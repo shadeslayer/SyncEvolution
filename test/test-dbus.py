@@ -666,27 +666,53 @@ class Connman (dbus.service.Object):
         if (self.count == 1):
             loop.quit()
             return {"ConnectedTechnologies":["ethernet", "some other stuff"],
-                    "EnabledTechnologies": ["bluetooth"]}
+                    "AvailableTechnologies": ["bluetooth"]}
         elif (self.count == 2):
             """ unplug the ethernet cable """
             loop.quit()
             return {"ConnectedTechnologies":["some other stuff"],
-                    "EnabledTechnologies": ["bluetooth"]}
+                    "AvailableTechnologies": ["bluetooth"]}
         elif (self.count == 3):
             """ replug the ethernet cable """
             loop.quit()
             return {"ConnectedTechnologies":["ethernet", "some other stuff"],
-                    "EnabledTechnologies": ["bluetooth"]}
+                    "AvailableTechnologies": ["bluetooth"]}
         elif (self.count == 4):
             """ nothing presence """
             loop.quit()
             return {"ConnectedTechnologies":[""],
-                    "EnabledTechnologies": [""]}
+                    "AvailableTechnologies": [""]}
         elif (self.count == 5):
             """ come back the same time """
             loop.quit()
             return {"ConnectedTechnologies":["ethernet", "some other stuff"],
-                    "EnabledTechnologies": ["bluetooth"]}
+                    "AvailableTechnologies": ["bluetooth"]}
+
+    @dbus.service.signal(dbus_interface='org.moblin.connman.Manager', signature='sv')
+    def PropertyChanged(self, key, value):
+        pass
+
+    def emitSignal(self):
+        self.count = self.count+1
+        if (self.count == 2):
+            """ unplug the ethernet cable """
+            self.PropertyChanged("ConnectedTechnologies",["some other stuff"])
+            return
+        elif (self.count == 3):
+            """ replug the ethernet cable """
+            self.PropertyChanged("ConnectedTechnologies", ["ethernet", "some other stuff"])
+            return
+        elif (self.count == 4):
+            """ nothing presence """
+            self.PropertyChanged("ConnectedTechnologies", [""])
+            self.PropertyChanged("AvailableTechnologies", [""])
+            return
+        elif (self.count == 5):
+            """ come back the same time """
+            self.PropertyChanged("ConnectedTechnologies", ["ethernet", "some other stuff"])
+            self.PropertyChanged("AvailableTechnologies", ["bluetooth"])
+            return
+
     def reset(self):
         self.count = 0
 
@@ -709,6 +735,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
             self.failUnlessEqual (status, "")
             self.failUnlessEqual (server, "foo")
             self.failUnlessEqual (transport, "http://http-only-1")
+            loop.quit()
 
         match = bus.add_signal_receiver(cb_http_presence,
                                 'Presence',
@@ -720,13 +747,14 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         loop.run()
         time.sleep(1)
         self.setUpSession("foo")
-        self.session.SetConfig(True, True, {"" : {"syncURL":
+        self.session.SetConfig(True, False, {"" : {"syncURL":
         "obex-bt://temp-bluetooth-peer-changed-from-http"}})
         def cb_bt_presence(server, status, transport):
             self.failUnlessEqual (status, "")
             self.failUnlessEqual (server, "foo")
             self.failUnlessEqual (transport,
                     "obex-bt://temp-bluetooth-peer-changed-from-http")
+            loop.quit()
         match.remove()
         match = bus.add_signal_receiver(cb_bt_presence,
                                 'Presence',
@@ -735,6 +763,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
+        self.conn.emitSignal()
         loop.run()
         time.sleep(1)
         self.session.Detach()
@@ -744,6 +773,9 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.session.Detach()
         self.foo = "random string"
         self.bar = "random string"
+        match.remove()
+        self.conn.emitSignal()
+        self.conn.emitSignal()
         def cb_bt_http_presence(server, status, transport):
             if (server == "foo"):
                 self.foo = status
@@ -751,8 +783,8 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
                 self.bar = status
             else:
                 self.fail("wrong server config")
+            loop.quit()
 
-        match.remove()
         match = bus.add_signal_receiver(cb_bt_http_presence,
                                 'Presence',
                                 'org.syncevolution.Server',
@@ -760,6 +792,8 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
+        #count=5, 2 signals recevied
+        self.conn.emitSignal()
         loop.run()
         loop.run()
         time.sleep(1)
@@ -798,7 +832,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         "http://http-client-mixed"])
 
         #count = 2
-        loop.run()
+        self.conn.emitSignal()
         time.sleep(1)
         (status, transports) = self.server.CheckPresence ("foo")
         self.failUnlessEqual (status, "no transport")
@@ -819,9 +853,9 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         time.sleep(1)
         status = self.session.checkPresence()
         self.failUnlessEqual (status, "")
-        loop.run()
-        loop.run()
-        loop.run()
+        self.conn.emitSignal()
+        self.conn.emitSignal()
+        self.conn.emitSignal()
         #count = 4
         time.sleep(1)
         status = self.session.checkPresence()

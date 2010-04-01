@@ -877,8 +877,13 @@ class PresenceStatus {
         :m_httpPresence (false), m_btPresence (false), m_initiated (false), m_server (server),
         m_httpTimer(), m_btTimer()
     {
-        init();
     }
+
+    enum TransportType{
+        HTTP_TRANSPORT,
+        BT_TRANSPORT,
+        INVALID_TRANSPORT
+    };
 
     void init();
 
@@ -888,11 +893,38 @@ class PresenceStatus {
     void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config);
 
     void updatePresenceStatus (bool httpPresence, bool btPresence); 
+    void updatePresenceStatus (bool newStatus, TransportType type);
 
     bool getHttpPresence() { return m_httpPresence; }
     bool getBtPresence() { return m_btPresence; }
     Timer& getHttpTimer() { return m_httpTimer; }
     Timer& getBtTimer() { return m_btTimer; }
+};
+
+/*
+ * Implements org.moblin.connman.Manager
+ * GetProperty  : getPropCb
+ * PropertyChanged: propertyChanged
+ **/
+class ConnmanClient : public DBusRemoteObject
+{
+public:
+    ConnmanClient (DBusServer &server);
+    virtual const char *getDestination() const {return "org.moblin.connman";}
+    virtual const char *getPath() const {return "/";}
+    virtual const char *getInterface() const {return "org.moblin.connman.Manager";}
+    virtual DBusConnection *getConnection() const {return m_connmanConn.get();}
+
+    void propertyChanged(const string &name,
+                         const boost::variant<vector<string>, string> &prop);
+
+    void getPropCb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
+
+private:
+    DBusServer &m_server;
+    DBusConnectionPtr m_connmanConn;
+
+    SignalWatch2 <string,boost::variant<vector<string>, string> > m_propertyChanged;
 };
 
 /**
@@ -1107,12 +1139,10 @@ class DBusServer : public DBusObjectHelper,
                 string,
                 const std::string &> logOutput;
 
-    static gboolean connmanPoll (gpointer dbus_server);
-    DBusConnectionPtr m_connmanConn;
-
     friend class Session;
 
     PresenceStatus m_presence;
+    ConnmanClient m_connman;
 
     /** manager to automatic sync */
     AutoSyncManager m_autoSync;
@@ -1192,8 +1222,6 @@ public:
     void connmanCallback(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
 
     PresenceStatus& getPresenceStatus() {return m_presence;}
-
-    DBusConnectionPtr getConnmanConnection() {return m_connmanConn;}
 
     void clearPeerTempls() { m_matchedTempls.clear(); }
     void addPeerTempl(const string &templName, const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl);
@@ -4331,6 +4359,15 @@ void PresenceStatus::updateConfigPeers (const std::string &peer, const ReadOpera
     }
 }
 
+void PresenceStatus::updatePresenceStatus (bool newStatus, PresenceStatus::TransportType type) {
+    if (type == PresenceStatus::HTTP_TRANSPORT) {
+        updatePresenceStatus (newStatus, m_btPresence);
+    } else if (type == PresenceStatus::BT_TRANSPORT) {
+        updatePresenceStatus (m_httpPresence, newStatus);
+    }else {
+    }
+}
+
 void PresenceStatus::updatePresenceStatus (bool httpPresence, bool btPresence) {
     bool httpChanged = (m_httpPresence != httpPresence);
     bool btChanged = (m_btPresence != btPresence);
@@ -4377,6 +4414,99 @@ void PresenceStatus::updatePresenceStatus (bool httpPresence, bool btPresence) {
                         status2string (entry.second).c_str(), entry.first.c_str());
             }
         }
+    }
+}
+
+/********************** Connman Client implementation **************/
+ConnmanClient::ConnmanClient(DBusServer &server):
+    m_server(server),
+    m_propertyChanged(*this, "PropertyChanged")
+{
+    const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
+    m_connmanConn = g_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
+    if (m_connmanConn){
+        typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
+        DBusClientCall1<PropDict>  getProp(*this,"GetProperties");
+        getProp (boost::bind(&ConnmanClient::getPropCb, this, _1, _2));
+        m_propertyChanged.activate(boost::bind(&ConnmanClient::propertyChanged, this, _1, _2));
+    }else{
+        SE_LOG_ERROR (NULL, NULL, "DBus connection setup for connman failed");
+    }
+}
+
+void ConnmanClient::getPropCb (const std::map <std::string,
+                               boost::variant <std::vector <std::string> > >& props, const string &error){
+    if (!error.empty()) {
+        if (error == "org.freedesktop.DBus.Error.ServiceUnknown") {
+            // ensure there is still first set of singal set in case of no
+            // connman available
+            m_server.getPresenceStatus().updatePresenceStatus (true, true);
+            SE_LOG_DEBUG (NULL, NULL, "No connman service available %s", error.c_str());
+            return;
+        }
+        SE_LOG_DEBUG (NULL, NULL, "error in connmanCallback %s", error.c_str());
+        return;
+    }
+
+    typedef std::pair <std::string, boost::variant <std::vector <std::string> > > element;
+    bool httpPresence = false, btPresence = false;
+    BOOST_FOREACH (element entry, props) {
+        //match connected for HTTP based peers (wifi/wimax/ethernet)
+        if (entry.first == "ConnectedTechnologies") {
+            std::vector <std::string> connected = boost::get <std::vector <std::string> > (entry.second);
+            BOOST_FOREACH (std::string tech, connected) {
+                if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet") 
+                || boost::iequals (tech, "wimax")) {
+                    httpPresence = true;
+                    break;
+                }
+            }
+        } else if (entry.first == "AvailableTechnologies") {
+            std::vector <std::string> enabled = boost::get <std::vector <std::string> > (entry.second);
+            BOOST_FOREACH (std::string tech, enabled){
+                if (boost::iequals (tech, "bluetooth")) {
+                    btPresence = true;
+                    break;
+                }
+            }
+        } else {
+            continue;
+        }
+    }
+    //now delivering the signals
+    m_server.getPresenceStatus().updatePresenceStatus (httpPresence, btPresence);
+}
+
+void ConnmanClient::propertyChanged(const string &name,
+                                    const boost::variant<vector<string>, string> &prop)
+{
+    bool httpPresence=false, btPresence=false;
+    bool httpChanged=false, btChanged=false;
+    if (boost::iequals(name, "ConnectedTechnologies")) {
+        httpChanged=true;
+        vector<string> connected = boost::get<vector<string> >(prop);
+        BOOST_FOREACH (std::string tech, connected) {
+            if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet") 
+                    || boost::iequals (tech, "wimax")) {
+                httpPresence=true;
+                break;
+            }
+        }
+    } else if (boost::iequals (name, "AvailableTechnologies")){
+        btChanged=true;
+        vector<string> enabled = boost::get<vector<string> >(prop);
+        BOOST_FOREACH (std::string tech, enabled){
+            if (boost::iequals (tech, "bluetooth")) {
+                btPresence = true;
+                break;
+            }
+        }
+    }
+    if(httpChanged) {
+        m_server.getPresenceStatus().updatePresenceStatus (httpPresence, PresenceStatus::HTTP_TRANSPORT);
+    } else if (btChanged) {
+        m_server.getPresenceStatus().updatePresenceStatus (btPresence, PresenceStatus::BT_TRANSPORT);
+    } else {
     }
 }
 
@@ -4545,6 +4675,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     infoRequest(*this, "InfoRequest"),
     logOutput(*this, "LogOutput"),
     m_presence(*this),
+    m_connman(*this),
     m_autoSync(*this),
     m_autoTerm(m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
     m_parentLogger(LoggerBase::instance())
@@ -4572,12 +4703,6 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
 
     LoggerBase::pushLogger(this);
     setLevel(LoggerBase::DEBUG);
-
-    const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
-    m_connmanConn = g_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
-    if (m_connmanConn) {
-        m_pollConnman =  g_timeout_add_seconds (10, connmanPoll, static_cast <gpointer> (this));
-    }
 }
 
 DBusServer::~DBusServer()
@@ -4836,74 +4961,6 @@ void DBusServer::removeInfoReq(const InfoReq &req)
     if(it != m_infoReqMap.end()) {
         m_infoReqMap.erase(it);
     }
-}
-
-gboolean DBusServer::connmanPoll (gpointer dbusserver)
-{
-    DBusServer *me = static_cast<DBusServer *>(dbusserver);
-    DBusConnectionPtr conn = me->getConnmanConnection();
-    struct ConnmanClient : public DBusCallObject
-    {
-        DBusConnectionPtr m_connection;
-        ConnmanClient (DBusConnectionPtr conn ) : m_connection (conn) {}
-        virtual const char *getDestination() const {return "org.moblin.connman";}
-        virtual const char *getPath() const {return "/";}
-        virtual const char *getInterface() const {return "org.moblin.connman.Manager";}
-        virtual const char *getMethod() const {return "GetProperties"; }
-        virtual DBusConnection *getConnection() const {return m_connection.get();}
-    }connman (conn);
-
-    typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
-    DBusClientCall1<PropDict>  getProp(connman);
-    getProp (boost::bind(&DBusServer::connmanCallback, me, _1, _2));
-    return TRUE;
-}
-
-
-void DBusServer::connmanCallback (const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error)
-{
-    if (!error.empty()) {
-        if (error == "org.freedesktop.DBus.Error.ServiceUnknown") {
-            // no connman available, remove connmanPoll.
-            m_pollConnman.set(0);
-            // ensure there is still first set of singal set in case of no
-            // connman available
-            m_presence.updatePresenceStatus (true, true);
-            SE_LOG_DEBUG (NULL, NULL, "No connman service available %s", error.c_str());
-            return;
-        }
-        SE_LOG_DEBUG (NULL, NULL, "error in connmanCallback %s", error.c_str());
-        return;
-    }
-
-    typedef std::pair <std::string, boost::variant <std::vector <std::string> > > element;
-    bool httpPresence = false, btPresence = false;
-    BOOST_FOREACH (element entry, props) {
-        //match connected for HTTP based peers (wifi/wimax/ethernet)
-        if (entry.first == "ConnectedTechnologies") {
-            std::vector <std::string> connected = boost::get <std::vector <std::string> > (entry.second);
-            BOOST_FOREACH (std::string tech, connected) {
-                if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet") 
-                || boost::iequals (tech, "wimax")) {
-                    httpPresence = true;
-                    break;
-                }
-            }
-        } else if (entry.first == "EnabledTechnologies") {
-            std::vector <std::string> enabled = boost::get <std::vector <std::string> > (entry.second);
-            BOOST_FOREACH (std::string tech, enabled){
-                if (boost::iequals (tech, "bluetooth")) {
-                    btPresence = true;
-                    break;
-                }
-            }
-        } else {
-            continue;
-        }
-    }
-    //now delivering the signals
-    m_presence.updatePresenceStatus (httpPresence, btPresence);
-
 }
 
 void DBusServer::getDeviceList(SyncConfig::DeviceList &devices)
