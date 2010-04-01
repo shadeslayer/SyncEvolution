@@ -161,6 +161,9 @@ public:
     /** set whether there is an error */
     void setResult(bool result) { m_result = result; }
 
+    /** call 'Server.InfoResponse' */
+    void infoResponse(const string &id, const string &state, const StringMap &resp);
+
 private:
     /** call 'Attach' until it returns */
     void attachSync();
@@ -179,6 +182,17 @@ private:
 
     /** callback of 'Server.LogOutput' */
     void logOutputCb(const DBusObject_t &object, const string &level, const string &log);
+
+    /** callback of 'Server.InfoRequest' */
+    void infoReqCb(const string &,
+                   const DBusObject_t &,
+                   const string &,
+                   const string &,
+                   const string &,
+                   const StringMap &);
+
+    /** callback of Server.InfoResponse */
+    void infoResponseCb(const string &error);
 
     /** callback of calling 'Server.StartSession' */
     void startSessionCb(const DBusObject_t &session, const string &error);
@@ -238,6 +252,14 @@ private:
     SignalWatch2<DBusObject_t, bool> m_sessionChanged;
     // listen to dbus server signal 'LogOutput'
     SignalWatch3<DBusObject_t, string, string> m_logOutput;
+    // listen to dbus server signal 'InfoRequest'
+    SignalWatch6<string, 
+                 DBusObject_t,
+                 string,
+                 string,
+                 string,
+                 StringMap > m_infoReq; 
+
     /** watch daemon whether it is gone */
     boost::shared_ptr<Watch> m_daemonWatch;
 };
@@ -254,6 +276,7 @@ public:
     virtual const char *getPath() const {return m_path.c_str();}
     virtual const char *getInterface() const {return "org.syncevolution.Session";}
     virtual DBusConnection *getConnection() const {return m_server.getConnection();}
+    RemoteDBusServer &getServer() { return m_server; }
 
     /**
      * call 'Execute' method of 'Session' in dbus server
@@ -294,6 +317,9 @@ public:
     /** get current status */
     string status() { return m_status; }
 
+    /** set the flag to indicate the session is running sync */
+    void setRunSync(bool runSync) { m_runSync = runSync; }
+
     /** monitor status of the sesion until it is done */
     void monitorSync();
 
@@ -303,9 +329,58 @@ public:
     /** set whether to print output */
     void setOutput(bool output) { m_output = output; }
 
+    /** process signals from daemon */
+    void infoReq(const string &id,
+                 const DBusObject_t &session,
+                 const string &state,
+                 const string &handler,
+                 const string &type,
+                 const StringMap &params);
+
+    /** remove InfoReq objects from map */
+    void removeInfoReq(const string &id);
+
     typedef std::map<std::string, SourceStatus> SourceStatuses_t;
 
 private:
+    /**
+     * InfoReq to handle info requests from daemon and
+     * call 'Server.InfoResponse' to send its response
+     */
+    class InfoReq
+    {
+        /** the session reference */
+        RemoteSession &m_session;
+        /** the id of InfoRequest */
+        string m_id;
+        /** the type of InfoRequest */
+        string m_type;
+        /** the response map sent to the daemon*/
+        StringMap m_resp;
+
+        /** InfoRequest state */
+        enum State {
+            INIT, // init
+            WORKING, //'working'
+            RESPONSE, // 'response'
+            DONE // 'done'
+        };
+        /** the current state of InfoRequest */
+        State m_state;
+    public:
+        InfoReq(RemoteSession &session, const string &id, const string &type);
+
+        /**
+         * process the info request dispatched by session
+         */
+        void process(const string &id,
+                     const DBusObject_t &session,
+                     const string &state,
+                     const string &handler,
+                     const string &type,
+                     const StringMap &params);
+    };
+
     /** callback of calling 'Session.Execute' */
     void executeCb(const string &error);
 
@@ -329,6 +404,11 @@ private:
     /** callback of 'Session.Abort' */
     void abortCb(const string &);
 
+    /**
+     * implement requirements from info req. Called by InfoReq.
+     */
+    void handleInfoReq(const string &type, const StringMap &params, StringMap &resp);
+
     /** dbus server */
     RemoteDBusServer &m_server;
 
@@ -343,9 +423,15 @@ private:
 
     /** current status */
     string m_status;
+    
+    /** session is running sync */
+    bool m_runSync;
 
     /** signal watch 'StatusChanged' */
     SignalWatch3<std::string, uint32_t, SourceStatuses_t> m_statusChanged;
+
+    /** InfoReq map. store all infoReq belongs to this session */
+    map<string, boost::shared_ptr<InfoReq> > m_infoReqs;
 };
 #endif
 
@@ -450,7 +536,7 @@ int main( int argc, char **argv )
             // Avoid that unless the user explicitly asked for the daemon.
             bool result = server.checkStarted(false);
             if (useDaemon.wasSet() || result) {
-                return server.execute(parsedArgs, cmdline.getConfigName(), cmdline.isSync());
+                return !server.execute(parsedArgs, cmdline.getConfigName(), cmdline.isSync());
             } else {
                 // User didn't select --use-daemon and thus doesn't need to know about it
                 // not being available.
@@ -499,7 +585,8 @@ RemoteDBusServer::RemoteDBusServer()
     :m_attached(false), m_result(true),
      m_replyTotal(0), m_replyCounter(0),
      m_sessionChanged(*this,"SessionChanged"),
-     m_logOutput(*this, "LogOutput")
+     m_logOutput(*this, "LogOutput"),
+     m_infoReq(*this, "InfoRequest")
 {
     m_loop = g_main_loop_new (NULL, FALSE);
     m_conn = g_dbus_setup_bus(DBUS_BUS_SESSION, NULL, true, NULL);
@@ -511,6 +598,7 @@ RemoteDBusServer::RemoteDBusServer()
         if(m_attached) {
             m_sessionChanged.activate(boost::bind(&RemoteDBusServer::sessionChangedCb, this, _1, _2));
             m_logOutput.activate(boost::bind(&RemoteDBusServer::logOutputCb, this, _1, _2, _3));
+            m_infoReq.activate(boost::bind(&RemoteDBusServer::infoReqCb, this, _1, _2, _3, _4, _5, _6));
         }
     }
 }
@@ -557,6 +645,38 @@ void RemoteDBusServer::logOutputCb(const DBusObject_t &object,
          boost::equals(object, m_session->getPath()))) {
         m_session->logOutput(Logger::strToLevel(level.c_str()), log);
     }
+}
+
+void RemoteDBusServer::infoReqCb(const string &id,
+                                 const DBusObject_t &session,
+                                 const string &state,
+                                 const string &handler,
+                                 const string &type,
+                                 const StringMap &params)
+{
+    // if m_session is null, just ignore
+    if(m_session) {
+        m_session->infoReq(id, session, state, handler, type, params);
+    }
+}
+
+void RemoteDBusServer::infoResponse(const string &id,
+                                    const string &state,
+                                    const StringMap &resp)
+{
+    //call Server.InfoResponse
+    DBusClientCall0 call(*this, "InfoResponse");
+    call(id, state, resp, boost::bind(&RemoteDBusServer::infoResponseCb, this, _1));
+}
+
+void RemoteDBusServer::infoResponseCb(const string &error)
+{
+    replyInc();
+    if(!error.empty()) {
+        SE_LOG_ERROR(NULL, NULL, "information response failed.");
+        m_result = false;
+    }
+    g_main_loop_quit(m_loop);
 }
 
 void RemoteDBusServer::sessionChangedCb(const DBusObject_t &object, bool active)
@@ -615,6 +735,7 @@ bool RemoteDBusServer::execute(const vector<string> &args, const string &peer, b
     }
 
     if(m_session) {
+        m_session->setRunSync(true);
 
         //if session is not active, just wait
         while(!isActive()) {
@@ -672,6 +793,7 @@ bool RemoteDBusServer::execute(const vector<string> &args, const string &peer, b
         g_session.reset();
         //restore logging level
         // LoggerBase::instance().setLevel(level);
+        m_session->setRunSync(false);
     }
     return m_result;
 }
@@ -870,7 +992,7 @@ bool RemoteDBusServer::monitor(const string &peer)
 /********************** RemoteSession implementation **************************/
 RemoteSession::RemoteSession(RemoteDBusServer &server,
         const string &path)
-    :m_server(server), m_output(false), m_path(path),
+    :m_server(server), m_output(false), m_path(path), m_runSync(false),
     m_statusChanged(*this, "StatusChanged")
 {
     m_statusChanged.activate(boost::bind(&RemoteSession::statusChangedCb, this, _1, _2, _3));
@@ -1004,6 +1126,93 @@ void RemoteSession::monitorSync()
     m_output = false;
 }
 
+void RemoteSession::infoReq(const string &id,
+                            const DBusObject_t &session,
+                            const string &state,
+                            const string &handler,
+                            const string &type,
+                            const StringMap &params)
+{
+    //if command line runs a sync, then try to handle req
+    if (m_runSync && boost::iequals(session, getPath())) {
+        //only handle password now
+        if (boost::iequals("password", type)) {
+            map<string, boost::shared_ptr<InfoReq> >::iterator it = m_infoReqs.find(id);
+            if (it != m_infoReqs.end()) {
+                it->second->process(id, session, state, handler, type, params);
+            } else {
+                boost::shared_ptr<InfoReq> passwd(new InfoReq(*this, id, type));
+                m_infoReqs[id] = passwd;
+                passwd->process(id, session, state, handler, type, params);
+            }
+        } 
+    }
+}
+
+void RemoteSession::handleInfoReq(const string &type, const StringMap &params, StringMap &resp)
+{
+    if (boost::iequals(type, "password")) {
+        char buffer[256];
+
+        string descr;
+        StringMap::const_iterator it = params.find("description");
+        if (it != params.end()) {
+            descr = it->second;
+        }
+        printf("Enter password for %s: ", descr.c_str());
+        fflush(stdout);
+        if (fgets(buffer, sizeof(buffer), stdin) &&
+                strcmp(buffer, "\n")) {
+            size_t len = strlen(buffer);
+            if (len && buffer[len - 1] == '\n') {
+                buffer[len - 1] = 0;
+            }
+            resp["password"] = string(buffer);
+        } else {
+            SE_LOG_ERROR(NULL, NULL, "could not read password for %s", descr.c_str());
+        }
+    }
+}
+
+void RemoteSession::removeInfoReq(const string &id) 
+{
+    map<string, boost::shared_ptr<InfoReq> >::iterator it = m_infoReqs.find(id);
+    if (it != m_infoReqs.end()) {
+        m_infoReqs.erase(it);
+    }
+}
+
+/********************** InfoReq implementation **************************/
+RemoteSession::InfoReq::InfoReq(RemoteSession &session,
+                                const string &id,
+                                const string &type)
+    :m_session(session), m_id(id), m_type(type), m_state(INIT)
+{
+}
+
+void RemoteSession::InfoReq::process(const string &id,
+                                     const DBusObject_t &session,
+                                     const string &state,
+                                     const string &handler,
+                                     const string &type,
+                                     const StringMap &params)
+{
+    //only handle info belongs to this InfoReq
+    if (boost::equals(m_id, id)) {
+        //check the state and response if necessary
+        if (m_state == INIT && boost::iequals("request", state)) {
+            m_session.getServer().infoResponse(m_id, "working", StringMap());
+            m_state = WORKING;
+            m_session.handleInfoReq(type, params, m_resp);
+        } else if ((m_state == WORKING) && boost::iequals("waiting", state)) {
+            m_session.getServer().infoResponse(m_id, "response", m_resp);
+            m_state = RESPONSE;
+        } else if (boost::iequals("done", state)) {
+            //if request is 'done', remove it
+            m_session.removeInfoReq(m_id);
+        }
+    }
+}
 #endif
 
 SE_END_CXX

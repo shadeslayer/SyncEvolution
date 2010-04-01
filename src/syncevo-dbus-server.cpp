@@ -5220,8 +5220,8 @@ gboolean InfoReq::checkCallback(gpointer data)
 
 bool InfoReq::checkTimeout()
 {
-    // if waiting for 'working' response, check time out
-    if(m_status == ST_RUN && m_infoState == IN_REQ) {
+    // if waiting for client response, check time out
+    if(m_status == ST_RUN) {
         if (m_timer.timeout()) {
             m_status = ST_TIMEOUT;
             return true;
@@ -5238,6 +5238,8 @@ void InfoReq::setResponse(const Caller_t &caller, const string &state, const Inf
         m_handler = caller;
         m_infoState = IN_WAIT;
         m_server.emitInfoReq(*this);
+        //reset the timer, used to check timeout
+        m_timer.reset();
     } else if(m_infoState == IN_WAIT && state == "response") {
         m_response = response;
         m_handler = caller;
