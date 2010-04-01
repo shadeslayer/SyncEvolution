@@ -406,6 +406,9 @@ int main( int argc, char **argv )
         if(!cmdline.parse()) {
             return 1;
         }
+        if (cmdline.dontRun()) {
+            return 0;
+        }
 
         Cmdline::Bool useDaemon = cmdline.useDaemon();
 

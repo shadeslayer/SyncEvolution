@@ -52,6 +52,12 @@ public:
      */
     bool parse();
 
+    /**
+     * @return false if run() still needs to be invoked, true when parse() already did
+     *         the job (like --sync-property ?)
+     */
+    bool dontRun() const { return m_dontrun; }
+
     bool run();
 
     /**
@@ -61,9 +67,9 @@ public:
     class Bool { 
     public:
     Bool(bool val = false) : m_value(val), m_wasSet(false) {}
-        operator bool () { return m_value; }
+        operator bool () const { return m_value; }
         Bool & operator = (bool val) { m_value = val; m_wasSet = true; return *this; }
-        bool wasSet() { return m_wasSet; }
+        bool wasSet() const { return m_wasSet; }
     private:
         bool m_value;
         bool m_wasSet;
