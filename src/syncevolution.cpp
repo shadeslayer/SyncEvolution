@@ -165,8 +165,11 @@ private:
     /** call 'Attach' until it returns */
     void attachSync();
 
-    /** callback of 'Server.Attach' */
-    void attachCb(const string &error);
+    /** 
+     * callback of 'Server.Attach'
+     * also set up a watch and add watch callback when the daemon is gone
+     */
+    void attachCb(const boost::shared_ptr<Watch> &watch, const string &error);
 
     /** callback of 'Server.GetSessions' */
     void getSessionsCb(const vector<string> &sessions, const string &error);
@@ -188,6 +191,9 @@ private:
 
     /** get all running sessions. Used internally. */
     void getRunningSessions();
+
+    /** called when daemon has gone */
+    void daemonGone();
 
     /** set the total number of replies we must wait */
     void resetReplies(int total = 1) 
@@ -232,6 +238,8 @@ private:
     SignalWatch2<DBusObject_t, bool> m_sessionChanged;
     // listen to dbus server signal 'LogOutput'
     SignalWatch3<DBusObject_t, string, string> m_logOutput;
+    /** watch daemon whether it is gone */
+    boost::shared_ptr<Watch> m_daemonWatch;
 };
 
 /**
@@ -490,13 +498,15 @@ int main( int argc, char **argv )
 RemoteDBusServer::RemoteDBusServer()
     :m_attached(false), m_result(true),
      m_replyTotal(0), m_replyCounter(0),
-     m_sessionChanged(*this,"SessionChanged"), m_logOutput(*this, "LogOutput")
+     m_sessionChanged(*this,"SessionChanged"),
+     m_logOutput(*this, "LogOutput")
 {
     m_loop = g_main_loop_new (NULL, FALSE);
     m_conn = g_dbus_setup_bus(DBUS_BUS_SESSION, NULL, true, NULL);
 
     if(m_conn) {
         //check whether we can attach to the daemon
+        //also set up the daemon watch when attaching to server
         attachSync();
         if(m_attached) {
             m_sessionChanged.activate(boost::bind(&RemoteDBusServer::sessionChangedCb, this, _1, _2));
@@ -519,19 +529,22 @@ bool RemoteDBusServer::checkStarted(bool printError)
 void RemoteDBusServer::attachSync()
 {
     resetReplies();
-    DBusClientCall0 attach(*this, "Attach");
-    attach(boost::bind(&RemoteDBusServer::attachCb, this, _1));
+    DBusClientCall1<boost::shared_ptr<Watch> > attach(*this, "Attach");
+    attach(boost::bind(&RemoteDBusServer::attachCb, this, _1, _2));
     while(!done()) {
         g_main_loop_run(m_loop);
     }
 }
 
-void RemoteDBusServer::attachCb(const string &error)
+void RemoteDBusServer::attachCb(const boost::shared_ptr<Watch> &watch, const string &error)
 {
     replyInc();
     if(error.empty()) {
         // don't print error information, leave it to caller
         m_attached = true;
+        //if attach is successful, watch server whether it is gone
+        m_daemonWatch = watch;
+        m_daemonWatch->setCallback(boost::bind(&RemoteDBusServer::daemonGone,this));
     }
 }
 
@@ -551,6 +564,13 @@ void RemoteDBusServer::sessionChangedCb(const DBusObject_t &object, bool active)
     // update active sessions if needed
     updateSessions(object, active);
     g_main_loop_quit(m_loop);
+}
+
+void RemoteDBusServer::daemonGone()
+{
+    //print error info and exit
+    SE_LOG_ERROR(NULL, NULL, "Background sync daemon has gone.");
+    exit(1);
 }
 
 /**
