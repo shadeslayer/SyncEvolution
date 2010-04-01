@@ -14,7 +14,7 @@ background. Notifications are emitted when syncs start, end or fail
 Automatic synchronization can be enabled separately for each peer
 ("autoSync=0/1", off by default), will be done at regular intervals
 ("autoSyncInterval=30" minutes) when online long enough
-("autoSyncDelay=15" minutes). That last option ensures that a) an
+("autoSyncDelay=5" minutes). That last option ensures that a) an
 automatic sync does not attempt to use a network connection unless it
 was already active and b) hopefully is also around long enough to
 complete the sync.
@@ -22,6 +22,19 @@ complete the sync.
 Detecting online status depends on ConnMan. Without it, SyncEvolution
 assumes that the network is available. For Bluetooth it is enough to
 have a peer paired.
+
+When SyncEvolution is compiled with a backend sync daemon
+("syncevo-dbus-server"), then conceptually that daemon controls the
+configuration and coordinates manually and automatically started sync
+sessions. Previously, the command line tool bypassed the daemon by
+running operations itself. Now it can hand over the command line
+parameters to the daemon to be executed there ("--daemon=yes", the
+default if the daemon is available; MB #5043). Command line parameters
+and output of "syncevolution" are the same as before. Note that the
+daemon only runs one operation at a time, which delays the command
+line client when the daemon is busy. For testing purposes (like
+running a client which talks to a local server in the daemon) it is
+still possible to ignore the daemon (--daemon=no).
 
 Thanks to fixes and improvements in both Synthesis engine and
 SyncEvolution, suspend and resume are fully supported in client and
@@ -38,9 +51,15 @@ older SyncML servers, like desknow.com.
 
 Other changes:
 
+* Mobical.net (and other, similar services): fix vCalendar 1.0 alarm
+  specifications before importing them (MB #10458)
 * Nokia N900: added a config template for it and disabled the redundant
   RespURI when using Bluetooth. Preliminary testing shows that this solves
   some of the issues seen before (MB #10224).
+* workaround for Evolution 2.30: "timezone cannot be retrieved because it
+  doesn't exist" is triggered incorrectly when importing non-standard
+  timezone definitions because libecal change an error code (MB #9820)
+* "syncevo-http-server" HTTP server script is included in normal install
 * syncevolution.org binaries: finally solved the libbluetooth3
   incompatibility (MB #9289). Binaries of beta 2 crashed on more
   recent distros because of that.
