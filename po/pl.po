@@ -104,7 +104,7 @@ msgstr "Trwa próba anulowania synchronizacji"
 # There is no space left
 #: ../src/gtk-ui/sync-ui.c:521
 msgid "No service or device selected"
-msgstr "Nie wybrano usługi lub urzadzenia"
+msgstr "Nie wybrano usługi lub urządzenia"
 
 # Last synchronization happened a few seconds ago
 #. TRANSLATORS: This is the title on main view. Placeholder is
@@ -694,7 +694,7 @@ msgstr "Zrób kopię zapasową swoich kontaktów i kalendarza. Synchronizuj jedn
 
 #: ../src/gtk-ui/sync-config-widget.c:86
 msgid "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
-msgstr "Usługa kopii zapasowej i przyrwacania Mobical umożliwia za darmo wykonanie bezpiecznej kopii zapasowej osobistych danych mobilnych."
+msgstr "Usługa kopii zapasowej i przywracania Mobical umożliwia za darmo wykonanie bezpiecznej kopii zapasowej osobistych danych mobilnych."
 
 #: ../src/gtk-ui/sync-config-widget.c:89
 msgid "ZYB is a simple way for people to store and share mobile information online."
@@ -908,18 +908,14 @@ msgstr "Odrzuć"
 #~ "Czy chcesz zastąpić %s poprzez %s? Nie spowoduje to usunięcia "
 #~ "jakichkolwiek informacji zsynchronizowanych na żadnym z urządzeń, ale nie "
 #~ "będzie już można dokonać synchronizacji z %s."
-
 #~ msgid "Yes, use %s"
 #~ msgstr "Tak, użyj %s"
-
 #~ msgid "No, use %s"
 #~ msgstr "Nie, użyj %s"
-
 #~ msgid "Database error"
 #~ msgstr "Błąd bazy danych"
-
 #~ msgid "Reset service"
 #~ msgstr "Zresetuj usługę"
-
 #~ msgid "Addressbook"
 #~ msgstr "Książka adresowa"
+
