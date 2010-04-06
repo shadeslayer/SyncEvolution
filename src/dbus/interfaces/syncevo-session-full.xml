@@ -230,6 +230,13 @@
       </arg>
     </method>
 
+    <method name="Execute">
+      <doc:doc><doc:description>Execute command line arguments </doc:description></doc:doc>
+      <arg type="a(ss)" name="args" direction="in">
+        <doc:doc><doc:summary>Command line arguments</doc:summary></doc:doc>
+      </arg>
+    </method>
+
     <signal name="StatusChanged">
       <doc:doc><doc:description>Session status change. See GetStatus() for argument descriptions.</doc:description></doc:doc>
       <arg type="s" name="status"/>
