@@ -2006,7 +2006,7 @@ public:
         m_cmdline(session, args, m_cmdlineOutStream, m_cmdlineOutStream)
     {}
 
-    void parse() { m_cmdline.parse(); }
+    bool parse() { return m_cmdline.parse(); }
     void run()
     {
         // exceptions must be handled (= printed) before returning,
@@ -3435,8 +3435,12 @@ void Session::execute(const vector<string> &args)
     }
     //create ostream with a specified streambuf
     m_cmdline.reset(new CmdlineWrapper(*this, args));
-    //args are checked before transferred to dbus server
-    m_cmdline->parse();
+
+    if(!m_cmdline->parse()) {
+        m_cmdline.reset();
+        SE_THROW_EXCEPTION(DBusSyncException, "arguments parsing error");
+    }
+
     m_runOperation = OP_CMDLINE;
     g_main_loop_quit(loop);
 }

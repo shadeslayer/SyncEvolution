@@ -891,7 +891,7 @@ void RemoteSession::executeCb(const string &error)
 {
     m_server.replyInc();
     if(!error.empty()) {
-        SE_LOG_ERROR(NULL, NULL, "running the command line inside the D-Bus server failed: %s", error.c_str());
+        SE_LOG_ERROR(NULL, NULL, "running the command line inside the D-Bus server failed");
         m_server.setResult(false);
         //end to print outputs
         m_output = false;
