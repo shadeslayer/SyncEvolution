@@ -53,6 +53,15 @@ public:
     bool parse();
 
     /**
+     * parse the command line options
+     * relative paths in the arguments are converted to absolute paths
+     * if it returns false, then the content of args is undefined.
+     *
+     * @retval true if command line was okay
+     */
+    bool parse(vector<string> &args);
+
+    /**
      * @return false if run() still needs to be invoked, true when parse() already did
      *         the job (like --sync-property ?)
      */

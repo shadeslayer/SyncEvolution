@@ -64,6 +64,13 @@ typedef map<string, string> StringMap;
  */
 string normalizePath(const string &path);
 
+/**
+ * convert relative path to canonicalized absolute path
+ * @param path will be turned into absolute path if possible, otherwise left unchanged
+ * @return true if conversion is successful, false otherwise(errno will be set)
+ */
+bool relToAbs(string &path);
+
 /** ensure that m_path is writable, otherwise throw error */
 void mkdir_p(const string &path);
 

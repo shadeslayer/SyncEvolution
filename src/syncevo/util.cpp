@@ -40,6 +40,8 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #if USE_SHA256 == 1
 # include <glib.h>
@@ -82,6 +84,17 @@ string normalizePath(const string &path)
         res.resize(res.size() - 1);
     }
     return res;
+}
+
+bool relToAbs(string &path)
+{
+    char buffer[PATH_MAX+1];
+    if (realpath(path.c_str(), buffer)) {
+        path = buffer;
+        return true;
+    } else {
+        return false; 
+    }
 }
 
 void mkdir_p(const string &path)

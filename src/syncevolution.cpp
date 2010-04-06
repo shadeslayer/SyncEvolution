@@ -403,9 +403,11 @@ int main( int argc, char **argv )
          * level DEVELOPER, while output is at most INFO)
          */
         KeyringSyncCmdline cmdline(argc, argv, std::cout, std::cout);
-        if(!cmdline.parse()) {
+        vector<string> parsedArgs;
+        if(!cmdline.parse(parsedArgs)) {
             return 1;
         }
+
         if (cmdline.dontRun()) {
             return 0;
         }
@@ -444,16 +446,11 @@ int main( int argc, char **argv )
 #ifdef DBUS_SERVICE
             RemoteDBusServer server;
 
-            vector<string> arguments;
-            for(int i = 0; i < argc; i++) {
-                arguments.push_back(argv[i]);
-            }
-
             // Running execute() without the server available will print errors.
             // Avoid that unless the user explicitly asked for the daemon.
             bool result = server.checkStarted(false);
             if (useDaemon.wasSet() || result) {
-                return server.execute(arguments, cmdline.getConfigName(), cmdline.isSync());
+                return server.execute(parsedArgs, cmdline.getConfigName(), cmdline.isSync());
             } else {
                 // User didn't select --use-daemon and thus doesn't need to know about it
                 // not being available.

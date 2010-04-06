@@ -72,15 +72,24 @@ Cmdline::Cmdline(const vector<string> &args, ostream &out, ostream &err) :
 
 bool Cmdline::parse()
 {
+    vector<string> parsed;
+    return parse(parsed);
+}
+
+bool Cmdline::parse(vector<string> &parsed)
+{
+    parsed.clear();
     int opt = 1;
     bool ok;
     while (opt < m_argc) {
+        parsed.push_back(m_argv[opt]);
         if (m_argv[opt][0] != '-') {
             break;
         }
         if (boost::iequals(m_argv[opt], "--sync") ||
             boost::iequals(m_argv[opt], "-s")) {
             opt++;
+            parsed.push_back(m_argv[opt]);
             string param;
             string cmdopt(m_argv[opt - 1]);
             if (!parseProp(m_validSourceProps, m_sourceProps,
@@ -95,6 +104,7 @@ bool Cmdline::parse()
         } else if(boost::iequals(m_argv[opt], "--sync-property") ||
                   boost::iequals(m_argv[opt], "-y")) {
                 opt++;
+                parsed.push_back(m_argv[opt]);
                 if (!parseProp(m_validSyncProps, m_syncProps,
                                m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                     return false;
@@ -102,6 +112,7 @@ bool Cmdline::parse()
         } else if(boost::iequals(m_argv[opt], "--source-property") ||
                   boost::iequals(m_argv[opt], "-z")) {
             opt++;
+            parsed.push_back(m_argv[opt]);
             if (!parseProp(m_validSourceProps, m_sourceProps,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                 return false;
@@ -109,6 +120,7 @@ bool Cmdline::parse()
         }else if(boost::iequals(m_argv[opt], "--template") ||
                   boost::iequals(m_argv[opt], "-l")) {
             opt++;
+            parsed.push_back(m_argv[opt]);
             if (opt >= m_argc) {
                 usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
                 return false;
@@ -149,10 +161,12 @@ bool Cmdline::parse()
                 usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
                 return false;
             }
-            if (!isDir(m_restore)) {
+            //if can't convert it successfully, it's an invalid path
+            if (!relToAbs(m_restore)) {
                 usage(true, string("parameter '") + m_restore + "' for " + cmdOpt(m_argv[opt - 1]) + " must be log directory");
                 return false;
             }
+            parsed.push_back(m_restore);
         } else if(boost::iequals(m_argv[opt], "--before")) {
             m_before = true;
         } else if(boost::iequals(m_argv[opt], "--after")) {
@@ -193,6 +207,7 @@ bool Cmdline::parse()
     if (opt < m_argc) {
         m_server = m_argv[opt++];
         while (opt < m_argc) {
+            parsed.push_back(m_argv[opt]);
             m_sources.insert(m_argv[opt++]);
         }
     }
