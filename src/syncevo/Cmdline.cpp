@@ -79,6 +79,10 @@ bool Cmdline::parse()
 bool Cmdline::parse(vector<string> &parsed)
 {
     parsed.clear();
+    if (m_argc) {
+        parsed.push_back(m_argv[0]);
+    }
+
     int opt = 1;
     bool ok;
     while (opt < m_argc) {
