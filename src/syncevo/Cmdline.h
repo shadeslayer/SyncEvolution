@@ -65,7 +65,7 @@ public:
      * @return false if run() still needs to be invoked, true when parse() already did
      *         the job (like --sync-property ?)
      */
-    bool dontRun() const { return m_dontrun; }
+    bool dontRun() const;
 
     bool run();
 

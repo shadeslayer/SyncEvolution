@@ -286,6 +286,18 @@ bool Cmdline::isSync()
     return true;
 }
 
+bool Cmdline::dontRun() const
+{
+    // this mimics the if() checks in run()
+    if (m_usage || m_version ||
+        m_printServers || boost::trim_copy(m_server) == "?" ||
+        m_printTemplates) {
+        return false;
+    } else {
+        return m_dontrun;
+    }
+}
+
 bool Cmdline::run() {
     // --dry-run is only supported by some operations.
     // Be very strict about it and make sure it is off in all
