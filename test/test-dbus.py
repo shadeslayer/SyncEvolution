@@ -2119,12 +2119,12 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         # adding second client must preserve type
         self.setUpSession("bar@other")
         config = self.server.GetConfig("Funambol@other", True, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.failUnlessEqual(config["source/addressbook"]["type"], "addressbook")
         self.session.SetConfig(False, False,
                                config,
                                utf8_strings=True)
         config = self.server.GetConfig("bar", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.failUnlessEqual(config["source/addressbook"]["type"], "addressbook")
         config = self.server.GetConfig("@other", False, utf8_strings=True)
         self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
 
