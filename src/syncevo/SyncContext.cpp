@@ -2194,6 +2194,8 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         "      retransfer_body=FALSE; // normally, do not retransfer email body (and attachments) when moving items to sent box\n"
         "      INTEGER delayedabort;\n"
         "      delayedabort = FALSE;\n"
+        "      INTEGER alarmTimeToUTC;\n"
+        "      alarmTimeToUTC = FALSE;\n"
         "    ]]></sessioninitscript>\n";
 
     ostringstream clientorserver;

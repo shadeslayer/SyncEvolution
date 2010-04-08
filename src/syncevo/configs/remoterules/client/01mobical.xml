@@ -1,0 +1,8 @@
+      <remoterule name="Mobical">
+          <manufacturer>Tactel AB</manufacturer>
+          <model>Mobical Sync Server</model>
+          <rulescript><![CDATA[
+              alarmTimeToUTC = TRUE;
+              ]]></rulescript>
+      </remoterule>
+

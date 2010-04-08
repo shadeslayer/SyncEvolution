@@ -152,20 +152,19 @@
 
       // for 'ALARM_TIME', convert duration time to UTC time
       // This workaround is for Mobical.net can't understand duration time
-      if (ITEMDATATYPE()=="vCalendar10" && ALARM_TIME!=EMPTY) {
-        if (ISDURATION(ALARM_TIME)) {
-          TIMESTAMP ts;
-          if (ALARM_REL==2)
-            ts = DTEND; // relative to end
-          else {
-            if (ISEVENT)
-              ts = DTSTART; // relative to start for events
-            else
-              ts = DUE; // relative to due for todos
-          }
-
-          ALARM_TIME = CONVERTTOUSERZONE(POINTINTIME(ts), TRUE) + ALARM_TIME;
-          ALARM_TIME = CONVERTTOZONE(ALARM_TIME, "UTC");
+      if (SESSIONVAR("alarmTimeToUTC") && ITEMDATATYPE()=="vCalendar10"
+            && ALARM_TIME!=EMPTY && ISDURATION(ALARM_TIME)) {
+        TIMESTAMP ts;
+        if (ALARM_REL==2)
+          ts = DTEND; // relative to end
+        else {
+          if (ISEVENT)
+            ts = DTSTART; // relative to start for events
+          else
+            ts = DUE; // relative to due for todos
         }
+
+        ALARM_TIME = CONVERTTOUSERZONE(POINTINTIME(ts), TRUE) + ALARM_TIME;
+        ALARM_TIME = CONVERTTOZONE(ALARM_TIME, "UTC");
       }
     ]]></macro>
