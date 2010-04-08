@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2010-03-03 10:25+0000\n"
+"POT-Creation-Date: 2010-04-07 09:29+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Eija <eija@wimma.com>\n"
 "Language-Team: \n"
@@ -16,122 +16,122 @@ msgstr ""
 #. TRANSLATORS: this is the application name that may be used by e.g.
 #. the windowmanager
 #: ../src/gtk-ui/main.c:40
-#: ../src/gtk-ui/ui.glade.h:36
+#: ../src/gtk-ui/ui.glade.h:38
 #: ../src/gtk-ui/sync.desktop.in.h:1
 #: ../src/gnome-bluetooth/syncevolution.c:112
 msgid "Sync"
 msgstr "Synkkaus"
 
-#: ../src/gtk-ui/sync-ui.c:250
+#: ../src/gtk-ui/sync-ui.c:260
 msgid "Contacts"
 msgstr "Yhteyshenkilöt"
 
-#: ../src/gtk-ui/sync-ui.c:252
+#: ../src/gtk-ui/sync-ui.c:262
 msgid "Appointments"
 msgstr "Tapaamiset"
 
-#: ../src/gtk-ui/sync-ui.c:254
-#: ../src/gtk-ui/ui.glade.h:38
+#: ../src/gtk-ui/sync-ui.c:264
+#: ../src/gtk-ui/ui.glade.h:40
 msgid "Tasks"
 msgstr "Tehtävät"
 
-#: ../src/gtk-ui/sync-ui.c:256
+#: ../src/gtk-ui/sync-ui.c:266
 msgid "Notes"
 msgstr "Huomautukset"
 
 #. TRANSLATORS: This is a "combination source" for syncing with devices
 #. * that combine appointments and tasks. the name should match the ones
 #. * used for calendar and todo above
-#: ../src/gtk-ui/sync-ui.c:261
+#: ../src/gtk-ui/sync-ui.c:271
 msgid "Appointments & Tasks"
 msgstr "Tapaamiset ja tehtävät"
 
-#: ../src/gtk-ui/sync-ui.c:333
+#: ../src/gtk-ui/sync-ui.c:343
 msgid "Starting sync"
 msgstr "Aloitetaan synkkaus"
 
 #. TRANSLATORS: slow sync confirmation dialog message. Placeholder
 #. * is service/device name
-#: ../src/gtk-ui/sync-ui.c:371
+#: ../src/gtk-ui/sync-ui.c:381
 #, c-format
 msgid "Do you want to slow sync with %s?"
 msgstr "Haluatko hitaan synkkauksen kohteen %s kanssa?"
 
-#: ../src/gtk-ui/sync-ui.c:375
+#: ../src/gtk-ui/sync-ui.c:385
 msgid "Yes, do slow sync"
 msgstr "Kyllä, tehdään hidas synkkaus"
 
-#: ../src/gtk-ui/sync-ui.c:375
+#: ../src/gtk-ui/sync-ui.c:385
 msgid "No, cancel sync"
 msgstr "Ei, peru synkkaus"
 
 #. TRANSLATORS: confirmation dialog for refresh-from-server. Placeholder
 #. * is service/device name
-#: ../src/gtk-ui/sync-ui.c:408
+#: ../src/gtk-ui/sync-ui.c:418
 #, c-format
 msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
 msgstr "Haluatko poistaa kaikki paikalliset tiedot ja korvata ne tiedoilla kohteesta %s? Tämä ei ole yleensä suositeltavaa."
 
-#: ../src/gtk-ui/sync-ui.c:413
-#: ../src/gtk-ui/sync-ui.c:444
+#: ../src/gtk-ui/sync-ui.c:423
+#: ../src/gtk-ui/sync-ui.c:454
 msgid "Yes, delete and replace"
 msgstr "Kyllä, poista ja korvaa"
 
-#: ../src/gtk-ui/sync-ui.c:413
-#: ../src/gtk-ui/sync-ui.c:444
-#: ../src/gtk-ui/sync-ui.c:1313
+#: ../src/gtk-ui/sync-ui.c:423
+#: ../src/gtk-ui/sync-ui.c:454
+#: ../src/gtk-ui/sync-ui.c:1566
 msgid "No"
 msgstr "Ei"
 
 #. TRANSLATORS: confirmation dialog for refresh-from-client. Placeholder
 #. * is service/device name
-#: ../src/gtk-ui/sync-ui.c:439
+#: ../src/gtk-ui/sync-ui.c:449
 #, c-format
 msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
 msgstr "Haluatko poistaa kaikki tiedot kohteessa %s ja korvata ne paikallisilla tiedoillasi? Tämä ei ole yleensä suositeltavaa."
 
-#: ../src/gtk-ui/sync-ui.c:471
+#: ../src/gtk-ui/sync-ui.c:481
 msgid "Trying to cancel sync"
 msgstr "Yritetään perua synkkaus"
 
-#: ../src/gtk-ui/sync-ui.c:504
-msgid "No service selected"
-msgstr "Palvelua ei ole valittuna"
+#: ../src/gtk-ui/sync-ui.c:521
+msgid "No service or device selected"
+msgstr "Palvelua tai laitetta ei ole valittuna"
 
 #. TRANSLATORS: This is the title on main view. Placeholder is
 #. * the service name. Example: "Google - synced just now"
-#: ../src/gtk-ui/sync-ui.c:512
+#: ../src/gtk-ui/sync-ui.c:529
 #, c-format
 msgid "%s - synced just now"
 msgstr "%s - synkataan juuri nyt"
 
-#: ../src/gtk-ui/sync-ui.c:516
+#: ../src/gtk-ui/sync-ui.c:533
 #, c-format
 msgid "%s - synced a minute ago"
 msgstr "%s - Synkattu viimeksi minuutti sitten"
 
-#: ../src/gtk-ui/sync-ui.c:520
+#: ../src/gtk-ui/sync-ui.c:537
 #, c-format
 msgid "%s - synced %ld minutes ago"
 msgstr "%s - Synkattu viimeksi %ld minuuttia sitten"
 
-#: ../src/gtk-ui/sync-ui.c:525
+#: ../src/gtk-ui/sync-ui.c:542
 #, c-format
 msgid "%s - synced an hour ago"
 msgstr "%s - Synkattu viimeksi tunti sitten"
 
-#: ../src/gtk-ui/sync-ui.c:529
+#: ../src/gtk-ui/sync-ui.c:546
 #, c-format
 msgid "%s - synced %ld hours ago"
 msgstr "%s - Synkattu viimeksi %ld tuntia sitten"
 
 # last synced yesterday
-#: ../src/gtk-ui/sync-ui.c:534
+#: ../src/gtk-ui/sync-ui.c:551
 #, c-format
 msgid "%s - synced a day ago"
 msgstr "%s - Synkattu viimeksi eilen"
 
-#: ../src/gtk-ui/sync-ui.c:538
+#: ../src/gtk-ui/sync-ui.c:555
 #, c-format
 msgid "%s - synced %ld days ago"
 msgstr "%s - Synkattu viimeksi %ld päivää sitten"
@@ -139,114 +139,121 @@ msgstr "%s - Synkattu viimeksi %ld päivää sitten"
 #. TRANSLATORS: Action button in info bar in main view. Shown with e.g.
 #. * "You've just restored a backup. The changes have not been "
 #. * "synced with %s yet"
-#: ../src/gtk-ui/sync-ui.c:588
-#: ../src/gtk-ui/sync-ui.c:699
+#: ../src/gtk-ui/sync-ui.c:604
+#: ../src/gtk-ui/sync-ui.c:719
 msgid "Sync now"
 msgstr "Synkkaa nyt"
 
 #. TRANSLATORS: Action button in info bar in main view. Shown with e.g.
 #. * "A normal sync is not possible at this time..." message.
 #. * "Other options" will open Emergency view
-#: ../src/gtk-ui/sync-ui.c:594
-#: ../src/gtk-ui/ui.glade.h:35
+#: ../src/gtk-ui/sync-ui.c:610
+#: ../src/gtk-ui/ui.glade.h:37
 msgid "Slow sync"
 msgstr "Hidas synkkaus"
 
-#: ../src/gtk-ui/sync-ui.c:595
+#: ../src/gtk-ui/sync-ui.c:611
 msgid "Other options..."
 msgstr "Muut asetukset..."
 
 #. TRANSLATORS: Action button in info bar in main view. Shown e.g.
 #. * when no service is selected. Will open configuration view
-#: ../src/gtk-ui/sync-ui.c:600
+#: ../src/gtk-ui/sync-ui.c:616
 msgid "Select sync service"
 msgstr "Määritä synkkauspalvelu"
 
 #. TRANSLATORS: Action button in info bar in main view. Shown e.g.
 #. * login to service fails. Will open configuration view for this service
-#: ../src/gtk-ui/sync-ui.c:605
+#: ../src/gtk-ui/sync-ui.c:621
 msgid "Edit service settings"
 msgstr "Muuta palveluasetuksia"
 
-#: ../src/gtk-ui/sync-ui.c:653
-msgid "You haven't selected a sync service yet. Sync services let you synchronize your data between your netbook and a web service"
-msgstr "Synkkauspalvelua ei ole vielä määritetty. Synkkauspalvelu mahdollistaa Netbookisi ja verkkopalvelusi tietojen synkkauksen."
+#: ../src/gtk-ui/sync-ui.c:670
+msgid "You haven't selected a sync service or device yet. Sync services let you synchronize your data between your netbook and a web service. You can also sync directly with some devices."
+msgstr "Synkkauspalvelua tai laitetta ei ole vielä valittu. Synkkauspalvelu mahdollistaa Netbookisi ja verkkopalvelusi tietojen synkkauksen. Voit myös synkata suoraan joitakin laitteita."
 
 # using taas instead of uudelleen to fix a truncation
-#: ../src/gtk-ui/sync-ui.c:697
+#: ../src/gtk-ui/sync-ui.c:717
 msgid "Sync again"
 msgstr "Synkkaa taas"
 
-#: ../src/gtk-ui/sync-ui.c:710
+#: ../src/gtk-ui/sync-ui.c:730
 msgid "Restoring"
 msgstr "Palautetaan"
 
-#: ../src/gtk-ui/sync-ui.c:712
+#: ../src/gtk-ui/sync-ui.c:732
 msgid "Syncing"
 msgstr "Synkkaus käynnissä"
 
 #. TRANSLATORS: This is for the button in main view, right side.
 #. Keep line length below ~20 characters, use two lines if needed
-#: ../src/gtk-ui/sync-ui.c:723
-#: ../src/gtk-ui/sync-ui.c:3091
+#: ../src/gtk-ui/sync-ui.c:743
+#: ../src/gtk-ui/sync-ui.c:3358
 msgid "Cancel sync"
 msgstr "Peru synkkaus"
 
-#. TRANSLATORS: button in the Moblin window title bar when main view is
-#. * not visible
-#: ../src/gtk-ui/sync-ui.c:803
+#: ../src/gtk-ui/sync-ui.c:908
 msgid "Back to sync"
 msgstr "Takaisin synkkaukseen"
+
+#. TRANSLATORS: label for checkbutton/toggle in main view.
+#. * Please stick to similar length strings or break the line with
+#. * "\n" if absolutely needed
+#: ../src/gtk-ui/sync-ui.c:1209
+msgid "Automatic sync"
+msgstr "Automaattinen synkkaus"
 
 #. This is the expander label in emergency view. It summarizes the
 #. * currently selected data sources. First placeholder is service/device
 #. * name, second a comma separeted list of sources.
 #. * E.g. "Affected data: Google Contacts, Appointments"
-#: ../src/gtk-ui/sync-ui.c:1230
+#: ../src/gtk-ui/sync-ui.c:1480
 #, c-format
 msgid "Affected data: %s %s"
 msgstr "Koskee tietoja: %s %s"
 
-#: ../src/gtk-ui/sync-ui.c:1235
+#: ../src/gtk-ui/sync-ui.c:1485
 #, c-format
 msgid "Affected data: none"
 msgstr "Koskee tietoja: ei mitään"
 
 #. TRANSLATORS: confirmation for restoring a backup. placeholder is the
 #. * backup time string defined below
-#: ../src/gtk-ui/sync-ui.c:1310
+#: ../src/gtk-ui/sync-ui.c:1563
 #, c-format
 msgid "Do you want to restore the backup from %s? All changes you have made since then will be lost."
 msgstr "Haluatko palauttaa varmuuskopioinnin kohteesta %s? Menetät kaikki tämän jälkeen tekemäsi muutokset."
 
-#: ../src/gtk-ui/sync-ui.c:1313
+#: ../src/gtk-ui/sync-ui.c:1566
 msgid "Yes, restore"
 msgstr "Kyllä, palauta"
 
-#: ../src/gtk-ui/sync-ui.c:1345
+#. TRANSLATORS: date/time for strftime(), used in emergency view backup
+#. * label. Any time format that shows date and time is good.
+#: ../src/gtk-ui/sync-ui.c:1598
 #, c-format
 msgid "%x %X"
 msgstr "%x %X"
 
 #. TRANSLATORS: label for a backup in emergency view. Placeholder is
 #. * service or device name
-#: ../src/gtk-ui/sync-ui.c:1364
+#: ../src/gtk-ui/sync-ui.c:1617
 #, c-format
 msgid "Backed up before syncing with %s"
 msgstr "Varmuuskopioitu ennen sunkkausta kohteen %s kanssa"
 
-#: ../src/gtk-ui/sync-ui.c:1381
+#: ../src/gtk-ui/sync-ui.c:1634
 msgid "Restore"
 msgstr "Palauttaa"
 
 #. TRANSLATORS: this is an explanation in Emergency view.
 #. * Placeholder is a service/device name
-#: ../src/gtk-ui/sync-ui.c:1488
+#: ../src/gtk-ui/sync-ui.c:1741
 #, c-format
 msgid "A normal sync with %s is not possible at this time. You can do a slow two-way sync or start from scratch. You can also restore a backup, but a slow sync or starting from scratch will still be required before normal sync is possible."
 msgstr "Normaali synkkaus kohteen %s ei ole mahdollinen täällä kertaa. Voit tehdä hitaan kaksisuuntaisen synkkauksen tai aloittaa nollasta. Voit myös palauttaa varmuuskopion, mutta joko hidas synkkaus tai aloittaminen nollasta vaaditaan, ennen kuin normaali synkkaus on mahdollinen."
 
-#: ../src/gtk-ui/sync-ui.c:1498
+#: ../src/gtk-ui/sync-ui.c:1751
 #, c-format
 msgid "If something has gone horribly wrong, you can try a slow sync, start from scratch or restore from backup."
 msgstr "Jos jotakin on mennyt järkyttävän pieleen, voit yrittää hidasta synkkausta, aloittamista nollasta tai palauttaa varmuuskopiosta."
@@ -254,7 +261,7 @@ msgstr "Jos jotakin on mennyt järkyttävän pieleen, voit yrittää hidasta syn
 #. TRANSLATORS: These are a buttons in Emergency view. Placeholder is a
 #. * service/device name. Please don't use too long lines, but feel free to
 #. * use several lines.
-#: ../src/gtk-ui/sync-ui.c:1507
+#: ../src/gtk-ui/sync-ui.c:1760
 #, c-format
 msgid ""
 "Delete all your local\n"
@@ -265,7 +272,7 @@ msgstr ""
 " tiedot ja korvaa ne \n"
 "tiedoilla kohteesta %s"
 
-#: ../src/gtk-ui/sync-ui.c:1513
+#: ../src/gtk-ui/sync-ui.c:1766
 #, c-format
 msgid ""
 "Delete all data on\n"
@@ -276,68 +283,72 @@ msgstr ""
 "%s ja korvaa \n"
 "paikallisilla tiedoilla"
 
-#: ../src/gtk-ui/sync-ui.c:1955
+#: ../src/gtk-ui/sync-ui.c:2226
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "Tuettujen palveluiden listan saaminen SyncEvolutionista epäonnistui"
 
-#: ../src/gtk-ui/sync-ui.c:2057
+#: ../src/gtk-ui/sync-ui.c:2280
+msgid "There was a problem communicating with the sync process. Please try again later."
+msgstr "Ilmeni onglema kommunikoitaessa synkkausprosessin kanssa. Yritä myöhemmin uudelleen."
+
+#: ../src/gtk-ui/sync-ui.c:2339
 msgid "Restore failed"
 msgstr "Palauttaminen epäonnistui"
 
 # changed to "sync error" in order to fix a truncation in the UI.
-#: ../src/gtk-ui/sync-ui.c:2060
-#: ../src/gtk-ui/sync-ui.c:2960
+#: ../src/gtk-ui/sync-ui.c:2342
+#: ../src/gtk-ui/sync-ui.c:3227
 msgid "Sync failed"
 msgstr "Synkkaus epäonnistui"
 
-#: ../src/gtk-ui/sync-ui.c:2066
+#: ../src/gtk-ui/sync-ui.c:2348
 msgid "Restore complete"
 msgstr "Palautus valmis"
 
-#: ../src/gtk-ui/sync-ui.c:2069
+#: ../src/gtk-ui/sync-ui.c:2351
 msgid "Sync complete"
 msgstr "Synkkaus valmis"
 
-#: ../src/gtk-ui/sync-ui.c:2161
+#: ../src/gtk-ui/sync-ui.c:2443
 #, c-format
 msgid "Preparing '%s'"
 msgstr "Valmistellaan: '%s'"
 
-#: ../src/gtk-ui/sync-ui.c:2164
+#: ../src/gtk-ui/sync-ui.c:2446
 #, c-format
 msgid "Receiving '%s'"
 msgstr "Vastaanotetaan: '%s'"
 
-#: ../src/gtk-ui/sync-ui.c:2167
+#: ../src/gtk-ui/sync-ui.c:2449
 #, c-format
 msgid "Sending '%s'"
 msgstr "Lähetetään: '%s'"
 
-#: ../src/gtk-ui/sync-ui.c:2288
+#: ../src/gtk-ui/sync-ui.c:2570
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %ld remote rejections."
 msgstr[0] "Tapahtui yksi etähylkäys"
 msgstr[1] "Tapahtui %ld etähylkäystä"
 
-#: ../src/gtk-ui/sync-ui.c:2293
+#: ../src/gtk-ui/sync-ui.c:2575
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %ld local rejections."
 msgstr[0] "Tapahtui yksi paikallinen hylkäys"
 msgstr[1] "Tapahtui %ld paikallista hylkäystä"
 
-#: ../src/gtk-ui/sync-ui.c:2298
+#: ../src/gtk-ui/sync-ui.c:2580
 #, c-format
 msgid "There were %ld local rejections and %ld remote rejections."
 msgstr "Tapahtui %ld paikallista hylkäystä ja %ld etähylkäystä"
 
-#: ../src/gtk-ui/sync-ui.c:2303
+#: ../src/gtk-ui/sync-ui.c:2585
 #, c-format
 msgid "Last time: No changes."
 msgstr "Viime kerta: ei muutoksia"
 
-#: ../src/gtk-ui/sync-ui.c:2305
+#: ../src/gtk-ui/sync-ui.c:2587
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %ld changes."
@@ -347,131 +358,149 @@ msgstr[1] "Viime kerralla: %ld muutosta lähetetty."
 #. This is about changes made to the local data. Not all of these
 #. changes were requested by the remote server, so "applied"
 #. is a better word than "received" (bug #5185).
-#: ../src/gtk-ui/sync-ui.c:2313
+#: ../src/gtk-ui/sync-ui.c:2595
 #, c-format
 msgid "Last time: Applied one change."
 msgid_plural "Last time: Applied %ld changes."
 msgstr[0] "Viime kerralla: yksi muutos sovellettu."
 msgstr[1] "Viime kerralla: %ld muutosta sovellettu."
 
-#: ../src/gtk-ui/sync-ui.c:2318
+#: ../src/gtk-ui/sync-ui.c:2600
 #, c-format
 msgid "Last time: Applied %ld changes and sent %ld changes."
 msgstr "Viime kerralla: Sovellettu %ld muutosta ja lähetetty %ld muutosta."
 
-#: ../src/gtk-ui/sync-ui.c:2527
+#. TRANSLATORS: the placeholder is a error message (hopefully)
+#. * explaining the problem
+#: ../src/gtk-ui/sync-ui.c:2807
+#, c-format
+msgid ""
+"There was a problem with last sync:\n"
+"%s"
+msgstr ""
+"Ilmeni onglema viimeisen synkkauksen kanssa :\n"
+"%s"
+
+#: ../src/gtk-ui/sync-ui.c:2817
 #, c-format
 msgid "You've just restored a backup. The changes have not been synced with %s yet"
 msgstr "Olet juuri palauttanut varmuuskopion. Muutoksia ei ole vielä synkattu kohteen %s kanssa."
 
-#: ../src/gtk-ui/sync-ui.c:2815
+#: ../src/gtk-ui/sync-ui.c:3105
 msgid "Waiting for current operation to finish..."
 msgstr "Nykyisen toiminnon päättymistä odotetaan..."
 
-#: ../src/gtk-ui/sync-ui.c:2888
+#. TRANSLATORS: next strings are error messages.
+#: ../src/gtk-ui/sync-ui.c:3139
 msgid "A normal sync is not possible at this time. The server suggests a slow sync, but this might not always be what you want if both ends already have data."
 msgstr "Normaali synkkaus ei ole mahdollinen tällä kertaa. Palvelin suosittelee hidasta synkkausta, mutta tämä ei aina ehkä ole sitä, mitä haluat, jos molemmissa päissä on jo tietoja."
 
 # ...service ended unexpectedly
-#: ../src/gtk-ui/sync-ui.c:2892
-msgid "The sync service died unexpectedly."
+#: ../src/gtk-ui/sync-ui.c:3143
+msgid "The sync process died unexpectedly."
 msgstr "Synkkauspalvelu loppui odottamattomasti"
 
-#: ../src/gtk-ui/sync-ui.c:2897
+#: ../src/gtk-ui/sync-ui.c:3148
+msgid "Password request was not answered. You can save the password in the settings to prevent the request."
+msgstr "Salasanapyyntöön ei vastattu. Voit tallentaa salasanan asetuksissa estääksesi pyynnön."
+
+#. TODO use the service device name here, this is a remote problem
+#: ../src/gtk-ui/sync-ui.c:3152
+msgid "There was a problem processing sync request. Trying again may help."
+msgstr "Synkkauspyynnön prosessoimisessa ilmeni ongelma. Voi auttaa, jos yrität uudelleen."
+
+#: ../src/gtk-ui/sync-ui.c:3158
 msgid "Failed to login. Could there be a problem with your username or password?"
 msgstr "Sisäänkirjautuminen ei onnistunut. Voisiko käyttäjänimen tai salasanan kanssa olla ongelma?"
 
-#: ../src/gtk-ui/sync-ui.c:2900
+#: ../src/gtk-ui/sync-ui.c:3161
 msgid "Forbidden"
 msgstr "Kielletty"
 
-#: ../src/gtk-ui/sync-ui.c:2905
-msgid "The source could not be found. Could there be a problem with the server settings?"
-msgstr "Lähdettä ei löydy. Voisiko palvelimen asetusten kanssa olla ongelma?"
+#. TRANSLATORS: data source means e.g. calendar or addressbook
+#: ../src/gtk-ui/sync-ui.c:3167
+msgid "A data source could not be found. Could there be a problem with the settings?"
+msgstr "Tietolähdettä ei löydy. Voisiko asetusten kanssa olla ongelma?"
 
-#: ../src/gtk-ui/sync-ui.c:2908
-msgid "Fatal database error"
-msgstr "Vakava tietokantavirhe"
+#: ../src/gtk-ui/sync-ui.c:3171
+msgid "Remote database error"
+msgstr "Etätietokantavirhe"
 
 #. This can happen when EDS is borked, restart it may help...
-#: ../src/gtk-ui/sync-ui.c:2911
+#: ../src/gtk-ui/sync-ui.c:3174
 msgid "There is a problem with the local database. Syncing again or rebooting may help."
 msgstr "Paikallisen tietokannan kanssa on ongelmia. Voi auttaa, jos synkkaat uudelleen tai buuttaat."
 
-#: ../src/gtk-ui/sync-ui.c:2914
-msgid "Database error"
-msgstr "Tietokantavirhe"
+#: ../src/gtk-ui/sync-ui.c:3177
+msgid "No space on disk"
+msgstr "Levykkeen tila lopussa"
 
-#: ../src/gtk-ui/sync-ui.c:2916
-msgid "No space left"
-msgstr "Tila lopussa"
-
-#: ../src/gtk-ui/sync-ui.c:2918
+#: ../src/gtk-ui/sync-ui.c:3179
 msgid "Failed to process SyncML"
 msgstr "SyncML:n käsittely epäonnistui"
 
-#: ../src/gtk-ui/sync-ui.c:2920
+#: ../src/gtk-ui/sync-ui.c:3181
 msgid "Server authorization failed"
 msgstr "Serverin varmennus epäonnistui"
 
-#: ../src/gtk-ui/sync-ui.c:2922
+#: ../src/gtk-ui/sync-ui.c:3183
 msgid "Failed to parse configuration file"
 msgstr "Asetustiedoston jäsennys epäonnistui"
 
-#: ../src/gtk-ui/sync-ui.c:2924
+#: ../src/gtk-ui/sync-ui.c:3185
 msgid "Failed to read configuration file"
 msgstr "Asetustiedoston lukeminen epäonnistui"
 
-#: ../src/gtk-ui/sync-ui.c:2926
+#: ../src/gtk-ui/sync-ui.c:3187
 msgid "No configuration found"
 msgstr "Asetuksia ei löydy"
 
-#: ../src/gtk-ui/sync-ui.c:2928
+#: ../src/gtk-ui/sync-ui.c:3189
 msgid "No configuration file found"
 msgstr "Asetustiedostoa ei löytynyt"
 
 # using erroneous instead of bad
-#: ../src/gtk-ui/sync-ui.c:2930
+#: ../src/gtk-ui/sync-ui.c:3191
 msgid "Server sent bad content"
 msgstr "Serveri lähetti virheellistä sisältöä"
 
-#: ../src/gtk-ui/sync-ui.c:2932
+#: ../src/gtk-ui/sync-ui.c:3193
 msgid "Connection certificate has expired"
 msgstr "Yhteyden varmenne on vanhentunut"
 
-#: ../src/gtk-ui/sync-ui.c:2934
+#: ../src/gtk-ui/sync-ui.c:3195
 msgid "Connection certificate is invalid"
 msgstr "Yhteyden varmenne on virheellinen"
 
-#: ../src/gtk-ui/sync-ui.c:2942
-msgid "We were unable to connect to the server. The problem could be temporary or there could be something wrong with the server settings."
-msgstr "Palvelimeen ei saada yhteyttä. Ongelma voi olla tilapäinen tai palvelimen asetuksissa voi olla ongelma. "
+#: ../src/gtk-ui/sync-ui.c:3203
+msgid "We were unable to connect to the server. The problem could be temporary or there could be something wrong with the settings."
+msgstr "Palvelimeen ei saada yhteyttä. Ongelma voi olla tilapäinen tai palvelimen asetuksissa voi olla virhe. "
 
-#: ../src/gtk-ui/sync-ui.c:2946
-msgid "URL is bad"
-msgstr "URL on virheellinen"
+#: ../src/gtk-ui/sync-ui.c:3210
+msgid "The server URL is bad"
+msgstr "Serverin URL on virheellinen"
 
-#: ../src/gtk-ui/sync-ui.c:2948
-msgid "Server not found"
+#: ../src/gtk-ui/sync-ui.c:3215
+msgid "The server was not found"
 msgstr "Serveriä ei löydy"
 
-#: ../src/gtk-ui/sync-ui.c:2950
+#: ../src/gtk-ui/sync-ui.c:3217
 #, c-format
 msgid "Error %d"
 msgstr "Virhe: %d"
 
 #. TRANSLATORS: password request dialog contents: title, cancel button
 #. * and ok button
-#: ../src/gtk-ui/sync-ui.c:3088
+#: ../src/gtk-ui/sync-ui.c:3355
 msgid "Password is required for sync"
 msgstr "Synkkaukseen vaaditaan salasana."
 
-#: ../src/gtk-ui/sync-ui.c:3092
+#: ../src/gtk-ui/sync-ui.c:3359
 msgid "Sync with password"
 msgstr "Synkkaa salasanan kanssa"
 
 #. TRANSLATORS: password request dialog message, placeholder is service name
-#: ../src/gtk-ui/sync-ui.c:3102
+#: ../src/gtk-ui/sync-ui.c:3369
 #, c-format
 msgid "Please enter password for syncing with %s:"
 msgstr "Anna salasana synkkaukseen kohteen %s kanssa:"
@@ -547,7 +576,12 @@ msgstr ""
 "Muuta tai muokkaa\n"
 "synkkauspalvelua"
 
-#: ../src/gtk-ui/ui.glade.h:23
+#. close button for settings window
+#: ../src/gtk-ui/ui.glade.h:24
+msgid "Close"
+msgstr "Sulje"
+
+#: ../src/gtk-ui/ui.glade.h:25
 msgid ""
 "Delete all data on Zyb \n"
 "and replace with your\n"
@@ -557,7 +591,7 @@ msgstr ""
 "ja korvaa ne omilla\n"
 "paikallisilla tiedoilla"
 
-#: ../src/gtk-ui/ui.glade.h:26
+#: ../src/gtk-ui/ui.glade.h:28
 msgid ""
 "Delete all your local\n"
 "information and replace\n"
@@ -568,7 +602,7 @@ msgstr ""
 "ne Zybin tiedoilla"
 
 #. button in main view, right side. Keep length to 20 characters or so, use two lines if needed
-#: ../src/gtk-ui/ui.glade.h:30
+#: ../src/gtk-ui/ui.glade.h:32
 msgid ""
 "Fix a sync\n"
 "emergency"
@@ -576,7 +610,7 @@ msgstr ""
 "Korjaa sync\n"
 "hätätila"
 
-#: ../src/gtk-ui/ui.glade.h:32
+#: ../src/gtk-ui/ui.glade.h:34
 msgid ""
 "If you don't see your service above but know that your sync provider uses SyncML\n"
 "you can setup a service manually."
@@ -584,15 +618,15 @@ msgstr ""
 "Jos et näe palveluasi yllä mutta tiedät, että synkkauspalvelun tarjoajasi käyttää\n"
 "SyncML:ää, voit määrittää palvelun manuaalisesti."
 
-#: ../src/gtk-ui/ui.glade.h:34
+#: ../src/gtk-ui/ui.glade.h:36
 msgid "Settings"
 msgstr "Asetukset"
 
-#: ../src/gtk-ui/ui.glade.h:37
+#: ../src/gtk-ui/ui.glade.h:39
 msgid "Sync Emergency"
 msgstr "Synkkauksen hätätila"
 
-#: ../src/gtk-ui/ui.glade.h:39
+#: ../src/gtk-ui/ui.glade.h:41
 msgid ""
 "To sync you'll need a network connection and an account with a sync service.\n"
 "We support the following services: "
@@ -600,11 +634,11 @@ msgstr ""
 "Synkkaus edellyttää verkkoyhteyttä ja synkkauspalvelutiliä.\n"
 "Me tuemme seuraavia palveluita:"
 
-#: ../src/gtk-ui/ui.glade.h:41
+#: ../src/gtk-ui/ui.glade.h:43
 msgid "Use Bluetooth to Sync your data from one device to another."
 msgstr "Käytä Bluetoothia ja synkkaa tiedot yhdeltä laitteelta toiselle."
 
-#: ../src/gtk-ui/ui.glade.h:42
+#: ../src/gtk-ui/ui.glade.h:44
 msgid "You will need to add Bluetooth devices before they can be synced."
 msgstr "Sinun täytyy lisätä Bluetooth-laitteet ennen kuin niitä voi synkata."
 
@@ -617,92 +651,79 @@ msgstr "Ajantasalla"
 msgid "Sync (GTK)"
 msgstr "Synkkaa (GTK)"
 
-#: ../src/gtk-ui/sync-config-widget.c:71
+#: ../src/gtk-ui/sync-config-widget.c:74
 msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes in sync."
 msgstr "ScheduleWorld mahdollistaa kontaktien,tapahtumien,tehtävien, ja viestien synkkaamisen. "
 
-#: ../src/gtk-ui/sync-config-widget.c:74
+#: ../src/gtk-ui/sync-config-widget.c:77
 msgid "Google Sync can backup and synchronize your contacts with your Gmail contacts."
 msgstr "Google Sync voi kopioida ja synkata kontaktisi Gmail-kontakteihisi"
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
-#: ../src/gtk-ui/sync-config-widget.c:80
+#: ../src/gtk-ui/sync-config-widget.c:83
 msgid "Backup your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
 msgstr "Varmuuskopioi kontaktisi ja kalenterisi. Synkkaa yhdellä klikkauksella, milloin ja missä tahansa (DEMO)."
 
-#: ../src/gtk-ui/sync-config-widget.c:83
+#: ../src/gtk-ui/sync-config-widget.c:86
 msgid "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
 msgstr "Mobical-varmuuskopio- ja palautuspalvelun avulla voit varmuuskopioida omat mobiilitietosi ilmaiseksi ja varmasti."
 
-#: ../src/gtk-ui/sync-config-widget.c:86
+#: ../src/gtk-ui/sync-config-widget.c:89
 msgid "ZYB is a simple way for people to store and share mobile information online."
 msgstr "ZYB on yksinkertainen tapa tallentaa ja jakaa mobiilitietoja verkossa."
 
-#: ../src/gtk-ui/sync-config-widget.c:89
+#: ../src/gtk-ui/sync-config-widget.c:92
 msgid "Memotoo lets you access your personal data from any computer connected to the Internet."
 msgstr "Mometoon avulla voi käyttää omia tietoja kaikilta koneilta, joilla on Internet-yhteys. "
 
-#: ../src/gtk-ui/sync-config-widget.c:255
-#, c-format
-msgid "Do you want to replace %s with %s? This will not remove any synced information on either end but you will no longer be able to sync with %s."
-msgstr "Haluatko korvata kohteen %s kohteella %s? Tämä ei poista mitään synkattuja tietoja kummassakaan päässä, mutta et voi enää synkata kohteen %s kanssa."
+#: ../src/gtk-ui/sync-config-widget.c:188
+msgid "Sorry, failed to save the configuration"
+msgstr "Konfiguraation tallennus epäonnistui"
 
-#. TRANSLATORS: decline/accept buttons in warning dialog.
-#. Placeholder is service name
-#: ../src/gtk-ui/sync-config-widget.c:267
-#, c-format
-msgid "Yes, use %s"
-msgstr "Kyllä, käytä kohdetta %s"
-
-#: ../src/gtk-ui/sync-config-widget.c:268
-#, c-format
-msgid "No, use %s"
-msgstr "Ei, älä käytä kohdetta %s"
-
-#: ../src/gtk-ui/sync-config-widget.c:341
+#: ../src/gtk-ui/sync-config-widget.c:377
 msgid "Service must have a name and server URL"
 msgstr "Palvelulla pitää olla nimi ja palvelimen URL"
 
-#: ../src/gtk-ui/sync-config-widget.c:381
+#: ../src/gtk-ui/sync-config-widget.c:418
 #, c-format
 msgid "Do you want to reset the settings for %s? This will not remove any synced information on either end."
 msgstr "Haluatko nollata kohteen %s asetukset? Tämä ei poista mitään synkattuja tietoja kummassakaan päässä."
 
 #. TRANSLATORS: buttons in reset-service warning dialog
-#: ../src/gtk-ui/sync-config-widget.c:385
+#: ../src/gtk-ui/sync-config-widget.c:422
 msgid "Yes, reset"
 msgstr "Kyllä, nollaa."
 
-#: ../src/gtk-ui/sync-config-widget.c:386
-#: ../src/gtk-ui/sync-config-widget.c:397
+#: ../src/gtk-ui/sync-config-widget.c:423
+#: ../src/gtk-ui/sync-config-widget.c:434
 msgid "No, keep settings"
 msgstr "Ei, säilytä asetukset"
 
-#: ../src/gtk-ui/sync-config-widget.c:391
+#: ../src/gtk-ui/sync-config-widget.c:428
 #, c-format
-msgid "Do you want to delete the settings for %s? This will not remove any synced information on either end but it will remove this service configuration."
-msgstr "Haluatko poistaa kohteen %s asetukset?  Tämä ei poista mitään synkattuja tietoja kummassakaan päässä, mutta poistaa tämän palvelukonfiguraation. "
+msgid "Do you want to delete the settings for %s? This will not remove any synced information on either end but it will remove these settings."
+msgstr "Haluatko poistaa kohteen %s asetukset?  Tämä ei poista mitään synkattuja tietoja kummassakaan päässä, mutta poistaa nämä  asetukset. "
 
 #. TRANSLATORS: buttons in delete-service warning dialog
-#: ../src/gtk-ui/sync-config-widget.c:396
+#: ../src/gtk-ui/sync-config-widget.c:433
 msgid "Yes, delete"
 msgstr "Kyllä, poista"
 
-#: ../src/gtk-ui/sync-config-widget.c:425
-msgid "Reset service"
-msgstr "Nollaa palvelu"
+#: ../src/gtk-ui/sync-config-widget.c:463
+msgid "Reset settings"
+msgstr "Nollaa asetukset"
 
-#: ../src/gtk-ui/sync-config-widget.c:428
-msgid "Delete service"
-msgstr "Poista palvelu"
+#: ../src/gtk-ui/sync-config-widget.c:466
+msgid "Delete settings"
+msgstr "Poista asetukset"
 
-#: ../src/gtk-ui/sync-config-widget.c:438
+#: ../src/gtk-ui/sync-config-widget.c:476
 msgid "Save and use"
 msgstr "Tallenna ja käytä"
 
-#: ../src/gtk-ui/sync-config-widget.c:441
+#: ../src/gtk-ui/sync-config-widget.c:479
 msgid ""
 "Save and replace\n"
 "current service"
@@ -710,11 +731,19 @@ msgstr ""
 "Tallenna ja korvaa\n"
 "nykyinen palvelu"
 
+#: ../src/gtk-ui/sync-config-widget.c:489
+msgid "Stop using device"
+msgstr "Lopeta laitteen käyttö"
+
+#: ../src/gtk-ui/sync-config-widget.c:492
+msgid "Stop using service"
+msgstr "Lopeta palvelun käyttö"
+
 # URI for target %s
 #. TRANSLATORS: label for an entry in service configuration form.
 #. * Placeholder is a source  name.
 #. * Example: "Appointments URI"
-#: ../src/gtk-ui/sync-config-widget.c:672
+#: ../src/gtk-ui/sync-config-widget.c:675
 #, c-format
 msgid "%s URI"
 msgstr "Kohteen %s URI"
@@ -726,77 +755,142 @@ msgstr "Kohteen %s URI"
 msgid "Send changes to %s"
 msgstr "Lähetä muutokset kohteeseen %s"
 
-#: ../src/gtk-ui/sync-config-widget.c:854
+#: ../src/gtk-ui/sync-config-widget.c:855
 #, c-format
 msgid "Receive changes from %s"
 msgstr "Vastaanota muutokset kohteesta %s"
 
-#: ../src/gtk-ui/sync-config-widget.c:869
+#: ../src/gtk-ui/sync-config-widget.c:871
 msgid "<b>Sync</b>"
 msgstr "<b>Synkkaa</b>"
 
 #. TRANSLATORS: label of a entry in service configuration
-#: ../src/gtk-ui/sync-config-widget.c:885
+#: ../src/gtk-ui/sync-config-widget.c:887
 msgid "Server address"
 msgstr "Serverin osoite"
 
-#: ../src/gtk-ui/sync-config-widget.c:1067
+#. TRANSLATORS: explanation before a device template combobox.
+#. * Placeholder is a device name like 'Nokia N85' or 'Syncevolution
+#. * Client'
+#: ../src/gtk-ui/sync-config-widget.c:963
+#, c-format
+msgid "This device looks like it might be a '%s'. If this is not correct, please take a look at the list of supported devices and pick yours if it is listed"
+msgstr "Tämä laite näyttää siltä, että se saattaisi olla '%s'. Jos tämä ei ole oikein, katso tätä tuettujen laitteiden luetteloa ja poimi omasi, jos se on luettelossa."
+
+#: ../src/gtk-ui/sync-config-widget.c:969
+msgid "We don't know what this device is exactly. Please take a look at the list of supported devices and pick yours if it is listed"
+msgstr "Emme tiedä täsmälleen, mikä tämä laite on. Katso luetteloa tuetuista ja poimi omasi, jos se on luettelossa."
+
+#: ../src/gtk-ui/sync-config-widget.c:1122
 #, c-format
 msgid "%s - Bluetooth device"
 msgstr "%s - Bluetooth-laite"
 
 #. TRANSLATORS: service title for services that are not based on a
 #. * template in service list, the placeholder is the name of the service
-#: ../src/gtk-ui/sync-config-widget.c:1073
+#: ../src/gtk-ui/sync-config-widget.c:1128
 #, c-format
 msgid "%s - manually setup"
 msgstr "%s - manuaalinen asetus"
 
 #. TRANSLATORS: link button in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1727
+#: ../src/gtk-ui/sync-config-widget.c:1803
 msgid "Launch website"
 msgstr "Siirry sivustoon"
 
 #. TRANSLATORS: button in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1736
+#: ../src/gtk-ui/sync-config-widget.c:1812
 msgid "Setup now"
 msgstr "Tee asetukset nyt"
 
 #. TRANSLATORS: labels of entries in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1799
+#: ../src/gtk-ui/sync-config-widget.c:1908
 msgid "Username"
 msgstr "Käyttäjätunnus"
 
-#: ../src/gtk-ui/sync-config-widget.c:1814
+#: ../src/gtk-ui/sync-config-widget.c:1923
 msgid "Password"
 msgstr "Salasana"
 
 #. TRANSLATORS: warning in service configuration form for people
 #. who have modified the configuration via other means.
-#: ../src/gtk-ui/sync-config-widget.c:1837
-msgid "Current service configuration is more complex than what can be shown here. Changes to sync mode or synced data types will overwrite that configuration."
-msgstr "Nykyinen palvelukonfiguraatio on monimutkaisempi kuin täällä voidaan näyttää. Muutokset synkkaustilaan tai synkattuihin tietotyyppeiden korvaavat tämän konfiguroinnin. "
+#: ../src/gtk-ui/sync-config-widget.c:1946
+msgid "Current configuration is more complex than what can be shown here. Changes to sync mode or synced data types will overwrite that configuration."
+msgstr "Nykyinen konfiguraatio on monimutkaisempi kuin täällä voidaan näyttää. Muutokset synkkaustilaan tai synkattuihin tietotyyppeihin korvaavat tämän konfiguroinnin. "
 
 #. TRANSLATORS: this is the epander label for server settings
 #. in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1856
+#: ../src/gtk-ui/sync-config-widget.c:1965
 msgid "Hide server settings"
 msgstr "Piilota serverin asetukset"
 
 #. TRANSLATORS: this is the epander label for server settings
 #. in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1876
+#: ../src/gtk-ui/sync-config-widget.c:1985
 msgid "Show server settings"
 msgstr "Näytä serverin asetukset"
-
-#. TRANSLATORS: button in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1889
-msgid "Stop using service"
-msgstr "Lopeta palvelun käyttö"
 
 #: ../src/gnome-bluetooth/syncevolution.c:110
 msgid "Sync in the Sync application"
 msgstr "Synkkaa synkkaussovelluksessa. "
+
+#: ../src/syncevo-dbus-server.cpp:5622
+#, c-format
+msgid "%s is syncing"
+msgstr "Synkkaus käynnissä kohteessa %s"
+
+#: ../src/syncevo-dbus-server.cpp:5623
+#, c-format
+msgid "We have just started to sync your computer with the %s sync service."
+msgstr "Tietokoneesi synkkaus on juuri aloitettu %s-synkkauspalvelulla."
+
+#. if sync is successfully started and done
+#: ../src/syncevo-dbus-server.cpp:5637
+#, c-format
+msgid "%s sync complete"
+msgstr "Kohteen %s synkkaus valmis"
+
+#: ../src/syncevo-dbus-server.cpp:5638
+#, c-format
+msgid "We have just finished syncing your computer with the %s sync service."
+msgstr "Tietokoneesi synkkaus on juuri lopetettu %s-synkkauspalvelulla."
+
+#. if sync is successfully started and has errors, or not started successful with a fatal problem
+#: ../src/syncevo-dbus-server.cpp:5643
+msgid "Sync problem."
+msgstr "Synkkauksen ongelma"
+
+#: ../src/syncevo-dbus-server.cpp:5644
+msgid "Sorry, there's a problem with your sync that you need to attend to."
+msgstr "Sorry, ilmeni ongelma synkkauksessa, jota sinun täytyy seurata."
+
+#: ../src/syncevo-dbus-server.cpp:5717
+msgid "View"
+msgstr "Näytä"
+
+#: ../src/syncevo-dbus-server.cpp:5718
+msgid "Dismiss"
+msgstr "Hylkää"
+
+#~ msgid "Database error"
+#~ msgstr "Tietokantavirhe"
+
+#~ msgid ""
+#~ "Do you want to replace %s with %s? This will not remove any synced "
+#~ "information on either end but you will no longer be able to sync with %s."
+#~ msgstr ""
+#~ "Haluatko korvata kohteen %s kohteella %s? Tämä ei poista mitään "
+#~ "synkattuja tietoja kummassakaan päässä, mutta et voi enää synkata kohteen "
+#~ "%s kanssa."
+
+#~ msgid "Yes, use %s"
+#~ msgstr "Kyllä, käytä kohdetta %s"
+
+#~ msgid "No, use %s"
+#~ msgstr "Ei, älä käytä kohdetta %s"
+
+#~ msgid "Reset service"
+#~ msgstr "Nollaa palvelu"
 
 #~ msgid "Addressbook"
 #~ msgstr "Osoitekirja"
