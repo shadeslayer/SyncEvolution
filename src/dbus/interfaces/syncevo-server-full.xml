@@ -524,7 +524,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
-      <arg type="o" name="handler">
+      <arg type="s" name="handler">
         <doc:doc>
           <doc:summary>
             for state="waiting": the client which first replied
