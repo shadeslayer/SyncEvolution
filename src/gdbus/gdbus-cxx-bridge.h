@@ -4052,10 +4052,12 @@ protected:
 public:
     struct CallbackData
     {
-        DBusClientCall &m_object;
+        //only keep connection, for DBusClientCall instance is absent when 'dbus client call' returns
+        //suppose connection is available in the callback handler
+        const DBusConnectionPtr m_conn;
         Callback_t m_callback;
-        CallbackData(DBusClientCall &object, const Callback_t &callback)
-            :m_object(object), m_callback(callback)
+        CallbackData(const DBusConnectionPtr &conn, const Callback_t &callback)
+            :m_conn(conn), m_callback(callback)
         {}
     };
 
@@ -4099,7 +4101,7 @@ public:
         }
 
         DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(*this, callback);
+        CallbackData *data = new CallbackData(m_conn, callback);
         dbus_pending_call_set_notify(mCall.get(),
                                      m_dbusCallback,
                                      data,
@@ -4126,7 +4128,7 @@ public:
         }
 
         DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(*this, callback);
+        CallbackData *data = new CallbackData(m_conn, callback);
         dbus_pending_call_set_notify(mCall.get(),
                                      m_dbusCallback,
                                      data,
@@ -4154,7 +4156,7 @@ public:
         }
 
         DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(*this, callback);
+        CallbackData *data = new CallbackData(m_conn, callback);
         dbus_pending_call_set_notify(mCall.get(),
                                      m_dbusCallback,
                                      data,
@@ -4249,7 +4251,7 @@ class DBusClientCall1 : public DBusClientCall<boost::function<void (const R1 &, 
         if (!errname) {
             DBusMessageIter iter;
             dbus_message_iter_init(reply.get(), &iter);
-            dbus_traits<R1>::get(data->m_object.getConnection(), reply.get(), iter, r);
+            dbus_traits<R1>::get(data->m_conn.get(), reply.get(), iter, r);
         } else {
             error = errname;
         }
@@ -4294,8 +4296,8 @@ class DBusClientCall2 : public DBusClientCall<boost::function<
         if (!errname) {
             DBusMessageIter iter;
             dbus_message_iter_init(reply.get(), &iter);
-            dbus_traits<R1>::get(data->m_object.getConnection(), reply.get(), iter, r1);
-            dbus_traits<R2>::get(data->m_object.getConnection(), reply.get(), iter, r2);
+            dbus_traits<R1>::get(data->m_conn.get(), reply.get(), iter, r1);
+            dbus_traits<R2>::get(data->m_conn.get(), reply.get(), iter, r2);
         } else {
             error = errname;
         }
@@ -4340,9 +4342,9 @@ class DBusClientCall3 : public DBusClientCall<boost::function<
         if (!errname) {
             DBusMessageIter iter;
             dbus_message_iter_init(reply.get(), &iter);
-            dbus_traits<R1>::get(data->m_object.getConnection(), reply.get(), iter, r1);
-            dbus_traits<R2>::get(data->m_object.getConnection(), reply.get(), iter, r2);
-            dbus_traits<R3>::get(data->m_object.getConnection(), reply.get(), iter, r3);
+            dbus_traits<R1>::get(data->m_conn.get(), reply.get(), iter, r1);
+            dbus_traits<R2>::get(data->m_conn.get(), reply.get(), iter, r2);
+            dbus_traits<R3>::get(data->m_conn.get(), reply.get(), iter, r3);
         } else {
             error = errname;
         }
