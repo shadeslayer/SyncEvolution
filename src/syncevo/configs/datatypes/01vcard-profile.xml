@@ -80,8 +80,8 @@
               <enum name="X-EVOLUTION-TELEX" value="B11"/>
               <enum name="X-EVOLUTION-TTYTDD" value="B12"/>
 
-              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
-              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+              <!-- enum mode="prefix" name="X-CustomLabel-" value="1.L"/ -->
+              <!-- enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/ -->
             </value>
           </parameter>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
@@ -99,8 +99,8 @@
               <enum mode="ignore"   value="B2"/> <!-- OTHER -->
               <enum name="INTERNET" value="B3"/>
 
-              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
-              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+              <!-- enum mode="prefix" name="X-CustomLabel-" value="1.L"/ -->
+              <!-- enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/ -->
             </value>
           </parameter>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="yes">
@@ -118,8 +118,8 @@
               <enum mode="ignore"   value="B2"/> <!-- OTHER -->
               <enum name="PREF"     value="B3"/>
 
-              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
-              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+              <!-- enum mode="prefix" name="X-CustomLabel-" value="1.L"/ -->
+              <!-- enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/ -->
             </value>
           </parameter>
         </property>
@@ -258,8 +258,8 @@
               <enum name="WORK"     value="B1"/>
               <enum mode="ignore"   value="B2"/> <!-- OTHER -->
 
-              <enum mode="prefix" name="X-CustomLabel-" value="1.L"/>
-              <enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/>
+              <!-- enum mode="prefix" name="X-CustomLabel-" value="1.L"/ -->
+              <!-- enum mode="prefix" name="X-Synthesis-Ref" value="2.L"/ -->
             </value>
           </parameter>
         </property>
