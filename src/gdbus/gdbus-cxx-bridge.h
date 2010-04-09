@@ -4185,7 +4185,7 @@ public:
         }
 
         DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(*this, callback);
+        CallbackData *data = new CallbackData(m_conn, callback);
         dbus_pending_call_set_notify(mCall.get(),
                                      m_dbusCallback,
                                      data,
