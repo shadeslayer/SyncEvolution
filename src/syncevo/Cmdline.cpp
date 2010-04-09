@@ -93,7 +93,6 @@ bool Cmdline::parse(vector<string> &parsed)
         if (boost::iequals(m_argv[opt], "--sync") ||
             boost::iequals(m_argv[opt], "-s")) {
             opt++;
-            parsed.push_back(m_argv[opt]);
             string param;
             string cmdopt(m_argv[opt - 1]);
             if (!parseProp(m_validSourceProps, m_sourceProps,
@@ -101,6 +100,7 @@ bool Cmdline::parse(vector<string> &parsed)
                            SyncSourceConfig::m_sourcePropSync.getName().c_str())) {
                 return false;
             }
+            parsed.push_back(m_argv[opt]);
 
             // disable requirement to add --run explicitly in order to
             // be compatible with traditional command lines
@@ -108,27 +108,27 @@ bool Cmdline::parse(vector<string> &parsed)
         } else if(boost::iequals(m_argv[opt], "--sync-property") ||
                   boost::iequals(m_argv[opt], "-y")) {
                 opt++;
-                parsed.push_back(m_argv[opt]);
                 if (!parseProp(m_validSyncProps, m_syncProps,
                                m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                     return false;
                 }
+                parsed.push_back(m_argv[opt]);
         } else if(boost::iequals(m_argv[opt], "--source-property") ||
                   boost::iequals(m_argv[opt], "-z")) {
             opt++;
-            parsed.push_back(m_argv[opt]);
             if (!parseProp(m_validSourceProps, m_sourceProps,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                 return false;
             }
+            parsed.push_back(m_argv[opt]);
         }else if(boost::iequals(m_argv[opt], "--template") ||
                   boost::iequals(m_argv[opt], "-l")) {
             opt++;
-            parsed.push_back(m_argv[opt]);
             if (opt >= m_argc) {
                 usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
                 return false;
             }
+            parsed.push_back(m_argv[opt]);
             m_template = m_argv[opt];
             m_configure = true;
             string temp = boost::trim_copy (m_template);
