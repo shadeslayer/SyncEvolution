@@ -3656,7 +3656,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.sourceNameServerTemplate = "calendar";
         config.uri = "cal2"; // ScheduleWorld
         config.type = "text/x-vcalendar";
-        config.insertItem =
+        static string insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3676,7 +3676,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "SEQUENCE:1\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-        config.updateItem =
+        static string updateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3697,7 +3697,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location and description of insertItem in testMerge(), add alarm */
-        config.mergeItem1 =
+        static string mergeItem1 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3723,7 +3723,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location to something else, add category */
-        config.mergeItem2 =
+        static string mergeItem2 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3744,6 +3744,19 @@ void ClientTest::getTestData(const char *type, Config &config)
             "SEQUENCE:1\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
+
+        if (getenv("CLIENT_TEST_SIMPLE_UID")) {
+            boost::replace_all(insertItem, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
+            boost::replace_all(updateItem, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
+            boost::replace_all(mergeItem1, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
+            boost::replace_all(mergeItem2, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
+        }
+
+        config.insertItem = insertItem.c_str();
+        config.updateItem = updateItem.c_str();
+        config.mergeItem1 = mergeItem1.c_str();
+        config.mergeItem2 = mergeItem2.c_str();
+
         config.parentItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
