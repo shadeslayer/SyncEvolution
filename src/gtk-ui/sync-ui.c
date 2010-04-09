@@ -2058,10 +2058,11 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                  * all configs / templates, then decide what to sho w*/
 
                 /* there is a widget for this device already, add this info there*/
-                sync_config_widget_add_alternative_config (w, device_name, config, 
-                                                           c_data->has_configuration);
+                if (g_strcmp0 ("1", ready) == 0) {
+                    sync_config_widget_add_alternative_config (w, device_name, config, 
+                                                               c_data->has_configuration);
+                }
             }
-
             g_strfreev (fpv);
         }
     } else {
