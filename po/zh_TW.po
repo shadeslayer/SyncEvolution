@@ -57,7 +57,7 @@ msgstr "正在開始同步"
 #: ../src/gtk-ui/sync-ui.c:381
 #, c-format
 msgid "Do you want to slow sync with %s?"
-msgstr "你想要與 %s 進行慢速同步嗎？"
+msgstr "您想要與 %s 進行慢速同步嗎？"
 
 #: ../src/gtk-ui/sync-ui.c:385
 msgid "Yes, do slow sync"
@@ -72,7 +72,7 @@ msgstr "不，取消同步"
 #: ../src/gtk-ui/sync-ui.c:418
 #, c-format
 msgid "Do you want to delete all local data and replace it with data from %s? This is not usually advised."
-msgstr "你要刪除所有本機資料，並使用 %s 上的資料取代它嗎？我們通常不建議這麼做。"
+msgstr "您要刪除所有本機資料，並使用 %s 上的資料取代它嗎？我們通常不建議這麼做。"
 
 #: ../src/gtk-ui/sync-ui.c:423
 #: ../src/gtk-ui/sync-ui.c:454
@@ -90,7 +90,7 @@ msgstr "否"
 #: ../src/gtk-ui/sync-ui.c:449
 #, c-format
 msgid "Do you want to delete all data in %s and replace it with your local data? This is not usually advised."
-msgstr "你要刪除所有在 %s 上的資料，並且使用本機資料取代它嗎？我們通常不建議這麼做。"
+msgstr "您要刪除所有在 %s 上的資料，並且使用本機資料取代它嗎？我們通常不建議這麼做。"
 
 #: ../src/gtk-ui/sync-ui.c:481
 msgid "Trying to cancel sync"
@@ -171,7 +171,7 @@ msgstr "編輯服務設定"
 
 #: ../src/gtk-ui/sync-ui.c:670
 msgid "You haven't selected a sync service or device yet. Sync services let you synchronize your data between your netbook and a web service. You can also sync directly with some devices."
-msgstr "你尚未選取同步服務或裝置。同步服務讓你在你的網路筆電與網路服務間同步你的資料。你也可以直接和一些裝置進行同步。"
+msgstr "您尚未選取同步服務或裝置。同步服務讓您在您的網路筆電與網路服務間同步您的資料。您也可以直接和一些裝置進行同步。"
 
 #: ../src/gtk-ui/sync-ui.c:717
 msgid "Sync again"
@@ -222,7 +222,7 @@ msgstr "受影響的資料：無"
 #: ../src/gtk-ui/sync-ui.c:1563
 #, c-format
 msgid "Do you want to restore the backup from %s? All changes you have made since then will be lost."
-msgstr "你想要還原來自 %s 的備份嗎？所有你從那時起的變更都會喪失。"
+msgstr "您想要還原來自 %s 的備份嗎？所有您從那時起的變更都會喪失。"
 
 #: ../src/gtk-ui/sync-ui.c:1566
 msgid "Yes, restore"
@@ -251,12 +251,12 @@ msgstr "還原"
 #: ../src/gtk-ui/sync-ui.c:1741
 #, c-format
 msgid "A normal sync with %s is not possible at this time. You can do a slow two-way sync or start from scratch. You can also restore a backup, but a slow sync or starting from scratch will still be required before normal sync is possible."
-msgstr "與 %s 的一般同步目前無法使用。你可以執行慢速雙方同步，或是從零開始。你也可以從備份中還原，但是在一般同步可以使用之前，會需要慢速同步或從零開始。"
+msgstr "與 %s 的一般同步目前無法使用。您可以執行慢速雙方同步，或是從零開始。您也可以從備份中還原，但是在一般同步可以使用之前，會需要慢速同步或從零開始。"
 
 #: ../src/gtk-ui/sync-ui.c:1751
 #, c-format
 msgid "If something has gone horribly wrong, you can try a slow sync, start from scratch or restore from backup."
-msgstr "如果有東西發生可怕錯誤，你可以嘗試慢速同步、從零開始或是從備份還原。"
+msgstr "如果有東西發生可怕錯誤，您可以嘗試慢速同步、從零開始或是從備份還原。"
 
 #. TRANSLATORS: These are a buttons in Emergency view. Placeholder is a
 #. * service/device name. Please don't use too long lines, but feel free to
@@ -280,7 +280,7 @@ msgid ""
 "with your local data"
 msgstr ""
 "刪除所有 %s 上的\n"
-"資料並使用你的本機\n"
+"資料並使用您的本機\n"
 "資料取代"
 
 #: ../src/gtk-ui/sync-ui.c:2226
@@ -383,7 +383,7 @@ msgstr ""
 #: ../src/gtk-ui/sync-ui.c:2817
 #, c-format
 msgid "You've just restored a backup. The changes have not been synced with %s yet"
-msgstr "你剛才已經還原一份備份。這些變更尚未與 %s 同步"
+msgstr "您剛才已經還原一份備份。這些變更尚未與 %s 同步"
 
 #: ../src/gtk-ui/sync-ui.c:3105
 msgid "Waiting for current operation to finish..."
@@ -392,7 +392,7 @@ msgstr "正在等候目前的操作完成..."
 #. TRANSLATORS: next strings are error messages.
 #: ../src/gtk-ui/sync-ui.c:3139
 msgid "A normal sync is not possible at this time. The server suggests a slow sync, but this might not always be what you want if both ends already have data."
-msgstr "一般同步目前無法使用。這台伺服器建議使用慢速同步，但這可能不總是你想要的，因為雙方可能都已經有資料。"
+msgstr "一般同步目前無法使用。這台伺服器建議使用慢速同步，但這可能不總是您想要的，因為雙方可能都已經有資料。"
 
 #: ../src/gtk-ui/sync-ui.c:3143
 msgid "The sync process died unexpectedly."
@@ -409,7 +409,7 @@ msgstr "同步請發生問題。重試一次可能會有幫助。"
 
 #: ../src/gtk-ui/sync-ui.c:3158
 msgid "Failed to login. Could there be a problem with your username or password?"
-msgstr "登入失敗。你的使用者名稱或密碼是否有問題？"
+msgstr "登入失敗。您的使用者名稱或密碼是否有問題？"
 
 #: ../src/gtk-ui/sync-ui.c:3161
 msgid "Forbidden"
@@ -554,7 +554,7 @@ msgstr "新增服務"
 #. explanation of "Restore backup" function
 #: ../src/gtk-ui/ui.glade.h:18
 msgid "Backups are made before every time we Sync. Choose a backup to restore. Any changes you have made since then will be lost."
-msgstr "在我們每次同步前都會進行備份。選擇要還原的備份。所有你從那時起的變更都會喪失。"
+msgstr "在我們每次同步前都會進行備份。選擇要還原的備份。所有您從那時起的變更都會喪失。"
 
 #: ../src/gtk-ui/ui.glade.h:19
 msgid "Calendar"
@@ -602,8 +602,8 @@ msgid ""
 "If you don't see your service above but know that your sync provider uses SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"如果你在上方沒有看到你的服務，但是你知道你的同步功能供應廠商使用 SyncML 的話，\n"
-"你可以手動設定服務。"
+"如果您在上方沒有看到您的服務，但是您知道您的同步功能供應廠商使用 SyncML 的話，\n"
+"您可以手動設定服務。"
 
 #: ../src/gtk-ui/ui.glade.h:36
 msgid "Settings"
@@ -618,16 +618,16 @@ msgid ""
 "To sync you'll need a network connection and an account with a sync service.\n"
 "We support the following services: "
 msgstr ""
-"若要同步，你需要有網路連線以及使用同步服務的帳號。\n"
+"若要同步，您需要有網路連線以及使用同步服務的帳號。\n"
 "我們支援下列服務："
 
 #: ../src/gtk-ui/ui.glade.h:43
 msgid "Use Bluetooth to Sync your data from one device to another."
-msgstr "使用藍牙從某裝置同步你的資料到另一個裝置去。"
+msgstr "使用藍牙從某裝置同步您的資料到另一個裝置去。"
 
 #: ../src/gtk-ui/ui.glade.h:44
 msgid "You will need to add Bluetooth devices before they can be synced."
-msgstr "在它們能被同步前，你需要先加入藍牙裝置。"
+msgstr "在它們能被同步前，您需要先加入藍牙裝置。"
 
 #: ../src/gtk-ui/sync.desktop.in.h:2
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:2
@@ -640,22 +640,22 @@ msgstr "同步 (GTK)"
 
 #: ../src/gtk-ui/sync-config-widget.c:74
 msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes in sync."
-msgstr "ScheduleWorld 可以讓你的連絡人、行事曆事項、工作、以及註記保持同步。"
+msgstr "ScheduleWorld 可以讓您的連絡人、行事曆事項、工作、以及註記保持同步。"
 
 #: ../src/gtk-ui/sync-config-widget.c:77
 msgid "Google Sync can backup and synchronize your contacts with your Gmail contacts."
-msgstr "Google Sync 可以將你的聯絡人和 Gmail 連絡人進行備份以及同步。"
+msgstr "Google Sync 可以將您的聯絡人和 Gmail 連絡人進行備份以及同步。"
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:83
 msgid "Backup your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
-msgstr "備份你的連絡人與行事曆。一個按鍵就同步，任何時間、任何地點(樣本)。"
+msgstr "備份您的連絡人與行事曆。一個按鍵就同步，任何時間、任何地點(樣本)。"
 
 #: ../src/gtk-ui/sync-config-widget.c:86
 msgid "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
-msgstr "Mobical 備份與還原服務讓你可以安全地備份個人行動資料，而且免費。"
+msgstr "Mobical 備份與還原服務讓您可以安全地備份個人行動資料，而且免費。"
 
 #: ../src/gtk-ui/sync-config-widget.c:89
 msgid "ZYB is a simple way for people to store and share mobile information online."
@@ -663,7 +663,7 @@ msgstr "ZYB 是人們儲存與線上分享行動資訊的一種簡單方法。"
 
 #: ../src/gtk-ui/sync-config-widget.c:92
 msgid "Memotoo lets you access your personal data from any computer connected to the Internet."
-msgstr "Memotoo 能讓你從任何連接到網路的電腦存取你的個人資料。"
+msgstr "Memotoo 能讓您從任何連接到網路的電腦存取您的個人資料。"
 
 #: ../src/gtk-ui/sync-config-widget.c:188
 msgid "Sorry, failed to save the configuration"
@@ -676,7 +676,7 @@ msgstr "服務項目必須要有一個名稱和伺服器網址"
 #: ../src/gtk-ui/sync-config-widget.c:418
 #, c-format
 msgid "Do you want to reset the settings for %s? This will not remove any synced information on either end."
-msgstr "你想要為 %s 重設設定嗎？這不會移除任何兩方同步過的資訊。"
+msgstr "您想要為 %s 重設設定嗎？這不會移除任何兩方同步過的資訊。"
 
 #. TRANSLATORS: buttons in reset-service warning dialog
 #: ../src/gtk-ui/sync-config-widget.c:422
@@ -691,7 +691,7 @@ msgstr "不，維持設定"
 #: ../src/gtk-ui/sync-config-widget.c:428
 #, c-format
 msgid "Do you want to delete the settings for %s? This will not remove any synced information on either end but it will remove these settings."
-msgstr "你想要為 %s 刪除設定值嗎？這不會移除任何兩端同步過的資訊，但是它會移除這些設定值。"
+msgstr "您想要為 %s 刪除設定值嗎？這不會移除任何兩端同步過的資訊，但是它會移除這些設定值。"
 
 #. TRANSLATORS: buttons in delete-service warning dialog
 #: ../src/gtk-ui/sync-config-widget.c:433
@@ -828,7 +828,7 @@ msgstr "%s 正在同步中"
 #: ../src/syncevo-dbus-server.cpp:5623
 #, c-format
 msgid "We have just started to sync your computer with the %s sync service."
-msgstr "我們剛開始將你的電腦同步到 %s 同步服務。"
+msgstr "我們剛開始將您的電腦同步到 %s 同步服務。"
 
 #. if sync is successfully started and done
 #: ../src/syncevo-dbus-server.cpp:5637
@@ -839,7 +839,7 @@ msgstr "%s 同步完成"
 #: ../src/syncevo-dbus-server.cpp:5638
 #, c-format
 msgid "We have just finished syncing your computer with the %s sync service."
-msgstr "我們剛完成將你的電腦同步到 %s 同步服務。"
+msgstr "我們剛完成將您的電腦同步到 %s 同步服務。"
 
 #. if sync is successfully started and has errors, or not started successful with a fatal problem
 #: ../src/syncevo-dbus-server.cpp:5643
@@ -848,7 +848,7 @@ msgstr "同步發生問題。"
 
 #: ../src/syncevo-dbus-server.cpp:5644
 msgid "Sorry, there's a problem with your sync that you need to attend to."
-msgstr "抱歉，你的同步有個問題是你需要關心的。"
+msgstr "抱歉，您的同步有個問題是您需要關心的。"
 
 #: ../src/syncevo-dbus-server.cpp:5717
 msgid "View"
@@ -862,7 +862,7 @@ msgstr "摒棄"
 #~ "Do you want to replace %s with %s? This will not remove any synced "
 #~ "information on either end but you will no longer be able to sync with %s."
 #~ msgstr ""
-#~ "你想要把 %s 用 %s 取代掉嗎？這不會移除兩方任何同步過的資訊，但是你將無法再"
+#~ "您想要把 %s 用 %s 取代掉嗎？這不會移除兩方任何同步過的資訊，但是您將無法再"
 #~ "與 %s 進行同步。"
 #~ msgid "Yes, use %s"
 #~ msgstr "是，使用 %s"
@@ -904,7 +904,7 @@ msgstr "摒棄"
 #~ "Sorry, you need an internet\n"
 #~ "connection to sync."
 #~ msgstr ""
-#~ "抱歉，你需要有網際網路連線\n"
+#~ "抱歉，您需要有網際網路連線\n"
 #~ "才能同步。"
 #~ msgid ""
 #~ "Synchronization is not available (D-Bus service does not answer), sorry."
@@ -944,5 +944,5 @@ msgstr "摒棄"
 #~ msgid "Reset original server settings"
 #~ msgstr "重置為原始的伺服器設定"
 #~ msgid "Bring your data with you"
-#~ msgstr "請帶攜你的數據"
+#~ msgstr "請帶攜您的數據"
 
