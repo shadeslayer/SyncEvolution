@@ -955,7 +955,7 @@ sync_config_widget_add_config (SyncConfigWidget *self,
                             -1);
     }
 
-    if (guess_score > 1 && guess_score >= second_guess_score) {
+    if (guess_score > 1 && guess_score > second_guess_score) {
         gtk_combo_box_set_active (GTK_COMBO_BOX (self->combo), 0);
         /* TRANSLATORS: explanation before a device template combobox.
          * Placeholder is a device name like 'Nokia N85' or 'Syncevolution
