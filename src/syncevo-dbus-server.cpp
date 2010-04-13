@@ -3470,7 +3470,12 @@ string Session::askPassword(const string &passwordName,
     boost::shared_ptr<InfoReq> req = m_server.createInfoReq("password", params, this);
     std::map<string, string> response;
     if(req->wait(response) == InfoReq::ST_OK) {
-        return response["password"];
+        std::map<string, string>::iterator it = response.find("password");
+        if (it == response.end()) {
+            SE_THROW_EXCEPTION_STATUS(StatusException, "user didn't provide password, abort", SyncMLStatus(sysync::LOCERR_USERABORT));
+        } else {
+            return it->second;
+        }
     } 
 
     SE_THROW_EXCEPTION_STATUS(StatusException, "can't get the password from clients. The password request is '" + req->getStatusStr() + "'", STATUS_PASSWORD_TIMEOUT);
