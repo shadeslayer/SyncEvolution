@@ -273,7 +273,7 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
                              G_TYPE_STRING,
                              G_TYPE_STRING,
                              G_TYPE_STRING,
-                             DBUS_TYPE_G_STRING_STRING_HASHTABLE,
+                             SYNCEVO_TYPE_STRING_STRING_HASHTABLE,
                              G_TYPE_INVALID);
     dbus_g_proxy_connect_signal (priv->proxy, "InfoRequest",
                                  G_CALLBACK (info_request_cb), server, NULL);
@@ -319,7 +319,7 @@ syncevo_server_init (SyncevoServer *server)
                                        G_TYPE_STRING,
                                        G_TYPE_STRING,
                                        G_TYPE_STRING,
-                                       DBUS_TYPE_G_STRING_STRING_HASHTABLE,
+                                       G_TYPE_BOXED,
                                        G_TYPE_INVALID);
 
     /* TemplatesChanged */
@@ -365,7 +365,7 @@ syncevo_server_class_init (SyncevoServerClass *klass)
                           NULL, NULL,
                           syncevo_marshal_VOID__STRING_STRING_STRING_STRING_STRING_BOXED,
                           G_TYPE_NONE,
-                          6, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, DBUS_TYPE_G_STRING_STRING_HASHTABLE);
+                          6, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
     signals[TEMPLATES_CHANGED] =
             g_signal_new ("templates-changed",
                           G_TYPE_FROM_CLASS (klass),

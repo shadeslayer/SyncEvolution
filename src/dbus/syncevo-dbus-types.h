@@ -62,6 +62,7 @@ typedef enum {
   SYNCEVO_PHASE_RECEIVING,
 } SyncevoSourcePhase;
 
+#define SYNCEVO_TYPE_STRING_STRING_HASHTABLE (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, G_TYPE_STRING))
 #define SYNCEVO_TYPE_SOURCE_STATUS (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_INVALID))
 #define SYNCEVO_TYPE_SOURCE_STATUSES (dbus_g_type_get_map ("GHashTable", G_TYPE_STRING, SYNCEVO_TYPE_SOURCE_STATUS))
 #define SYNCEVO_TYPE_SOURCE_PROGRESS (dbus_g_type_get_struct ("GValueArray", G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INVALID))
