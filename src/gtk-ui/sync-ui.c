@@ -298,7 +298,7 @@ reload_config (app_data *data, const char *server)
     if (!server || strlen (server) == 0) {
         data->current_service = NULL;
         update_service_ui (data);
-        set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+        set_app_state (data, SYNC_UI_STATE_SERVER_OK);
     } else {
         data->synced_this_session = FALSE;
         data->current_service = g_slice_new0 (server_config);
@@ -496,6 +496,8 @@ start_sync (app_data *data)
 static void
 sync_clicked_cb (GtkButton *btn, app_data *data)
 {
+    g_return_if_fail (data->current_service);
+
     start_sync (data);
 }
 
@@ -643,10 +645,6 @@ set_info_bar (GtkWidget *widget,
 static void
 set_app_state (app_data *data, app_state state)
 {
-
-    if (data->current_state == state)
-        return;
-
     if (state != SYNC_UI_STATE_CURRENT_STATE)
         data->current_state = state;
 
@@ -662,28 +660,10 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
         gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         break;
-    case SYNC_UI_STATE_NO_SERVER:
-        gtk_widget_hide (data->service_box);
-        gtk_widget_hide (data->autosync_box);
-        set_info_bar (data->info_bar,
-                      GTK_MESSAGE_INFO, SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
-                      _("You haven't selected a sync service or device yet. "
-                        "Sync services let you synchronize your data "
-                        "between your netbook and a web service. You can "
-                        "also sync directly with some devices."));
-        refresh_last_synced_label (data);
-
-        gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
-
-        gtk_widget_set_sensitive (data->main_frame, TRUE);
-        gtk_widget_set_sensitive (data->sync_btn, FALSE);
-        gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-        gtk_widget_set_sensitive (data->emergency_btn, FALSE);
-        gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->change_service_btn);
-        break;
     case SYNC_UI_STATE_SERVER_FAILURE:
         gtk_widget_hide (data->service_box);
         gtk_widget_hide (data->autosync_box);
+        gtk_widget_hide (data->progress);
         refresh_last_synced_label (data);
 
         /* info bar content should be set earlier */
@@ -697,27 +677,51 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
         break;
     case SYNC_UI_STATE_SERVER_OK:
-        /* we have a active, idle session */
-        gtk_widget_show (data->service_box);
-        gtk_widget_show (data->autosync_box);
-        gtk_widget_hide (data->info_bar);
-
-        gtk_widget_set_sensitive (data->main_frame, TRUE);
         if (data->online) {
             gtk_widget_hide (data->no_connection_box);
         } else {
             gtk_widget_show (data->no_connection_box);
         }
-        gtk_widget_set_sensitive (data->sync_btn, data->online);
+
+        if (!data->current_service) {
+            gtk_widget_hide (data->service_box);
+            gtk_widget_hide (data->autosync_box);
+            gtk_widget_hide (data->progress);
+            set_info_bar (data->info_bar,
+                          GTK_MESSAGE_INFO, SYNC_ERROR_RESPONSE_SETTINGS_SELECT,
+                          _("You haven't selected a sync service or device yet. "
+                            "Sync services let you synchronize your data "
+                            "between your netbook and a web service. You can "
+                            "also sync directly with some devices."));
+            refresh_last_synced_label (data);
+
+            gtk_label_set_text (GTK_LABEL (data->sync_status_label), "");
+
+            gtk_widget_set_sensitive (data->sync_btn, FALSE);
+            gtk_widget_set_sensitive (data->emergency_btn, FALSE);
+            gtk_window_set_focus (GTK_WINDOW (data->sync_win),
+                                  data->change_service_btn);
+        } else {
+            gtk_widget_hide (data->info_bar);
+            gtk_widget_show (data->service_box);
+            gtk_widget_show (data->autosync_box);
+            gtk_widget_set_sensitive (data->sync_btn, data->online);
+            gtk_widget_set_sensitive (data->emergency_btn, TRUE);
+            /* TRANSLATORS: These are for the button in main view, right side.
+               Keep line length below ~20 characters, use two lines if needed */
+            if (data->synced_this_session && data->current_operation != OP_RESTORE) {
+                gtk_button_set_label (GTK_BUTTON (data->sync_btn),
+                                      _("Sync again"));
+            } else {
+                gtk_widget_hide (data->progress);
+                gtk_button_set_label (GTK_BUTTON (data->sync_btn),
+                                      _("Sync now"));
+            }
+            gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->sync_btn);
+        }
+
+        gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-        gtk_widget_set_sensitive (data->emergency_btn, TRUE);
-        /* TRANSLATORS: These are for the button in main view, right side.
-           Keep line length below ~20 characters, use two lines if needed */
-        if (data->synced_this_session && data->current_operation != OP_RESTORE)
-            gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync again"));
-        else
-            gtk_button_set_label (GTK_BUTTON (data->sync_btn), _("Sync now"));
-        gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->sync_btn);
 
         data->syncing = FALSE;
         break;
@@ -2272,7 +2276,7 @@ get_config_for_main_win_cb (SyncevoServer *server,
         if (error->code == DBUS_GERROR_REMOTE_EXCEPTION &&
             dbus_g_error_has_name (error, SYNCEVO_DBUS_ERROR_NO_SUCH_CONFIG)) {
             /* another syncevolution client probably removed the config */
-            set_app_state (data, SYNC_UI_STATE_NO_SERVER);
+            reload_config (data, NULL);
         } else {
             g_warning ("Error in Server.GetConfig: %s", error->message);
             /* TRANSLATORS: message in main view */
