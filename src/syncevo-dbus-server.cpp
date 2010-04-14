@@ -2014,7 +2014,8 @@ public:
         try {
             m_cmdline.run();
         } catch (...) {
-            Exception::handle();
+            redirectPtr->flush();
+            throw;
         }
         // always forward all currently pending redirected output
         // before closing the session
@@ -3327,7 +3328,14 @@ void Session::run()
                                 m_restoreBefore ? SyncContext::DATABASE_BEFORE_SYNC : SyncContext::DATABASE_AFTER_SYNC);
                 break;
             case OP_CMDLINE:
-                m_cmdline->run();
+                try {
+                    m_cmdline->run();
+                } catch (...) {
+                    SyncMLStatus status = Exception::handle();
+                    if (!m_error) {
+                        m_error = status;
+                    }
+                }
             default:
                 break;
             };

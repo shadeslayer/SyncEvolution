@@ -1023,6 +1023,12 @@ void RemoteSession::statusChangedCb(const string &status,
         const SourceStatuses_t &sourceStatus)
 {
     m_status = status;
+
+    if (errorCode) {
+        m_server.setResult(false);
+        g_main_loop_quit(m_server.getLoop());
+    }
+
     if(status == "done") {
         //if session is done, quit the loop
         g_main_loop_quit(m_server.getLoop());
