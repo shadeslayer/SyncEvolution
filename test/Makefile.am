@@ -19,5 +19,6 @@ EXTRA_DIST = \
 	testcases/lcs/file1.txt \
 	testcases/lcs/file2.txt \
         syncevo-http-server.py \
+        syncevo-phone-config.py \
 	$(wildcard testcases/*.patch) \
         synccompare.pl

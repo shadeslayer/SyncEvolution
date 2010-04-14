@@ -66,6 +66,11 @@ syncevo-http-server: $(srcdir)/../test/syncevo-http-server.py
 	cp $< $@
 CLEANFILES += syncevo-http-server
 
+nodist_bin_SCRIPTS += syncevo-phone-config
+syncevo-phone-config: $(srcdir)/../test/syncevo-phone-config.py
+	cp $< $@
+CLEANFILES += syncevo-phone-config
+
 SYNCEVOLUTION_DEP =
 if ENABLE_MODULES
 else
