@@ -27,6 +27,7 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3182
   CLIENT_TEST_SERVER=Ovi \
   CLIENT_TEST_DELETE_REFRESH=1 \
   CLIENT_TEST_NUM_ITEMS=50 \
+  CLIENT_TEST_MAX_ITEM_SIZE=512\
   CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/test/                             \
   CLIENT_TEST_SKIP=Client::Sync::vcard30::testRefreshFromServerSync,         \
   Client::Sync::vcard30::testOneWayFromClient,                               \
@@ -36,8 +37,20 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3182
   Client::Sync::vcard30::testDelete,                                        \
   Client::Sync::vcard30::testManyDeletes,                                    \
   Client::Sync::vcard30::testDeleteAllSync,                                  \
-  Client::Sync::vcard30::testRetry,Client::Sync::vcard30::Suspend
-
+  Client::Sync::vcard30::testRetry,Client::Sync::vcard30::Suspend            \
+  Client::Sync::calendar+task::testRefreshFromServerSync,                         \
+  Client::Sync::calendar+task::testOneWayFromClient,                               \
+  Client::Sync::calendar+task::testOneWayFromServer,                               \
+  Client::Sync::calendar+task::testSlowSyncSemantic,                               \
+  Client::Sync::calendar+task::testComplexRefreshFromServerSemantic,               \
+  Client::Sync::calendar+task::testDelete,                                        \
+  Client::Sync::calendar+task::testManyDeletes,                                    \
+  Client::Sync::calendar+task::testDeleteAllSync,                                  \
+  Client::Sync::calendar+task::testRetry,Client::Sync::vcard30::Suspend, \
+  Client::Sync::calendar+task::testDeleteAllRefresh, \
+  Client::Sync::calendar+task::testItemsXML, \
+  Client::Sync::calendar+task::testMaxMsg, \
+  Client::Sync::calendar+task::testLargeObject
 
 * Data formats we need to test:
 Client::Sync::vcard30
@@ -82,6 +95,10 @@ EVENTS:
 TODO:
  --Lost properties: SEQUENCE, PERCENT-COMPLETE
  --MISMATCH properties: DTSTART, COMPLETED; TODO only supports date not datetime
+
+testDeleteAllRefresh, testItemsXML, testMaxMsg, testLargeObject these cases were 
+tested OK sometime with serveral retires but the server is quite unstable and usually
+failed with an unexpected response.
 
 Also tried with icalendar 2.0 format which also works badly (all day event
 recognized but with one additional day added, events with VTimeZone rejected by
