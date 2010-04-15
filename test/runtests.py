@@ -1067,6 +1067,62 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 testPrefix=options.testprefix)
 context.add(memotootest)
 
+ovitest = SyncEvolutionTest("ovi", compile,
+                                "", options.shell,
+                                [ "Client::Sync" ],
+                                [ "vcard30",
+                                  "calendar+todo" ],
+                                "CLIENT_TEST_DELETE_REFRESH=1 "
+                                "CLIENT_TEST_NUM_ITEMS=50 "
+                                "CLIENT_TEST_MAX_ITEMSIZE=512 "
+                                "CLIENT_TEST_SKIP="
+                                "Client::Sync::vcard30::Retry,"
+                                "Client::Sync::vcard30::Suspend,"
+                                "Client::Sync::vcard30::testOneWayFromClient,"
+                                "Client::Sync::vcard30::testOneWayFromServer,"
+                                "Client::Sync::vcard30::testSlowSyncSemantic,"
+                                "Client::Sync::vcard30::testComplexRefreshFromServerSemantic,"
+                                "Client::Sync::vcard30::testDelete,"
+                                "Client::Sync::vcard30::testDeleteAllSync,"
+                                "Client::Sync::vcard30::testManyDeletes,"
+                                "Client::Sync::calendar+todo::Retry,"
+                                "Client::Sync::calendar+todo::Suspend,"
+                                "Client::Sync::calendar+todo::testOneWayFromClient,"
+                                "Client::Sync::calendar+todo::testOneWayFromServer,"
+                                "Client::Sync::calendar+todo::testSlowSyncSemantic,"
+                                "Client::Sync::calendar+todo::testComplexRefreshFromServerSemantic,"
+                                "Client::Sync::calendar+todo::testDelete,"
+                                "Client::Sync::calendar+todo::testDeleteAllSync,"
+                                "Client::Sync::calendar+todo::testManyDeletes,"
+                                "Client::Sync::calendar+todo::testDeleteAllRefresh,"
+                                "Client::Sync::calendar+todo::testItemsXML,"
+                                "Client::Sync::calendar+todo::testMaxMsg,"
+                                "Client::Sync::calendar+todo::testLargeObject,"
+                                "Client::Sync::calendar+todo_vcard30::Retry,"
+                                "Client::Sync::calendar+todo_vcard30::Suspend,"
+                                "Client::Sync::calendar+todo_vcard30::testOneWayFromClient,"
+                                "Client::Sync::calendar+todo_vcard30::testOneWayFromServer,"
+                                "Client::Sync::calendar+todo_vcard30::testSlowSyncSemantic,"
+                                "Client::Sync::calendar+todo_vcard30::testComplexRefreshFromServerSemantic,"
+                                "Client::Sync::calendar+todo_vcard30::testDelete,"
+                                "Client::Sync::calendar+todo_vcard30::testDeleteAllSync,"
+                                "Client::Sync::calendar+todo_vcard30::testManyDeletes,"
+                                "Client::Sync::calendar+todo::Retry,"
+                                "Client::Sync::vcard30_calendar+todo::Suspend,"
+                                "Client::Sync::vcard30_calendar+todo::testOneWayFromClient,"
+                                "Client::Sync::vcard30_calendar+todo::testOneWayFromServer,"
+                                "Client::Sync::vcard30_calendar+todo::testSlowSyncSemantic,"
+                                "Client::Sync::vcard30_calendar+todo::testComplexRefreshFromServerSemantic,"
+                                "Client::Sync::vcard30_calendar+todo::testDelete,"
+                                "Client::Sync::vcard30_calendar+todo::testDeleteAllSync,"
+                                "Client::Sync::vcard30_calendar+todo::testManyDeletes,"
+                                "CLIENT_TEST_DELAY=5 "
+                                "CLIENT_TEST_COMPARE_LOG=T "
+                                "CLIENT_TEST_RESEND_TIMEOUT=5 "
+                                "CLIENT_TEST_INTERRUPT_AT=1",
+                                testPrefix=options.testprefix)
+context.add(ovitest)
+
 if options.list:
     for action in context.todo:
         print action.name
