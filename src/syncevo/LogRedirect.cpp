@@ -577,9 +577,9 @@ public:
 
         static const char *simpleMessage = "hello world";
         CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(simpleMessage), write(STDOUT_FILENO, simpleMessage, strlen(simpleMessage)));
-        buffer.m_redirect->process();
+        buffer.m_redirect->flush();
 
-        CPPUNIT_ASSERT_EQUAL(buffer.m_streams[Logger::INFO].str(), std::string(simpleMessage));
+        CPPUNIT_ASSERT_EQUAL(buffer.m_streams[Logger::SHOW].str(), std::string(simpleMessage));
     }
 
     void largeChunk()
@@ -589,10 +589,10 @@ public:
         std::string large;
         large.append(60 * 1024, 'h');
         CPPUNIT_ASSERT_EQUAL((ssize_t)large.size(), write(STDOUT_FILENO, large.c_str(), large.size()));
-        buffer.m_redirect->process();
+        buffer.m_redirect->flush();
 
-        CPPUNIT_ASSERT_EQUAL(large.size(), buffer.m_streams[Logger::INFO].str().size());
-        CPPUNIT_ASSERT_EQUAL(large, buffer.m_streams[Logger::INFO].str());
+        CPPUNIT_ASSERT_EQUAL(large.size(), buffer.m_streams[Logger::SHOW].str().size());
+        CPPUNIT_ASSERT_EQUAL(large, buffer.m_streams[Logger::SHOW].str());
     }
 
     void streams()
@@ -603,10 +603,16 @@ public:
         CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(simpleMessage), write(STDOUT_FILENO, simpleMessage, strlen(simpleMessage)));
         static const char *errorMessage = "such a cruel place";
         CPPUNIT_ASSERT_EQUAL((ssize_t)strlen(errorMessage), write(STDERR_FILENO, errorMessage, strlen(errorMessage)));
-        buffer.m_redirect->process();
 
-        CPPUNIT_ASSERT_EQUAL(std::string(simpleMessage), buffer.m_streams[Logger::INFO].str());
+        // process() keeps unfinished STDOUT lines buffered
+        buffer.m_redirect->process();
         CPPUNIT_ASSERT_EQUAL(std::string(errorMessage), buffer.m_streams[Logger::DEV].str());
+        CPPUNIT_ASSERT_EQUAL(string(""), buffer.m_streams[Logger::SHOW].str());
+
+        // flush() makes them available
+        buffer.m_redirect->flush();
+        CPPUNIT_ASSERT_EQUAL(std::string(errorMessage), buffer.m_streams[Logger::DEV].str());
+        CPPUNIT_ASSERT_EQUAL(std::string(simpleMessage), buffer.m_streams[Logger::SHOW].str());
     }
 
     void overload()
@@ -618,9 +624,9 @@ public:
         for (int i = 0; i < 4000; i++) {
             CPPUNIT_ASSERT_EQUAL((ssize_t)large.size(), write(STDOUT_FILENO, large.c_str(), large.size()));
         }
-        buffer.m_redirect->process();
+        buffer.m_redirect->flush();
 
-        CPPUNIT_ASSERT(buffer.m_streams[Logger::INFO].str().size() > large.size());
+        CPPUNIT_ASSERT(buffer.m_streams[Logger::SHOW].str().size() > large.size());
     }
 
 #ifdef HAVE_GLIB
