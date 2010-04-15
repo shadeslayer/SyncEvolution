@@ -232,8 +232,11 @@
 
     <method name="Execute">
       <doc:doc><doc:description>Execute command line arguments </doc:description></doc:doc>
-      <arg type="a(ss)" name="args" direction="in">
+      <arg type="as" name="args" direction="in">
         <doc:doc><doc:summary>Command line arguments</doc:summary></doc:doc>
+      </arg>
+      <arg type="a{ss}" name="vars" direction="in">
+        <doc:doc><doc:summary>Environment variables in clients</doc:summary></doc:doc>
       </arg>
     </method>
 

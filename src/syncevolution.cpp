@@ -433,6 +433,15 @@ private:
     /** InfoReq map. store all infoReq belongs to this session */
     map<string, boost::shared_ptr<InfoReq> > m_infoReqs;
 };
+
+/**
+ * Get current known environment variables, which might be used
+ * in executing command line arguments. This is only necessary
+ * when using dbus daemon.
+ * @param vars the returned environment variables
+ */
+static void getEnvVars(map<string, string> &vars);
+
 #endif
 
 extern "C"
@@ -1002,8 +1011,10 @@ void RemoteSession::executeAsync(const vector<string> &args)
 {
     //start to print outputs
     m_output = true;
+    map<string, string> vars;
+    getEnvVars(vars);
     DBusClientCall0 call(*this, "Execute");
-    call(args, boost::bind(&RemoteSession::executeCb, this, _1));
+    call(args, vars, boost::bind(&RemoteSession::executeCb, this, _1));
 }
 
 void RemoteSession::executeCb(const string &error)
@@ -1219,6 +1230,34 @@ void RemoteSession::InfoReq::process(const string &id,
         }
     }
 }
+
+void getEnvVars(map<string, string> &vars)
+{
+    //environment variables used to run command line
+    static const char *varNames[] = {
+        "http_proxy",
+        "HOME",
+        "PATH",
+        "SYNCEVOLUTION_BACKEND_DIR",
+        "SYNCEVOLUTION_DEBUG",
+        "SYNCEVOLUTION_GNUTLS_DEBUG",
+        "SYNCEVOLUTION_TEMPLATE_DIR",
+        "SYNCEVOLUTION_XML_CONFIG_DIR",
+        "SYNC_EVOLUTION_EVO_CALENDAR_DELAY",
+        "XDG_CACHE_HOME",
+        "XDG_CONFIG_HOME",
+        "XDG_DATA_HOME"
+    };
+
+    for (unsigned int i = 0; i < sizeof(varNames) / sizeof(const char*); i++) {
+        const char *value;
+        //get values of environment variables if they are set
+        if ((value = getenv(varNames[i])) != NULL) {
+            vars.insert(make_pair(varNames[i], value));
+        }
+    }
+}
+
 #endif
 
 SE_END_CXX

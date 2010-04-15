@@ -1785,7 +1785,7 @@ class Session : public DBusObjectHelper,
     void checkPresence (string &status);
 
     /** Session.Execute() */
-    void execute(const vector<string> &args);
+    void execute(const vector<string> &args, const map<string, string> &vars);
 
     /**
      * Must be called each time that properties changing the
@@ -1994,6 +1994,9 @@ class CmdlineWrapper
     /** instance to run command line arguments */
     DBusCmdline m_cmdline;
 
+    /** environment variables passed from client */
+    map<string, string> m_envVars;
+
 public:
     /**
      * constructor to create cmdline instance.
@@ -2001,14 +2004,22 @@ public:
      * command line is output to this stream for it is
      * different from Logger::ERROR.
      */
-    CmdlineWrapper(Session &session, const vector<string> &args)
+    CmdlineWrapper(Session &session,
+                   const vector<string> &args,
+                   const map<string, string> &vars)
         : m_cmdlineOutStream(&m_outStreamBuf),
-        m_cmdline(session, args, m_cmdlineOutStream, m_cmdlineOutStream)
+        m_cmdline(session, args, m_cmdlineOutStream, m_cmdlineOutStream),
+        m_envVars(vars)
     {}
 
     bool parse() { return m_cmdline.parse(); }
     void run()
     {
+        //temporarily set environment variables and restore them after running
+        list<boost::shared_ptr<ScopedEnvChange> > changes;
+        BOOST_FOREACH(const StringPair &var, m_envVars) {
+            changes.push_back(boost::shared_ptr<ScopedEnvChange>(new ScopedEnvChange(var.first, var.second)));
+        }
         // exceptions must be handled (= printed) before returning,
         // so that our client gets the output
         try {
@@ -3430,7 +3441,7 @@ string Session::runOpToString(RunOperation op)
     };
 }
 
-void Session::execute(const vector<string> &args)
+void Session::execute(const vector<string> &args, const map<string, string> &vars)
 {
     if (!m_active) {
         SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
@@ -3442,7 +3453,7 @@ void Session::execute(const vector<string> &args)
         SE_THROW_EXCEPTION(InvalidCall, msg);
     }
     //create ostream with a specified streambuf
-    m_cmdline.reset(new CmdlineWrapper(*this, args));
+    m_cmdline.reset(new CmdlineWrapper(*this, args, vars));
 
     if(!m_cmdline->parse()) {
         m_cmdline.reset();
