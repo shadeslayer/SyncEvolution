@@ -2379,7 +2379,7 @@ bool SecondsConfigProperty::parseDuration(const string &value, string &error, un
                 error = StringPrintf("invalid character '%c'", c);
                 return false;
             }
-            if (!haveDigit) {
+            if (!haveDigit && c != '+') {
                 error = StringPrintf("unit character without preceeding number: %c", c);
                 return false;
             }
@@ -2449,6 +2449,8 @@ private:
         CPPUNIT_ASSERT_EQUAL(expected, seconds);
         CPPUNIT_ASSERT(SecondsConfigProperty::parseDuration("5 + 1y+2d + 3 H4M", error, seconds));
         CPPUNIT_ASSERT_EQUAL(expected, seconds);
+
+        CPPUNIT_ASSERT(!SecondsConfigProperty::parseDuration("m", error, seconds));
     }
 };
 
