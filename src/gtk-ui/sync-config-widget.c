@@ -6,7 +6,11 @@
 #include <dbus/dbus-glib.h>
 
 #ifdef USE_MOBLIN_UX
+#ifdef MX_GTK_0_99_1
+#include <mx-gtk/mx-gtk.h>
+#else
 #include <mx/mx-gtk.h>
+#endif
 #endif
 
 #include "sync-ui.h"

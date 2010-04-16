@@ -45,7 +45,13 @@
 
 #ifdef USE_MOBLIN_UX
 #include "mux-frame.h"
+
+#ifdef MX_GTK_0_99_1
+#include <mx-gtk/mx-gtk.h>
+#else
 #include <mx/mx-gtk.h>
+#endif
+
 #endif
 
 static gboolean support_canceling = FALSE;

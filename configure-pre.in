@@ -430,6 +430,13 @@ if test $enable_gui != "no"; then
     fi
     if test $enable_gui == "moblin" -o $enable_gui == "all"; then
         gui_modules="$guimodules mx-gtk-1.0"
+
+        PKG_CHECK_MODULES(MX_GTK_0_99_1, mx-gtk-1.0 >= 0.99.1,
+                          have_mx_gtk_0_99_1="yes",
+                          have_mx_gtk_0_99_1="no")
+        if test $have_mx_gtk_0_99_1 == "yes"; then
+            AC_DEFINE(MX_GTK_0_99_1, 1, [we have Mx-Gtk 0.99.1 or better])
+        fi
     fi
 
     PKG_CHECK_MODULES(UNIQUE, unique-1.0,
