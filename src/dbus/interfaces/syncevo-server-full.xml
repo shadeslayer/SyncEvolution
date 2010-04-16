@@ -75,10 +75,18 @@
       <doc:doc><doc:description>
         Get an array of all configured servers (or templates)
 
-        In getting templates mode, the dbus server checks the paired devices
-        from bluez and returns the matched templates. Templates for each device
-        are re-named with 'Bluetooth_&lt;mac address&gt;_&lt;number&gt;', where number
-        enumerates the templates created for the device.
+        In getting templates mode, the dbus server checks all paired devices
+        from bluez daemon and filters them by SyncML capability. Then it
+        looks through built-in templates and returns their matched templates.
+        Multiple templates might be created for each device, with different
+        matching scores(range: 1-5). Scores represent how well the device name
+        matches a template. The higher, the better.
+        
+        A template might be used to help creation for multiple devices. Thus template
+        names must be reset in a naming rule. They are re-named with 'Bluetooth_&lt;
+        mac address&gt;_&lt;sequence number&gt;'. Here 'mac address' is the mac
+        address of the Bluetooth device and 'sequence number' enumerates all the
+        matched templates created for the device.
 
         Get these templates latter when calling GetConfig with additional new
         properties: 
@@ -87,8 +95,8 @@
             deviceName - the device name that the template is for
             fingerPrint - the fingerPrint of the template, used for dbus
                           clients to re-match with user input device info
-        Also a property value is changed: 'syncURL' is replaced with the device 
-        mac address.
+        Together with these changes, a property value is changed: 'syncURL' in the
+        configuration is replaced with the mac address of the device.
       </doc:description></doc:doc>
       <arg type="b" name="template" direction="in">
         <doc:doc><doc:summary>
