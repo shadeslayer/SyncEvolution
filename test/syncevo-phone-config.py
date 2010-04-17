@@ -21,7 +21,7 @@
 Automatically trying different configurations for a phone to sync with
 SyncEvolution.
 '''
-import sys, optparse, os, time
+import sys, optparse, os, time, popen2
 
 ########################### cmdline options ##########################################
 parser = optparse.OptionParser()
@@ -75,6 +75,7 @@ configName = 'bfb3e7cb3d259e5f5aabbfb2ffac23f8cf5ad91b'
 configContext = 'test-phone'
 templateName = '"Nokia 7210c"'
 testFolder = '/tmp/'+configName
+testResult = '/tmp/cache/'
 
 #################### Configuration Parameter #######################
 class ConfigurationParameter:
@@ -258,6 +259,30 @@ def runCommand(cmd, exception = True):
     if result != 0 and exception:
         raise Exception("%s: failed (return code %d)" % (cmd, result>>8))
 
+def runSync(sync):
+    cmd = "rm -rf %s/syncevolution" %(testResult)
+    runCommand (cmd)
+    status = True
+    interrupt = False
+
+    try:
+        runCommand (sync)
+    except:
+        status = False
+        pass
+    cmd = "find %s/syncevolution/ -name 'status.ini'" %(testResult)
+    fout,fin = popen2.popen2(cmd)
+    for line in fout:
+        resultFile = line.rpartition('\n')[0]
+    result = open(resultFile)
+    for line in result:
+        if (line.find ('status') != -1 and line.find('20015') != -1):
+            status = False
+            interrupt = True
+            break;
+    return (status, interrupt)
+
+
 ##############################TestConfiguration##################################
 class TestingConfiguration():
     def __init__(self, versions, sources, uris, types, ctcaps, identifiers, btaddr):
@@ -394,18 +419,14 @@ class TestingConfiguration():
             runCommand (configCmd)
 
         """ start the sync session """
-        cmdPrefix=''
+        cmdPrefix="XDG_CACHE_HOME=%s " %(testResult)
         if (not self.ctcap):
-            cmdPrefix = "SYNCEVOLUTION_NOCTCAP=t "
+            cmdPrefix += "SYNCEVOLUTION_NOCTCAP=t "
         syncCmd = "%s %s %s" % (syncevo, fullConfigName, runSources[self.source])
-        try:
-            runCommand (cmdPrefix+syncCmd)
-        except:
-            pass
-            return False
-        if (options.advanced):
-            return self.advancedTestWithCurrentConfiguration(runSources)
-        return True
+        (status,interrupt) = runSync (cmdPrefix+syncCmd)
+        if (options.advanced and status and not interrupt):
+            (status,interrupt)= self.advancedTestWithCurrentConfiguration(runSources)
+        return (status, interrupt)
 
     '''Basic test for sending/receiving data
     It will work as:
@@ -431,31 +452,36 @@ class TestingConfiguration():
 
         #step 1: clean the data both locally and remotely using a 'slow-sync' and 'two-way'
         clearLocalSyncData(sources)
-        cmdPrefix = ''
+        cmdPrefix="XDG_CACHE_HOME=%s " % (testResult)
         if (not self.ctcap):
-            cmdPrefix = "SYNCEVOLUTION_NOCTCAP=t "
+            cmdPrefix += "SYNCEVOLUTION_NOCTCAP=t "
         syncCmd = "%s %s --sync slow %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
-        if (runCommand(syncCmd, False)):
-            return False
+        status,interrupt = runSync(syncCmd)
+        if (not status or interrupt):
+            return (status, interrupt)
         clearLocalSyncData(sources)
         syncCmd = "%s %s --sync two-way %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
-        if (runCommand(syncCmd, False)):
-            return False
+        status,interrupt = runSync(syncCmd)
+        if (not status or interrupt):
+            return (status, interrupt)
 
         #step 2: insert testcase to local data and sync with 'two-way'
         insertLocalSyncData(sources, self.type)
         syncCmd = "%s %s --sync two-way %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
-        if (runCommand(syncCmd, False)):
-            return False
+        status,interrupt = runSync(syncCmd)
+        if (not status or interrupt):
+            return (status, interrupt)
 
         #step 3: delete local data and sync with 'slow-sync'
         clearLocalSyncData(sources)
         syncCmd = "%s %s --sync slow %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
-        if (runCommand(syncCmd, False)):
-            return False
+        status,interrupt = runSync(syncCmd)
+        if (not status or interrupt):
+            return (status, interrupt)
 
         #step 4: compare the received data with test case
-        return compareSyncData(sources, self.type)
+        status = compareSyncData(sources, self.type)
+        return (status, interrupt)
 
     '''
     The test driver iterating all possible test combinations and try them one by one
@@ -478,20 +504,39 @@ class TestingConfiguration():
             self.wConfigs[source] = None
 
         #second round of iterating, test for each configuration
+        interrupt = False
         for self.source in self.sources:
+           if(interrupt):
+               break
            for self.ctcap in self.ctcaps:
+               if(interrupt):
+                   break
                for self.version in self.versions:
+                   if(interrupt):
+                       break
                    for self.identifier in self.identifiers:
+                       if(interrupt):
+                           break
                        for self.uri in self.uris[self.source]:
+                           if(interrupt):
+                               break
                            for self.type in self.types[self.source]:
                                curconfig +=1
                                skip = self.prepare (allconfigs, curconfig)
                                if (not skip):
-                                   if (self.testWithCurrentConfiguration ()):
+                                   (status, interrupt) = self.testWithCurrentConfiguration ()
+                                   if (status and not interrupt):
                                        self.wConfigs[self.source] = ConfigurationParameter (self.version, self.source, self.uri, self.type, self.ctcap, self.identifier)
                                        print "Found a working configuration for %s" % (self.source,)
                                        if (options.verbose):
                                            self.wConfigs[self.source].printMe()
+                               if (interrupt):
+                                   break;
+        if(interrupt):
+            print "Test Interrupted"
+            self.cleanup()
+            return 1
+
         print "Test Ended"
         self.cleanup()
 
