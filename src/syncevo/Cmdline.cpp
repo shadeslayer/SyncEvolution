@@ -1555,7 +1555,7 @@ public:
                               "peers/scheduleworld/config.ini:# proxyPassword = \n"
                               "peers/scheduleworld/config.ini:# clientAuthType = md5\n"
                               "peers/scheduleworld/config.ini:# RetryDuration = 5M\n"
-                              "peers/scheduleworld/config.ini:# RetryInterval = 1M\n"
+                              "peers/scheduleworld/config.ini:# RetryInterval = 2M\n"
                               "peers/scheduleworld/config.ini:# remoteIdentifier = \n"
                               "peers/scheduleworld/config.ini:# PeerIsClient = 0\n"
                               "peers/scheduleworld/config.ini:# SyncMLVersion = \n"
@@ -2701,7 +2701,7 @@ private:
             "spds/syncml/config.txt:# proxyPassword = \n"
             "spds/syncml/config.txt:# clientAuthType = md5\n"
             "spds/syncml/config.txt:# RetryDuration = 5M\n"
-            "spds/syncml/config.txt:# RetryInterval = 1M\n"
+            "spds/syncml/config.txt:# RetryInterval = 2M\n"
             "spds/syncml/config.txt:# remoteIdentifier = \n"
             "spds/syncml/config.txt:# PeerIsClient = 0\n"
             "spds/syncml/config.txt:# SyncMLVersion = \n"
@@ -2766,6 +2766,10 @@ private:
         boost::replace_first(config,
                              "# enableWBXML = 1",
                              "enableWBXML = 0");
+
+        boost::replace_first(config,
+                             "# RetryInterval = 2M",
+                             "RetryInterval = 0");
 
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",

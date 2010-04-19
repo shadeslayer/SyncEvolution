@@ -82,6 +82,14 @@ Other changes:
 * restore: no longer updates the time of the backup (MB #9963)
 * various minor improvements and fixes, see ChangeLog
 
+Upgrading:
+* The new "RetryInterval" property causes messages to be resent
+  after 2 minutes (increased from 1 minute in previous 1.0 betas).
+  At least the Funambol server is known to not handle this correctly
+  in all cases (http://funzilla.funambol.com/show_bug.cgi?id=7910).
+  So in the Funambol config template the interval is set to zero,
+  disabling the feature. Enabling or disabling the feature must
+  be done manually in existing configurations.
 
 SyncEvolution 1.0 beta 1 -> beta 2, 23.02.2010
 ==============================================

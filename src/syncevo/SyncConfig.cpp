@@ -596,6 +596,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         config->setSyncURL("http://my.funambol.com/sync");
         config->setWebURL("http://my.funambol.com");
         config->setWBXML(false);
+        config->setRetryInterval(0);
         config->setConsumerReady(true);
         source = config->getSyncSourceConfig("calendar");
         source->setSync("two-way");
@@ -1088,7 +1089,7 @@ static SecondsConfigProperty syncPropRetryInterval("RetryInterval",
                                           "\n"
                                           "Servers cannot resend messages, so this setting has no\n"
                                           "effect in that case."
-                                          ,"1M");
+                                          ,"2M");
 static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
                                           "Indicates whether this configuration is about a\n"
                                           "client peer or server peer.\n",
