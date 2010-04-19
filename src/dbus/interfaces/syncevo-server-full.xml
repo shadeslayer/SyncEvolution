@@ -88,13 +88,18 @@
         address of the Bluetooth device and 'sequence number' enumerates all the
         matched templates created for the device.
 
-        Get these templates latter when calling GetConfig with additional new
-        properties: 
-            description - the description for the template
-            score - the calculated score based on the device name and template
-            deviceName - the device name that the template is for
-            fingerPrint - the fingerPrint of the template, used for dbus
-                          clients to re-match with user input device info
+        When retrieving the templates with GetConfig(), several additional
+        properties will be returned:
+            description - the description for the template (non-localized string)
+            score - the calculated score based on the device name and template (1-5, 5 is best)
+            deviceName - the device name that the template is for (copied verbatim from that device)
+            templateName - string identifying the class of devices the templates works for,
+                           like "Nokia S40"; meant to be shown to users; optional, fall back
+                           to first entry in fingerPrint if not set
+            fingerPrint - comma separated list of devices which work with this template,
+                          typically in "vendor model" format; can be used by D-Bus
+                          clients to re-match with user provided device information
+
         Together with these changes, a property value is changed: 'syncURL' in the
         configuration is replaced with the mac address of the device.
       </doc:description></doc:doc>
