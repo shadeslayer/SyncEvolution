@@ -5757,7 +5757,10 @@ void AutoSyncManager::Notification::send(const char *summary,
     //so disable it in case of no support of actions
     if(m_actions) {
         notify_notification_add_action(m_notification, "view", _("View"), notifyAction, (gpointer)viewParams, NULL);
-        notify_notification_add_action(m_notification, "dismiss", _("Dismiss"), notifyAction, (gpointer)viewParams, NULL);
+        // Use "default" as ID because that is what mutter-moblin
+        // recognizes: it then skips the action instead of adding it
+        // in addition to its own "Dismiss" button (always added).
+        notify_notification_add_action(m_notification, "default", _("Dismiss"), notifyAction, (gpointer)viewParams, NULL);
     }
     notify_notification_show(m_notification, NULL);
 }
