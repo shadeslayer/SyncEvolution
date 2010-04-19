@@ -477,6 +477,7 @@ public:
         // this is required when using glib directly or indirectly
         g_type_init();
         g_thread_init(NULL);
+        g_set_prgname("client-test");
 #endif
         EDSAbiWrapperInit();
         testClient.registerTests();

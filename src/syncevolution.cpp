@@ -469,6 +469,7 @@ int main( int argc, char **argv )
     // this is required when using glib directly or indirectly
     g_type_init();
     g_thread_init(NULL);
+    g_set_prgname("syncevolution");
 #endif
 
     setvbuf(stderr, NULL, _IONBF, 0);
