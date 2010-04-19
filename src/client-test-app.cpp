@@ -35,7 +35,7 @@
 # include <execinfo.h>
 #endif
 
-#include <syncevo/SyncContext.h>
+#include "CmdlineSyncClient.h"
 #include "EvolutionSyncSource.h"
 #include <syncevo/util.h>
 #include <syncevo/VolatileConfigNode.h>
@@ -310,12 +310,12 @@ public:
         server += "_";
         server += m_clientID;
         
-        class ClientTest : public SyncContext {
+        class ClientTest : public CmdlineSyncClient {
         public:
             ClientTest(const string &server,
                        const string &logbase,
                        const SyncOptions &options) :
-                SyncContext(server, false),
+                CmdlineSyncClient(server, false, true),
                 m_logbase(logbase),
                 m_options(options),
                 m_started(false)
