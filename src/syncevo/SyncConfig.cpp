@@ -706,12 +706,12 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         source->setSync("none");
         source->setURI("");
         //prefer vcalendar 1.0
-        source->setSourceType("Calendar:text/x-vcalendar");
+        source->setSourceType("calendar:text/x-vcalendar");
         source = config->getSyncSourceConfig("todo");
         source->setSync("none");
         source->setURI("");
         //prefer vcalendar 1.0
-        source->setSourceType("Calendar:text/x-vcalendar");
+        source->setSourceType("todo:text/x-vcalendar");
         //A virtual datastore combining calendar and todo
         source = config->getSyncSourceConfig("calendar+todo");
         source->setURI("./EventTask/Tasks");
