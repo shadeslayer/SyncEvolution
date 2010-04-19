@@ -698,6 +698,13 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     } else if (boost::iequals(server, "Ovi")) {
         config->setSyncURL("https://sync.ovi.com/services/syncml");
         config->setWebURL("http://www.ovi.com");
+#ifndef ENABLE_SSL_CERTIFICATE_CHECK
+        // temporarily (?) disabled certificate checking because
+        // libsoup/gnutls do not accept the Verisign certificate
+        // (GNOME Bugzilla #589323)
+        config->setSSLVerifyServer(false);
+        config->setSSLVerifyHost(false);
+#endif
         //prefer vcard 3.0
         source = config->getSyncSourceConfig("addressbook");
         source->setSourceType("addressbook:text/vcard");
