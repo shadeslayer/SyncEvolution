@@ -1,4 +1,4 @@
-SyncEvolution 1.0 beta 2 -> beta 3, xxxxxxxxxx
+SyncEvolution 1.0 beta 2 -> beta 3, 20.04.2010
 ==============================================
 
 One more step towards the long awaited 1.0. 0.1 was released over four
@@ -48,6 +48,15 @@ standard ("SyncMLVersion" property, MB #9312). No further
 interoperability testing with such phones has been done at this
 time. When acting as client, that same property allows talking to
 older SyncML servers, like desknow.com.
+
+A minor workaround and the right configuration make it possible to
+synchronize with Nokia N85 and probably also other S60
+devices. Added a template for "Nokia S60". Also made the template
+for "Nokia N900" accessible in the GTK GUI.
+
+Because determining which configuration works for a phone involves
+a lot of trial-and-error, the new "syncevo-phone-config" script
+automates that process.
 
 Other changes:
 
