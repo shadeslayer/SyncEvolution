@@ -21,7 +21,7 @@
 Automatically trying different configurations for a phone to sync with
 SyncEvolution.
 '''
-import sys, optparse, os, time, popen2
+import sys, optparse, os, time, popen2, tempfile
 
 ########################### cmdline options ##########################################
 parser = optparse.OptionParser()
@@ -74,8 +74,6 @@ syncevo = 'syncevolution'
 configName = 'bfb3e7cb3d259e5f5aabbfb2ffac23f8cf5ad91b'
 configContext = 'test-phone'
 templateName = '"Nokia 7210c"'
-testFolder = '/tmp/'+configName
-testResult = '/tmp/cache/'
 
 #################### Configuration Parameter #######################
 class ConfigurationParameter:
@@ -698,6 +696,11 @@ def main():
 
     config = TestingConfiguration (versions, sources, uris, types, ctcaps,
             identifiers, options.btaddr)
+
+    tempfile = tempfile.mkdtemp(prefix="syncevo-phone-config")
+    testFolder = testfile+'/data'
+    testResult = testfile+'/cache'
+    print "Running test with test data inside %s and test results inside %s" %(testFolder, testResult)
     config.run()
 
 if __name__ == "__main__":
