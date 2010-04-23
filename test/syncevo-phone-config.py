@@ -253,7 +253,7 @@ def runCommand(cmd, exception = True):
     if (options.verbose):
         print "%s: %s" % (os.getcwd(), cmd)
     else:
-        cmd += ' >/dev/null 2>&1'
+        cmd += ' >/dev/null'
     sys.stdout.flush()
     result = os.system(cmd)
     if result != 0 and exception:
