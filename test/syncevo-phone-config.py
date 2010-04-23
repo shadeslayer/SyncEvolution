@@ -466,6 +466,7 @@ class TestingConfiguration():
         """ start the sync session """
         if (not self.ctcap):
             cmdPrefix += "SYNCEVOLUTION_NOCTCAP=t "
+        cmdPrefix += "SYNCEVOLUTION_NO_SYNC_SIGNALS=1"
         syncCmd = " ".join((cmdPrefix, syncevoCmd, "--daemon=no", configName, runSources[self.source]))
         (status,interrupt) = runSync(syncCmd)
         if (options.advanced and status and not interrupt):

@@ -2988,13 +2988,14 @@ SyncMLStatus SyncContext::doSync()
     new_action.sa_handler = handleSignal;
     sigemptyset(&new_action.sa_mask);
     sigaction(SIGINT, NULL, &old_action);
-    if (old_action.sa_handler == SIG_DFL) {
+    bool catchSignals = getenv("SYNCEVOLUTION_NO_SYNC_SIGNALS") == NULL;
+    if (catchSignals && old_action.sa_handler == SIG_DFL) {
         sigaction(SIGINT, &new_action, NULL);
     }
 
     struct sigaction old_term_action;
     sigaction(SIGTERM, NULL, &old_term_action);
-    if (old_term_action.sa_handler == SIG_DFL) {
+    if (catchSignals && old_term_action.sa_handler == SIG_DFL) {
         sigaction(SIGTERM, &new_action, NULL);
     }   
 
@@ -3541,8 +3542,10 @@ SyncMLStatus SyncContext::doSync()
     }
 
     m_agent.reset();
-    sigaction (SIGINT, &old_action, NULL);
-    sigaction (SIGTERM, &old_term_action, NULL);
+    if (catchSignals) {
+        sigaction (SIGINT, &old_action, NULL);
+        sigaction (SIGTERM, &old_term_action, NULL);
+    }
     return status;
 }
 
