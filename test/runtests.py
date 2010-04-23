@@ -1120,6 +1120,7 @@ ovitest = SyncEvolutionTest("ovi", compile,
                                 "CLIENT_TEST_COMPARE_LOG=T "
                                 "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                 "CLIENT_TEST_INTERRUPT_AT=1",
+                                serverName="Ovi",
                                 testPrefix=options.testprefix)
 context.add(ovitest)
 
