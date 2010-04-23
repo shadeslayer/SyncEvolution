@@ -46,8 +46,8 @@ parser.add_option ("-i", "--identifier", action = "store", type="string",
         default = "")
 parser.add_option ("", "--without-ctcap", action = "store_true", default =False,
         dest = "ctcap", help = "Testing without sending CTCap information")
-parser.add_option ("-v", "--verbose", action = "store_true", default = False,
-        dest = "verbose", help = "Enabling detailed output")
+parser.add_option ("-v", "--verbose", action = "count",
+        dest = "verbose", help = "Increase amount of output")
 parser.add_option ("", "--combined-calendar-task", action = "store_true",
         default = False, dest = "combined", help = "Testing the combined calendar, task data source")
 parser.add_option ("-a", "--advanced", action = "store_true", default = False,
@@ -100,6 +100,17 @@ class ConfigurationParameter:
         print "Sync Source:    %s" %(self.source,)
         print "URI:            %s" %(self.uri,)
         print "Content Type:   %s" %(self.type,)
+
+    def __str__(self):
+        res = []
+        if self.ctcap:
+            res.append("with CTCap")
+        else:
+            res.append("without CTCap")
+        res.append(self.identifier)
+        res.append(self.version)
+        res.append("%s = %s + %s" % (self.source, self.uri, self.type))
+        return ", ".join(res)
 
     def equalWith(self, config):
         return (config and \
@@ -240,7 +251,7 @@ def compareSyncData(sources, type):
         except:
             return False
         keys = getTestCaseKeywords(source, type)
-        if (options.verbose):
+        if (options.verbose > 1):
             print "comparing received file:"
             print received
             print "with built in keywords in test case:"
@@ -253,7 +264,7 @@ def compareSyncData(sources, type):
 # wrapper of running a shell command
 def runCommand(cmd, exception = True):
     """Log and run the given command, throwing an exception if it fails."""
-    if (options.verbose):
+    if (options.verbose > 1):
         print "%s: %s" % (os.getcwd(), cmd)
     else:
         cmd += ' >/dev/null'
@@ -386,15 +397,25 @@ class TestingConfiguration():
                 if ((self.source == 'calendar' or self.source == 'task') and isCombinedSource(config.source)):
                     skip = True
         if (skip):
-            if (options.verbose):
+            if (options.verbose > 1):
                 print "Test %d/%d skipped because already found a working configuration" % (curconfig, allconfigs)
+            elif options.verbose > 0:
+                print "Test %d/%d skipped" %(curconfig, allconfigs), \
+                    ConfigurationParameter(self.version, self.source, self.uri, self.type, self.ctcap, self.identifier)
             else:
                 print "Test %d/%d skipped" %(curconfig, allconfigs)
         else:
-            print "Start %d/%d test" % (curconfig, allconfigs)
-            if (options.verbose):
+            print ("Start %d/%d test" % (curconfig, allconfigs)),
+            if (options.verbose > 0):
                 config = ConfigurationParameter(self.version, self.source, self.uri, self.type, self.ctcap, self.identifier)
-                config.printMe()
+                if (options.verbose > 1):
+                    print
+                    config.printMe()
+                else:
+                    print config
+            else:
+                print
+
         return skip
 
 
@@ -551,7 +572,7 @@ class TestingConfiguration():
                                    if (status and not interrupt):
                                        self.wConfigs[self.source] = ConfigurationParameter (self.version, self.source, self.uri, self.type, self.ctcap, self.identifier)
                                        print "Found a working configuration for %s" % (self.source,)
-                                       if (options.verbose):
+                                       if (options.verbose > 0):
                                            self.wConfigs[self.source].printMe()
                                if (interrupt):
                                    break;
