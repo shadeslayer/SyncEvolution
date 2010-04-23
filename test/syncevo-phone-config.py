@@ -73,12 +73,14 @@ if (options.type and not options.source):
     parser.error ("options -t must work with -s")
 
 #######################some global parameters ######################
-syncevo = 'syncevolution'
-configName = 'bfb3e7cb3d259e5f5aabbfb2ffac23f8cf5ad91b'
-configContext = 'test-phone'
+syncevoCmd = 'syncevolution'
+configName = 'test-phone'        # inside temporary testConfig dir
 templateName = '"Nokia 7210c"'
-testFolder = None
-testResult = None
+# real paths set in main() inside temporary directory
+testFolder = '/dev/null/data'
+testResult = '/dev/null/cache'
+testConfig = '/dev/null/config'
+
 
 #################### Configuration Parameter #######################
 class ConfigurationParameter:
@@ -402,52 +404,49 @@ class TestingConfiguration():
     def testWithCurrentConfiguration(self):
         """ Prepare the configuration and run a sync session, Returns true if
         the test was successful, otherwise false"""
-        fullConfigName = configName +'@' + configContext
-        try:
-            runCommand (syncevo+' --remove '+fullConfigName)
-        except:
-            pass
-        runCommand (syncevo+' -c -l ' + templateName + ' ' + fullConfigName)
+        rm_r(testConfig)
+        cmdPrefix = "XDG_CACHE_HOME=%s XDG_CONFIG_HOME=%s " %(testResult, testConfig)
+        syncevoTest = "%s %s --daemon=no" % (cmdPrefix, syncevoCmd)
+        runCommand ("%s -c -l %s %s" % (syncevoTest, templateName, configName))
         runSources ={'contact':'addressbook', 'calendar':'calendar', 'task':'todo', 'memo':'memo', 'calendar+task':'calendar+todo'}
         # set the local database
         if (isCombinedSource(self.source)):
             for s in getSubSources(self.source):
                     filesource = testFolder+'/'+s
-                    configCmd = "%s --configure --source-property evolutionsource='file:///%s' %s %s" %(syncevo,filesource, fullConfigName, runSources[s]) 
+                    configCmd = "%s --configure --source-property evolutionsource='file:///%s' %s %s" %(syncevoTest, filesource, configName, runSources[s]) 
                     runCommand(configCmd)
             subSources = getSubSources(self.source)
             filesource = runSources[subSources[0]] +',' + runSources[subSources[1]]
-            configCmd = "%s --configure --source-property evolutionsource=%s %s %s" %(syncevo,filesource, fullConfigName, runSources[self.source]) 
+            configCmd = "%s --configure --source-property evolutionsource=%s %s %s" %(syncevoTest, filesource, configName, runSources[self.source]) 
             runCommand(configCmd)
 
         else:
             filesource = testFolder+'/'+self.source
-            configCmd = "%s --configure --source-property evolutionsource='file:///%s' %s %s" %(syncevo,filesource, fullConfigName, runSources[self.source]) 
+            configCmd = "%s --configure --source-property evolutionsource='file:///%s' %s %s" %(syncevoTest, filesource, configName, runSources[self.source]) 
             runCommand (configCmd)
 
-        configCmd = "%s --configure --sync-property logLevel=5 --sync-property SyncURL=obex-bt://%s --sync-property SyncMLVersion=%s %s" % (syncevo, self.btaddr,self.version, fullConfigName)
+        configCmd = "%s --configure --sync-property logLevel=5 --sync-property SyncURL=obex-bt://%s --sync-property SyncMLVersion=%s %s" % (syncevoTest, self.btaddr,self.version, configName)
         runCommand (configCmd)
 
         if (self.identifier):
-            configCmd = "%s --configure --sync-property remoteIdentifier='%s' %s" %(syncevo, self.identifier, fullConfigName)
+            configCmd = "%s --configure --sync-property remoteIdentifier='%s' %s" %(syncevoTest, self.identifier, configName)
             runCommand (configCmd)
 
         if (isCombinedSource(self.source)):
-            configCmd = "%s --configure --source-property type=%s --source-property uri=%s %s %s" %(syncevo, "virtual:"+self.type.partition(':')[0], self.uri, fullConfigName, runSources[self.source])
+            configCmd = "%s --configure --source-property type=%s --source-property uri=%s %s %s" %(syncevoTest, "virtual:"+self.type.partition(':')[0], self.uri, configName, runSources[self.source])
             runCommand (configCmd)
             for s in getSubSources(self.source):
-                configCmd = "%s --configure --source-property type=%s %s %s" %(syncevo, "file:"+self.type, fullConfigName, runSources[s])
+                configCmd = "%s --configure --source-property type=%s %s %s" %(syncevoTest, "file:"+self.type, configName, runSources[s])
                 runCommand (configCmd)
         else:
-            configCmd = "%s --configure --source-property type=%s --source-property uri=%s %s %s" %(syncevo, "file:"+self.type, self.uri, fullConfigName, runSources[self.source])
+            configCmd = "%s --configure --source-property type=%s --source-property uri=%s %s %s" %(syncevoTest, "file:"+self.type, self.uri, configName, runSources[self.source])
             runCommand (configCmd)
 
         """ start the sync session """
-        cmdPrefix="XDG_CACHE_HOME=%s " %(testResult)
         if (not self.ctcap):
             cmdPrefix += "SYNCEVOLUTION_NOCTCAP=t "
-        syncCmd = "%s %s %s" % (syncevo, fullConfigName, runSources[self.source])
-        (status,interrupt) = runSync (cmdPrefix+syncCmd)
+        syncCmd = " ".join((cmdPrefix, syncevoCmd, "--daemon=no", configName, runSources[self.source]))
+        (status,interrupt) = runSync(syncCmd)
         if (options.advanced and status and not interrupt):
             (status,interrupt)= self.advancedTestWithCurrentConfiguration(runSources)
         return (status, interrupt)
@@ -467,7 +466,6 @@ class TestingConfiguration():
         """ 
         Sending/receving real data for basic sanity test
         """
-        fullConfigName = configName +'@' + configContext
         sources = []
         if (isCombinedSource (self.source)):
             sources = getSubSources (self.source)
@@ -476,29 +474,30 @@ class TestingConfiguration():
 
         #step 1: clean the data both locally and remotely using a 'slow-sync' and 'two-way'
         clearLocalSyncData(sources)
-        cmdPrefix="XDG_CACHE_HOME=%s " % (testResult)
+        cmdPrefix="XDG_CACHE_HOME=%s XDG_CONFIG_HOME=%s " % (testResult, testConfig)
         if (not self.ctcap):
             cmdPrefix += "SYNCEVOLUTION_NOCTCAP=t "
-        syncCmd = "%s %s --sync slow %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
+        syncevoTest = "%s %s --daemon=no" % (cmdPrefix, syncevoCmd)
+        syncCmd = "%s --sync slow %s %s" % (syncevoTest, configName, runSources[self.source])
         status,interrupt = runSync(syncCmd)
         if (not status or interrupt):
             return (status, interrupt)
         clearLocalSyncData(sources)
-        syncCmd = "%s %s --sync two-way %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
+        syncCmd = "%s --sync two-way %s %s" % (syncevoTest, configName, runSources[self.source])
         status,interrupt = runSync(syncCmd)
         if (not status or interrupt):
             return (status, interrupt)
 
         #step 2: insert testcase to local data and sync with 'two-way'
         insertLocalSyncData(sources, self.type)
-        syncCmd = "%s %s --sync two-way %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
+        syncCmd = "%s --sync two-way %s %s" % (syncevoTest, configName, runSources[self.source])
         status,interrupt = runSync(syncCmd)
         if (not status or interrupt):
             return (status, interrupt)
 
         #step 3: delete local data and sync with 'slow-sync'
         clearLocalSyncData(sources)
-        syncCmd = "%s %s --sync slow %s %s" % (cmdPrefix, syncevo, fullConfigName, runSources[self.source])
+        syncCmd = "%s --sync slow %s %s" % (syncevoTest, configName, runSources[self.source])
         status,interrupt = runSync(syncCmd)
         if (not status or interrupt):
             return (status, interrupt)
@@ -558,11 +557,9 @@ class TestingConfiguration():
                                    break;
         if(interrupt):
             print "Test Interrupted"
-            self.cleanup()
             return 1
 
         print "Test Ended"
-        self.cleanup()
 
         #Test finished, print summary and generating configurations
         print "****************SUMMARY****************"
@@ -597,17 +594,17 @@ class TestingConfiguration():
             if (options.create):
                 #first remove the previous configuration if there is a configuration with the same name
                 create = options.create
-                cmd = "%s --remove '%s'" %(syncevo, create)
+                cmd = "%s --remove '%s'" %(syncevoCmd, create)
                 try:
                     runCommand (cmd)
                 except:
                     pass
                 #create the configuration based on the template
-                cmd = "%s -c -l %s %s" %(syncevo, templateName, create)
+                cmd = "%s -c -l %s %s" %(syncevoCmd, templateName, create)
                 runCommand (cmd)
                 #disable all sources by default
                 for source in self.allSources:
-                    cmd = "%s -c --source-property sync='disabled' %s %s" %(syncevo, create, self.getLocalSourceName(source))
+                    cmd = "%s -c --source-property sync='disabled' %s %s" %(syncevoCmd, create, self.getLocalSourceName(source))
                     runCommand(cmd)
 
                 syncCreated = False
@@ -615,14 +612,14 @@ class TestingConfiguration():
                     if (config):
                         if (not syncCreated):
                             #set the sync parameter
-                            cmd = "%s --configure --sync-property syncURL='obex-bt://%s' --sync-property remoteIdentifier='%s' --sync-property SyncMLVersion='%s' '%s'" %(syncevo, self.btaddr, config.identifier, config.version, create)
+                            cmd = "%s --configure --sync-property syncURL='obex-bt://%s' --sync-property remoteIdentifier='%s' --sync-property SyncMLVersion='%s' '%s'" %(syncevoCmd, self.btaddr, config.identifier, config.version, create)
                             syncCreated = True
                             runCommand (cmd)
                         #set each source parameter
                         ltype = config.type.split(':')[0]
                         if(isCombinedSource (config.source)):
                             ltype = 'virtual:'+ltype
-                        cmd = "%s --configure --source-property sync='two-way' --source-property URI='%s' --source-property type='%s' '%s' '%s'" %(syncevo, config.uri, ltype, create, self.getLocalSourceName(config.source))
+                        cmd = "%s --configure --source-property sync='two-way' --source-property URI='%s' --source-property type='%s' '%s' '%s'" %(syncevoCmd, config.uri, ltype, create, self.getLocalSourceName(config.source))
                         runCommand(cmd)
 
             if (options.template):
@@ -690,15 +687,6 @@ class TestingConfiguration():
                 print "Created configuration template %s" %(options.template)
                 print "It is located as folder %s in current directory" %(options.template)
 
-    def cleanup (self):
-        #remove configurations 
-        fullConfigName = configName +'@' + configContext
-        cleanCmd = '%s --remove "%s"' %(syncevo, fullConfigName,)
-        try:
-            runCommand (cleanCmd)
-        except:
-            pass
-
 def main():
     versions = []
     sources = []
@@ -727,8 +715,10 @@ def main():
     tmpdir = tempfile.mkdtemp(prefix="syncevo-phone-config")
     global testFolder
     global testResult
+    global testConfig
     testFolder = tmpdir+'/data'
     testResult = tmpdir+'/cache'
+    testConfig = tmpdir+'/config'
     print "Running test with test data inside %s and test results inside %s" %(testFolder, testResult)
     config.run()
 
