@@ -23,6 +23,8 @@ SyncEvolution.
 '''
 import sys, optparse, os, time, popen2, tempfile
 import shutil
+import ConfigParser
+import glob
 
 ########################### cmdline options ##########################################
 parser = optparse.OptionParser()
@@ -268,16 +270,36 @@ def runSync(sync):
     except:
         status = False
         pass
-    cmd = "find %s/syncevolution/ -name 'status.ini'" %(testResult)
-    fout,fin = popen2.popen2(cmd)
-    for line in fout:
-        resultFile = line.rpartition('\n')[0]
-    result = open(resultFile)
-    for line in result:
-        if (line.find ('status') != -1 and line.find('20015') != -1):
-            status = False
-            interrupt = True
-            break;
+
+    # session name is unknown, but we know there is only one, so let
+    # glob find it for us
+    resultFile = glob.glob("%s/syncevolution/*/status.ini"  % testResult)[0]
+
+    # inject [main] at start of file for ConfigParser,
+    # because SyncEvolution doesn't write sections
+    class IniFile:
+        def __init__(self, filename):
+            self.fp = open(filename, "r")
+            self.read = False
+        def readline(self):
+            if not self.read:
+                self.read = True
+                return "[main]"
+            else:
+                return self.fp.readline()
+
+    ini = ConfigParser.ConfigParser({"status": "0", "error": ""})
+    ini.readfp(IniFile(resultFile))
+    statuscode = ini.get("main", "status")
+    if statuscode == "20015":
+        # aborted by user, stop testing
+        status = False
+        interrupt = True
+    if statuscode == "22002":
+        # syncevolution failed (for example, kill -9), warn and abort
+        print "\nSyncEvolution binary died prematurely, aborting testing."
+        status = False
+        interrupt = True
     return (status, interrupt)
 
 # recursive directory removal, without throwing an error if directory does not exist
