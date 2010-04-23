@@ -22,6 +22,7 @@ Automatically trying different configurations for a phone to sync with
 SyncEvolution.
 '''
 import sys, optparse, os, time, popen2, tempfile
+import shutil
 
 ########################### cmdline options ##########################################
 parser = optparse.OptionParser()
@@ -113,11 +114,9 @@ def getSubSources (source):
 
 def clearLocalSyncData(sources):
     for source in sources:
-        sourceCmd = "rm -rf %s/%s; mkdir %s/%s" % (testFolder, source, testFolder, source)
-        try:
-            runCommand(sourceCmd)
-        except:
-            pass
+        dirname = "%s/%s" % (testFolder, source)
+        rm_r(dirname)
+        os.makedirs(dirname)
 
 def insertLocalSyncData(sources, type):
     for source in sources:
@@ -260,8 +259,7 @@ def runCommand(cmd, exception = True):
         raise Exception("%s: failed (return code %d)" % (cmd, result>>8))
 
 def runSync(sync):
-    cmd = "rm -rf %s/syncevolution" %(testResult)
-    runCommand (cmd)
+    rm_r("%s/syncevolution" % testResult)
     status = True
     interrupt = False
 
@@ -282,6 +280,10 @@ def runSync(sync):
             break;
     return (status, interrupt)
 
+# recursive directory removal, without throwing an error if directory does not exist
+def rm_r(dirname):
+    if os.path.isdir(dirname):
+        shutil.rmtree(dirname)
 
 ##############################TestConfiguration##################################
 class TestingConfiguration():
@@ -635,7 +637,8 @@ class TestingConfiguration():
                 description=''
                 templateini = "fingerprint = %s\ndescription = %s\n" %(fingerprint,description)
                 #write to directory
-                cmd = "rm -rf %s; mkdir %s; mkdir %s/sources" %(template,template,template)
+                shutil.rmdir(template)
+                os.makedirs("%s/sources" % template)
                 runCommand(cmd)
                 cmd = "echo '%s' >%s/config.ini; echo ''" %(configini, template)
                 runCommand(cmd)
