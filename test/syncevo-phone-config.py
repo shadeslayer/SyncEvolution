@@ -350,7 +350,7 @@ class TestingConfiguration():
             self.uris = {}
             self.uris['addressbook'] = ['Contact', 'contact', 'Contacts', 'contacts', 'Addressbook', 'addressbook']
             self.uris['calendar'] = ['Calendar', 'calendar', 'Agenda','agenda']
-            self.uris['todo'] = ['Task', 'task', 'Tasks', 'tasks', 'Todo','todo'] + self.uris['calendar']
+            self.uris['todo'] = self.uris['calendar'] + ['Task', 'task', 'Tasks', 'tasks', 'Todo','todo']
             self.uris['memo'] = ['Memo', 'memo', 'Notes', 'notes', 'Note', 'note']
 
         if (types):
