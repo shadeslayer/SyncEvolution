@@ -21,7 +21,7 @@
 Automatically trying different configurations for a phone to sync with
 SyncEvolution.
 '''
-import sys, optparse, os, time, popen2, tempfile
+import sys, optparse, os, time, tempfile
 import shutil
 import ConfigParser
 import glob
@@ -66,8 +66,8 @@ if not options.btaddr:
     parser.error ("Please provide the Bluetooth MAC address for the phone with -b/--bt-address.")
 if options.version and options.version not in allVersions:
     parser.error("Option -p/--protocol-version can only be one of " + "|".join(allVersions) + ".")
-if options.source and options.source not in allContacts:
-    parser.error("Option -s/--source can only be one of " + "|".join(allContacts) + ".")
+if options.source and options.source not in allSources:
+    parser.error("Option -s/--source can only be one of " + "|".join(allSources) + ".")
 if options.uri and not options.source:
     parser.error ("Option -u/--uri only works in combination with -s/--source.")
 if options.type and not options.source:
@@ -607,7 +607,7 @@ class TestingConfiguration():
                     cmd = "%s --configure --source-property sync='two-way' --source-property URI='%s' --source-property type='virtual:%s' '%s' calendar+todo" %(syncevoCmd, uri, ltype, create)
                     runCommand(cmd)
                     for source in ('calendar', 'todo'):
-                        cmd = "%s --configure --source-property sync='none' --source-property URI= '%s' calendar+todo" %(syncevoCmd, uri, create)
+                        cmd = "%s --configure --source-property sync='none' --source-property URI='%s' '%s' calendar+todo" %(syncevoCmd, uri, create)
                         runCommand(cmd)
 
 
@@ -645,7 +645,7 @@ class TestingConfiguration():
                     # disable the sub datasources
                     for source in ('calendar', 'todo'):
                         sourceConfigInis[source]["sync"] = "none"
-                        sourceConfigInis[source].remove("uri")
+                        sourceConfigInis[source].pop("uri")
 
                 # print template to stdout
                 sep = "--------------------> snip <--------------------"
