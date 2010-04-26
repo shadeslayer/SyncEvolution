@@ -360,6 +360,6 @@ extern "C" void EDSAbiWrapperInit()
 #endif // EVOLUTION_COMPATIBILITY
 }
 
-extern "C" const char *EDSAbiWrapperInfo() { return lookupInfo.c_str(); }
-extern "C" const char *EDSAbiWrapperDebug() { return lookupDebug.c_str(); }
+extern "C" const char *EDSAbiWrapperInfo() { EDSAbiWrapperInit(); return lookupInfo.c_str(); }
+extern "C" const char *EDSAbiWrapperDebug() { EDSAbiWrapperInit(); return lookupDebug.c_str(); }
 
