@@ -621,15 +621,14 @@ class TestingConfiguration():
 
                 configini = { "peerIsClient": "1" }
                 sourceConfigInis = {}
-                syncCreated = False
-                if (config.identifier):
-                    configini["remoteIdentifier"] = config.identifier
-                if (config.version != '1.2'):
-                    configini["SyncMLVersion"] = config.version
 
                 for source,config in self.wConfigs.items():
                     if(config):
                         sourceini = {}
+                        if (config.identifier):
+                            configini["remoteIdentifier"] = config.identifier
+                        if (config.version != '1.2'):
+                            configini["SyncMLVersion"] = config.version
                         sourceini["sync"] = "two-way"
                         sourceini["uri"] = config.uri
                         sourceini["type"] = "%s:%s" % (source, config.type.split(':')[0])
