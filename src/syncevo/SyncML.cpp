@@ -117,7 +117,7 @@ std::string GetLegacyMIMEType (const std::string &type, bool force) {
               ||boost::iequals (type, "text/x-calendar") || boost::iequals (type, "text/x-calendar:1.0")) {
         return "text/x-vcalendar";
     } else if (boost::iequals (type, "text/calendar") ||boost::iequals (type, "text/calendar:2.0")) {
-        return force ? "text/vcalendar" : "text/x-calendar";
+        return force ? "text/vcalendar" : "text/x-vcalendar";
     } else if (boost::iequals (type, "text/plain") ||boost::iequals (type, "text/plain:1.0")) {
         return "text/plain";
     } else {
