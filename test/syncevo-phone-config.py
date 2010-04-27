@@ -25,6 +25,7 @@ import sys, optparse, os, time, tempfile
 import shutil
 import ConfigParser
 import glob
+import os.path
 
 # source names as commonly used in SyncEvolution
 allSources = ['addressbook', 'calendar', 'todo', 'memo', 'calendar+todo']
@@ -127,116 +128,119 @@ def clearLocalSyncData(sources):
         rm_r(dirname)
         os.makedirs(dirname)
 
+def createFile(filename, content):
+    f = open(filename, "w")
+    f.write(content)
+
 def insertLocalSyncData(sources, type):
     for source in sources:
-        testcase = getTestCase (source, type)
-        cmd = "echo \"%s\" > %s/%s/0 ;echo 'insertLocalSyncData'" % (testcase, testFolder, source)
-        runCommand(cmd)
+        testcase, keys = getTestCase (source, type)
+        createFile(os.path.join(testFolder, source, "0"), testcase)
 
 def getTestCase(source, type):
-    if (source == 'addressbook' and (type == 'text/vcard:3.0' or type == 'text/vcard')):
-        return  "BEGIN:VCARD\n"\
-        +"VERSION:3.0\n"\
-        +"TITLE:tester\n"\
-        +"FN:John Doe\n"\
-        +"N:Doe;John;;;\n"\
-        +"TEL;TYPE=WORK;TYPE=VOICE:business 1\n"\
-        +"X-EVOLUTION-FILE-AS:Doe\\, John\n"\
-        +"X-MOZILLA-HTML:FALSE\n"\
-        +"NOTE:test-phone\n"\
-        +"END:VCARD\n"
-    if (source == 'addressbook' and (type == 'text/x-vcard:2.1' or type == 'text/x-vcard')):
-        return "BEGIN:VCARD\n"\
-        +"VERSION:2.1\n"\
-        +"TITLE:tester\n"\
-        +"FN:John Doe\n"\
-        +"N:Doe;John;;;\n"\
-        +"TEL;TYPE=WORK;TYPE=VOICE:business 1\n"\
-        +"X-MOZILLA-HTML:FALSE\n"\
-        +"NOTE:REVISION\n"\
-        +"END:VCARD\n"
-    if (source == 'calendar' and (type == 'text/calendar:2.0' or type == 'text/calendar')):
-        return "BEGIN:VCALENDAR\n"\
-        +"PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"\
-        +"VERSION:2.0\n"\
-        +"METHOD:PUBLISH\n"\
-        +"BEGIN:VEVENT\n"\
-        +"SUMMARY:phone meeting\n"\
-        +"DTEND:20060406T163000Z\n"\
-        +"DTSTART:20060406T160000Z\n"\
-        +"DTSTAMP:20060406T211449Z\n"\
-        +"LAST-MODIFIED:20060409T213201\n"\
-        +"CREATED:20060409T213201\n"\
-        +"LOCATION:my office\n"\
-        +"DESCRIPTION:let's talkREVISION\n"\
-        +"END:VEVENT\n"\
-        +"END:VCALENDAR\n"
-    if (source == 'calendar' and (type =='text/x-vcalendar:1.0' or type == 'text/x-vcalendar')):
-        return "BEGIN:VCALENDAR\n"\
-        +"VERSION:1.0\n"\
-        +"BEGIN:VEVENT\n"\
-        +"SUMMARY:phone meeting\n"\
-        +"DTEND:20060406T163000Z\n"\
-        +"DTSTART:20060406T160000Z\n"\
-        +"DTSTAMP:20060406T211449Z\n"\
-        +"LOCATION:my office\n"\
-        +"DESCRIPTION:let's talkREVISION\n"\
-        +"END:VEVENT\n"\
-        +"END:VCALENDAR\n"
-    if (source == 'todo' and (type == 'text/calendar:2.0' or type == 'text/calendar')):
-        return "BEGIN:VCALENDAR\n"\
-        +"PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"\
-        +"VERSION:2.0\n"\
-        +"METHOD:PUBLISH\n"\
-        +"BEGIN:VTODO\n"\
-        +"DTSTAMP:20060417T173712Z\n"\
-        +"SUMMARY:do me\n"\
-        +"DESCRIPTION:to be doneREVISION\n"\
-        +"CREATED:20060417T173712\n"\
-        +"LAST-MODIFIED:20060417T173712\n"\
-        +"END:VTODO\n"\
-        +"END:VCALENDAR\n"
-    if (source == 'todo' and (type == 'text/x-vcalendar:1.0' or type == 'text/x-vcalendar')):
-        return "BEGIN:VCALENDAR\n"\
-        +"PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"\
-        +"VERSION:1.0\n"\
-        +"METHOD:PUBLISH\n"\
-        +"BEGIN:VTODO\n"\
-        +"DTSTAMP:20060417T173712Z\n"\
-        +"SUMMARY:do me\n"\
-        +"DESCRIPTION:to be doneREVISION\n"\
-        +"CREATED:20060417T173712\n"\
-        +"LAST-MODIFIED:20060417T173712\n"\
-        +"END:VTODO\n"\
-        +"END:VCALENDAR\n"
-    if (source == 'memo'):
-        return "SUMMARY\n"\
-        +"BODY TEXT\n"
-    return ""
+    """Returns a pair of test item string plus a list of sub strings
+    which are expected to come back from the phone. Type comparison is
+    intentionally a bit vague, so that it doesn't matter whether the
+    type contains a version or a ! force flag."""
+    if source == 'addressbook' and type.startswith('text/vcard'):
+        return  ("BEGIN:VCARD\n"
+                 "VERSION:3.0\n"
+                 "TITLE:tester\n"
+                 "FN:John Doe\n"
+                 "N:Doe;John;;;\n"
+                 "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
+                 "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+                 "X-MOZILLA-HTML:FALSE\n"
+                 "NOTE:test-phone\n"
+                 "END:VCARD\n",
+                 ["VCARD", "TITLE:tester", "Doe", "John"])
 
-# Get the keyword to be matched with for each test case
-def getTestCaseKeywords(source, type):
-    if (source == 'addressbook' and (type == 'text/vcard:3.0' or type == 'text/vcard')):
-        return ["VCARD", "TITLE:tester", "Doe", "John"] 
-    if (source == 'addressbook' and (type == 'text/x-vcard:2.1' or type == 'text/x-vcard')):
-        return ["VCARD", "TITLE:tester", "Doe", "John"]
-    if (source == 'calendar' and (type == 'text/calendar:2.0' or type == 'text/calendar')):
-        return ["VCALENDAR", "VEVENT", "phone meeting", "my office"]
-    if (source == 'calendar' and (type =='text/x-vcalendar:1.0' or type == 'text/x-vcalendar')):
-        return ["VCALENDAR", "VEVENT", "phone meeting", "my office"]
-    if (source == 'todo' and (type == 'text/calendar:2.0' or type == 'text/calendar')):
-        return ["VCALENDAR", "VTODO", "do me"]
-    if (source == 'todo' and (type == 'text/x-vcalendar:1.0' or type == 'text/x-vcalendar')):
-        return ["VCALENDAR", "VTODO", "do me"]
-    if (source == 'memo'):
-        return ["SUMMARY"]
-    return ""
+    if source == 'addressbook' and type.startswith('text/x-vcard'):
+        return ("BEGIN:VCARD\n"
+                "VERSION:2.1\n"
+                "TITLE:tester\n"
+                "FN:John Doe\n"
+                "N:Doe;John;;;\n"
+                "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
+                "X-MOZILLA-HTML:FALSE\n"
+                "NOTE:REVISION\n"
+                "END:VCARD\n",
+                ["VCARD", "TITLE:tester", "Doe", "John"])
+
+    if source == 'calendar' and type.startswith('text/calendar'):
+        return ("BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VEVENT\n"
+                "SUMMARY:phone meeting\n"
+                "DTEND:20060406T163000Z\n"
+                "DTSTART:20060406T160000Z\n"
+                "DTSTAMP:20060406T211449Z\n"
+                "LAST-MODIFIED:20060409T213201\n"
+                "CREATED:20060409T213201\n"
+                "LOCATION:my office\n"
+                "DESCRIPTION:let's talkREVISION\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n",
+                ["VCALENDAR", "VEVENT", "phone meeting", "my office"])
+
+    if source == 'calendar' and type.startswith('text/x-vcalendar'):
+        return ("BEGIN:VCALENDAR\n"
+                "VERSION:1.0\n"
+                "BEGIN:VEVENT\n"
+                "SUMMARY:phone meeting\n"
+                "DTEND:20060406T163000Z\n"
+                "DTSTART:20060406T160000Z\n"
+                "DTSTAMP:20060406T211449Z\n"
+                "LOCATION:my office\n"
+                "DESCRIPTION:let's talkREVISION\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n",
+               ["VCALENDAR", "VEVENT", "phone meeting", "my office"])
+ 
+    if source == 'todo' and type.startswith('text/calendar'):
+        return ("BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VTODO\n"
+                "DTSTAMP:20060417T173712Z\n"
+                "SUMMARY:do me\n"
+                "DESCRIPTION:to be doneREVISION\n"
+                "CREATED:20060417T173712\n"
+                "LAST-MODIFIED:20060417T173712\n"
+                "END:VTODO\n"
+                "END:VCALENDAR\n",
+                ["VCALENDAR", "VTODO", "do me"]) 
+
+    if source == 'todo' and type.startswith('text/x-vcalendar'):
+        return ("BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:1.0\n"
+                "METHOD:PUBLISH\n"
+                "BEGIN:VTODO\n"
+                "DTSTAMP:20060417T173712Z\n"
+                "SUMMARY:do me\n"
+                "DESCRIPTION:to be doneREVISION\n"
+                "CREATED:20060417T173712\n"
+                "LAST-MODIFIED:20060417T173712\n"
+                "END:VTODO\n"
+                "END:VCALENDAR\n",
+                ["VCALENDAR", "VTODO", "do me"])
+
+    if source == 'memo':
+        return ("Summary Line\n"
+                "BODY TEXT\n",
+                ["Summary Line"])
+
+    raise "no test data defined for source %s and type %s" % (source, type)
 
 # Compare the received data with the sent data, we only match selected keywords in received
 # data for a basic sanity test
 def compareSyncData(sources, type):
     for source in sources:
-        testcase = getTestCase (source, type)
+        testcase, keys  = getTestCase (source, type)
         received = ''
         recFile = "%s/%s/0" %(testFolder, source)
         try:
@@ -244,7 +248,6 @@ def compareSyncData(sources, type):
             received = rf.read()
         except:
             return False
-        keys = getTestCaseKeywords(source, type)
         if (options.verbose > 1):
             print "comparing received file:"
             print received
@@ -321,6 +324,13 @@ def hash2ini(hash):
         res.append("%s = %s" % (key, value))
     return "\n".join(res)
 
+def strip_version(type):
+    """turn type[:version][!] into type[!]"""
+    res = type.split(':')[0]
+    if type.endswith('!'):
+        res += '!'
+    return res
+
 ##############################TestConfiguration##################################
 class TestingConfiguration():
     def __init__(self, versions, sources, uris, types, ctcaps, identifiers, btaddr):
@@ -356,9 +366,13 @@ class TestingConfiguration():
         if (types):
             self.types = types
         else:
+            # - must include version numbers because file backend needs them
+            # - current types like 'text/vcard:3.0' are "downgraded" to the
+            #   legacy types when sending a SAN, so they are basically identical;
+            #   to really send a SAN with these current types, we have to "force" them
             self.types = {}
-            self.types['addressbook'] = ['text/vcard:3.0', 'text/x-vcard:2.1']
-            self.types['calendar'] = self.types['todo'] = ['text/calendar:2.0', 'text/x-vcalendar:1.0']
+            self.types['addressbook'] = ['text/vcard:3.0', 'text/x-vcard:2.1', 'text/vcard:3.0!']
+            self.types['calendar'] = self.types['todo'] = ['text/calendar:2.0', 'text/x-vcalendar:1.0', 'text/calendar:2.0!']
             self.types['memo'] = ['text/plain:1.0']
 
         if (ctcaps):
@@ -434,7 +448,7 @@ class TestingConfiguration():
             configCmd = "%s --configure --sync-property remoteIdentifier='%s' %s" %(syncevoTest, self.identifier, configName)
             runCommand (configCmd)
 
-        configCmd = "%s --configure --source-property type=%s --source-property uri=%s %s %s" %(syncevoTest, "file:"+self.type, self.uri, configName, self.source)
+        configCmd = "%s --configure --source-property 'type=file:%s' --source-property uri=%s %s %s" %(syncevoTest, self.type, self.uri, configName, self.source)
         runCommand (configCmd)
 
         """ start the sync session """
@@ -598,11 +612,11 @@ class TestingConfiguration():
                             syncCreated = True
                             runCommand (cmd)
                         #set each source parameter
-                        ltype = config.type.split(':')[0]
+                        ltype = strip_version(config.type)
                         cmd = "%s --configure --source-property sync='two-way' --source-property URI='%s' --source-property type='%s:%s' '%s' '%s'" %(syncevoCmd, config.uri, source, ltype, create, config.source)
                         runCommand(cmd)
                 if have_combined:
-                    ltype = self.wConfigs['calendar'].type.split(':')[0]
+                    ltype = strip_version(self.wConfigs['calendar'].type)
                     uri = self.wConfigs['calendar'].uri
                     cmd = "%s --configure --source-property sync='two-way' --source-property URI='%s' --source-property type='virtual:%s' '%s' calendar+todo" %(syncevoCmd, uri, ltype, create)
                     runCommand(cmd)
@@ -631,7 +645,7 @@ class TestingConfiguration():
                             configini["SyncMLVersion"] = config.version
                         sourceini["sync"] = "two-way"
                         sourceini["uri"] = config.uri
-                        sourceini["type"] = "%s:%s" % (source, config.type.split(':')[0])
+                        sourceini["type"] = "%s:%s" % (source, strip_version(config.type))
                         sourceConfigInis[source] = sourceini
 
                 # create 'calendar+todo' entry, disable separate 'calendar' and 'todo'?
@@ -639,7 +653,7 @@ class TestingConfiguration():
                     sourceini = {}
                     sourceini["evolutionsource"] = "calendar,todo"
                     sourceini["uri"] = self.wConfigs['calendar'].uri
-                    sourceini["type"] = "virtual:%s" % self.wConfigs['calendar'].type.split(':')[0]
+                    sourceini["type"] = "virtual:%s" % strip_version(self.wConfigs['calendar'].type)
                     sourceConfigInis['calendar+todo'] = sourceini
                     # disable the sub datasources
                     for source in ('calendar', 'todo'):
