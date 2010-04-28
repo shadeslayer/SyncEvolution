@@ -491,6 +491,20 @@ AC_ARG_WITH(rst2man,
             [AC_PATH_PROG(RST2MAN, rst2man, "no")])
 AM_CONDITIONAL([COND_MAN_PAGES], [test "$RST2MAN" != "no"])
 
+# need rst2html for HTML version of README
+AC_ARG_WITH(rst2html,
+            AS_HELP_STRING([--with-rst2html=<path to reStructuredText to HTML converter>],
+                           [Specifies an explicit path to the utility if not found in PATH.
+                            An explicit --without-rst2html or not having it installed turn off
+                            building of README in HTML format.]),
+            [RST2HTML=$withval
+             if test "$RST2HTML" == "yes"; then
+                 AC_PATH_PROG(RST2HTML, rst2html, "no")
+             fi
+             test "$RST2HTML" == "no" || test -x "$RST2HTML" || AC_ERROR([--with-rst2html=$RST2HTML: tool not found])],
+            [AC_PATH_PROG(RST2HTML, rst2html, "no")])
+AM_CONDITIONAL([COND_HTML_README], [test "$RST2HTML" != "no"])
+
 # absolute patch to source of Synthesis client library
 SYNTHESIS_SRC=no-synthesis-source
 AC_SUBST(SYNTHESIS_SRC)
