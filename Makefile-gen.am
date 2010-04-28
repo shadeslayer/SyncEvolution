@@ -2,11 +2,15 @@
 
 ACLOCAL_AMFLAGS = -I m4 -I m4-repo
 
+man_MANS =
 dist_doc_DATA =
 SUBDIRS = src
 if COND_CORE
 SUBDIRS += po test
 dist_doc_DATA += README NEWS COPYING $(TEST_README_FILES)
+if COND_MAN_PAGES
+man_MANS += syncevolution.1
+endif
 endif
 DIST_SUBDIRS = src po test
 
@@ -14,6 +18,7 @@ EXTRA_DIST = \
 	HACKING \
 	LICENSE.txt \
 	LICENSE.LGPL-21 \
+        README.rst \
 	description \
 	configure-pre.in \
 	configure-post.in \
@@ -43,7 +48,7 @@ distbin : README NEWS COPYING $(TEST_README_FILES) INSTALL-tar-gz all
 	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
 	mkdir -p $(distdir)/usr/share/doc/syncevolution
 	cp $(srcdir)/INSTALL-tar-gz $(distdir)/INSTALL
-	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)/usr/share/doc/syncevolution
+	cp README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)/usr/share/doc/syncevolution
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
 else
@@ -56,7 +61,7 @@ distbin : README NEWS COPYING all
 	echo removing developer files and empty directories
 	rm -rf $(call DEV_FILE_PATTERN,$(distdir),/)
 	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
-	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)
+	cp README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
 endif
@@ -212,3 +217,17 @@ installcheck-local:
 		fi \
 	done
 endif
+
+# patch README.rst properties on-the-fly with sed expressions
+PATCH_README = -e "s/^:Version: .*/:Version: $(VERSION)/" -e "s/:Date: .*/:Date: `date +%Y-%m-%d`/"
+
+# produce man pages
+syncevolution.1: README.rst
+	sed $(PATCH_README) $< | $(RST2MAN) --exit-status=3 - >$@
+CLEANFILES += syncevolution.1
+
+# README is the traditional name in the distribution,
+# continue using it instead of README.rst.
+README: README.rst
+	sed $(PATCH_README) $< >$@
+CLEANFILES += README

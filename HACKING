@@ -1,3 +1,77 @@
+Compiling from Source
+---------------------
+
+To compile the code the source or an installation of the Synthesis
+SyncML engine is needed. A compatible snapshot of it is included in
+SyncEvolution source packages and will be used automatically.
+The section _`Checking out the source` explains how to work
+with sources obtained via the git repositories.
+
+Also needed are the Evolution and Boost (>= 1.35) development
+files. For HTTP, either Curl or libsoup can be used.
+
+On Debian based systems the required packages can be installed with
+   apt-get install evolution-data-server-dev \
+                   libecal1.2-dev libebook1.2-dev \
+                   libsoup2.4-dev \
+                   libboost-dev
+
+libboost-dev >= 1.34, available as libboost1.35-dev backport for Debian Etch.
+
+Necessary on some distros due to bad dependencies (not needed by SyncEvolution itself):
+   apt-get install libdb3-dev
+
+Optional (enables reading proxy settings from GNOME preferences):
+   apt-get install libsoup-gnome2.4-dev
+
+Optional (enables direct sync with phones):
+   apt-get install libopenobex-dev libbluetooth-dev
+
+Optional (only used for SHA-256 when glib is not already a dependency):
+   apt-get install libnss3-dev
+
+For compiling libsynthesis:
+   apt-get install libpcre3-dev libsqlite3-dev libexpat-dev libz-dev
+
+This was copied from the libsynthesis README.
+
+The test framework also requires CPPUnit:
+   apt-get install libcppunit-dev
+
+For the GUI and its D-Bus based service backend:
+   apt-get install libdbus-glib-1-dev \
+                   xsltproc \
+                   libglib2.0-dev \
+                   libgtk2.0-dev libglade2-dev \
+                   libgnome-keyring-dev \
+                   libgconf2-dev libgnomevfs2-dev
+
+Optional packages for GUI:
+   apt-get install libunique-dev
+
+libunique = ensure that GTK GUI only runs once per user
+
+Optional packages for GNOME Bluetooth Panel plugin:
+   apt-get install libgnome-bluetooth-dev
+
+The plugin adds a button to invoke sync-UI after a device
+was paired which supports SyncML.
+
+The build system is the normal autotools system. See INSTALL for
+general instructions how to use that and "./configure --help" for
+SyncEvolution specific options.
+
+Note that compiling without the Evolution development files is
+possible. But because this is usually not what people want,
+the configure script needs explicit --disable-ecal --disable-ebook
+parameters, otherwise it will refuse to compile without Evolution
+support.
+
+When compiling from a git checkout, remember to run "./autogen.sh".
+It depends on:
+  apt-get install libtool intltool automake
+
+
 Checking out the Source
 -----------------------
 

@@ -477,6 +477,20 @@ AC_SUBST(GUI_DESKTOP_FILES)
 # as Debian Etch backport.
 AX_BOOST_BASE(1.34)
 
+# need rst2man for man pages
+AC_ARG_WITH(rst2man,
+            AS_HELP_STRING([--with-rst2man=<path to reStructuredText to man converter>],
+                           [Specifies an explicit path to the utility if not found in PATH.
+                            An explicit --without-rst2man or not having it installed turn off
+                            building of man pages.]),
+            [RST2MAN=$withval
+             if test "$RST2MAN" == "yes"; then
+                 AC_PATH_PROG(RST2MAN, rst2man, "no")
+             fi
+             test "$RST2MAN" == "no" || test -x "$RST2MAN" || AC_ERROR([--with-rst2man=$RST2MAN: tool not found])],
+            [AC_PATH_PROG(RST2MAN, rst2man, "no")])
+AM_CONDITIONAL([COND_MAN_PAGES], [test "$RST2MAN" != "no"])
+
 # absolute patch to source of Synthesis client library
 SYNTHESIS_SRC=no-synthesis-source
 AC_SUBST(SYNTHESIS_SRC)
