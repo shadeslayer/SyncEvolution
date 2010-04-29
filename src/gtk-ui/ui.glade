@@ -805,463 +805,480 @@ you can setup a service manually.</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">none</property>
             <child>
-              <widget class="GtkHBox" id="hbox16">
+              <widget class="GtkScrolledWindow" id="emergency_scrolledwindow">
                 <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="hscrollbar_policy">never</property>
+                <property name="vscrollbar_policy">automatic</property>
                 <child>
-                  <widget class="GtkVBox" id="vbox20">
+                  <widget class="GtkViewport" id="emergency_viewport">
                     <property name="visible">True</property>
-                    <property name="orientation">vertical</property>
-                    <property name="spacing">8</property>
+                    <property name="resize_mode">queue</property>
                     <child>
-                      <widget class="GtkVBox" id="vbox39">
+                      <widget class="GtkHBox" id="hbox16">
                         <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">8</property>
                         <child>
-                          <widget class="GtkLabel" id="emergency_label">
-                            <property name="width_request">800</property>
+                          <widget class="GtkVBox" id="vbox20">
                             <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="label">If something has gone horribly wrong you can try a slow sync, start from scratch or restore from backup.</property>
-                            <property name="wrap">True</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkExpander" id="emergency_expander">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">8</property>
                             <child>
-                              <widget class="GtkAlignment" id="alignment19">
-                                <property name="visible">True</property>
-                                <property name="yscale">0</property>
-                                <property name="left_padding">20</property>
-                                <child>
-                                  <widget class="GtkTable" id="emergency_source_table">
-                                    <property name="visible">True</property>
-                                    <property name="n_rows">2</property>
-                                    <child>
-                                      <widget class="GtkCheckButton" id="checkbutton2">
-                                        <property name="label" translatable="yes">Calendar</property>
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <property name="receives_default">False</property>
-                                        <property name="draw_indicator">True</property>
-                                      </widget>
-                                    </child>
-                                    <child>
-                                      <widget class="GtkCheckButton" id="checkbutton3">
-                                        <property name="label" translatable="yes">Tasks</property>
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">True</property>
-                                        <property name="receives_default">False</property>
-                                        <property name="draw_indicator">True</property>
-                                      </widget>
-                                      <packing>
-                                        <property name="top_attach">1</property>
-                                        <property name="bottom_attach">2</property>
-                                      </packing>
-                                    </child>
-                                  </widget>
-                                </child>
-                              </widget>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="emergency_expander_label">
-                                <property name="visible">True</property>
-                                <property name="label">Affected data:</property>
-                              </widget>
-                              <packing>
-                                <property name="type">label_item</property>
-                              </packing>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="padding">8</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkVBox" id="slow_sync_box">
-                        <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">5</property>
-                        <child>
-                          <widget class="GtkLabel" id="slow_sync_label">
-                            <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Slow sync&lt;/big&gt;</property>
-                            <property name="use_markup">True</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkAlignment" id="alignment4">
-                            <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="yalign">0</property>
-                            <property name="xscale">0</property>
-                            <property name="left_padding">40</property>
-                            <property name="right_padding">40</property>
-                            <child>
-                              <widget class="GtkHBox" id="hbox19">
-                                <property name="visible">True</property>
-                                <property name="spacing">6</property>
-                                <child>
-                                  <widget class="GtkButton" id="slow_sync_btn">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <child>
-                                      <widget class="GtkLabel" id="slow_sync_btn_label">
-                                        <property name="visible">True</property>
-                                        <property name="xpad">16</property>
-                                        <property name="label" translatable="yes">Slow sync</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkLabel" id="slow_sync_explanation_label">
-                                    <property name="visible">True</property>
-                                    <property name="xpad">8</property>
-                                    <property name="label" translatable="yes">A slow sync compares items from both sides and tries to merge them. 
-This may fail in some cases, leading to duplicates or lost information.</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="padding">8</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkVBox" id="vbox1">
-                        <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">5</property>
-                        <child>
-                          <widget class="GtkLabel" id="label14">
-                            <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Start from scratch&lt;/big&gt;</property>
-                            <property name="use_markup">True</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkAlignment" id="alignment3">
-                            <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="yalign">0</property>
-                            <property name="xscale">0</property>
-                            <property name="left_padding">40</property>
-                            <property name="right_padding">40</property>
-                            <child>
-                              <widget class="GtkHBox" id="hbox13">
-                                <property name="visible">True</property>
-                                <child>
-                                  <widget class="GtkButton" id="refresh_from_server_btn">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <child>
-                                      <widget class="GtkLabel" id="refresh_from_server_btn_label">
-                                        <property name="visible">True</property>
-                                        <property name="xpad">16</property>
-                                        <property name="label" translatable="yes">Delete all your local
-information and replace
-with data from Zyb</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkLabel" id="label4">
-                                    <property name="visible">True</property>
-                                    <property name="xpad">15</property>
-                                    <property name="label" translatable="yes" comments="text between the two &quot;start from scratch&quot; buttons in emergency view">&lt;b&gt;or&lt;/b&gt;</property>
-                                    <property name="use_markup">True</property>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">False</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <widget class="GtkButton" id="refresh_from_client_btn">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <child>
-                                      <widget class="GtkLabel" id="refresh_from_client_btn_label">
-                                        <property name="visible">True</property>
-                                        <property name="xpad">16</property>
-                                        <property name="label" translatable="yes">Delete all data on Zyb 
-and replace with your
-local information</property>
-                                      </widget>
-                                    </child>
-                                  </widget>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="position">2</property>
-                                  </packing>
-                                </child>
-                              </widget>
-                            </child>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </widget>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="padding">8</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <widget class="GtkVBox" id="vbox21">
-                        <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">5</property>
-                        <child>
-                          <widget class="GtkLabel" id="label9">
-                            <property name="visible">True</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Restore from backup&lt;/big&gt;</property>
-                            <property name="use_markup">True</property>
-                          </widget>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <widget class="GtkAlignment" id="alignment2">
-                            <property name="visible">True</property>
-                            <property name="resize_mode">queue</property>
-                            <property name="left_padding">40</property>
-                            <property name="right_padding">40</property>
-                            <child>
-                              <widget class="GtkVBox" id="vbox22">
+                              <widget class="GtkVBox" id="vbox39">
                                 <property name="visible">True</property>
                                 <property name="orientation">vertical</property>
+                                <property name="spacing">8</property>
                                 <child>
-                                  <widget class="GtkLabel" id="label12">
+                                  <widget class="GtkLabel" id="emergency_label">
                                     <property name="width_request">800</property>
                                     <property name="visible">True</property>
                                     <property name="xalign">0</property>
-                                    <property name="label" translatable="yes" comments="explanation of &quot;Restore backup&quot; function">Backups are made before every time we Sync. Choose a backup to restore. Any changes you have made since then will be lost.</property>
+                                    <property name="label">If something has gone horribly wrong you can try a slow sync, start from scratch or restore from backup.</property>
                                     <property name="wrap">True</property>
                                   </widget>
                                   <packing>
                                     <property name="expand">False</property>
-                                    <property name="fill">False</property>
                                     <property name="position">0</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <widget class="GtkScrolledWindow" id="scrolledwindow1">
+                                  <widget class="GtkExpander" id="emergency_expander">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
-                                    <property name="hscrollbar_policy">automatic</property>
-                                    <property name="vscrollbar_policy">automatic</property>
                                     <child>
-                                      <widget class="GtkViewport" id="backup_viewport">
+                                      <widget class="GtkAlignment" id="alignment19">
                                         <property name="visible">True</property>
-                                        <property name="resize_mode">queue</property>
+                                        <property name="yscale">0</property>
+                                        <property name="left_padding">20</property>
                                         <child>
-                                          <widget class="GtkTable" id="emergency_backup_table">
+                                          <widget class="GtkTable" id="emergency_source_table">
                                             <property name="visible">True</property>
-                                            <property name="n_rows">10</property>
-                                            <property name="n_columns">2</property>
-                                            <property name="row_spacing">16</property>
+                                            <property name="n_rows">2</property>
                                             <child>
-                                              <widget class="GtkLabel" id="label59">
+                                              <widget class="GtkCheckButton" id="checkbutton2">
+                                                <property name="label" translatable="yes">Calendar</property>
                                                 <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="ypad">5</property>
-                                                <property name="label">Backup before syncing Dec 5th 2009 16:35</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="receives_default">False</property>
+                                                <property name="draw_indicator">True</property>
                                               </widget>
-                                              <packing>
-                                                <property name="top_attach">2</property>
-                                                <property name="bottom_attach">3</property>
-                                                <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options">GTK_FILL</property>
-                                              </packing>
                                             </child>
                                             <child>
-                                              <widget class="GtkLabel" id="label69">
+                                              <widget class="GtkCheckButton" id="checkbutton3">
+                                                <property name="label" translatable="yes">Tasks</property>
                                                 <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="ypad">5</property>
-                                                <property name="label">Backup before syncing Dec 5th 2009 13:35</property>
-                                              </widget>
-                                              <packing>
-                                                <property name="top_attach">3</property>
-                                                <property name="bottom_attach">4</property>
-                                                <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options">GTK_FILL</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <widget class="GtkLabel" id="label79">
-                                                <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="ypad">5</property>
-                                                <property name="label">Backup before syncing Dec 5th 2009 11:35</property>
-                                              </widget>
-                                              <packing>
-                                                <property name="top_attach">4</property>
-                                                <property name="bottom_attach">5</property>
-                                                <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options">GTK_FILL</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <widget class="GtkLabel" id="label89">
-                                                <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="ypad">5</property>
-                                                <property name="label">Backup before syncing Dec 3rd</property>
-                                              </widget>
-                                              <packing>
-                                                <property name="top_attach">5</property>
-                                                <property name="bottom_attach">6</property>
-                                                <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options">GTK_FILL</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <widget class="GtkLabel" id="label109">
-                                                <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="ypad">5</property>
-                                                <property name="label">Backup before syncing Dec 1st</property>
-                                              </widget>
-                                              <packing>
-                                                <property name="top_attach">6</property>
-                                                <property name="bottom_attach">7</property>
-                                                <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options">GTK_FILL</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <widget class="GtkLabel" id="label29">
-                                                <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="ypad">5</property>
-                                                <property name="label">Backup before syncing yesterday</property>
+                                                <property name="can_focus">True</property>
+                                                <property name="receives_default">False</property>
+                                                <property name="draw_indicator">True</property>
                                               </widget>
                                               <packing>
                                                 <property name="top_attach">1</property>
                                                 <property name="bottom_attach">2</property>
-                                                <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options">GTK_FILL</property>
                                               </packing>
-                                            </child>
-                                            <child>
-                                              <widget class="GtkLabel" id="label30">
-                                                <property name="visible">True</property>
-                                                <property name="xalign">0</property>
-                                                <property name="ypad">5</property>
-                                                <property name="label">Backup before syncing two hours ago</property>
-                                              </widget>
-                                              <packing>
-                                                <property name="y_options">GTK_FILL</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <widget class="GtkButton" id="button1">
-                                                <property name="label">Restore</property>
-                                                <property name="visible">True</property>
-                                                <property name="can_focus">True</property>
-                                                <property name="receives_default">True</property>
-                                              </widget>
-                                              <packing>
-                                                <property name="left_attach">1</property>
-                                                <property name="right_attach">2</property>
-                                                <property name="x_options">GTK_FILL</property>
-                                                <property name="y_options">GTK_FILL</property>
-                                                <property name="x_padding">16</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
                                             </child>
                                           </widget>
+                                        </child>
+                                      </widget>
+                                    </child>
+                                    <child>
+                                      <widget class="GtkLabel" id="emergency_expander_label">
+                                        <property name="visible">True</property>
+                                        <property name="label">Affected data:</property>
+                                      </widget>
+                                      <packing>
+                                        <property name="type">label_item</property>
+                                      </packing>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="padding">8</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkVBox" id="slow_sync_box">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">5</property>
+                                <child>
+                                  <widget class="GtkLabel" id="slow_sync_label">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                    <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Slow sync&lt;/big&gt;</property>
+                                    <property name="use_markup">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkAlignment" id="alignment4">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                    <property name="yalign">0</property>
+                                    <property name="xscale">0</property>
+                                    <property name="left_padding">40</property>
+                                    <property name="right_padding">40</property>
+                                    <child>
+                                      <widget class="GtkHBox" id="hbox19">
+                                        <property name="visible">True</property>
+                                        <property name="spacing">6</property>
+                                        <child>
+                                          <widget class="GtkButton" id="slow_sync_btn">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">True</property>
+                                            <property name="receives_default">True</property>
+                                            <child>
+                                              <widget class="GtkLabel" id="slow_sync_btn_label">
+                                                <property name="visible">True</property>
+                                                <property name="xpad">16</property>
+                                                <property name="label" translatable="yes">Slow sync</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                          <packing>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="slow_sync_explanation_label">
+                                            <property name="visible">True</property>
+                                            <property name="xpad">8</property>
+                                            <property name="label" translatable="yes">A slow sync compares items from both sides and tries to merge them. 
+This may fail in some cases, leading to duplicates or lost information.</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="padding">8</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkVBox" id="vbox1">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">5</property>
+                                <child>
+                                  <widget class="GtkLabel" id="label14">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                    <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Start from scratch&lt;/big&gt;</property>
+                                    <property name="use_markup">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkAlignment" id="alignment3">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                    <property name="yalign">0</property>
+                                    <property name="xscale">0</property>
+                                    <property name="left_padding">40</property>
+                                    <property name="right_padding">40</property>
+                                    <child>
+                                      <widget class="GtkHBox" id="hbox13">
+                                        <property name="visible">True</property>
+                                        <child>
+                                          <widget class="GtkButton" id="refresh_from_server_btn">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">True</property>
+                                            <property name="receives_default">True</property>
+                                            <child>
+                                              <widget class="GtkLabel" id="refresh_from_server_btn_label">
+                                                <property name="visible">True</property>
+                                                <property name="xpad">16</property>
+                                                <property name="label" translatable="yes">Delete all your local
+information and replace
+with data from Zyb</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkLabel" id="label4">
+                                            <property name="visible">True</property>
+                                            <property name="xpad">15</property>
+                                            <property name="label" translatable="yes" comments="text between the two &quot;start from scratch&quot; buttons in emergency view">&lt;b&gt;or&lt;/b&gt;</property>
+                                            <property name="use_markup">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">False</property>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkButton" id="refresh_from_client_btn">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">True</property>
+                                            <property name="receives_default">True</property>
+                                            <child>
+                                              <widget class="GtkLabel" id="refresh_from_client_btn_label">
+                                                <property name="visible">True</property>
+                                                <property name="xpad">16</property>
+                                                <property name="label" translatable="yes">Delete all data on Zyb 
+and replace with your
+local information</property>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="position">2</property>
+                                          </packing>
+                                        </child>
+                                      </widget>
+                                    </child>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="padding">8</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkVBox" id="vbox21">
+                                <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">5</property>
+                                <child>
+                                  <widget class="GtkLabel" id="label9">
+                                    <property name="visible">True</property>
+                                    <property name="xalign">0</property>
+                                    <property name="label" translatable="yes" comments="a title in emergency view">&lt;big&gt;Restore from backup&lt;/big&gt;</property>
+                                    <property name="use_markup">True</property>
+                                  </widget>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <widget class="GtkAlignment" id="alignment2">
+                                    <property name="visible">True</property>
+                                    <property name="resize_mode">queue</property>
+                                    <property name="left_padding">40</property>
+                                    <property name="right_padding">40</property>
+                                    <child>
+                                      <widget class="GtkVBox" id="vbox22">
+                                        <property name="visible">True</property>
+                                        <property name="orientation">vertical</property>
+                                        <child>
+                                          <widget class="GtkLabel" id="label12">
+                                            <property name="width_request">800</property>
+                                            <property name="visible">True</property>
+                                            <property name="xalign">0</property>
+                                            <property name="label" translatable="yes" comments="explanation of &quot;Restore backup&quot; function">Backups are made before every time we Sync. Choose a backup to restore. Any changes you have made since then will be lost.</property>
+                                            <property name="wrap">True</property>
+                                          </widget>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">False</property>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <widget class="GtkScrolledWindow" id="scrolledwindow2">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">True</property>
+                                            <property name="hscrollbar_policy">automatic</property>
+                                            <property name="vscrollbar_policy">automatic</property>
+                                            <child>
+                                              <widget class="GtkViewport" id="backup_viewport">
+                                                <property name="visible">True</property>
+                                                <property name="resize_mode">queue</property>
+                                                <child>
+                                                  <widget class="GtkTable" id="emergency_backup_table">
+                                                    <property name="visible">True</property>
+                                                    <property name="n_rows">10</property>
+                                                    <property name="n_columns">2</property>
+                                                    <property name="row_spacing">16</property>
+                                                    <child>
+                                                      <widget class="GtkLabel" id="label59">
+                                                        <property name="visible">True</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="ypad">5</property>
+                                                        <property name="label">Backup before syncing Dec 5th 2009 16:35</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="top_attach">2</property>
+                                                        <property name="bottom_attach">3</property>
+                                                        <property name="x_options">GTK_FILL</property>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <widget class="GtkLabel" id="label69">
+                                                        <property name="visible">True</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="ypad">5</property>
+                                                        <property name="label">Backup before syncing Dec 5th 2009 13:35</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="top_attach">3</property>
+                                                        <property name="bottom_attach">4</property>
+                                                        <property name="x_options">GTK_FILL</property>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <widget class="GtkLabel" id="label79">
+                                                        <property name="visible">True</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="ypad">5</property>
+                                                        <property name="label">Backup before syncing Dec 5th 2009 11:35</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="top_attach">4</property>
+                                                        <property name="bottom_attach">5</property>
+                                                        <property name="x_options">GTK_FILL</property>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <widget class="GtkLabel" id="label89">
+                                                        <property name="visible">True</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="ypad">5</property>
+                                                        <property name="label">Backup before syncing Dec 3rd</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="top_attach">5</property>
+                                                        <property name="bottom_attach">6</property>
+                                                        <property name="x_options">GTK_FILL</property>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <widget class="GtkLabel" id="label109">
+                                                        <property name="visible">True</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="ypad">5</property>
+                                                        <property name="label">Backup before syncing Dec 1st</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="top_attach">6</property>
+                                                        <property name="bottom_attach">7</property>
+                                                        <property name="x_options">GTK_FILL</property>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <widget class="GtkLabel" id="label29">
+                                                        <property name="visible">True</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="ypad">5</property>
+                                                        <property name="label">Backup before syncing yesterday</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="top_attach">1</property>
+                                                        <property name="bottom_attach">2</property>
+                                                        <property name="x_options">GTK_FILL</property>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <widget class="GtkLabel" id="label30">
+                                                        <property name="visible">True</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="ypad">5</property>
+                                                        <property name="label">Backup before syncing two hours ago</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <widget class="GtkButton" id="button1">
+                                                        <property name="label">Restore</property>
+                                                        <property name="visible">True</property>
+                                                        <property name="can_focus">True</property>
+                                                        <property name="receives_default">True</property>
+                                                      </widget>
+                                                      <packing>
+                                                        <property name="left_attach">1</property>
+                                                        <property name="right_attach">2</property>
+                                                        <property name="x_options">GTK_FILL</property>
+                                                        <property name="y_options">GTK_FILL</property>
+                                                        <property name="x_padding">16</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                    <child>
+                                                      <placeholder/>
+                                                    </child>
+                                                  </widget>
+                                                </child>
+                                              </widget>
+                                            </child>
+                                          </widget>
+                                          <packing>
+                                            <property name="position">1</property>
+                                          </packing>
                                         </child>
                                       </widget>
                                     </child>
@@ -1271,23 +1288,20 @@ local information</property>
                                   </packing>
                                 </child>
                               </widget>
+                              <packing>
+                                <property name="padding">8</property>
+                                <property name="position">3</property>
+                              </packing>
                             </child>
                           </widget>
                           <packing>
-                            <property name="position">1</property>
+                            <property name="padding">40</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                       </widget>
-                      <packing>
-                        <property name="padding">8</property>
-                        <property name="position">3</property>
-                      </packing>
                     </child>
                   </widget>
-                  <packing>
-                    <property name="padding">40</property>
-                    <property name="position">0</property>
-                  </packing>
                 </child>
               </widget>
             </child>
