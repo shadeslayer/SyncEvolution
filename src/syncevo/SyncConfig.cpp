@@ -418,7 +418,9 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
     string templateDir(SyncEvolutionTemplateDir());
     std::queue <std::string, std::list<std::string> > directories;
 
-    directories.push (templateDir);
+    directories.push(templateDir);
+    templateDir = SubstEnvironment("${XDG_CONFIG_HOME}/syncevolution-templates");
+    directories.push(templateDir);
     while (!directories.empty()) {
         string sDir = directories.front();
         directories.pop();
