@@ -28,6 +28,7 @@
 #include <syncevo/VolatileConfigNode.h>
 #include <syncevo/DevNullConfigNode.h>
 #include <syncevo/MultiplexConfigNode.h>
+#include <syncevo/SingleFileConfigTree.h>
 #include <syncevo/lcs.h>
 #include <test.h>
 #include <synthesis/timeutil.h>
@@ -416,22 +417,22 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
     // layout, the match is entirely based on the metadata template.ini
     string templateDir(SyncEvolutionTemplateDir());
     std::queue <std::string, std::list<std::string> > directories;
-    if (isDir(templateDir)) {
-        directories.push (templateDir);
-    } 
+
+    directories.push (templateDir);
     while (!directories.empty()) {
         string sDir = directories.front();
         directories.pop();
-        if (!TemplateConfig::isTemplateConfig(sDir)) {
+        if (isDir(sDir)) {
+            // check all sub directories
             ReadDir dir(sDir);
-            //not a template folder, check all sub directories
             BOOST_FOREACH(const string &entry, dir) {
-                if (isDir(sDir + "/" + entry)) {
-                    directories.push (sDir + "/" + entry);
-                }
+                directories.push(sDir + "/" + entry);
             }
         } else {
             TemplateConfig templateConf (sDir);
+            if (!templateConf.isTemplateConfig()) {
+                continue;
+            }
             BOOST_FOREACH (const DeviceList::value_type &entry, peers){
                 int rank = templateConf.metaMatch (entry.m_fingerprint, entry.m_matchMode);
                 if (fuzzyMatch){
@@ -485,8 +486,10 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
 
     // before starting another fuzzy match process, first try to load the
     // template directly taking the parameter as the path
-    if (isDir (server) && TemplateConfig::isTemplateConfig(server)) {
+    bool fromDisk = false;
+    if (TemplateConfig::isTemplateConfig(server)) {
         templateConfig = server;
+        fromDisk = true;
     } else {
         SyncConfig::DeviceList devices;
         devices.push_back (DeviceDescription("", server, MATCH_ALL));
@@ -498,11 +501,12 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         if (templateConfig.empty()) {
             // not found, avoid reading current directory by using one which doesn't exist
             templateConfig = "/dev/null";
+        } else {
+            fromDisk = true;
         }
     }
     
-    boost::shared_ptr<FileConfigTree> tree(new FileConfigTree(templateConfig, "", false));
-    tree->setReadOnly(true);
+    boost::shared_ptr<ConfigTree> tree(new SingleFileConfigTree(templateConfig));
     boost::shared_ptr<SyncConfig> config(new SyncConfig(server, tree));
     boost::shared_ptr<PersistentSyncSourceConfig> source;
 
@@ -559,13 +563,23 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         source->setSync("two-way");
     }
 
-    if (isDir(templateConfig)) {
-        // directory exists, check for icon?
+    if (fromDisk) {
+        // check for icon
         if (config->getIconURI().empty()) {
-            ReadDir dir(templateConfig);
+            string dirname, filename;
+            splitPath(templateConfig, dirname, filename);
+            ReadDir dir(getDirname(dirname));
+
+            // remove last suffix, regardless what it is
+            size_t pos = filename.rfind('.');
+            if (pos != filename.npos) {
+                filename.resize(pos);
+            }
+            filename += "-icon";
+
             BOOST_FOREACH(const string &entry, dir) {
-                if (boost::istarts_with(entry, "icon")) {
-                    config->setIconURI("file://" + templateConfig + "/" + entry);
+                if (boost::istarts_with(entry, filename)) {
+                    config->setIconURI("file://" + dirname + "/" + entry);
                     break;
                 }
             }
@@ -573,8 +587,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
 
         // leave the source configs alone and return the config as it is:
         // in order to have sources configured as part of the template,
-        // the template directory must have directories for all
-        // sources under "sources"
+        // the template must have entries for all sources under "sources"
         return config;
     }
 
@@ -2220,24 +2233,34 @@ bool SyncConfig::TemplateDescription::compare_op (boost::shared_ptr<SyncConfig::
     return (left->m_templateId < right->m_templateId);
 }
 
-TemplateConfig::TemplateConfig (const string &path)
-    : m_metaNode (new FileConfigNode (path, "template.ini", true)),
-    m_id(""),
-    m_path(path)
+TemplateConfig::TemplateConfig(const string &path) :
+    m_template(new SingleFileConfigTree(path))
 {
-    m_metaNode->readProperties(m_metaProps);
+    boost::shared_ptr<ConfigNode> metaNode = m_template->open("template.ini");
+    metaNode->readProperties(m_metaProps);
 }
 
-bool TemplateConfig::isTemplateConfig (const string &dir) 
+bool TemplateConfig::isTemplateConfig (const string &path) 
 {
-    return !ReadDir(dir).find ("template.ini", false).empty();
+    SingleFileConfigTree templ(path);
+    boost::shared_ptr<ConfigNode> metaNode = templ.open("template.ini");
+    if (!metaNode->exists()) {
+        return false;
+    }
+    ConfigProps props;
+    metaNode->readProperties(props);
+    return !props.empty();
+}
+
+bool TemplateConfig::isTemplateConfig() const
+{
+    return !m_metaProps.empty();
 }
 
 int TemplateConfig::serverModeMatch (SyncConfig::MatchMode mode)
 {
-
-    FileConfigNode configNode (m_path, "config.ini", true);
-    std::string peerIsClient = configNode.readProperty ("peerIsClient");
+    boost::shared_ptr<ConfigNode> configNode = m_template->open("config.ini");
+    std::string peerIsClient = configNode->readProperty ("peerIsClient");
     
     //not a match if serverMode does not match
     if ((peerIsClient.empty() || peerIsClient == "0") && mode == SyncConfig::MATCH_FOR_SERVER_MODE) {
