@@ -83,6 +83,13 @@ SYNCEVOLUTION_SOURCES  = \
 	FileConfigNode.h \
 	FileConfigNode.cpp \
 	\
+	DataBlob.h \
+	FileDataBlob.h \
+	FileDataBlob.cpp \
+	\
+	SafeOstream.h \
+	SafeOstream.cpp \
+	\
 	FileConfigTree.h \
 	FileConfigTree.cpp \
 	\
