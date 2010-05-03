@@ -33,24 +33,6 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-/** @TODO: replace stdio.h with streams */
-
-boost::shared_ptr<ConfigNode> ConfigNode::createFileNode(const string &filename)
-{
-    string::size_type off = filename.rfind('/');
-    boost::shared_ptr<ConfigNode> filenode;
-    if (off != filename.npos) {
-        filenode.reset(new FileConfigNode(filename.substr(0, off),
-                                          filename.substr(off + 1),
-                                          false));
-    } else {
-        filenode.reset(new FileConfigNode(".", filename, false));
-    }
-    boost::shared_ptr<SafeConfigNode> savenode(new SafeConfigNode(filenode));
-    savenode->setMode(false);
-    return savenode;
-}
-
 FileBaseConfigNode::FileBaseConfigNode(const string &path, const string &fileName, bool readonly) :
     m_path(path),
     m_fileName(fileName),
