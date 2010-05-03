@@ -2040,6 +2040,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
             /* NOTE: using device_name here means a new config will be saved with
              * device_name (and not the template name). Not sure if this is
              * what we really want... */
+
             syncevo_config_get_value (config, NULL, "templateName", &device_name);
             if (!device_name) {
                 syncevo_config_get_value (config, NULL, "fingerPrint", &fp);
@@ -2072,7 +2073,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                  * all configs / templates, then decide what to sho w*/
 
                 /* there is a widget for this device already, add this info there*/
-                if (g_strcmp0 ("1", ready) == 0) {
+                if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
                     sync_config_widget_add_alternative_config (w, device_name, config, 
                                                                c_data->has_configuration);
                 }
