@@ -432,7 +432,11 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
             }
         } else {
             TemplateConfig templateConf (sDir);
-            if (!templateConf.isTemplateConfig()) {
+            if (boost::ends_with(sDir, "~") ||
+                boost::starts_with(sDir, ".") ||
+                !templateConf.isTemplateConfig()) {
+                // ignore temporary files and files which do
+                // not contain a valid template
                 continue;
             }
             BOOST_FOREACH (const DeviceList::value_type &entry, peers){
