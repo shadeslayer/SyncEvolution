@@ -65,6 +65,23 @@ typedef map<string, string> StringMap;
 string normalizePath(const string &path);
 
 /**
+ * Returns last component of path. Trailing slash is ignored.
+ * Empty if path is empty.
+ */
+string getBasename(const string &path);
+
+/**
+ * Returns path without the last component. Empty if nothing left.
+ */
+string getDirname(const string &path);
+
+/**
+ * Splits path into directory and file part. Trailing slashes
+ * are stripped first.
+ */
+void splitPath(const string &path, string &dir, string &file);
+
+/**
  * convert relative path to canonicalized absolute path
  * @param path will be turned into absolute path if possible, otherwise left unchanged
  * @return true if conversion is successful, false otherwise(errno will be set)
