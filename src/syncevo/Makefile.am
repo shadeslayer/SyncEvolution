@@ -87,6 +87,8 @@ SYNCEVOLUTION_SOURCES  = \
 	DataBlob.h \
 	FileDataBlob.h \
 	FileDataBlob.cpp \
+	StringDataBlob.h \
+	StringDataBlob.cpp \
 	\
 	SafeOstream.h \
 	SafeOstream.cpp \
