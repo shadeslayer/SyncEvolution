@@ -84,6 +84,11 @@ SYNCEVOLUTION_SOURCES  = \
 	FileConfigNode.h \
 	FileConfigNode.cpp \
 	\
+	IniConfigNode.h \
+	IniConfigNode.cpp \
+	SingleFileConfigTree.h \
+	SingleFileConfigTree.cpp \
+	\
 	DataBlob.h \
 	FileDataBlob.h \
 	FileDataBlob.cpp \
