@@ -3317,23 +3317,22 @@ SyncMLStatus SyncContext::doSync()
                                             progressInfo.extra2,
                                             progressInfo.extra3);
                         break;
-                    default:
-                        if (!m_serverMode) {
-                            // specific for a certain sync source:
-                            // find it...
-                            SyncSource *source = m_sourceListPtr->lookupBySynthesisID(progressInfo.targetID);
-                            if (source) {
-                                displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
-                                                      *source,
-                                                      progressInfo.extra1,
-                                                      progressInfo.extra2,
-                                                      progressInfo.extra3);
-                            } else {
-                                throwError(std::string("unknown target ") + s);
-                            }
-                            target.reset();
+                    default: {
+                        // specific for a certain sync source:
+                        // find it...
+                        SyncSource *source = m_sourceListPtr->lookupBySynthesisID(progressInfo.targetID);
+                        if (source) {
+                            displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
+                                                  *source,
+                                                  progressInfo.extra1,
+                                                  progressInfo.extra2,
+                                                  progressInfo.extra3);
+                        } else {
+                            throwError(std::string("unknown target ") + s);
                         }
+                        target.reset();
                         break;
+                    }
                     }
                 }
                 stepCmd = sysync::STEPCMD_STEP;
