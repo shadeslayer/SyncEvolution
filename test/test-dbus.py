@@ -1808,6 +1808,20 @@ class TestConnection(unittest.TestCase, DBusUtil):
         loop.run()
         self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
+        # start another session for the server (ensures that the previous one is done),
+        # then check the server side report
+        DBusUtil.quit_events = []
+        self.setUpSession("dummy-test")
+        sessions = self.session.GetReports(0, 100)
+        self.failUnlessEqual(len(sessions), 1)
+        # transport failure, only addressbook active and later aborted
+        self.failUnlessEqual(sessions[0]["status"], "20043")
+        self.failUnlessEqual(sessions[0]["error"], "D-Bus peer has disconnected")
+        self.failUnlessEqual(sessions[0]["source-addressbook-status"], "20017")
+        self.failUnlessEqual(sessions[0]["source-calendar-status"], "0")
+        self.failUnlessEqual(sessions[0]["source-todo-status"], "0")
+        self.failUnlessEqual(sessions[0]["source-memo-status"], "0")
+
 
     def testCredentialsWrong(self):
         """send invalid credentials"""
