@@ -3399,13 +3399,21 @@ void ClientTest::getItems(const char *file, list<string> &items, std::string &te
 {
     items.clear();
 
-    // import the file
+    // import the file, trying a .tem file (base file plus patch)
+    // first
     std::ifstream input;
     string server = getenv("CLIENT_TEST_SERVER");
     testcases = string(file) + '.' + server +".tem";
     input.open(testcases.c_str());
 
-    if(input.fail()) {
+    if (input.fail()) {
+        // try server-specific file (like ical20.ics.local)
+        testcases = string(file) + '.' + server;
+        input.open(testcases.c_str());
+    }
+
+    if (input.fail()) {
+        // try base file
         testcases = file;
         input.open(testcases.c_str());
     }

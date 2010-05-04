@@ -217,6 +217,7 @@ CLIENT_LIB_TEST_FILES = \
 	testcases/vcard21.vcf \
 	testcases/vcard30.vcf \
 	testcases/ical20.ics \
+	testcases/ical20.ics.local \
 	testcases/imemo20.ics \
 	testcases/itodo20.ics
 
