@@ -570,9 +570,10 @@ msgstr ""
 "Una sincronización lenta compara elementos de ambos lados e intenta combinarlos. \n"
 "Esto puede fallar en algunos casos, creando duplicados o perdida de información."
 
+# I had to shorten the string to fit the button
 #: ../src/gtk-ui/ui.glade.h:15
 msgid "Add new device"
-msgstr "Agregar nuevo dispositivo"
+msgstr "Agregar dispositivo"
 
 #: ../src/gtk-ui/ui.glade.h:16
 msgid "Add new service"
