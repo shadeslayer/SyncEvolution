@@ -543,7 +543,7 @@ msgstr ""
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid "Add new device"
-msgstr "Adicionar novo dispositivo"
+msgstr "Adicionar dispositivo"
 
 #: ../src/gtk-ui/ui.glade.h:16
 msgid "Add new service"
