@@ -11,6 +11,7 @@ EXTRA_DIST = \
         Algorithm/Diff.pm \
         Algorithm/README \
         testcases/ical20.ics \
+	testcases/ical20.ics.local \
         testcases/itodo20.ics \
         testcases/vcal10.ics \
         testcases/vcard21.vcf \
