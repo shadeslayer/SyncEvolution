@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2010-04-28 09:27+0000\n"
-"PO-Revision-Date: 2010-04-30 13:34-0800\n"
+"POT-Creation-Date: 2010-05-05 09:24+0000\n"
+"PO-Revision-Date: 2010-05-06 11:18-0800\n"
 "Last-Translator: francesca godani <francesca.godani@ptiglobal.net>\n"
 "Language-Team: Italian <tp@lists.linux.it>\n"
 "MIME-Version: 1.0\n"
@@ -199,7 +199,7 @@ msgstr "Sincronizzazione"
 #. TRANSLATORS: This is for the button in main view, right side.
 #. Keep line length below ~20 characters, use two lines if needed
 #: ../src/gtk-ui/sync-ui.c:757
-#: ../src/gtk-ui/sync-ui.c:3373
+#: ../src/gtk-ui/sync-ui.c:3374
 msgid "Cancel sync"
 msgstr "Annulla sincronizzazione"
 
@@ -295,71 +295,71 @@ msgstr ""
 "%s e sostituirli\n"
 "con quelli locali"
 
-#: ../src/gtk-ui/sync-ui.c:2241
+#: ../src/gtk-ui/sync-ui.c:2242
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "Recupero elenco dei servizi supportati da SyncEvolution non riuscito"
 
-#: ../src/gtk-ui/sync-ui.c:2295
+#: ../src/gtk-ui/sync-ui.c:2296
 msgid "There was a problem communicating with the sync process. Please try again later."
 msgstr "Si è verificato un problema di comunicazione con il processo di sincronizzazione. Si prega di riprovare più tardi."
 
-#: ../src/gtk-ui/sync-ui.c:2354
+#: ../src/gtk-ui/sync-ui.c:2355
 msgid "Restore failed"
 msgstr "Ripristino non riuscito"
 
-#: ../src/gtk-ui/sync-ui.c:2357
-#: ../src/gtk-ui/sync-ui.c:3242
+#: ../src/gtk-ui/sync-ui.c:2358
+#: ../src/gtk-ui/sync-ui.c:3243
 msgid "Sync failed"
 msgstr "Sincronizzazione non riuscita"
 
-#: ../src/gtk-ui/sync-ui.c:2363
+#: ../src/gtk-ui/sync-ui.c:2364
 msgid "Restore complete"
 msgstr "Ripristino completato"
 
-#: ../src/gtk-ui/sync-ui.c:2366
+#: ../src/gtk-ui/sync-ui.c:2367
 msgid "Sync complete"
 msgstr "Sincronizzazione completata"
 
-#: ../src/gtk-ui/sync-ui.c:2458
+#: ../src/gtk-ui/sync-ui.c:2459
 #, c-format
 msgid "Preparing '%s'"
 msgstr "Preparazione di '%s'"
 
-#: ../src/gtk-ui/sync-ui.c:2461
+#: ../src/gtk-ui/sync-ui.c:2462
 #, c-format
 msgid "Receiving '%s'"
 msgstr "Ricezione di '%s'"
 
-#: ../src/gtk-ui/sync-ui.c:2464
+#: ../src/gtk-ui/sync-ui.c:2465
 #, c-format
 msgid "Sending '%s'"
 msgstr "Invio di '%s'"
 
-#: ../src/gtk-ui/sync-ui.c:2585
+#: ../src/gtk-ui/sync-ui.c:2586
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %ld remote rejections."
 msgstr[0] "Si è verificato un rifiuto remoto."
 msgstr[1] "Si sono verificati %ld rifiuti remoti."
 
-#: ../src/gtk-ui/sync-ui.c:2590
+#: ../src/gtk-ui/sync-ui.c:2591
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %ld local rejections."
 msgstr[0] "Si è verificato un rifiuto locale."
 msgstr[1] "Si sono verificati %ld rifiuti locali."
 
-#: ../src/gtk-ui/sync-ui.c:2595
+#: ../src/gtk-ui/sync-ui.c:2596
 #, c-format
 msgid "There were %ld local rejections and %ld remote rejections."
 msgstr "Si sono verificati %ld rifiuti locali e %ld remoti."
 
-#: ../src/gtk-ui/sync-ui.c:2600
+#: ../src/gtk-ui/sync-ui.c:2601
 #, c-format
 msgid "Last time: No changes."
 msgstr "Ultima volta: nessuna modifica."
 
-#: ../src/gtk-ui/sync-ui.c:2602
+#: ../src/gtk-ui/sync-ui.c:2603
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %ld changes."
@@ -369,21 +369,21 @@ msgstr[1] "Ultima volta: inviate %ld modifiche."
 #. This is about changes made to the local data. Not all of these
 #. changes were requested by the remote server, so "applied"
 #. is a better word than "received" (bug #5185).
-#: ../src/gtk-ui/sync-ui.c:2610
+#: ../src/gtk-ui/sync-ui.c:2611
 #, c-format
 msgid "Last time: Applied one change."
 msgid_plural "Last time: Applied %ld changes."
 msgstr[0] "Ultima volta: applicata una modifica."
 msgstr[1] "Ultima volta: applicate %ld modifiche."
 
-#: ../src/gtk-ui/sync-ui.c:2615
+#: ../src/gtk-ui/sync-ui.c:2616
 #, c-format
 msgid "Last time: Applied %ld changes and sent %ld changes."
 msgstr "Ultima volta: applicate %ld modifiche e inviate %ld."
 
 #. TRANSLATORS: the placeholder is a error message (hopefully)
 #. * explaining the problem
-#: ../src/gtk-ui/sync-ui.c:2822
+#: ../src/gtk-ui/sync-ui.c:2823
 #, c-format
 msgid ""
 "There was a problem with last sync:\n"
@@ -392,124 +392,124 @@ msgstr ""
 "Si è verificato un problema con l'ultima sincronizzazione:\n"
 "%s"
 
-#: ../src/gtk-ui/sync-ui.c:2832
+#: ../src/gtk-ui/sync-ui.c:2833
 #, c-format
 msgid "You've just restored a backup. The changes have not been synced with %s yet"
 msgstr "Hai appena ripristinato un backup. I cambiamenti non sono ancora stati sincronizzati con %s"
 
-#: ../src/gtk-ui/sync-ui.c:3120
+#: ../src/gtk-ui/sync-ui.c:3121
 msgid "Waiting for current operation to finish..."
 msgstr "In attesa che termini l'operazione..."
 
 #. TRANSLATORS: next strings are error messages.
-#: ../src/gtk-ui/sync-ui.c:3154
+#: ../src/gtk-ui/sync-ui.c:3155
 msgid "A normal sync is not possible at this time. The server suggests a slow sync, but this might not always be what you want if both ends already have data."
 msgstr "Una sincronizzazione normale non è possibile in questo momento. Il server suggerisce una sincronizzazione lenta, ma questo potrebbe non essere sempre quello che vuoi, se entrambe le estremità hanno dati."
 
-#: ../src/gtk-ui/sync-ui.c:3158
+#: ../src/gtk-ui/sync-ui.c:3159
 msgid "The sync process died unexpectedly."
 msgstr "Il servizio di sincronizzazione è terminato inaspettatamente."
 
-#: ../src/gtk-ui/sync-ui.c:3163
+#: ../src/gtk-ui/sync-ui.c:3164
 msgid "Password request was not answered. You can save the password in the settings to prevent the request."
 msgstr "La richiesta della password ha ricevuto risposta. È possibile salvare la password nelle impostazioni per evitare la richiesta."
 
 #. TODO use the service device name here, this is a remote problem
-#: ../src/gtk-ui/sync-ui.c:3167
+#: ../src/gtk-ui/sync-ui.c:3168
 msgid "There was a problem processing sync request. Trying again may help."
 msgstr "C'è stato un problema di elaborazione delle richieste di sincronizzazione. Riprovare potrebbe risolvere il problema."
 
-#: ../src/gtk-ui/sync-ui.c:3173
+#: ../src/gtk-ui/sync-ui.c:3174
 msgid "Failed to login. Could there be a problem with your username or password?"
 msgstr "Impossibile effettuare il login. Ci potrebbe essere un problema con il tuo nome utente o la password?"
 
-#: ../src/gtk-ui/sync-ui.c:3176
+#: ../src/gtk-ui/sync-ui.c:3177
 msgid "Forbidden"
 msgstr "Proibito"
 
 #. TRANSLATORS: data source means e.g. calendar or addressbook
-#: ../src/gtk-ui/sync-ui.c:3182
+#: ../src/gtk-ui/sync-ui.c:3183
 msgid "A data source could not be found. Could there be a problem with the settings?"
 msgstr "Impossibile trovare la sorgente. Ci potrebbe essere un problema con le impostazioni?"
 
-#: ../src/gtk-ui/sync-ui.c:3186
+#: ../src/gtk-ui/sync-ui.c:3187
 msgid "Remote database error"
 msgstr "Errore remoto nel database"
 
 #. This can happen when EDS is borked, restart it may help...
-#: ../src/gtk-ui/sync-ui.c:3189
+#: ../src/gtk-ui/sync-ui.c:3190
 msgid "There is a problem with the local database. Syncing again or rebooting may help."
 msgstr "C'è un problema con il database locale. Sincronizzare di nuovo o riavviare."
 
-#: ../src/gtk-ui/sync-ui.c:3192
+#: ../src/gtk-ui/sync-ui.c:3193
 msgid "No space on disk"
 msgstr "Spazio esaurito sul disco"
 
-#: ../src/gtk-ui/sync-ui.c:3194
+#: ../src/gtk-ui/sync-ui.c:3195
 msgid "Failed to process SyncML"
 msgstr "Elaborazione SyncML non riuscita"
 
-#: ../src/gtk-ui/sync-ui.c:3196
+#: ../src/gtk-ui/sync-ui.c:3197
 msgid "Server authorization failed"
 msgstr "Autorizzazione server non riuscita"
 
-#: ../src/gtk-ui/sync-ui.c:3198
+#: ../src/gtk-ui/sync-ui.c:3199
 msgid "Failed to parse configuration file"
 msgstr "Analisi del file di configurazione non riuscita"
 
-#: ../src/gtk-ui/sync-ui.c:3200
+#: ../src/gtk-ui/sync-ui.c:3201
 msgid "Failed to read configuration file"
 msgstr "Lettura del file di configurazione non riuscita"
 
-#: ../src/gtk-ui/sync-ui.c:3202
+#: ../src/gtk-ui/sync-ui.c:3203
 msgid "No configuration found"
 msgstr "Non è stata trovata alcuna configurazione"
 
-#: ../src/gtk-ui/sync-ui.c:3204
+#: ../src/gtk-ui/sync-ui.c:3205
 msgid "No configuration file found"
 msgstr "Non è stato trovato alcun file di configurazione"
 
-#: ../src/gtk-ui/sync-ui.c:3206
+#: ../src/gtk-ui/sync-ui.c:3207
 msgid "Server sent bad content"
 msgstr "Il server ha inviato dei contenuti errati"
 
-#: ../src/gtk-ui/sync-ui.c:3208
+#: ../src/gtk-ui/sync-ui.c:3209
 msgid "Connection certificate has expired"
 msgstr "Il certificato della connessione è scaduto"
 
-#: ../src/gtk-ui/sync-ui.c:3210
+#: ../src/gtk-ui/sync-ui.c:3211
 msgid "Connection certificate is invalid"
 msgstr "Il certificato della connessione non è valido"
 
-#: ../src/gtk-ui/sync-ui.c:3218
+#: ../src/gtk-ui/sync-ui.c:3219
 msgid "We were unable to connect to the server. The problem could be temporary or there could be something wrong with the settings."
 msgstr "Non siamo stati in grado di connetterci al server. Il problema potrebbe essere temporaneo o ci potrebbe essere qualcosa di sbagliato con le impostazioni."
 
-#: ../src/gtk-ui/sync-ui.c:3225
+#: ../src/gtk-ui/sync-ui.c:3226
 msgid "The server URL is bad"
 msgstr "L'URLdel server non è corretto"
 
-#: ../src/gtk-ui/sync-ui.c:3230
+#: ../src/gtk-ui/sync-ui.c:3231
 msgid "The server was not found"
 msgstr "Il server non è stato trovato"
 
-#: ../src/gtk-ui/sync-ui.c:3232
+#: ../src/gtk-ui/sync-ui.c:3233
 #, c-format
 msgid "Error %d"
 msgstr "Errore %d"
 
 #. TRANSLATORS: password request dialog contents: title, cancel button
 #. * and ok button
-#: ../src/gtk-ui/sync-ui.c:3370
+#: ../src/gtk-ui/sync-ui.c:3371
 msgid "Password is required for sync"
 msgstr "Password necessaria per la sincronizzazione"
 
-#: ../src/gtk-ui/sync-ui.c:3374
+#: ../src/gtk-ui/sync-ui.c:3375
 msgid "Sync with password"
 msgstr "Sincronizza con password"
 
 #. TRANSLATORS: password request dialog message, placeholder is service name
-#: ../src/gtk-ui/sync-ui.c:3384
+#: ../src/gtk-ui/sync-ui.c:3385
 #, c-format
 msgid "Please enter password for syncing with %s:"
 msgstr "Inserire la passowrd per la sincronizzazione con %s:"
@@ -579,8 +579,8 @@ msgid ""
 "Change or edit\n"
 "sync service"
 msgstr ""
-"Cambia/modifica servizio\n"
-"di sincronizzazione"
+"Cambia o modifica\n"
+"sincronizzazione"
 
 #. close button for settings window
 #: ../src/gtk-ui/ui.glade.h:24
