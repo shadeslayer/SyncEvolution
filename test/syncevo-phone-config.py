@@ -584,6 +584,8 @@ class TestingConfiguration():
             have_combined = \
                 self.wConfigs.has_key('calendar') and \
                 self.wConfigs.has_key('todo') and \
+                self.wConfigs['calendar'] and \
+                self.wConfigs['todo'] and \
                 self.wConfigs['calendar'].uri == self.wConfigs['todo'].uri
 
             if (options.create):
