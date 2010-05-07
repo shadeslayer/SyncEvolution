@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2010-05-05 09:24+0000\n"
-"PO-Revision-Date: 2010-05-06 11:18-0800\n"
-"Last-Translator: francesca godani <francesca.godani@ptiglobal.net>\n"
+"PO-Revision-Date: 2010-05-06 18:06-0800\n"
+"Last-Translator: Clara Steiner-Jay <csteiner@aracnet.com>\n"
 "Language-Team: Italian <tp@lists.linux.it>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -512,7 +512,7 @@ msgstr "Sincronizza con password"
 #: ../src/gtk-ui/sync-ui.c:3385
 #, c-format
 msgid "Please enter password for syncing with %s:"
-msgstr "Inserire la passowrd per la sincronizzazione con %s:"
+msgstr "Inserire la passoword per la sincronizzazione con %s:"
 
 #. title for the buttons on the right side of main view
 #: ../src/gtk-ui/ui.glade.h:2
@@ -611,9 +611,8 @@ msgid ""
 "Fix a sync\n"
 "emergency"
 msgstr ""
-"Risolvi una\n"
-"sincronizzazione\n"
-"di emergenza"
+"Risolvi urgencia in\n"
+"sincronizzazione"
 
 # (ndt) segnalare SyncML?
 #: ../src/gtk-ui/ui.glade.h:34
@@ -890,7 +889,6 @@ msgstr "Scarta"
 
 #~ msgid "Database error"
 #~ msgstr "Errore nel database"
-
 #~ msgid ""
 #~ "Do you want to replace %s with %s? This will not remove any synced "
 #~ "information on either end but you will no longer be able to sync with %s."
@@ -898,105 +896,75 @@ msgstr "Scarta"
 #~ "Vuoi sostituire %s con %s? Questa operazione non rimuoverà nessuna "
 #~ "informazione sincronizzata ma non sarai più in grado di sincronizzare con "
 #~ "%s."
-
 #~ msgid "Yes, use %s"
 #~ msgstr "Sì, utilizza %s"
-
 #~ msgid "No, use %s"
 #~ msgstr "No, utilizza %s"
-
 #~ msgid "Reset service"
 #~ msgstr "Servizio di ripristino"
-
 #~ msgid "Addressbook"
 #~ msgstr "Rubrica"
-
 #~ msgid "Todo"
 #~ msgstr "Attività"
-
 #~ msgid "Memo"
 #~ msgstr "Memo"
-
 #~ msgid "Failed to save current service in GConf configuration system"
 #~ msgstr ""
 #~ "Salvataggio del servizio attuale nel sistema di configurazione GConf non "
 #~ "riuscito"
-
 #~ msgid "Failed to save service configuration to SyncEvolution"
 #~ msgstr ""
 #~ "Salvataggio della configurazione del servizio in SyncEvolution non "
 #~ "riuscito"
-
 #~ msgid "Failed to get service configuration from SyncEvolution"
 #~ msgstr ""
 #~ "Recupero della configurazione del servizio da SyncEvolution non riuscito"
-
 #~ msgid "Failed to remove service configuration from SyncEvolution"
 #~ msgstr ""
 #~ "Rimozione della configurazione del servizio da SyncEvolution non riuscita"
-
 #~ msgid "Failed to cancel: sync was no longer in progress"
 #~ msgstr "Annullamento non riuscito: la sincronizzazione non era più in corso"
-
 #~ msgid "Failed to cancel sync"
 #~ msgstr "Annullamento sincronizzazione non riuscito"
-
 #~ msgid "Canceling sync"
 #~ msgstr "Annullamento sincronizzazione"
-
 #~ msgid "No sources are enabled, not syncing"
 #~ msgstr "Nessuna sorgente è abilitata, niente da sincronizzare"
-
 #~ msgid "A sync is already in progress"
 #~ msgstr "È già in corso una sincronizzazione"
-
 #~ msgid "Failed to start sync"
 #~ msgstr "Avvio della sincronizzazione non riuscito"
-
 #~ msgid "%s (not supported by this service)"
 #~ msgstr "%s (non supportato da questo servizio)"
-
 #~ msgid "Failed to get server configuration from SyncEvolution"
 #~ msgstr ""
 #~ "Recupero della configurazione del server da SyncEvolution non riuscito"
-
 #~ msgid "Server URL"
 #~ msgstr "URL del server"
-
 #~ msgid "Failed to get list of manually setup services from SyncEvolution"
 #~ msgstr ""
 #~ "Recupero elenco dei servizi configurati manualmente da SyncEvolution non "
 #~ "riuscito"
-
 #~ msgid "Service configuration not found"
 #~ msgstr "Configurazione del servizio non trovata"
-
 #~ msgid "Not authorized"
 #~ msgstr "Non autorizzato"
-
 #~ msgid "Not found"
 #~ msgstr "Non trovato"
-
 #~ msgid "Transport failure (no connection?)"
 #~ msgstr "Errore nel trasporto dei dati (connessione assente?)"
-
 #~ msgid "Connection timed out"
 #~ msgstr "La connessione è terminata"
-
 #~ msgid "Connection failed"
 #~ msgstr "La connessione non è stata stabilita"
-
 #~ msgid "Sync canceled"
 #~ msgstr "Sincronizzazione annullata"
-
 #~ msgid "Ending sync"
 #~ msgstr "Termine sincronizzazione"
-
 #~ msgid "<b>No sync service in use</b>"
 #~ msgstr "<b>Nessun servizio di sincronizzazione in uso</b>"
-
 #~ msgid "<big>Manual setup</big>"
 #~ msgstr "<big>Configurazione manuale</big>"
-
 #~ msgid "Merge local and remote data (recommended)"
 #~ msgstr "Unire i dati locali e remoti (raccomandato)"
+
