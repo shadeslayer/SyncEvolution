@@ -429,9 +429,30 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         ItemID id(newluid);
         bool isParent = id.m_rid.empty();
 
-        // ensure that the component has the right UID
-        if (update && !id.m_uid.empty()) {
-            icalcomponent_set_uid(subcomp, id.m_uid.c_str());
+        // ensure that the component has the right UID and
+        // RECURRENCE-ID
+        if (update) {
+            if (!id.m_uid.empty()) {
+                icalcomponent_set_uid(subcomp, id.m_uid.c_str());
+            }
+            if (!id.m_rid.empty()) {
+                // Reconstructing the RECURRENCE-ID is non-trivial,
+                // because our luid only contains the date-time, but
+                // not the time zone. Only do the work if the event
+                // really doesn't have a RECURRENCE-ID.
+                struct icaltimetype rid;
+                rid = icalcomponent_get_recurrenceid(subcomp);
+                if (icaltime_is_null_time(rid)) {
+                    // Preserve the original RECURRENCE-ID, including
+                    // timezone, no matter what the update contains
+                    // (might have wrong timezone or UTC).
+                    eptr<icalcomponent> orig(retrieveItem(id));
+                    icalproperty *orig_rid = icalcomponent_get_first_property(orig, ICAL_RECURRENCEID_PROPERTY);
+                    if (orig_rid) {
+                        icalcomponent_add_property(subcomp, icalproperty_new_clone(orig_rid));
+                    }
+                }
+            }
         }
 
         if (isParent) {
