@@ -920,6 +920,7 @@ setup_windows (app_data *data,
                         FALSE, FALSE, 0);
 
     data->back_btn = gtk_button_new_with_label (_("Back to sync"));
+    gtk_widget_set_name (data->back_btn, "moblin-toolbar-button");
     gtk_widget_set_can_focus (data->back_btn, FALSE);
     gtk_widget_set_no_show_all (data->back_btn, TRUE);
     g_signal_connect_swapped (data->back_btn, "clicked",
@@ -928,7 +929,7 @@ setup_windows (app_data *data,
     gtk_container_add (GTK_CONTAINER (item), data->back_btn);
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, 0);
 
-    item = gtk_separator_tool_item_new ();
+    item = gtk_tool_item_new ();
     gtk_tool_item_set_expand (item, TRUE);
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, 1);
 
@@ -939,8 +940,8 @@ setup_windows (app_data *data,
                                           G_CALLBACK (settings_toggled), data);
 
     gtk_container_add (GTK_CONTAINER (data->settings_btn),
-                       gtk_image_new_from_icon_name ("preferences-other-hover",
-                                                     GTK_ICON_SIZE_DIALOG));
+                       gtk_image_new_from_icon_name ("preferences-other",
+                                                     GTK_ICON_SIZE_LARGE_TOOLBAR));
     item = gtk_tool_item_new ();
     gtk_container_add (GTK_CONTAINER (item), data->settings_btn);
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
@@ -951,8 +952,8 @@ setup_windows (app_data *data,
     g_signal_connect (close_btn, "clicked",
                       G_CALLBACK (gtk_main_quit), NULL);
     gtk_container_add (GTK_CONTAINER (close_btn),
-                       gtk_image_new_from_icon_name ("window-close-hover",
-                                                     GTK_ICON_SIZE_DIALOG));
+                       gtk_image_new_from_icon_name ("window-close",
+                                                     GTK_ICON_SIZE_LARGE_TOOLBAR));
     item = gtk_tool_item_new ();
     gtk_container_add (GTK_CONTAINER (item), close_btn);
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
