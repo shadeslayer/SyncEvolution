@@ -1251,6 +1251,17 @@ build_autosync_ui (app_data *data)
     gtk_widget_show (data->autosync_toggle);
 }
 
+static void
+glade_name_workaround (GtkBuilder *builder, const char *name)
+{
+    GtkWidget *w;
+
+    w = GTK_WIDGET (gtk_builder_get_object (builder, name));
+    if (w) {
+        gtk_widget_set_name (w, name);
+    }
+}
+
 static gboolean
 init_ui (app_data *data)
 {
@@ -1366,6 +1377,19 @@ init_ui (app_data *data)
     data->new_device_btn = GTK_WIDGET (gtk_builder_get_object (builder, "new_device_btn"));
     g_signal_connect (data->new_device_btn, "clicked", 
                       G_CALLBACK (new_device_clicked_cb), data);    
+
+    /* workarounds for glade not working with gtkbuilder >= 2.20:
+     * widgets do not get names. */
+    glade_name_workaround (builder, "meego_win");
+    glade_name_workaround (builder, "sync_data_and_type_box");
+    glade_name_workaround (builder, "log_frame");
+    glade_name_workaround (builder, "backup_frame");
+    glade_name_workaround (builder, "services_frame");
+    glade_name_workaround (builder, "sync_service_label");
+    glade_name_workaround (builder, "sync_status_label");
+    glade_name_workaround (builder, "no_server_label");
+    glade_name_workaround (builder, "sync_failure_label");
+    glade_name_workaround (builder, "sync_btn");
 
     init_bluetooth_ui (data);
 
