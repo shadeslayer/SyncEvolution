@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2010-05-12 09:27+0000\n"
-"PO-Revision-Date: 2010-05-12 14:13-0800\n"
+"PO-Revision-Date: 2010-05-12 14:20-0800\n"
 "Last-Translator: francesca godani <francesca.godani@ptiglobal.net>\n"
 "Language-Team: Italian <tp@lists.linux.it>\n"
 "MIME-Version: 1.0\n"
@@ -83,7 +83,7 @@ msgstr "Eliminare i dati locali e sostituirli con quelli da %s? Solitamente ques
 #: ../src/gtk-ui/sync-ui.c:429
 #: ../src/gtk-ui/sync-ui.c:460
 msgid "Yes, delete and replace"
-msgstr "Elimia e sostituisci"
+msgstr "Elimina e sostituisci"
 
 #: ../src/gtk-ui/sync-ui.c:429
 #: ../src/gtk-ui/sync-ui.c:460
