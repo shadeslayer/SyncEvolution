@@ -679,5 +679,11 @@ fi
 AC_CONFIG_FILES(src/gnome-bluetooth/Makefile)
 AM_CONDITIONAL([ENABLE_GNOME_BLUETOOTH_PANEL], [test "$have_gbt" = "yes" && test "$enable_gnome_bluetooth_panel" = "yes"])
 
+AC_ARG_ENABLE(doc,
+              AC_HELP_STRING([--enable-doc],
+                             [generate backend and DBus API documentation]),
+              enable_doc="$enableval", enable_doc="no")
+            
+AM_CONDITIONAL([COND_DOC], [test "$enable_doc" != "no"])
 
 dnl src/backends/*/configure-sub.in and configure-post.in follow

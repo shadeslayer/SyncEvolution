@@ -14,6 +14,7 @@
     <xsl:attribute name="id"><xsl:value-of select="@doc:id"/></xsl:attribute>
     <title>
       <xsl:value-of select="doc:doc/doc:summary"/>
+      <xsl:text> ##VERSION##</xsl:text>
     </title>
   <xsl:apply-templates select="interface"/>
 </reference>

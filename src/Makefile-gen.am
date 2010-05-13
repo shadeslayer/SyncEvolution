@@ -35,7 +35,12 @@ SUBDIRS += $(SYNTHESIS_SUBDIR_INCLUDES)
 endif
 if COND_GUI
 SUBDIRS += dbus gtk-ui
+else
+if COND_DOC
+SUBDIRS += dbus
 endif
+endif
+
 DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui gnome-bluetooth synthesis-includes
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS)

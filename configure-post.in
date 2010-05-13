@@ -136,4 +136,5 @@ echo "UI (DBus client): $enable_gui"
 echo "Bluetooth transport: $have_bluetooth"
 echo "GNOME Bluetooth panel plugin: $enable_gnome_bluetooth_panel"
 echo "SHA-256: $have_sha"
+echo "API documentation: $enable_doc"
 echo
