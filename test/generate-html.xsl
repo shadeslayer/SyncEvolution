@@ -265,7 +265,9 @@
                     </td>
                     <td>
                         <xsl:for-each select="$categories">
-                            <xsl:value-of select="name(.)"/>
+                            <xsl:call-template name="stringescape">
+                                <xsl:with-param name="string" select="name(.)"/>
+                            </xsl:call-template>
                             <xsl:if test="position()!=last()">
                                 <xsl:value-of select="', '"/>
                             </xsl:if>
@@ -562,7 +564,11 @@
             <tr>
                 <th>Item</th>
                 <xsl:for-each select="$type-list">
-                    <th width="20"><xsl:value-of select="name(.)"/></th>
+                    <th width="20">
+                        <xsl:call-template name="stringescape">
+                            <xsl:with-param name="string" select="name(.)"/>
+                        </xsl:call-template>
+                    </th>
                 </xsl:for-each>
             </tr>
 
@@ -594,7 +600,12 @@
                                     skipped
                                 </xsl:when>
                                 <xsl:otherwise>
-                                    <a href="{concat($log-path,string(@prefix),name($type),'_',name($unit),$log-file-suffix)}">
+                                    <xsl:variable name='escapedtype'>
+                                        <xsl:call-template name="stringescape">
+                                            <xsl:with-param name="string" select="name($type)"/>
+                                        </xsl:call-template>
+                                    </xsl:variable>
+                                    <a href="{concat($log-path,string(@prefix),$escapedtype,'_',name($unit),$log-file-suffix)}">
                                         <xsl:value-of select="$status"/>
                                     </a>
                                 </xsl:otherwise>
@@ -790,6 +801,42 @@
         <font color="green">Green</font>: improvement 
         <font color="gray">Gray</font>: failed but not regression
         <br/>
+    </xsl:template>
+
+    <xsl:template name="stringescape">
+        <xsl:param name="string"/>
+        <xsl:variable name="str">
+            <xsl:call-template name="stringreplaceall">
+                <xsl:with-param name="orginalstring" select="$string"/>
+                <xsl:with-param name="old" select="'__'"/>
+                <xsl:with-param name="new" select="'_'"/>
+            </xsl:call-template>
+        </xsl:variable>
+        <xsl:call-template name="stringreplaceall">
+            <xsl:with-param name="orginalstring" select="string($str)"/>
+            <xsl:with-param name="old" select="'_-'"/>
+            <xsl:with-param name="new" select="'+'"/>
+        </xsl:call-template>
+    </xsl:template>
+
+    <xsl:template name="stringreplaceall">
+        <xsl:param name="orginalstring"/>
+        <xsl:param name="old"/>
+        <xsl:param name="new"/>
+        <xsl:choose>
+            <xsl:when test="contains($orginalstring, $old)">
+                <xsl:value-of select="substring-before($orginalstring, $old)"/>
+                <xsl:value-of select="$new"/>
+                <xsl:call-template name="stringreplaceall">
+                    <xsl:with-param name="orginalstring" select="substring-after($orginalstring, $old)"/>
+                    <xsl:with-param name="old" select="$old"/>
+                    <xsl:with-param name="new" select="$new"/>
+                </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="$orginalstring"/>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
 </xsl:stylesheet>

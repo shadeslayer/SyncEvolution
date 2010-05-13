@@ -245,8 +245,8 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 indents.append(indent)
                 prefix = logprefix[format]
                 qformat = format;
-                if (qformat.find('calendar+todo') !=-1):
-                    qformat = format.replace('calendar+todo', 'calendar_todo')
+                qformat = qformat.replace("_", "__");
+                qformat = qformat.replace("+", "_-");
                 result.write(indent+'<'+qformat+' prefix="'+prefix+'">\n')
                 for case in logdic[format]:
                     indent +=space
