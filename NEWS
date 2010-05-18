@@ -1,3 +1,29 @@
+SyncEvolution 1.0 beta 3 -> 1.0 final, xxxxxxx
+==============================================
+
+Bug fixes and new features:
+
+* Configuration templates are stored in a single file (MBC #1208).
+  New templates (like something downloaded from http://syncevolution.org/wiki)
+  can be dropped into $HOME/.config/syncevolution-templates using an arbitrary
+  file name.
+* Progress and per-source status are now also reported and recorded when
+  running in server mode (MBC #1359).
+* Better handling of certain third-party time zone definitions (MBC #1332).
+  Better logging to track down such problems.
+* D-Bus server + command line: return error code when failed (MBC #2193)
+* syncevo-phone-config: simplified command line options, several bug fixes
+  (syntax error, incorrect handling of calendar+todo, MBC #1197)
+* Revised README, now also available as man page (MBC #690).
+* Funambol, Memotoo (and probably others): preserve meeting series when
+  receiving update for detached recurrence (MBC #1916)
+* Nokia E55: convert alarm times (MBC #1657). This is done via a new 
+* GTK GUI: styling fix (MBC #1372), updated toolbar for MeeGo 1.0 (MBC #1970),
+  avoid duplicating configs when selecting a config created by syncevo-phone-config 
+  or the command line (MBC #1266), scroll bars for emergency window (MBC #1296),
+  updated translations.
+
+
 SyncEvolution 1.0 beta 2 -> beta 3, 20.04.2010
 ==============================================
 
