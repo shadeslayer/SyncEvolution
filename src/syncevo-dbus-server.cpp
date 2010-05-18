@@ -2023,7 +2023,10 @@ public:
         // exceptions must be handled (= printed) before returning,
         // so that our client gets the output
         try {
-            m_cmdline.run();
+            if (!m_cmdline.run()) {
+                SE_THROW_EXCEPTION(DBusSyncException, "command line execution failure");
+            }
+
         } catch (...) {
             redirectPtr->flush();
             throw;
