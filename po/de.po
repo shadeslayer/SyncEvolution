@@ -2,9 +2,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2010-05-12 09:27+0000\n"
+"POT-Creation-Date: 2010-05-17 21:48+0000\n"
 "PO-Revision-Date: \n"
-"Last-Translator: Clara Steiner-Jay <csteiner@aracnet.com>\n"
+"Last-Translator: Andreas Machoy <amachoy@hotmail.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -154,7 +154,9 @@ msgstr "Jetzt syncen"
 #: ../src/gtk-ui/sync-ui.c:618
 #: ../src/gtk-ui/ui.glade.h:37
 msgid "Slow sync"
-msgstr "Langsame Synchronisation"
+msgstr ""
+"Langsame\n"
+"Synchronisation"
 
 #: ../src/gtk-ui/sync-ui.c:619
 msgid "Other options..."
@@ -886,6 +888,7 @@ msgstr "Ignorieren"
 
 #~ msgid "Database error"
 #~ msgstr "Datenbankfehler"
+
 #~ msgid ""
 #~ "Do you want to replace %s with %s? This will not remove any synced "
 #~ "information on either end but you will no longer be able to sync with %s."
@@ -893,12 +896,15 @@ msgstr "Ignorieren"
 #~ "Soll %s durch %s? ersetzt werden? Es wird dabei keine synchronisierte "
 #~ "Information gelöscht,  Synchronisierung mit %s ist jedoch nichit mehr "
 #~ "möglich."
+
 #~ msgid "Yes, use %s"
 #~ msgstr "Ja, %s benutzen"
+
 #~ msgid "No, use %s"
 #~ msgstr "Nein, %s benutzen"
+
 #~ msgid "Reset service"
 #~ msgstr "Service neu einstellen"
+
 #~ msgid "Addressbook"
 #~ msgstr "Adressbuch"
-
