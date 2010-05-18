@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2010-05-05 09:24+0000\n"
-"PO-Revision-Date: 2010-05-05 18:35-0800\n"
+"PO-Revision-Date: 2010-05-17 17:39-0800\n"
 "Last-Translator: Bogdan Nosach <bogdan.nosach@ptiglobal.net>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -154,7 +154,7 @@ msgstr "Синхронизировать сейчас"
 #: ../src/gtk-ui/sync-ui.c:618
 #: ../src/gtk-ui/ui.glade.h:37
 msgid "Slow sync"
-msgstr "Медленная синхронизация"
+msgstr "Медленная/n синхронизация"
 
 #: ../src/gtk-ui/sync-ui.c:619
 msgid "Other options..."
