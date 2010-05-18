@@ -4,7 +4,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2010-05-17 21:48+0000\n"
 "PO-Revision-Date: \n"
-"Last-Translator: Andreas Machoy <amachoy@hotmail.com>\n"
+"Last-Translator: Clara Steiner-Jay <csteiner@aracnet.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -166,7 +166,7 @@ msgstr "Andere Optionen..."
 #. * when no service is selected. Will open configuration view
 #: ../src/gtk-ui/sync-ui.c:624
 msgid "Select sync service"
-msgstr "Synchronisations-Service auswählen"
+msgstr "Synchronisations-Service wählen"
 
 #. TRANSLATORS: Action button in info bar in main view. Shown e.g.
 #. * login to service fails. Will open configuration view for this service
@@ -267,7 +267,7 @@ msgstr "Eine normale Synchronisation mit %s ist zur Zeit nicht möglich. Du kann
 #: ../src/gtk-ui/sync-ui.c:1790
 #, c-format
 msgid "If something has gone horribly wrong, you can try a slow sync, start from scratch or restore from backup."
-msgstr "Falls etwas fehlgschlagen ist, kannst du eine langsame Synchronisation versuchen, neu anfangen oder von der Sicherheitskopie Daten wiederherstellen."
+msgstr "Falls etwas fehlgeschlagen ist, kannst du eine langsame Synchronisation versuchen, neu anfangen oder von der Sicherheitskopie Daten wiederherstellen."
 
 #. TRANSLATORS: These are a buttons in Emergency view. Placeholder is a
 #. * service/device name. Please don't use too long lines, but feel free to
@@ -404,7 +404,7 @@ msgstr "Warten auf Beenden des laufenden Vorgangs..."
 #. TRANSLATORS: next strings are error messages.
 #: ../src/gtk-ui/sync-ui.c:3180
 msgid "A normal sync is not possible at this time. The server suggests a slow sync, but this might not always be what you want if both ends already have data."
-msgstr "Eine normale Synchronisation ist zur Zeit nicht möglich. Der Server schlägt eine langsame Synchronisation vor, doch wenn beide Enden bereits Daten haben ist dies vielleicht nicht immer wünschenswert."
+msgstr "Eine normale Synchronisation ist zur Zeit nicht möglich. Der Server schlägt eine langsame Synchronisation vor, doch wenn beide Enden bereits Daten haben, ist dies vielleicht nicht immer wünschenswert."
 
 #: ../src/gtk-ui/sync-ui.c:3184
 msgid "The sync process died unexpectedly."
@@ -712,7 +712,7 @@ msgstr "Nein, Einstellungen behalten"
 #: ../src/gtk-ui/sync-config-widget.c:432
 #, c-format
 msgid "Do you want to delete the settings for %s? This will not remove any synced information on either end but it will remove these settings."
-msgstr "Sollen die Einstellungen für %s gelöscht werden? Dabei werden keine synchronisierten Information gelöscht, jedoch wird die Service-Konfiguration gelöscht."
+msgstr "Sollen die Einstellungen für %s gelöscht werden? Dabei werden keine synchronisierten Informationen gelöscht, jedoch wird die Service-Konfiguration gelöscht."
 
 #. TRANSLATORS: buttons in delete-service warning dialog
 #: ../src/gtk-ui/sync-config-widget.c:437
@@ -738,8 +738,8 @@ msgid ""
 "Save and replace\n"
 "current service"
 msgstr ""
-"Speichern und ersetzen\n"
-"diesen Service "
+"Diesen Service\n"
+"speichern und ersetzen"
 
 #: ../src/gtk-ui/sync-config-widget.c:493
 msgid "Stop using device"
@@ -762,7 +762,7 @@ msgstr "URI von %s"
 #: ../src/gtk-ui/sync-config-widget.c:854
 #, c-format
 msgid "Send changes to %s"
-msgstr "Önderungen senden an %s"
+msgstr "Änderungen senden an %s"
 
 #: ../src/gtk-ui/sync-config-widget.c:859
 #, c-format
@@ -888,7 +888,6 @@ msgstr "Ignorieren"
 
 #~ msgid "Database error"
 #~ msgstr "Datenbankfehler"
-
 #~ msgid ""
 #~ "Do you want to replace %s with %s? This will not remove any synced "
 #~ "information on either end but you will no longer be able to sync with %s."
@@ -896,15 +895,12 @@ msgstr "Ignorieren"
 #~ "Soll %s durch %s? ersetzt werden? Es wird dabei keine synchronisierte "
 #~ "Information gelöscht,  Synchronisierung mit %s ist jedoch nichit mehr "
 #~ "möglich."
-
 #~ msgid "Yes, use %s"
 #~ msgstr "Ja, %s benutzen"
-
 #~ msgid "No, use %s"
 #~ msgstr "Nein, %s benutzen"
-
 #~ msgid "Reset service"
 #~ msgstr "Service neu einstellen"
-
 #~ msgid "Addressbook"
 #~ msgstr "Adressbuch"
+
