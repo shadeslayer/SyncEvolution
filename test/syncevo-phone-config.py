@@ -620,10 +620,10 @@ class TestingConfiguration():
                 if have_combined:
                     ltype = strip_version(self.wConfigs['calendar'].type)
                     uri = self.wConfigs['calendar'].uri
-                    cmd = "%s --configure --source-property sync='two-way' --source-property URI='%s' --source-property type='virtual:%s' '%s' calendar+todo" %(syncevoCmd, uri, ltype, create)
+                    cmd = "%s --configure --source-property evolutionsource='calendar,todo' --source-property sync='two-way' --source-property URI='%s' --source-property type='virtual:%s' '%s' calendar+todo" %(syncevoCmd, uri, ltype, create)
                     runCommand(cmd)
                     for source in ('calendar', 'todo'):
-                        cmd = "%s --configure --source-property sync='none' --source-property URI='%s' '%s' calendar+todo" %(syncevoCmd, uri, create)
+                        cmd = "%s --configure --source-property sync='none' --source-property URI='%s' '%s' %s" %(syncevoCmd, uri, create, source)
                         runCommand(cmd)
 
 
