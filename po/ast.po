@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: syncevolution.master\n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2010-05-17 21:48+0000\n"
+"POT-Creation-Date: 2010-05-22 09:19+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: astur <malditoastur@gmail.com>\n"
 "Language-Team: Softastur <alministradores@softastur.org>\n"
@@ -41,7 +41,7 @@ msgstr "Notes"
 
 #. TRANSLATORS: This is a "combination source" for syncing with devices
 #. * that combine appointments and tasks. the name should match the ones
-#. * used for calendar and too above
+#. * used for calendar and todo above
 #: ../src/gtk-ui/sync-ui.c:277
 msgid "Appointments & Tasks"
 msgstr "Cites y xeres"
@@ -208,7 +208,7 @@ msgid "Back to sync"
 msgstr "Volver a la sincronización"
 
 #. TRANSLATORS: label for checkbutton/toggle in main view.
-#. * Please stick to asemeyao length strings or break the line with
+#. * Please stick to similar length strings or break the line with
 #. * "\n" if absolutely needed
 #: ../src/gtk-ui/sync-ui.c:1224
 msgid "Automatic sync"
@@ -272,7 +272,7 @@ msgid "If something has gone horribly wrong, you can try a slow sync, start from
 msgstr "Si asocede daqué realmente malo, puedes intentar una sincronización lenta, entamar de cero o restaurar la copia de seguridá."
 
 #. TRANSLATORS: These are a buttons in Emergency view. Placeholder is a
-#. * service/device name. Please don't use tolong lines, but feel free to
+#. * service/device name. Please don't use too long lines, but feel free to
 #. * use several lines.
 #: ../src/gtk-ui/sync-ui.c:1799
 #, c-format
@@ -460,8 +460,8 @@ msgstr "El sirvidor nun aceutó l'autorización"
 
 # Error while analysing the syntax of the configuration file
 #: ../src/gtk-ui/sync-ui.c:3224
-msgid "Failed to pase configuration file"
-msgstr "Fallu al analizar la sintaxis del ficheru de configuración"
+msgid "Failed to parse configuration file"
+msgstr "Fallu al analizar el ficheru de configuración"
 
 # Error while reading the configuration file
 #: ../src/gtk-ui/sync-ui.c:3226
@@ -861,44 +861,44 @@ msgid "Sync in the Sync application"
 msgstr "Sincronizar n'aplicación de sincronización"
 
 # Synchronization is taking place
-#: ../src/syncevo-dbus-server.cpp:5664
+#: ../src/syncevo-dbus-server.cpp:5667
 #, c-format
 msgid "%s is syncing"
 msgstr "%s ta sincronizándose"
 
-#: ../src/syncevo-dbus-server.cpp:5665
+#: ../src/syncevo-dbus-server.cpp:5668
 #, c-format
 msgid "We have just started to sync your computer with the %s sync service."
 msgstr "Anicióse a sincronizar esta máquina col serviciu de sincronización %s."
 
 #. if sync is successfully started and done
-#: ../src/syncevo-dbus-server.cpp:5679
+#: ../src/syncevo-dbus-server.cpp:5682
 #, c-format
 msgid "%s sync complete"
 msgstr "Completóse la sincronización de %s"
 
-#: ../src/syncevo-dbus-server.cpp:5680
+#: ../src/syncevo-dbus-server.cpp:5683
 #, c-format
 msgid "We have just finished syncing your computer with the %s sync service."
 msgstr "Finóse de sincronizar esta máquina col serviciu de sincronización %s."
 
 #. if sync is successfully started and has errors, or not started successful with a fatal problem
-#: ../src/syncevo-dbus-server.cpp:5685
+#: ../src/syncevo-dbus-server.cpp:5688
 msgid "Sync problem."
 msgstr "Problemes na sincronización."
 
-#: ../src/syncevo-dbus-server.cpp:5686
+#: ../src/syncevo-dbus-server.cpp:5689
 msgid "Sorry, there's a problem with your sync that you need to attend to."
 msgstr "Hebo un fallu mentantu la sincronización, y tienes qu'igualu."
 
-#: ../src/syncevo-dbus-server.cpp:5759
+#: ../src/syncevo-dbus-server.cpp:5762
 msgid "View"
 msgstr "Ver"
 
 #. Use "default" as ID because that is what mutter-moblin
 #. recognizes: it then skips the action instead of adding it
 #. in addition to its own "Dismiss" button (always added).
-#: ../src/syncevo-dbus-server.cpp:5763
+#: ../src/syncevo-dbus-server.cpp:5766
 msgid "Dismiss"
 msgstr "Zarrar"
 
