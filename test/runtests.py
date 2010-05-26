@@ -622,7 +622,7 @@ class SyncEvolutionCheckout(GitCheckout):
                              # parameter to autogen.sh in SyncEvolution: also
                              # check for clean Synthesis source
                              "env SYNTHESISSRC=../libsynthesis %s" % options.shell,
-                             "git@git.moblin.org:syncevolution.git",
+                             "git@gitorious.org:meego-middleware/syncevolution.git",
                              revision)
 
 class SynthesisCheckout(GitCheckout):
@@ -630,7 +630,7 @@ class SynthesisCheckout(GitCheckout):
         """checkout libsynthesis"""
         GitCheckout.__init__(self,
                              name, context.workdir, options.shell,
-                             "git@git.moblin.org:libsynthesis.git",
+                             "git@gitorious.org:meego-middleware/libsynthesis.git",
                              revision)
 
 class SyncEvolutionBuild(AutotoolsBuild):
