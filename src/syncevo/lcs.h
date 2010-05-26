@@ -75,7 +75,21 @@ public:
     typedef typename T::value_type::first_type F;
     typedef typename T::value_type::second_type C;
 
-    static C cost(const T &a, ssize_t start, size_t end) { return a[end].second - (start == -1 ? 0 : a[start].second); }
+    /**
+     * @param a        container holding sequence of items as passed to lcs()
+     * @param start    index of first item in the gap, may be -1
+     * @param end      index of the last item in the gap, may be one beyond end of sequence, always >= start
+     * @return cost    0 for start == end, > 0 for start < end
+     */
+    static C cost(const T &a, ssize_t start, size_t end) {
+        return a.empty() ? 0 :
+            ((end >= a.size() ? a[a.size() - 1].second  : a[end].second) -
+             (start < 0 ? a[0].second : a[start].second));
+    }
+    /**
+     * @param index    valid index (>= 0, < a.size())
+     * @return entry at index
+     */
     static const F &entry_at(const T &a, size_t index) { return a[index].first; }
 };
 
