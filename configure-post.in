@@ -51,6 +51,11 @@ if test "$need_glib" = "yes"; then
         BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $GLIB_CFLAGS $GTHREAD_CFLAGS $GOBJECT_CFLAGS"
 fi
 
+# Check for Qt if some backend needs it.
+if test "$need_qt_modules"; then
+   AT_WITH_QT(-gui $need_qt_modules)
+fi
+
 # determine from where we can get a SHA-256 implementation
 have_sha="no"
 if test "$GLIBFOUND" = "yes"; then
