@@ -926,22 +926,24 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         def callback():
             callback_called[1] = "callback()"
             self.session.Detach()
-        t1 = self.addTimeout(2, callback)
-        # session 1 done
-        loop.run()
-        self.failUnless(callback_called)
-        # session 2 ready and idle
-        loop.run()
-        loop.run()
-        expected = ["session " + self.sessionpath + " done",
-                    "session " + sessionpath + " idle",
-                    "session " + sessionpath + " ready"]
-        expected.sort()
-        DBusUtil.quit_events.sort()
-        self.failUnlessEqual(DBusUtil.quit_events, expected)
-        status, error, sources = session.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "idle")
-        self.removeTimeout(t1)
+        try:
+            t1 = self.addTimeout(2, callback)
+            # session 1 done
+            loop.run()
+            self.failUnless(callback_called)
+            # session 2 ready and idle
+            loop.run()
+            loop.run()
+            expected = ["session " + self.sessionpath + " done",
+                        "session " + sessionpath + " idle",
+                        "session " + sessionpath + " ready"]
+            expected.sort()
+            DBusUtil.quit_events.sort()
+            self.failUnlessEqual(DBusUtil.quit_events, expected)
+            status, error, sources = session.GetStatus(utf8_strings=True)
+            self.failUnlessEqual(status, "idle")
+        finally:
+            self.removeTimeout(t1)
 
 class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
     """Test session APIs that work with an empty server name. Thus, all of session APIs which
