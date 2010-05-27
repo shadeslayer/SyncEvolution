@@ -73,7 +73,6 @@ using namespace std;
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-SourceList *SyncContext::m_sourceListPtr;
 SyncContext *SyncContext::m_activeContext;
 SuspendFlags SyncContext::s_flags;
 
@@ -161,6 +160,7 @@ void SyncContext::init()
     m_serverMode = false;
     m_firstSourceAccess = true;
     m_remoteInitiated = false;
+    m_sourceListPtr = NULL;
 }
 
 SyncContext::~SyncContext()
@@ -1780,8 +1780,8 @@ void SyncContext::throwError(const string &action, int error)
 void SyncContext::fatalError(void *object, const char *error)
 {
     SE_LOG_ERROR(NULL, NULL, "%s", error);
-    if (m_sourceListPtr) {
-        m_sourceListPtr->syncDone(STATUS_FATAL, NULL);
+    if (m_activeContext && m_activeContext->m_sourceListPtr) {
+        m_activeContext->m_sourceListPtr->syncDone(STATUS_FATAL, NULL);
     }
     exit(1);
 }
@@ -1834,7 +1834,7 @@ void SyncContext::startLoopThread()
 
 SyncSource *SyncContext::findSource(const char *name)
 {
-    if (!m_sourceListPtr) {
+    if (!m_activeContext || !m_activeContext->m_sourceListPtr) {
         return NULL;
     }
     const char *realname = strrchr(name, m_findSourceSeparator);
@@ -1843,7 +1843,7 @@ SyncSource *SyncContext::findSource(const char *name)
     } else {
         realname = name;
     }
-    return (*m_sourceListPtr)[realname];
+    return (*m_activeContext->m_sourceListPtr)[realname];
 }
 
 SyncContext *SyncContext::findContext(const char *sessionName)
@@ -2573,10 +2573,10 @@ SyncContext::analyzeSyncMLMessage(const char *data, size_t len,
                                   const std::string &messageType)
 {
     SyncContext sync;
-    SwapContext syncSentinel(&sync);
     SourceList sourceList(sync, false);
     sourceList.setLogLevel(SourceList::LOGGING_SUMMARY);
-    m_sourceListPtr = &sourceList;
+    sync.m_sourceListPtr = &sourceList;
+    SwapContext syncSentinel(&sync);
     sync.initServer("", SharedBuffer(), "");
     SwapEngine swapengine(sync);
     sync.initEngine(false);
