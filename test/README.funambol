@@ -51,7 +51,7 @@ ical20
   -- If 'BYMONTHDAY' of 'RRULE' is not presented in 'monthly', funambol will generate a 'BYMONTHDAY' part  automatically. 
 itodo20
   -- Below properties are lost:
-     UID, SEQUENCE, TRANSP, LAST-MODIFIED, X-EVOLUTION-ALARM-UID, STATUS, URL
+     UID, SEQUENCE, TRANSP, LAST-MODIFIED, X-EVOLUTION-ALARM-UID, STATUS, URL, COMPLETED
   -- Below properties(together with default values) are added by server:
      CLASS:PUBLIC, PERCENT-COMPLETE:0
 

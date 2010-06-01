@@ -1,4 +1,4 @@
-@@ -32,8 +32,8 @@
+@@ -32,10 +32,9 @@
  DUE;TZID=/softwarestudio.org/Tzfile/America/New_York:20090502T130000
  DTSTART;TZID=/softwarestudio.org/Tzfile/America/New_York:20090501T100000
  CLASS:PUBLIC
@@ -7,5 +7,7 @@
 +PERCENT-COMPLETE:78
 +STATUS:IN-PROGRESS
  CATEGORIES:Business,Waiting
- COMPLETED:20090401T030000Z
+-COMPLETED:20090401T030000Z
  URL:http://foo.com
+ SEQUENCE:1
+ END:VTODO
