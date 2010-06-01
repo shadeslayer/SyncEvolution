@@ -3900,6 +3900,7 @@ private:
      * @return logdir created for the session
      */
     string session(bool changeServer, SyncMLStatus status, ...) {
+        Logger::Level level = LoggerBase::instance().getLevel();
         SourceList list(*this, true);
         list.setLogLevel(SourceList::LOGGING_QUIET);
         SyncReport report;
@@ -3949,6 +3950,7 @@ private:
         }
         list.syncDone(status, &report);
 
+        LoggerBase::instance().setLevel(level);
         return list.getLogdir();
     }
 
