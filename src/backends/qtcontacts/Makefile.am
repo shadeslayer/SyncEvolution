@@ -17,7 +17,7 @@ MAINTAINERCLEANFILES = Makefile.in
 syncqtcontacts_la_SOURCES = \
 	QtContactsSource.h \
 	QtContactsSource.cpp
-syncqtcontacts_la_LIBADD = -lQtContacts $(QT_LIBS)
+syncqtcontacts_la_LIBADD = -lQtContacts -lQtVersit $(QT_LIBS)
 syncqtcontacts_la_LDFLAGS = -module -avoid-version $(QT_LDFLAGS)
 syncqtcontacts_la_CPPFLAGS = $(AM_CPPFLAGS) $(QT_CPPFLAGS)
 # Allow Qt to set some compile flags, but not the ones normally set via configure.
