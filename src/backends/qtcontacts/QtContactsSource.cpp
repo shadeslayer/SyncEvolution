@@ -88,7 +88,7 @@ public:
 
     static string getRev(const QContact &contact)
     {
-        QContactTimestamp rev = contact.detail(QContactTimestamp::DefinitionName);
+        QContactTimestamp rev = contact.detail<QContactTimestamp>();
         QDateTime stamp = rev.lastModified();
         if (!stamp.isValid()) {
             stamp = rev.created();
