@@ -2928,7 +2928,7 @@ save_config (app_data *data, SyncevoSession *session)
 }
 
 static void
-sync (operation_data *op_data, SyncevoSession *session)
+do_sync (operation_data *op_data, SyncevoSession *session)
 {
     GHashTable *source_modes;
     GHashTableIter iter;
@@ -2998,7 +2998,7 @@ set_config_for_sync_cb (SyncevoSession *session,
         return;
     }
 
-    sync (op_data, session);
+    do_sync (op_data, session);
 }
 
 static void
