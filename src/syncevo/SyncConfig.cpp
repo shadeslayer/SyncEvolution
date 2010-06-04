@@ -1497,9 +1497,9 @@ bool SyncConfig::getUseProxy() const {
     if (!proxy ) {
         return syncPropUseProxy.getPropertyValue(*getNode(syncPropUseProxy));
     } else if (strlen(proxy)>0) {
-        return TRUE;
+        return true;
     } else {
-        return FALSE;
+        return false;
     }
 }
 
