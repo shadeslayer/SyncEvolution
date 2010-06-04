@@ -114,7 +114,7 @@ QtContactsSource::~QtContactsSource()
 
 void QtContactsSource::open()
 {
-    m_data = new QtContactsData("qtcontacts:tracker:");
+    m_data = new QtContactsData("qtcontacts:tracker:query-builder=all");
     cxxptr<QContactManager> manager(QContactManager::fromUri(m_data->m_managerURI),
                                     "QTContactManager");
     if (manager->error()) {
