@@ -4435,6 +4435,5 @@
    fun:icaltzutil_fetch_timezone
    obj:*libical.so.*
    fun:icaltimezone_get_component
-   fun:_ZN6sysync25loadSystemZoneDefinitionsEPNS_6GZonesE
 }
 
