@@ -132,15 +132,21 @@
       <doc:doc><doc:description>
         <doc:para>
           Start synchronization. The synchronization mode selection for sources works like this: Primarily, use mode from "sources" array. If the source was not found or its mode was empty, use the mode parameter. If mode parameter is empty, use the mode in configuration.
-              Examples:
-              * sync all with mode from config
-              Sync (NULL, ())
-              * refresh all from server
-              Sync ("refresh-from-server", ())
-              * force slow sync for calendar, use mode from config for others
-              Sync (NULL, (("calendar", "slow")))
-              * sync only calendar and addressbook, with mode from config
-              Sync ("none", (("calendar", NULL), ("addressbook", NULL)))
+          Examples:
+          <doc:list type="bullet">
+            <doc:item><doc:definition>sync all with mode from config:
+              Sync (NULL, ())</doc:definition>
+            </doc:item>
+            <doc:item><doc:definition>refresh all from server:
+              Sync ("refresh-from-server", ())</doc:definition>
+            </doc:item>
+            <doc:item><doc:definition>force slow sync for calendar, use mode from config for others:
+              Sync (NULL, (("calendar", "slow")))</doc:definition>
+            </doc:item>
+            <doc:item><doc:definition>sync only calendar and addressbook, with mode from config:
+              Sync ("none", (("calendar", NULL), ("addressbook", NULL)))</doc:definition>
+            </doc:item>
+          </doc:list>
         </doc:para>
         <doc:para>
           Syncevolution will by default output a sync "diff" in the end of Sync().
