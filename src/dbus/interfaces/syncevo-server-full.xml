@@ -103,7 +103,7 @@
         Together with these changes, a property value is changed: 'syncURL' in the
         configuration is replaced with the mac address of the device.
       </doc:description></doc:doc>
-      <arg type="b" name="template" direction="in">
+      <arg type="b" name="tmplate" direction="in">
         <doc:doc><doc:summary>
           if TRUE, will return template names, otherwise will return 
           configured servers
@@ -123,7 +123,7 @@
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
       </arg>
-      <arg type="b" name="template" direction="in">
+      <arg type="b" name="tmplate" direction="in">
         <doc:doc><doc:summary>
           if TRUE, will return a matching template configuration, otherwise
           will return a matching server configuration
@@ -153,6 +153,7 @@
           server. The result is undefined.
         </doc:description></doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
     </method>
 
     <method name="CheckPresence">
@@ -221,6 +222,7 @@
                 its pair-value won't be included in the dictionary.
         </doc:description></doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfStringMap"/>
     </method>
 
     <method name="GetDatabases">
@@ -253,6 +255,7 @@
           </doc:description>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfDatabases"/>
     </method>
 
     <method name="CheckSource">
@@ -365,6 +368,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In0" value="StringMap"/>
       <arg type="b" name="must_authenticate" direction="in">
         <doc:doc>
           <doc:summary>
@@ -571,6 +575,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In5" value="StringMap"/>
     </signal>
 
     <method name="InfoResponse">
@@ -599,6 +604,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="StringMap"/>
     </method>
 
     <signal name="LogOutput">
