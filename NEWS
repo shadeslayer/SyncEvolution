@@ -8,20 +8,31 @@ Bug fixes and new features:
   can be dropped into $HOME/.config/syncevolution-templates using an arbitrary
   file name.
 * Progress and per-source status are now also reported and recorded when
-  running in server mode (MBC #1359).
+  running in server mode (MBC #1359). There are still several limitations
+  (sync mode not reported, no information about sent/received/processed items
+  while the sync runs, see MBC #2786).
 * Better handling of certain third-party time zone definitions (MBC #1332).
   Better logging to track down such problems.
 * D-Bus server + command line: return error code when failed (MBC #2193)
 * syncevo-phone-config: simplified command line options, several bug fixes
   (syntax error, incorrect handling of calendar+todo, MBC #1197)
-* Revised README, now also available as man page (MBC #690).
+* Revised README, now also available as man page (MBC #690). Conversion of D-Bus API
+  documentation into .html page (MBC #1745).
 * Funambol, Memotoo (and probably others): preserve meeting series when
   receiving update for detached recurrence (MBC #1916)
-* Nokia E55: convert alarm times (MBC #1657). This is done via a new 
+* Fix for potential out-of-bounds memory access (MBC #1007).
+* HTTP server: fix for potential crash when second session was requested while an
+  older one was still running, initial sync was done without libical time zone
+  information and thus may have mismatched times (MBC #2435)
+* Nokia E55: convert alarm times (MBC #1657). This is done via a new remote rule
+  in /usr/share/syncevolution/xml/remoterules/server/46_E55.xml
+  If another phone needs the same treatment, then copy that file to
+  ~/.config/syncevolution-xml/remoterules/server and edit the <model> element.
 * GTK GUI: styling fix (MBC #1372), updated toolbar for MeeGo 1.0 (MBC #1970),
   avoid duplicating configs when selecting a config created by syncevo-phone-config 
   or the command line (MBC #1266), scroll bars for emergency window (MBC #1296),
-  updated translations.
+  avoid compile problem on Fedora Core 13 due to name collision with system sync()
+  call, updated translations.
 
 
 SyncEvolution 1.0 beta 2 -> beta 3, 20.04.2010
