@@ -1,4 +1,4 @@
-dist_doc_DATA =
+doc_DATA =
 
 %.xml: %-full.xml
 	$(XSLT) -o $@ $(srcdir)/spec-strip-docs.xsl $<
@@ -18,7 +18,7 @@ syncevo-dbus-api-doc.xml: syncevo-server-doc.xml syncevo-session-doc.xml syncevo
 syncevo-dbus-api-doc.html: syncevo-dbus-api-doc.xml
 	$(XSLT) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
 
-dist_doc_DATA += syncevo-dbus-api-doc.html
+doc_DATA += syncevo-dbus-api-doc.html
 
 endif
 
