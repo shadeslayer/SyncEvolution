@@ -4437,3 +4437,179 @@
    fun:icaltimezone_get_component
 }
 
+# ==23938== Conditional jump or move depends on uninitialised value(s)
+# ==23938==    at 0x7423FBE: icaltime_adjust (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x74294D3: icaltimezone_convert_time (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x742587B: icaltime_from_timet_with_zone (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x742597A: icaltime_from_timet (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x74263CB: icaltzutil_fetch_timezone (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x74276F4: (within /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x7427744: icaltimezone_get_component (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x6CA11A: sysync::finalizeSystemZoneDefinitions(sysync::GZones*) (platform_timezones.cpp:186)
+# ==23938==    by 0x6B4544: sysync::GZones::loggingStarted() (timezones.cpp:114)
+# ==23938==    by 0x6DA507: sysync::TSyncAppBase::finishConfig() (syncappbase.cpp:1441)
+# ==23938==    by 0x6DA67F: sysync::TSyncAppBase::readXMLConfigStream(int (*)(char*, unsigned long, unsigned long*, void*), void*) (syncappbase.cpp:1753)
+# ==23938==    by 0x6DA787: sysync::TSyncAppBase::readXMLConfigConstant(char const*) (syncappbase.cpp:1786)
+# ==23938==    by 0x6B27E9: sysync::TEngineInterface::InitEngineXML(char const*) (engineinterface.cpp:1194)
+# ==23938==    by 0x69F47C: SyncEvo::SharedEngine::InitEngineXML(std::string const&) (SynthesisEngine.cpp:48)
+# ==23938==    by 0x624EB6: SyncEvo::SyncContext::initEngine(bool) (SyncContext.cpp:2622)
+# ==23938==    by 0x6364FE: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2709)
+# ==23938==    by 0x4BF856: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:379)
+# ==23938==    by 0x56B6C0: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3248)
+# ==23938==    by 0x57D9A1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:765)
+# ==23938==    by 0x4D4EE0: SyncEvo::SyncTests::deleteAll(SyncEvo::SyncTests::DeleteAllMode) (ClientTest.cpp:1620)
+# ==23938==    by 0x4CDB1E: SyncEvo::SyncTests::testItems() (ClientTest.cpp:2333)
+# ==23938==    by 0x5B7A406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B6C7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B76278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B75FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B7A09C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B84121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B8713A: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+   icaltimezone_get_component II
+   Memcheck:Cond
+   fun:icaltime_adjust
+   fun:icaltimezone_convert_time
+   fun:icaltime_from_timet_with_zone
+   fun:icaltime_from_timet
+   fun:icaltzutil_fetch_timezone
+   obj:*libical.so*
+   fun:icaltimezone_get_component
+   fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
+
+# ==23938== Use of uninitialised value of size 8
+# ==23938==    at 0x7423DFB: icaltime_days_in_month (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x742400B: icaltime_adjust (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x74294FB: icaltimezone_convert_time (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x742587B: icaltime_from_timet_with_zone (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x742597A: icaltime_from_timet (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x74263CB: icaltzutil_fetch_timezone (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x74276F4: (within /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x7427744: icaltimezone_get_component (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x6CA11A: sysync::finalizeSystemZoneDefinitions(sysync::GZones*) (platform_timezones.cpp:186)
+# ==23938==    by 0x6B4544: sysync::GZones::loggingStarted() (timezones.cpp:114)
+# ==23938==    by 0x6DA507: sysync::TSyncAppBase::finishConfig() (syncappbase.cpp:1441)
+# ==23938==    by 0x6DA67F: sysync::TSyncAppBase::readXMLConfigStream(int (*)(char*, unsigned long, unsigned long*, void*), void*) (syncappbase.cpp:1753)
+# ==23938==    by 0x6DA787: sysync::TSyncAppBase::readXMLConfigConstant(char const*) (syncappbase.cpp:1786)
+# ==23938==    by 0x6B27E9: sysync::TEngineInterface::InitEngineXML(char const*) (engineinterface.cpp:1194)
+# ==23938==    by 0x69F47C: SyncEvo::SharedEngine::InitEngineXML(std::string const&) (SynthesisEngine.cpp:48)
+# ==23938==    by 0x624EB6: SyncEvo::SyncContext::initEngine(bool) (SyncContext.cpp:2622)
+# ==23938==    by 0x6364FE: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2709)
+# ==23938==    by 0x4BF856: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:379)
+# ==23938==    by 0x56B6C0: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3248)
+# ==23938==    by 0x57D9A1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:765)
+# ==23938==    by 0x4D4EE0: SyncEvo::SyncTests::deleteAll(SyncEvo::SyncTests::DeleteAllMode) (ClientTest.cpp:1620)
+# ==23938==    by 0x4CDB1E: SyncEvo::SyncTests::testItems() (ClientTest.cpp:2333)
+# ==23938==    by 0x5B7A406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B6C7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B76278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B75FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B7A09C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B84121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+   icaltimezone_get_component III
+   Memcheck:Value8
+   fun:icaltime_days_in_month
+   fun:icaltime_adjust
+   fun:icaltimezone_convert_time
+   fun:icaltime_from_timet_with_zone
+   fun:icaltime_from_timet
+   fun:icaltzutil_fetch_timezone
+   obj:*libical.so*
+   fun:icaltimezone_get_component
+   fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
+# ==23938== Conditional jump or move depends on uninitialised value(s)
+# ==23938==    at 0x742B5CC: icalvalue_reset_kind (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x7415284: icalvalue_new_datetime (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x7412488: icalproperty_set_dtstart (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x7412554: icalproperty_new_dtstart (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x7426476: icaltzutil_fetch_timezone (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x74276F4: (within /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x7427744: icaltimezone_get_component (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x6CA11A: sysync::finalizeSystemZoneDefinitions(sysync::GZones*) (platform_timezones.cpp:186)
+# ==23938==    by 0x6B4544: sysync::GZones::loggingStarted() (timezones.cpp:114)
+# ==23938==    by 0x6DA507: sysync::TSyncAppBase::finishConfig() (syncappbase.cpp:1441)
+# ==23938==    by 0x6DA67F: sysync::TSyncAppBase::readXMLConfigStream(int (*)(char*, unsigned long, unsigned long*, void*), void*) (syncappbase.cpp:1753)
+# ==23938==    by 0x6DA787: sysync::TSyncAppBase::readXMLConfigConstant(char const*) (syncappbase.cpp:1786)
+# ==23938==    by 0x6B27E9: sysync::TEngineInterface::InitEngineXML(char const*) (engineinterface.cpp:1194)
+# ==23938==    by 0x69F47C: SyncEvo::SharedEngine::InitEngineXML(std::string const&) (SynthesisEngine.cpp:48)
+# ==23938==    by 0x624EB6: SyncEvo::SyncContext::initEngine(bool) (SyncContext.cpp:2622)
+# ==23938==    by 0x6364FE: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2709)
+# ==23938==    by 0x4BF856: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:379)
+# ==23938==    by 0x56B6C0: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3248)
+# ==23938==    by 0x57D9A1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:765)
+# ==23938==    by 0x4D4EE0: SyncEvo::SyncTests::deleteAll(SyncEvo::SyncTests::DeleteAllMode) (ClientTest.cpp:1620)
+# ==23938==    by 0x4CDB1E: SyncEvo::SyncTests::testItems() (ClientTest.cpp:2333)
+# ==23938==    by 0x5B7A406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B6C7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B76278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B75FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B7A09C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B84121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B8713A: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+   icaltimezone_get_component IV 
+   Memcheck:Cond
+   fun:icalvalue_reset_kind
+   fun:icalvalue_new_datetime
+   fun:icalproperty_set_dtstart
+   fun:icalproperty_new_dtstart
+   fun:icaltzutil_fetch_timezone
+   obj:*libical.so*
+   fun:icaltimezone_get_component
+   fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
+# ==23938== Conditional jump or move depends on uninitialised value(s)
+# ==23938==    at 0x8053794: vfprintf (in /lib/libc-2.9.so)
+# ==23938==    by 0x8076759: vsnprintf (in /lib/libc-2.9.so)
+# ==23938==    by 0x805BBA2: snprintf (in /lib/libc-2.9.so)
+# ==23938==    by 0x742B728: print_date_to_string (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x742B865: print_datetime_to_string (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x742BFF8: icalvalue_as_ical_string_r (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x741F1C4: icalproperty_as_ical_string_r (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x741AD58: icalcomponent_as_ical_string_r (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x741ADAF: icalcomponent_as_ical_string_r (in /usr/lib/libical.so.0.44.0)
+# ==23938==    by 0x6CA12D: sysync::finalizeSystemZoneDefinitions(sysync::GZones*) (platform_timezones.cpp:189)
+# ==23938==    by 0x6B4544: sysync::GZones::loggingStarted() (timezones.cpp:114)
+# ==23938==    by 0x6DA507: sysync::TSyncAppBase::finishConfig() (syncappbase.cpp:1441)
+# ==23938==    by 0x6DA67F: sysync::TSyncAppBase::readXMLConfigStream(int (*)(char*, unsigned long, unsigned long*, void*), void*) (syncappbase.cpp:1753)
+# ==23938==    by 0x6DA787: sysync::TSyncAppBase::readXMLConfigConstant(char const*) (syncappbase.cpp:1786)
+# ==23938==    by 0x6B27E9: sysync::TEngineInterface::InitEngineXML(char const*) (engineinterface.cpp:1194)
+# ==23938==    by 0x69F47C: SyncEvo::SharedEngine::InitEngineXML(std::string const&) (SynthesisEngine.cpp:48)
+# ==23938==    by 0x624EB6: SyncEvo::SyncContext::initEngine(bool) (SyncContext.cpp:2622)
+# ==23938==    by 0x6364FE: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2709)
+# ==23938==    by 0x4BF856: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:379)
+# ==23938==    by 0x56B6C0: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3248)
+# ==23938==    by 0x57D9A1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:765)
+# ==23938==    by 0x4D4EE0: SyncEvo::SyncTests::deleteAll(SyncEvo::SyncTests::DeleteAllMode) (ClientTest.cpp:1620)
+# ==23938==    by 0x4CDB1E: SyncEvo::SyncTests::testItems() (ClientTest.cpp:2333)
+# ==23938==    by 0x5B7A406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B6C7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B76278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B75FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B7A09C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==23938==    by 0x5B81B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+   icalcomponent_as_ical_string_r
+   Memcheck:Cond
+   fun:vfprintf
+   fun:vsnprintf
+   fun:snprintf
+   fun:print_date_to_string
+   fun:print_datetime_to_string
+   fun:icalvalue_as_ical_string_r
+   fun:icalproperty_as_ical_string_r
+   fun:icalcomponent_as_ical_string_r
+   fun:icalcomponent_as_ical_string_r
+   fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
