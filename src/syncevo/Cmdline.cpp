@@ -83,6 +83,11 @@ bool Cmdline::parse(vector<string> &parsed)
         parsed.push_back(m_argv[0]);
     }
 
+    // All command line options which ask for a specific operation,
+    // like --restore, --print-config, ... Used to detect conflicting
+    // operations.
+    vector<string> operations;
+
     int opt = 1;
     bool ok;
     while (opt < m_argc) {
@@ -140,21 +145,28 @@ bool Cmdline::parse(vector<string> &parsed)
         } else if(boost::iequals(m_argv[opt], "--print-servers") ||
                   boost::iequals(m_argv[opt], "--print-peers") ||
                   boost::iequals(m_argv[opt], "--print-configs")) {
+            operations.push_back(m_argv[opt]);
             m_printServers = true;
         } else if(boost::iequals(m_argv[opt], "--print-config") ||
                   boost::iequals(m_argv[opt], "-p")) {
+            operations.push_back(m_argv[opt]);
             m_printConfig = true;
         } else if(boost::iequals(m_argv[opt], "--print-sessions")) {
+            operations.push_back(m_argv[opt]);
             m_printSessions = true;
         } else if(boost::iequals(m_argv[opt], "--configure") ||
                   boost::iequals(m_argv[opt], "-c")) {
+            operations.push_back(m_argv[opt]);
             m_configure = true;
         } else if(boost::iequals(m_argv[opt], "--remove")) {
+            operations.push_back(m_argv[opt]);
             m_remove = true;
         } else if(boost::iequals(m_argv[opt], "--run") ||
                   boost::iequals(m_argv[opt], "-r")) {
+            operations.push_back(m_argv[opt]);
             m_run = true;
         } else if(boost::iequals(m_argv[opt], "--restore")) {
+            operations.push_back(m_argv[opt]);
             opt++;
             if (opt >= m_argc) {
                 usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
@@ -178,9 +190,11 @@ bool Cmdline::parse(vector<string> &parsed)
         } else if(boost::iequals(m_argv[opt], "--dry-run")) {
             m_dryrun = true;
         } else if(boost::iequals(m_argv[opt], "--migrate")) {
+            operations.push_back(m_argv[opt]);
             m_migrate = true;
         } else if(boost::iequals(m_argv[opt], "--status") ||
                   boost::iequals(m_argv[opt], "-t")) {
+            operations.push_back(m_argv[opt]);
             m_status = true;
         } else if(boost::iequals(m_argv[opt], "--quiet") ||
                   boost::iequals(m_argv[opt], "-q")) {
@@ -189,6 +203,7 @@ bool Cmdline::parse(vector<string> &parsed)
                   boost::iequals(m_argv[opt], "-h")) {
             m_usage = true;
         } else if(boost::iequals(m_argv[opt], "--version")) {
+            operations.push_back(m_argv[opt]);
             m_version = true;
         } else if (parseBool(opt, "--keyring", "-k", true, m_keyring, ok)) {
             if (!ok) {
@@ -200,6 +215,7 @@ bool Cmdline::parse(vector<string> &parsed)
             }
         } else if(boost::iequals(m_argv[opt], "--monitor")||
                 boost::iequals(m_argv[opt], "-m")) {
+            operations.push_back(m_argv[opt]);
             m_monitor = true;
         } else {
             usage(false, string(m_argv[opt]) + ": unknown parameter");
@@ -214,6 +230,12 @@ bool Cmdline::parse(vector<string> &parsed)
             parsed.push_back(m_argv[opt]);
             m_sources.insert(m_argv[opt++]);
         }
+    }
+
+    // check whether we have conflicting operations requested by user
+    if (operations.size() > 1) {
+        usage(false, boost::join(operations, " ") + ": mutually exclusive operations");
+        return false;
     }
 
     return true;
