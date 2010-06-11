@@ -1401,6 +1401,13 @@ string SyncContext::askPassword(const string &passwordName, const string &descr,
     }
 }
 
+void SyncContext::readStdin(string &content)
+{
+    if (!ReadFile(cin, content)) {
+        throwError("stdin", errno);
+    }
+}
+
 string SyncContext::getUsedSyncURL() {
     vector<string> urls = getSyncURL();
     BOOST_FOREACH (string url, urls) {

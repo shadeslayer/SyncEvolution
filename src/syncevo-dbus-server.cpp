@@ -1451,6 +1451,11 @@ public:
     bool savePassword(const string &passwordName, 
                       const string &password, 
                       const ConfigPasswordKey &key);
+
+    /**
+     * Read stdin via InfoRequest/Response.
+     */
+    void readStdin(string &content);
 };
 
 /**
@@ -2711,6 +2716,10 @@ bool DBusUserInterface::savePassword(const string &passwordName,
 #endif
 }
 
+void DBusUserInterface::readStdin(string &content)
+{
+    throwError("reading stdin in D-Bus server not supported, use --daemon=no in command line");
+}
 
 /***************** DBusSync implementation **********************/
 

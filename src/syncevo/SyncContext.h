@@ -432,6 +432,14 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     bool getRemoteInitiated() {return m_remoteInitiated;}
     void setRemoteInitiated(bool remote) {m_remoteInitiated = remote;}
 
+    /**
+     * Read from stdin until end of stream.
+     *
+     * Default implementation reads from real stdin,
+     * D-Bus server implementation must ask client.
+     */
+    virtual void readStdin(string &content);
+
   protected:
     /** exchange active Synthesis engine */
     SharedEngine swapEngine(SharedEngine newengine) {
