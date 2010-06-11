@@ -40,6 +40,19 @@ Restore data from the automatic backups:
 Modify a configuration:
   syncevolution --remove|--migrate|--configure <options> <config>
 
+List items:
+  syncevolution --print-items <config> <source>
+
+Export item(s):
+  syncevolution [--delimiter <string>] --export <dir>|<file>|- <config> <source> [<luid> ...]
+
+Add item(s):
+  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- <config> <source>
+
+Update item(s)
+  syncevolution --update <dir> <config> <source>
+  syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
+
 DESCRIPTION
 ===========
 
@@ -210,8 +223,46 @@ A restore tries to minimize the number of item changes (see section
 identical before and after the change will not be transmitted anew to
 the server during the next synchronization. If the server somehow
 needs to get a clean copy of all items on the client then, use "--sync
-refresh-from-client" in the next run.
+refresh-from-client" in the next run. ::
 
+  syncevolution --print-items <config> <source>
+  syncevolution [--delimiter <string>] --export <dir>|<file>|- <config> <source> [<luid> ...]
+  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- <config> <source>
+  syncevolution --update <dir> <config> <source>
+  syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
+
+Restore depends on the specific format of the automatic backups
+created by SyncEvolution. Arbitrary access to item data is provided
+with additional options. <luid> here is the unique local identifier
+assigned to each item in the source, transformed so that it contains
+only alphanumeric characters, dash and underscore.
+
+--print-items shows all existing items using one line per item using
+the format "<luid>[: <short description>]". Whether the description
+is available depends on the backend and the kind of data that it
+stores.
+
+--export writes all items in the source or all items whose <luid> is
+given into a directory if the --export parameter exists and is a
+directory. The <luid> of each item is used as file name. Otherwise it
+creates a new file under that name and writes the selected items
+separated by the chosen delimiter string. stdout can be selected with
+a dash.
+
+The default delimiter are two newline characters for a blank line. This
+works for vCard 3.0 and iCalendar 2.0, which never contain blank lines.
+Because items may or may not end in a newline, as a special case the
+initial newline of a delimiter is skipped if the item ends in a newline.
+
+--import adds all items found in the directory or input file to the
+source.  When reading from a directory, each file is treated as one
+item. Otherwise the input is split at the chosen delimiter. "none" as
+delimiter disables splitting of the input.
+
+--update overwrites the content of existing items. When updating from
+a directory, the name of each file is taken as its luid. When updating
+from file or stdin, the number of luids given on the command line
+must match with the number of items in the input.
 
 OPTIONS
 =======

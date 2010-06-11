@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -40,9 +41,10 @@ using namespace std;
 
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
-
+#include <fstream>
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -82,6 +84,7 @@ bool Cmdline::parse(vector<string> &parsed)
     if (m_argc) {
         parsed.push_back(m_argv[0]);
     }
+    m_delimiter = "\n\n";
 
     // All command line options which ask for a specific operation,
     // like --restore, --print-config, ... Used to detect conflicting
@@ -187,6 +190,40 @@ bool Cmdline::parse(vector<string> &parsed)
             m_before = true;
         } else if(boost::iequals(m_argv[opt], "--after")) {
             m_after = true;
+        } else if (boost::iequals(m_argv[opt], "--print-items")) {
+            operations.push_back(m_argv[opt]);
+            m_printItems = m_accessItems = true;
+        } else if ((boost::iequals(m_argv[opt], "--export") && (m_export = true)) ||
+                   (boost::iequals(m_argv[opt], "--import") && (m_import = true)) ||
+                   (boost::iequals(m_argv[opt], "--update") && (m_update = true))) {
+            operations.push_back(m_argv[opt]);
+            m_accessItems = true;
+            opt++;
+            if (opt >= m_argc || !m_argv[opt][0]) {
+                usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
+                return false;
+            }
+            m_itemPath = m_argv[opt];
+            if (m_itemPath != "-") {
+                string dir, file;
+                splitPath(m_itemPath, dir, file);
+                if (dir.empty()) {
+                    dir = ".";
+                }
+                if (!relToAbs(dir)) {
+                    SyncContext::throwError(dir, errno);
+                }
+                m_itemPath = dir + "/" + file;
+            }
+            parsed.push_back(m_itemPath);
+        } else if (boost::iequals(m_argv[opt], "--delimiter")) {
+            opt++;
+            if (opt >= m_argc) {
+                usage(true, string("missing parameter for ") + cmdOpt(m_argv[opt - 1]));
+                return false;
+            }
+            m_delimiter = m_argv[opt];
+            parsed.push_back(m_delimiter);
         } else if(boost::iequals(m_argv[opt], "--dry-run")) {
             m_dryrun = true;
         } else if(boost::iequals(m_argv[opt], "--migrate")) {
@@ -228,7 +265,13 @@ bool Cmdline::parse(vector<string> &parsed)
         m_server = m_argv[opt++];
         while (opt < m_argc) {
             parsed.push_back(m_argv[opt]);
-            m_sources.insert(m_argv[opt++]);
+            if (m_sources.empty() ||
+                !m_accessItems) {
+                m_sources.insert(m_argv[opt++]);
+            } else {
+                // first additional parameter was source, rest are luids
+                m_luids.push_back(m_argv[opt++]);
+            }
         }
     }
 
@@ -236,6 +279,22 @@ bool Cmdline::parse(vector<string> &parsed)
     if (operations.size() > 1) {
         usage(false, boost::join(operations, " ") + ": mutually exclusive operations");
         return false;
+    }
+
+    // common sanity checking for item listing/import/export/update
+    if (m_accessItems) {
+        if (m_server.empty()) {
+            usage(false, operations[0] + ": needs configuration name");
+            return false;
+        }
+        if (m_sources.size() == 0) {
+            usage(false, operations[0] + ": needs source name");
+            return false;
+        }
+        if ((m_import || m_update) && m_dryrun) {
+            usage(false, operations[0] + ": --dry-run not supported");
+            return false;
+        }
     }
 
     return true;
@@ -291,6 +350,7 @@ bool Cmdline::isSync()
         m_configure || m_migrate ||
         m_status || m_printSessions ||
         !m_restore.empty() ||
+        m_accessItems ||
         m_dryrun ||
         (!m_run && (m_syncProps.size() || m_sourceProps.size()))) {
         return false;
@@ -661,6 +721,203 @@ bool Cmdline::run() {
             config->remove();
             return true;
         }
+    } else if (m_accessItems) {
+        // need access to specific source
+        boost::shared_ptr<SyncContext> context;
+        context.reset(createSyncClient());
+        context->setOutput(&m_out);
+        string sourceName = *m_sources.begin();
+        SyncSourceNodes sourceNodes = context->getSyncSourceNodes(sourceName);
+        SyncSourceParams params(sourceName, sourceNodes);
+        cxxptr<SyncSource> source(SyncSource::createSource(params, true));
+
+        sysync::TSyError err;
+#define CHECK_ERROR(_op) if (err) { SE_THROW_EXCEPTION_STATUS(StatusException, string(source->getName()) + ": " + (_op), SyncMLStatus(err)); }
+
+        source->open();
+        const SyncSource::Operations &ops = source->getOperations();
+        if (m_printItems) {
+            SyncSourceLogging *logging = dynamic_cast<SyncSourceLogging *>(source.get());
+            if (!ops.m_startDataRead ||
+                !ops.m_readNextItem) {
+                source->throwError("reading items not supported");
+            }
+            err = ops.m_startDataRead("", "");
+            CHECK_ERROR("reading items");
+            list<string> luids;
+            readLUIDs(source, luids);
+            BOOST_FOREACH(string &luid, luids) {
+                string description;
+                if (false && logging) {
+                    // This code depends on a functional Synthesis engine,
+                    // which we don't have.
+                    // sysync::KeyH key;
+                    // ops.m_readItemAsKey()
+                    // description = ": ";
+                    // description += logging->getDescription(key);
+                }
+                m_out << luid << description << std::endl;
+            }
+        } else {
+            SyncSourceRaw *raw = dynamic_cast<SyncSourceRaw *>(source.get());
+            if (!raw) {
+                source->throwError("reading/writing items directly not supported");
+            }
+            if (m_import || m_update) {
+                err = ops.m_startDataRead("", "");
+                CHECK_ERROR("reading items");
+                if (ops.m_endDataRead) {
+                    err = ops.m_endDataRead();
+                    CHECK_ERROR("stop reading items");
+                }
+                if (ops.m_startDataWrite) {
+                    err = ops.m_startDataWrite();
+                    CHECK_ERROR("writing items");
+                }
+
+                cxxptr<ifstream> inFile;
+                if (m_itemPath =="-" ||
+                    !isDir(m_itemPath)) {
+                    string content;
+                    string luid;
+                    if (m_itemPath == "-") {
+                        context->readStdin(content);
+                    } else if (!ReadFile(m_itemPath, content)) {
+                        SyncContext::throwError(m_itemPath, errno);
+                    }
+                    if (m_delimiter == "none") {
+                        if (m_update) {
+                            if (m_luids.size() != 1) {
+                                SyncContext::throwError("need exactly one LUID parameter");
+                            } else {
+                                luid = *m_luids.begin();
+                            }
+                        }
+                        m_out << "#0: "
+                              << insertItem(raw, luid, content) 
+                              << endl;
+                    } else {
+                        typedef boost::split_iterator<string::iterator> string_split_iterator;
+                        int count = 0;
+                        // when updating, check number of luids in advance
+                        if (m_update) {
+                            unsigned long total = 0;
+                            for (string_split_iterator it =
+                                     boost::make_split_iterator(content,
+                                                                boost::first_finder(m_delimiter, boost::is_iequal()));
+                                 it != string_split_iterator();
+                                 ++it) {
+                                total++;
+                            }
+                            if (total != m_luids.size()) {
+                                SyncContext::throwError(StringPrintf("%lu items != %lu luids, must match => aborting",
+                                                                     total, (unsigned long)m_luids.size()));
+                            }
+                        }
+                        list<string>::const_iterator luidit = m_luids.begin();
+                        for (string_split_iterator it =
+                                 boost::make_split_iterator(content,
+                                                            boost::first_finder(m_delimiter, boost::is_iequal()));
+                             it != string_split_iterator();
+                             ++it) {
+                            m_out << "#" << count << ": ";
+                            string luid;
+                            if (m_update) {
+                                if (luidit == m_luids.end()) {
+                                    // was checked above
+                                    SyncContext::throwError("internal error, not enough luids");
+                                }
+                                luid = *luidit;
+                                ++luidit;
+                            }
+                            m_out << insertItem(raw,
+                                                luid,
+                                                string(it->begin(), it->end()))
+                                  << endl;
+                            count++;
+                        }
+                    }
+                } else {
+                    ReadDir dir(m_itemPath);
+                    int count = 0;
+                    BOOST_FOREACH(const string &entry, dir) {
+                        string content;
+                        string path = m_itemPath + "/" + entry;
+                        m_out << count << ": " << entry << ": ";
+                        if (!ReadFile(path, content)) {
+                            SyncContext::throwError(path, errno);
+                        }
+                        m_out << insertItem(raw, "", content) << endl;
+                    }
+                }
+
+                // NO err = ops.m_endDataWrite()! That's
+                // intentional. It ensures that for most (all?!)
+                // backends the change tracking isn't updated and thus
+                // future syncs see the imports/updates as changes
+                // made by the user.
+            } else if (m_export) {
+                err = ops.m_startDataRead("", "");
+                CHECK_ERROR("reading items");
+
+                ostream *out = NULL;
+                cxxptr<ofstream> outFile;
+                if (m_itemPath == "-") {
+                    out = &m_out;
+                } else if(!isDir(m_itemPath)) {
+                    outFile.set(new ofstream(m_itemPath.c_str()));
+                    out = outFile;
+                }
+                if (m_luids.empty()) {
+                    readLUIDs(source, m_luids);
+                }
+                bool haveItem = false;     // have written one item
+                bool haveNewline = false;  // that item had a newline at the end
+                try {
+                    BOOST_FOREACH(const string &luid, m_luids) {
+                        string item;
+                        raw->readItemRaw(SafeConfigNode::unescape(luid), item);
+                        if (!out) {
+                            // write into directory
+                            string fullPath = m_itemPath + "/" + luid;
+                            ofstream file((m_itemPath + "/" + luid).c_str());
+                            file << item;
+                            file.close();
+                            if (file.bad()) {
+                                SyncContext::throwError(fullPath, errno);
+                            }
+                        } else {
+                            if (haveItem) {
+                                if (m_delimiter.size() > 1 &&
+                                    haveNewline &&
+                                    m_delimiter[0] == '\n') {
+                                    // already wrote initial newline, skip it
+                                    *out << m_delimiter.substr(1);
+                                } else {
+                                    *out << m_delimiter;
+                                }
+                            }
+                            *out << item;
+                            haveNewline = !item.empty() && item[item.size() - 1] == '\n';
+                            haveItem = true;
+                        }
+                    }
+                } catch (...) {
+                    // ensure that we start following output on new line
+                    if (m_itemPath == "-" && haveItem && !haveNewline) {
+                        m_out << endl;
+                    }
+                    throw;
+                }
+                if (outFile) {
+                    outFile->close();
+                    if (outFile->bad()) {
+                        SyncContext::throwError(m_itemPath, errno);
+                    }
+                }
+            }
+        }
+        source->close();
     } else {
         std::set<std::string> unmatchedSources;
         boost::shared_ptr<SyncContext> context;
@@ -782,6 +1039,26 @@ bool Cmdline::run() {
     }
 
     return true;
+}
+
+void Cmdline::readLUIDs(SyncSource *source, list<string> &luids)
+{
+    const SyncSource::Operations &ops = source->getOperations();
+    sysync::ItemIDType id;
+    sysync::sInt32 status;
+    sysync::TSyError err = ops.m_readNextItem(&id, &status, true);
+    CHECK_ERROR("next item");
+    while (status != sysync::ReadNextItem_EOF) {
+        luids.push_back(SafeConfigNode::escape(id.item, true, true));
+        err = ops.m_readNextItem(&id, &status, false);
+        CHECK_ERROR("next item");
+    }
+}
+
+string Cmdline::insertItem(SyncSourceRaw *source, const string &luid, const string &data)
+{
+    SyncSourceRaw::InsertItemResult res = source->insertItemRaw(luid, data);
+    return res.m_luid;
 }
 
 string Cmdline::cmdOpt(const char *opt, const char *param)

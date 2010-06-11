@@ -33,6 +33,7 @@ using namespace std;
 SE_BEGIN_CXX
 
 class SyncSource;
+class SyncSourceRaw;
 class SyncContext;
 class CmdlineTest;
 
@@ -132,6 +133,12 @@ protected:
 
     string m_restore;
     Bool m_before, m_after;
+
+    Bool m_accessItems;
+    string m_itemPath;
+    string m_delimiter;
+    list<string> m_luids;
+    Bool m_printItems, m_update, m_import, m_export;
 
     string m_server;
     string m_template;
@@ -249,6 +256,22 @@ protected:
     bool parseBool(int opt, const char *longName, const char *shortName,
                    bool def, Bool &value,
                    bool &ok);
+
+    /**
+     * Fill list with all local IDs of the given source.
+     * Unsafe characters are escaped with SafeConfigNode::escape(true,true).
+     * startDataRead() must have been called.
+     */
+    void readLUIDs(SyncSource *source, list<string> &luids);
+
+    /**
+     * Add or update one item.
+     * @param source     SyncSource in write mode (startWriteData must have been called)
+     * @param luid       local ID, empty if item is to be added
+     * @param data       the item data to insert
+     * @return luid of inserted item
+     */
+    string insertItem(SyncSourceRaw *source, const string &luid, const string &data);
 };
 
 
