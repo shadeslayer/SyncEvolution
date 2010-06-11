@@ -384,6 +384,11 @@ bool ReadFile(const string &filename, string &content)
 {
     ifstream in;
     in.open(filename.c_str());
+    return ReadFile(in, content);
+}
+
+bool ReadFile(istream &in, string &content)
+{
     ostringstream out;
     char buf[8192];
     do {

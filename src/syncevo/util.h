@@ -130,6 +130,7 @@ bool isDir(const string &path);
  * @return true if file could be read
  */
 bool ReadFile(const string &filename, string &content);
+bool ReadFile(istream &in, string &content);
 
 enum ExecuteFlags {
     EXECUTE_NO_STDERR = 1<<0,       /**< suppress stderr of command */
