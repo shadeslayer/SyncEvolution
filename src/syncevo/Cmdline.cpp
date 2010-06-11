@@ -281,31 +281,22 @@ bool Cmdline::parseBool(int opt, const char *longName, const char *shortName,
 
 bool Cmdline::isSync()
 {
-    //make sure command line arguments really try to run sync
-    if(m_usage || m_version) {
+    // make sure command line arguments really try to run sync
+    if (m_usage || m_version ||
+        m_printServers || boost::trim_copy(m_server) == "?" ||
+        m_printTemplates || m_dontrun ||
+        m_argc == 1 || (m_useDaemon.wasSet() && m_argc == 2) ||
+        m_printConfig || m_remove ||
+        (m_server == "" && m_argc > 1) ||
+        m_configure || m_migrate ||
+        m_status || m_printSessions ||
+        !m_restore.empty() ||
+        m_dryrun ||
+        (!m_run && (m_syncProps.size() || m_sourceProps.size()))) {
         return false;
-    } else if(m_printServers || boost::trim_copy(m_server) == "?")  {
-        return false;
-    } else if(m_printTemplates || m_dontrun) {
-        return false;
-    } else if(m_argc == 1 || (m_useDaemon.wasSet() && m_argc == 2)) {
-        return false;
-    } else if(m_printConfig || m_remove) {
-        return false;
-    } else if (m_server == "" && m_argc > 1) {
-        return false;
-    } else if(m_configure || m_migrate) {
-        return false;
-    } else if(m_status || m_printSessions) {
-        return false;
-    } else if(!m_restore.empty()) {
-        return false;
-    } else if(m_dryrun) {
-        return false;
-    } else if(!m_run && (m_syncProps.size() || m_sourceProps.size())) {
-        return false;
+    } else {
+        return true;
     }
-    return true;
 }
 
 bool Cmdline::dontRun() const
