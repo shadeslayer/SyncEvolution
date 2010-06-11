@@ -751,13 +751,11 @@ bool Cmdline::run() {
             readLUIDs(source, luids);
             BOOST_FOREACH(string &luid, luids) {
                 string description;
-                if (false && logging) {
-                    // This code depends on a functional Synthesis engine,
-                    // which we don't have.
-                    // sysync::KeyH key;
-                    // ops.m_readItemAsKey()
-                    // description = ": ";
-                    // description += logging->getDescription(key);
+                if (logging) {
+                    description = logging->getDescription(luid);
+                    if (!description.empty()) {
+                        description.insert(0, ": ");
+                    }
                 }
                 m_out << luid << description << std::endl;
             }
