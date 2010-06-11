@@ -138,7 +138,7 @@ protected:
     string m_itemPath;
     string m_delimiter;
     list<string> m_luids;
-    Bool m_printItems, m_update, m_import, m_export;
+    Bool m_printItems, m_update, m_import, m_export, m_deleteItems;
 
     string m_server;
     string m_template;

@@ -224,6 +224,9 @@ bool Cmdline::parse(vector<string> &parsed)
             }
             m_delimiter = m_argv[opt];
             parsed.push_back(m_delimiter);
+        } else if (boost::iequals(m_argv[opt], "--delete-items")) {
+            operations.push_back(m_argv[opt]);
+            m_deleteItems = m_accessItems = true;
         } else if(boost::iequals(m_argv[opt], "--dry-run")) {
             m_dryrun = true;
         } else if(boost::iequals(m_argv[opt], "--migrate")) {
@@ -758,6 +761,27 @@ bool Cmdline::run() {
                 }
                 m_out << luid << description << std::endl;
             }
+        } else if (m_deleteItems) {
+            if (!ops.m_deleteItem) {
+                source->throwError("deleting items not supported");
+            }
+            err = ops.m_startDataRead("", "");
+            CHECK_ERROR("reading items");
+            if (ops.m_endDataRead) {
+                err = ops.m_endDataRead();
+                CHECK_ERROR("stop reading items");
+            }
+            if (ops.m_startDataWrite) {
+                err = ops.m_startDataWrite();
+                CHECK_ERROR("writing items");
+            }
+            BOOST_FOREACH(const string &luid, m_luids) {
+                sysync::ItemIDType id;
+                id.item = (char *)luid.c_str();
+                err = ops.m_deleteItem(&id);
+                CHECK_ERROR("deleting item");
+            }
+            // NO err = ops.m_endDataWrite(), see import/update below.
         } else {
             SyncSourceRaw *raw = dynamic_cast<SyncSourceRaw *>(source.get());
             if (!raw) {

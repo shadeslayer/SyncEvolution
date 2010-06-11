@@ -53,6 +53,9 @@ Update item(s)
   syncevolution --update <dir> <config> <source>
   syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
 
+Remove item(s):
+  syncevolution --delete-items <config> <source> <luid> ...
+
 DESCRIPTION
 ===========
 
@@ -230,6 +233,7 @@ refresh-from-client" in the next run. ::
   syncevolution [--delimiter <string>|none] --import <dir>|<file>|- <config> <source>
   syncevolution --update <dir> <config> <source>
   syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
+  syncevolution --delete-items <config> <source> <luid> ...
 
 Restore depends on the specific format of the automatic backups
 created by SyncEvolution. Arbitrary access to item data is provided
@@ -263,6 +267,14 @@ delimiter disables splitting of the input.
 a directory, the name of each file is taken as its luid. When updating
 from file or stdin, the number of luids given on the command line
 must match with the number of items in the input.
+
+--delete-items removes the specified items from the source. Most
+backends print some progress information about this, but besides that,
+no further output is produced. Trying to remove an item which does not
+exist typically leads to an ERROR message, but is not reflected in a
+non-zero result of the command line invocation itself because the
+situation is not reported as an error by backends (removal of
+non-existent items is not an error in SyncML).
 
 OPTIONS
 =======
