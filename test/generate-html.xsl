@@ -234,6 +234,7 @@
                 <th width="60">Categories</th>
                 <th width="60">Total Cases</th>
                 <th width="60">Passed</th>
+                <th width="60">Known Failure</th>
                 <th width="60">Failed</th>
                 <th width="60">Skipped</th>
                 <th width="60">Passrate</th>
@@ -248,6 +249,7 @@
                 <xsl:variable name="categories" select="$item/*"/>
                 <xsl:variable name="all" select="count($unit-cases) * count($categories)"/>
                 <xsl:variable name="passed" select="count($item/*/*[.='okay'])"/>
+                <xsl:variable name="knownfailure" select="count($item/*/*[.='knownfailure'])"/>
                 <xsl:variable name="failed" select="count($item/*/*[.='failed'])"/>
                 <xsl:variable name="status" select="$cmp-result/*[name(.)=name($item)]/@summary"/>
                 <xsl:variable name="real-regression" select="$cmp-result/*[name(.)=name($item)]/*/*[.=$regression]"/>
@@ -278,6 +280,9 @@
                     </td>
                     <td>
                         <xsl:value-of select="$passed"/>
+                    </td>
+                    <td>
+                        <xsl:value-of select="$knownfailure"/>
                     </td>
                     <td>
                         <xsl:value-of select="$failed"/>
@@ -422,6 +427,7 @@
                 <th width="60">Sources</th>
                 <th width="60">Total Cases</th>
                 <th width="60">Passed</th>
+                <th width="60">Known Failure</th>
                 <th width="60">Failed</th>
                 <th width="60">Skipped</th>
                 <th width="60">Passrate</th>
@@ -440,6 +446,7 @@
                 <xsl:variable name="item" select="."/>
                 <xsl:variable name="all" select="count($item/*)"/>
                 <xsl:variable name="passed" select="count($item/*/*[.='okay'])"/>
+                <xsl:variable name="knownfailure" select="count($item/*/*[.='knownfailure'])"/>
                 <xsl:variable name="failed" select="count($item/*/*[.='failed'])"/>
                 <xsl:variable name="status" select="$cmp-result/*[name(.)=name($item)]/@summary"/>
                 <xsl:variable name="valgrind" select="$item/@result"/>
@@ -458,6 +465,9 @@
                     </td>
                     <td> 
                         <xsl:value-of select="$passed"/>
+                    </td>
+                    <td> 
+                        <xsl:value-of select="$knownfailure"/>
                     </td>
                     <td> 
                         <xsl:value-of select="$total - $passed"/>
