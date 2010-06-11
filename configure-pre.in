@@ -5,8 +5,8 @@ dnl Invoke autogen.sh to produce a configure script.
 # Debian packages. For prereleases (beta, alpha),
 # set it to something like "0.9.2+" and the AC_INIT
 # VERSION to 1.0beta1 to produce 0.9.2+1.0beta1.
-AC_INIT([syncevolution], [1.0beta3])
-STABLE_VERSION=0.9.2+
+AC_INIT([syncevolution], [1.0])
+STABLE_VERSION=
 AC_SUBST(STABLE_VERSION)
 
 AM_INIT_AUTOMAKE([tar-ustar])
