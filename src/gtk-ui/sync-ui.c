@@ -691,6 +691,11 @@ set_app_state (app_data *data, app_state state)
             gtk_widget_show (data->no_connection_box);
         }
 
+        /* TRANSLATORS: These are for the button in main view, right side.
+           Keep line length below ~20 characters, use two lines if needed */
+        gtk_button_set_label (GTK_BUTTON (data->sync_btn),
+                              _("Sync now"));
+
         if (!data->current_service) {
             gtk_widget_hide (data->service_box);
             gtk_widget_hide (data->autosync_box);
@@ -715,15 +720,11 @@ set_app_state (app_data *data, app_state state)
             gtk_widget_show (data->autosync_box);
             gtk_widget_set_sensitive (data->sync_btn, data->online);
             gtk_widget_set_sensitive (data->emergency_btn, TRUE);
-            /* TRANSLATORS: These are for the button in main view, right side.
-               Keep line length below ~20 characters, use two lines if needed */
             if (data->synced_this_session && data->current_operation != OP_RESTORE) {
                 gtk_button_set_label (GTK_BUTTON (data->sync_btn),
                                       _("Sync again"));
             } else {
                 gtk_widget_hide (data->progress);
-                gtk_button_set_label (GTK_BUTTON (data->sync_btn),
-                                      _("Sync now"));
             }
             gtk_window_set_focus (GTK_WINDOW (data->sync_win), data->sync_btn);
         }
