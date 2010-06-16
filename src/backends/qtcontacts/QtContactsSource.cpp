@@ -154,7 +154,19 @@ void QtContactsSource::listAllItems(RevisionMap_t &revisions)
     fetch.waitForFinished();
     // TODO: fetch.errors()
     foreach (const QContact &contact, fetch.contacts()) {
-        revisions[QtContactsData::getLUID(contact)] = QtContactsData::getRev(contact);
+        string revision = QtContactsData::getRev(contact);
+        string luid = QtContactsData::getLUID(contact);
+        if (luid == "2147483647" &&
+            revision == "") {
+            // Seems to be a special, artifical contact that always
+            // exists. Ignore it.
+            //
+            // Also note that qtcontacts-tracker and/or QtContacts
+            // spew out a warning on stdout about it (?):
+            // skipping contact with unsupported IRI: "http://www.semanticdesktop.org/ontologies/2007/03/22/nco#default-contact-emergency"
+            continue;
+        }
+        revisions[luid] = revision;
     }
 }
 
