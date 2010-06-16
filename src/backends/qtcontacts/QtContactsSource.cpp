@@ -234,12 +234,16 @@ TrackingSyncSource::InsertItemResult QtContactsSource::insertItem(const string &
 
 void QtContactsSource::removeItem(const string &uid)
 {
+#if 1
     QContactRemoveRequest remove;
     remove.setManager(m_data->m_manager.get());
     remove.setContactIds(QtContactsData::createContactList(uid));
     remove.start();
     remove.waitForFinished();
     // TODO: remove.errors()
+#else
+    m_data->m_manager->removeContact(atoi(uid.c_str()));
+#endif
 }
 
 SE_END_CXX
