@@ -957,6 +957,19 @@ ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
     return const_cast<SyncConfig *>(this)->getSyncSourceNodes(name, changeId);
 }
 
+SyncSourceNodes SyncConfig::getSyncSourceNodesNoTracking(const string &name)
+{
+    SyncSourceNodes nodes = getSyncSourceNodes(name);
+    boost::shared_ptr<ConfigNode> dummy(new VolatileConfigNode());
+    return SyncSourceNodes(nodes.m_havePeerNode,
+                           nodes.m_sharedNode,
+                           nodes.m_peerNode,
+                           nodes.m_hiddenPeerNode,
+                           dummy,
+                           nodes.m_serverNode,
+                           nodes.m_cacheDir);
+}
+
 static ConfigProperty syncPropSyncURL("syncURL",
                                       "Identifies how to contact the peer,\n"
                                       "best explained with some examples:\n"

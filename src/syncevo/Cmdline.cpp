@@ -730,7 +730,7 @@ bool Cmdline::run() {
         context.reset(createSyncClient());
         context->setOutput(&m_out);
         string sourceName = *m_sources.begin();
-        SyncSourceNodes sourceNodes = context->getSyncSourceNodes(sourceName);
+        SyncSourceNodes sourceNodes = context->getSyncSourceNodesNoTracking(sourceName);
         SyncSourceParams params(sourceName, sourceNodes);
         cxxptr<SyncSource> source(SyncSource::createSource(params, true));
 
