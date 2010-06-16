@@ -1456,7 +1456,7 @@ private:
  */
 class SyncSourceNodes {
  public:
-    SyncSourceNodes() {}
+    SyncSourceNodes() : m_havePeerNode(false) {}
 
     /**
      * @param havePeerNode    false when peerNode is a dummy instance which has to
@@ -1508,6 +1508,7 @@ class SyncSourceNodes {
     string getCacheDir() const { return m_cacheDir; }
 
  protected:
+    const bool m_havePeerNode;
     const boost::shared_ptr<FilterConfigNode> m_sharedNode;
     const boost::shared_ptr<FilterConfigNode> m_peerNode;
     const boost::shared_ptr<ConfigNode> m_hiddenPeerNode;
