@@ -2100,6 +2100,7 @@ SyncSourceNodes::SyncSourceNodes(bool havePeerNode,
                                  const boost::shared_ptr<ConfigNode> &trackingNode,
                                  const boost::shared_ptr<ConfigNode> &serverNode,
                                  const string &cacheDir) :
+    m_havePeerNode(havePeerNode),
     m_sharedNode(sharedNode),
     m_peerNode(peerNode),
     m_hiddenPeerNode(hiddenPeerNode),
@@ -2137,10 +2138,18 @@ SyncSourceNodes::getNode(const ConfigProperty &prop) const
         }
         break;
     case ConfigProperty::NO_SHARING:
-        if (prop.isHidden()) {
-            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
+        if ((prop.getFlags() & ConfigProperty::SHARED_AND_UNSHARED) &&
+            !m_havePeerNode &&
+            !prop.isHidden()) {
+            // special case for "sync": use shared node because
+            // peer node does not exist
+            return m_sharedNode;
         } else {
-            return m_peerNode;
+            if (prop.isHidden()) {
+                return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
+            } else {
+                return m_peerNode;
+            }
         }
     }
     return boost::shared_ptr<FilterConfigNode>();
