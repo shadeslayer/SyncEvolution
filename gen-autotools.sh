@@ -118,7 +118,7 @@ for sub in src/backends/*/configure-sub.in; do
 done
 cat configure-post.in >>configure.in
 
-TEMPLATE_FILES=`cd src && find templates -type f \( -name README -o -name '*.png' -o -name '*.svg' -o -name '*.ini' \)`
+TEMPLATE_FILES=`cd src && find templates -type f \( -name README -o -name '*.png' -o -name '*.svg' -o -name '*.ini' \) | sort`
 TEMPLATE_FILES=`echo $TEMPLATE_FILES`
 
 # create Makefile.am files
