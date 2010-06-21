@@ -60,10 +60,18 @@ SE_BEGIN_CXX
  * Using this pointer automates the open()/beginSync()/endSync()/close()
  * life cycle: it automatically calls these functions when a new
  * pointer is assigned or deleted.
+ *
+ * Anchors are stored globally in a hash which uses the tracking node
+ * name as key. This name happens to be the unique file path that
+ * is created for each source (see TestEvolution::createSource() and
+ * SyncConfig::getSyncSourceNodes()).
  */
 class TestingSyncSourcePtr : public std::auto_ptr<TestingSyncSource>
 {
     typedef std::auto_ptr<TestingSyncSource> base_t;
+
+    static StringMap m_anchors;
+
 public:
     TestingSyncSourcePtr() {}
     TestingSyncSourcePtr(TestingSyncSource *source) :
@@ -71,7 +79,8 @@ public:
     {
         CPPUNIT_ASSERT(source);
         SOURCE_ASSERT_NO_FAILURE(source, source->open());
-        SOURCE_ASSERT_NO_FAILURE(source, source->beginSync("", ""));
+        string node = source->getTrackingNode()->getName();
+        SOURCE_ASSERT_NO_FAILURE(source, source->beginSync(m_anchors[node], ""));
         const char * serverMode = getenv ("CLIENT_TEST_MODE");
         if (serverMode && !strcmp (serverMode, "server")) {
             SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
@@ -89,13 +98,15 @@ public:
                           get()->getOperations().m_endSession) {
                 callback();
             }
-            SOURCE_ASSERT_NO_FAILURE(get(), get()->endSync(true));
+            string node = get()->getTrackingNode()->getName();
+            SOURCE_ASSERT_NO_FAILURE(get(), (m_anchors[node] = get()->endSync(true)));
             SOURCE_ASSERT_NO_FAILURE(get(), get()->close());
         }
         CPPUNIT_ASSERT_NO_THROW(base_t::reset(source));
         if (source) {
             SOURCE_ASSERT_NO_FAILURE(source, source->open());
-            SOURCE_ASSERT_NO_FAILURE(source, source->beginSync("", ""));
+            string node = source->getTrackingNode()->getName();
+            SOURCE_ASSERT_NO_FAILURE(source, source->beginSync(m_anchors[node], ""));
             const char * serverMode = getenv ("CLIENT_TEST_MODE");
             if (serverMode && !strcmp (serverMode, "server")) {
                 SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
@@ -107,6 +118,8 @@ public:
         }
     }
 };
+
+StringMap TestingSyncSourcePtr::m_anchors;
 
 bool SyncOptions::defaultWBXML()
 {
