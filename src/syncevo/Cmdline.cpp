@@ -775,7 +775,8 @@ bool Cmdline::run() {
             }
             BOOST_FOREACH(const string &luid, m_luids) {
                 sysync::ItemIDType id;
-                id.item = (char *)luid.c_str();
+                string tmp = SafeConfigNode::unescape(luid);
+                id.item = (char *)tmp.c_str();
                 err = ops.m_deleteItem(&id);
                 CHECK_ERROR("deleting item");
             }
@@ -1079,7 +1080,7 @@ void Cmdline::readLUIDs(SyncSource *source, list<string> &luids)
 
 string Cmdline::insertItem(SyncSourceRaw *source, const string &luid, const string &data)
 {
-    SyncSourceRaw::InsertItemResult res = source->insertItemRaw(luid, data);
+    SyncSourceRaw::InsertItemResult res = source->insertItemRaw(SafeConfigNode::unescape(luid), data);
     return res.m_luid;
 }
 
