@@ -43,6 +43,7 @@ static const QString todoType("Todo");
 class KCalExtendedData
 {
     KCalExtendedSource *m_parent;
+    bool m_modified;
     QString m_notebook;
     QString m_notebookUID;
     QString m_type;
@@ -58,6 +59,7 @@ public:
                      const QString &notebook,
                      const QString &type) :
         m_parent(parent),
+        m_modified(false),
         m_notebook(notebook),
         m_type(type)
     {
@@ -197,9 +199,6 @@ bool KCalExtendedSource::isEmpty()
 void KCalExtendedSource::close()
 {
     if (m_data->m_storage) {
-        if (!m_data->m_storage->save()) {
-            throwError("could not save calendar");
-        }
         m_data->m_storage->close();
         m_data->m_storage.set(NULL);
     }
@@ -260,26 +259,25 @@ void KCalExtendedSource::beginSync(const std::string &lastToken, const std::stri
 
 std::string KCalExtendedSource::endSync(bool success)
 {
-    if (!m_data->m_storage->save()) {
-        throwError("could not save calendar");
+    if (m_data->m_modified) {
+        if (!m_data->m_storage->save()) {
+            throwError("could not save calendar");
+        }
+        time_t modtime = time(NULL);
+        // Saving set the modified time stamps of all items needed
+        // saving, so ensure that we sleep for one second starting now.
+        // Must sleep before taking the time stamp for the anchor,
+        // because changes made after and including (>= instead of >) that time
+        // stamp will be considered as "changes made after last sync".
+        time_t current = modtime;
+        do {
+            sleep(1 - (current - modtime));
+            current = time(NULL);
+        } while (current - modtime < 1);
     }
-
-    // sleep at least a second to ensure that time stamps increment
-    // for change tracking
-    time_t start = time(NULL);
-    do {
-        sleep(1);
-    } while ((long)(time(NULL) - start) <= 0);
 
     QDateTime now = QDateTime::currentDateTime().toUTC();
     const char *anchor = now.toString(Qt::ISODate).toLocal8Bit().constData();
-
-    // sleep again because change tracking does not say whether
-    // comparisons are < or <=
-    start = time(NULL);
-    do {
-        sleep(1);
-    } while ((long)(time(NULL) - start) <= 0);
 
     return anchor;
 }
@@ -360,6 +358,8 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
         // no need to save
     }
 
+    m_data->m_modified = true;
+
     return InsertItemResult(newUID,
                             "",
                             updated);
@@ -375,6 +375,7 @@ void KCalExtendedSource::deleteItem(const string &uid)
     if (!m_data->m_calendar->deleteIncidence(incidence)) {
         throwError("could not delete incidence");
     }
+    m_data->m_modified = true;
 }
 
 SE_END_CXX
