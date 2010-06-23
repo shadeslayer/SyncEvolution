@@ -168,6 +168,20 @@ KCalExtendedSource::KCalExtendedSource(const SyncSourceParams &params) :
     TestingSyncSource(params)
 {
     SyncSourceRevisions::init(this, this, 0, m_operations);
+    SyncSourceLogging::init(InitList<std::string>("SUMMARY") + "LOCATION",
+                            ", ",
+                            m_operations);
+#if 0
+    // VTODO
+    SyncSourceLogging::init(InitList<std::string>("SUMMARY"),
+                            ", ",
+                            m_operations);
+    // VJOURNAL
+    SyncSourceLogging::init(InitList<std::string>("SUBJECT"),
+                            ", ",
+                            m_operations);
+#endif
+
     m_data = NULL;
 }
 
@@ -389,6 +403,31 @@ void KCalExtendedSource::listAllItems(RevisionMap_t &revisions)
         if (incidence->type() == m_data->m_type) {
             revisions[m_data->getItemID(incidence).getLUID()] = "1";
         }
+    }
+}
+
+std::string KCalExtendedSource::getDescription(const string &luid)
+{
+    try {
+        KCal::Incidence *incidence = m_data->findIncidence(luid);
+        if (incidence) {
+            list<string> parts;
+            QString str;
+            // for VEVENT
+            str = incidence->summary();
+            if (!str.isEmpty()) {
+                parts.push_back(str.toLocal8Bit().constData());
+            }
+            str = incidence->location();
+            if (!str.isEmpty()) {
+                parts.push_back(str.toLocal8Bit().constData());
+            }
+            return boost::join(parts, ", ");
+        } else {
+            return "";
+        }
+    } catch (...) {
+        return "";
     }
 }
 

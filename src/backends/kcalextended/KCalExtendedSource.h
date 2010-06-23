@@ -43,7 +43,7 @@ class KCalExtendedData;
  * This class is designed so that no KCalExtended header files are required
  * to include this header file.
  */
-class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, private SyncSourceBlob, private SyncSourceRevisions, private boost::noncopyable
+class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, private SyncSourceBlob, private SyncSourceRevisions, public SyncSourceLogging, private boost::noncopyable
 {
   public:
     KCalExtendedSource(const SyncSourceParams &params);
@@ -78,6 +78,9 @@ class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, pr
      * Used for backup/restore (with dummy revision string).
      */
     virtual void listAllItems(RevisionMap_t &revisions);
+
+    /* implementation of SyncSourceLogging */
+    virtual std::string getDescription(const string &luid);
 
  private:
     KCalExtendedData *m_data;
