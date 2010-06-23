@@ -3766,7 +3766,12 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
 
-        if (getenv("CLIENT_TEST_SIMPLE_UID")) {
+        if (getenv("CLIENT_TEST_NO_UID")) {
+            boost::replace_all(insertItem, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
+            boost::replace_all(updateItem, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
+            boost::replace_all(mergeItem1, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
+            boost::replace_all(mergeItem2, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
+        } else if (getenv("CLIENT_TEST_SIMPLE_UID")) {
             boost::replace_all(insertItem, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
             boost::replace_all(updateItem, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
             boost::replace_all(mergeItem1, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
