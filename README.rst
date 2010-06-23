@@ -241,6 +241,15 @@ with additional options. <luid> here is the unique local identifier
 assigned to each item in the source, transformed so that it contains
 only alphanumeric characters, dash and underscore.
 
+<config> and <source> must be given, but they do not have to refer to
+existing configurations. In that case, the desired backend and must be
+give via "--source-property type=<backend>", like this::
+
+  syncevolution --print-items --source-property type=evolution-contacts dummy-config dummy-source
+
+The desired backend database can be chosen via "--source-property
+evolutionsource".
+
 --print-items shows all existing items using one line per item using
 the format "<luid>[: <short description>]". Whether the description
 is available depends on the backend and the kind of data that it

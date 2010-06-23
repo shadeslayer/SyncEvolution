@@ -729,6 +729,11 @@ bool Cmdline::run() {
         boost::shared_ptr<SyncContext> context;
         context.reset(createSyncClient());
         context->setOutput(&m_out);
+
+        // apply filters
+        context->setConfigFilter(true, "", m_syncProps);
+        context->setConfigFilter(false, "", m_sourceProps);
+
         string sourceName = *m_sources.begin();
         SyncSourceNodes sourceNodes = context->getSyncSourceNodesNoTracking(sourceName);
         SyncSourceParams params(sourceName, sourceNodes);
