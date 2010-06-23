@@ -337,6 +337,16 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
             incidence->setRecurrenceID(original->recurrenceID());
         }
 
+        // also preserve original creation time, unless explicitly
+        // set in update
+        // TODO: if created() == CREATED, then preserving it
+        // unconditionally is right. If created() == DTSTAMP,
+        // then it has to be conditionally.
+        // TODO: handle both DTSTAMP and CREATED
+        if (true || !incidence->created().isValid()) {
+            incidence->setCreated(original->created());
+        }
+
         if (original->type() == eventType) {
             *static_cast<KCal::Event *>(original) =
                 *static_cast<KCal::Event *>(incidence);
