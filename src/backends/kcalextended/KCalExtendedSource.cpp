@@ -42,6 +42,7 @@ static const QString todoType("Todo");
 
 class KCalExtendedData
 {
+    KCalExtendedSource *m_parent;
     QString m_notebook;
     QString m_notebookUID;
     QString m_type;
@@ -53,7 +54,10 @@ class KCalExtendedData
     cxxptr<KCal::ExtendedStorage> m_storage;
 
 public:
-    KCalExtendedData(const QString &notebook, const QString &type) :
+    KCalExtendedData(KCalExtendedSource *parent,
+                     const QString &notebook,
+                     const QString &type) :
+        m_parent(parent),
         m_notebook(notebook),
         m_type(type)
     {
@@ -135,7 +139,12 @@ KCalExtendedData::ItemID::ItemID(const string &luid)
 KCal::Incidence *KCalExtendedData::findIncidence(const string &luid)
 {
     ItemID id(luid);
-    KCal::Incidence *incidence = m_calendar->incidence(id.getIDString(), id.getDateTime());
+    QString uid = id.getIDString();
+    KDateTime rid = id.getDateTime();
+    if (!m_storage->load(uid, rid)) {
+        m_parent->throwError("failed to load incidence");
+    }
+    KCal::Incidence *incidence = m_calendar->incidence(uid, rid);
     return incidence;
 }
 
@@ -167,14 +176,11 @@ KCalExtendedSource::~KCalExtendedSource()
 void KCalExtendedSource::open()
 {
     // TODO: also support todoType
-    m_data = new KCalExtendedData(getDatabaseID(), eventType);
+    m_data = new KCalExtendedData(this, getDatabaseID(), eventType);
     m_data->m_calendar.set(new KCal::ExtendedCalendar(KDateTime::Spec::LocalZone()), "KCalExtended Calendar");
     m_data->m_storage.set(m_data->m_calendar->defaultStorage(), "KCalExtended Default Storage");
     if (!m_data->m_storage->open()) {
         throwError("failed to open storage");
-    }
-    if (!m_data->m_storage->load()) {
-        throwError("failed to load calendar");
     }
     KCal::Notebook *defaultNotebook = m_data->m_storage->defaultNotebook();
     if (!defaultNotebook) {
