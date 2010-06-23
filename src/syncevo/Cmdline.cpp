@@ -757,7 +757,7 @@ bool Cmdline::run() {
             BOOST_FOREACH(string &luid, luids) {
                 string description;
                 if (logging) {
-                    description = logging->getDescription(luid);
+                    description = logging->getDescription(SafeConfigNode::unescape(luid));
                     if (!description.empty()) {
                         description.insert(0, ": ");
                     }
