@@ -167,6 +167,7 @@ QApplication *KCalExtendedData::m_app;
 KCalExtendedSource::KCalExtendedSource(const SyncSourceParams &params) :
     TestingSyncSource(params)
 {
+    SyncSourceRevisions::init(this, this, 0, m_operations);
     m_data = NULL;
 }
 
@@ -376,6 +377,19 @@ void KCalExtendedSource::deleteItem(const string &uid)
         throwError("could not delete incidence");
     }
     m_data->m_modified = true;
+}
+
+void KCalExtendedSource::listAllItems(RevisionMap_t &revisions)
+{
+    KCal::Incidence::List incidences;
+    if (!m_data->m_storage->allIncidences(&incidences, m_data->m_notebookUID)) {
+        throwError("allIncidences() failed");
+    }
+    foreach (KCal::Incidence *incidence, incidences) {
+        if (incidence->type() == m_data->m_type) {
+            revisions[m_data->getItemID(incidence).getLUID()] = "1";
+        }
+    }
 }
 
 SE_END_CXX

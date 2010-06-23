@@ -43,7 +43,7 @@ class KCalExtendedData;
  * This class is designed so that no KCalExtended header files are required
  * to include this header file.
  */
-class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, private SyncSourceBlob, private boost::noncopyable
+class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, private SyncSourceBlob, private SyncSourceRevisions, private boost::noncopyable
 {
   public:
     KCalExtendedSource(const SyncSourceParams &params);
@@ -71,6 +71,13 @@ class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, pr
     virtual const char *getMimeVersion() const { return "2.0"; }
     virtual InsertItemResult insertItem(const std::string &luid, const std::string &item);
     virtual void readItem(const std::string &luid, std::string &item);
+
+    /*
+     * implementation of SyncSourceRevisions
+     *
+     * Used for backup/restore (with dummy revision string).
+     */
+    virtual void listAllItems(RevisionMap_t &revisions);
 
  private:
     KCalExtendedData *m_data;
