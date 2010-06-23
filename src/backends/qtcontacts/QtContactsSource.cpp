@@ -105,6 +105,9 @@ QtContactsSource::QtContactsSource(const SyncSourceParams &params) :
     TrackingSyncSource(params)
 {
     m_data = NULL;
+    SyncSourceLogging::init(InitList<std::string>("N_FIRST") + "N_MIDDLE" + "N_LAST",
+                            " ",
+                            m_operations);
 }
 
 QtContactsSource::~QtContactsSource()
@@ -244,6 +247,30 @@ void QtContactsSource::removeItem(const string &uid)
 #else
     m_data->m_manager->removeContact(atoi(uid.c_str()));
 #endif
+}
+
+std::string QtContactsSource::getDescription(const string &luid)
+{
+    try {
+        QContactFetchRequest fetch;
+        fetch.setManager(m_data->m_manager.get());
+        fetch.setFilter(QtContactsData::createFilter(luid));
+        fetch.start();
+        fetch.waitForFinished();
+        if (fetch.contacts().isEmpty()) {
+            return "";
+        }
+        QContact contact = fetch.contacts().first();
+        string descr = contact.displayLabel().toLocal8Bit().constData();
+        return descr;
+    } catch (...) {
+        // Instead of failing we log the error and ask
+        // the caller to log the UID. That way transient
+        // errors or errors in the logging code don't
+        // prevent syncs.
+        handleException();
+        return "";
+    }
 }
 
 SE_END_CXX

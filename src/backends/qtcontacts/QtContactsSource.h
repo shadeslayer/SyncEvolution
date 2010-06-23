@@ -38,7 +38,7 @@ class QtContactsData;
  * This class is designed so that no Qt header files are required
  * to include this header file.
  */
-class QtContactsSource : public TrackingSyncSource, private boost::noncopyable
+class QtContactsSource : public TrackingSyncSource, public SyncSourceLogging, private boost::noncopyable
 {
   public:
     QtContactsSource(const SyncSourceParams &params);
@@ -58,6 +58,9 @@ class QtContactsSource : public TrackingSyncSource, private boost::noncopyable
     virtual InsertItemResult insertItem(const string &luid, const std::string &item, bool raw);
     void readItem(const std::string &luid, std::string &item, bool raw);
     virtual void removeItem(const string &uid);
+
+    /* implementation of SyncSourceLogging */
+    virtual std::string getDescription(const string &luid);
 
  private:
     QtContactsData *m_data;
