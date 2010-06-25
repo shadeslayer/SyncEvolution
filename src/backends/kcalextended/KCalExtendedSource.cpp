@@ -320,7 +320,24 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
     }
     bool updated;
     string newUID;
+    string oldUID = uid;
+
+    // check for existing incidence with this UID and RECURRENCE-ID first,
+    // update when found even if caller didn't know about that existing
+    // incidence
     if (uid.empty()) {
+        QString id = incidences[0]->uid();
+        KDateTime rid = incidences[0]->recurrenceID();
+        if (!id.isEmpty()) {
+            m_data->m_storage->load(id, rid);
+            KCal::Incidence *incidence = m_data->m_calendar->incidence(id, rid);
+            if (incidence) {
+                oldUID = m_data->getItemID(incidence).getLUID();
+            }
+        }
+    }
+
+    if (oldUID.empty()) {
         // addInstance transfers ownership, need a copy
         cxxptr<KCal::Incidence> tmp(incidences[0]->clone(), "incidence clone");
         KCal::Incidence *incidence = tmp;
@@ -334,8 +351,8 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
     } else {
         KCal::Incidence *incidence = incidences[0];
         updated = true;
-        newUID = uid;
-        KCal::Incidence *original = m_data->findIncidence(uid);
+        newUID = oldUID;
+        KCal::Incidence *original = m_data->findIncidence(oldUID);
         if (!original) {
             throwError("incidence to be updated not found");
         }
