@@ -49,6 +49,7 @@ using namespace QtMobility;
 
 class QtContactsData
 {
+    QtContactsSource *m_parent;
     QString m_managerURI;
     cxxptr<QContactManager> m_manager;
 
@@ -56,7 +57,9 @@ class QtContactsData
     static QApplication *m_app;
 
 public:
-    QtContactsData(const QString &managerURI) :
+    QtContactsData(QtContactsSource *parent,
+                   const QString &managerURI) :
+        m_parent(parent),
         m_managerURI(managerURI)
     {
         if (!m_app) {
@@ -96,6 +99,30 @@ public:
         return stamp.toString().toLocal8Bit().constData();
     }
 
+    template<class T>
+    void checkError(const char *op, T &req)
+    {
+        if (req.error()) {
+            m_parent->throwError(StringPrintf("%s: failed with error %d", op, req.error()));
+        }
+    }
+    template<class T>
+    void checkError(const char *op,
+                    T &req,
+                    const QMap<int, QContactManager::Error> &errors)
+    {
+        if (errors.isEmpty()) {
+            checkError(op, req);
+        } else {
+            list<string> res;
+            foreach (int index, errors) {
+                res.push_back(StringPrintf("entry #%d failed with error %d", index, errors[index]));
+            }
+            m_parent->throwError(StringPrintf("%s: failed with error %d, ", op, req.error()) +
+                                 boost::join(res, ", "));
+        }
+    }
+
     friend class QtContactsSource;
 };
 
@@ -117,7 +144,7 @@ QtContactsSource::~QtContactsSource()
 
 void QtContactsSource::open()
 {
-    m_data = new QtContactsData("qtcontacts:tracker:query-builder=fetch,save");
+    m_data = new QtContactsData(this, "qtcontacts:tracker:query-builder=fetch,save");
     cxxptr<QContactManager> manager(QContactManager::fromUri(m_data->m_managerURI),
                                     "QTContactManager");
     if (manager->error()) {
@@ -161,7 +188,7 @@ void QtContactsSource::listAllItems(RevisionMap_t &revisions)
 
     fetch.start();
     fetch.waitForFinished();
-    // TODO: fetch.errors()
+    m_data->checkError("read all items", fetch);
     foreach (const QContact &contact, fetch.contacts()) {
         string revision = QtContactsData::getRev(contact);
         string luid = QtContactsData::getLUID(contact);
@@ -198,7 +225,7 @@ void QtContactsSource::readItem(const string &uid, std::string &item, bool raw)
     }
     writer.waitForFinished();
     item = vcard.constData();
-    // TODO: writer.errors() ?
+    m_data->checkError("encoding as vCard 3.0", writer);
 }
 
 TrackingSyncSource::InsertItemResult QtContactsSource::insertItem(const string &uid, const std::string &item, bool raw)
@@ -208,7 +235,7 @@ TrackingSyncSource::InsertItemResult QtContactsSource::insertItem(const string &
         throwError("reading vCard failed");
     }
     reader.waitForFinished();
-    // TODO: error?
+    m_data->checkError("decoding vCard", reader);
 
     QVersitContactImporter importer;
     if (!importer.importDocuments(reader.results())) {
@@ -230,7 +257,7 @@ TrackingSyncSource::InsertItemResult QtContactsSource::insertItem(const string &
     save.setContacts(QList<QContact>() << contact);
     save.start();
     save.waitForFinished();
-    // TODO: save.errors();
+    m_data->checkError("saving contact", save, save.errorMap());
 
     QList<QContact> savedContacts = save.contacts();
     QContact &savedContact = savedContacts.first();
@@ -249,7 +276,7 @@ void QtContactsSource::removeItem(const string &uid)
     remove.setContactIds(QtContactsData::createContactList(uid));
     remove.start();
     remove.waitForFinished();
-    // TODO: remove.errors()
+    m_data->checkError("remove contact", remove, remove.errorMap());
 #else
     m_data->m_manager->removeContact(atoi(uid.c_str()));
 #endif
