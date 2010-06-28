@@ -1,10 +1,6 @@
 include_HEADERS = gdbus.h
 
-if ENABLE_MODULES
-pkglib_LTLIBRARIES = libgdbus.la
-else
 noinst_LTLIBRARIES = libgdbus.la
-endif
 
 libgdbus_la_SOURCES = debug.h debug.c mainloop.c object.c watch.c
 libgdbus_la_LDFLAGS = -version-info 0:0:0 -export-symbols-regex g_dbus_.*
