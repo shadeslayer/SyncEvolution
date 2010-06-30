@@ -389,7 +389,6 @@ SyncConfig::TemplateList SyncConfig::getBuiltInTemplates()
     result.addDefaultTemplate("Synthesis", "http://www.synthesis.ch");
     result.addDefaultTemplate("Memotoo", "http://www.memotoo.com");
     result.addDefaultTemplate("Google", "http://m.google.com/sync");
-    result.addDefaultTemplate("ZYB", "http://www.zyb.com");
     result.addDefaultTemplate("Mobical", "http://www.mobical.net");
     result.addDefaultTemplate("Oracle", "http://www.oracle.com/technology/products/beehive/index.html");
     result.addDefaultTemplate("Goosync", "http://www.goosync.com/");
@@ -676,21 +675,6 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         source = config->getSyncSourceConfig("memo");
         source->setSync("none");
         source->setURI("");
-    } else if (boost::iequals(server, "zyb")) {
-        config->setSyncURL("http://sync.zyb.com");
-        config->setWebURL("http://www.zyb.com");
-        config->setConsumerReady(true);
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("contacts");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("calendar");
-        source->setSync("disabled");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("task");
-        source->setSync("disabled");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("note");
-        source->setSync("disabled");
     } else if (boost::iequals(server, "mobical")) {
         config->setSyncURL("http://www.mobical.net/sync/server");
         config->setWebURL("http://www.mobical.net");

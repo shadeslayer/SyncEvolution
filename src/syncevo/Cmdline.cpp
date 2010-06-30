@@ -1845,8 +1845,7 @@ protected:
                                   "   Ovi = http://www.ovi.com\n"
                                   "   ScheduleWorld = http://www.scheduleworld.com\n"
                                   "   SyncEvolution = http://www.syncevolution.org\n"
-                                  "   Synthesis = http://www.synthesis.ch\n"
-                                  "   ZYB = http://www.zyb.com\n",
+                                  "   Synthesis = http://www.synthesis.ch\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }
