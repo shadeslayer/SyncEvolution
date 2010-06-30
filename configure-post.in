@@ -132,6 +132,7 @@ for backend in $BACKENDS; do
     eval echo $backend: \${enable_${backend}}
 done
 echo "DBus service: $enable_dbus_service"
+echo "GNOME keyring: $enable_gnome_keyring"
 echo "UI (DBus client): $enable_gui"
 echo "Bluetooth transport: $have_bluetooth"
 echo "GNOME Bluetooth panel plugin: $enable_gnome_bluetooth_panel"
