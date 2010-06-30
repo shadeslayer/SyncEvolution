@@ -3925,7 +3925,8 @@ void Connection::process(const Caller_t &caller,
                     }
                 }
                 // TODO: use the session ID set by the server if non-null
-            } else if (message_type == TransportAgent::m_contentTypeSyncML ||
+            } else if (// relaxed checking for XML: ignore stuff like "; CHARSET=UTF-8"
+                       message_type.substr(0, message_type.find(';')) == TransportAgent::m_contentTypeSyncML ||
                        message_type == TransportAgent::m_contentTypeSyncWBXML) {
                 // run a new SyncML session as server
                 serverMode = true;
@@ -3967,7 +3968,7 @@ void Connection::process(const Caller_t &caller,
                 m_server.killSessions(info.m_deviceID);
                 peerDeviceID = info.m_deviceID;
             } else {
-                throw runtime_error("message type not supported for starting a sync");
+                throw runtime_error(StringPrintf("message type '%s' not supported for starting a sync", message_type.c_str()));
             }
 
             // run session as client or server
