@@ -1,6 +1,7 @@
 AM_CPPFLAGS = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(top_srcdir)/src -DSYNCEVO_BACKEND=\"$(backendsearchdir)\"
 
 SUBDIRS = configs
+BUILT_SOURCES =
 
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library
@@ -173,6 +174,13 @@ GenSyncEvolutionXML:
 	echo ";" >>SyncEvolutionXML.c.new
 	if cmp SyncEvolutionXML.c SyncEvolutionXML.c.new >/dev/null; then rm SyncEvolutionXML.c.new; else mv SyncEvolutionXML.c.new SyncEvolutionXML.c; fi
 
+# turn README.rst into a file with plain text strings for
+# "Synopsis" and "Usage"
+CLEANFILES += CmdlineHelp.c
+BUILT_SOURCES += CmdlineHelp.c
+EXTRA_DIST += readme2c.pl
+CmdlineHelp.c: readme2c.pl $(top_srcdir)/README.rst
+	perl $+ >$@
 
 # include boost in distribution
 #dist-hook:

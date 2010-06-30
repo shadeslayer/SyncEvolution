@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -44,12 +43,9 @@ using namespace std;
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
-#include <fstream>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-
-// synopsis and options char strings
-#include "CmdlineHelp.c"
 
 Cmdline::Cmdline(int argc, const char * const * argv, ostream &out, ostream &err) :
     m_argc(argc),
@@ -732,13 +728,8 @@ bool Cmdline::run() {
         boost::shared_ptr<SyncContext> context;
         context.reset(createSyncClient());
         context->setOutput(&m_out);
-
-        // apply filters
-        context->setConfigFilter(true, "", m_syncProps);
-        context->setConfigFilter(false, "", m_sourceProps);
-
         string sourceName = *m_sources.begin();
-        SyncSourceNodes sourceNodes = context->getSyncSourceNodesNoTracking(sourceName);
+        SyncSourceNodes sourceNodes = context->getSyncSourceNodes(sourceName);
         SyncSourceParams params(sourceName, sourceNodes);
         cxxptr<SyncSource> source(SyncSource::createSource(params, true));
 
@@ -760,7 +751,7 @@ bool Cmdline::run() {
             BOOST_FOREACH(string &luid, luids) {
                 string description;
                 if (logging) {
-                    description = logging->getDescription(SafeConfigNode::unescape(luid));
+                    description = logging->getDescription(luid);
                     if (!description.empty()) {
                         description.insert(0, ": ");
                     }
@@ -783,8 +774,7 @@ bool Cmdline::run() {
             }
             BOOST_FOREACH(const string &luid, m_luids) {
                 sysync::ItemIDType id;
-                string tmp = SafeConfigNode::unescape(luid);
-                id.item = (char *)tmp.c_str();
+                id.item = (char *)luid.c_str();
                 err = ops.m_deleteItem(&id);
                 CHECK_ERROR("deleting item");
             }
@@ -842,7 +832,7 @@ bool Cmdline::run() {
                             }
                             if (total != m_luids.size()) {
                                 SyncContext::throwError(StringPrintf("%lu items != %lu luids, must match => aborting",
-                                                                     total, (unsigned long)m_luids.size()));
+                                                                     total, m_luids.size()));
                             }
                         }
                         list<string>::const_iterator luidit = m_luids.begin();
@@ -1088,7 +1078,7 @@ void Cmdline::readLUIDs(SyncSource *source, list<string> &luids)
 
 string Cmdline::insertItem(SyncSourceRaw *source, const string &luid, const string &data)
 {
-    SyncSourceRaw::InsertItemResult res = source->insertItemRaw(SafeConfigNode::unescape(luid), data);
+    SyncSourceRaw::InsertItemResult res = source->insertItemRaw(luid, data);
     return res.m_luid;
 }
 
@@ -1394,11 +1384,175 @@ void Cmdline::usage(bool full, const string &error, const string &param)
 {
     ostream &out(error.empty() ? m_out : m_err);
 
-    out << synopsis;
+    out << "Show available sources:" << endl;
+    out << "  " << m_argv[0] << endl;
+    out << "Show information about configuration(s) and sync sessions:" << endl;
+    out << "  " << m_argv[0] << " --print-servers|--print-configs|--print-peers" << endl;
+    out << "  " << m_argv[0] << " --print-config [--quiet] <config> [main|<source ...]" << endl;
+    out << "  " << m_argv[0] << " --print-sessions [--quiet] <config>" << endl;
+    out << "Show information about SyncEvolution:" << endl;
+    out << "  " << m_argv[0] << " --help|-h" << endl;
+    out << "  " << m_argv[0] << " --version" << endl;
+    out << "Run a synchronization:" << endl;
+    out << "  " << m_argv[0] << " <config> [<source> ...]" << endl;
+    out << "  " << m_argv[0] << " --run <options for run> <config> [<source> ...]" << endl;
+    out << "Restore data from the automatic backups:" << endl;
+    out << "  " << m_argv[0] << " --restore <session directory> --before|--after [--dry-run] <config> <source> ..." << endl;
+    out << "Remove a configuration:" << endl;
+    out << "  " << m_argv[0] << " --remove <config>" << endl;
+    out << "Modify configuration:" << endl;
+    out << "  " << m_argv[0] << " --configure <options for configuration> <config> [<source> ...]" << endl;
+    out << "  " << m_argv[0] << " --migrate <config>" << endl;
     if (full) {
         out << endl <<
             "Options:" << endl <<
-            options;
+            "--sync|-s <mode>" << endl <<
+            "--sync|-s ?" << endl <<
+            "  Temporarily synchronize the active sources in that mode. Useful" << endl <<
+            "  for a \"refresh-from-server\" or \"refresh-from-client\" sync which" << endl <<
+            "  clears all data at one end and copies all items from the other." << endl <<
+            "" << endl <<
+            "--print-servers|--print-configs|--print-peers" << endl <<
+            "  Prints the names of all configured peers to stdout." << endl <<
+            "" << endl <<
+            "--print-config|-p" << endl <<
+            "  Prints the complete configuration for the selected peer" << endl <<
+            "  to stdout, including up-to-date comments for all properties. The" << endl <<
+            "  format is the normal .ini format with source configurations in" << endl <<
+            "  different sections introduced with [<source>] lines. Can be combined" << endl <<
+            "  with --sync-property and --source-property to modify the configuration" << endl <<
+            "  on-the-fly. When one or more sources are listed after the <config>" << endl <<
+            "  name on the command line, then only the configs of those sources are" << endl <<
+            "  printed. Using --quiet suppresses the comments for each property." << endl <<
+            "  When setting a --template, then the reference configuration for" << endl <<
+            "  that peer is printed instead of an existing configuration." << endl <<
+            "" << endl <<
+            "--print-sessions" << endl <<
+            "  Prints a list of all previous log directories. Unless --quiet is used, each" << endl <<
+            "  file name is followed by the original sync report." << endl <<
+            "" << endl <<
+            "--configure|-c" << endl <<
+            "  Modify the configuration files for the selected peer. If no such" << endl <<
+            "  configuration exists, then a new one is created using one of the" << endl <<
+            "  template configurations (see --template option). When creating" << endl <<
+            "  a new configuration only the active sources will be set to active" << endl <<
+            "  in the new configuration, i.e. \"syncevolution -c scheduleworld addressbook\"" << endl <<
+            "  followed by \"syncevolution scheduleworld\" will only synchronize the" << endl <<
+            "  address book. The other sources are created in a disabled state." << endl <<
+            "  When modifying an existing configuration and sources are specified," << endl <<
+            "  then the source properties of only those sources are modified." << endl <<
+            "" << endl <<
+            "--migrate" << endl <<
+            "  In older SyncEvolution releases a different layout of configuration files" << endl <<
+            "  was used. Using --migrate will automatically migrate to the new" << endl <<
+            "  layout and rename the <config> into <config>.old to prevent accidental use" << endl <<
+            "  of the old configuration. WARNING: old SyncEvolution releases cannot" << endl <<
+            "  use the new configuration!" << endl <<
+            "" << endl <<
+            "  The switch can also be used to migrate a configuration in the current" << endl <<
+            "  configuration directory: this preserves all property values, discards" << endl <<
+            "  obsolete properties and sets all comments exactly as if the configuration" << endl <<
+            "  had been created from scratch. WARNING: custom comments in the" << endl <<
+            "  configuration are not preserved." << endl <<
+            "" << endl <<
+            "--restore" << endl <<
+            "  Restores the data of the selected sources to the state from before or after the" << endl <<
+            "  selected synchronization. The synchronization is selected via its log directory" << endl <<
+            "  (see --print-sessions). Other directories can also be given as long as" << endl <<
+            "  they contain database dumps in the format created by SyncEvolution." << endl <<
+            "  The output includes information about the changes made during the" << endl <<
+            "  restore, both in terms of item changes and content changes (which is" << endl <<
+            "  not always the same, see manual for details). This output can be suppressed" << endl <<
+            "  with --quiet." << endl <<
+            "  In combination with --dry-run, the changes to local data are only simulated." << endl <<
+            "  This can be used to check that --restore will not remove valuable information." << endl <<
+            "" << endl <<
+            "--remove" << endl <<
+            "  Deletes the configuration. If the <config> refers to a specific" << endl <<
+            "  peer, only that peer's configuration is removed. If it refers to" << endl <<
+            "  a context, that context and all peers inside it are removed." << endl <<
+            "  Note that there is no confirmation question. Neither local data" << endl <<
+            "  referenced by the configuration nor the content of log dirs are" << endl <<
+            "  deleted." << endl <<
+            "" << endl <<
+            "--sync-property|-y <property>=<value>" << endl <<
+            "--sync-property|-y ?" << endl <<
+            "--sync-property|-y <property>=?" << endl <<
+            "  Overrides a source-independent configuration property for the" << endl <<
+            "  current synchronization run or permanently when --configure is used" << endl <<
+            "  to update the configuration. Can be used multiple times.  Specifying" << endl <<
+            "  an unused property will trigger an error message." << endl <<
+            "" << endl <<
+            "  When using the configuration layout introduced with 1.0, some of the" << endl <<
+            "  sync properties are shared between peers, for example the directory" << endl <<
+            "  where sessions are logged. Permanently changing such a shared" << endl <<
+            "  property for one peer will automatically update the property for all" << endl <<
+            "  other peers in the same context because the property is stored in a" << endl <<
+            "  shared config file." << endl <<
+            "" << endl <<
+            "--source-property|-z <property>=<value>" << endl <<
+            "--source-property|-z ?" << endl <<
+            "--source-property|-z <property>=?" << endl <<
+            "  Same as --sync-property, but applies to the configuration of all active" << endl <<
+            "  sources. \"--sync <mode>\" is a shortcut for \"--source-property sync=<mode>\"." << endl <<
+            "" << endl <<
+            "--template|-l <peer name>|default|?|?<device>" << endl <<
+            "  Can be used to select from one of the built-in default configurations" << endl <<
+            "  for known SyncML peers. Defaults to the <config> name, so --template" << endl <<
+            "  only has to be specified when creating multiple different configurations" << endl <<
+            "  for the same peer, or when using a template that is named differently" << endl <<
+            "  than the peer. \"default\" is an alias for \"scheduleworld\" and can be" << endl <<
+            "  used as the starting point for servers which do not have a built-in" << endl <<
+            "  template." << endl <<
+            "" << endl <<
+            "  Each template contains a pseudo-random device ID. Therefore setting the" << endl <<
+            "  \"deviceId\" sync property is only necessary when manually recreating a" << endl <<
+            "  configuration or when a more descriptive name is desired." << endl <<
+            "" << endl <<
+            "  The available templates for different known SyncML servers are listed when" << endl <<
+            "  using a single question mark instead of template name. When using the" << endl <<
+            "  ?<device> format, a fuzzy search for a template that might be" << endl <<
+            "  suitable for talking to such a device is done. The matching works best" << endl <<
+            "  when using <device> = <Manufacturer>_<Model>. If you don't know the" << endl <<
+            "  manufacturer, you can just keep it as empty. The output in this mode" << endl <<
+            "  gives the template name followed by a short description and a rating how well" << endl <<
+            "  the template matches the device (higher is better)." << endl <<
+            "" << endl <<
+            "--status|-t" << endl <<
+            "  The changes made to local data since the last synchronization are" << endl <<
+            "  shown without starting a new one. This can be used to see in advance" << endl <<
+            "  whether the local data needs to be synchronized with the peer." << endl <<
+            "" << endl <<
+            "  When used without configuration name, it shows the status of the background" << endl <<
+            "  sync daemon or an error if no such daemon exists." << endl <<
+            "" << endl <<
+            "--quiet|-q" << endl <<
+            "  Suppresses most of the normal output during a synchronization. The" << endl <<
+            "  log file still contains all the information." << endl <<
+            "" << endl <<
+            "--keyring|-k[=yes/no/...]" << endl <<
+            "  Save or retrieve passwords from the GNOME keyring when modifying the" << endl <<
+            "  configuration or running a synchronization. Note that using this option" << endl <<
+            "  applies to *all* passwords in a configuration, so setting a single" << endl <<
+            "  password as follows moves the other passwords into the keyring, if" << endl <<
+            "  they were not stored there already:" << endl <<
+            "     --keyring --configure --sync-property proxyPassword=foo" << endl <<
+            "" << endl <<
+            "  When passwords were stored in the keyring, their value is set to '-'" << endl <<
+            "  in the configuration. This means that when running a synchronization" << endl <<
+            "  without the --keyring argument, the password has to be entered" << endl <<
+            "  interactively. The --print-config output always shows '-' instead of" << endl <<
+            "  retrieving the password from the keyring." << endl <<
+            "" << endl <<
+            "--daemon[=yes/no/...]" << endl <<
+            "  Run operations in cooperation with the background sync daemon;" << endl <<
+            "  enabled by default if it is installed." << endl <<
+            "" << endl <<
+            "--help|-h" << endl <<
+            "  Prints usage information." << endl <<
+            "" << endl <<
+            "--version" << endl <<
+            "  Prints the SyncEvolution version." << endl;
     }
 
     if (error != "") {
@@ -1734,10 +1888,6 @@ public:
                               "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/addressbook/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/addressbook/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/addressbook/config.ini:# KCalExtended = calendar\n"
-                              "sources/addressbook/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                               "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                               "sources/addressbook/config.ini:# evolutionsource = \n"
@@ -1748,10 +1898,6 @@ public:
                               "peers/scheduleworld/sources/calendar/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/calendar/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/calendar/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/calendar/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/calendar/config.ini:# KCalExtended = calendar\n"
-                              "sources/calendar/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/calendar/config.ini:type = calendar\n"
                               "peers/scheduleworld/sources/calendar/config.ini:type = calendar\n"
                               "sources/calendar/config.ini:# evolutionsource = \n"
@@ -1762,10 +1908,6 @@ public:
                               "peers/scheduleworld/sources/memo/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/memo/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/memo/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/memo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/memo/config.ini:# KCalExtended = calendar\n"
-                              "sources/memo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/memo/config.ini:type = memo\n"
                               "peers/scheduleworld/sources/memo/config.ini:type = memo\n"
                               "sources/memo/config.ini:# evolutionsource = \n"
@@ -1776,10 +1918,6 @@ public:
                               "peers/scheduleworld/sources/todo/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/todo/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/todo/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/todo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/todo/config.ini:# KCalExtended = calendar\n"
-                              "sources/todo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/todo/config.ini:type = todo\n"
                               "peers/scheduleworld/sources/todo/config.ini:type = todo\n"
                               "sources/todo/config.ini:# evolutionsource = \n"
@@ -2018,7 +2156,8 @@ protected:
                                   "   Ovi = http://www.ovi.com\n"
                                   "   ScheduleWorld = http://www.scheduleworld.com\n"
                                   "   SyncEvolution = http://www.syncevolution.org\n"
-                                  "   Synthesis = http://www.synthesis.ch\n",
+                                  "   Synthesis = http://www.synthesis.ch\n"
+                                  "   ZYB = http://www.zyb.com\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }

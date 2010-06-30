@@ -1,0 +1,17 @@
+*************** bool Cmdline::run() {
+*** 832,838 ****
+                              }
+                              if (total != m_luids.size()) {
+                                  SyncContext::throwError(StringPrintf("%lu items != %lu luids, must match => aborting"
+-                                                                      total, m_luids.size()));
+                              }
+                          }
+                          list<string>::const_iterator luidit = m_luids.begin();
+--- 832,838 ----
+                              }
+                              if (total != m_luids.size()) {
+                                  SyncContext::throwError(StringPrintf("%lu items != %lu luids, must match => aborting"
++                                                                      (unsigned long)total, (unsigned long) m_luids.size()));
+                              }
+                          }
+                          list<string>::const_iterator luidit = m_luids.begin();

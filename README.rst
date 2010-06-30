@@ -199,13 +199,7 @@ These commands print information about existing configurations. When
 printing a configuration a short version without comments can be
 selected with --quiet. When sources are listed, only their
 configuration is shown. `Main` instead or in combination with sources
-lists only the main peer configuration.
-
-With --print-session information about previous synchronization
-sessions for the selected peer or context are printed. This depends on
-the `logdir` option.  The information includes the log directory name
-(useful for --restore) and the synchronization report. In combination
-with --quiet, only the paths are listed. ::
+lists only the main peer configuration. ::
 
    syncevolution --restore <session directory> --before|--after
                  [--dry-run] <config> <source> ...
@@ -250,41 +244,6 @@ give via "--source-property type=<backend>", like this::
 The desired backend database can be chosen via "--source-property
 evolutionsource".
 
---print-items shows all existing items using one line per item using
-the format "<luid>[: <short description>]". Whether the description
-is available depends on the backend and the kind of data that it
-stores.
-
---export writes all items in the source or all items whose <luid> is
-given into a directory if the --export parameter exists and is a
-directory. The <luid> of each item is used as file name. Otherwise it
-creates a new file under that name and writes the selected items
-separated by the chosen delimiter string. stdout can be selected with
-a dash.
-
-The default delimiter are two newline characters for a blank line. This
-works for vCard 3.0 and iCalendar 2.0, which never contain blank lines.
-Because items may or may not end in a newline, as a special case the
-initial newline of a delimiter is skipped if the item ends in a newline.
-
---import adds all items found in the directory or input file to the
-source.  When reading from a directory, each file is treated as one
-item. Otherwise the input is split at the chosen delimiter. "none" as
-delimiter disables splitting of the input.
-
---update overwrites the content of existing items. When updating from
-a directory, the name of each file is taken as its luid. When updating
-from file or stdin, the number of luids given on the command line
-must match with the number of items in the input.
-
---delete-items removes the specified items from the source. Most
-backends print some progress information about this, but besides that,
-no further output is produced. Trying to remove an item which does not
-exist typically leads to an ERROR message, but is not reflected in a
-non-zero result of the command line invocation itself because the
-situation is not reported as an error by backends (removal of
-non-existent items is not an error in SyncML).
-
 OPTIONS
 =======
 
@@ -302,7 +261,7 @@ a list of valid values.
   Prints the names of all configured peers to stdout. There is no
   difference between these options, the are just aliases.
 
---print-config|-p
+--print-servers|--print-configs|--print-peers|-p
   Prints the complete configuration for the selected <config>
   to stdout, including up-to-date comments for all properties. The
   format is the normal .ini format with source configurations in
@@ -314,6 +273,13 @@ a list of valid values.
   configurations. Using --quiet suppresses the comments for each property.
   When setting a --template, then the reference configuration for
   that peer is printed instead of an existing configuration.
+
+\--print-sessions
+  Prints information about previous synchronization sessions for the
+  selected peer or context are printed. This depends on the `logdir`
+  option.  The information includes the log directory name (useful for
+  --restore) and the synchronization report. In combination with
+  --quiet, only the paths are listed.
 
 --configure|-c
   Modify the configuration files for the selected peer. If no such
@@ -339,22 +305,62 @@ a list of valid values.
   layout and rename the <config> into <config>.old to prevent accidental use
   of the old configuration. WARNING: old SyncEvolution releases cannot
   use the new configuration!
-  
+
   The switch can also be used to migrate a configuration in the current
   configuration directory: this preserves all property values, discards
   obsolete properties and sets all comments exactly as if the configuration
   had been created from scratch. WARNING: custom comments in the
   configuration are not preserved.
-  
+
   --migrate implies --configure and can be combined with modifying
   properties.
+
+\--print-items
+  Shows all existing items using one line per item using
+  the format "<luid>[: <short description>]". Whether the description
+  is available depends on the backend and the kind of data that it
+  stores.
+
+\--export
+  Writes all items in the source or all items whose <luid> is
+  given into a directory if the --export parameter exists and is a
+  directory. The <luid> of each item is used as file name. Otherwise it
+  creates a new file under that name and writes the selected items
+  separated by the chosen delimiter string. stdout can be selected with
+  a dash.
+
+  The default delimiter are two newline characters for a blank line. This
+  works for vCard 3.0 and iCalendar 2.0, which never contain blank lines.
+  Because items may or may not end in a newline, as a special case the
+  initial newline of a delimiter is skipped if the item ends in a newline.
+
+\--import
+  Adds all items found in the directory or input file to the
+  source.  When reading from a directory, each file is treated as one
+  item. Otherwise the input is split at the chosen delimiter. "none" as
+  delimiter disables splitting of the input.
+
+\--update
+  Overwrites the content of existing items. When updating from a
+  directory, the name of each file is taken as its luid. When updating
+  from file or stdin, the number of luids given on the command line
+  must match with the number of items in the input.
+
+\--delete-items
+  Removes the specified items from the source. Most backends print
+  some progress information about this, but besides that, no further
+  output is produced. Trying to remove an item which does not exist
+  typically leads to an ERROR message, but is not reflected in a
+  non-zero result of the command line invocation itself because the
+  situation is not reported as an error by backends (removal of
+  non-existent items is not an error in SyncML).
 
 --sync-property|-y <property>=<value>|<property>=?|?
   Overrides a source-independent configuration property for the
   current synchronization run or permanently when --configure is used
   to update the configuration. Can be used multiple times.  Specifying
   an unused property will trigger an error message.
-  
+
   When using the configuration layout introduced with 1.0, some of the
   sync properties are shared between peers, for example the directory
   where sessions are logged. Permanently changing such a shared
@@ -383,11 +389,11 @@ a list of valid values.
   than the peer. `default` is an alias for `scheduleworld` and can be
   used as the starting point for servers which do not have a built-in
   template.
-  
+
   Each template contains a pseudo-random device ID. Therefore setting the
   `deviceId` sync property is only necessary when manually recreating a
   configuration or when a more descriptive name is desired.
-  
+
   The available templates for different known SyncML servers are listed when
   using a single question mark instead of template name. When using the
   `?<device>` format, a fuzzy search for a template that might be
@@ -412,9 +418,9 @@ a list of valid values.
   applies to *all* passwords in a configuration, so setting a single
   password as follows moves the other passwords into the keyring, if
   they were not stored there already::
-  
+
      --keyring --configure --sync-property proxyPassword=foo
-  
+
   When passwords were stored in the keyring, their value is set to a single
   hyphen ("-") in the configuration. This means that when running a
   synchronization without the --keyring argument, the password has to be
@@ -426,7 +432,6 @@ a list of valid values.
 
 \--version
   Prints the SyncEvolution version.
-
 
 EXAMPLES
 ========
