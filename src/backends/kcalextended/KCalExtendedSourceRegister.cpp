@@ -57,7 +57,7 @@ static RegisterSyncSource registerMe("KCalExtended",
                                      Values() +
                                      (Aliases("KCalExtended")));
 
-#ifdef ENABLE_FILE
+#ifdef ENABLE_KCALEXTENDED
 #ifdef ENABLE_UNIT_TESTS
 
 class KCalExtendedSourceUnitTest : public CppUnit::TestFixture {
@@ -93,6 +93,6 @@ public:
 
 }
 
-#endif // ENABLE_FILE
+#endif // ENABLE_KCALEXTENDED
 
 SE_END_CXX
