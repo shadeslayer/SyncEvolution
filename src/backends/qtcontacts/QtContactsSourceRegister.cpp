@@ -56,7 +56,7 @@ static RegisterSyncSource registerMe("QtContacts",
                                      Values() +
                                      (Aliases("QtContacts") + "qt-contacts"));
 
-#ifdef ENABLE_FILE
+#ifdef ENABLE_QTCONTACTS
 #ifdef ENABLE_UNIT_TESTS
 
 class QtContactsSourceUnitTest : public CppUnit::TestFixture {
@@ -93,6 +93,6 @@ public:
 
 }
 
-#endif // ENABLE_FILE
+#endif // ENABLE_QTCONTACTS
 
 SE_END_CXX
