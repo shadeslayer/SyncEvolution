@@ -1482,6 +1482,12 @@ static string lastLine(const string &buffer)
 
 // true if <word> =
 static bool isPropAssignment(const string &buffer) {
+    // ignore these 2 comments
+    if (boost::starts_with(buffer, "KCalExtended = ") ||
+            boost::starts_with(buffer, "QtContacts = ")) {
+        return false;
+    }
+                                
     size_t start = 0;
     while (start < buffer.size() &&
            !isspace(buffer[start])) {
@@ -1734,10 +1740,6 @@ public:
                               "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/addressbook/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/addressbook/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/addressbook/config.ini:# KCalExtended = calendar\n"
-                              "sources/addressbook/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                               "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                               "sources/addressbook/config.ini:# evolutionsource = \n"
@@ -1748,10 +1750,6 @@ public:
                               "peers/scheduleworld/sources/calendar/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/calendar/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/calendar/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/calendar/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/calendar/config.ini:# KCalExtended = calendar\n"
-                              "sources/calendar/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/calendar/config.ini:type = calendar\n"
                               "peers/scheduleworld/sources/calendar/config.ini:type = calendar\n"
                               "sources/calendar/config.ini:# evolutionsource = \n"
@@ -1762,10 +1760,6 @@ public:
                               "peers/scheduleworld/sources/memo/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/memo/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/memo/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/memo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/memo/config.ini:# KCalExtended = calendar\n"
-                              "sources/memo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/memo/config.ini:type = memo\n"
                               "peers/scheduleworld/sources/memo/config.ini:type = memo\n"
                               "sources/memo/config.ini:# evolutionsource = \n"
@@ -1776,10 +1770,6 @@ public:
                               "peers/scheduleworld/sources/todo/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0\n"
                               "peers/scheduleworld/sources/todo/config.ini:sync = two-way\n"
-                              "peers/scheduleworld/sources/todo/config.ini:# KCalExtended = calendar\n"
-                              "peers/scheduleworld/sources/todo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
-                              "sources/todo/config.ini:# KCalExtended = calendar\n"
-                              "sources/todo/config.ini:# QtContacts = addressbook = contacts = qt-contacts\n"
                               "sources/todo/config.ini:type = todo\n"
                               "peers/scheduleworld/sources/todo/config.ini:type = todo\n"
                               "sources/todo/config.ini:# evolutionsource = \n"
