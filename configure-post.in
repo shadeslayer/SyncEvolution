@@ -53,7 +53,9 @@ fi
 
 # Check for Qt if some backend needs it.
 if test "$need_qt_modules"; then
-   AT_WITH_QT(-gui $need_qt_modules)
+   AT_WITH_QT([-gui $need_qt_modules],
+              [$qt_config],
+              [$qt_misc])
 fi
 
 # determine from where we can get a SHA-256 implementation
