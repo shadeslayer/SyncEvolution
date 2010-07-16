@@ -182,7 +182,7 @@ void QtContactsSource::listAllItems(RevisionMap_t &revisions)
 
     // only need ID and time stamps
     QContactFetchHint hint;
-    hint.setOptimizationHints(QContactFetchHint::NoRelationships|QContactFetchHint::NoBinaryBlobs);
+    hint.setOptimizationHints(QContactFetchHint::OptimizationHints(QContactFetchHint::NoRelationships|QContactFetchHint::NoBinaryBlobs));
     hint.setDetailDefinitionsHint(QStringList() << QContactTimestamp::DefinitionName);
     fetch.setFetchHint(hint);
 
