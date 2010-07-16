@@ -893,22 +893,18 @@ msgstr "閉じる"
 
 #~ msgid "Database error"
 #~ msgstr "データベース・エラー"
-
 #~ msgid ""
 #~ "Do you want to replace %s with %s? This will not remove any synced "
 #~ "information on either end but you will no longer be able to sync with %s."
 #~ msgstr ""
 #~ "%s を %s に入れ替えますか? この操作を行っても、双方の同期した情報は一切削"
 #~ "除されませんが、%s とは同期できなくなります。"
-
 #~ msgid "Yes, use %s"
 #~ msgstr "はい、%s を使用します"
-
 #~ msgid "No, use %s"
 #~ msgstr "いいえ、%s を使用します"
-
 #~ msgid "Reset service"
 #~ msgstr "サービスをリセットします"
-
 #~ msgid "Addressbook"
 #~ msgstr "アドレスブック"
+
