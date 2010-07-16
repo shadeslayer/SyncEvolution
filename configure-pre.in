@@ -5,8 +5,8 @@ dnl Invoke autogen.sh to produce a configure script.
 # Debian packages. For prereleases (beta, alpha),
 # set it to something like "0.9.2+" and the AC_INIT
 # VERSION to 1.0beta1 to produce 0.9.2+1.0beta1.
-AC_INIT([syncevolution], [1.0beta2a])
-STABLE_VERSION=0.9.2+
+AC_INIT([syncevolution], [1.0])
+STABLE_VERSION=
 AC_SUBST(STABLE_VERSION)
 
 AM_INIT_AUTOMAKE([tar-ustar])
@@ -477,6 +477,34 @@ AC_SUBST(GUI_DESKTOP_FILES)
 # as Debian Etch backport.
 AX_BOOST_BASE(1.34)
 
+# need rst2man for man pages
+AC_ARG_WITH(rst2man,
+            AS_HELP_STRING([--with-rst2man=<path to reStructuredText to man converter>],
+                           [Specifies an explicit path to the utility if not found in PATH.
+                            An explicit --without-rst2man or not having it installed turn off
+                            building of man pages.]),
+            [RST2MAN=$withval
+             if test "$RST2MAN" == "yes"; then
+                 AC_PATH_PROG(RST2MAN, rst2man, "no")
+             fi
+             test "$RST2MAN" == "no" || test -x "$RST2MAN" || AC_ERROR([--with-rst2man=$RST2MAN: tool not found])],
+            [AC_PATH_PROG(RST2MAN, rst2man, "no")])
+AM_CONDITIONAL([COND_MAN_PAGES], [test "$RST2MAN" != "no"])
+
+# need rst2html for HTML version of README
+AC_ARG_WITH(rst2html,
+            AS_HELP_STRING([--with-rst2html=<path to reStructuredText to HTML converter>],
+                           [Specifies an explicit path to the utility if not found in PATH.
+                            An explicit --without-rst2html or not having it installed turn off
+                            building of README in HTML format.]),
+            [RST2HTML=$withval
+             if test "$RST2HTML" == "yes"; then
+                 AC_PATH_PROG(RST2HTML, rst2html, "no")
+             fi
+             test "$RST2HTML" == "no" || test -x "$RST2HTML" || AC_ERROR([--with-rst2html=$RST2HTML: tool not found])],
+            [AC_PATH_PROG(RST2HTML, rst2html, "no")])
+AM_CONDITIONAL([COND_HTML_README], [test "$RST2HTML" != "no"])
+
 # absolute patch to source of Synthesis client library
 SYNTHESIS_SRC=no-synthesis-source
 AC_SUBST(SYNTHESIS_SRC)
@@ -651,5 +679,11 @@ fi
 AC_CONFIG_FILES(src/gnome-bluetooth/Makefile)
 AM_CONDITIONAL([ENABLE_GNOME_BLUETOOTH_PANEL], [test "$have_gbt" = "yes" && test "$enable_gnome_bluetooth_panel" = "yes"])
 
+AC_ARG_ENABLE(doc,
+              AC_HELP_STRING([--enable-doc],
+                             [generate backend and DBus API documentation]),
+              enable_doc="$enableval", enable_doc="no")
+            
+AM_CONDITIONAL([COND_DOC], [test "$enable_doc" != "no"])
 
 dnl src/backends/*/configure-sub.in and configure-post.in follow

@@ -2,11 +2,18 @@
 
 ACLOCAL_AMFLAGS = -I m4 -I m4-repo
 
+man_MANS =
 dist_doc_DATA =
 SUBDIRS = src
 if COND_CORE
 SUBDIRS += po test
 dist_doc_DATA += README NEWS COPYING $(TEST_README_FILES)
+if COND_HTML_README
+dist_doc_DATA += README.html
+endif
+if COND_MAN_PAGES
+man_MANS += syncevolution.1
+endif
 endif
 DIST_SUBDIRS = src po test
 
@@ -14,6 +21,7 @@ EXTRA_DIST = \
 	HACKING \
 	LICENSE.txt \
 	LICENSE.LGPL-21 \
+        README.rst \
 	description \
 	configure-pre.in \
 	configure-post.in \
@@ -33,7 +41,7 @@ DEV_FILE_PATTERN = $(1)$(2)/etc $(1)$(2)/include $(1)$(2)/lib/*.so $(1)$(2)/lib/
 if COND_DBUS
 # when building with D-Bus, we have no choice: the service has to go into /usr
 # in order to be found
-distbin : README NEWS COPYING $(TEST_README_FILES) INSTALL-tar-gz all
+distbin : $(dist_doc_DATA) INSTALL-tar-gz all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 )
 	@ [ "$(prefix)" == "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
 	rm -rf $(distdir)
@@ -43,20 +51,20 @@ distbin : README NEWS COPYING $(TEST_README_FILES) INSTALL-tar-gz all
 	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
 	mkdir -p $(distdir)/usr/share/doc/syncevolution
 	cp $(srcdir)/INSTALL-tar-gz $(distdir)/INSTALL
-	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)/usr/share/doc/syncevolution
+	cp $(filter-out all, $+) $(distdir)/usr/share/doc/syncevolution
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
 else
 # without D-Bus, we can simply create an archive with a bin directory
 # and everything works
-distbin : README NEWS COPYING all
+distbin : $(dist_doc_DATA) all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 ) 
 	rm -rf $(distdir)
 	$(MAKE) prefix=`pwd`/$(distdir) install
 	echo removing developer files and empty directories
 	rm -rf $(call DEV_FILE_PATTERN,$(distdir),/)
 	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
-	cp $(srcdir)/README $(srcdir)/NEWS $(srcdir)/COPYING $(TEST_README_FILES) $(distdir)
+	cp $(filter-out all, $+) $(distdir)
 	tar zcf $(distdir)-$(BINSUFFIX).tar.gz $(distdir)
 	rm -rf $(distdir)
 endif
@@ -212,3 +220,23 @@ installcheck-local:
 		fi \
 	done
 endif
+
+# patch README.rst properties on-the-fly with sed expressions
+PATCH_README = -e "s/^:Version: .*/:Version: $(VERSION)/" -e "s/:Date: .*/:Date: `date +%Y-%m-%d`/"
+
+# produce man pages
+syncevolution.1: README.rst
+	sed $(PATCH_README) $< | $(RST2MAN) --exit-status=3 - >$@
+CLEANFILES += syncevolution.1
+
+# README is the traditional name in the distribution,
+# continue using it instead of README.rst.
+README: README.rst
+	sed $(PATCH_README) $< >$@
+CLEANFILES += README
+
+# The README.html is also used on syncevolution.org as "Usage" page,
+# therefore we must use <h3> headers and lower to fit into the page.
+README.html: README.rst
+	sed $(PATCH_README) $< | $(RST2HTML) --initial-header-level=3 --exit-status=3 - >$@
+CLEANFILES += README.html

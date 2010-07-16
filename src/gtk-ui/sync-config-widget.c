@@ -2115,6 +2115,7 @@ sync_config_widget_add_alternative_config (SyncConfigWidget *self,
 {
     if (configured) {
         sync_config_widget_set_config (self, config);
+        sync_config_widget_set_name (self, name);
         sync_config_widget_set_configured (self, TRUE);    
     } else  {
         sync_config_widget_add_config (self, name, config);

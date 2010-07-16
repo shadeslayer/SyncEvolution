@@ -73,7 +73,6 @@ using namespace std;
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-SourceList *SyncContext::m_sourceListPtr;
 SyncContext *SyncContext::m_activeContext;
 SuspendFlags SyncContext::s_flags;
 
@@ -161,6 +160,7 @@ void SyncContext::init()
     m_serverMode = false;
     m_firstSourceAccess = true;
     m_remoteInitiated = false;
+    m_sourceListPtr = NULL;
 }
 
 SyncContext::~SyncContext()
@@ -1780,8 +1780,8 @@ void SyncContext::throwError(const string &action, int error)
 void SyncContext::fatalError(void *object, const char *error)
 {
     SE_LOG_ERROR(NULL, NULL, "%s", error);
-    if (m_sourceListPtr) {
-        m_sourceListPtr->syncDone(STATUS_FATAL, NULL);
+    if (m_activeContext && m_activeContext->m_sourceListPtr) {
+        m_activeContext->m_sourceListPtr->syncDone(STATUS_FATAL, NULL);
     }
     exit(1);
 }
@@ -1834,7 +1834,7 @@ void SyncContext::startLoopThread()
 
 SyncSource *SyncContext::findSource(const char *name)
 {
-    if (!m_sourceListPtr) {
+    if (!m_activeContext || !m_activeContext->m_sourceListPtr) {
         return NULL;
     }
     const char *realname = strrchr(name, m_findSourceSeparator);
@@ -1843,7 +1843,7 @@ SyncSource *SyncContext::findSource(const char *name)
     } else {
         realname = name;
     }
-    return (*m_sourceListPtr)[realname];
+    return (*m_activeContext->m_sourceListPtr)[realname];
 }
 
 SyncContext *SyncContext::findContext(const char *sessionName)
@@ -2573,10 +2573,10 @@ SyncContext::analyzeSyncMLMessage(const char *data, size_t len,
                                   const std::string &messageType)
 {
     SyncContext sync;
-    SwapContext syncSentinel(&sync);
     SourceList sourceList(sync, false);
     sourceList.setLogLevel(SourceList::LOGGING_SUMMARY);
-    m_sourceListPtr = &sourceList;
+    sync.m_sourceListPtr = &sourceList;
+    SwapContext syncSentinel(&sync);
     sync.initServer("", SharedBuffer(), "");
     SwapEngine swapengine(sync);
     sync.initEngine(false);
@@ -2988,13 +2988,14 @@ SyncMLStatus SyncContext::doSync()
     new_action.sa_handler = handleSignal;
     sigemptyset(&new_action.sa_mask);
     sigaction(SIGINT, NULL, &old_action);
-    if (old_action.sa_handler == SIG_DFL) {
+    bool catchSignals = getenv("SYNCEVOLUTION_NO_SYNC_SIGNALS") == NULL;
+    if (catchSignals && old_action.sa_handler == SIG_DFL) {
         sigaction(SIGINT, &new_action, NULL);
     }
 
     struct sigaction old_term_action;
     sigaction(SIGTERM, NULL, &old_term_action);
-    if (old_term_action.sa_handler == SIG_DFL) {
+    if (catchSignals && old_term_action.sa_handler == SIG_DFL) {
         sigaction(SIGTERM, &new_action, NULL);
     }   
 
@@ -3316,23 +3317,22 @@ SyncMLStatus SyncContext::doSync()
                                             progressInfo.extra2,
                                             progressInfo.extra3);
                         break;
-                    default:
-                        if (!m_serverMode) {
-                            // specific for a certain sync source:
-                            // find it...
-                            SyncSource *source = m_sourceListPtr->lookupBySynthesisID(progressInfo.targetID);
-                            if (source) {
-                                displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
-                                                      *source,
-                                                      progressInfo.extra1,
-                                                      progressInfo.extra2,
-                                                      progressInfo.extra3);
-                            } else {
-                                throwError(std::string("unknown target ") + s);
-                            }
-                            target.reset();
+                    default: {
+                        // specific for a certain sync source:
+                        // find it...
+                        SyncSource *source = m_sourceListPtr->lookupBySynthesisID(progressInfo.targetID);
+                        if (source) {
+                            displaySourceProgress(sysync::TProgressEventEnum(progressInfo.eventtype),
+                                                  *source,
+                                                  progressInfo.extra1,
+                                                  progressInfo.extra2,
+                                                  progressInfo.extra3);
+                        } else {
+                            throwError(std::string("unknown target ") + s);
                         }
+                        target.reset();
                         break;
+                    }
                     }
                 }
                 stepCmd = sysync::STEPCMD_STEP;
@@ -3541,8 +3541,10 @@ SyncMLStatus SyncContext::doSync()
     }
 
     m_agent.reset();
-    sigaction (SIGINT, &old_action, NULL);
-    sigaction (SIGTERM, &old_term_action, NULL);
+    if (catchSignals) {
+        sigaction (SIGINT, &old_action, NULL);
+        sigaction (SIGTERM, &old_term_action, NULL);
+    }
     return status;
 }
 
@@ -3898,6 +3900,7 @@ private:
      * @return logdir created for the session
      */
     string session(bool changeServer, SyncMLStatus status, ...) {
+        Logger::Level level = LoggerBase::instance().getLevel();
         SourceList list(*this, true);
         list.setLogLevel(SourceList::LOGGING_QUIET);
         SyncReport report;
@@ -3947,6 +3950,7 @@ private:
         }
         list.syncDone(status, &report);
 
+        LoggerBase::instance().setLevel(level);
         return list.getLogdir();
     }
 

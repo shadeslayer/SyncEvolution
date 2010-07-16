@@ -2,6 +2,7 @@ lib_LTLIBRARIES = libsyncevo-dbus.la
 
 SUBDIRS = interfaces
 
+if COND_GUI
 AM_CPPFLAGS = -I$(top_srcdir) -Iinterfaces $(SYNTHESIS_CFLAGS)
 
 DISTCLEANFILES = syncevo-dbus.pc
@@ -40,3 +41,4 @@ syncevo_dbus_headers = \
 libsyncevo_dbus_includedir = $(includedir)/syncevo-dbus
 libsyncevo_dbus_include_HEADERS =	\
 	$(syncevo_dbus_headers)
+endif

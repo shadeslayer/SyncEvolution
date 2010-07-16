@@ -34,30 +34,33 @@
 
       <doc:para>
         Method calls may fail with the following errors:
-        "org.syncevolution.Exception" - catch-all error condition.
-        "org.syncevolution.NoSuchConfig" - server configuration name is invalid
-        "org.syncevolution.NoSuchSource" - source name is invalid
-        "org.syncevolution.SourceUnusable" - CheckSource() may return this
-        if source is not usable (for various possible reasons).
-        "org.syncevolution.InvalidCall" - a call is (perhaps no longer) allowed
-        or suitable in the current situation, like Detach() when the client
-        is not attached.
+        <doc:list>
+          <doc:item><doc:term>org.syncevolution.Exception</doc:term><doc:definition>catch-all error condition.</doc:definition></doc:item>
+          <doc:item><doc:term>org.syncevolution.NoSuchConfig</doc:term><doc:definition>server configuration name is invalid</doc:definition></doc:item>
+          <doc:item><doc:term>org.syncevolution.NoSuchSource</doc:term><doc:definition>source name is invalid</doc:definition></doc:item>
+          <doc:item><doc:term>org.syncevolution.SourceUnusable</doc:term><doc:definition>CheckSource() may return this if source is not usable (for various possible reasons).</doc:definition></doc:item>
+          <doc:item><doc:term>org.syncevolution.InvalidCall</doc:term><doc:definition>a call is (perhaps no longer) allowed or suitable in the current situation, like Detach() when the client is not attached.</doc:definition></doc:item>
+        </doc:list>
       </doc:para>
     </doc:doc>
 
     <method name="Attach">
       <doc:doc>
         <doc:description>
+          <doc:para>
           With no client attached, the server will shut down after a
           certain period of inactivity. Attaching to the server
           prevents that. Attaching is not necessary to invoke methods.
           The main purpose is to keep the server running while clients
           are around and listen for signals, in particular the
           Presence signal.
+          </doc:para>
+          <doc:para>
           Each attach has to be matched by one detach, so that one client has
           the capability to attach to the server many times in different
           modules. The behavior of calling Detach() more often than Attach()
           is undefined.
+          </doc:para>
         </doc:description>
       </doc:doc>
     </method>
@@ -73,37 +76,68 @@
 
     <method name ="GetConfigs">
       <doc:doc><doc:description>
+        <doc:para>
         Get an array of all configured servers (or templates)
-
+        </doc:para>
+        <doc:para>
         In getting templates mode, the dbus server checks all paired devices
         from bluez daemon and filters them by SyncML capability. Then it
         looks through built-in templates and returns their matched templates.
         Multiple templates might be created for each device, with different
         matching scores(range: 1-5). Scores represent how well the device name
         matches a template. The higher, the better.
+        </doc:para>
         
+        <doc:para>
         A template might be used to help creation for multiple devices. Thus template
         names must be reset in a naming rule. They are re-named with 'Bluetooth_&lt;
         mac address&gt;_&lt;sequence number&gt;'. Here 'mac address' is the mac
         address of the Bluetooth device and 'sequence number' enumerates all the
         matched templates created for the device.
+        </doc:para>
 
+        <doc:para>
         When retrieving the templates with GetConfig(), several additional
         properties will be returned:
-            description - the description for the template (non-localized string)
-            score - the calculated score based on the device name and template (1-5, 5 is best)
-            deviceName - the device name that the template is for (copied verbatim from that device)
-            templateName - string identifying the class of devices the templates works for,
-                           like "Nokia S40"; meant to be shown to users; optional, fall back
-                           to first entry in fingerPrint if not set
-            fingerPrint - comma separated list of devices which work with this template,
-                          typically in "vendor model" format; can be used by D-Bus
-                          clients to re-match with user provided device information
+        <doc:list>
+          <doc:item>
+            <doc:term>description</doc:term>
+            <doc:definition>the description for the template
+            (non-localized string)</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>score</doc:term>
+            <doc:definition>the calculated score based on the device
+            name and template (1-5, 5 is best)</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>deviceName</doc:term>
+            <doc:definition>the device name that the template is for
+            (copied verbatim from that device)</doc:definition>
+          </doc:item>
+            <doc:item>
+              <doc:term>templateName</doc:term>
+              <doc:definition>string identifying the class of devices
+                the templates works for, like "Nokia S40"; meant to be
+                shown to users; optional, fall back to first entry in
+                fingerPrint if not set</doc:definition>
+            </doc:item>
+            <doc:item>
+              <doc:term>fingerPrint</doc:term>
+              <doc:definition>comma separated list of devices which
+                work with this template, typically in "vendor model"
+                format; can be used by D-Bus clients to re-match with
+                user provided device information</doc:definition>
+            </doc:item>
+        </doc:list>
+        </doc:para>
 
+        <doc:para>
         Together with these changes, a property value is changed: 'syncURL' in the
         configuration is replaced with the mac address of the device.
+        </doc:para>
       </doc:description></doc:doc>
-      <arg type="b" name="template" direction="in">
+      <arg type="b" name="tmplate" direction="in">
         <doc:doc><doc:summary>
           if TRUE, will return template names, otherwise will return 
           configured servers
@@ -123,7 +157,7 @@
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
       </arg>
-      <arg type="b" name="template" direction="in">
+      <arg type="b" name="tmplate" direction="in">
         <doc:doc><doc:summary>
           if TRUE, will return a matching template configuration, otherwise
           will return a matching server configuration
@@ -153,6 +187,7 @@
           server. The result is undefined.
         </doc:description></doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
     </method>
 
     <method name="CheckPresence">
@@ -221,6 +256,7 @@
                 its pair-value won't be included in the dictionary.
         </doc:description></doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfStringMap"/>
     </method>
 
     <method name="GetDatabases">
@@ -253,6 +289,7 @@
           </doc:description>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfDatabases"/>
     </method>
 
     <method name="CheckSource">
@@ -365,6 +402,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In0" value="StringMap"/>
       <arg type="b" name="must_authenticate" direction="in">
         <doc:doc>
           <doc:summary>
@@ -499,11 +537,16 @@
           </doc:para>
 
           <doc:para>
-            Clients react by calling InfoResponse.  The flow is this:
-            information needed, InfoRequest("request"),
-            InfoResponse("working") + dialog is opened (if necessary),
-            InfoRequest("waiting"), information becomes available,
-            InfoResponse("response"), InfoRequest("done").
+            Clients react by calling InfoResponse.  The flow of events is this:
+            <doc:list type="number">
+              <doc:item><doc:definition>information needed</doc:definition></doc:item>
+              <doc:item><doc:definition>InfoRequest("request")</doc:definition></doc:item>
+              <doc:item><doc:definition>InfoResponse("working") + dialog is opened (if necessary)</doc:definition></doc:item>
+              <doc:item><doc:definition>InfoRequest("waiting")</doc:definition></doc:item>
+              <doc:item><doc:definition>information becomes available</doc:definition></doc:item>
+              <doc:item><doc:definition>InfoResponse("response")</doc:definition></doc:item>
+              <doc:item><doc:definition>InfoRequest("done")</doc:definition></doc:item>
+            </doc:list>
           </doc:para>
 
           <doc:para>
@@ -518,6 +561,33 @@
             minutes, not seconds), it has to assume that no client can
             provide the information and fall back to some default or
             abort.
+          </doc:para>
+
+          <doc:para>
+            For "type = password" the following keys are used as part of the "parameters" string hash:
+            <doc:list>
+              <doc:item>
+                <doc:term>"name"</doc:term>
+                <doc:definition>name of the password property in the config</doc:definition>
+              </doc:item>
+              <doc:item>
+                <doc:term>"description"</doc:term>
+                <doc:definition>unique English description of the required password.
+                  Content is determined by the individual password property, so this
+                  may change. Currently used are "SyncML Server", "proxy",
+                  "'source name' backend" (with 'source name' replaced by the same
+                  names also used for the corresponding config entry).
+                </doc:definition>
+              </doc:item>
+              <doc:item>
+                <doc:term>
+                  "user", "server", "domain", "object", "protocol", "authtype", "port"
+                </doc:term>
+                <doc:definition>
+                  optional keys as they would be used in the GNOME keyring.
+                </doc:definition>
+              </doc:item>
+            </doc:list>
           </doc:para>
         </doc:description>
       </doc:doc>
@@ -558,19 +628,10 @@
         <doc:doc>
           <doc:summary>
             Auxiliary parameters which depend on the type.
-
-            For "password" the following keys are used:
-            "name" - name of the password property in the config.
-            "description" - unique English description of the required password.
-            Content is determined by the individual password property, so this
-            may change. Currently used are "SyncML Server", "proxy",
-            "'source name' backend" (with 'source name' replaced by the same
-            names also used for the corresponding config entry).
-            "user", "server", "domain", "object", "protocol", "authtype", "port" -
-            optional keys as they would be used in the GNOME keyring.
           </doc:summary>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In5" value="StringMap"/>
     </signal>
 
     <method name="InfoResponse">
@@ -599,6 +660,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="StringMap"/>
     </method>
 
     <signal name="LogOutput">

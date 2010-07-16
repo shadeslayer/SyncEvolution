@@ -256,6 +256,7 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.e_cal_remove_object_with_mod, "e_cal_remove_object_with_mod",
                 &EDSAbiWrapperSingleton.e_cal_set_auth_func, "e_cal_set_auth_func",
                 &EDSAbiWrapperSingleton.icalcomponent_add_component, "icalcomponent_add_component",
+                &EDSAbiWrapperSingleton.icalcomponent_add_property, "icalcomponent_add_property",
                 &EDSAbiWrapperSingleton.icalcomponent_as_ical_string, "icalcomponent_as_ical_string",
                 &EDSAbiWrapperSingleton.icalcomponent_free, "icalcomponent_free",
                 &EDSAbiWrapperSingleton.icalcomponent_get_first_component, "icalcomponent_get_first_component",
@@ -272,9 +273,11 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icalcomponent_new_from_string, "icalcomponent_new_from_string",
                 &EDSAbiWrapperSingleton.icalcomponent_remove_property, "icalcomponent_remove_property",
                 &EDSAbiWrapperSingleton.icalcomponent_set_uid, "icalcomponent_set_uid",
+                &EDSAbiWrapperSingleton.icalcomponent_set_recurrenceid, "icalcomponent_set_recurrenceid",
                 &EDSAbiWrapperSingleton.icalcomponent_vanew, "icalcomponent_vanew",
                 &EDSAbiWrapperSingleton.icalparameter_get_tzid, "icalparameter_get_tzid",
                 &EDSAbiWrapperSingleton.icalparameter_set_tzid, "icalparameter_set_tzid",
+                &EDSAbiWrapperSingleton.icalproperty_new_clone, "icalproperty_new_clone",
                 &EDSAbiWrapperSingleton.icalproperty_get_description, "icalproperty_get_description",
                 &EDSAbiWrapperSingleton.icalproperty_get_first_parameter, "icalproperty_get_first_parameter",
                 &EDSAbiWrapperSingleton.icalproperty_get_lastmodified, "icalproperty_get_lastmodified",
@@ -284,7 +287,10 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icalproperty_new_summary, "icalproperty_new_summary",
                 &EDSAbiWrapperSingleton.icalproperty_set_value_from_string, "icalproperty_set_value_from_string",
                 &EDSAbiWrapperSingleton.icalproperty_remove_parameter_by_kind, "icalproperty_remove_parameter_by_kind",
+                &EDSAbiWrapperSingleton.icaltime_is_null_time, "icaltime_is_null_time",
                 &EDSAbiWrapperSingleton.icaltime_as_ical_string, "icaltime_as_ical_string",
+                &EDSAbiWrapperSingleton.icaltime_from_string, "icaltime_from_string",
+                &EDSAbiWrapperSingleton.icaltime_set_timezone, "icaltime_set_timezone",
                 &EDSAbiWrapperSingleton.icaltimezone_free, "icaltimezone_free",
                 &EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone, "icaltimezone_get_builtin_timezone",
                 &EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone_from_tzid, "icaltimezone_get_builtin_timezone_from_tzid",
@@ -360,6 +366,6 @@ extern "C" void EDSAbiWrapperInit()
 #endif // EVOLUTION_COMPATIBILITY
 }
 
-extern "C" const char *EDSAbiWrapperInfo() { return lookupInfo.c_str(); }
-extern "C" const char *EDSAbiWrapperDebug() { return lookupDebug.c_str(); }
+extern "C" const char *EDSAbiWrapperInfo() { EDSAbiWrapperInit(); return lookupInfo.c_str(); }
+extern "C" const char *EDSAbiWrapperDebug() { EDSAbiWrapperInit(); return lookupDebug.c_str(); }
 

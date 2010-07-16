@@ -244,7 +244,10 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 indent +=space
                 indents.append(indent)
                 prefix = logprefix[format]
-                result.write(indent+'<'+format+' prefix="'+prefix+'">\n')
+                qformat = format;
+                qformat = qformat.replace("_", "__");
+                qformat = qformat.replace("+", "_-");
+                result.write(indent+'<'+qformat+' prefix="'+prefix+'">\n')
                 for case in logdic[format]:
                     indent +=space
                     indents.append(indent)
@@ -259,7 +262,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                     result.write('</'+casename+'>\n')
                     indents.pop()
                     indent = indents[-1]
-                result.write(indent+'</'+format+'>\n')
+                result.write(indent+'</'+qformat+'>\n')
                 indents.pop()
                 indent = indents[-1]
             result.write(indent+'</'+server+'>\n')

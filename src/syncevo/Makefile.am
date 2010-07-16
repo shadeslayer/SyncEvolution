@@ -19,6 +19,7 @@ lib_LTLIBRARIES = libsyncevolution.la
 SYNCEVOLUTION_SOURCES  = \
 	ConfigTree.h \
 	ConfigNode.h \
+	ConfigNode.cpp \
 	HashConfigNode.h \
 	VolatileConfigNode.h \
 	VolatileConfigTree.h \
@@ -82,6 +83,20 @@ SYNCEVOLUTION_SOURCES  = \
 	\
 	FileConfigNode.h \
 	FileConfigNode.cpp \
+	\
+	IniConfigNode.h \
+	IniConfigNode.cpp \
+	SingleFileConfigTree.h \
+	SingleFileConfigTree.cpp \
+	\
+	DataBlob.h \
+	FileDataBlob.h \
+	FileDataBlob.cpp \
+	StringDataBlob.h \
+	StringDataBlob.cpp \
+	\
+	SafeOstream.h \
+	SafeOstream.cpp \
 	\
 	FileConfigTree.h \
 	FileConfigTree.cpp \

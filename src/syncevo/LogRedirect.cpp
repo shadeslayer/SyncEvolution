@@ -393,10 +393,11 @@ bool LogRedirect::process(FDs &fds) throw()
                 while (*text == '\n') {
                     text++;
                 }
-                const char *glib_debug_prefix = "** (process:";
+                const char *glib_debug_prefix = "** ("; // ** (client-test:875): WARNING **:
                 const char *glib_msg_prefix = "** Message:";
                 prefix = "stderr";
-                if (!strncmp(text, glib_debug_prefix, strlen(glib_debug_prefix)) ||
+                if ((!strncmp(text, glib_debug_prefix, strlen(glib_debug_prefix)) &&
+                     strstr(text, " **:")) ||
                     !strncmp(text, glib_msg_prefix, strlen(glib_msg_prefix))) {
                     level = Logger::DEBUG;
                     prefix = "glib";
@@ -662,10 +663,19 @@ public:
 
             buffer.m_redirect->process();
 
-            std::string debug = buffer.m_streams[Logger::DEBUG].str();
+            std::string error = buffer.m_streams[Logger::ERROR].str();
+            std::string warning = buffer.m_streams[Logger::WARNING].str();           
+            std::string show = buffer.m_streams[Logger::SHOW].str();
+            std::string info = buffer.m_streams[Logger::INFO].str();
             std::string dev = buffer.m_streams[Logger::DEV].str();
-            CPPUNIT_ASSERT(debug.find("test warning") != debug.npos);
+            std::string debug = buffer.m_streams[Logger::DEBUG].str();
+            CPPUNIT_ASSERT_EQUAL(string(""), error);
+            CPPUNIT_ASSERT_EQUAL(string(""), warning);
+            CPPUNIT_ASSERT_EQUAL(string(""), show);
+            CPPUNIT_ASSERT_EQUAL(string(""), info);
+            CPPUNIT_ASSERT_EQUAL(string(""), error);
             CPPUNIT_ASSERT(dev.find("normal message stderr") != dev.npos);
+            CPPUNIT_ASSERT(debug.find("test warning") != debug.npos);
         } catch(...) {
             dup2(orig_stdout, STDOUT_FILENO);
             throw;

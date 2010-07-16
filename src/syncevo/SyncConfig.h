@@ -1680,16 +1680,17 @@ class SyncSourceConfig {
     string m_cachedPassword;
 };
 
+class SingleFileConfigTree;
+
 /**
  * Representing a configuration template node used for fuzzy matching.
  */
 class TemplateConfig
 {
-    boost::shared_ptr<FileConfigNode> m_metaNode;
+    boost::shared_ptr<SingleFileConfigTree> m_template;
     ConfigProps m_metaProps;
     string m_id;
     string m_templateName;
-    string m_path;
 public:
     TemplateConfig (const string &path);
     enum {
@@ -1701,6 +1702,7 @@ public:
         BEST_MATCH=5
     };
     static bool isTemplateConfig (const string &path);
+    bool isTemplateConfig() const;
     virtual int metaMatch (const string &fingerprint, SyncConfig::MatchMode mode);
     virtual int serverModeMatch (SyncConfig::MatchMode mode);
     virtual int fingerprintMatch (const string &fingerprint);

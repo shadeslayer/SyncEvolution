@@ -86,6 +86,35 @@ string normalizePath(const string &path)
     return res;
 }
 
+string getBasename(const string &path)
+{
+    string dir;
+    string file;
+    splitPath(path, dir, file);
+    return file;
+}
+
+string getDirname(const string &path)
+{
+    string dir;
+    string file;
+    splitPath(path, dir, file);
+    return dir;
+}
+
+void splitPath(const string &path, string &dir, string &file)
+{
+    string normal = normalizePath(path);
+    size_t offset = normal.rfind('/');
+    if (offset != normal.npos) {
+        dir = normal.substr(0, offset);
+        file = normal.substr(offset + 1);
+    } else {
+        dir = "";
+        file = normal;
+    }
+}
+
 bool relToAbs(string &path)
 {
     char buffer[PATH_MAX+1];

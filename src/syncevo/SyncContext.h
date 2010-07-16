@@ -103,10 +103,10 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     static SuspendFlags s_flags;
 
     /**
-     * a pointer to the active SourceList instance if one exists; 
+     * a pointer to the active SourceList instance for this context if one exists;
      * used for error handling in throwError() on the iPhone
      */
-    static SourceList *m_sourceListPtr;
+    SourceList *m_sourceListPtr;
 
     /**
      * a pointer to the active SyncContext instance if one exists;

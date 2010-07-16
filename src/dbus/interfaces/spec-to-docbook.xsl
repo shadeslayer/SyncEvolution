@@ -9,19 +9,9 @@
 -->
 <xsl:output method="xml" indent="yes" encoding="UTF-8"/>
 
-<xsl:template match="/node">
-  <reference>
-    <xsl:attribute name="id"><xsl:value-of select="@doc:id"/></xsl:attribute>
-    <title>
-      <xsl:value-of select="doc:doc/doc:summary"/>
-    </title>
-  <xsl:apply-templates select="interface"/>
-</reference>
-</xsl:template>
+<xsl:template match="/">
 
-<xsl:template match="interface">
-
-<xsl:variable name="interface" select="@name"/>
+<xsl:variable name="interface" select="//interface/@name"/>
 <xsl:variable name="basename">
   <xsl:call-template name="interface-basename">
     <xsl:with-param name="str" select="$interface"/>
@@ -30,11 +20,11 @@
 
 <refentry><xsl:attribute name="id"><xsl:value-of select="$basename"/></xsl:attribute>
   <refmeta>
-    <refentrytitle role="top_of_page"><xsl:value-of select="@name"/></refentrytitle>
+    <refentrytitle role="top_of_page"><xsl:value-of select="//interface/@name"/></refentrytitle>
   </refmeta>
 
   <refnamediv>
-    <refname><xsl:value-of select="@name"/></refname>
+    <refname><xsl:value-of select="//interface/@name"/></refname>
     <refpurpose><xsl:value-of select="$basename"/> interface</refpurpose>
   </refnamediv>
 
@@ -47,38 +37,52 @@
     </synopsis>
   </refsynopsisdiv>
 
-  <refsect1 role="signal_proto">
-    <title role="signal_proto.title">Signals</title>
-    <synopsis>
-  <xsl:call-template name="signals-synopsis">
-    <xsl:with-param name="basename" select="$basename"/>
-  </xsl:call-template>
-    </synopsis>
-  </refsect1>
+  <xsl:choose>
+    <xsl:when test="count(///signal) > 0">
+      <refsect1 role="signal_proto">
+        <title role="signal_proto.title">Signals</title>
+        <synopsis>
+          <xsl:call-template name="signals-synopsis">
+            <xsl:with-param name="basename" select="$basename"/>
+          </xsl:call-template>
+        </synopsis>
+      </refsect1>
+    </xsl:when>
+  </xsl:choose>
 
   <refsect1 role="impl_interfaces">
     <title role="impl_interfaces.title">Implemented Interfaces</title>
     <para>
-    <xsl:value-of select="$interface"/> implements
+    Objects implementing <xsl:value-of select="$interface"/> also implements
     org.freedesktop.DBus.Introspectable,
     org.freedesktop.DBus.Properties
     </para>
   </refsect1>
 
-  <refsect1 role="properties">
-    <title role="properties.title">Properties</title>
-    <synopsis>
-  <xsl:call-template name="properties-synopsis">
-    <xsl:with-param name="basename" select="$basename"/>
-  </xsl:call-template>
-    </synopsis>
-  </refsect1>
+  <xsl:choose>
+    <xsl:when test="count(///property) > 0">
+      <refsect1 role="properties">
+        <title role="properties.title">Properties</title>
+        <synopsis>
+          <xsl:call-template name="properties-synopsis">
+            <xsl:with-param name="basename" select="$basename"/>
+          </xsl:call-template>
+        </synopsis>
+      </refsect1>
+    </xsl:when>
+  </xsl:choose>
 
   <refsect1 role="desc">
     <title role="desc.title">Description</title>
-    <para>
-      <xsl:apply-templates select="doc:doc"/>
-    </para>
+    <xsl:choose>
+      <xsl:when test="count(//interface/doc:doc) > 0">
+        <xsl:apply-templates select="//interface/doc:doc"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <para>
+        </para>
+      </xsl:otherwise>
+    </xsl:choose>
   </refsect1>
 
   <refsect1 role="details">
@@ -88,19 +92,27 @@
     </xsl:call-template>
   </refsect1>
 
-  <refsect1 role="signals">
-    <title role="signals.title">Signal Details</title>
-    <xsl:call-template name="signal-details">
-      <xsl:with-param name="basename" select="$basename"/>
-    </xsl:call-template>
-  </refsect1>
+  <xsl:choose>
+    <xsl:when test="count(///signal) > 0">
+      <refsect1 role="signals">
+        <title role="signals.title">Signal Details</title>
+        <xsl:call-template name="signal-details">
+          <xsl:with-param name="basename" select="$basename"/>
+        </xsl:call-template>
+      </refsect1>
+    </xsl:when>
+  </xsl:choose>
 
-  <refsect1 role="property_details">
-    <title role="property_details.title">Property Details</title>
-    <xsl:call-template name="property-details">
-      <xsl:with-param name="basename" select="$basename"/>
-    </xsl:call-template>
-  </refsect1>
+  <xsl:choose>
+    <xsl:when test="count(///property) > 0">
+      <refsect1 role="property_details">
+        <title role="property_details.title">Property Details</title>
+        <xsl:call-template name="property-details">
+          <xsl:with-param name="basename" select="$basename"/>
+        </xsl:call-template>
+      </refsect1>
+    </xsl:when>
+  </xsl:choose>
 
 </refentry>
 </xsl:template>
@@ -109,13 +121,17 @@
 <xsl:template name="property-doc">
   <xsl:apply-templates select="doc:doc/doc:description"/>
 
-  <variablelist role="params">
-    <xsl:for-each select="arg">
+  <xsl:choose>
+    <xsl:when test="count(arg) > 0">
+      <variablelist role="params">
+        <xsl:for-each select="arg">
 <varlistentry><term><parameter><xsl:value-of select="@name"/></parameter>:</term>
 <listitem><simpara><xsl:value-of select="doc:doc/doc:summary"/></simpara></listitem>
 </varlistentry>
-    </xsl:for-each>
-  </variablelist>
+        </xsl:for-each>
+      </variablelist>
+    </xsl:when>
+  </xsl:choose>
 
   <xsl:apply-templates select="doc:doc/doc:since"/>
   <xsl:apply-templates select="doc:doc/doc:deprecated"/>
@@ -131,15 +147,13 @@
       <xsl:with-param name="set" select="@name"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:for-each select="property">
+  <xsl:for-each select="///property">
   <refsect2>
     <title><anchor role="function"><xsl:attribute name="id"><xsl:value-of select="$basename"/>:<xsl:value-of select="@name"/></xsl:attribute></anchor>The "<xsl:value-of select="@name"/>" property</title>
 <indexterm><primary><xsl:value-of select="@name"/></primary><secondary><xsl:value-of select="$basename"/></secondary></indexterm>
 <programlisting>'<xsl:value-of select="@name"/>'<xsl:call-template name="pad-spaces"><xsl:with-param name="width" select="2"/></xsl:call-template>
 <xsl:call-template name="property-args"><xsl:with-param name="indent" select="string-length(@name) + 2"/></xsl:call-template></programlisting>
-
   <xsl:call-template name="property-doc"/>
-
   </refsect2>
   </xsl:for-each>
 </xsl:template>
@@ -147,13 +161,17 @@
 <xsl:template name="signal-doc">
   <xsl:apply-templates select="doc:doc/doc:description"/>
 
-  <variablelist role="params">
-    <xsl:for-each select="arg">
+  <xsl:choose>
+    <xsl:when test="count(arg) > 0">
+      <variablelist role="params">
+        <xsl:for-each select="arg">
 <varlistentry><term><parameter><xsl:value-of select="@name"/></parameter>:</term>
 <listitem><simpara><xsl:value-of select="doc:doc/doc:summary"/></simpara></listitem>
 </varlistentry>
-    </xsl:for-each>
-  </variablelist>
+        </xsl:for-each>
+      </variablelist>
+    </xsl:when>
+  </xsl:choose>
 
   <xsl:apply-templates select="doc:doc/doc:since"/>
   <xsl:apply-templates select="doc:doc/doc:deprecated"/>
@@ -168,14 +186,12 @@
       <xsl:with-param name="set" select="@name"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:for-each select="signal">
+  <xsl:for-each select="///signal">
   <refsect2>
     <title><anchor role="function"><xsl:attribute name="id"><xsl:value-of select="$basename"/>::<xsl:value-of select="@name"/></xsl:attribute></anchor>The <xsl:value-of select="@name"/> signal</title>
 <indexterm><primary><xsl:value-of select="@name"/></primary><secondary><xsl:value-of select="$basename"/></secondary></indexterm>
 <programlisting><xsl:value-of select="@name"/> (<xsl:call-template name="signal-args"><xsl:with-param name="indent" select="string-length(@name) + 2"/><xsl:with-param name="prefix" select="."/></xsl:call-template>)</programlisting>
-
   <xsl:call-template name="signal-doc"/>
-
   </refsect2>
   </xsl:for-each>
 </xsl:template>
@@ -186,14 +202,74 @@
 </programlisting>
 </xsl:template>
 
+<xsl:template match="doc:tt">
+  <literal>
+    <xsl:apply-templates />
+  </literal>
+</xsl:template>
+
+<xsl:template match="doc:i">
+  <emphasis>
+    <xsl:apply-templates />
+  </emphasis>
+</xsl:template>
+
+<xsl:template match="doc:b">
+  <emphasis role="bold">
+    <xsl:apply-templates />
+  </emphasis>
+</xsl:template>
+
+<xsl:template match="doc:ulink">
+  <ulink>
+    <xsl:attribute name="url"><xsl:value-of select="@url"/></xsl:attribute>
+    <xsl:value-of select="."/>
+  </ulink>
+</xsl:template>
+
 <xsl:template match="doc:summary">
-<!-- by default don't display -->
+  <xsl:apply-templates />
 </xsl:template>
 
 <xsl:template match="doc:example">
 <informalexample>
 <xsl:apply-templates />
 </informalexample>
+</xsl:template>
+
+<xsl:template name="listitems-do-term">
+  <xsl:param name="str"/>
+  <xsl:choose>
+    <xsl:when test="string-length($str) > 0">
+      <emphasis role="bold"><xsl:value-of select="$str"/>: </emphasis>
+    </xsl:when>
+  </xsl:choose>
+</xsl:template>
+
+<xsl:template name="do-listitems">
+  <xsl:for-each select="doc:item">
+    <listitem><para>
+      <xsl:call-template name="listitems-do-term"><xsl:with-param name="str" select="doc:term"/></xsl:call-template>
+      <xsl:apply-templates select="doc:definition"/>
+    </para></listitem>
+  </xsl:for-each>
+</xsl:template>
+
+<xsl:template match="doc:list">
+  <para>
+    <xsl:choose>
+      <xsl:when test="contains(@type,'number')">
+        <orderedlist>
+          <xsl:call-template name="do-listitems"/>
+        </orderedlist>
+      </xsl:when>
+      <xsl:otherwise>
+        <itemizedlist>
+          <xsl:call-template name="do-listitems"/>
+        </itemizedlist>
+      </xsl:otherwise>
+    </xsl:choose>
+  </para>
 </xsl:template>
 
 <xsl:template match="doc:para">
@@ -259,6 +335,12 @@ instead.</para></warning>
 </para>
 </xsl:template>
 
+<xsl:template match="doc:errors">
+<para role="errors">
+<xsl:apply-templates />
+</para>
+</xsl:template>
+
 <xsl:template match="doc:seealso">
 <para>
 See also:
@@ -285,9 +367,6 @@ See also:
     <xsl:when test="contains($type,'interface')">
       <link><xsl:attribute name="linkend"><xsl:value-of select="$to"/></xsl:attribute><xsl:value-of select="$val"/></link>
     </xsl:when>
-    <xsl:when test="contains($type,'xref')">
-      <xref><xsl:attribute name="linkend"><xsl:value-of select="$to"/></xsl:attribute></xref>
-    </xsl:when>
   </xsl:choose>
 </xsl:template>
 
@@ -302,20 +381,46 @@ See also:
 <xsl:template name="method-doc">
   <xsl:apply-templates select="doc:doc/doc:description"/>
 
-  <variablelist role="params">
-    <xsl:for-each select="arg">
+  <xsl:choose>
+    <xsl:when test="count(arg) > 0">
+      <variablelist role="params">
+        <xsl:for-each select="arg">
 <varlistentry><term><parameter><xsl:value-of select="@name"/></parameter>:</term>
-<listitem>
-<para><xsl:value-of select="doc:doc/doc:summary"/></para>
-  <xsl:apply-templates select="doc:doc/doc:description"/>
-</listitem>
+<listitem><simpara><xsl:apply-templates select="doc:doc/doc:summary"/></simpara></listitem>
 </varlistentry>
-    </xsl:for-each>
-  </variablelist>
+        </xsl:for-each>
+      </variablelist>
+    </xsl:when>
+  </xsl:choose>
 
   <xsl:apply-templates select="doc:doc/doc:since"/>
   <xsl:apply-templates select="doc:doc/doc:deprecated"/>
-  <xsl:apply-templates select="doc:doc/doc:permission"/>
+
+  <xsl:choose>
+    <xsl:when test="count(doc:doc/doc:errors) > 0">
+      <note>
+        <title>Errors</title>
+        <variablelist role="errors">
+          <xsl:for-each select="doc:doc/doc:errors/doc:error">
+            <varlistentry>
+              <term><parameter><xsl:value-of select="@name"/></parameter>:</term>
+              <listitem><simpara><xsl:apply-templates select="."/></simpara></listitem>
+            </varlistentry>
+          </xsl:for-each>
+        </variablelist>
+      </note>
+    </xsl:when>
+  </xsl:choose>
+
+  <xsl:choose>
+    <xsl:when test="count(doc:doc/doc:permission) > 0">
+      <note>
+        <title>Permissions</title>
+        <xsl:apply-templates select="doc:doc/doc:permission"/>
+      </note>
+    </xsl:when>
+  </xsl:choose>
+
   <xsl:apply-templates select="doc:doc/doc:seealso"/>
 </xsl:template>
 
@@ -326,15 +431,13 @@ See also:
       <xsl:with-param name="set" select="@name"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:for-each select="method">
+  <xsl:for-each select="///method">
     <refsect2>
     <title><anchor role="function"><xsl:attribute name="id"><xsl:value-of select="$basename"/>.<xsl:value-of select="@name"/></xsl:attribute></anchor><xsl:value-of select="@name"/> ()</title>
 <indexterm><primary><xsl:value-of select="@name"/></primary><secondary><xsl:value-of select="$basename"/></secondary></indexterm>
 <programlisting><xsl:value-of select="@name"/> (<xsl:call-template name="method-args"><xsl:with-param name="indent" select="string-length(@name) + 2"/><xsl:with-param name="prefix" select="."/></xsl:call-template>)</programlisting>
-
     <xsl:call-template name="method-doc"/>
     </refsect2>
-
   </xsl:for-each>
 </xsl:template>
 
@@ -343,10 +446,10 @@ See also:
   <xsl:param name="basename"/>
   <xsl:variable name="longest">
     <xsl:call-template name="find-longest">
-      <xsl:with-param name="set" select="property/@name"/>
+      <xsl:with-param name="set" select="///property/@name"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:for-each select="property">
+  <xsl:for-each select="///property">
 <link><xsl:attribute name="linkend"><xsl:value-of select="$basename"/>:<xsl:value-of select="@name"/></xsl:attribute>'<xsl:value-of select="@name"/>'</link><xsl:call-template name="pad-spaces"><xsl:with-param name="width" select="$longest - string-length(@name) + 1"/></xsl:call-template> <xsl:call-template name="property-args"><xsl:with-param name="indent" select="$longest + 2"/></xsl:call-template>
 </xsl:for-each>
 </xsl:template>
@@ -356,11 +459,11 @@ See also:
   <xsl:param name="basename"/>
   <xsl:variable name="longest">
     <xsl:call-template name="find-longest">
-      <xsl:with-param name="set" select="signal/@name"/>
+      <xsl:with-param name="set" select="///signal/@name"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:for-each select="signal">
-<link><xsl:attribute name="linkend"><xsl:value-of select="$basename"/>::<xsl:value-of select="@name"/></xsl:attribute><xsl:value-of select="@name"/></link><xsl:call-template name="pad-spaces"><xsl:with-param name="width" select="$longest - string-length(@name) + 1"/></xsl:call-template>(<xsl:call-template name="signal-args"><xsl:with-param name="indent" select="$longest + 2"/><xsl:with-param name="prefix" select="signal"/></xsl:call-template>)
+  <xsl:for-each select="///signal">
+<link><xsl:attribute name="linkend"><xsl:value-of select="$basename"/>::<xsl:value-of select="@name"/></xsl:attribute><xsl:value-of select="@name"/></link><xsl:call-template name="pad-spaces"><xsl:with-param name="width" select="$longest - string-length(@name) + 1"/></xsl:call-template>(<xsl:call-template name="signal-args"><xsl:with-param name="indent" select="$longest + 2"/><xsl:with-param name="prefix" select="///signal"/></xsl:call-template>)
 </xsl:for-each>
 </xsl:template>
 
@@ -369,11 +472,11 @@ See also:
   <xsl:param name="basename"/>
   <xsl:variable name="longest">
     <xsl:call-template name="find-longest">
-      <xsl:with-param name="set" select="method/@name"/>
+      <xsl:with-param name="set" select="///method/@name"/>
     </xsl:call-template>
   </xsl:variable>
-  <xsl:for-each select="method">
-<link><xsl:attribute name="linkend"><xsl:value-of select="$basename"/>.<xsl:value-of select="@name"/></xsl:attribute><xsl:value-of select="@name"/></link><xsl:call-template name="pad-spaces"><xsl:with-param name="width" select="$longest - string-length(@name) + 1"/></xsl:call-template>(<xsl:call-template name="method-args"><xsl:with-param name="indent" select="$longest + 2"/><xsl:with-param name="prefix" select="method"/></xsl:call-template>)
+  <xsl:for-each select="///method">
+<link><xsl:attribute name="linkend"><xsl:value-of select="$basename"/>.<xsl:value-of select="@name"/></xsl:attribute><xsl:value-of select="@name"/></link><xsl:call-template name="pad-spaces"><xsl:with-param name="width" select="$longest - string-length(@name) + 1"/></xsl:call-template>(<xsl:call-template name="method-args"><xsl:with-param name="indent" select="$longest + 2"/><xsl:with-param name="prefix" select="///method"/></xsl:call-template>)
 </xsl:for-each>
 </xsl:template>
 

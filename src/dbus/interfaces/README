@@ -1,0 +1,9 @@
+The documentation of .xml files follows dbus-introspect-docs.dtd
+and uses spec-to-docbook.xsl from William Jon McCann <jmccann@redhat.com>
+to convert the documentation into DocBook and then HTML.
+
+See http://cgit.freedesktop.org/ConsoleKit/tree/doc/dbus for latest (?)
+copy of the script and http://cgit.freedesktop.org/ConsoleKit/tree/src
+for some examples.
+
+

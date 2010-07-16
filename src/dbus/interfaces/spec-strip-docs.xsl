@@ -33,6 +33,7 @@
 		</node>
 	</xsl:template>
 	
+        <xsl:template match="annotation"/>
 	<xsl:template match="doc:*"/>
 	<xsl:template match="text()"/>
 </xsl:stylesheet>

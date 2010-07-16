@@ -1519,6 +1519,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testPrintServers);
     CPPUNIT_TEST(testPrintConfig);
     CPPUNIT_TEST(testPrintFileTemplates);
+    CPPUNIT_TEST(testPrintFileTemplatesConfig);
     CPPUNIT_TEST(testTemplate);
     CPPUNIT_TEST(testMatchTemplate);
     CPPUNIT_TEST(testAddSource);
@@ -1852,6 +1853,7 @@ protected:
 
     void testMatchTemplate() {
         ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "testcases/templates");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", "/dev/null");
 
         TestCmdline help1("--template", "?nokia 7210c", NULL);
         help1.doit();
@@ -2083,12 +2085,27 @@ protected:
     }
 
     void testPrintFileTemplates() {
+        rm_r(m_testDir);
         // use local copy of templates in build dir (no need to install)
         ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "./templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
+        doPrintFileTemplates();
+    }
+
+    void testPrintFileTemplatesConfig() {
         rm_r(m_testDir);
+        mkdir_p(m_testDir);
+        symlink("../templates", (m_testDir + "/syncevolution-templates").c_str());
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        doPrintFileTemplates();
+    }
+
+    void doPrintFileTemplates() {
         testSetupFunambol();
 
         {

@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
 "POT-Creation-Date: 2010-05-05 09:24+0000\n"
-"PO-Revision-Date: 2010-05-05 18:35-0800\n"
+"PO-Revision-Date: 2010-05-17 17:45-0800\n"
 "Last-Translator: Bogdan Nosach <bogdan.nosach@ptiglobal.net>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -146,7 +146,7 @@ msgstr "%s - синхронизировано %ld дней назад"
 #: ../src/gtk-ui/sync-ui.c:612
 #: ../src/gtk-ui/sync-ui.c:726
 msgid "Sync now"
-msgstr "Синхронизировать сейчас"
+msgstr "Синхронизировать"
 
 #. TRANSLATORS: Action button in info bar in main view. Shown with e.g.
 #. * "A normal sync is not possible at this time..." message.
@@ -154,7 +154,7 @@ msgstr "Синхронизировать сейчас"
 #: ../src/gtk-ui/sync-ui.c:618
 #: ../src/gtk-ui/ui.glade.h:37
 msgid "Slow sync"
-msgstr "Медленная синхронизация"
+msgstr "Медленная/nсинхронизация"
 
 #: ../src/gtk-ui/sync-ui.c:619
 msgid "Other options..."
@@ -543,12 +543,12 @@ msgid ""
 "A slow sync compares items from both sides and tries to merge them. \n"
 "This may fail in some cases, leading to duplicates or lost information."
 msgstr ""
-"При медленной синхронизации сравниваются элементы с обеих сторон и выполняется попытка их объединения. \n"
-"В некоторых случаях это может закончиться сбоем и стать причиной появлений копий данных или их утраты. "
+"Медленная синхронизация сравнивает элементы с обеих сторон и выполняет их объединение. \n"
+"В некоторых случаях это может вызвать появление копий данных или их утрату. "
 
 #: ../src/gtk-ui/ui.glade.h:15
 msgid "Add new device"
-msgstr "Добавить новое устройство"
+msgstr "Новое устройство"
 
 #: ../src/gtk-ui/ui.glade.h:16
 msgid "Add new service"
@@ -569,7 +569,7 @@ msgid ""
 "Change or edit\n"
 "sync service"
 msgstr ""
-"Изменить или редактировать\n"
+"Изменить\n"
 "службу синхронизации"
 
 #. close button for settings window
@@ -603,7 +603,7 @@ msgid ""
 "Fix a sync\n"
 "emergency"
 msgstr ""
-"Исправить экстренную\n"
+"Изменить экстренную\n"
 "синхронизацию"
 
 #: ../src/gtk-ui/ui.glade.h:34

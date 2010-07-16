@@ -876,7 +876,10 @@ class FunambolTest(SyncEvolutionTest):
                                    "CLIENT_TEST_XML=1 "
                                    "CLIENT_TEST_MAX_ITEMSIZE=2048 "
                                    "CLIENT_TEST_DELAY=10 "
-                                   "CLIENT_TEST_FAILURES= "
+                                   "CLIENT_TEST_FAILURES="
+                                   "Client::Sync::vcard21::testTwinning,"
+                                   "Client::Sync::vcard21_ical20_itodo20_text::testTwinning,"
+                                   "Client::Sync::text_itodo20_ical20_vcard21::testTwinning "
                                    "CLIENT_TEST_COMPARE_LOG=T "
                                    "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                    "CLIENT_TEST_INTERRUPT_AT=1",
@@ -1029,6 +1032,7 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 "Client::Sync::vcard21::testRefreshFromClientSync,"
                                 "Client::Sync::vcard21::testRefreshFromClientSemantic,"
                                 "Client::Sync::vcard21::testRefreshStatus,"
+                                "Client::Sync::vcard21::testDeleteAllRefresh,"
                                 "Client::Sync::vcard21::testOneWayFromServer,"
                                 "Client::Sync::ical20::testRefreshFromClientSync,"
                                 "Client::Sync::ical20::testRefreshFromClientSemantic,"
@@ -1039,18 +1043,21 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 "Client::Sync::itodo20::testRefreshFromClientSync,"
                                 "Client::Sync::itodo20::testRefreshFromClientSemantic,"
                                 "Client::Sync::itodo20::testRefreshStatus,"
+                                "Client::Sync::itodo20::testDeleteAllRefresh,"
                                 "Client::Sync::itodo20::testOneWayFromServer,"
                                 "Client::Sync::itodo20::Retry,"
                                 "Client::Sync::itodo20::Suspend,"
                                 "Client::Sync::text::testRefreshFromClientSync,"
                                 "Client::Sync::text::testRefreshFromClientSemantic,"
                                 "Client::Sync::text::testRefreshStatus,"
+                                "Client::Sync::text::testDeleteAllRefresh,"
                                 "Client::Sync::text::testOneWayFromServer,"
                                 "Client::Sync::text::Retry,"
                                 "Client::Sync::text::Suspend,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::testRefreshFromClientSync,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::testRefreshFromClientSemantic,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::testRefreshStatus,"
+                                "Client::Sync::vcard21_ical20_itodo20_text::testDeleteAllRefresh,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::testOneWayFromServer,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::Retry,"
                                 "Client::Sync::vcard21_ical20_itodo20_text::Suspend,"
@@ -1058,6 +1065,7 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 "Client::Sync::text_itodo20_ical20_vcard21::testRefreshFromClientSemantic,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::testRefreshStatus,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::testOneWayFromServer,"
+                                "Client::Sync::text_itodo20_ical20_vcard21::testDeleteAllRefresh,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::Retry,"
                                 "Client::Sync::text_itodo20_ical20_vcard21::Suspend "
                                 "CLIENT_TEST_DELAY=5 "
@@ -1120,6 +1128,7 @@ ovitest = SyncEvolutionTest("ovi", compile,
                                 "CLIENT_TEST_COMPARE_LOG=T "
                                 "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                 "CLIENT_TEST_INTERRUPT_AT=1",
+                                serverName="Ovi",
                                 testPrefix=options.testprefix)
 context.add(ovitest)
 

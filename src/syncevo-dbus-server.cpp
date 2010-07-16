@@ -2023,7 +2023,10 @@ public:
         // exceptions must be handled (= printed) before returning,
         // so that our client gets the output
         try {
-            m_cmdline.run();
+            if (!m_cmdline.run()) {
+                SE_THROW_EXCEPTION(DBusSyncException, "command line execution failure");
+            }
+
         } catch (...) {
             redirectPtr->flush();
             throw;
@@ -5837,6 +5840,14 @@ int main(int argc, char **argv)
         g_type_init();
         g_thread_init(NULL);
         g_set_application_name("SyncEvolution");
+
+        // Initializing a potential use of EDS early is necessary for
+        // libsynthesis when compiled with
+        // --enable-evolution-compatibility: in that mode libical will
+        // only be found by libsynthesis after EDSAbiWrapperInit()
+        // pulls it into the process by loading libecal.
+        EDSAbiWrapperInit();
+
         loop = g_main_loop_new (NULL, FALSE);
 
         setvbuf(stderr, NULL, _IONBF, 0);
