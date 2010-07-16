@@ -2060,25 +2060,22 @@ get_config_for_config_widget_cb (SyncevoServer *server,
     if (is_peer && g_strcmp0 ("1", is_peer) == 0) {
         if (url) {
             SyncConfigWidget *w;
-            char *fp, *device_name = NULL;
+            char *fp, *template_name, *device_name = NULL;
             char **fpv = NULL;
 
-            /* NOTE: using device_name here means a new config will be saved with
-             * device_name (and not the template name). Not sure if this is
-             * what we really want... */
-
-            syncevo_config_get_value (config, NULL, "templateName", &device_name);
+            syncevo_config_get_value (config, NULL, "deviceName", &device_name);
             if (!device_name) {
+                device_name = c_data->name;
+            }
+            syncevo_config_get_value (config, NULL, "templateName", &template_name);
+            if (!template_name) {
                 syncevo_config_get_value (config, NULL, "fingerPrint", &fp);
                 if (fp) {
                     fpv = g_strsplit_set (fp, ",;", 2);
                     if (g_strv_length (fpv) > 0) {
-                        device_name = fpv[0];
+                        template_name = fpv[0];
                     }
                 }
-            }
-            if (!device_name) {
-                device_name = c_data->name;
             }
 
             /* keep a list of added devices */
@@ -2092,6 +2089,8 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                                                            c_data->has_configuration,
                                                            c_data->data);
                     g_hash_table_insert (c_data->device_templates, url, w);
+                    sync_config_widget_add_alternative_config (w, template_name, config,
+                                                               c_data->has_configuration);
                 }
             } else {
                 /* TODO: might want to add a new widget, if user has created more
@@ -2100,7 +2099,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
 
                 /* there is a widget for this device already, add this info there*/
                 if (c_data->has_configuration || g_strcmp0 ("1", ready) == 0) {
-                    sync_config_widget_add_alternative_config (w, device_name, config, 
+                    sync_config_widget_add_alternative_config (w, template_name, config,
                                                                c_data->has_configuration);
                 }
             }
