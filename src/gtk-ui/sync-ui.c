@@ -2036,6 +2036,8 @@ typedef struct config_data {
 
 } config_data;
 
+#define LEGAL_CONFIG_NAME_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVXYZ1234567890-_"
+
 static void
 get_config_for_config_widget_cb (SyncevoServer *server,
                                  SyncevoConfig *config,
@@ -2060,13 +2062,17 @@ get_config_for_config_widget_cb (SyncevoServer *server,
     if (is_peer && g_strcmp0 ("1", is_peer) == 0) {
         if (url) {
             SyncConfigWidget *w;
-            char *fp, *template_name, *device_name = NULL;
+            char *fp, *tmp, *template_name, *device_name = NULL;
             char **fpv = NULL;
 
-            syncevo_config_get_value (config, NULL, "deviceName", &device_name);
-            if (!device_name) {
-                device_name = c_data->name;
+            syncevo_config_get_value (config, NULL, "deviceName", &tmp);
+            if (!tmp) {
+                device_name = g_strdup (c_data->name);
+            } else {
+                device_name = g_strcanon (g_strdup (tmp), LEGAL_CONFIG_NAME_CHARS, '-');
             }
+            
+            
             syncevo_config_get_value (config, NULL, "templateName", &template_name);
             if (!template_name) {
                 syncevo_config_get_value (config, NULL, "fingerPrint", &fp);
@@ -2103,6 +2109,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                                                                c_data->has_configuration);
                 }
             }
+            g_free (device_name);
             g_strfreev (fpv);
         }
     } else {
