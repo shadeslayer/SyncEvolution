@@ -760,6 +760,12 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 public:
     static bool transport_cb (void *data);
 
+    /**
+     * Returns the URL in the getSyncURL() list which is to be used
+     * for sync.  The long term goal is to pick the first URL which
+     * uses a currently available transport; right now it simply picks
+     * the first supported one.
+     */
     string getUsedSyncURL();
 };
 
