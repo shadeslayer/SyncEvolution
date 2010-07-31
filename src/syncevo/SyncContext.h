@@ -89,6 +89,8 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     bool m_quiet;
     bool m_dryrun;
 
+    bool m_localSync;
+    string m_localClientRootPath;
     bool m_serverMode;
     std::string m_sessionID;
     SharedBuffer m_initialMessage;
@@ -171,11 +173,30 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     SyncContext();
 
     /**
-     * @param server     identifies the server config to be used
-     * @param doLogging  write additional log and datatbase files about the sync
+     * Constructor for syncing with a SyncML peer.
+     *
+     * @param peer       identifies the client or server config to be used
+     * @param doLogging  write additional log and datatbase files about the sync;
+     *                   true for regular syncs, false for debugging
      */
     SyncContext(const string &server,
                 bool doLogging = false);
+
+    /**
+     * Constructor for client in a local sync.
+     *
+     * @param client     identifies the client context to be used (@foobar)
+     * @param rootPath   use this directory as config directory for the
+     *                   peer-specific files (located inside peer directory
+     *                   of server config)
+     * @param agent      transport agent, ready for communication with server
+     * @param doLogging  write additional log and datatbase files about the sync
+     */
+    SyncContext(const string &config,
+                const string &rootPath,
+                const boost::shared_ptr<TransportAgent> &agent,
+                bool doLogging = false);
+
     ~SyncContext();
 
     /**
@@ -736,7 +757,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * Synthesis server textdb files, unique for each
      * peer
      */
-    string getSynthesisDatadir() { return getRootPath() + "/.synthesis"; }
+    string getSynthesisDatadir();
 
     /**
      * return true if "delayedabort" session variable is true

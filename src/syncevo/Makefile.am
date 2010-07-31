@@ -49,6 +49,9 @@ SYNCEVOLUTION_SOURCES  = \
 	SoupTransportAgent.h \
 	SoupTransportAgent.cpp \
 	\
+	LocalTransportAgent.h \
+	LocalTransportAgent.cpp \
+	\
 	util.cpp \
 	util.h \
 	\

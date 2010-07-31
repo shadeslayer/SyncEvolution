@@ -167,6 +167,16 @@ class LoggerBase : public Logger
      */
     static void popLogger();
 
+    /** total number of active loggers */
+    static int numLoggers();
+
+    /**
+     * access to active logger
+     * @param index    0 for oldest (inner-most) logger
+     * @return pointer or NULL for invalid index
+     */
+    static LoggerBase *loggerAt(int index);
+
     virtual void setLevel(Level level) { m_level = level; }
     virtual Level getLevel() { return m_level; }
 

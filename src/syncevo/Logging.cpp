@@ -53,6 +53,19 @@ void LoggerBase::popLogger()
     }
 }
 
+int LoggerBase::numLoggers()
+{
+    return (int)loggers.size();
+}
+
+LoggerBase *LoggerBase::loggerAt(int index)
+{
+    return index < 0 || index >= (int)loggers.size() ?
+        NULL :
+        loggers[index];
+}
+
+
 void Logger::message(Level level,
                      const char *prefix,
                      const char *file,

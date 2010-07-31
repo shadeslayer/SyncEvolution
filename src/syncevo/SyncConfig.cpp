@@ -155,8 +155,10 @@ void SyncConfig::makeVolatile()
 }
 
 SyncConfig::SyncConfig(const string &peer,
-                       boost::shared_ptr<ConfigTree> tree) :
-    m_layout(SHARED_LAYOUT)
+                       boost::shared_ptr<ConfigTree> tree,
+                       const string &redirectPeerRootPath) :
+    m_layout(SHARED_LAYOUT),
+    m_redirectPeerRootPath(redirectPeerRootPath)
 {
     // initialize properties
     SyncConfig::getRegistry();
@@ -263,7 +265,15 @@ SyncConfig::SyncConfig(const string &peer,
 
         path = m_peerPath;
         if (path.empty()) {
-            node.reset(new DevNullConfigNode(m_contextPath + " without peer config"));
+            if (!m_redirectPeerRootPath.empty()) {
+                node.reset(new FileConfigNode(m_redirectPeerRootPath,
+                                              ".internal.ini",
+                                              false));
+                node = m_tree->add(m_redirectPeerRootPath + "/.internal.ini",
+                                   node);
+            } else {
+                node.reset(new DevNullConfigNode(m_contextPath + " without peer config"));
+            }
         } else {
             node = m_tree->open(path, ConfigTree::visible);
         }
@@ -905,6 +915,20 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         hiddenPeerNode =
             trackingNode =
             serverNode = node;
+
+        if (!m_redirectPeerRootPath.empty()) {
+            string path = m_redirectPeerRootPath + "/sources/" + lower;
+            trackingNode.reset(new HashFileConfigNode(path,
+                                                      ".other.ini",
+                                                      false));
+            trackingNode = m_tree->add(path + "/.other.ini", trackingNode);
+             boost::shared_ptr<ConfigNode> node(new HashFileConfigNode(path,
+                                                                      ".internal.ini",
+                                                                      false));
+            peerNode.reset(new FilterConfigNode(node));
+            peerNode = boost::static_pointer_cast<FilterConfigNode>(m_tree->add(path + "/.internal.ini", peerNode));
+            hiddenPeerNode = peerNode;
+        }
     } else {
         // Here we assume that m_tree is a FileConfigTree. Otherwise getRootPath()
         // will not point into a normal file system.

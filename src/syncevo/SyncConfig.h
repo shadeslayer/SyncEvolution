@@ -849,9 +849,17 @@ class SyncConfig {
      *               as configuration tree instead of
      *               searching for it; always uses the
      *               current layout in that tree
+     *
+     * @param redirectPeerRootPath
+     *               Can be used to redirect the per-peer
+     *               files into a different directory. Only works
+     *               in non-peer context configs.
+     *               Used by SyncContext for local sync.
      */
     SyncConfig(const string &peer,
-               boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>());
+               boost::shared_ptr<ConfigTree> tree = boost::shared_ptr<ConfigTree>(),
+               const string &redirectPeerRootPath = "");
+
 
     /**
      * Creates a temporary configuration.
@@ -1417,6 +1425,7 @@ private:
     string m_contextPath;
 
     Layout m_layout;
+    string m_redirectPeerRootPath;
     string m_cachedPassword;
     string m_cachedProxyPassword;
 
@@ -1501,6 +1510,9 @@ class SyncSourceNodes {
 
     /** true if the peer-specific config node exists */
     bool exists() const { return m_peerNode->exists(); }
+
+    /** true if the context-specific config node exists */
+    bool dataConfigExists() const { return m_sharedNode->exists(); }
 
     /**
      * Returns the right config node for a certain property,

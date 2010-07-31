@@ -35,6 +35,7 @@
 #include <syncevo/CurlTransportAgent.h>
 #include <syncevo/SoupTransportAgent.h>
 #include <syncevo/ObexTransportAgent.h>
+#include <syncevo/LocalTransportAgent.h>
 
 #include <list>
 #include <memory>
@@ -147,6 +148,22 @@ SyncContext::SyncContext(const string &server,
     m_doLogging = doLogging;
 }
 
+SyncContext::SyncContext(const string &config,
+                         const string &rootPath,
+                         const boost::shared_ptr<TransportAgent> &agent,
+                         bool doLogging) :
+    SyncConfig(config,
+               boost::shared_ptr<ConfigTree>(),
+               rootPath),
+    m_server(config),
+    m_localClientRootPath(rootPath),
+    m_agent(agent)
+{
+    init();
+    m_localSync = true;
+    m_doLogging = doLogging;
+}
+
 void SyncContext::setOutput(ostream *out)
 {
     m_out = out ? out : &std::cout;
@@ -158,6 +175,7 @@ void SyncContext::init()
     m_doLogging = false;
     m_quiet = false;
     m_dryrun = false;
+    m_localSync = false;
     m_serverMode = false;
     m_firstSourceAccess = true;
     m_remoteInitiated = false;
@@ -1430,6 +1448,8 @@ string SyncContext::getUsedSyncURL() {
 #ifdef ENABLE_BLUETOOTH
             return url;
 #endif
+        } else if (boost::starts_with(url, "local://")) {
+            return url;
         }
     }
     return "";
@@ -1442,7 +1462,12 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainl
     m_retryDuration = getRetryDuration();
     int timeout = m_serverMode ? m_retryDuration : m_retryInterval;
 
-    if (boost::starts_with(url, "http://") ||
+    if (m_localSync) {
+        string peer = url.substr(strlen("local://"));
+        boost::shared_ptr<LocalTransportAgent> agent(new LocalTransportAgent(this, peer, gmainloop));
+        agent->start();
+        return agent;
+    } else if (boost::starts_with(url, "http://") ||
         boost::starts_with(url, "https://")) {
 #ifdef ENABLE_LIBSOUP
         
@@ -2384,7 +2409,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                     "      ]]></datastoreinitscript>\n";
             }
 
-            if (m_serverMode) {
+            if (m_serverMode && !m_localSync) {
                 string uri = source->getURI();
                 if (!uri.empty()) {
                     datastores << " <alias name='" << uri << "'/>";
@@ -2437,7 +2462,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 << "        <guidprefix>t</guidprefix>\n"
                 <<"      </contains>\n" ;
 
-            if (m_serverMode) {
+            if (m_serverMode && !m_localSync) {
                 string uri = vSource->getURI();
                 if (!uri.empty()) {
                     datastores << " <alias name='" << uri << "'/>";
@@ -2705,17 +2730,24 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                                 getLogLevel(),
                                 report);
 
+        if (boost::starts_with(getUsedSyncURL(), "local://")) {
+            m_localSync = true;
+        }
+
         /* Must detect server or client session before creating the
          * underlying SynthesisEngine 
          * */
         if ( getPeerIsClient()) {
             m_serverMode = true;
             /* Do not check username/pwd if this is a server session over
-             * bluetooth transport*/
-            if (boost::starts_with (getUsedSyncURL(), "obex-bt")) {
+             * bluetooth transport or local sync */
+            if (boost::starts_with (getUsedSyncURL(), "obex-bt") ||
+                m_localSync) {
                 setUsername ("", true);
                 setPassword ("", true);
             }
+        } else if (m_localSync && !m_agent) {
+            throwError("configuration error, syncURL = local can only be used in combination with peerIsClient = 1");
         }
 
         // create a Synthesis engine, used purely for logging purposes
@@ -2819,6 +2851,16 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 break;
             }
         }
+
+        // also take into account result of client side in local sync,
+        // if any existed
+        if (m_localSync && m_agent) {
+            boost::shared_ptr<LocalTransportAgent> agent = boost::static_pointer_cast<LocalTransportAgent>(m_agent);
+
+            // TODO: check results from client and override
+            // inconclusive resuls on server side
+        }
+
         sourceList.syncDone(status, report);
     } catch(...) {
         Exception::handle(&status);
@@ -3017,7 +3059,9 @@ SyncMLStatus SyncContext::doSync()
     SyncMLStatus status = STATUS_OK;
     std::string s;
 
-    if (m_serverMode && !m_initialMessage.size()) {
+    if (m_serverMode &&
+        !m_initialMessage.size() &&
+        !m_localSync) {
         //This is a server alerted sync !
         string sanFormat (getSyncMLVersion());
         uint16_t version = 12;
@@ -3163,6 +3207,7 @@ SyncMLStatus SyncContext::doSync()
 
     sysync::TEngineProgressInfo progressInfo;
     sysync::uInt16 stepCmd = 
+        (m_localSync && m_serverMode) ? sysync::STEPCMD_NEEDDATA :
         m_serverMode ?
         sysync::STEPCMD_GOTDATA :
         sysync::STEPCMD_CLIENTSTART;
@@ -3170,7 +3215,7 @@ SyncMLStatus SyncContext::doSync()
     SharedBuffer sendBuffer;
     SessionSentinel sessionSentinel(*this, session);
 
-    if (m_serverMode) {
+    if (m_serverMode && !m_localSync) {
         m_engine.WriteSyncMLBuffer(session,
                                    m_initialMessage.get(),
                                    m_initialMessage.size());
@@ -3561,6 +3606,15 @@ SyncMLStatus SyncContext::doSync()
         sigaction (SIGTERM, &old_term_action, NULL);
     }
     return status;
+}
+
+string SyncContext::getSynthesisDatadir()
+{
+    if (m_localSync && !m_serverMode) {
+        return m_localClientRootPath + "/.synthesis";
+    } else {
+        return getRootPath() + "/.synthesis";
+    }
 }
 
 SyncMLStatus SyncContext::handleException()
