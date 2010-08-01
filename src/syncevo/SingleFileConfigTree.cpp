@@ -114,6 +114,13 @@ boost::shared_ptr<ConfigNode> SingleFileConfigTree::open(const string &path,
     return open(fullpath);
 }
 
+boost::shared_ptr<ConfigNode> SingleFileConfigTree::add(const string &path,
+                                                        const boost::shared_ptr<ConfigNode> &bode)
+{
+    SE_THROW("SingleFileConfigTree::add() not supported");
+}
+
+
 static void checkChild(const string &normalized,
                        const string &node,
                        set<string> &subdirs)

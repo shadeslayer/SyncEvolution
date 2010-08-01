@@ -110,6 +110,22 @@ class ConfigTree {
                                                const string &otherId = string("")) = 0;
 
     /**
+     * Use the specified node, with type determined
+     * by caller. The reason for adding the instance is
+     * twofold:
+     * - ensure that flush() is called on the node
+     *   as part of flushing the tree
+     * - an existing instance is reused and shared between
+     *   different users of the tree
+     *
+     * @param path       a relative or absolute path, may be outside of normal tree
+     * @param node       default instance if not opened before, discarded if a
+     *                   node was registered or opened under the given path before
+     */
+    virtual boost::shared_ptr<ConfigNode> add(const string &path,
+                                              const boost::shared_ptr<ConfigNode> &node) = 0;
+
+    /**
      * returns names of all existing nodes beneath the given path
      */
     virtual list<string> getChildren(const string &path) = 0;

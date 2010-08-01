@@ -69,6 +69,8 @@ class SingleFileConfigTree : public ConfigTree {
     virtual boost::shared_ptr<ConfigNode> open(const std::string &path,
                                                PropertyType type,
                                                const std::string &otherId = std::string(""));
+    virtual boost::shared_ptr<ConfigNode> add(const string &path,
+                                              const boost::shared_ptr<ConfigNode> &bode);
     list<string> getChildren(const std::string &path);
 
  private:

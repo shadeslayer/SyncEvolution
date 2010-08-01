@@ -182,6 +182,18 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
     }
 }
 
+boost::shared_ptr<ConfigNode> FileConfigTree::add(const string &path,
+                                                  const boost::shared_ptr<ConfigNode> &node)
+{
+    NodeCache_t::iterator found = m_nodes.find(path);
+    if (found != m_nodes.end()) {
+        return found->second;
+    } else {
+        m_nodes[path] = node;
+        return node;
+    }
+}
+
 static inline bool isNode(const string &dir, const string &name) {
     struct stat buf;
     string fullpath = dir + "/" + name;
