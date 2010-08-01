@@ -53,6 +53,7 @@ using namespace std;
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/bind.hpp>
+#include <boost/utility.hpp>
 
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -167,11 +168,140 @@ SyncContext::~SyncContext()
 {
 }
 
+/**
+ * Utility code for parsing and comparing
+ * log dir names. Also a binary predicate for
+ * sorting them.
+ */
+class LogDirNames {
+public:
+    // internal prefix for backup directory name: "SyncEvolution-"
+    static const char* const DIR_PREFIX;
+
+    /**
+     * Compare two directory by its creation time encoded
+     * in the directory name sort them in ascending order
+     */
+    bool operator() (const string &str1, const string &str2) {
+        string iDirPath1, iStr1;
+        string iDirPath2, iStr2;
+        parseLogDir(str1, iDirPath1, iStr1);
+        parseLogDir(str2, iDirPath2, iStr2);
+        string dirPrefix1, peerName1, dateTime1;
+        parseDirName(iStr1, dirPrefix1, peerName1, dateTime1);
+        string dirPrefix2, peerName2, dateTime2;
+        parseDirName(iStr2, dirPrefix2, peerName2, dateTime2);
+        return dateTime1 < dateTime2;
+    }
+
+    /**
+     * extract backup directory name from a full backup path
+     * for example, a full path "/home/xxx/.cache/syncevolution/default/funambol-2009-12-08-14-05"
+     * is parsed as "/home/xxx/.cache/syncevolution/default" and "funambol-2009-12-08-14-05"
+     */
+    static void parseLogDir(const string &fullpath, string &dirPath, string &dirName) {
+        string iFullpath = boost::trim_right_copy_if(fullpath, boost::is_any_of("/"));
+        size_t off = iFullpath.find_last_of('/');
+        if(off != iFullpath.npos) {
+            dirPath = iFullpath.substr(0, off);
+            dirName = iFullpath.substr(off+1);
+        } else {
+            dirPath = "";
+            dirName = iFullpath;
+        }
+    }
+
+    // escape '-' and '_' for peer name 
+    static string escapePeer(const string &prefix) {
+        string escaped = prefix;
+        boost::replace_all(escaped, "_", "__");
+        boost::replace_all(escaped, "-", "_+");
+        return escaped;
+    }
+
+    // un-escape '_+' and '__' for peer name 
+    static string unescapePeer(const string &escaped) {
+        string prefix = escaped;
+        boost::replace_all(prefix, "_+", "-");
+        boost::replace_all(prefix, "__", "_");
+        return prefix;
+    }
+
+    /**
+     * parse a directory name into dirPrefix(empty or DIR_PREFIX), peerName, dateTime.
+     * peerName must be unescaped by the caller to get the real string.
+     * If directory name is in the format of '[DIR_PREFIX]-peer[@context]-year-month-day-hour-min'
+     * then parsing is sucessful and these 3 strings are correctly set and true is returned. 
+     * Otherwise, false is returned. 
+     * Here we don't check whether the dir name is matching peer name
+     */
+    static bool parseDirName(const string &dir, string &dirPrefix, string &config, string &dateTime) {
+        string iDir = dir;
+        if (!boost::starts_with(iDir, DIR_PREFIX)) {
+            dirPrefix = "";
+        } else {
+            dirPrefix = DIR_PREFIX;
+            boost::erase_first(iDir, DIR_PREFIX);
+        }
+        size_t off = iDir.find('-');
+        if (off != iDir.npos) {
+            config = iDir.substr(0, off);
+            dateTime = iDir.substr(off);
+            // m_prefix doesn't contain peer name or it equals with dirPrefix plus peerName
+            return checkDirName(dateTime);
+        }
+        return false;
+    }
+
+    // check the dir name is conforming to what format we write
+    static bool checkDirName(const string& value) {
+        const char* str = value.c_str();
+        /** need check whether string after prefix is a valid date-time we wrote, format
+         * should be -YYYY-MM-DD-HH-MM and optional sequence number */
+        static char table[] = {'-','9','9','9','9', //year
+                               '-','1','9', //month
+                               '-','3','9', //date
+                               '-','2','9', //hour
+                               '-','5','9'  //minute
+        };
+        for(size_t i = 0; i < sizeof(table)/sizeof(table[0]) && *str; i++,str++) {
+            switch(table[i]) {
+                case '-':
+                    if(*str != '-')
+                        return false;
+                    break;
+                case '1':
+                    if(*str < '0' || *str > '1')
+                        return false;
+                    break;
+                case '2':
+                    if(*str < '0' || *str > '2')
+                        return false;
+                    break;
+                case '3':
+                    if(*str < '0' || *str > '3')
+                        return false;
+                    break;
+                case '5':
+                    if(*str < '0' || *str > '5')
+                        return false;
+                    break;
+                case '9':
+                    if(*str < '0' || *str > '9')
+                        return false;
+                    break;
+                default:
+                    return false;
+            };
+        }
+        return true;
+    }
+};
 
 // this class owns the logging directory and is responsible
 // for redirecting output at the start and end of sync (even
 // in case of exceptions thrown!)
-class LogDir : public LoggerBase {
+class LogDir : public LoggerBase, private boost::noncopyable, private LogDirNames {
     SyncContext &m_client;
     Logger &m_parentLogger;  /**< the logger which was active before we started to intercept messages */
     string m_logdir;         /**< configured backup root dir */
@@ -189,9 +319,6 @@ class LogDir : public LoggerBase {
     SafeConfigNode *m_info;  /**< key/value representation of sync information */
     bool m_readonly;         /**< m_info is not to be written to */
     SyncReport *m_report;    /**< record start/end times here */
-
-    // internal prefix for backup directory name: "SyncEvolution-"
-    static const char* const DIR_PREFIX;
 
 public:
     LogDir(SyncContext &client) : m_client(client), m_parentLogger(LoggerBase::instance()), m_info(NULL), m_readonly(false), m_report(NULL)
@@ -655,22 +782,6 @@ public:
     }
 
     /**
-     * Compare two directory by its creation time encoded in the directory name
-     * sort them in ascending order
-     */
-    bool operator()(const string &str1, const string &str2) {
-        string iDirPath1, iStr1;
-        string iDirPath2, iStr2;
-        parseLogDir(str1, iDirPath1, iStr1);
-        parseLogDir(str2, iDirPath2, iStr2);
-        string dirPrefix1, peerName1, dateTime1;
-        parseDirName(iStr1, dirPrefix1, peerName1, dateTime1);
-        string dirPrefix2, peerName2, dateTime2;
-        parseDirName(iStr2, dirPrefix2, peerName2, dateTime2);
-        return dateTime1 < dateTime2;
-    }
-
-    /**
      * Compare two database dumps just based on their inodes.
      * @return true    if inodes differ
      */
@@ -738,65 +849,6 @@ private:
         {}
     };
 
-    /**
-     * extract backup directory name from a full backup path
-     * for example, a full path "/home/xxx/.cache/syncevolution/default/funambol-2009-12-08-14-05"
-     * is parsed as "/home/xxx/.cache/syncevolution/default" and "funambol-2009-12-08-14-05"
-     */
-    static void parseLogDir(const string &fullpath, string &dirPath, string &dirName) {
-        string iFullpath = boost::trim_right_copy_if(fullpath, boost::is_any_of("/"));
-        size_t off = iFullpath.find_last_of('/');
-        if(off != iFullpath.npos) {
-            dirPath = iFullpath.substr(0, off);
-            dirName = iFullpath.substr(off+1);
-        } else {
-            dirPath = "";
-            dirName = iFullpath;
-        }
-    }
-
-    // escape '-' and '_' for peer name 
-    static string escapePeer(const string &prefix) {
-        string escaped = prefix;
-        boost::replace_all(escaped, "_", "__");
-        boost::replace_all(escaped, "-", "_+");
-        return escaped;
-    }
-
-    // un-escape '_+' and '__' for peer name 
-    static string unescapePeer(const string &escaped) {
-        string prefix = escaped;
-        boost::replace_all(prefix, "_+", "-");
-        boost::replace_all(prefix, "__", "_");
-        return prefix;
-    }
-
-    /**
-     * parse a directory name into dirPrefix(empty or DIR_PREFIX), peerName, dateTime.
-     * peerName must be unescaped by the caller to get the real string.
-     * If directory name is in the format of '[DIR_PREFIX]-peer[@context]-year-month-day-hour-min'
-     * then parsing is sucessful and these 3 strings are correctly set and true is returned. 
-     * Otherwise, false is returned. 
-     * Here we don't check whether the dir name is matching peer name
-     */
-    static bool parseDirName(const string &dir, string &dirPrefix, string &config, string &dateTime) {
-        string iDir = dir;
-        if (!boost::starts_with(iDir, DIR_PREFIX)) {
-            dirPrefix = "";
-        } else {
-            dirPrefix = DIR_PREFIX;
-            boost::erase_first(iDir, DIR_PREFIX);
-        }
-        size_t off = iDir.find('-');
-        if (off != iDir.npos) {
-            config = iDir.substr(0, off);
-            dateTime = iDir.substr(off);
-            // m_prefix doesn't contain peer name or it equals with dirPrefix plus peerName
-            return checkDirName(dateTime);
-        }
-        return false;
-    }
-
     /** 
      * Find all entries in a given directory, return as sorted array of full paths in ascending order.
      * If m_prefix doesn't contain peer name information, then all log dirs for different peers in the
@@ -831,54 +883,10 @@ private:
         // sort vector in ascending order
         // if no peer name
         if(peerName.empty()){
-            sort(dirs.begin(), dirs.end(), *this);
+            sort(dirs.begin(), dirs.end(), LogDirNames());
         } else {
             sort(dirs.begin(), dirs.end());
         }
-    }
-
-    // check the dir name is conforming to what format we write
-    static bool checkDirName(const string& value) {
-        const char* str = value.c_str();
-        /** need check whether string after prefix is a valid date-time we wrote, format
-         * should be -YYYY-MM-DD-HH-MM and optional sequence number */
-        static char table[] = {'-','9','9','9','9', //year
-                               '-','1','9', //month
-                               '-','3','9', //date
-                               '-','2','9', //hour
-                               '-','5','9'  //minute
-        };
-        for(size_t i = 0; i < sizeof(table)/sizeof(table[0]) && *str; i++,str++) {
-            switch(table[i]) {
-                case '-':
-                    if(*str != '-')
-                        return false;
-                    break;
-                case '1':
-                    if(*str < '0' || *str > '1')
-                        return false;
-                    break;
-                case '2':
-                    if(*str < '0' || *str > '2')
-                        return false;
-                    break;
-                case '3':
-                    if(*str < '0' || *str > '3')
-                        return false;
-                    break;
-                case '5':
-                    if(*str < '0' || *str > '5')
-                        return false;
-                    break;
-                case '9':
-                    if(*str < '0' || *str > '9')
-                        return false;
-                    break;
-                default:
-                    return false;
-            };
-        }
-        return true;
     }
 
     // store time stamp in session info
@@ -896,7 +904,7 @@ private:
     }
 };
 
-const char* const LogDir::DIR_PREFIX = "SyncEvolution-";
+const char* const LogDirNames::DIR_PREFIX = "SyncEvolution-";
 
 /**
  * This class owns the sync sources. For historic reasons (required
