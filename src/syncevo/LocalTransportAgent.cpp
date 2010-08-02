@@ -46,7 +46,7 @@ LocalTransportAgent::LocalTransportAgent(SyncContext *server,
                                          const std::string &clientContext,
                                          void *loop) :
     m_server(server),
-    m_clientContext(clientContext),
+    m_clientContext(SyncConfig::normalizeConfigString(clientContext)),
     m_loop(static_cast<GMainLoop *>(loop)),
     m_status(INACTIVE),
     m_receiveBufferSize(0),
@@ -61,6 +61,22 @@ LocalTransportAgent::~LocalTransportAgent()
 void LocalTransportAgent::start()
 {
     int sockets[2];
+
+    // compare normalized context names to detect forbidden sync
+    // within the same context; they could be set up, but are more
+    // likely configuration mistakes
+    string peer, context;
+    SyncConfig::splitConfigString(m_clientContext, peer, context);
+    if (!peer.empty()) {
+        SE_THROW(StringPrintf("invalid local sync URL: '%s' references a peer config, should point to a context like @%s instead",
+                              m_clientContext.c_str(),
+                              context.c_str()));
+    }
+    SyncConfig::splitConfigString(m_server->getConfigName(),
+                                  peer, context);
+    if (m_clientContext == string("@") + context) {
+        SE_THROW(StringPrintf("invalid local sync inside context '%s', need second context with different databases", context.c_str()));
+    }
 
     if (socketpair(AF_LOCAL,
                    SOCK_STREAM,
