@@ -572,6 +572,12 @@ bool Cmdline::run() {
                     // template is the peer name
                     configTemplate = m_server;
                     SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context);
+                    if (peer.empty()) {
+                        // configuring a context, template doesn't matter =>
+                        // use default "SyncEvolution" template
+                        configTemplate =
+                            peer = "SyncEvolution";
+                    }
                 } else {
                     // Template is specified explicitly. It must not contain a context,
                     // because the context comes from the config name.

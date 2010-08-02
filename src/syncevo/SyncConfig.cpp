@@ -201,7 +201,8 @@ SyncConfig::SyncConfig(const string &peer,
                 }
             }
         }
-        m_tree.reset(new FileConfigTree(root, m_peerPath,
+        m_tree.reset(new FileConfigTree(root,
+                                        m_peerPath.empty() ? m_contextPath : m_peerPath,
                                         m_layout == SYNC4J_LAYOUT));
     }
 

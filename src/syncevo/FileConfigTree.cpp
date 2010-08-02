@@ -56,6 +56,12 @@ void FileConfigTree::flush()
     BOOST_FOREACH(const NodeCache_t::value_type &node, m_nodes) {
         node.second->flush();
     }
+    if (!m_oldLayout) {
+        // ensure that "peers" directory exists for new-style configs,
+        // not created by flushing nodes for pure context configs but
+        // needed to detect new-syle configs
+        mkdir_p(getRootPath() + "/peers");
+    }
 }
 
 /**
