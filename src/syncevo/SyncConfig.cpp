@@ -189,7 +189,8 @@ SyncConfig::SyncConfig(const string &peer,
             root = getNewRoot();
             path = root + "/" + m_peerPath;
             if (!access((path + "/config.ini").c_str(), F_OK) &&
-                !access((path + "/sources").c_str(), F_OK)) {
+                !access((path + "/sources").c_str(), F_OK) &&
+                access((path + "/peers").c_str(), F_OK)) {
                 m_layout = HTTP_SERVER_LAYOUT;
             } else {
                 // check whether config name specifies a context,
