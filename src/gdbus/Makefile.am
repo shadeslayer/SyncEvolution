@@ -1,4 +1,4 @@
-include_HEADERS = gdbus.h
+# include_HEADERS = gdbus.h
 
 noinst_LTLIBRARIES = libgdbus.la
 
@@ -11,7 +11,7 @@ AM_CFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@
 
 MAINTAINERCLEANFILES = Makefile.in
 
-include_HEADERS += gdbus-cxx-bridge.h gdbus-cxx.h
+# include_HEADERS = gdbus-cxx-bridge.h gdbus-cxx.h
 noinst_PROGRAMS = example
 example_SOURCES = test/example.cpp
 example_CXXFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@
