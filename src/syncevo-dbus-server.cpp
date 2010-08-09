@@ -173,13 +173,13 @@ static DBusMessage* SyncEvoHandleException(DBusMessage *msg)
     try {
         throw;
     } catch (const dbus_error &ex) {
-        return g_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
+        return b_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
     } catch (const DBusCXXException &ex) {
-        return g_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
+        return b_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
     } catch (const std::runtime_error &ex) {
-        return g_dbus_create_error(msg, "org.syncevolution.Exception", "%s", ex.what());
+        return b_dbus_create_error(msg, "org.syncevolution.Exception", "%s", ex.what());
     } catch (...) {
-        return g_dbus_create_error(msg, "org.syncevolution.Exception", "unknown");
+        return b_dbus_create_error(msg, "org.syncevolution.Exception", "unknown");
     }
 }
 
@@ -4482,7 +4482,7 @@ ConnmanClient::ConnmanClient(DBusServer &server):
     m_propertyChanged(*this, "PropertyChanged")
 {
     const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
-    m_connmanConn = g_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
+    m_connmanConn = b_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
     if (m_connmanConn){
         typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
         DBusClientCall1<PropDict>  getProp(*this,"GetProperties");
@@ -5289,7 +5289,7 @@ BluezManager::BluezManager(DBusServer &server) :
     m_server(server),
     m_adapterChanged(*this, "DefaultAdapterChanged")
 {
-    m_bluezConn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
+    m_bluezConn = b_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
     if(m_bluezConn) {
         m_done = false;
         DBusClientCall1<DBusObject_t> getAdapter(*this, "DefaultAdapter");
@@ -5864,12 +5864,12 @@ int main(int argc, char **argv)
         LoggerBase::instance().setLevel(LoggerBase::INFO);
 
         DBusErrorCXX err;
-        DBusConnectionPtr conn = g_dbus_setup_bus(DBUS_BUS_SESSION,
+        DBusConnectionPtr conn = b_dbus_setup_bus(DBUS_BUS_SESSION,
                                                   "org.syncevolution",
                                                   true,
                                                   &err);
         if (!conn) {
-            err.throwFailure("g_dbus_setup_bus()", " failed - server already running?");
+            err.throwFailure("b_dbus_setup_bus()", " failed - server already running?");
         }
 
         DBusServer server(loop, conn, duration);

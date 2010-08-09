@@ -599,7 +599,7 @@ RemoteDBusServer::RemoteDBusServer()
      m_infoReq(*this, "InfoRequest")
 {
     m_loop = g_main_loop_new (NULL, FALSE);
-    m_conn = g_dbus_setup_bus(DBUS_BUS_SESSION, NULL, true, NULL);
+    m_conn = b_dbus_setup_bus(DBUS_BUS_SESSION, NULL, true, NULL);
 
     if(m_conn) {
         //check whether we can attach to the daemon

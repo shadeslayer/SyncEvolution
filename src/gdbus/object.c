@@ -50,12 +50,12 @@ typedef struct {
 
 typedef struct {
 	char *name;
-	GDBusMethodTable *methods;
-	GDBusSignalTable *signals;
-	GDBusPropertyTable *properties;
+	BDBusMethodTable *methods;
+	BDBusSignalTable *signals;
+	BDBusPropertyTable *properties;
 	void *user_data;
-	GDBusDestroyFunction destroy;
-	GDBusInterfaceFunction callback;
+	BDBusDestroyFunction destroy;
+	BDBusInterfaceFunction callback;
 } InterfaceData;
 
 static InterfaceData *find_interface(GSList *interfaces, const char *name)
@@ -86,10 +86,10 @@ static ObjectData *find_object(GSList *objects, const char *path)
 	return NULL;
 }
 
-static GDBusPropertyTable *find_property(InterfaceData *interface,
+static BDBusPropertyTable *find_property(InterfaceData *interface,
 					 		const char *name)
 {
-	GDBusPropertyTable *property;
+	BDBusPropertyTable *property;
 
 	if (interface == NULL)
 		return NULL;
@@ -129,9 +129,9 @@ static inline void add_annotation(GString *xml, const char *name)
 		"\t\t\t<annotation name=\"%s\" value=\"true\"/>\n", name);
 }
 
-static inline void add_methods(GString *xml, GDBusMethodTable *methods)
+static inline void add_methods(GString *xml, BDBusMethodTable *methods)
 {
-	GDBusMethodTable *method;
+	BDBusMethodTable *method;
 
 	for (method = methods; method && method->name; method++) {
 		g_string_append_printf(xml, "\t\t<method name=\"%s\">\n",
@@ -150,9 +150,9 @@ static inline void add_methods(GString *xml, GDBusMethodTable *methods)
 	}
 }
 
-static inline void add_signals(GString *xml, GDBusSignalTable *signals)
+static inline void add_signals(GString *xml, BDBusSignalTable *signals)
 {
-	GDBusSignalTable *signal;
+	BDBusSignalTable *signal;
 
 	for (signal = signals; signal && signal->name; signal++) {
 		g_string_append_printf(xml, "\t\t<signal name=\"%s\">\n",
@@ -167,9 +167,9 @@ static inline void add_signals(GString *xml, GDBusSignalTable *signals)
 	}
 }
 
-static inline void add_properties(GString *xml, GDBusPropertyTable *properties)
+static inline void add_properties(GString *xml, BDBusPropertyTable *properties)
 {
-	GDBusPropertyTable *property;
+	BDBusPropertyTable *property;
 
 	for (property = properties; property && property->name; property++) {
 		const char *access;
@@ -359,7 +359,7 @@ static DBusHandlerResult properties_get(DBusConnection *connection,
 				DBusMessage *message, ObjectData *data)
 {
 	DBusMessage *reply;
-	GDBusPropertyTable *property;
+	BDBusPropertyTable *property;
 	DBusMessageIter iter, value;
 	dbus_bool_t result;
 	const char *interface, *name;
@@ -415,7 +415,7 @@ static DBusHandlerResult properties_set(DBusConnection *connection,
 				DBusMessage *message, ObjectData *data)
 {
 	DBusMessage *reply;
-	GDBusPropertyTable *property;
+	BDBusPropertyTable *property;
 	DBusMessageIter iter, value;
 	const char *interface, *name;
 	InterfaceData *iface;
@@ -485,7 +485,7 @@ static inline void append_message(DBusMessageIter *value, DBusMessage *message)
 static void do_getall(DBusConnection *connection, DBusMessageIter *iter,
 				InterfaceData *interface, ObjectData *data)
 {
-	GDBusPropertyTable *property;
+	BDBusPropertyTable *property;
 
 	if (interface == NULL)
 		return;
@@ -576,7 +576,7 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 {
 	ObjectData *data = user_data;
 	InterfaceData *interface;
-	GDBusMethodTable *method;
+	BDBusMethodTable *method;
 
 	DBG("object data %p", data);
 
@@ -678,7 +678,7 @@ static DBusObjectPathVTable object_table = {
 };
 
 /**
- * g_dbus_register_object:
+ * b_dbus_register_object:
  * @connection: the connection
  * @path: object path
  *
@@ -686,7 +686,7 @@ static DBusObjectPathVTable object_table = {
  *
  * Returns: #TRUE on success
  */
-static gboolean g_dbus_register_object(DBusConnection *connection,
+static gboolean b_dbus_register_object(DBusConnection *connection,
 							const char *path)
 {
 	ConnectionData *data;
@@ -752,7 +752,7 @@ static gboolean g_dbus_register_object(DBusConnection *connection,
 }
 
 /**
- * g_dbus_unregister_object:
+ * b_dbus_unregister_object:
  * @connection: the connection
  * @path: object path
  *
@@ -761,7 +761,7 @@ static gboolean g_dbus_register_object(DBusConnection *connection,
  *
  * Returns: #TRUE on success
  */
-static gboolean g_dbus_unregister_object(DBusConnection *connection,
+static gboolean b_dbus_unregister_object(DBusConnection *connection,
 							const char *path)
 {
 	ConnectionData *data;
@@ -810,7 +810,7 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
 
 #if 0
 /**
- * g_dbus_unregister_object_hierarchy:
+ * b_dbus_unregister_object_hierarchy:
  * @connection: the connection
  * @path: object path
  *
@@ -819,7 +819,7 @@ static gboolean g_dbus_unregister_object(DBusConnection *connection,
  *
  * Returns: #TRUE on success
  */
-static gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
+static gboolean b_dbus_unregister_object_hierarchy(DBusConnection *connection,
 							const char *path)
 {
 	ConnectionData *data;
@@ -868,7 +868,7 @@ static gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 
 	g_static_mutex_unlock(&data->mutex);
 
-	result = g_dbus_unregister_object(connection, path);
+	result = b_dbus_unregister_object(connection, path);
 	if (result == FALSE)
 		return FALSE;
 
@@ -878,12 +878,12 @@ static gboolean g_dbus_unregister_object_hierarchy(DBusConnection *connection,
 }
 
 /**
- * g_dbus_unregister_all_objects:
+ * b_dbus_unregister_all_objects:
  * @connection: the connection
  *
  * Unregister the all paths in the object hierarchy.
  */
-static void g_dbus_unregister_all_objects(DBusConnection *connection)
+static void b_dbus_unregister_all_objects(DBusConnection *connection)
 {
 	ConnectionData *data;
 	GSList *list;
@@ -923,7 +923,7 @@ static void g_dbus_unregister_all_objects(DBusConnection *connection)
 #endif
 
 /**
- * g_dbus_register_interface:
+ * b_dbus_register_interface:
  * @connection: the connection
  * @path: object path
  * @name: interface name
@@ -939,21 +939,21 @@ static void g_dbus_unregister_all_objects(DBusConnection *connection)
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_register_interface_with_callback(DBusConnection *connection,
+gboolean b_dbus_register_interface_with_callback(DBusConnection *connection,
 					const char *path, const char *name,
-					GDBusMethodTable *methods,
-					GDBusSignalTable *signals,
-					GDBusPropertyTable *properties,
+					BDBusMethodTable *methods,
+					BDBusSignalTable *signals,
+					BDBusPropertyTable *properties,
 					void *user_data,
-					GDBusDestroyFunction destroy,
-					GDBusInterfaceFunction callback)
+					BDBusDestroyFunction destroy,
+					BDBusInterfaceFunction callback)
 {
 	ObjectData *object;
 	InterfaceData *interface;
 
 	DBG("connection %p path %s name %s", connection, path, name);
 
-	if (g_dbus_register_object(connection, path) == FALSE)
+	if (b_dbus_register_object(connection, path) == FALSE)
 		return FALSE;
 
 	if (dbus_connection_get_object_path_data(connection,
@@ -988,20 +988,20 @@ gboolean g_dbus_register_interface_with_callback(DBusConnection *connection,
 	return TRUE;
 }
 
-gboolean g_dbus_register_interface(DBusConnection *connection,
+gboolean b_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
-					GDBusMethodTable *methods,
-					GDBusSignalTable *signals,
-					GDBusPropertyTable *properties,
+					BDBusMethodTable *methods,
+					BDBusSignalTable *signals,
+					BDBusPropertyTable *properties,
 					void *user_data,
-					GDBusDestroyFunction destroy) 
+					BDBusDestroyFunction destroy) 
 {
-	return g_dbus_register_interface_with_callback(connection,
+	return b_dbus_register_interface_with_callback(connection,
 					path, name, methods, signals, properties, user_data, destroy, NULL);
 }
 
 /**
- * g_dbus_unregister_interface:
+ * b_dbus_unregister_interface:
  * @connection: the connection
  * @path: object path
  * @name: interface name
@@ -1011,7 +1011,7 @@ gboolean g_dbus_register_interface(DBusConnection *connection,
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_unregister_interface(DBusConnection *connection,
+gboolean b_dbus_unregister_interface(DBusConnection *connection,
 					const char *path, const char *name)
 {
 	ObjectData *object;
@@ -1042,7 +1042,7 @@ gboolean g_dbus_unregister_interface(DBusConnection *connection,
 	g_free(interface->name);
 	g_free(interface);
 
-	g_dbus_unregister_object(connection, path);
+	b_dbus_unregister_object(connection, path);
 
 	return TRUE;
 }
@@ -1082,7 +1082,7 @@ char *printf_dyn(const char *format, va_list ap)
 }
 
 /**
- * g_dbus_create_error_valist:
+ * b_dbus_create_error_valist:
  * @message: the originating message
  * @name: the error name
  * @format: the error description
@@ -1092,7 +1092,7 @@ char *printf_dyn(const char *format, va_list ap)
  *
  * Returns: reply message on success
  */
-DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
+DBusMessage *b_dbus_create_error_valist(DBusMessage *message, const char *name,
 						const char *format, va_list args)
 {
 	DBusMessage *msg = NULL;
@@ -1109,7 +1109,7 @@ DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
 }
 
 /**
- * g_dbus_create_error:
+ * b_dbus_create_error:
  * @message: the originating message
  * @name: the error name
  * @format: the error description
@@ -1119,7 +1119,7 @@ DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
  *
  * Returns: reply message on success
  */
-DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
+DBusMessage *b_dbus_create_error(DBusMessage *message, const char *name,
 						const char *format, ...)
 {
 	va_list args;
@@ -1129,7 +1129,7 @@ DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
 
 	va_start(args, format);
 
-	reply = g_dbus_create_error_valist(message, name, format, args);
+	reply = b_dbus_create_error_valist(message, name, format, args);
 
 	va_end(args);
 
@@ -1137,7 +1137,7 @@ DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
 }
 
 /**
- * g_dbus_create_reply_valist:
+ * b_dbus_create_reply_valist:
  * @message: the originating message
  * @type: first argument type
  * @args: argument list
@@ -1146,7 +1146,7 @@ DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
  *
  * Returns: reply message on success
  */
-DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
+DBusMessage *b_dbus_create_reply_valist(DBusMessage *message,
 						int type, va_list args)
 {
 	DBusMessage *reply;
@@ -1166,7 +1166,7 @@ DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
 }
 
 /**
- * g_dbus_create_reply:
+ * b_dbus_create_reply:
  * @message: the originating message
  * @type: first argument type
  * @varargs: list of parameters
@@ -1175,7 +1175,7 @@ DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
  *
  * Returns: reply message on success
  */
-DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...)
+DBusMessage *b_dbus_create_reply(DBusMessage *message, int type, ...)
 {
 	va_list args;
 	DBusMessage *reply;
@@ -1184,7 +1184,7 @@ DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...)
 
 	va_start(args, type);
 
-	reply = g_dbus_create_reply_valist(message, type, args);
+	reply = b_dbus_create_reply_valist(message, type, args);
 
 	va_end(args);
 
@@ -1192,7 +1192,7 @@ DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...)
 }
 
 /**
- * g_dbus_send_message:
+ * b_dbus_send_message:
  * @connection: the connection
  * @message: the message to send
  *
@@ -1203,7 +1203,7 @@ DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...)
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message)
+gboolean b_dbus_send_message(DBusConnection *connection, DBusMessage *message)
 {
 	dbus_bool_t result;
 
@@ -1217,7 +1217,7 @@ gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message)
 }
 
 /**
- * g_dbus_send_error:
+ * b_dbus_send_error:
  * @connection: the connection
  * @message: the originating message
  * @name: the error name
@@ -1229,7 +1229,7 @@ gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message)
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
+gboolean b_dbus_send_error(DBusConnection *connection, DBusMessage *message,
 				const char *name, const char *format, ...)
 {
 	va_list args;
@@ -1239,18 +1239,18 @@ gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
 
 	va_start(args, format);
 
-	error = g_dbus_create_error(message, name, format, args);
+	error = b_dbus_create_error(message, name, format, args);
 
 	va_end(args);
 
 	if (error == NULL)
 		return FALSE;
 
-	return g_dbus_send_message(connection, error);
+	return b_dbus_send_message(connection, error);
 }
 
 /**
- * g_dbus_send_reply_valist:
+ * b_dbus_send_reply_valist:
  * @connection: the connection
  * @message: the originating message
  * @type: first argument type
@@ -1261,7 +1261,7 @@ gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_send_reply_valist(DBusConnection *connection,
+gboolean b_dbus_send_reply_valist(DBusConnection *connection,
 				DBusMessage *message, int type, va_list args)
 {
 	DBusMessage *reply;
@@ -1277,11 +1277,11 @@ gboolean g_dbus_send_reply_valist(DBusConnection *connection,
 		return FALSE;
 	}
 
-	return g_dbus_send_message(connection, reply);
+	return b_dbus_send_message(connection, reply);
 }
 
 /**
- * g_dbus_send_reply:
+ * b_dbus_send_reply:
  * @connection: the connection
  * @message: the originating message
  * @type: first argument type
@@ -1292,7 +1292,7 @@ gboolean g_dbus_send_reply_valist(DBusConnection *connection,
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_send_reply(DBusConnection *connection,
+gboolean b_dbus_send_reply(DBusConnection *connection,
 				DBusMessage *message, int type, ...)
 {
 	va_list args;
@@ -1302,18 +1302,18 @@ gboolean g_dbus_send_reply(DBusConnection *connection,
 
 	va_start(args, type);
 
-	result = g_dbus_send_reply_valist(connection, message, type, args);
+	result = b_dbus_send_reply_valist(connection, message, type, args);
 
 	va_end(args);
 
 	return result;
 }
 
-static GDBusSignalTable *find_signal(GSList *interfaces,
+static BDBusSignalTable *find_signal(GSList *interfaces,
 				const char *interface, const char *name)
 {
 	InterfaceData *data;
-	GDBusSignalTable *signal;
+	BDBusSignalTable *signal;
 
 	data = find_interface(interfaces, interface);
 	if (data == NULL)
@@ -1328,7 +1328,7 @@ static GDBusSignalTable *find_signal(GSList *interfaces,
 }
 
 /**
- * g_dbus_emit_signal_valist:
+ * b_dbus_emit_signal_valist:
  * @connection: the connection
  * @path: object path
  * @interface: interface name
@@ -1344,12 +1344,12 @@ static GDBusSignalTable *find_signal(GSList *interfaces,
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_emit_signal_valist(DBusConnection *connection,
+gboolean b_dbus_emit_signal_valist(DBusConnection *connection,
 				const char *path, const char *interface,
 				const char *name, int type, va_list args)
 {
 	ObjectData *object;
-	GDBusSignalTable *signal;
+	BDBusSignalTable *signal;
 	DBusMessage *message;
 	const char *signature;
 	gboolean result = FALSE;
@@ -1393,7 +1393,7 @@ done:
 }
 
 /**
- * g_dbus_emit_signal:
+ * b_dbus_emit_signal:
  * @connection: the connection
  * @path: object path
  * @interface: interface name
@@ -1409,7 +1409,7 @@ done:
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_emit_signal(DBusConnection *connection,
+gboolean b_dbus_emit_signal(DBusConnection *connection,
 				const char *path, const char *interface,
 				const char *name, int type, ...)
 {
@@ -1421,7 +1421,7 @@ gboolean g_dbus_emit_signal(DBusConnection *connection,
 
 	va_start(args, type);
 
-	result = g_dbus_emit_signal_valist(connection, path, interface,
+	result = b_dbus_emit_signal_valist(connection, path, interface,
 							name, type, args);
 
 	va_end(args);

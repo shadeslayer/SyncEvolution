@@ -17,8 +17,8 @@
  * 02110-1301  USA
  */
 
-#ifndef INCL_GDBUS_CXX
-#define INCL_GDBUS_CXX
+#ifndef INCL_BDBUS_CXX
+#define INCL_BDBUS_CXX
 
 #include <string>
 #include <stdexcept>
@@ -178,4 +178,4 @@ struct Result10 : virtual public Result
 
 
 
-#endif // INCL_GDBUS_CXX
+#endif // INCL_BDBUS_CXX

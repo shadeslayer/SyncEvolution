@@ -41,24 +41,24 @@ typedef struct {
 	char *name;
 	void *user_data;
 	char *match;
-	GDBusWatchFunction connect;
-	GDBusWatchFunction disconn;
-	GDBusDestroyFunction destroy;
+	BDBusWatchFunction connect;
+	BDBusWatchFunction disconn;
+	BDBusDestroyFunction destroy;
 } WatchData;
 
 typedef struct {
 	guint id;
 	void *user_data;
-	GDBusWatchFunction function;
-	GDBusDestroyFunction destroy;
+	BDBusWatchFunction function;
+	BDBusDestroyFunction destroy;
 } DisconnectData;
 
 typedef struct {
 	guint id;
 	void *user_data;
 	char *match;
-	GDBusSignalFunction function;
-	GDBusDestroyFunction destroy;
+	BDBusSignalFunction function;
+	BDBusDestroyFunction destroy;
 } SignalData;
 
 static DBusHandlerResult signal_function(DBusConnection *connection,
@@ -176,7 +176,7 @@ static void put_connection_data(DBusConnection *connection)
 }
 
 /**
- * g_dbus_add_service_watch:
+ * b_dbus_add_service_watch:
  * @connection: the connection
  * @name: unique or well known name
  * @connect: function called on name connect
@@ -189,10 +189,10 @@ static void put_connection_data(DBusConnection *connection)
  *
  * Returns: identifier of the watch
  */
-guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
-				GDBusWatchFunction connect,
-				GDBusWatchFunction disconnect,
-				void *user_data, GDBusDestroyFunction destroy)
+guint b_dbus_add_service_watch(DBusConnection *connection, const char *name,
+				BDBusWatchFunction connect,
+				BDBusWatchFunction disconnect,
+				void *user_data, BDBusDestroyFunction destroy)
 {
 	ConnectionData *data;
 	WatchData *watch;
@@ -254,7 +254,7 @@ error:
 }
 
 /**
- * g_dbus_remove_watch:
+ * b_dbus_remove_watch:
  * @connection: the connection
  * @tag: watch identifier
  *
@@ -262,7 +262,7 @@ error:
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag)
+gboolean b_dbus_remove_watch(DBusConnection *connection, guint tag)
 {
 	ConnectionData *data;
 	GSList *list;
@@ -323,12 +323,12 @@ done:
 }
 
 /**
- * g_dbus_remove_all_watches:
+ * b_dbus_remove_all_watches:
  * @connection: the connection
  *
  * Removes all registered watches.
  */
-void g_dbus_remove_all_watches(DBusConnection *connection)
+void b_dbus_remove_all_watches(DBusConnection *connection)
 {
 	ConnectionData *data;
 	GSList *list;
@@ -397,7 +397,7 @@ static void disconnect_function(DBusConnection *connection, void *user_data)
 
 	data->function(connection, data->user_data);
 
-	g_dbus_remove_watch(connection, id);
+	b_dbus_remove_watch(connection, id);
 }
 
 static void disconnect_release(void *user_data)
@@ -406,7 +406,7 @@ static void disconnect_release(void *user_data)
 }
 
 /**
- * g_dbus_add_disconnect_watch:
+ * b_dbus_add_disconnect_watch:
  * @connection: the connection
  * @name: unique or well known name
  * @function: function called on name disconnect
@@ -421,9 +421,9 @@ static void disconnect_release(void *user_data)
  *
  * Returns: identifier of the watch
  */
-guint g_dbus_add_disconnect_watch(DBusConnection *connection,
-				const char *name, GDBusWatchFunction function,
-				void *user_data, GDBusDestroyFunction destroy)
+guint b_dbus_add_disconnect_watch(DBusConnection *connection,
+				const char *name, BDBusWatchFunction function,
+				void *user_data, BDBusDestroyFunction destroy)
 {
 	DisconnectData *data;
 
@@ -435,7 +435,7 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 	data->function = function;
 	data->destroy = destroy;
 
-	data->id = g_dbus_add_service_watch(connection, name, NULL,
+	data->id = b_dbus_add_service_watch(connection, name, NULL,
 			disconnect_function, data, disconnect_release);
 
 	if (data->id == 0) {
@@ -447,7 +447,7 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
 }
 
 /**
- * g_dbus_add_signal_watch:
+ * b_dbus_add_signal_watch:
  * @connection: the connection
  * @rule: matching rule for this signal
  * @function: function called when signal arrives
@@ -462,9 +462,9 @@ guint g_dbus_add_disconnect_watch(DBusConnection *connection,
  *
  * Returns: identifier of the watch
  */
-guint g_dbus_add_signal_watch(DBusConnection *connection,
-				const char *rule, GDBusSignalFunction function,
-				void *user_data, GDBusDestroyFunction destroy)
+guint b_dbus_add_signal_watch(DBusConnection *connection,
+				const char *rule, BDBusSignalFunction function,
+				void *user_data, BDBusDestroyFunction destroy)
 {
 	ConnectionData *data;
 	SignalData *signal;

@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef __GDBUS_H
-#define __GDBUS_H
+#ifndef __BDBUS_H
+#define __BDBUS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,25 +39,25 @@ extern "C" {
  */
 
 /**
- * GDBusDestroyFunction:
+ * BDBusDestroyFunction:
  * @user_data: user data to pass to the function
  *
  * Destroy function
  */
-typedef void (* GDBusDestroyFunction) (void *user_data);
+typedef void (* BDBusDestroyFunction) (void *user_data);
 
 /**
- * GDBusWatchFunction:
+ * BDBusWatchFunction:
  * @connection: a #DBusConnection
  * @user_data: user data to pass to the function
  *
  * Watch function
  */
-typedef void (* GDBusWatchFunction) (DBusConnection *connection,
+typedef void (* BDBusWatchFunction) (DBusConnection *connection,
 							void *user_data);
 
 /**
- * GDBusSignalFunction:
+ * BDBusSignalFunction:
  * @connection: a #DBusConnection
  * @message: a #DBusMessage
  * @user_data: user data to pass to the function
@@ -66,11 +66,11 @@ typedef void (* GDBusWatchFunction) (DBusConnection *connection,
  *
  * Returns: #FALSE to remove this watch
  */
-typedef gboolean (* GDBusSignalFunction) (DBusConnection *connection,
+typedef gboolean (* BDBusSignalFunction) (DBusConnection *connection,
 					DBusMessage *message, void *user_data);
 
 /**
- * GDBusMethodFunction:
+ * BDBusMethodFunction:
  * @connection: a #DBusConnection
  * @message: a #DBusMessage
  * @user_data: user data to pass to the function
@@ -79,11 +79,11 @@ typedef gboolean (* GDBusSignalFunction) (DBusConnection *connection,
  *
  * Returns: #DBusMessage reply
  */
-typedef DBusMessage * (* GDBusMethodFunction) (DBusConnection *connection,
+typedef DBusMessage * (* BDBusMethodFunction) (DBusConnection *connection,
 					DBusMessage *message, void *user_data);
 
 /**
- * GDBusPropertyGetFunction:
+ * BDBusPropertyGetFunction:
  * @connection: a #DBusConnection
  * @iter: a #DBusMessageIter
  * @user_data: user data to pass to the function
@@ -92,11 +92,11 @@ typedef DBusMessage * (* GDBusMethodFunction) (DBusConnection *connection,
  *
  * Returns: #TRUE on success
  */
-typedef dbus_bool_t (* GDBusPropertyGetFunction) (DBusConnection *connection,
+typedef dbus_bool_t (* BDBusPropertyGetFunction) (DBusConnection *connection,
 					DBusMessageIter *iter, void *user_data);
 
 /**
- * GDBusPropertySetFunction:
+ * BDBusPropertySetFunction:
  * @connection: a #DBusConnection
  * @iter: a #DBusMessageIter
  * @user_data: user data to pass to the function
@@ -105,25 +105,25 @@ typedef dbus_bool_t (* GDBusPropertyGetFunction) (DBusConnection *connection,
  *
  * Returns: #TRUE on success
  */
-typedef dbus_bool_t (* GDBusPropertySetFunction) (DBusConnection *connection,
+typedef dbus_bool_t (* BDBusPropertySetFunction) (DBusConnection *connection,
 					DBusMessageIter *iter, void *user_data);
 
 /**
- * GDBusInterfaceFunction:
+ * BDBusInterfaceFunction:
  * @user_data: user data to pass to the function
  *
  * Callback function for interface
  */
-typedef void (* GDBusInterfaceFunction) (void *user_data); 
+typedef void (* BDBusInterfaceFunction) (void *user_data); 
 
 /**
- * GDBusMethodFlags:
+ * BDBusMethodFlags:
  * @G_DBUS_METHOD_FLAG_DEPRECATED: annotate deprecated methods
  * @G_DBUS_METHOD_FLAG_NOREPLY: annotate methods with no reply
  * @G_DBUS_METHOD_FLAG_ASYNC: annotate asynchronous methods
  * @G_DBUS_METHOD_FLAG_METHOD_DATA: the method is passed the
- *                                  GDBusMethodTable method_data pointer
- *                                  instead of the g_dbus_register_interface()
+ *                                  BDBusMethodTable method_data pointer
+ *                                  instead of the b_dbus_register_interface()
  *                                  user_data pointer
  *
  * Method flags
@@ -134,10 +134,10 @@ typedef enum {
 	G_DBUS_METHOD_FLAG_NOREPLY    = (1 << 1),
 	G_DBUS_METHOD_FLAG_ASYNC      = (1 << 2),
 	G_DBUS_METHOD_FLAG_METHOD_DATA = (1 << 3),
-} GDBusMethodFlags;
+} BDBusMethodFlags;
 
 /**
- * GDBusSignalFlags:
+ * BDBusSignalFlags:
  * @G_DBUS_SIGNAL_FLAG_DEPRECATED: annotate deprecated signals
  *
  * Signal flags
@@ -145,10 +145,10 @@ typedef enum {
 typedef enum {
 	G_DBUS_SIGNAL_FLAG_NONE = 0,
 	G_DBUS_SIGNAL_FLAG_DEPRECATED = (1 << 0),
-} GDBusSignalFlags;
+} BDBusSignalFlags;
 
 /**
- * GDBusPropertyFlags:
+ * BDBusPropertyFlags:
  * @G_DBUS_PROPERTY_FLAG_DEPRECATED: annotate deprecated properties
  *
  * Property flags
@@ -156,19 +156,19 @@ typedef enum {
 typedef enum {
 	G_DBUS_PROPERTY_FLAG_NONE = 0,
 	G_DBUS_PROPERTY_FLAG_DEPRECATED = (1 << 0),
-} GDBusPropertyFlags;
+} BDBusPropertyFlags;
 
 /**
- * GDBusMethodTable:
+ * BDBusMethodTable:
  * @name: method name
  * @signature: method signature
  * @reply: reply signature
  * @function: method function
  * @flags: method flags
- * @method_data: passed as GDBusMethodFunction user_data if
+ * @method_data: passed as BDBusMethodFunction user_data if
  *               G_DBUS_METHOD_FLAG_METHOD_DATA is set
  * @destroy: destructor function for method table; not called
- *           by gdbus itself, because it never frees GDBusMethodTable
+ *           by gdbus itself, because it never frees BDBusMethodTable
  *           entries, but useful in upper layers
  *
  * Method table
@@ -177,14 +177,14 @@ typedef struct {
 	const char *name;
 	const char *signature;
 	const char *reply;
-	GDBusMethodFunction function;
-	GDBusMethodFlags flags;
+	BDBusMethodFunction function;
+	BDBusMethodFlags flags;
 	void *method_data;
-	GDBusDestroyFunction destroy;
-} GDBusMethodTable;
+	BDBusDestroyFunction destroy;
+} BDBusMethodTable;
 
 /**
- * GDBusSignalTable:
+ * BDBusSignalTable:
  * @name: signal name
  * @signature: signal signature
  * @flags: signal flags
@@ -194,11 +194,11 @@ typedef struct {
 typedef struct {
 	const char *name;
 	const char *signature;
-	GDBusSignalFlags flags;
-} GDBusSignalTable;
+	BDBusSignalFlags flags;
+} BDBusSignalTable;
 
 /**
- * GDBusPropertyTable:
+ * BDBusPropertyTable:
  * @name: property name
  * @type: property value type
  * @get: property get function
@@ -210,86 +210,86 @@ typedef struct {
 typedef struct {
 	const char *name;
 	const char *type;
-	GDBusPropertyGetFunction get;
-	GDBusPropertyGetFunction set;
-	GDBusPropertyFlags flags;
-} GDBusPropertyTable;
+	BDBusPropertyGetFunction get;
+	BDBusPropertyGetFunction set;
+	BDBusPropertyFlags flags;
+} BDBusPropertyTable;
 
-void g_dbus_setup_connection(DBusConnection *connection,
+void b_dbus_setup_connection(DBusConnection *connection,
 						gboolean unshared,
 						GMainContext *context);
-void g_dbus_cleanup_connection(DBusConnection *connection);
+void b_dbus_cleanup_connection(DBusConnection *connection);
 
-DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
+DBusConnection *b_dbus_setup_bus(DBusBusType type, const char *name,
 							gboolean unshared,
 							DBusError *error);
 
-DBusConnection *g_dbus_setup_address(const char *address, DBusError *error);
+DBusConnection *b_dbus_setup_address(const char *address, DBusError *error);
 
-gboolean g_dbus_request_name(DBusConnection *connection, const char *name,
+gboolean b_dbus_request_name(DBusConnection *connection, const char *name,
 							DBusError *error);
 
-gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
-				GDBusWatchFunction function,
-				void *user_data, GDBusDestroyFunction destroy);
+gboolean b_dbus_set_disconnect_function(DBusConnection *connection,
+				BDBusWatchFunction function,
+				void *user_data, BDBusDestroyFunction destroy);
 
-gboolean g_dbus_register_interface(DBusConnection *connection,
+gboolean b_dbus_register_interface(DBusConnection *connection,
 					const char *path, const char *name,
-					GDBusMethodTable *methods,
-					GDBusSignalTable *signals,
-					GDBusPropertyTable *properties,
+					BDBusMethodTable *methods,
+					BDBusSignalTable *signals,
+					BDBusPropertyTable *properties,
 					void *user_data,
-					GDBusDestroyFunction destroy);
-gboolean g_dbus_register_interface_with_callback(DBusConnection *connection,
+					BDBusDestroyFunction destroy);
+gboolean b_dbus_register_interface_with_callback(DBusConnection *connection,
 					const char *path, const char *name,
-					GDBusMethodTable *methods,
-					GDBusSignalTable *signals,
-					GDBusPropertyTable *properties,
+					BDBusMethodTable *methods,
+					BDBusSignalTable *signals,
+					BDBusPropertyTable *properties,
 					void *user_data,
-					GDBusDestroyFunction destroy,
-					GDBusInterfaceFunction callback);
-gboolean g_dbus_unregister_interface(DBusConnection *connection,
+					BDBusDestroyFunction destroy,
+					BDBusInterfaceFunction callback);
+gboolean b_dbus_unregister_interface(DBusConnection *connection,
 					const char *path, const char *name);
 
-DBusMessage *g_dbus_create_error(DBusMessage *message, const char *name,
+DBusMessage *b_dbus_create_error(DBusMessage *message, const char *name,
 						const char *format, ...);
-DBusMessage *g_dbus_create_error_valist(DBusMessage *message, const char *name,
+DBusMessage *b_dbus_create_error_valist(DBusMessage *message, const char *name,
 					const char *format, va_list args);
-DBusMessage *g_dbus_create_reply(DBusMessage *message, int type, ...);
-DBusMessage *g_dbus_create_reply_valist(DBusMessage *message,
+DBusMessage *b_dbus_create_reply(DBusMessage *message, int type, ...);
+DBusMessage *b_dbus_create_reply_valist(DBusMessage *message,
 						int type, va_list args);
 
-gboolean g_dbus_send_message(DBusConnection *connection, DBusMessage *message);
-gboolean g_dbus_send_error(DBusConnection *connection, DBusMessage *message,
+gboolean b_dbus_send_message(DBusConnection *connection, DBusMessage *message);
+gboolean b_dbus_send_error(DBusConnection *connection, DBusMessage *message,
 				const char *name, const char *format, ...);
 
-gboolean g_dbus_send_reply(DBusConnection *connection,
+gboolean b_dbus_send_reply(DBusConnection *connection,
 				DBusMessage *message, int type, ...);
-gboolean g_dbus_send_reply_valist(DBusConnection *connection,
+gboolean b_dbus_send_reply_valist(DBusConnection *connection,
 				DBusMessage *message, int type, va_list args);
 
-gboolean g_dbus_emit_signal(DBusConnection *connection,
+gboolean b_dbus_emit_signal(DBusConnection *connection,
 				const char *path, const char *interface,
 				const char *name, int type, ...);
-gboolean g_dbus_emit_signal_valist(DBusConnection *connection,
+gboolean b_dbus_emit_signal_valist(DBusConnection *connection,
 				const char *path, const char *interface,
 				const char *name, int type, va_list args);
 
-guint g_dbus_add_service_watch(DBusConnection *connection, const char *name,
-				GDBusWatchFunction connect,
-				GDBusWatchFunction disconnect,
-				void *user_data, GDBusDestroyFunction destroy);
-guint g_dbus_add_disconnect_watch(DBusConnection *connection,
-				const char *name, GDBusWatchFunction function,
-				void *user_data, GDBusDestroyFunction destroy);
-guint g_dbus_add_signal_watch(DBusConnection *connection,
-				const char *rule, GDBusSignalFunction function,
-				void *user_data, GDBusDestroyFunction destroy);
-gboolean g_dbus_remove_watch(DBusConnection *connection, guint tag);
-void g_dbus_remove_all_watches(DBusConnection *connection);
+guint b_dbus_add_service_watch(DBusConnection *connection, const char *name,
+				BDBusWatchFunction connect,
+				BDBusWatchFunction disconnect,
+				void *user_data, BDBusDestroyFunction destroy);
+guint b_dbus_add_disconnect_watch(DBusConnection *connection,
+				const char *name, BDBusWatchFunction function,
+				void *user_data, BDBusDestroyFunction destroy);
+guint b_dbus_add_signal_watch(DBusConnection *connection,
+				const char *rule, BDBusSignalFunction function,
+				void *user_data, BDBusDestroyFunction destroy);
+gboolean b_dbus_remove_watch(DBusConnection *connection, guint tag);
+void b_dbus_remove_all_watches(DBusConnection *connection);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __GDBUS_H */
+#endif /* __BDBUS_H */
