@@ -13,5 +13,5 @@ AC_ARG_ENABLE_BACKEND(kcalextended,
 
 if test "$enable_kcalextended" = "yes"; then
         AC_DEFINE(ENABLE_KCALEXTENDED, 1, [KCalExtended available])
-        PKG_CHECK_MODULES(KCALEXTENDED, libextendedkcal)
+        PKG_CHECK_MODULES(KCALEXTENDED, libmkcal)
 fi
