@@ -6,10 +6,10 @@ dnl Invoke autogen.sh to produce a configure script.
 # kdepimlibs5-dev >= 4.3 provides the necessary files.
 AKONADIFOUND=yes
 if ! test "$KDEPIM_CFLAGS"; then
-   KDEPIM_CFLAGS="-I/usr/include/KDE -I/usr/include/qt4"
+   KDEPIM_CFLAGS="-I`kde4-config --path include` -I`kde4-config --path include`/KDE -I`qmake -query QT_INSTALL_HEADERS`"
 fi
 if ! test "$KDEPIM_LIBS"; then
-   KDEPIM_LIBS="-lakonadi-kde"
+   KDEPIM_LIBS="-L`kde4-config --prefix`/lib`kde4-config --libsuffix` -lakonadi-kde"
 fi
 AC_LANG_PUSH(C++)
 old_CPPFLAGS="$CPPFLAGS"

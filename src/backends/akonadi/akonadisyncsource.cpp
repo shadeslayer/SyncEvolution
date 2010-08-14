@@ -26,19 +26,28 @@
 #include <Akonadi/ItemFetchJob>
 #include <Akonadi/ItemFetchScope>
 #include <Akonadi/ItemModifyJob>
+
 #include <Akonadi/CollectionFetchJob>
+#include <Akonadi/CollectionFetchScope>
+
+#include <Akonadi/CollectionStatistics>
+#include <Akonadi/CollectionStatisticsJob>
+
 #include <Akonadi/Control>
 #include <kurl.h>
 
 #include <QtCore/QCoreApplication>
+#include <QtCore/QStringList>
+
+#include <QtCore/QDebug>
 
 SE_BEGIN_CXX
 using namespace Akonadi;
 
 AkonadiSyncSource::AkonadiSyncSource(const char *submime,
-                                     const SyncSourceParams &params) :
-    TrackingSyncSource(params),
-    m_subMime(submime)
+                                     const SyncSourceParams &params)
+    : TrackingSyncSource(params)
+    , m_subMime(submime)
 {
 }
 
@@ -46,14 +55,54 @@ AkonadiSyncSource::~AkonadiSyncSource()
 {
 }
 
-bool AkonadiSyncSource::isEmpty(){return false;}
+bool AkonadiSyncSource::isEmpty()
+{
+    //To Check if the respective collection is Empty, without actually loading the collections
+    CollectionStatisticsJob *statisticsJob = new CollectionStatisticsJob(m_collection);
+    if (!statisticsJob->exec()) {
+        throwError("Error fetching the collection stats");
+    }
+    return statisticsJob->statistics().count() == 0;
+}
+
 void AkonadiSyncSource::start()
 {
     int argc = 1;
     static const char *prog = "syncevolution";
     static char *argv[] = { (char *)&prog, NULL };
-    if (!qApp) {
-        new QCoreApplication(argc, argv);
+    KAboutData aboutData(// The program name used internally.
+                         "syncevolution",
+                         // The message catalog name
+                         // If null, program name is used instead.
+                         0,
+                         // A displayable program name string.
+                         ki18n("Syncevolution"),
+                         // The program version string.
+                         "1.0",
+                         // Short description of what the app does.
+                         ki18n("Lets Akonadi synchronize with a SyncML Peer"),
+                         // The license this code is released under
+                         KAboutData::License_GPL,
+                         // Copyright Statement
+                         ki18n("(c) 2010"),
+                         // Optional text shown in the About box.
+                         // Can contain any information desired.
+                         ki18n(""),
+                         // The program homepage string.
+                         "http://www.syncevolution.org/",
+                         // The bug report email address
+                         "syncevolution@syncevolution.org");
+
+    KCmdLineArgs::init(argc, argv, &aboutData);
+    if (!kapp) {
+        new KApplication;
+    }
+    // Start The Akonadi Server if not already Running.
+    if (!Akonadi::ServerManager::isRunning()) {
+        qDebug() << "Akonadi Server isn't running, and hence starting it.";
+        if (!Akonadi::Control::start()) {
+            qDebug() << "Couldn't Start Akonadi Server: hence the akonadi backend of syncevolution wont work ..";
+        }
     }
 }
 
@@ -62,33 +111,32 @@ SyncSource::Databases AkonadiSyncSource::getDatabases()
     start();
 
     Databases res;
-    // TODO: insert databases which match the "type"
-    // of the source, including a user-visible description
-    // and a database IDs. Exactly one of the databases
-    // should be marked as the default one used by the
-    // source.
+    QStringList mimeTypes;
+    mimeTypes << m_subMime.c_str();
+    // Insert databases which match the "type" of the source, including a user-visible
+    // description and a database IDs. Exactly one of the databases  should be marked
+    // as the default one used by the source.
     // res.push_back("Contacts", "some-KDE-specific-ID", isDefault);
 
     CollectionFetchJob *fetchJob = new CollectionFetchJob(Collection::root(),
                                                           CollectionFetchJob::Recursive);
-    // fetchJob->setMimeTypeFilter(m_subMime.c_str());
+
+    fetchJob->fetchScope().setContentMimeTypes(mimeTypes);
+
     if (!fetchJob->exec()) {
         throwError("cannot list collections");
     }
 
-    // the first collection of the right type is the default
-    // TODO: is there a better way to choose the default?
+    // Currently, the first collection of the right type is the default
+    // This decision should go to the GUI: which deals with sync profiles.
+
     bool isFirst = true;
     Collection::List collections = fetchJob->collections();
-    foreach(const Collection &collection, collections) {
-        // TODO: filter out collections which contain no items
-        // of the type we sync (m_subMime)
-        if (true) {
-            res.push_back(Database(collection.name().toUtf8().constData(),
-                                   collection.url().url().toUtf8().constData(),
-                                   isFirst));
-            isFirst = false;
-        }
+    foreach (const Collection &collection, collections) {
+        res.push_back(Database(collection.name().toUtf8().constData(),
+                               collection.url().url().toUtf8().constData(),
+                               isFirst));
+        isFirst = false;
     }
     return res;
 }
@@ -101,9 +149,9 @@ void AkonadiSyncSource::open()
     // otherwise the collection URL or a name
     string id = getDatabaseID();
 
-    // TODO: support selection by name and empty ID for default
-
-    // TODO: check for invalid URL?!
+    // support selection by name and empty ID for default by using
+    // evolutionsource = akonadi:?collection=<number>
+    // invalid url=>invalid collection Error at runtime.
     m_collection = Collection::fromUrl(KUrl(id.c_str()));
 }
 
@@ -111,15 +159,17 @@ void AkonadiSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisio
 {
     // copy all local IDs and the corresponding revision
     ItemFetchJob *fetchJob = new ItemFetchJob(m_collection);
+
     if (!fetchJob->exec()) {
         throwError("listing items");
     }
-    BOOST_FOREACH(const Item &item, fetchJob->items()) {
-        // TODO: filter out items which don't have the right type
-        // (for example, VTODO when syncing events)
-        // if (... == m_subMime)
-        revisions[QByteArray::number(item.id()).constData()] =
-                  QByteArray::number(item.revision()).constData();
+    BOOST_FOREACH (const Item &item, fetchJob->items()) {
+        // Filter out items which don't have the right type (for example, VTODO when
+        // syncing events)
+        if (item.mimeType() == m_subMime.c_str()) {
+            revisions[QByteArray::number(item.id()).constData()] =
+                      QByteArray::number(item.revision()).constData();
+        }
     }
 }
 
@@ -128,8 +178,7 @@ void AkonadiSyncSource::close()
     // TODO: close collection!?
 }
 
-TrackingSyncSource::InsertItemResult
-AkonadiSyncSource::insertItem(const std::string &luid, const std::string &data, bool raw)
+TrackingSyncSource::InsertItemResult AkonadiSyncSource::insertItem(const std::string &luid, const std::string &data, bool raw)
 {
     Item item;
 
@@ -139,6 +188,7 @@ AkonadiSyncSource::insertItem(const std::string &luid, const std::string &data, 
         ItemCreateJob *createJob = new ItemCreateJob(item, m_collection);
         if (!createJob->exec()) {
             throwError(string("storing new item ") + luid);
+            return InsertItemResult("", "", false);
         }
         item = createJob->item();
     } else {
@@ -146,18 +196,23 @@ AkonadiSyncSource::insertItem(const std::string &luid, const std::string &data, 
         ItemFetchJob *fetchJob = new ItemFetchJob(Item(syncItemId));
         if (!fetchJob->exec()) {
             throwError(string("checking item ") + luid);
-        }            
+        }
+        item = fetchJob->items().first();
+        item.setPayloadFromData(QByteArray(data.c_str()));
         ItemModifyJob *modifyJob = new ItemModifyJob(item);
         // TODO: SyncEvolution must pass the known revision that
         // we are updating.
         // TODO: check that the item has not been updated in the meantime
         if (!modifyJob->exec()) {
             throwError(string("updating item ") + luid);
+            return InsertItemResult("", "", false);
         }
         item = modifyJob->item();
     }
 
-    // TODO: Read-only datastores may not have actually added something here!
+    // Read-only datastores may not have actually added something here!
+    // The Jobs themselves throw errors, and hence the return statements
+    // above will take care of this
     return InsertItemResult(QByteArray::number(item.id()).constData(),
                             QByteArray::number(item.revision()).constData(),
                             false);

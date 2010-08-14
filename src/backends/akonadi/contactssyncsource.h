@@ -35,8 +35,8 @@ public:
                                   Settings::self()->contactsRemoteDatabaseName().toLatin1())
     {
         setName(Settings::self()->contactsCollectionName().toLatin1());
-        setType("text/x-vcard");
-        setSupportedTypes("text/x-vcard:,text/vcard");
+        setType("text/vcard");
+        setSupportedTypes("text/x-vcard,text/vcard");
     }
 };
 

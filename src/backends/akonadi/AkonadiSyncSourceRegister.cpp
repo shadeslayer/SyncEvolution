@@ -22,14 +22,17 @@
 
 #include <boost/algorithm/string.hpp>
 
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 static SyncSource *createSource(const SyncSourceParams &params)
 {
     SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
-    bool isMe;
-
+    bool isMe;    
+    
+    
+    
     isMe = sourceType.m_backend == "KDE Address Book";
     if (isMe || sourceType.m_backend == "addressbook") {
         if (sourceType.m_format == "" || sourceType.m_format == "text/vcard" 
@@ -116,7 +119,7 @@ static RegisterSyncSource registerMe("KDE Contact/Calendar/Task List/Memos",
                                      "   iCalendar 2.0 (default) = text/calendar\n"
                                      "   vCalendar 1.0 = text/x-calendar\n"
                                      "KDE Memos = memo = memos = kde-memos\n"
-                                     "   plain text in UTF-8 (default) = text/plain\n",
+                                     "   plain text in UTF-8 (default) = text/plain\n",				     
                                      Values() +
                                      (Aliases("KDE Address Book") + "KDE Contacts" + "kde-contacts") +
                                      (Aliases("KDE Calendar") + "kde-calendar") +

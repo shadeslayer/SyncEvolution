@@ -16,7 +16,8 @@ Configuring without Evolution and with Akonadi:
                                --disable-shared --enable-static \
                                --enable-libcurl \
                                --enable-unit-tests --enable-integration-tests \
-                               --disable-ecal --disable-ebook --disable-libsoup
+                               --disable-ecal --disable-ebook --disable-libsoup \
+                               --enable-akonadi --enable-kwallet
 
 This creates src/syncevolution and src/client-test which can be run under
 a debugger directly.
