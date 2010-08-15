@@ -748,6 +748,13 @@ bool Cmdline::run() {
                      "files or enter them interactively on each program run." << endl;
             return false;
 #endif
+#ifndef USE_KDE_KWALLET
+            m_err << "Error: this syncevolution binary was compiled without support for storing "
+                     "passwords in a wallet. Either store passwords in your configuration "
+                     "files or enter them interactively on each program run." << endl;
+            return false;
+#endif
+
         }
 
         // name of renamed config ("foo.old") after migration

@@ -40,6 +40,7 @@ static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 #include <syncevo/SyncSource.h>
 #include <syncevo/SyncML.h>
 #include <syncevo/FileConfigNode.h>
+#include <syncevo/TransportAgent.h>
 #include <syncevo/Cmdline.h>
 #include <syncevo/GLibSupport.h>
 
@@ -70,6 +71,20 @@ static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 extern "C" {
 #include <gnome-keyring.h>
 }
+#endif
+
+#ifdef USE_KDE_KWALLET
+#include <QtCore/QCoreApplication>
+#include <QtCore/QString>
+#include <QtCore/QLatin1String>
+#include <QtCore/QByteArray>
+#include <QtCore/QDebug>
+
+#include <KApplication>
+#include <KAboutData>
+#include <KCmdLineArgs>
+
+#include <kwallet.h>
 #endif
 
 #ifdef HAS_NOTIFY
@@ -3103,6 +3118,48 @@ string DBusUserInterface::askPassword(const string &passwordName,
                                       const ConfigPasswordKey &key) 
 {
     string password;
+    
+#ifdef USE_KDE_KWALLET
+    /** here we use server sync url without protocol prefix and
+     * user account name as the key in the keyring */
+     /* Also since the KWallet's API supports only storing (key,passowrd)
+     * or Map<QString,QString> , the former is used */
+    bool isKde=true;
+    #ifdef USE_GNOME_KEYRING
+    //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session 
+    //and Call
+    QByteArray isKdeRunning=getenv("KDE_FULL_SESSION");
+    if(isKdeRunning!="true")
+      isKde=false;
+    #endif   
+    if (isKde){
+	QString walletPassword;
+        QString walletKey = QString(passwdStr(key.user)) + ',' +
+			    QString(passwdStr(key.domain))+ ','+
+			    QString(passwdStr(key.server))+','+
+			    QString(passwdStr(key.object))+','+
+			    QString(passwdStr(key.protocol))+','+
+			    QString(passwdStr(key.authtype))+','+
+			    QString::number(key.port);
+                                                          
+	    
+	    QString wallet_name = KWallet::Wallet::NetworkWallet();
+	    //QString folder = QString::fromUtf8("Syncevolution");
+	    const QLatin1String folder("Syncevolution");
+    	  	      
+	    if (!KWallet::Wallet::keyDoesNotExist(wallet_name, folder, walletKey)){
+	    KWallet::Wallet *wallet = KWallet::Wallet::openWallet(wallet_name, -1, KWallet::Wallet::Synchronous); 
+	
+	    if (wallet){
+	      if (wallet->setFolder(folder))                
+                if (wallet->readPassword(walletKey, walletPassword) == 0)
+		  return walletPassword.toStdString();
+		 }    
+	  }        
+
+    }    
+#endif
+
 #ifdef USE_GNOME_KEYRING
     /** here we use server sync url without protocol prefix and
      * user account name as the key in the keyring */
@@ -3129,6 +3186,8 @@ string DBusUserInterface::askPassword(const string &passwordName,
         return password;
     }
 #endif
+
+
     //if not found, return empty
     return "";
 }
@@ -3137,6 +3196,55 @@ bool DBusUserInterface::savePassword(const string &passwordName,
                                      const string &password, 
                                      const ConfigPasswordKey &key)
 {
+
+
+#ifdef USE_KDE_KWALLET
+        /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
+         * but currently only use passed key instead */
+    bool isKde=true;
+    #ifdef USE_GNOME_KEYRING
+    //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session 
+    //and Call
+    QByteArray isKdeRunning=getenv("KDE_FULL_SESSION");
+    if(isKdeRunning!="true")
+      isKde=false;
+    #endif
+    if(isKde){
+        // write password to keyring
+	QString walletKey = QString(passwdStr(key.user)) + ',' +
+			    QString(passwdStr(key.domain))+ ','+
+			    QString(passwdStr(key.server))+','+
+			    QString(passwdStr(key.object))+','+
+			    QString(passwdStr(key.protocol))+','+
+			    QString(passwdStr(key.authtype))+','+
+			    QString::number(key.port);
+	QString walletPassword = password.c_str();
+	
+	 bool write_success = false;
+	 QString wallet_name = KWallet::Wallet::NetworkWallet();
+	 //QString folder = QString::fromUtf8("Syncevolution");
+	 const QLatin1String folder("Syncevolution");
+	 
+	 KWallet::Wallet *wallet = KWallet::Wallet::openWallet(wallet_name, -1, 
+                                            KWallet::Wallet::Synchronous);
+	  if (wallet){
+	    if (!wallet->hasFolder(folder))
+	      wallet->createFolder(folder);
+	    
+	    if (wallet->setFolder(folder))	      
+	      if (wallet->writePassword(walletKey, walletPassword) == 0)
+                write_success = true;            
+	    
+	}
+	
+        if(!write_success) {
+            SyncContext::throwError("Try to save " + passwordName + " in kde-wallet but got an error. ");
+        } 
+        
+    return write_success;
+    }
+#endif
+
 #ifdef USE_GNOME_KEYRING
     /* It is possible to let CmdlineSyncClient decide which of fields in ConfigPasswordKey it would use
      * but currently only use passed key instead */
@@ -3166,9 +3274,10 @@ bool DBusUserInterface::savePassword(const string &passwordName,
     } 
     return true;
 #else
+#endif
+
     /** if no support of gnome-keyring, don't save anything */
     return false;
-#endif
 }
 
 void DBusUserInterface::readStdin(string &content)
@@ -3183,6 +3292,47 @@ DBusSync::DBusSync(const std::string &config,
     DBusUserInterface(config),
     m_session(session)
 {
+    #ifdef USE_KDE_KWALLET
+    //QCoreApplication *app;
+    //if (!qApp) {
+        //int argc = 1;
+        //app = new QCoreApplication(argc, (char *[1]){ (char*) "syncevolution"});
+    //}
+    int argc = 1;
+    static const char *prog = "syncevolution";
+    static char *argv[] = { (char *)&prog, NULL };
+    //if (!qApp) {
+        //new QCoreApplication(argc, argv);
+    //}
+    KAboutData aboutData(// The program name used internally.
+                         "syncevolution",
+                         // The message catalog name
+                         // If null, program name is used instead.
+                         0,
+                         // A displayable program name string.
+                         ki18n("Syncevolution"),
+                         // The program version string.
+                         "1.0",
+                         // Short description of what the app does.
+                         ki18n("Lets Akonadi synchronize with a SyncML Peer"),
+                         // The license this code is released under
+                         KAboutData::License_GPL,
+                         // Copyright Statement
+                         ki18n("(c) 2010"),
+                         // Optional text shown in the About box.
+                         // Can contain any information desired.
+                         ki18n(""),
+                         // The program homepage string.
+                         "http://www.syncevolution.org/",
+                         // The bug report email address
+                         "syncevolution@syncevolution.org");
+
+    KCmdLineArgs::init(argc, argv, &aboutData);
+    if (!kapp) {
+        new KApplication;
+    }
+    #endif
+  
 }
 
 boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
