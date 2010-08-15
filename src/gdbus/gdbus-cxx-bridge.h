@@ -54,8 +54,8 @@
  */
 
 
-#ifndef INCL_GDBUS_CXX_BRIDGE
-#define INCL_GDBUS_CXX_BRIDGE
+#ifndef INCL_BDBUS_CXX_BRIDGE
+#define INCL_BDBUS_CXX_BRIDGE
 
 #include "gdbus.h"
 #include "gdbus-cxx.h"
@@ -411,9 +411,9 @@ class EmitSignal0
         }
     }
 
-    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    BDBusSignalTable makeSignalEntry(BDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
-        GDBusSignalTable entry;
+        BDBusSignalTable entry;
         entry.name = m_signal.c_str();
         std::string buffer;
         entry.signature = strdup(buffer.c_str());
@@ -450,9 +450,9 @@ class EmitSignal1
         }
     }
 
-    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    BDBusSignalTable makeSignalEntry(BDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
-        GDBusSignalTable entry;
+        BDBusSignalTable entry;
         entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -490,9 +490,9 @@ class EmitSignal2
         }
     }
 
-    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    BDBusSignalTable makeSignalEntry(BDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
-        GDBusSignalTable entry;
+        BDBusSignalTable entry;
         entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -530,9 +530,9 @@ class EmitSignal3
         }
     }
 
-    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    BDBusSignalTable makeSignalEntry(BDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
-        GDBusSignalTable entry;
+        BDBusSignalTable entry;
         entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -571,9 +571,9 @@ class EmitSignal4
         }
     }
 
-    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    BDBusSignalTable makeSignalEntry(BDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
-        GDBusSignalTable entry;
+        BDBusSignalTable entry;
         entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -613,9 +613,9 @@ class EmitSignal5
         }
     }
 
-    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    BDBusSignalTable makeSignalEntry(BDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
-        GDBusSignalTable entry;
+        BDBusSignalTable entry;
         entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -656,9 +656,9 @@ class EmitSignal6
         }
     }
 
-    GDBusSignalTable makeSignalEntry(GDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
+    BDBusSignalTable makeSignalEntry(BDBusSignalFlags flags = G_DBUS_SIGNAL_FLAG_NONE) const
     {
-        GDBusSignalTable entry;
+        BDBusSignalTable entry;
         entry.name = m_signal.c_str();
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -680,8 +680,8 @@ struct MakeMethodEntry
     // If you get an error about it missing, then write
     // a specialization for your type M (the method pointer).
     //
-    // static GDBusMethodTable make(const char *name,
-    //                              GDBusMethodFlags flags)
+    // static BDBusMethodTable make(const char *name,
+    //                              BDBusMethodFlags flags)
 };
 
 /**
@@ -694,7 +694,7 @@ template <class T> class DBusVector {
     size_t m_size;
     T *m_elements;
 
-    static void destroy(GDBusMethodTable &entry) {
+    static void destroy(BDBusMethodTable &entry) {
         free(const_cast<char *>(entry.name));
         free(const_cast<char *>(entry.signature));
         free(const_cast<char *>(entry.reply));
@@ -703,7 +703,7 @@ template <class T> class DBusVector {
         }
     }
 
-    static void destroy(GDBusSignalTable &entry) {
+    static void destroy(BDBusSignalTable &entry) {
         free(const_cast<char *>(entry.signature));
         // if (entry.destroy) {
         // entry.destroy(&entry);
@@ -747,8 +747,8 @@ class DBusObjectHelper : public DBusObject
     std::string m_interface;
     boost::function<void (void)> m_callback;
     bool m_activated;
-    DBusVector<GDBusMethodTable> m_methods;
-    DBusVector<GDBusSignalTable> m_signals;
+    DBusVector<BDBusMethodTable> m_methods;
+    DBusVector<BDBusSignalTable> m_signals;
 
  public:
     DBusObjectHelper(DBusConnection *conn,
@@ -777,7 +777,7 @@ class DBusObjectHelper : public DBusObject
      * and invokes it when the specified method is called
      */
     template <class A1, class C, class M> void add(A1 instance, M C::*method,
-                                                   const char *name, GDBusMethodFlags flags = G_DBUS_METHOD_FLAG_NONE) {
+                                                   const char *name, BDBusMethodFlags flags = G_DBUS_METHOD_FLAG_NONE) {
         typedef MakeMethodEntry< boost::function<M> > entry_type;
         m_methods.push_back(entry_type::make(name, flags, entry_type::boostptr(method, instance)));
     }
@@ -788,7 +788,7 @@ class DBusObjectHelper : public DBusObject
      * invokes it when the specified method is called
      */
     template <class M> void add(M *function,
-                                const char *name, GDBusMethodFlags flags = G_DBUS_METHOD_FLAG_NONE) {
+                                const char *name, BDBusMethodFlags flags = G_DBUS_METHOD_FLAG_NONE) {
         m_methods.push_back(MakeMethodEntry< boost::function<M> >::make(name, flags, function));
     }
 
@@ -799,22 +799,22 @@ class DBusObjectHelper : public DBusObject
         m_signals.push_back(s.makeSignalEntry());
     }
 
-    void activate(GDBusMethodTable *methods,
-                  GDBusSignalTable *signals,
-                  GDBusPropertyTable *properties,
+    void activate(BDBusMethodTable *methods,
+                  BDBusSignalTable *signals,
+                  BDBusPropertyTable *properties,
                   const boost::function<void (void)> &callback) {
-        if (!g_dbus_register_interface_with_callback(getConnection(), getPath(), getInterface(),
+        if (!b_dbus_register_interface_with_callback(getConnection(), getPath(), getInterface(),
                                        methods, signals, properties, this, NULL, interfaceCallback)) {
-            throw std::runtime_error(std::string("g_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
+            throw std::runtime_error(std::string("b_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
         }
         m_callback = callback;
         m_activated = true;
     }
 
     void activate() {
-        if (!g_dbus_register_interface_with_callback(getConnection(), getPath(), getInterface(),
+        if (!b_dbus_register_interface_with_callback(getConnection(), getPath(), getInterface(),
                                        m_methods.get(), m_signals.get(), NULL, this, NULL, interfaceCallback)) {
-            throw std::runtime_error(std::string("g_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
+            throw std::runtime_error(std::string("b_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
         }
         m_activated = true;
     }
@@ -822,10 +822,10 @@ class DBusObjectHelper : public DBusObject
     void deactivate()
     {
         if (m_activated) {
-            if (!g_dbus_unregister_interface(getConnection(),
+            if (!b_dbus_unregister_interface(getConnection(),
                                              getPath(),
                                              getInterface())) {
-                throw std::runtime_error(std::string("g_dbus_unregister_interface() failed for ") + getPath() + " " + getInterface());
+                throw std::runtime_error(std::string("b_dbus_unregister_interface() failed for ") + getPath() + " " + getInterface());
             }
             m_activated = false;
         }
@@ -1513,13 +1513,13 @@ static DBusMessage *handleException(DBusMessage *msg)
         throw;
 #endif
     } catch (const dbus_error &ex) {
-        return g_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
+        return b_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
     } catch (const DBusCXXException &ex) {
-        return g_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
+        return b_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
     } catch (const std::runtime_error &ex) {
-        return g_dbus_create_error(msg, "org.syncevolution.gdbus-cxx.Exception", "%s", ex.what());
+        return b_dbus_create_error(msg, "org.syncevolution.gdbus-cxx.Exception", "%s", ex.what());
     } catch (...) {
-        return g_dbus_create_error(msg, "org.syncevolution.gdbus-cxx.Exception", "unknown");
+        return b_dbus_create_error(msg, "org.syncevolution.gdbus-cxx.Exception", "unknown");
     }
 }
 
@@ -1570,13 +1570,13 @@ class DBusWatch : public Watch
         }
 
         // Install watch first ...
-        m_watchID = g_dbus_add_disconnect_watch(m_conn.get(),
+        m_watchID = b_dbus_add_disconnect_watch(m_conn.get(),
                                                 peer,
                                                 disconnect,
                                                 this,
                                                 NULL);
         if (!m_watchID) {
-            throw std::runtime_error("g_dbus_add_disconnect_watch() failed");
+            throw std::runtime_error("b_dbus_add_disconnect_watch() failed");
         }
 
         // ... then check that the peer really exists,
@@ -1598,7 +1598,7 @@ class DBusWatch : public Watch
     ~DBusWatch()
     {
         if (m_watchID) {
-            if (!g_dbus_remove_watch(m_conn.get(), m_watchID)) {
+            if (!b_dbus_remove_watch(m_conn.get(), m_watchID)) {
                 // this may happen because the watch is
                 // removed automatically when it was triggered
             }
@@ -1651,10 +1651,10 @@ class DBusResult : virtual public Result
 
     virtual void failed(const dbus_error &error)
     {
-        if (!g_dbus_send_error(m_conn.get(), m_msg.get(),
+        if (!b_dbus_send_error(m_conn.get(), m_msg.get(),
                                error.dbusName().c_str(),
                                "%s", error.what())) {
-            throw std::runtime_error("g_dbus_send_error() failed");
+            throw std::runtime_error("b_dbus_send_error() failed");
         }
     }
 
@@ -1678,7 +1678,7 @@ class DBusResult0 :
   
     virtual void done()
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1704,7 +1704,7 @@ class DBusResult1 :
   
     virtual void done(A1 a1)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1733,7 +1733,7 @@ class DBusResult2 :
   
     virtual void done(A1 a1, A2 a2)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1766,7 +1766,7 @@ class DBusResult3 :
   
     virtual void done(A1 a1, A2 a2, A3 a3)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1799,7 +1799,7 @@ class DBusResult4 :
   
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1832,7 +1832,7 @@ class DBusResult5 :
   
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1866,7 +1866,7 @@ class DBusResult6 :
   
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1900,7 +1900,7 @@ class DBusResult7 :
   
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1934,7 +1934,7 @@ class DBusResult8 :
   
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -1968,7 +1968,7 @@ class DBusResult9 :
   
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8, A9 a9)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -2002,7 +2002,7 @@ class DBusResult10 :
   
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8, A9 a9, A10 a10)
     {
-        DBusMessagePtr reply(g_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
+        DBusMessagePtr reply(b_dbus_create_reply(m_msg.get(), DBUS_TYPE_INVALID));
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
@@ -2176,22 +2176,22 @@ struct MakeMethodEntry< boost::function<R (A1, A2)> >
      * The boost function doesn't have a virtual destructor.
      * Therefore we have to cast down to the right type M
      * before deleting it. The rest of the allocated data
-     * is freed by GDBusVector.
+     * is freed by BDBusVector.
      */
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
     /**
-     * Creates a GDBusMethodTable entry.
+     * Creates a BDBusMethodTable entry.
      * The strings inside the entry are allocated
-     * with strdup(), to be freed by GDBusVector::destroy().
+     * with strdup(), to be freed by BDBusVector::destroy().
      */
-    GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         // same trick as before: only argument types
         // are added to the signature
@@ -2209,7 +2209,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2)> >
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
         // make sure that methodFunction has access to the boost function
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -2289,13 +2289,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -2323,7 +2323,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -2402,13 +2402,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8, A9)> 
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -2435,7 +2435,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8, A9)> 
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -2509,13 +2509,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -2541,7 +2541,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -2615,13 +2615,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -2646,7 +2646,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -2717,13 +2717,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -2747,7 +2747,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -2818,13 +2818,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -2847,7 +2847,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -2915,13 +2915,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -2943,7 +2943,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3011,13 +3011,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3038,7 +3038,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3102,13 +3102,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6)> >
     }
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3128,7 +3128,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3192,13 +3192,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3217,7 +3217,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3278,13 +3278,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3302,7 +3302,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3363,13 +3363,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3386,7 +3386,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3444,13 +3444,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3466,7 +3466,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3524,13 +3524,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3545,7 +3545,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3600,13 +3600,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3620,7 +3620,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3675,13 +3675,13 @@ struct MakeMethodEntry< boost::function<R (A1, A2)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3694,7 +3694,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3746,13 +3746,13 @@ struct MakeMethodEntry< boost::function<void (A1, A2)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3764,7 +3764,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3816,13 +3816,13 @@ struct MakeMethodEntry< boost::function<R (A1)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3833,7 +3833,7 @@ struct MakeMethodEntry< boost::function<R (A1)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3882,13 +3882,13 @@ struct MakeMethodEntry< boost::function<void (A1)> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         buffer += dbus_traits<A1>::getSignature();
@@ -3898,7 +3898,7 @@ struct MakeMethodEntry< boost::function<void (A1)> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA |
                                        (asynchronous ? G_DBUS_METHOD_FLAG_ASYNC : 0));
         entry.method_data = new M(m);
         return entry;
@@ -3937,13 +3937,13 @@ struct MakeMethodEntry< boost::function<R ()> >
     }
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         entry.signature = strdup(buffer.c_str());
@@ -3952,7 +3952,7 @@ struct MakeMethodEntry< boost::function<R ()> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA);
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA);
         entry.method_data = new M(m);
         return entry;
     }
@@ -3986,13 +3986,13 @@ struct MakeMethodEntry< boost::function<void ()> >
 
     static void destroyFunction(void *user_data)
     {
-        GDBusMethodTable *entry = static_cast<GDBusMethodTable *>(user_data);
+        BDBusMethodTable *entry = static_cast<BDBusMethodTable *>(user_data);
         delete static_cast<M *>(entry->method_data);
     }
 
-    static GDBusMethodTable make(const char *name, GDBusMethodFlags flags, const M &m)
+    static BDBusMethodTable make(const char *name, BDBusMethodFlags flags, const M &m)
     {
-        GDBusMethodTable entry;
+        BDBusMethodTable entry;
         entry.name = strdup(name);
         std::string buffer;
         entry.signature = strdup(buffer.c_str());
@@ -4000,7 +4000,7 @@ struct MakeMethodEntry< boost::function<void ()> >
         entry.reply = strdup(buffer.c_str());
         entry.function = methodFunction;
         entry.destroy = destroyFunction;
-        entry.flags = GDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA);
+        entry.flags = BDBusMethodFlags(flags | G_DBUS_METHOD_FLAG_METHOD_DATA);
         entry.method_data = new M(m);
         return entry;
     }
@@ -4380,7 +4380,7 @@ template <class T> class SignalWatch
     ~SignalWatch()
     {
         if (m_tag) {
-            g_dbus_remove_watch(m_object.getConnection(), m_tag);
+            b_dbus_remove_watch(m_object.getConnection(), m_tag);
         }
     }
 
@@ -4416,7 +4416,7 @@ template <class T> class SignalWatch
     {
         m_callback = callback;
         std::string rule = makeSignalRule();
-        m_tag = g_dbus_add_signal_watch(m_object.getConnection(),
+        m_tag = b_dbus_add_signal_watch(m_object.getConnection(),
                                         rule.c_str(),
                                         cb,
                                         this,
@@ -4672,4 +4672,4 @@ class SignalWatch6 : public SignalWatch< boost::function<void (const A1 &, const
     void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
 };
 
-#endif // INCL_GDBUS_CXX_BRIDGE
+#endif // INCL_BDBUS_CXX_BRIDGE

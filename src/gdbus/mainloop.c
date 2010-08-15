@@ -352,9 +352,9 @@ static void free_connection(void *memory)
 
 	DBG("connection data %p", data);
 
-	g_dbus_remove_all_watches(data->connection);
+	b_dbus_remove_all_watches(data->connection);
 
-	//g_dbus_unregister_all_objects(data->connection);
+	//b_dbus_unregister_all_objects(data->connection);
 
 	if (data->unshared)
 		dbus_connection_close(data->connection);
@@ -366,7 +366,7 @@ static void free_connection(void *memory)
 }
 
 /**
- * g_dbus_setup_connection:
+ * b_dbus_setup_connection:
  * @connection: a #DBusConnection
  * @unshared: the connection is private and must be closed explicitly
  * @context: a #GMainContext or #NULL for default context
@@ -378,7 +378,7 @@ static void free_connection(void *memory)
  * Pass in #NULL for the #GMainContext unless you're
  * doing something specialized.
  */
-void g_dbus_setup_connection(DBusConnection *connection,
+void b_dbus_setup_connection(DBusConnection *connection,
 						gboolean unshared,
 						GMainContext *context)
 {
@@ -421,13 +421,13 @@ void g_dbus_setup_connection(DBusConnection *connection,
 }
 
 /**
- * g_dbus_cleanup_connection:
+ * b_dbus_cleanup_connection:
  * @connection: a #DBusConnection
  *
  * Cleanup the setup of DBusConnection and free the
  * allocated memory.
  */
-void g_dbus_cleanup_connection(DBusConnection *connection)
+void b_dbus_cleanup_connection(DBusConnection *connection)
 {
 	DBG("connection %p slot %d", connection, connection_slot);
 
@@ -442,7 +442,7 @@ void g_dbus_cleanup_connection(DBusConnection *connection)
 }
 
 /**
- * g_dbus_setup_bus:
+ * b_dbus_setup_bus:
  * @type: a #DBusBusType
  * @name: well known name
  * @unshared: use dbus_bus_get_private() to ensure that we have the connection
@@ -458,7 +458,7 @@ void g_dbus_cleanup_connection(DBusConnection *connection)
  *
  * Returns: newly setup #DBusConnection
  */
-DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
+DBusConnection *b_dbus_setup_bus(DBusBusType type, const char *name,
 							gboolean unshared,
 							DBusError *error)
 {
@@ -491,7 +491,7 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 		}
 	}
 
-	g_dbus_setup_connection(connection, unshared, NULL);
+	b_dbus_setup_connection(connection, unshared, NULL);
 
 	return connection;
 
@@ -503,7 +503,7 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
 }
 
 /**
- * g_dbus_setup_address:
+ * b_dbus_setup_address:
  * @address: bus address
  * @error: a #DBusError
  *
@@ -515,7 +515,7 @@ DBusConnection *g_dbus_setup_bus(DBusBusType type, const char *name,
  *
  * Returns: newly setup #DBusConnection
  */
-DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
+DBusConnection *b_dbus_setup_address(const char *address, DBusError *error)
 {
 	DBusConnection *connection;
 
@@ -531,13 +531,13 @@ DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
 	if (connection == NULL)
 		return NULL;
 
-	g_dbus_setup_connection(connection, FALSE, NULL);
+	b_dbus_setup_connection(connection, FALSE, NULL);
 
 	return connection;
 }
 
 /**
- * g_dbus_request_name:
+ * b_dbus_request_name:
  * @connection: a #DBusConnection
  * @name: well known name
  * @error: a #DBusError
@@ -546,7 +546,7 @@ DBusConnection *g_dbus_setup_address(const char *address, DBusError *error)
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_request_name(DBusConnection *connection, const char *name,
+gboolean b_dbus_request_name(DBusConnection *connection, const char *name,
 							DBusError *error)
 {
 	DBG("connection %p name %s error %p", connection, name, error);
@@ -580,20 +580,20 @@ static DBusHandlerResult disconnect_filter(DBusConnection *connection,
 }
 
 /**
- * g_dbus_set_disconnect_function:
+ * b_dbus_set_disconnect_function:
  * @connection: a #DBusConnection
- * @function: a #GDBusWatchFunction
+ * @function: a #BDBusWatchFunction
  * @user_data: user data to pass to the function
- * @destroy: a #GDBusDestroyFunction
+ * @destroy: a #BDBusDestroyFunction
  *
  * Set a callback function that will be called when the
  * D-Bus message bus exits.
  *
  * Returns: #TRUE on success
  */
-gboolean g_dbus_set_disconnect_function(DBusConnection *connection,
-				GDBusWatchFunction function,
-				void *user_data, GDBusDestroyFunction destroy)
+gboolean b_dbus_set_disconnect_function(DBusConnection *connection,
+				BDBusWatchFunction function,
+				void *user_data, BDBusDestroyFunction destroy)
 {
 	dbus_connection_set_exit_on_disconnect(connection, FALSE);
 
