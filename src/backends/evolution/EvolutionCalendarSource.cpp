@@ -354,6 +354,8 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     icalproperty *modprop;
     while ((modprop = icalcomponent_get_first_property(subcomp, ICAL_LASTMODIFIED_PROPERTY)) != NULL) {
         icalcomponent_remove_property(subcomp, modprop);
+        icalproperty_free(modprop);
+        modprop = NULL;
     }
 
     if (!update) {
