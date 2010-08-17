@@ -169,6 +169,7 @@ struct EDSAbiWrapper {
     const char* (*icalparameter_get_tzid) (const icalparameter* value);
     void (*icalparameter_set_tzid) (icalparameter* value, const char* v);
     icalproperty *(*icalproperty_new_clone)(icalproperty *prop);
+    void (*icalproperty_free)(icalproperty *prop);
     const char* (*icalproperty_get_description) (const icalproperty* prop);
     icalparameter* (*icalproperty_get_first_parameter) (icalproperty* prop, icalparameter_kind kind);
     struct icaltimetype (*icalproperty_get_lastmodified) (const icalproperty* prop);
@@ -311,6 +312,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalparameter_get_tzid EDSAbiWrapperSingleton.icalparameter_get_tzid
 #   define icalparameter_set_tzid EDSAbiWrapperSingleton.icalparameter_set_tzid
 #   define icalproperty_new_clone EDSAbiWrapperSingleton.icalproperty_new_clone
+#   define icalproperty_free EDSAbiWrapperSingleton.icalproperty_free
 #   define icalproperty_get_description EDSAbiWrapperSingleton.icalproperty_get_description
 #   define icalproperty_get_first_parameter EDSAbiWrapperSingleton.icalproperty_get_first_parameter
 #   define icalproperty_get_lastmodified EDSAbiWrapperSingleton.icalproperty_get_lastmodified

@@ -278,6 +278,7 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icalparameter_get_tzid, "icalparameter_get_tzid",
                 &EDSAbiWrapperSingleton.icalparameter_set_tzid, "icalparameter_set_tzid",
                 &EDSAbiWrapperSingleton.icalproperty_new_clone, "icalproperty_new_clone",
+                &EDSAbiWrapperSingleton.icalproperty_free, "icalproperty_free",
                 &EDSAbiWrapperSingleton.icalproperty_get_description, "icalproperty_get_description",
                 &EDSAbiWrapperSingleton.icalproperty_get_first_parameter, "icalproperty_get_first_parameter",
                 &EDSAbiWrapperSingleton.icalproperty_get_lastmodified, "icalproperty_get_lastmodified",
