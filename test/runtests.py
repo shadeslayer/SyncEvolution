@@ -379,7 +379,7 @@ class GitCheckout(Action):
         if os.access(self.basedir, os.F_OK):
             cmd = "cd %s && perl -pi -e 's!git\@gitorious.org:!git://gitorious.org/!' .git/config && git fetch" % (self.basedir)
         else:
-            cmd = "git clone %s %s" % (url, self.basedir)
+            cmd = "git clone %s %s && chmod -R g+w %s && cd %s && git config core.sharedRepository group " % (url, self.basedir, self.basedir, self.basedir)
         context.runCommand(cmd)
 
         if (url != self.url):
