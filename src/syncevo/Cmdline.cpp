@@ -788,7 +788,12 @@ bool Cmdline::run() {
                 err = ops.m_deleteItem(&id);
                 CHECK_ERROR("deleting item");
             }
-            // NO err = ops.m_endDataWrite(), see import/update below.
+            char *token;
+            err = ops.m_endDataWrite(true, &token);
+            if (token) {
+                free(token);
+            }
+            CHECK_ERROR("stop writing items");
         } else {
             SyncSourceRaw *raw = dynamic_cast<SyncSourceRaw *>(source.get());
             if (!raw) {
@@ -881,12 +886,12 @@ bool Cmdline::run() {
                         m_out << insertItem(raw, "", content) << endl;
                     }
                 }
-
-                // NO err = ops.m_endDataWrite()! That's
-                // intentional. It ensures that for most (all?!)
-                // backends the change tracking isn't updated and thus
-                // future syncs see the imports/updates as changes
-                // made by the user.
+                char *token = NULL;
+                err = ops.m_endDataWrite(true, &token);
+                if (token) {
+                    free(token);
+                }
+                CHECK_ERROR("stop writing items");
             } else if (m_export) {
                 err = ops.m_startDataRead("", "");
                 CHECK_ERROR("reading items");
