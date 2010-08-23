@@ -31,6 +31,7 @@
 #include <extendedcalendar.h>
 #include <extendedstorage.h>
 #include <icalformat.h>
+#include <memorycalendar.h>
 
 #include <syncevo/SmartPtr.h>
 
@@ -300,7 +301,7 @@ void KCalExtendedSource::readItem(const string &uid, std::string &item)
     if (!incidence) {
         throwError(string("failure extracting ") + uid);
     }
-    KCalCore::Calendar::Ptr calendar(new mKCal::ExtendedCalendar(KDateTime::Spec::LocalZone()));
+    KCalCore::Calendar::Ptr calendar(new KCalCore::MemoryCalendar(KDateTime::Spec::LocalZone()));
     calendar->addIncidence(incidence);
     KCalCore::ICalFormat formatter;
     item = formatter.toString(calendar).toLocal8Bit().constData();
@@ -308,12 +309,14 @@ void KCalExtendedSource::readItem(const string &uid, std::string &item)
 
 TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string &uid, const std::string &item)
 {
-    mKCal::ExtendedCalendar::Ptr calendar(new mKCal::ExtendedCalendar(KDateTime::Spec::LocalZone()));
+    KCalCore::Calendar::Ptr calendar(new KCalCore::MemoryCalendar(KDateTime::Spec::LocalZone()));
     KCalCore::ICalFormat parser;
-    parser.fromString(calendar, QString(item.c_str()));
+    if (!parser.fromString(calendar, QString(item.c_str()))) {
+        throwError("error parsing iCalendar 2.0 item");
+    }
     KCalCore::Incidence::List incidences = calendar->rawIncidences();
     if (incidences.empty()) {
-        throwError("error parsing iCalendar 2.0 item");
+        throwError("iCalendar 2.0 item empty?!");
     }
     bool updated;
     string newUID;
@@ -335,12 +338,10 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
     }
 
     if (oldUID.empty()) {
-        // addInstance transfers ownership, need a copy
-        KCalCore::Incidence::Ptr tmp(incidences[0]->clone());
-        KCalCore::Incidence::Ptr incidence = tmp;
+        KCalCore::Incidence::Ptr incidence = incidences[0];
 
         updated = false;
-        if (!m_data->m_calendar->addIncidence(tmp)) {
+        if (!m_data->m_calendar->addIncidence(incidence)) {
             throwError("could not add incidence");
         }
         m_data->m_calendar->setNotebook(incidence, m_data->m_notebookUID);
