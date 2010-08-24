@@ -1024,6 +1024,12 @@ class DBusServer : public DBusObjectHelper,
      */
     void clientGone(Client *c);
 
+    /** Server.GetCapabilities() */
+    vector<string> getCapabilities();
+
+    /** Server.GetVersions() */
+    StringMap getVersions();
+
     /** Server.Attach() */
     void attachClient(const Caller_t &caller,
                       const boost::shared_ptr<Watch> &watch);
@@ -4609,6 +4615,31 @@ std::string DBusServer::getNextSession()
     return StringPrintf("%u%u", rand(), m_lastSession);
 }
 
+vector<string> DBusServer::getCapabilities()
+{
+    // Note that this is tested by test-dbus.py in
+    // TestDBusServer.testCapabilities, update the test when adding
+    // capabilities.
+    vector<string> capabilities;
+
+    // capabilities.push_back("ConfigChanged");
+    // capabilities.push_back("GetConfigName");
+    // capabilities.push_back("Notifications");
+    capabilities.push_back("Version");
+    // capabilities.push_back("SessionFlags");
+    return capabilities;
+}
+
+StringMap DBusServer::getVersions()
+{
+    StringMap versions;
+
+    versions["version"] = VERSION;
+    versions["system"] = EDSAbiWrapperInfo();
+    versions["backends"] = SyncSource::backendsInfo();
+    return versions;
+}
+
 void DBusServer::attachClient(const Caller_t &caller,
                               const boost::shared_ptr<Watch> &watch)
 {
@@ -4751,6 +4782,8 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     struct timeval tv;
     gettimeofday(&tv, NULL);
     srand(tv.tv_usec);
+    add(this, &DBusServer::getCapabilities, "GetCapabilities");
+    add(this, &DBusServer::getVersions, "GetVersions");
     add(this, &DBusServer::attachClient, "Attach");
     add(this, &DBusServer::detachClient, "Detach");
     add(this, &DBusServer::connect, "Connect");

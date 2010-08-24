@@ -44,6 +44,74 @@
       </doc:para>
     </doc:doc>
 
+    <method name="GetCapabilities">
+      <doc:doc>
+        <doc:description>
+          <doc:para>
+            Describes which features are implemented by the server. If the method itself
+            is unavailable, then the features correspond to SyncEvolution 1.0. The following
+            capabilities are currently defined:
+            <doc:list>
+              <doc:item><doc:term>ConfigChanged</doc:term>
+                <doc:definition>Server.ConfigChange
+                  signal available; if not, reread config after each
+                  session
+                </doc:definition>
+              </doc:item>
+             
+              <doc:item><doc:term>GetConfigName</doc:term>
+                <doc:definition>Session.GetConfigName()
+                  implemented
+                </doc:definition>
+              </doc:item>
+             
+              <doc:item><doc:term>Notifications</doc:term>
+                <doc:definition>Server.DisableNotifications()
+                  and Server.EnableNotifications() implemented
+                </doc:definition>
+              </doc:item>
+             
+              <doc:item><doc:term>Version</doc:term>
+                <doc:definition>Server.GetVersion()
+                  implemented; note that this is not meant to be used to determine supported
+                  features
+                </doc:definition>
+              </doc:item>
+             
+              <doc:item><doc:term>SessionFlags</doc:term>
+                <doc:definition>Server.StartSessionWithFlags()
+                  and Session.GetFlags() are implemented
+                </doc:definition>
+              </doc:item>
+            </doc:list>
+          </doc:para>
+        </doc:description>
+      </doc:doc>
+      <arg type="a{s}" name="capabilities" direction="out">
+        <doc:doc><doc:summary>
+          set of supported capabilities
+        </doc:summary></doc:doc>
+      </arg>
+    </method>
+
+    <method name="GetVersions">
+      <doc:doc>
+        <doc:description>
+          <doc:para>
+            Returns information about server side implementations.
+          </doc:para>
+        </doc:description>
+      </doc:doc>
+      <arg type="a{ss}" name="info" direction="out">
+        <doc:doc><doc:summary>
+            "version" - main SyncEvolution release name (usually a number,
+sometimes also a beta or alpha suffix),
+            "system" - some plain text information about system libraries,
+            "backends" - available backend libraries
+        </doc:summary></doc:doc>
+      </arg>
+    </method>  
+
     <method name="Attach">
       <doc:doc>
         <doc:description>

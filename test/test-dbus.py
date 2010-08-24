@@ -532,6 +532,17 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result)
 
+    def testCapabilities(self):
+        """check the Server.GetCapabilities() call"""
+        self.failUnlessEqual(self.server.GetCapabilities(), ['Version'])
+
+    def testVersions(self):
+        """check the Server.GetVersions() call"""
+        versions = self.server.GetVersions()
+        self.failIfEqual(versions["version"], "")
+        self.failIfEqual(versions["system"], None)
+        self.failIfEqual(versions["backends"], None)
+
     def testGetConfigsEmpty(self):
         """GetConfigs() with no configurations available"""
         configs = self.server.GetConfigs(False, utf8_strings=True)
