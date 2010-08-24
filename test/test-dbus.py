@@ -550,8 +550,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
                                        "Ovi",
                                        "ScheduleWorld",
                                        "SyncEvolution",
-                                       "Synthesis",
-                                       "ZYB"])
+                                       "Synthesis"])
 
     def testGetConfigScheduleWorld(self):
         """read ScheduleWorld template"""
