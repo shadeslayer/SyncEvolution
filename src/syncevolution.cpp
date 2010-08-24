@@ -169,10 +169,16 @@ private:
     void attachSync();
 
     /** 
-     * callback of 'Server.Attach'
-     * also set up a watch and add watch callback when the daemon is gone
+     * callback of 'Server.Attach':
+     * also set up a watch and add watch callback when the daemon is gone,
+     * then do version check before returning
      */
     void attachCb(const boost::shared_ptr<Watch> &watch, const string &error);
+
+    /**
+     * second half of attaching: check version and print warning
+     */
+    void versionCb(const StringMap &versions, const string &error);
 
     /** callback of 'Server.GetSessions' */
     void getSessionsCb(const vector<string> &sessions, const string &error);
@@ -636,13 +642,38 @@ void RemoteDBusServer::attachSync()
 
 void RemoteDBusServer::attachCb(const boost::shared_ptr<Watch> &watch, const string &error)
 {
-    replyInc();
     if(error.empty()) {
-        // don't print error information, leave it to caller
-        m_attached = true;
         //if attach is successful, watch server whether it is gone
         m_daemonWatch = watch;
         m_daemonWatch->setCallback(boost::bind(&RemoteDBusServer::daemonGone,this));
+
+        // don't print error information, leave it to caller
+        m_attached = true;
+
+        // do a version check now before calling replyInc()
+        DBusClientCall1< StringMap > getVersions(*this, "GetVersions");
+        getVersions(boost::bind(&RemoteDBusServer::versionCb, this, _1, _2));
+    } else {
+        // done with attach phase, skip version check
+        replyInc();
+    }
+}
+
+void RemoteDBusServer::versionCb(const StringMap &versions,
+                                 const string &error)
+{
+    replyInc();
+    if (!error.empty()) {
+        SE_LOG_DEBUG(NULL, NULL, "Server.GetVersions(): %s", error.c_str());
+    } else {
+        StringMap::const_iterator it = versions.find("version");
+        if (it != versions.end() &&
+            it->second != VERSION) {
+            SE_LOG_INFO(NULL, NULL,
+                        "proceeding despite version mismatch between command line client 'syncevolution' and 'syncevo-dbus-server' (%s != %s)",
+                        it->second.c_str(),
+                        VERSION);
+        }
     }
 }
 
