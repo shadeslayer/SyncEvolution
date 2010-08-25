@@ -1791,7 +1791,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
             connection.Process('1234', 'invalid message type')
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 'org.syncevolution.Exception: message type 'invalid message type' not supported for starting a sync')
+                                 "org.syncevolution.Exception: message type 'invalid message type' not supported for starting a sync")
         else:
             self.fail("no exception thrown")
         loop.run()
