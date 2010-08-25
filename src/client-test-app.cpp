@@ -198,10 +198,10 @@ public:
                 vector<string> subs;
                 boost::split (subs, conf.subConfigs, boost::is_any_of(","));
                 BOOST_FOREACH (string sub, subs) {
-                    m_localSource2Config.push_back (sub);
+                    pushLocalSource2Config(sub);
                 }
             } else {
-                m_localSource2Config.push_back (source);
+                pushLocalSource2Config(source);
             }
         }
         // get configuration and set obligatory fields
@@ -436,6 +436,20 @@ private:
         // must ensure that they are indeed TestingSyncSource instances
         SyncSource *ss = SyncSource::createSource(params);
         return static_cast<TestingSyncSource *>(ss);
+    }
+
+    // push source into localsource2config if it doesn't exist in the vector
+    void pushLocalSource2Config(const string &source) {
+        bool finded = false;
+        BOOST_FOREACH(string element, m_localSource2Config) {
+            if (boost::iequals(element, source)) {
+                finded = true;
+                break;
+            }
+        }
+        if (!finded) {
+            m_localSource2Config.push_back (source);
+        }
     }
 };
 
