@@ -1935,6 +1935,9 @@ public:
     /** Session.GetFlags() */
     std::vector<std::string> getFlags() { return m_flags; }
 
+    /** Session.GetConfigName() */
+    std::string getNormalConfigName() { return SyncConfig::normalizeConfigString(m_configName); }
+
     /** Session.SetConfig() */
     void setConfig(bool update, bool temporary,
                    const ReadOperations::Config_t &config);
@@ -3185,6 +3188,7 @@ Session::Session(DBusServer &server,
 {
     add(this, &Session::detach, "Detach");
     add(this, &Session::getFlags, "GetFlags");
+    add(this, &Session::getNormalConfigName, "GetConfigName");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getConfigs, "GetConfigs");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getConfig, "GetConfig");
     add(this, &Session::setConfig, "SetConfig");
@@ -4663,7 +4667,7 @@ vector<string> DBusServer::getCapabilities()
     vector<string> capabilities;
 
     // capabilities.push_back("ConfigChanged");
-    // capabilities.push_back("GetConfigName");
+    capabilities.push_back("GetConfigName");
     capabilities.push_back("Notifications");
     capabilities.push_back("Version");
     capabilities.push_back("SessionFlags");

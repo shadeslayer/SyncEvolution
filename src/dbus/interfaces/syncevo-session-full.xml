@@ -17,6 +17,26 @@
       </arg>
     </method>
 
+    <method name="GetConfigName">
+      <doc:doc>
+        <doc:description>
+          <doc:para>Get the configuration name of the session.</doc:para>
+          <doc:para>Every session is associated with a specific
+            configuration, as requested by the creator of the
+            session. This call returns the normalized configuration
+            name. Note that this may be different from the name used
+            when creating the configuration, because that name is not
+            required to be normalized. Therefore this method may be
+            useful both for the creator of the session and other
+            clients which cannot know the configuration name without
+            calling this method.</doc:para>
+        </doc:description>
+      </doc:doc>
+      <arg type="s" name="config" direction="out">
+        <doc:doc><doc:summary>peer configuration name</doc:summary></doc:doc>
+      </arg>
+    </method>  
+
     <method name="GetConfig">
       <doc:doc><doc:description>Get the configuration of the server</doc:description></doc:doc>
       <arg type="b" name="tmplate" direction="in">

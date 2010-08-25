@@ -539,7 +539,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """check the Server.GetCapabilities() call"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
-        self.failUnlessEqual(capabilities, ['Notifications', 'SessionFlags', 'Version'])
+        self.failUnlessEqual(capabilities, ['GetConfigName', 'Notifications', 'SessionFlags', 'Version'])
 
     def testVersions(self):
         """check the Server.GetVersions() call"""
@@ -893,12 +893,14 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
     def testCreateSession(self):
         """ask for session"""
         self.failUnlessEqual(self.session.GetFlags(), [])
+        self.failUnlessEqual(self.session.GetConfigName(), "@default");
 
     def testCreateSessionWithFlags(self):
-        """ask for session with some specific flags"""
+        """ask for session with some specific flags and config"""
         self.session.Detach()
-        self.sessionpath, self.session = self.createSession("", True, ["foo", "bar"])
+        self.sessionpath, self.session = self.createSession("FooBar@no-such-context", True, ["foo", "bar"])
         self.failUnlessEqual(self.session.GetFlags(), ["foo", "bar"])
+        self.failUnlessEqual(self.session.GetConfigName(), "foobar@no-such-context");
 
     @timeout(20)
     def testSecondSession(self):
