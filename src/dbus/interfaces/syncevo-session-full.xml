@@ -6,6 +6,17 @@
       <doc:para>Commands (other than Detach()) cannot be used before the status changes to "idle" (see GetStatus() and StatusChanged).</doc:para>
     </doc:description></doc:doc>
 
+    <method name="GetFlags">
+      <doc:doc>
+        <doc:description>
+          Get the session flags set with Server.StartSessionWithFlags().
+        </doc:description>
+      </doc:doc>
+      <arg type="a{s}" name="flags" direction="out">
+        <doc:doc><doc:summary>session flags</doc:summary></doc:doc>
+      </arg>
+    </method>
+
     <method name="GetConfig">
       <doc:doc><doc:description>Get the configuration of the server</doc:description></doc:doc>
       <arg type="b" name="tmplate" direction="in">

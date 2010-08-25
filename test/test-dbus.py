@@ -353,12 +353,15 @@ class DBusUtil(Timeout):
                                                     '/org/syncevolution/Server'),
                                      'org.syncevolution.Server')
 
-    def createSession(self, config, wait):
+    def createSession(self, config, wait, flags=[]):
         """Return sessionpath and session object for session using 'config'.
         A signal handler calls loop.quit() when this session becomes ready.
         If wait=True, then this call blocks until the session is ready.
         """
-        sessionpath = self.server.StartSession(config)
+        if flags:
+            sessionpath = self.server.StartSessionWithFlags(config, flags)
+        else:
+            sessionpath = self.server.StartSession(config)
 
         def session_ready(object, ready):
             if self.running and ready and object == sessionpath:
@@ -534,7 +537,9 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
 
     def testCapabilities(self):
         """check the Server.GetCapabilities() call"""
-        self.failUnlessEqual(self.server.GetCapabilities(), ['Version'])
+        capabilities = self.server.GetCapabilities()
+        capabilities.sort()
+        self.failUnlessEqual(capabilities, ['SessionFlags', 'Version'])
 
     def testVersions(self):
         """check the Server.GetVersions() call"""
@@ -887,7 +892,13 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
 
     def testCreateSession(self):
         """ask for session"""
-        pass
+        self.failUnlessEqual(self.session.GetFlags(), [])
+
+    def testCreateSessionWithFlags(self):
+        """ask for session with some specific flags"""
+        self.session.Detach()
+        self.sessionpath, self.session = self.createSession("", True, ["foo", "bar"])
+        self.failUnlessEqual(self.session.GetFlags(), ["foo", "bar"])
 
     @timeout(20)
     def testSecondSession(self):

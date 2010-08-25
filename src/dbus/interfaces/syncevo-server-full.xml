@@ -382,10 +382,36 @@ sometimes also a beta or alpha suffix),
       <doc:doc><doc:description>
         Start a session. The object is created instantly but will not be
         ready for method calls until status changes from "queueing" to "idle".
-        The Detach() method can be called before that.
+        The Detach() method can be called before that. Same as StartSessionWithFlags()
+        without any flags set.
       </doc:description></doc:doc>
-      <arg type="s" name="server" direction="in">
-        <doc:doc><doc:summary>server name</doc:summary></doc:doc>
+      <arg type="s" name="config" direction="in">
+        <doc:doc><doc:summary>name of configuration to be created or used in session</doc:summary></doc:doc>
+      </arg>
+      <arg type="o" name="session" direction="out">
+        <doc:doc><doc:summary>session D-Bus object path</doc:summary></doc:doc>
+      </arg>
+    </method>
+
+    <method name="StartSessionWithFlags">
+      <doc:doc><doc:description>
+        Start a session. The object is created instantly but will not be
+        ready for method calls until status changes from "queueing" to "idle".
+        The Detach() method can be called before that. Additional flags,
+        identified by strings, can be passed to control the session creation.
+        They can be retrieved with Session.GetFlags(). The following flags are
+        currently defined:
+        <doc:list>
+          <doc:item><doc:term>no-sync</doc:term>
+            <doc:definition>session will not be used for running a synchronization</doc:definition>
+          </doc:item>
+        </doc:list>
+      </doc:description></doc:doc>
+      <arg type="s" name="config" direction="in">
+        <doc:doc><doc:summary>name of configuration to be created or used in session</doc:summary></doc:doc>
+      </arg>
+      <arg type="a{s}" name="flags" direction="in">
+        <doc:doc><doc:summary>optional flags</doc:summary></doc:doc>
       </arg>
       <arg type="o" name="session" direction="out">
         <doc:doc><doc:summary>session D-Bus object path</doc:summary></doc:doc>

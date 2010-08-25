@@ -1049,7 +1049,16 @@ class DBusServer : public DBusObjectHelper,
     void startSession(const Caller_t &caller,
                       const boost::shared_ptr<Watch> &watch,
                       const std::string &server,
-                      DBusObject_t &object);
+                      DBusObject_t &object) {
+        startSessionWithFlags(caller, watch, server, std::vector<std::string>(), object);
+    }
+
+    /** Server.StartSessionWithFlags() */
+    void startSessionWithFlags(const Caller_t &caller,
+                               const boost::shared_ptr<Watch> &watch,
+                               const std::string &server,
+                               const std::vector<std::string> &flags,
+                               DBusObject_t &object);
 
     /** Server.GetConfig() */
     void getConfig(const std::string &config_name,
@@ -1671,6 +1680,7 @@ class Session : public DBusObjectHelper,
                 private boost::noncopyable
 {
     DBusServer &m_server;
+    std::vector<std::string> m_flags;
     const std::string m_sessionID;
     std::string m_peerDeviceID;
 
@@ -1827,7 +1837,8 @@ public:
     Session(DBusServer &server,
             const std::string &peerDeviceID,
             const std::string &config_name,
-            const std::string &session);
+            const std::string &session,
+            const std::vector<std::string> &flags = std::vector<std::string>());
     ~Session();
 
     enum {
@@ -1896,6 +1907,9 @@ public:
     string askPassword(const string &passwordName, 
                        const string &descr, 
                        const ConfigPasswordKey &key);
+
+    /** Session.GetFlags() */
+    std::vector<std::string> getFlags() { return m_flags; }
 
     /** Session.SetConfig() */
     void setConfig(bool update, bool temporary,
@@ -3112,13 +3126,15 @@ string Session::syncStatusToString(SyncStatus state)
 Session::Session(DBusServer &server,
                  const std::string &peerDeviceID,
                  const std::string &config_name,
-                 const std::string &session) :
+                 const std::string &session,
+                 const std::vector<std::string> &flags) :
     DBusObjectHelper(server.getConnection(),
                      std::string("/org/syncevolution/Session/") + session,
                      "org.syncevolution.Session",
                      boost::bind(&DBusServer::autoTermCallback, &server)),
     ReadOperations(config_name, server),
     m_server(server),
+    m_flags(flags),
     m_sessionID(session),
     m_peerDeviceID(peerDeviceID),
     m_serverMode(false),
@@ -3144,6 +3160,7 @@ Session::Session(DBusServer &server,
     emitProgress(*this, "ProgressChanged")
 {
     add(this, &Session::detach, "Detach");
+    add(this, &Session::getFlags, "GetFlags");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getConfigs, "GetConfigs");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getConfig, "GetConfig");
     add(this, &Session::setConfig, "SetConfig");
@@ -4626,7 +4643,7 @@ vector<string> DBusServer::getCapabilities()
     // capabilities.push_back("GetConfigName");
     // capabilities.push_back("Notifications");
     capabilities.push_back("Version");
-    // capabilities.push_back("SessionFlags");
+    capabilities.push_back("SessionFlags");
     return capabilities;
 }
 
@@ -4718,10 +4735,11 @@ void DBusServer::connect(const Caller_t &caller,
     object = c->getPath();
 }
 
-void DBusServer::startSession(const Caller_t &caller,
-                              const boost::shared_ptr<Watch> &watch,
-                              const std::string &server,
-                              DBusObject_t &object)
+void DBusServer::startSessionWithFlags(const Caller_t &caller,
+                                       const boost::shared_ptr<Watch> &watch,
+                                       const std::string &server,
+                                       const std::vector<std::string> &flags,
+                                       DBusObject_t &object)
 {
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
@@ -4730,7 +4748,8 @@ void DBusServer::startSession(const Caller_t &caller,
     boost::shared_ptr<Session> session(new Session(*this,
                                                    "is this a client or server session?",
                                                    server,
-                                                   new_session));
+                                                   new_session,
+                                                   flags));
     client->attach(session);
     session->activate();
     enqueue(session);
@@ -4788,6 +4807,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(this, &DBusServer::detachClient, "Detach");
     add(this, &DBusServer::connect, "Connect");
     add(this, &DBusServer::startSession, "StartSession");
+    add(this, &DBusServer::startSessionWithFlags, "StartSessionWithFlags");
     add(this, &DBusServer::getConfigs, "GetConfigs");
     add(this, &DBusServer::getConfig, "GetConfig");
     add(this, &DBusServer::getReports, "GetReports");
