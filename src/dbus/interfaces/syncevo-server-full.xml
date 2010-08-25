@@ -87,7 +87,7 @@
           </doc:para>
         </doc:description>
       </doc:doc>
-      <arg type="a{s}" name="capabilities" direction="out">
+      <arg type="a(s)" name="capabilities" direction="out">
         <doc:doc><doc:summary>
           set of supported capabilities
         </doc:summary></doc:doc>
@@ -444,7 +444,7 @@ sometimes also a beta or alpha suffix),
       <arg type="s" name="config" direction="in">
         <doc:doc><doc:summary>name of configuration to be created or used in session</doc:summary></doc:doc>
       </arg>
-      <arg type="a{s}" name="flags" direction="in">
+      <arg type="a(s)" name="flags" direction="in">
         <doc:doc><doc:summary>optional flags</doc:summary></doc:doc>
       </arg>
       <arg type="o" name="session" direction="out">

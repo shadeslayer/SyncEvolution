@@ -12,7 +12,7 @@
           Get the session flags set with Server.StartSessionWithFlags().
         </doc:description>
       </doc:doc>
-      <arg type="a{s}" name="flags" direction="out">
+      <arg type="a(s)" name="flags" direction="out">
         <doc:doc><doc:summary>session flags</doc:summary></doc:doc>
       </arg>
     </method>
