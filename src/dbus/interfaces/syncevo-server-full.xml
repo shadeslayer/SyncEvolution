@@ -142,6 +142,40 @@ sometimes also a beta or alpha suffix),
       </doc:doc>
     </method>
 
+    <method name="DisableNotifications">
+      <doc:doc>
+        <doc:description>
+          Prevents showing of user visible notifications by the
+          syncevo-dbus-server. Must be called while the client is
+          attached to the server. Notifications will be disabled
+          until the client detaches or calls EnableNotifications().
+          The calls cannot be nested, so calling
+          DisableNotifications()/DisableNoticiations()/EnableNotifications()
+          will enable notifications.
+        </doc:description>
+      </doc:doc>
+      <arg type="s" name="notifications" direction="in">
+        <doc:doc><doc:summary>
+            describes the notifications which are to be disabled; currently
+            ignored by server, pass empty string
+        </doc:summary></doc:doc>
+      </arg>
+    </method>
+
+    <method name="EnableNotifications">
+      <doc:doc>
+        <doc:description>
+          Allows showing of user visible notifications again.
+        </doc:description>
+      </doc:doc>
+      <arg type="s" name="notifications" direction="in">
+        <doc:doc><doc:summary>
+            describes the notifications which are to be ensabled; currently
+            ignored by server, pass empty string
+        </doc:summary></doc:doc>
+      </arg>
+    </method>
+
     <method name ="GetConfigs">
       <doc:doc><doc:description>
         <doc:para>

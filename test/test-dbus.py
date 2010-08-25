@@ -539,7 +539,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """check the Server.GetCapabilities() call"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
-        self.failUnlessEqual(capabilities, ['SessionFlags', 'Version'])
+        self.failUnlessEqual(capabilities, ['Notifications', 'SessionFlags', 'Version'])
 
     def testVersions(self):
         """check the Server.GetVersions() call"""

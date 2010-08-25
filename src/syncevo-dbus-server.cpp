@@ -951,12 +951,6 @@ class DBusServer : public DBusObjectHelper,
     typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
     Clients_t m_clients;
 
-    /* clients that attach the server explicitly
-     * the pair is <client id, attached times>. Each attach has
-     * to be matched with one detach.
-     */
-    std::list<std::pair<Caller_t, int> > m_attachedClients;
-
     /* Event source that regurally pool network manager
      * */
     GLibEvent m_pollConnman;
@@ -1036,6 +1030,23 @@ class DBusServer : public DBusObjectHelper,
 
     /** Server.Detach() */
     void detachClient(const Caller_t &caller);
+
+    /** Server.DisableNotifications() */
+    void disableNotifications(const Caller_t &caller,
+                              const string &notifications) {
+        setNotifications(false, caller, notifications);
+    }
+
+    /** Server.EnableNotifications() */
+    void enableNotifications(const Caller_t &caller,
+                             const string &notifications) {
+        setNotifications(true, caller, notifications);
+    }
+
+    /** actual implementation of enable and disable */
+    void setNotifications(bool enable,
+                          const Caller_t &caller,
+                          const string &notifications);
 
     /** Server.Connect() */
     void connect(const Caller_t &caller,
@@ -1126,12 +1137,6 @@ class DBusServer : public DBusObjectHelper,
 
     /** remove InfoReq from hash map */
     void removeInfoReq(const InfoReq &req);
-
-    /*
-     * Decrease refs for a client. If allRefs, it tries to remove all refs from 'Attach()'
-     * for the client. Otherwise, decrease one ref for the client.
-     */
-    void detachClientRefs(const Caller_t &caller, bool allRefs);
 
     /** Server.SessionChanged */
     EmitSignal2<const DBusObject_t &,
@@ -1283,6 +1288,11 @@ public:
     AutoSyncManager &getAutoSyncManager() { return m_autoSync; }
 
     /**
+     * false if any client requested suppression of notifications
+     */
+    bool notificationsEnabled();
+
+    /**
      * implement virtual method from LogStdout.
      * Not only print the message in the console
      * but also send them as signals to clients
@@ -1306,10 +1316,18 @@ class Client
     typedef std::list< boost::shared_ptr<Resource> > Resources_t;
     Resources_t m_resources;
 
+    /** counts how often a client has called Attach() without Detach() */
+    int m_attachCount;
+
+    /** current client setting for notifications (see HAS_NOTIFY) */
+    bool m_notificationsEnabled;
+
 public:
     const Caller_t m_ID;
 
     Client(const Caller_t &ID) :
+        m_attachCount(0),
+        m_notificationsEnabled(true),
         m_ID(ID)
     {}
 
@@ -1317,7 +1335,13 @@ public:
     {
         SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s is destructing", m_ID.c_str());
     }
-        
+
+    void increaseAttachCount() { ++m_attachCount; }
+    void decreaseAttachCount() { --m_attachCount; }
+    int getAttachCount() const { return m_attachCount; }
+
+    void setNotificationsEnabled(bool enabled) { m_notificationsEnabled = enabled; }
+    bool getNotificationsEnabled() const { return m_notificationsEnabled; }
 
     /**
      * Attach a specific resource to this client. As long as the
@@ -4611,12 +4635,11 @@ void DBusServer::clientGone(Client *c)
         if (it->second.get() == c) {
             SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s has disconnected",
                          c->m_ID.c_str());
+            autoTermUnref(it->second->getAttachCount());
             m_clients.erase(it);
             return;
         }
     }
-    // remove the client if it attaches the dbus server
-    detachClientRefs(c->m_ID, true);
     SE_LOG_DEBUG(NULL, NULL, "unknown client has disconnected?!");
 }
 
@@ -4641,7 +4664,7 @@ vector<string> DBusServer::getCapabilities()
 
     // capabilities.push_back("ConfigChanged");
     // capabilities.push_back("GetConfigName");
-    // capabilities.push_back("Notifications");
+    capabilities.push_back("Notifications");
     capabilities.push_back("Version");
     capabilities.push_back("SessionFlags");
     return capabilities;
@@ -4663,44 +4686,41 @@ void DBusServer::attachClient(const Caller_t &caller,
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
                                                  watch);
-    std::list<std::pair<Caller_t, int> >::iterator it;
-    for(it = m_attachedClients.begin(); it != m_attachedClients.end(); ++it) {
-        if (it->first == caller) {
-            break;
-        }
-    }
     autoTermRef();
-    // if not attach before, then create it
-    if(it == m_attachedClients.end()) {
-        m_attachedClients.push_back(std::pair<Caller_t, int>(caller, 1));
-        watch->setCallback(boost::bind(&DBusServer::clientGone, this, client.get()));
-    } else {
-        it->second++;
-    }
+    client->increaseAttachCount();
 }
 
 void DBusServer::detachClient(const Caller_t &caller)
 {
-    detachClientRefs(caller, false);
+    boost::shared_ptr<Client> client = findClient(caller);
+    if (client) {
+        autoTermUnref();
+        client->decreaseAttachCount();
+    }
 }
 
-void DBusServer::detachClientRefs(const Caller_t &caller, bool allRefs)
+void DBusServer::setNotifications(bool enabled,
+                                  const Caller_t &caller,
+                                  const string & /* notifications */)
 {
-    std::list<std::pair<Caller_t, int> >::iterator it;
-    for(it = m_attachedClients.begin(); it != m_attachedClients.end(); ++it) {
-        if (it->first == caller) {
-            if(allRefs) {
-                autoTermUnref(it->second);
-                m_attachedClients.erase(it);
-            } else if(--it->second == 0) {
-                autoTermUnref();
-                m_attachedClients.erase(it);
-            } else {
-                autoTermUnref();
-            }
-            break;
+    boost::shared_ptr<Client> client = findClient(caller);
+    if (client && client->getAttachCount()) {
+        client->setNotificationsEnabled(enabled);
+    } else {
+        SE_THROW("client not attached, not allowed to change notifications");
+    }
+}
+
+bool DBusServer::notificationsEnabled()
+{
+    for(Clients_t::iterator it = m_clients.begin();
+        it != m_clients.end();
+        ++it) {
+        if (!it->second->getNotificationsEnabled()) {
+            return false;
         }
     }
+    return true;
 }
 
 void DBusServer::connect(const Caller_t &caller,
@@ -4805,6 +4825,8 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(this, &DBusServer::getVersions, "GetVersions");
     add(this, &DBusServer::attachClient, "Attach");
     add(this, &DBusServer::detachClient, "Detach");
+    add(this, &DBusServer::enableNotifications, "EnableNotifications");
+    add(this, &DBusServer::disableNotifications, "DisableNotifications");
     add(this, &DBusServer::connect, "Connect");
     add(this, &DBusServer::startSession, "StartSession");
     add(this, &DBusServer::startSessionWithFlags, "StartSessionWithFlags");
@@ -4832,7 +4854,6 @@ DBusServer::~DBusServer()
     m_syncSession.reset();
     m_workQueue.clear();
     m_clients.clear();
-    m_attachedClients.clear();
     LoggerBase::popLogger();
 }
 
@@ -5727,10 +5748,12 @@ void AutoSyncManager::syncSuccessStart()
     m_syncSuccessStart = true;
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been successfully started.\n", m_activeTask->m_peer.c_str());
 #ifdef HAS_NOTIFY
-    string summary = StringPrintf(_("%s is syncing"), m_activeTask->m_peer.c_str());
-    string body = StringPrintf(_("We have just started to sync your computer with the %s sync service."), m_activeTask->m_peer.c_str());
-    //TODO: set config information for 'sync-ui'
-    m_notify.send(summary.c_str(), body.c_str());
+    if (m_server.notificationsEnabled()) {
+        string summary = StringPrintf(_("%s is syncing"), m_activeTask->m_peer.c_str());
+        string body = StringPrintf(_("We have just started to sync your computer with the %s sync service."), m_activeTask->m_peer.c_str());
+        //TODO: set config information for 'sync-ui'
+        m_notify.send(summary.c_str(), body.c_str());
+    }
 #endif
 }
 
@@ -5738,21 +5761,23 @@ void AutoSyncManager::syncDone(SyncMLStatus status)
 {
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been done.\n", m_activeTask->m_peer.c_str());
 #ifdef HAS_NOTIFY
-    // send a notification to notification server
-    string summary, body;
-    if(m_syncSuccessStart && status == STATUS_OK) {
-        // if sync is successfully started and done
-        summary = StringPrintf(_("%s sync complete"), m_activeTask->m_peer.c_str());
-        body = StringPrintf(_("We have just finished syncing your computer with the %s sync service."), m_activeTask->m_peer.c_str());
-        //TODO: set config information for 'sync-ui'
-        m_notify.send(summary.c_str(), body.c_str());
-    } else if(m_syncSuccessStart || (!m_syncSuccessStart && status == STATUS_FATAL)) {
-        //if sync is successfully started and has errors, or not started successful with a fatal problem
-        summary = StringPrintf(_("Sync problem."));
-        body = StringPrintf(_("Sorry, there's a problem with your sync that you need to attend to."));
-        //TODO: set config information for 'sync-ui'
-        m_notify.send(summary.c_str(), body.c_str());
-    } 
+    if (m_server.notificationsEnabled()) {
+        // send a notification to notification server
+        string summary, body;
+        if(m_syncSuccessStart && status == STATUS_OK) {
+            // if sync is successfully started and done
+            summary = StringPrintf(_("%s sync complete"), m_activeTask->m_peer.c_str());
+            body = StringPrintf(_("We have just finished syncing your computer with the %s sync service."), m_activeTask->m_peer.c_str());
+            //TODO: set config information for 'sync-ui'
+            m_notify.send(summary.c_str(), body.c_str());
+        } else if(m_syncSuccessStart || (!m_syncSuccessStart && status == STATUS_FATAL)) {
+            //if sync is successfully started and has errors, or not started successful with a fatal problem
+            summary = StringPrintf(_("Sync problem."));
+            body = StringPrintf(_("Sorry, there's a problem with your sync that you need to attend to."));
+            //TODO: set config information for 'sync-ui'
+            m_notify.send(summary.c_str(), body.c_str());
+        }
+    }
 #endif
     m_session.reset();
     m_activeTask.reset();
