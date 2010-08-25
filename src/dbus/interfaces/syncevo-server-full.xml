@@ -609,6 +609,15 @@ sometimes also a beta or alpha suffix),
       </doc:doc>
     </signal>
 
+    <signal name="ConfigChanged">
+      <doc:doc>
+        <doc:description>
+          Configuration added, updated or removed. To find out more,
+          request list of configurations anew.
+      </doc:description>
+      </doc:doc>
+    </signal>
+
     <signal name="Presence">
       <doc:doc>
         <doc:description>

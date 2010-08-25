@@ -442,6 +442,21 @@ class DBusUtil(Timeout):
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
+    def setUpConfigListeners(self):
+        """records ConfigChanged signal and records it in DBusUtil.events, then quits the loop"""
+
+        def config():
+            if self.running:
+                DBusUtil.events.append("ConfigChanged")
+                loop.quit()
+
+        bus.add_signal_receiver(config,
+                                'ConfigChanged',
+                                'org.syncevolution.Server',
+                                'org.syncevolution',
+                                byte_arrays=True, 
+                                utf8_strings=True)
+
     def setUpConnectionListeners(self, conpath):
         """records connection signals (abort and reply), quits when
         getting an abort"""
@@ -539,7 +554,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """check the Server.GetCapabilities() call"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
-        self.failUnlessEqual(capabilities, ['GetConfigName', 'Notifications', 'SessionFlags', 'Version'])
+        self.failUnlessEqual(capabilities, ['ConfigChanged', 'GetConfigName', 'Notifications', 'SessionFlags', 'Version'])
 
     def testVersions(self):
         """check the Server.GetVersions() call"""
@@ -1107,14 +1122,21 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         else:
             self.fail("no exception thrown")
 
+    @timeout(20)
     def testCreateGetConfig(self):
         """ test the config is created successfully. """
+        self.setUpConfigListeners()
         self.config[""]["username"] = "creategetconfig"
         self.config[""]["password"] = "112233445566778"
         self.setupConfig()
         """ get config and compare """
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config, self.config)
+        # terminate session and check whether a "config changed" signal
+        # was sent as required
+        self.session.Detach()
+        loop.run()
+        self.failUnlessEqual(DBusUtil.events, ["ConfigChanged"])
 
     def testUpdateConfig(self):
         """ test the config is permenantly updated correctly. """

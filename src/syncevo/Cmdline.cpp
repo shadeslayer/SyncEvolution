@@ -702,6 +702,7 @@ bool Cmdline::run() {
         to->preFlush(*to);
 
         // done, now write it
+        m_configModified = true;
         to->flush();
 
         // also copy .synthesis dir?
@@ -731,6 +732,7 @@ bool Cmdline::run() {
                 SyncContext::throwError(string("no such configuration: ") + m_server);
             }
             config->remove();
+            m_configModified = true;
             return true;
         }
     } else if (m_accessItems) {

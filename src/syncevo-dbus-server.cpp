@@ -1153,6 +1153,12 @@ class DBusServer : public DBusObjectHelper,
      */
     EmitSignal0 templatesChanged;
 
+    /**
+     * Server.ConfigChanged, triggered each time a session ends
+     * which modified its configuration
+     */
+    EmitSignal0 configChanged;
+
     /** Server.InfoRequest */
     EmitSignal6<const std::string &,
                 const DBusObject_t &,
@@ -1725,7 +1731,10 @@ class Session : public DBusObjectHelper,
     /** whether dbus clients set temporary configs */
     bool m_tempConfig;
 
-    /** whether dbus clients update or clear configs, not include temporary set */
+    /**
+     * whether the dbus clients updated, removed or cleared configs,
+     * ignoring temporary configuration changes
+     */
     bool m_setConfig;
 
     /**
@@ -2087,6 +2096,8 @@ public:
         // before closing the session
         redirectPtr->flush();
     }
+
+    bool configWasModified() { return m_cmdline.configWasModified(); }
 };
 
 /**
@@ -2928,6 +2939,7 @@ void Session::setConfig(bool update, bool temporary,
         boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(getConfigName()));
         if(syncConfig.get()) {
             syncConfig->remove();
+            m_setConfig = true;
         }
         return;
     }
@@ -3214,6 +3226,11 @@ Session::~Session()
         m_server.getAutoSyncManager().update(m_configName);
     }
     m_server.dequeue(this);
+
+    // now tell other clients about config change?
+    if (m_setConfig) {
+        m_server.configChanged();
+    }
 }
     
 
@@ -3410,6 +3427,8 @@ void Session::run()
                         m_error = status;
                     }
                 }
+                m_setConfig = m_cmdline->configWasModified();
+                break;
             default:
                 break;
             };
@@ -4666,7 +4685,7 @@ vector<string> DBusServer::getCapabilities()
     // capabilities.
     vector<string> capabilities;
 
-    // capabilities.push_back("ConfigChanged");
+    capabilities.push_back("ConfigChanged");
     capabilities.push_back("GetConfigName");
     capabilities.push_back("Notifications");
     capabilities.push_back("Version");
@@ -4814,6 +4833,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     sessionChanged(*this, "SessionChanged"),
     presence(*this, "Presence"),
     templatesChanged(*this, "TemplatesChanged"),
+    configChanged(*this, "ConfigChanged"),
     infoRequest(*this, "InfoRequest"),
     logOutput(*this, "LogOutput"),
     m_presence(*this),
@@ -4844,6 +4864,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(this, &DBusServer::infoResponse, "InfoResponse");
     add(sessionChanged);
     add(templatesChanged);
+    add(configChanged);
     add(presence);
     add(infoRequest);
     add(logOutput);

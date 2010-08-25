@@ -70,6 +70,9 @@ public:
 
     bool run();
 
+    /** the run() call modified configurations (added, updated, removed) */
+    bool configWasModified() const { return m_configModified; }
+
     /**
      * Acts like a boolean, but in addition, can also tell whether the
      * value was explicitly set.
@@ -143,6 +146,9 @@ protected:
     string m_server;
     string m_template;
     set<string> m_sources;
+
+    /** running the command line modified configuration settings (add, update, remove) */
+    Bool m_configModified;
 
     /** compose description of cmd line option with optional parameter */
     static string cmdOpt(const char *opt, const char *param = NULL);
