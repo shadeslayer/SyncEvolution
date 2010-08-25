@@ -3232,7 +3232,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5)> >
     typedef boost::function<Mptr> M;
 
     template <class I, class C> static M boostptr(Mptr C::*method, I instance) {
-        return boost::bind(method, instance, _1, _2, _3, _4, _5, _6, _7, _8);
+        return boost::bind(method, instance, _1, _2, _3, _4, _5);
     }
 
     static const bool asynchronous = DBusResult5<A1, A2, A3, A4, A5>::asynchronous;
