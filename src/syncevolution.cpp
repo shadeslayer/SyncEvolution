@@ -766,8 +766,12 @@ bool RemoteDBusServer::execute(const vector<string> &args, const string &peer, b
     //3) execute 'arguments' once it is active
 
     // start a new session
-    DBusClientCall1<DBusObject_t> call(*this, "StartSession");
-    call(peer, boost::bind(&RemoteDBusServer::startSessionCb, this, _1, _2));
+    DBusClientCall1<DBusObject_t> startSession(*this, "StartSessionWithFlags");
+    std::vector<std::string> flags;
+    if (!runSync) {
+        flags.push_back("no-sync");
+    }
+    startSession(peer, flags, boost::bind(&RemoteDBusServer::startSessionCb, this, _1, _2));
 
     // wait until 'StartSession' returns
     resetReplies();
@@ -844,6 +848,9 @@ void RemoteDBusServer::startSessionCb(const DBusObject_t &sessionPath, const str
     replyInc();
     if(!error.empty()) {
         SE_LOG_ERROR(NULL, NULL, "starting D-Bus session failed: %s", error.c_str());
+        if (error.find("org.freedesktop.DBus.Error.UnknownMethod") != error.npos) {
+            SE_LOG_INFO(NULL, NULL, "syncevo-dbus-server is most likely too old");
+        }
         m_result = false;
         g_main_loop_quit(m_loop);
         return;
