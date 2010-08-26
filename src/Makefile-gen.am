@@ -279,10 +279,7 @@ testcase2patch: $(TEST_FILES_GENERATED)
 	done
 
 # copy base test files
-$(filter-out %.tem testcases/templates/%, $(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_LIB_TEST_FILES)))) : % : $(srcdir)/../test/%
-	mkdir -p ${@D}
-	cp $< $@
-$(filter testcases/templates/%, $(CLIENT_LIB_TEST_FILES)) : testcases/% : $(srcdir)/%
+$(filter-out %.tem, $(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_LIB_TEST_FILES)))) : % : $(srcdir)/../test/%
 	mkdir -p ${@D}
 	cp $< $@
 
