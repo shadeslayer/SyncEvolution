@@ -669,6 +669,7 @@ class TestingConfiguration():
                 print "fingerprint = <Model> <Manufacturer>"
                 print "=== config.ini ==="
                 print hash2ini(configini)
+                print "consumerReady = 1"
                 for source, configini in sourceConfigInis.items():
                     print "=== sources/%s/config.ini ===" % source
                     print hash2ini(configini)
