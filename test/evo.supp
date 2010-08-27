@@ -78,13 +78,38 @@
 # ==10986==    by 0x804DD30: (within /tmp/runtests/head/tmp/build/src/client-test)
 # ==10986==    by 0x812EAA8: __libc_csu_init (in /tmp/runtests/head/tmp/build/src/client-test)
 {
-   g_type_init
+   g_type_init, g_type_create
    Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   obj:*libgobject-2.0*
-   obj:*libgobject-2.0*
-   fun:g_type_init_with_debug_flags
+   ...
+   fun:g_type_*
+}
+
+# ==13528== 64 bytes in 1 blocks are possibly lost in loss record 489 of 780
+# ==13528==    at 0x4C245E2: realloc (vg_replace_malloc.c:525)
+# ==13528==    by 0x643233E: g_realloc (in /lib/libglib-2.0.so.0.2400.1)
+# ==13528==    by 0x5FC70BA: ??? (in /usr/lib/libgobject-2.0.so.0.2400.1)
+# ==13528==    by 0x5FCA374: g_type_register_static (in /usr/lib/libgobject-2.0.so.0.2400.1)
+# ==13528==    by 0x5FCA407: g_type_register_static_simple (in /usr/lib/libgobject-2.0.so.0.2400.1)
+# ==13528==    by 0x5058230: e_book_get_type (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==13528==    by 0x505835F: e_book_new (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==13528==    by 0x50587A7: e_book_new_from_uri (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==13528==    by 0x59815F: SyncEvo::EvolutionContactSource::open() (EvolutionContactSource.cpp:168)
+# ==13528==    by 0x4E46D8: SyncEvo::LocalTests::testOpen() (ClientTest.cpp:532)
+# ==13528==    by 0x595B406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x594D7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x5957278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x5956FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x5962D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x595B09C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x5962B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x5965121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x596813A: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==13528==    by 0x586B2B: main (client-test-main.cpp:271)
+{
+   g_type_register
+   Memcheck:Leak
+   ...
+   fun:g_type_register*
 }
 
 ##### clients #####
@@ -1183,21 +1208,69 @@
 {
    e_cal_new IV
    Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   fun:ORBit_POA_new
-   fun:ORBit_POA_new_from
-   fun:bonobo_poa_new_from
-   fun:bonobo_poa_get_threadedv
-   fun:bonobo_poa_get_threaded
-   fun:e_cal_listener_new
-   fun:e_cal_init
-   fun:g_type_create_instance
-   fun:g_object_constructor
-   fun:g_object_newv
-   fun:g_object_new_valist
-   fun:g_object_new
-   fun:e_cal_new
+   ...
+   fun:g_object_*
+   fun:e_cal_new*
+}
+{
+   e_cal_new V
+   Memcheck:Leak
+   ...
+   fun:g_signal*
+   fun:e_cal_new*
+}
+{
+   e_book_new + g_object
+   Memcheck:Leak
+   ...
+   fun:g_object_*
+   fun:e_book_new*
+}
+{
+   e_book_new + g_signal
+   Memcheck:Leak
+   ...
+   fun:g_signal_*
+   fun:e_book_new*
+}
+
+# ==18590== 49 bytes in 1 blocks are definitely lost in loss record 481 of 799
+# ==18590==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==18590==    by 0x6432504: g_malloc (in /lib/libglib-2.0.so.0.2400.1)
+# ==18590==    by 0x6449D7D: g_strdup (in /lib/libglib-2.0.so.0.2400.1)
+# ==18590==    by 0x5FAB052: g_boxed_copy (in /usr/lib/libgobject-2.0.so.0.2400.1)
+# ==18590==    by 0x5FAB8AD: g_value_set_boxed (in /usr/lib/libgobject-2.0.so.0.2400.1)
+# ==18590==    by 0x8BF8639: ??? (in /usr/lib/libdbus-glib-1.so.2.1.0)
+# ==18590==    by 0x8BF6904: ??? (in /usr/lib/libdbus-glib-1.so.2.1.0)
+# ==18590==    by 0x8BF1F04: ??? (in /usr/lib/libdbus-glib-1.so.2.1.0)
+# ==18590==    by 0x8BF2A42: dbus_g_proxy_call (in /usr/lib/libdbus-glib-1.so.2.1.0)
+# ==18590==    by 0x528CDB5: e_cal_new (in /usr/lib/libecal-1.2.so.7.2.2)
+# ==18590==    by 0x528D2DB: e_cal_new_from_uri (in /usr/lib/libecal-1.2.so.7.2.2)
+# ==18590==    by 0x5A0E8E: SyncEvo::EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:187)
+{
+    libecal + D-Bus leaks
+    Memcheck:Leak
+    ...
+    fun:dbus_g_*
+    fun:e_cal_*
+}
+
+# ==28758== 3 bytes in 1 blocks are possibly lost in loss record 31 of 10,032
+# ==28758==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==28758==    by 0x6432504: g_malloc (in /lib/libglib-2.0.so.0.2400.1)
+# ==28758==    by 0x6449D7D: g_strdup (in /lib/libglib-2.0.so.0.2400.1)
+# ==28758==    by 0x54CA34C: e_source_update_from_xml_node (in /usr/lib/libedataserver-1.2.so.13.0.1)
+# ==28758==    by 0x54CB8FD: e_source_new_from_xml_node (in /usr/lib/libedataserver-1.2.so.13.0.1)
+# ==28758==    by 0x54C7BE7: e_source_group_new_from_xmldoc (in /usr/lib/libedataserver-1.2.so.13.0.1)
+# ==28758==    by 0x54C8D8F: ??? (in /usr/lib/libedataserver-1.2.so.13.0.1)
+# ==28758==    by 0x54C9874: e_source_list_new_for_gconf (in /usr/lib/libedataserver-1.2.so.13.0.1)
+# ==28758==    by 0x5283EEB: ??? (in /usr/lib/libecal-1.2.so.7.2.2)
+# ==28758==    by 0x5A0AED: SyncEvo::EvolutionCalendarSource::open() (EvolutionCalendarSource.cpp:173)
+{
+    e_source_list_new_for_gconf
+    Memcheck:Leak
+    ...
+    fun:e_source_list_new_for_gconf
 }
 
 # ==31023== 13,056 (6,072 direct, 6,984 indirect) bytes in 115 blocks are definitely lost in loss record 29 of 42
@@ -3455,15 +3528,26 @@
 {
    ConfigServer_add_client
    Memcheck:Leak
-   fun:calloc
-   fun:g_malloc0
-   fun:giop_send_buffer_use
-   fun:giop_send_buffer_use_request
-   fun:orbit_small_marshal
-   fun:ORBit_small_invoke_stub
-   fun:ORBit_small_invoke_stub_n
-   fun:ORBit_c_stub_invoke
+   ...
    fun:ConfigServer_add_client
+}
+{
+   gconf_activate_server
+   Memcheck:Leak
+   ...
+   fun:gconf_activate_server
+}
+{
+   ORBit_small_invoke_stub
+   Memcheck:Leak
+   ...
+   fun:ORBit_small_invoke_stub
+}
+{
+   gconf leaks
+   Memcheck:Leak
+   ...
+   fun:gconf_client_add_dir
 }
 
 # ==22473== 126,995 bytes in 1,589 blocks are possibly lost in loss record 177 of 177
@@ -4287,6 +4371,24 @@
    fun:_ZN7CppUnit8TestCase3runEPNS_10TestResultE
    fun:_ZN7CppUnit13TestComposite15doRunChildTestsEPNS_10TestResultE
    fun:_ZN7CppUnit13TestComposite3runEPNS_10TestResultE
+}
+
+# ==17425== 32 bytes in 1 blocks are possibly lost in loss record 353 of 780
+# ==17425==    at 0x4C245E2: realloc (vg_replace_malloc.c:525)
+# ==17425==    by 0x643233E: g_realloc (in /lib/libglib-2.0.so.0.2400.1)
+# ==17425==    by 0x5FCA989: g_type_set_qdata (in /usr/lib/libgobject-2.0.so.0.2400.1)
+# ==17425==    by 0x8BF88F7: ??? (in /usr/lib/libdbus-glib-1.so.2.1.0)
+# ==17425==    by 0x8BEC964: dbus_g_bus_get (in /usr/lib/libdbus-glib-1.so.2.1.0)
+# ==17425==    by 0x50586AC: e_book_new (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==17425==    by 0x50587A7: e_book_new_from_uri (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==17425==    by 0x59815F: SyncEvo::EvolutionContactSource::open() (EvolutionContactSource.cpp:168)
+# ==17425==    by 0x4E46D8: SyncEvo::LocalTests::testOpen() (ClientTest.cpp:532)
+{
+    ebook new VIII
+    Memcheck:Leak
+    ...
+    fun:dbus_g_bus_get
+    fun:e_book_new
 }
 
 # ==17187== 207,274 bytes in 11 blocks are possibly lost in loss record 70 of 71
