@@ -102,6 +102,19 @@ private:
 };
 
 /**
+ * This is a workaround for libecal/libebook in Evolution >= 2.30.
+ * The storage daemons shut down after only 10 seconds of no client
+ * being attached.  Due to limitations in libecal/libebook this is not
+ * detected when only using the synchronous API ("destroyed" signal
+ * not delivered, see e-cal.c), which then leads to D-Bus errors.
+ *
+ * The workaround consists of keeping one open SyncEvolution backend
+ * around for each of ical20 and vcard21/30, if they ever were used
+ * during testing.
+ */
+static map<string, boost::shared_ptr<TestingSyncSource> > lockEvolution;
+
+/**
  * This code uses the ClientTest and and information provided by
  * the backends in their RegisterSyncSourceTest instances to test
  * real synchronization with a server.
@@ -373,6 +386,7 @@ public:
             PrettyPrintSyncMode(options.m_syncMode);
         for(int i = 0; sources[i] >= 0; i++) {
             client.setConfigFilter(false, m_syncSource2Config[sources[i]], filter);
+            checkEvolutionSource(sources[i]);
         }
 
         SyncReport report;
@@ -406,26 +420,35 @@ private:
         }
         return m_evoPrefix + configName + "_" + m_clientID;
     }
-    
+
+    /** called by test frame work */
     static TestingSyncSource *createSource(ClientTest &client, int source, bool isSourceA) {
         TestEvolution &evClient((TestEvolution &)client);
         string name = evClient.m_localSource2Config[source];
-        string database = evClient.getDatabaseName(name);
 
+        // implement Evolution shutdown workaround (see lockEvolution above)
+        evClient.checkEvolutionSource(source);
+
+        return evClient.createSource(name, isSourceA);
+    }
+
+    /** called internally in this class */
+    TestingSyncSource *createSource(const string &name, bool isSourceA) {
+        string database = getDatabaseName(name);
         SyncConfig config("client-test-changes");
         SyncSourceNodes nodes = config.getSyncSourceNodes(name,
-                                                          string("_") + ((TestEvolution &)client).m_clientID +
+                                                          string("_") + m_clientID +
                                                           "_" + (isSourceA ? "A" : "B"));
 
         // always set this property: the name might have changes since last test run
         nodes.getProperties()->setProperty("evolutionsource", database.c_str());
-        nodes.getProperties()->setProperty("evolutionuser", evClient.m_evoUser.c_str());
-        nodes.getProperties()->setProperty("evolutionpassword", evClient.m_evoPassword.c_str());
+        nodes.getProperties()->setProperty("evolutionuser", m_evoUser.c_str());
+        nodes.getProperties()->setProperty("evolutionpassword", m_evoPassword.c_str());
 
         SyncSourceParams params(name,
                                 nodes);
 
-        const RegisterSyncSourceTest *test = evClient.m_configs[name];
+        const RegisterSyncSourceTest *test = m_configs[name];
         ClientTestConfig testConfig;
         getSourceConfig(test, testConfig);
 
@@ -449,6 +472,28 @@ private:
         }
         if (!finded) {
             m_localSource2Config.push_back (source);
+        }
+    }
+
+    void checkEvolutionSource(int source)
+    {
+        string name = m_localSource2Config[source];
+        string basename;
+
+        // hard-coded names as used by src/backends/evolution;
+        // if some other backend reuses them, it gets the
+        // same treatment, which shouldn't cause any harm
+        if (name == "vcard21" ||
+            name == "vcard30") {
+            basename = "ebook";
+        } else if (name == "ical20") {
+            basename = "ecal";
+        }
+
+        if (!basename.empty() &&
+            lockEvolution.find(basename) == lockEvolution.end()) {
+            lockEvolution[basename].reset(createSource(name, true));
+            lockEvolution[basename]->open();
         }
     }
 };
