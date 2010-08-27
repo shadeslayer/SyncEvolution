@@ -144,7 +144,7 @@ QtContactsSource::~QtContactsSource()
 
 void QtContactsSource::open()
 {
-    m_data = new QtContactsData(this, "qtcontacts:tracker:query-builder=fetch,save");
+    m_data = new QtContactsData(this, NULL);
     cxxptr<QContactManager> manager(QContactManager::fromUri(m_data->m_managerURI),
                                     "QTContactManager");
     if (manager->error()) {
@@ -262,8 +262,21 @@ TrackingSyncSource::InsertItemResult QtContactsSource::insertItem(const string &
     QList<QContact> savedContacts = save.contacts();
     QContact &savedContact = savedContacts.first();
 
+    // Saving is not guaranteed to update the time stamp (BMC #5710).
+    // Need to read again.
+    QContactFetchRequest fetch;
+    fetch.setManager(m_data->m_manager.get());
+    fetch.setFilter(QtContactsData::createFilter(QtContactsData::getLUID(savedContact)));
+    QContactFetchHint hint;
+    hint.setOptimizationHints(QContactFetchHint::OptimizationHints(QContactFetchHint::NoRelationships|QContactFetchHint::NoBinaryBlobs));
+    hint.setDetailDefinitionsHint(QStringList() << QContactTimestamp::DefinitionName);
+    fetch.setFetchHint(hint);
+    fetch.start();
+    fetch.waitForFinished();
+    QContact &finalContact = fetch.contacts().first();
+
     return InsertItemResult(QtContactsData::getLUID(savedContact),
-                            QtContactsData::getRev(savedContact),
+                            QtContactsData::getRev(finalContact),
                             false);
 }
 
