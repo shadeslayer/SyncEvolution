@@ -19,6 +19,8 @@ EXTRA_DIST = \
         testcases/imemo20.ics \
 	testcases/lcs/file1.txt \
 	testcases/lcs/file2.txt \
+	testcases/templates/clients/phone/nokia/S40/7210c.ini \
+	testcases/templates/clients/SyncEvolution.ini \
         syncevo-http-server.py \
         syncevo-phone-config.py \
 	$(wildcard testcases/*.patch) \
