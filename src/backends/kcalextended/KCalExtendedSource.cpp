@@ -290,8 +290,7 @@ std::string KCalExtendedSource::endSync(bool success)
     }
 
     QDateTime now = QDateTime::currentDateTime().toUTC();
-    const char *anchor = now.toString(Qt::ISODate).toLocal8Bit().constData();
-
+    string anchor(now.toString(Qt::ISODate).toLocal8Bit().constData());
     return anchor;
 }
 
