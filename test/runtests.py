@@ -575,9 +575,19 @@ if options.recipients and not options.sender:
     print "sending email also requires sender argument"
     sys.exit(1)
 
+# accept --enable foo[=args]
+enabled = {}
+for option in options.enabled:
+    l = option.split("=", 1)
+    if len(l) == 2:
+        enabled[l[0]] = l[1]
+    else:
+        enabled[option] = None
+localtests = enabled.get("evolution", "Client::Source SyncEvolution").split(" ")
+
 context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
                   options.subject, options.sender, options.recipients, options.mailhost,
-                  options.enabled, options.skip, options.nologs, options.setupcmd,
+                  enabled, options.skip, options.nologs, options.setupcmd,
                   options.makecmd, options.sanitychecks, options.lastresultdir, options.datadir)
 
 class EvoSvn(Action):
@@ -622,9 +632,11 @@ for prebuilt in options.prebuilt:
     if prebuilt:
         context.add(SyncEvolutionTest("evolution-prebuilt-" + os.path.basename(prebuilt), pre,
                                       "", options.shell,
-                                      [ "Client::Source", "SyncEvolution" ],
+                                      localtests,
                                       [],
                                       testPrefix=options.testprefix))
+        if "evolution" in enabled:
+            del enabled["evolution"]
 
 class SyncEvolutionCheckout(GitCheckout):
     def __init__(self, name, revision):
@@ -722,7 +734,7 @@ context.add(dist)
 
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
-                                  [ "Client::Source", "SyncEvolution" ],
+                                  localtests,
                                   [],
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
