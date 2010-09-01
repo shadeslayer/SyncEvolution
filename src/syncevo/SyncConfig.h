@@ -742,11 +742,11 @@ class SafeConfigProperty : public ConfigProperty {
     {}
 
     void setProperty(ConfigNode &node, const string &value) {
-        ConfigProperty::setProperty(node, SafeConfigNode::escape(value, true, false));
+        ConfigProperty::setProperty(node, StringEscape::escape(value, '!', StringEscape::INI_WORD));
     }
     virtual string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
         string res = ConfigProperty::getProperty(node, isDefault);
-        res = SafeConfigNode::unescape(res);
+        res = StringEscape::unescape(res, '!');
         return res;
     }
 };

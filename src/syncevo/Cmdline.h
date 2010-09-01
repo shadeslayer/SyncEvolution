@@ -22,6 +22,7 @@
 
 #include <syncevo/SyncConfig.h>
 #include <syncevo/FilterConfigNode.h>
+#include <syncevo/util.h>
 
 #include <set>
 using namespace std;
@@ -54,13 +55,13 @@ public:
 
     /** return original LUID */
     string toLUID() const { return toLUID(m_encodedLUID); }
-    static string toLUID(const string &encoded) { return SafeConfigNode::unescape(encoded); }
+    static string toLUID(const string &encoded) { return StringEscape::unescape(encoded, '%'); }
 
     /** fill with unencoded LUID */
     void setLUID(const string &luid) { m_encodedLUID = fromLUID(luid); }
 
     /** convert from unencoded LUID */
-    static string fromLUID(const string &luid) { return SafeConfigNode::escape(luid, true, true); }
+    static string fromLUID(const string &luid) { return StringEscape::escape(luid, '%', StringEscape::STRICT); }
 };
 
 class Cmdline {

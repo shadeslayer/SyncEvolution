@@ -169,6 +169,67 @@ unsigned long Hash(const std::string &str);
 std::string SHA_256(const std::string &in);
 
 /**
+ * escape/unescape code
+ *
+ * Escaping is done URL-like, with a configurable escape
+ * character. The exact set of characters to replace (besides the
+ * special escape character) is configurable, too.
+ *
+ * The code used to be in SafeConfigNode, but is of general value.
+ */
+class StringEscape
+{
+ public:
+    enum Mode {
+        INI_VALUE,         /**< right hand side of .ini assignment:
+                              escape all spaces at start and end (but not in the middle) and the equal sign */
+        INI_WORD,          /**< same as before, but keep it one word:
+                              escape all spaces and the equal sign = */
+        STRICT             /**< general purpose:
+                              escape all characters besides alphanumeric and -_ */
+    };
+
+ private:
+    char m_escapeChar;
+    Mode m_mode;
+
+ public:
+    /**
+     * default constructor, using % as escape character, escaping all spaces (including
+     * leading and trailing ones), and all characters besides alphanumeric and -_
+     */
+    StringEscape(char escapeChar = '%', Mode mode = STRICT) :
+        m_escapeChar(escapeChar),
+        m_mode(mode)
+    {}
+
+    /** special character which introduces two-char hex encoded original character */
+    char getEscapeChar() const { return m_escapeChar; }
+    void setEscapeChar(char escapeChar) { m_escapeChar = escapeChar; }
+
+    Mode getMode() const { return m_mode; }
+    void setMode(Mode mode) { m_mode = mode; }
+
+    /**
+     * escape string according to current settings
+     */
+    string escape(const string &str) const { return escape(str, m_escapeChar, m_mode); }
+
+    /** escape string with the given settings */
+    static string escape(const string &str, char escapeChar, Mode mode);
+
+    /**
+     * unescape string, with escape character as currently set
+     */
+    string unescape(const string &str) const { return unescape(str, m_escapeChar); }
+
+    /**
+     * unescape string, with escape character as given
+     */
+    static string unescape(const string &str, char escapeChar);
+};
+
+/**
  * This is a simplified implementation of a class representing and calculating
  * UUIDs v4 inspired from RFC 4122. We do not use cryptographic pseudo-random
  * numbers, instead we rely on rand/srand.

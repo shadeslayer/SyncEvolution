@@ -459,6 +459,126 @@ std::string SHA_256(const std::string &data)
 #endif
 }
 
+string StringEscape::escape(const string &str, char escapeChar, Mode mode)
+{
+    string res;
+    char buffer[4];
+    bool isLeadingSpace = true;
+    res.reserve(str.size() * 3);
+
+    BOOST_FOREACH(char c, str) {
+        if(c != escapeChar &&
+           (mode == STRICT ?
+            (isalnum(c) ||
+             c == '-' ||
+             c == '_') :
+            !(((isLeadingSpace || mode == INI_WORD) && isspace(c)) ||
+              c == '=' ||
+              c == '\r' ||
+              c == '\n'))) {
+            res += c;
+            if (!isspace(c)) {
+                isLeadingSpace = false;
+            }
+        } else {
+            sprintf(buffer, "%c%02x",
+                    escapeChar,
+                    (unsigned int)(unsigned char)c);
+            res += buffer;
+        }
+    }
+
+    // also encode trailing space?
+    if (mode == INI_VALUE) {
+        size_t numspaces = 0;
+        ssize_t off = res.size() - 1;
+        while (off >= 0 && isspace(res[off])) {
+            off--;
+            numspaces++;
+        }
+        res.resize(res.size() - numspaces);
+        BOOST_FOREACH(char c, str.substr(str.size() - numspaces)) {
+            sprintf(buffer, "%c%02x",
+                    escapeChar,
+                    (unsigned int)(unsigned char)c);
+            res += buffer;
+        }
+    }
+
+    return res;
+}
+
+string StringEscape::unescape(const string &str, char escapeChar)
+{
+    string res;
+    size_t curr;
+
+    res.reserve(str.size());
+
+    curr = 0;
+    while (curr < str.size()) {
+        if (str[curr] == escapeChar) {
+            string hex = str.substr(curr + 1, 2);
+            res += (char)strtol(hex.c_str(), NULL, 16);
+            curr += 3;
+        } else {
+            res += str[curr];
+            curr++;
+        }
+    }
+
+    return res;
+}
+
+#ifdef ENABLE_UNIT_TESTS
+
+class StringEscapeTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(StringEscapeTest);
+    CPPUNIT_TEST(escape);
+    CPPUNIT_TEST(unescape);
+    CPPUNIT_TEST_SUITE_END();
+
+    void escape() {
+        const string test = " _-%\rfoo bar?! \n ";
+
+        StringEscape def;
+        CPPUNIT_ASSERT_EQUAL(string("%20_-%25%0dfoo%20bar%3f%21%20%0a%20"), def.escape(test));
+        CPPUNIT_ASSERT_EQUAL(string("%20_-%25%0dfoo%20bar%3f%21%20%0a%20"),
+                             StringEscape::escape(test, '%', StringEscape::STRICT));
+
+        StringEscape word('%', StringEscape::INI_WORD);
+        CPPUNIT_ASSERT_EQUAL(string("%20_-%25%0dfoo%20bar?!%20%0a%20"), word.escape(test));
+        CPPUNIT_ASSERT_EQUAL(string("%20_-%25%0dfoo%20bar?!%20%0a%20"),
+                             StringEscape::escape(test, '%', StringEscape::INI_WORD));
+
+        StringEscape ini('%', StringEscape::INI_VALUE);
+        CPPUNIT_ASSERT_EQUAL(string("%20_-%25%0dfoo bar?! %0a%20"), ini.escape(test));
+        CPPUNIT_ASSERT_EQUAL(string("%20_-%25%0dfoo bar?! %0a%20"),
+                             StringEscape::escape(test, '%', StringEscape::INI_VALUE));
+
+        StringEscape alt('!', StringEscape::INI_VALUE);
+        CPPUNIT_ASSERT_EQUAL(string("!20_-%!0dfoo bar?!21 !0a!20"), alt.escape(test));
+        CPPUNIT_ASSERT_EQUAL(string("!20_-%!0dfoo bar?!21 !0a!20"),
+                             StringEscape::escape(test, '!', StringEscape::INI_VALUE));
+    }
+
+    void unescape() {
+        const string escaped = "%20_-%25foo%20bar%3F%21%20%0A";
+        const string plain = " _-%foo bar?! \n";
+
+        StringEscape def;
+        CPPUNIT_ASSERT_EQUAL(plain, def.unescape(escaped));
+        CPPUNIT_ASSERT_EQUAL(plain, StringEscape::unescape(escaped, '%'));
+
+        CPPUNIT_ASSERT_EQUAL(string("%41B"), StringEscape::unescape("%41!42", '!'));
+        CPPUNIT_ASSERT_EQUAL(string("A!42"), StringEscape::unescape("%41!42", '%'));
+    }
+};
+
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(StringEscapeTest);
+
+#endif // ENABLE_UNIT_TESTS
+
 
 std::string StringPrintf(const char *format, ...)
 {

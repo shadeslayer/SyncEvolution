@@ -26,7 +26,6 @@
 #include <syncevo/SyncSource.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/util.h>
-#include <syncevo/SafeConfigNode.h>
 
 #include <syncevo/SynthesisEngine.h>
 #include <synthesis/SDK_util.h>
@@ -1087,7 +1086,7 @@ sysync::TSyError SyncSourceAdmin::loadAdminData(const char *aLocDB,
                                                 char **adminData)
 {
     std::string data = m_configNode->readProperty(m_adminPropertyName);
-    *adminData = StrAlloc(SafeConfigNode::unescape(data).c_str());
+    *adminData = StrAlloc(StringEscape::unescape(data, '!').c_str());
     resetMap();
     return sysync::LOCERR_OK;
 }
@@ -1095,7 +1094,7 @@ sysync::TSyError SyncSourceAdmin::loadAdminData(const char *aLocDB,
 sysync::TSyError SyncSourceAdmin::saveAdminData(const char *adminData)
 {
     m_configNode->setProperty(m_adminPropertyName,
-                              SafeConfigNode::escape(adminData, false, false));
+                              StringEscape::escape(adminData, '!', StringEscape::INI_VALUE));
 
     // Flush here, because some calls to saveAdminData() happend
     // after SyncSourceAdmin::flush() (= session end).
@@ -1197,12 +1196,12 @@ void SyncSourceAdmin::resetMap()
 
 void SyncSourceAdmin::mapid2entry(sysync::cMapID mID, string &key, string &value)
 {
-    key = StringPrintf ("%s-%x",
-                         SafeConfigNode::escape(mID->localID ? mID->localID : "", true, false).c_str(),
-                         mID->ident);
+    key = StringPrintf("%s-%x",
+                       StringEscape::escape(mID->localID ? mID->localID : "", '!', StringEscape::INI_WORD).c_str(),
+                       mID->ident);
     if (mID->remoteID && mID->remoteID[0]) {
         value = StringPrintf("%s %x",
-                             SafeConfigNode::escape(mID->remoteID ? mID->remoteID : "", true, false).c_str(),
+                             StringEscape::escape(mID->remoteID ? mID->remoteID : "", '!', StringEscape::INI_WORD).c_str(),
                              mID->flags);
     } else {
         value = StringPrintf("%x", mID->flags);
@@ -1212,7 +1211,7 @@ void SyncSourceAdmin::mapid2entry(sysync::cMapID mID, string &key, string &value
 void SyncSourceAdmin::entry2mapid(const string &key, const string &value, sysync::MapID mID)
 {
     size_t found = key.rfind('-');
-    mID->localID = StrAlloc(SafeConfigNode::unescape(key.substr(0,found)).c_str());
+    mID->localID = StrAlloc(StringEscape::unescape(key.substr(0,found), '!').c_str());
     if (found != key.npos) {
         mID->ident =  strtol(key.substr(found+1).c_str(), NULL, 16);
     } else {
@@ -1222,7 +1221,7 @@ void SyncSourceAdmin::entry2mapid(const string &key, const string &value, sysync
     boost::split(tokens, value, boost::is_from_range(' ', ' '));
     if (tokens.size() >= 2) {
         // if branch from mapid2entry above
-        mID->remoteID = StrAlloc(SafeConfigNode::unescape(tokens[0]).c_str());
+        mID->remoteID = StrAlloc(StringEscape::unescape(tokens[0], '!').c_str());
         mID->flags = strtol(tokens[1].c_str(), NULL, 16);
     } else {
         // else branch from above
