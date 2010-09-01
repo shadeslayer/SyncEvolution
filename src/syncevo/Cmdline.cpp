@@ -276,7 +276,7 @@ bool Cmdline::parse(vector<string> &parsed)
                 m_sources.insert(m_argv[opt++]);
             } else {
                 // first additional parameter was source, rest are luids
-                m_luids.push_back(m_argv[opt++]);
+                m_luids.push_back(CmdlineLUID::toLUID(m_argv[opt++]));
             }
         }
     }
@@ -768,12 +768,12 @@ bool Cmdline::run() {
             BOOST_FOREACH(string &luid, luids) {
                 string description;
                 if (logging) {
-                    description = logging->getDescription(SafeConfigNode::unescape(luid));
+                    description = logging->getDescription(luid);
                     if (!description.empty()) {
                         description.insert(0, ": ");
                     }
                 }
-                m_out << luid << description << std::endl;
+                m_out << CmdlineLUID::fromLUID(luid) << description << std::endl;
             }
         } else if (m_deleteItems) {
             if (!ops.m_deleteItem) {
@@ -791,8 +791,7 @@ bool Cmdline::run() {
             }
             BOOST_FOREACH(const string &luid, m_luids) {
                 sysync::ItemIDType id;
-                string tmp = SafeConfigNode::unescape(luid);
-                id.item = (char *)tmp.c_str();
+                id.item = (char *)luid.c_str();
                 err = ops.m_deleteItem(&id);
                 CHECK_ERROR("deleting item");
             }
@@ -838,7 +837,7 @@ bool Cmdline::run() {
                             }
                         }
                         m_out << "#0: "
-                              << insertItem(raw, luid, content) 
+                              << insertItem(raw, luid, content).getEncoded()
                               << endl;
                     } else {
                         typedef boost::split_iterator<string::iterator> string_split_iterator;
@@ -876,7 +875,7 @@ bool Cmdline::run() {
                             }
                             m_out << insertItem(raw,
                                                 luid,
-                                                string(it->begin(), it->end()))
+                                                string(it->begin(), it->end())).getEncoded()
                                   << endl;
                             count++;
                         }
@@ -891,7 +890,7 @@ bool Cmdline::run() {
                         if (!ReadFile(path, content)) {
                             SyncContext::throwError(path, errno);
                         }
-                        m_out << insertItem(raw, "", content) << endl;
+                        m_out << insertItem(raw, "", content).getEncoded() << endl;
                     }
                 }
                 char *token = NULL;
@@ -920,7 +919,7 @@ bool Cmdline::run() {
                 try {
                     BOOST_FOREACH(const string &luid, m_luids) {
                         string item;
-                        raw->readItemRaw(SafeConfigNode::unescape(luid), item);
+                        raw->readItemRaw(luid, item);
                         if (!out) {
                             // write into directory
                             string fullPath = m_itemPath + "/" + luid;
@@ -1093,16 +1092,18 @@ void Cmdline::readLUIDs(SyncSource *source, list<string> &luids)
     sysync::TSyError err = ops.m_readNextItem(&id, &status, true);
     CHECK_ERROR("next item");
     while (status != sysync::ReadNextItem_EOF) {
-        luids.push_back(SafeConfigNode::escape(id.item, true, true));
+        luids.push_back(id.item);
         err = ops.m_readNextItem(&id, &status, false);
         CHECK_ERROR("next item");
     }
 }
 
-string Cmdline::insertItem(SyncSourceRaw *source, const string &luid, const string &data)
+CmdlineLUID Cmdline::insertItem(SyncSourceRaw *source, const string &luid, const string &data)
 {
-    SyncSourceRaw::InsertItemResult res = source->insertItemRaw(SafeConfigNode::unescape(luid), data);
-    return res.m_luid;
+    SyncSourceRaw::InsertItemResult res = source->insertItemRaw(luid, data);
+    CmdlineLUID cluid;
+    cluid.setLUID(res.m_luid);
+    return cluid;
 }
 
 string Cmdline::cmdOpt(const char *opt, const char *param)

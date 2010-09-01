@@ -37,6 +37,32 @@ class SyncSourceRaw;
 class SyncContext;
 class CmdlineTest;
 
+/**
+ * encodes a locally unique ID (LUID) in such a
+ * way that it is treated as a plain word by shells
+ */
+class CmdlineLUID
+{
+    string m_encodedLUID;
+
+public:
+    /** fill with encoded LUID */
+    void setEncoded(const string &encodedLUID) { m_encodedLUID = encodedLUID; }
+
+    /** return encoded LUID as string */
+    string getEncoded() const { return m_encodedLUID; }
+
+    /** return original LUID */
+    string toLUID() const { return toLUID(m_encodedLUID); }
+    static string toLUID(const string &encoded) { return SafeConfigNode::unescape(encoded); }
+
+    /** fill with unencoded LUID */
+    void setLUID(const string &luid) { m_encodedLUID = fromLUID(luid); }
+
+    /** convert from unencoded LUID */
+    static string fromLUID(const string &luid) { return SafeConfigNode::escape(luid, true, true); }
+};
+
 class Cmdline {
 public:
     /**
@@ -275,9 +301,9 @@ protected:
      * @param source     SyncSource in write mode (startWriteData must have been called)
      * @param luid       local ID, empty if item is to be added
      * @param data       the item data to insert
-     * @return luid of inserted item
+     * @return encoded luid of inserted item
      */
-    string insertItem(SyncSourceRaw *source, const string &luid, const string &data);
+    CmdlineLUID insertItem(SyncSourceRaw *source, const string &luid, const string &data);
 };
 
 
