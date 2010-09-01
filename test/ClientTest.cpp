@@ -42,6 +42,7 @@
 
 #include <memory>
 #include <vector>
+#include <set>
 #include <utility>
 #include <sstream>
 #include <iomanip>
@@ -55,6 +56,8 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
+
+static set<ClientTest::Cleanup_t> cleanupSet;
 
 /**
  * Using this pointer automates the open()/beginSync()/endSync()/close()
@@ -3381,6 +3384,18 @@ ClientTest::~ClientTest()
         CppUnit::TestFactoryRegistry::getRegistry().unregisterFactory((CppUnit::TestFactory *)factory);
         delete (CppUnit::TestFactory *)factory;
         factory = 0;
+    }
+}
+
+void ClientTest::registerCleanup(Cleanup_t cleanup)
+{
+    cleanupSet.insert(cleanup);
+}
+
+void ClientTest::shutdown()
+{
+    BOOST_FOREACH(Cleanup_t cleanup, cleanupSet) {
+        cleanup();
     }
 }
 

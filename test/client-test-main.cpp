@@ -40,6 +40,7 @@
 
 #include <Logging.h>
 #include <LogStdout.h>
+#include "ClientTest.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -273,12 +274,15 @@ int main(int argc, char* argv[])
       }
 
       // Return error code 1 if the one of test failed.
+      ClientTest::shutdown();
       return syncListener.hasFailed() ? 1 : 0;
   } catch (invalid_argument e) {
       // Test path not resolved
       std::cerr << std::endl
                 << "ERROR: " << e.what()
                 << std::endl;
+
+      ClientTest::shutdown();
       return 1;
   }
 }

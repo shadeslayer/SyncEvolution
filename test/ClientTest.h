@@ -225,6 +225,20 @@ class ClientTest {
     ClientTest(int serverSleepSec = 0, const std::string &serverLog= "");
     virtual ~ClientTest();
 
+    /** cleanup function to be called when shutting down testing */
+    typedef void (*Cleanup_t)(void);
+
+    /**
+     * Call this to register another shutdown cleanup functions.
+     * Every unique function will be called exactly once.
+     */
+    static void registerCleanup(Cleanup_t cleanup);
+
+    /**
+     * Call cleanup functions.
+     */
+    static void shutdown();
+
     /**
      * This function registers tests using this instance of ClientTest for
      * later use during a test run.
@@ -433,6 +447,9 @@ public:
 
     /** helper funclets to create sources */
     CreateSource createSourceA, createSourceB;
+
+    /** if set, then this will be called at the end of testing */
+    void (*cleanupSources)();
 
     LocalTests(const std::string &name, ClientTest &cl, int sourceParam, ClientTest::Config &co) :
         CppUnit::TestSuite(name),

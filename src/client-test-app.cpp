@@ -113,6 +113,10 @@ private:
  * during testing.
  */
 static map<string, boost::shared_ptr<TestingSyncSource> > lockEvolution;
+static void CleanupSources()
+{
+    lockEvolution.clear();
+}
 
 /**
  * This code uses the ClientTest and and information provided by
@@ -494,6 +498,7 @@ private:
             lockEvolution.find(basename) == lockEvolution.end()) {
             lockEvolution[basename].reset(createSource(name, true));
             lockEvolution[basename]->open();
+            ClientTest::registerCleanup(CleanupSources);
         }
     }
 };
