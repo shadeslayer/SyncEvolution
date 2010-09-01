@@ -1,0 +1,19 @@
+    <remoterule name="Nokia">
+      <!-- defaults for *all* Nokia phones; can be overridden for specific models later on -->
+      <manufacturer>NOKIA</manufacturer>
+      <finalrule>no</finalrule>
+
+      <!-- At least the Nokia E55 is only able to deal with alarm times in UTC,
+           later confirmed for other Nokia models. BMC #1657 -->
+      <rulescript><![CDATA[
+        // no dates before 1980
+        mindate=(TIMESTAMP)"19800101T000000Z";
+        alarmTimeToUTC = TRUE;
+      ]]></rulescript>
+      
+      <!-- 5800 and N97mini are confirmed to report bogus maximum size
+           256 bytes for PHOTO, seems to be a cut-and-paste error at Nokia.
+           Ignore size info, BMC #5860 -->
+      <ignoredevinfmaxsize>yes</ignoredevinfmaxsize>
+    </remoterule>
+
