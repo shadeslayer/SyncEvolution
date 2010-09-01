@@ -27,7 +27,7 @@ SE_BEGIN_CXX
 static SyncSource *createSource(const SyncSourceParams &params)
 {
     SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
-    bool isMe = sourceType.m_backend == "KCalExtended";
+    bool isMe = sourceType.m_backend == "mkcal";
     bool maybeMe = sourceType.m_backend == "calendar";
 
     if (isMe || maybeMe) {
@@ -52,10 +52,10 @@ static RegisterSyncSource registerMe("KCalExtended",
                                      false,
 #endif
                                      createSource,
-                                     "KCalExtended = calendar\n"
+                                     "mkcal = KCalExtended = calendar\n"
                                      "   iCalendar 2.0 = text/calendar\n",
                                      Values() +
-                                     (Aliases("KCalExtended")));
+                                     (Aliases("mkcal") + "KCalExtended" + "MeeGo Calendar"));
 
 #ifdef ENABLE_KCALEXTENDED
 #ifdef ENABLE_UNIT_TESTS
