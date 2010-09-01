@@ -389,8 +389,9 @@ public:
         filter[SyncSourceConfig::m_sourcePropSync.getName()] =
             PrettyPrintSyncMode(options.m_syncMode);
         for(int i = 0; sources[i] >= 0; i++) {
-            client.setConfigFilter(false, m_syncSource2Config[sources[i]], filter);
-            checkEvolutionSource(sources[i]);
+            std::string &name = m_syncSource2Config[sources[i]];
+            client.setConfigFilter(false, name, filter);
+            checkEvolutionSource(name);
         }
 
         SyncReport report;
@@ -431,7 +432,7 @@ private:
         string name = evClient.m_localSource2Config[source];
 
         // implement Evolution shutdown workaround (see lockEvolution above)
-        evClient.checkEvolutionSource(source);
+        evClient.checkEvolutionSource(name);
 
         return evClient.createSource(name, isSourceA);
     }
@@ -479,9 +480,8 @@ private:
         }
     }
 
-    void checkEvolutionSource(int source)
+    void checkEvolutionSource(std::string &name)
     {
-        string name = m_localSource2Config[source];
         string basename;
 
         // hard-coded names as used by src/backends/evolution;
@@ -490,7 +490,8 @@ private:
         if (name == "vcard21" ||
             name == "vcard30") {
             basename = "ebook";
-        } else if (name == "ical20") {
+        } else if (name == "ical20" ||
+                   name == "text") {
             basename = "ecal";
         }
 
