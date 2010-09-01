@@ -374,15 +374,8 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
             incidence->setCreated(original->created());
         }
 
-        if (original->type() == KCalCore::IncidenceBase::TypeEvent) {
-            // *static_cast<KCalCore::Event *>(original) =
-            //    *static_cast<KCalCore::Event *>(incidence);
-        } else if (original->type() == KCalCore::IncidenceBase::TypeTodo) {
-            // *static_cast<KCalCore::Todo *>(original) =
-            //    *static_cast<KCalCore::Todo *>(incidence);
-        } else {
-            throwError("unknown type");
-        }
+        // now overwrite item in calendar
+        (KCalCore::IncidenceBase &)*original = (KCalCore::IncidenceBase &)*incidence;
         m_data->m_calendar->setNotebook(original, m_data->m_notebookUID);
         // no need to save
     }
