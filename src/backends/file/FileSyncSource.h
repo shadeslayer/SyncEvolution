@@ -104,6 +104,15 @@ class FileSyncSource : public TrackingSyncSource, private boost::noncopyable
      * create full filename from basedir and entry name
      */
     string createFilename(const string &entry);
+
+    void getSynthesisInfo(SynthesisInfo &info,
+                          XMLConfigFragments &fragments)
+    {
+        TrackingSyncSource::getSynthesisInfo(info, fragments);
+        // files can store all kinds of extensions, so tell
+        // engine to enable them
+        info.m_backendRule = "ALL";
+    }
 };
 
 SE_END_CXX

@@ -1,4 +1,5 @@
-    <remoterule name="EVOLUTION">
+    <!-- rule which enables all optional properties and parameters -->
+    <remoterule name="ALL">
       <deviceid>none - this rule is activated via its name in MAKE/PARSETEXTWITHPROFILE() macro calls</deviceid>
       <include rule="HAVE-EVOLUTION-UI-SLOT"/>
     </remoterule>

@@ -1,0 +1,7 @@
+    <remoterule name="SyncEvolution">
+      <manufacturer>Patrick Ohly</manufacturer>
+      <model>SyncEvolution</model>
+
+      <include rule="HAVE-EVOLUTION-UI-SLOT"/>
+    </remoterule>
+
