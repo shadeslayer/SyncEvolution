@@ -239,6 +239,12 @@ sub Normalize {
     s;^BEGIN:VTIMEZONE.*?^TZID:/[^/\n]*/[^/\n]*/(\S+).*^END:VTIMEZONE;BEGIN:VTIMEZONE\nTZID:$1 [...]\nEND:VTIMEZONE;gms;
     s;TZID=/[^/\n]*/[^/\n]*/(.*)$;TZID=$1;gm;
 
+    # normalize iCalendar 2.0
+    if (/^BEGIN:(VEVENT|VTODO|VJOURNAL)$/m) {
+        # CLASS=PUBLIC is the default, no need to show it
+        s/^CLASS:PUBLIC\r?\n//m;
+    }
+
     if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
