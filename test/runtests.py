@@ -956,6 +956,7 @@ googletest = SyncEvolutionTest("google", compile,
                                "Client::Sync::vcard21::testRefreshFromClientSync,"
                                "Client::Sync::vcard21::testRefreshFromClientSemantic,"
                                "Client::Sync::vcard21::testRefreshStatus,"
+                               "Client::Sync::vcard21::testDeleteAllRefresh,"
                                "Client::Sync::vcard21::testOneWayFromClient,"
                                "Client::Sync::vcard21::testItemsXML "
                                "CLIENT_TEST_DELAY=5 "
