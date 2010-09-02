@@ -231,6 +231,8 @@
         <table border="2">
             <tr>
                 <th width="60">Server</th>
+                <th width="60">Valgrind</th>
+                <th width="60">Status</th>
                 <th width="60">Categories</th>
                 <th width="60">Total Cases</th>
                 <th width="60">Passed</th>
@@ -241,8 +243,6 @@
                 <th width="60">Passrate</th>
                 <th width="60">Improved</th>
                 <th width="60">Regression</th>
-                <th width="60">Valgrind</th>
-                <th width="60">Status</th>
             </tr>
 
             <xsl:for-each select="$servers">
@@ -266,6 +266,40 @@
                         <a href="#{name($item)}">
                             <xsl:value-of select="name($item)"/>
                         </a>
+                    </td>
+                    <td>
+                        <xsl:choose>
+                            <xsl:when test="$valgrind=100">
+                                <xsl:attribute name="bgcolor">
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$valgrind-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
+                                </xsl:attribute>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
+                            </xsl:when>
+                            <xsl:otherwise>ok</xsl:otherwise>
+                        </xsl:choose>
+                    </td>
+                    <td>
+                        <xsl:choose>
+                            <xsl:when test="not($retcode) or $retcode=0">
+                                ok
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="bgcolor">
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$retcode-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
+                                </xsl:attribute>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </td>
                     <td>
                         <xsl:for-each select="$categories">
@@ -328,40 +362,6 @@
                             </xsl:when>
                             <xsl:otherwise>
                                 0
-                            </xsl:otherwise>
-                        </xsl:choose>
-                    </td>
-                    <td>
-                        <xsl:choose>
-                            <xsl:when test="$valgrind=100">
-                                <xsl:attribute name="bgcolor">
-                                    <xsl:call-template name="generate-color">
-                                        <xsl:with-param name="status" select="$valgrind-cmp"/>
-                                        <xsl:with-param name="source" select="'failed'"/>
-                                    </xsl:call-template>
-                                </xsl:attribute>
-                                <a href="{$path}/output.txt">
-                                    failed
-                                </a>
-                            </xsl:when>
-                            <xsl:otherwise>ok</xsl:otherwise>
-                        </xsl:choose>
-                    </td>
-                    <td>
-                        <xsl:choose>
-                            <xsl:when test="not($retcode) or $retcode=0">
-                                ok
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:attribute name="bgcolor">
-                                    <xsl:call-template name="generate-color">
-                                        <xsl:with-param name="status" select="$retcode-cmp"/>
-                                        <xsl:with-param name="source" select="'failed'"/>
-                                    </xsl:call-template>
-                                </xsl:attribute>
-                                <a href="{$path}/output.txt">
-                                    failed
-                                </a>
                             </xsl:otherwise>
                         </xsl:choose>
                     </td>
@@ -430,6 +430,8 @@
         <table border="2">
             <tr>
                 <th width="60">Sources</th>
+                <th width="60">Valgrind</th>
+                <th width="60">Status</th>
                 <th width="60">Total Cases</th>
                 <th width="60">Passed</th>
                 <th width="60">Known Failure</th>
@@ -439,8 +441,6 @@
                 <th width="60">Passrate</th>
                 <th width="60">Improved</th>
                 <th width="60">Regression</th>
-                <th width="60">Valgrind</th>
-                <th width="60">Status</th>
             </tr>
             <xsl:variable name="total">
                 <xsl:call-template name="count-all-cases">
@@ -466,6 +466,40 @@
                         <a href="#{name($item)}">
                             <xsl:value-of select="name($item)"/>
                         </a>
+                    </td>
+                    <td>
+                        <xsl:choose>
+                            <xsl:when test="$valgrind=100">
+                                <xsl:attribute name="bgcolor">
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$valgrind-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
+                                </xsl:attribute>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
+                            </xsl:when>
+                            <xsl:otherwise>ok</xsl:otherwise>
+                        </xsl:choose>
+                    </td>
+                    <td>
+                        <xsl:choose>
+                            <xsl:when test="not($retcode) or $retcode=0">
+                                ok
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="bgcolor">
+                                    <xsl:call-template name="generate-color">
+                                        <xsl:with-param name="status" select="$retcode-cmp"/>
+                                        <xsl:with-param name="source" select="'failed'"/>
+                                    </xsl:call-template>
+                                </xsl:attribute>
+                                <a href="{$path}/output.txt">
+                                    failed
+                                </a>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </td>
                     <td> 
                         <xsl:value-of select="$total"/>
@@ -519,40 +553,6 @@
                             </xsl:when>
                             <xsl:otherwise>
                                 0
-                            </xsl:otherwise>
-                        </xsl:choose>
-                    </td>
-                    <td>
-                        <xsl:choose>
-                            <xsl:when test="$valgrind=100">
-                                <xsl:attribute name="bgcolor">
-                                    <xsl:call-template name="generate-color">
-                                        <xsl:with-param name="status" select="$valgrind-cmp"/>
-                                        <xsl:with-param name="source" select="'failed'"/>
-                                    </xsl:call-template>
-                                </xsl:attribute>
-                                <a href="{$path}/output.txt">
-                                    failed
-                                </a>
-                            </xsl:when>
-                            <xsl:otherwise>ok</xsl:otherwise>
-                        </xsl:choose>
-                    </td>
-                    <td>
-                        <xsl:choose>
-                            <xsl:when test="not($retcode) or $retcode=0">
-                                ok
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:attribute name="bgcolor">
-                                    <xsl:call-template name="generate-color">
-                                        <xsl:with-param name="status" select="$retcode-cmp"/>
-                                        <xsl:with-param name="source" select="'failed'"/>
-                                    </xsl:call-template>
-                                </xsl:attribute>
-                                <a href="{$path}/output.txt">
-                                    failed
-                                </a>
                             </xsl:otherwise>
                         </xsl:choose>
                     </td>
