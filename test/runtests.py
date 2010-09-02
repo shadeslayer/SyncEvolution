@@ -209,9 +209,6 @@ class Context:
                 # get action
                 action = self.todo.pop(0)
 
-                if action.isserver:
-                    run_servers.append(action.name);
-
                 # check whether it actually needs to be executed
                 if self.enabled and \
                        not action.name in self.enabled and \
@@ -235,6 +232,8 @@ class Context:
                     continue
 
                 # execute it
+                if action.isserver:
+                    run_servers.append(action.name);
                 action.tryexecution(step, not self.nologs)
                 if action.status > status:
                     status = action.status
