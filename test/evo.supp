@@ -4627,6 +4627,27 @@
    fun:icaltimezone_get_component
    fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
 }
+{
+   icaltimezone_get_component III, version 2
+   Memcheck:Cond
+   fun:icaltime_days_in_month
+   fun:icaltime_adjust
+   fun:icaltimezone_convert_time
+   fun:icaltime_from_timet_with_zone
+   fun:icaltime_from_timet
+   fun:icaltzutil_fetch_timezone
+   obj:*libical.so*
+   fun:icaltimezone_get_component
+   fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
+{
+   icaltimezone_get_component IV
+   Memcheck:Value8
+   ...
+   fun:icalcomponent_as_ical_string*
+   fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
+
 # ==23938== Conditional jump or move depends on uninitialised value(s)
 # ==23938==    at 0x742B5CC: icalvalue_reset_kind (in /usr/lib/libical.so.0.44.0)
 # ==23938==    by 0x7415284: icalvalue_new_datetime (in /usr/lib/libical.so.0.44.0)
