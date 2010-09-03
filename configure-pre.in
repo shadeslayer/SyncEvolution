@@ -93,7 +93,6 @@ AC_ARG_ENABLE(developer-mode,
              enable_developer_mode="$enableval", enable_developer_mode="no")
 
 # Maemo hacks:
-# - set the (non-standard!) DBUS_DEFAULT_TIMEOUT
 # - wrap e_book_from_string() to fix invalid parameter
 # - don't use UTF-8 encoding in Perl script
 AC_ARG_ENABLE(maemo,

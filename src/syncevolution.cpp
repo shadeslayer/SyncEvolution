@@ -453,18 +453,6 @@ static void getEnvVars(map<string, string> &vars);
 extern "C"
 int main( int argc, char **argv )
 {
-#ifdef ENABLE_MAEMO
-    // EDS-DBus uses potentially long-running calls which may fail due
-    // to the default 25s timeout. Some of these can be replaced by
-    // their async version, but e_book_async_get_changes() still
-    // triggered it.
-    //
-    // The workaround for this is to link the binary against a libdbus
-    // which has the dbus-timeout.patch and thus let's users and
-    // the application increase the default timeout.
-    setenv("DBUS_DEFAULT_TIMEOUT", "600000", 0);
-#endif
-
     // Intercept stderr and route it through our logging.
     // stdout is printed normally. Deconstructing it when
     // leaving main() does one final processing of pending
