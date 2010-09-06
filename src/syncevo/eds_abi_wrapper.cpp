@@ -392,7 +392,9 @@ static int _dbus_connection_default_timeout(void)
         timeout = atoi(def);
     }
     if (timeout == 0) {
-        timeout = INT_MAX;
+        timeout = INT_MAX - 1; // not infinite, but very long;
+                               // INT_MAX led to a valgrind report in poll()/libdbus,
+                               // avoid it
     }
     return timeout;
 }
