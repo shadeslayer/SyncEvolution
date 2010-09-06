@@ -38,7 +38,8 @@ Restore data from the automatic backups:
   syncevolution --restore <session directory> --before|--after [--dry-run] <config> <source> ...
 
 Modify a configuration:
-  syncevolution --remove|--migrate|--configure <options> <config>
+  syncevolution --configure <options> <config> [<source> ...]
+  syncevolution --remove|--migrate <options> <config>
 
 List items:
   syncevolution --print-items <config> <source>
@@ -98,6 +99,11 @@ synchronized.  In that sense, a configuration context can be seen as a
 set of local databases plus the peer configurations that are
 synchronized against those databases.
 
+The peer-independent properties of a source can be configured by
+giving the context name as <config> parameter ("@default
+addressbook"). Operations manipulating the local data also accept
+the context name.
+
 When different peers are meant to synchronize different local
 databases, then different contexts have to be used when setting up the
 peers by appending a context name after the `at` sign, as in
@@ -119,7 +125,7 @@ set a different synchronization mode in its configuration file. ::
 
    syncevolution <config>
 
-Without the optional list of sources all sources which are enabled in
+Without the optional list of sources, all sources which are enabled in
 their configuration file are synchronized. ::
 
    syncevolution <config> <source> ...
@@ -127,8 +133,19 @@ their configuration file are synchronized. ::
 Otherwise only the ones mentioned on the command line are active. It
 is possible to configure sources without activating their
 synchronization: if the synchronization mode of a source is set to
-`none`, the source will be ignored. Explicitly listing such a source
-will synchronize it in `two-way` mode once.
+`disabled`, the source will be ignored. Explicitly listing such a
+source will synchronize it in `two-way` mode once.
+
+In SyncEvolution's predefined configuration templates, the following
+names for sources are used. Different names can be chosen for sources
+that are defined manually. ::
+
+ * addressbook: a list of contacts
+ * calendar: calendar *events*
+ * memo: plain text notes
+ * todo: task list
+ * calendar+todo: a virtual source combining one local "calendar" and
+   one "todo" source (required for synchronizing with some phones)
 
 Progress and error messages are written into a log file that is
 preserved for each synchronization run. Details about that is found in
@@ -282,11 +299,12 @@ a list of valid values.
   --quiet, only the paths are listed.
 
 --configure|-c
-  Modify the configuration files for the selected peer. If no such
-  configuration exists, then a new one is created using one of the
-  template configurations (see --template option). When creating
-  a new configuration only the active sources will be set to active
-  in the new configuration, i.e. `syncevolution -c scheduleworld addressbook`
+  Modify the configuration files for the selected peer and/or sources.
+  If no such configuration exists, then a new one is created using one
+  of the template configurations (see --template option). When
+  creating a new configuration and listing sources explicitly on the
+  command line, only those sources will be set to active in the new
+  configuration, i.e. `syncevolution -c scheduleworld addressbook`
   followed by `syncevolution scheduleworld` will only synchronize the
   address book. The other sources are created in a disabled state.
   When modifying an existing configuration and sources are specified,
@@ -373,10 +391,11 @@ a list of valid values.
   Same as --sync-property, but applies to the configuration of all active
   sources. `--sync <mode>` is a shortcut for `--source-property sync=<mode>`.
   
-  When combined with `--configure`, the configuration of all sources is
-  modified. Properties cannot be specified differently for different
-  sources, so if you want to change a source property of just one specific
-  sync source, then use `--configure --source-property ... <server> <source>`.
+  When combined with `--configure`, the configuration of all sources
+  is modified. The value is applied to all sources unless sources are
+  listed explicitly on the command line. So if you want to change a
+  source property of just one specific sync source, then use
+  `--configure --source-property ... <server> <source>`.
   
   As with sync properties, some properties are shared between peers,
   in particular the selection of which local data to synchronize.
@@ -390,8 +409,8 @@ a list of valid values.
   used as the starting point for servers which do not have a built-in
   template.
 
-  Each template contains a pseudo-random device ID. Therefore setting the
-  `deviceId` sync property is only necessary when manually recreating a
+  A pseudo-random device ID is generated automatically. Therefore setting
+  the `deviceId` sync property is only necessary when manually recreating a
   configuration or when a more descriptive name is desired.
 
   The available templates for different known SyncML servers are listed when
@@ -427,6 +446,15 @@ a list of valid values.
   entered interactively. The --print-config output always shows "-" instead
   of retrieving the password from the keyring.
 
+--daemon[=yes/no]
+  By default, the SyncEvolution command line is executed inside the
+  syncevo-dbus-server process. This ensures that synchronization sessions
+  started by the command line do not conflict with sessions started
+  via some other means (GUI, automatically). For debugging purposes
+  or very special use cases (running a local sync against a server which
+  executes inside the daemon) it is possible to execute the operation
+  without the daemon (--daemon=no).
+
 --help|-h
   Prints usage information.
 
@@ -446,6 +474,15 @@ Create a new configuration, using the existing ScheduleWorld template::
                 --sync-property "username=123456" \
                 --sync-property "password=!@#ABcd1234" \
                 scheduleworld
+
+Note that putting passwords into the command line, even for
+short-lived processes as the one above, is a security risk in shared
+environments, because the password is visible to everyone on the
+machine. To avoid this, remove the password from the command above,
+then add the password to the right config.ini file with a text editor.
+This command shows the directory containing the file::
+
+   syncevolution --print-configs
 
 Review configuration::
 
@@ -494,8 +531,11 @@ clients, see `Exchanging Data`_::
   
   syncevolution --configure \
                 --source-property evolutionsource=<name of other address book> \
+                @other addressbook
+
+  syncevolution --configure \
                 --source-property sync=two-way \
-                scheduleworld@other
+                scheduleworld@other addressbook
 
   syncevolution scheduleworld 
   syncevolution scheduleworld@other
@@ -520,7 +560,7 @@ needed. Calendar items and tasks can be sent and received in iCalendar
 2.0 as well as vCalendar 1.0, but vCalendar 1.0 should be avoided if
 possible because it cannot represent all data that Evolution stores.
 
-.. note:: The Evolution backends are mentioned are as examples;
+.. note:: The Evolution backends are mentioned as examples;
    the same applies to other data sources.
 
 How the server stores the items depends on its implementation and
