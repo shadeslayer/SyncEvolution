@@ -1853,7 +1853,7 @@ SyncSourceConfig::SyncSourceConfig(const string &name, const SyncSourceNodes &no
 }
 
 StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
-                                           "requests a certain synchronization mode:\n"
+                                           "Requests a certain synchronization mode when initiating a sync:\n"
                                            "  two-way             = only send/receive changes since last sync\n"
                                            "  slow                = exchange all items\n"
                                            "  refresh-from-client = discard all remote items and replace with\n"
@@ -1862,7 +1862,13 @@ StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            "                        the items on the server\n"
                                            "  one-way-from-client = transmit changes from client\n"
                                            "  one-way-from-server = transmit changes from server\n"
-                                           "  none (or disabled)  = synchronization disabled",
+                                           "  disabled (or none)  = synchronization disabled\n"
+                                           "When accepting a sync session in a SyncML server (HTTP server), only\n"
+                                           "sources with sync != disabled are made available to the client,\n"
+                                           "which chooses the final sync mode based on its own configuration.\n"
+                                           "When accepting a sync session in a SyncML client (local sync with\n"
+                                           "the server contacting SyncEvolution on a device), the sync mode\n"
+                                           "specified in the client is typically overriden by the server.\n",
                                            "disabled",
                                            "",
                                            Values() +
