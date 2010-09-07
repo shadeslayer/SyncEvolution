@@ -1210,6 +1210,7 @@
    Memcheck:Leak
    ...
    fun:g_object_*
+   ...
    fun:e_cal_new*
 }
 {
@@ -1217,6 +1218,7 @@
    Memcheck:Leak
    ...
    fun:g_signal*
+   ...
    fun:e_cal_new*
 }
 {
@@ -1224,6 +1226,7 @@
    Memcheck:Leak
    ...
    fun:g_object_*
+   ...
    fun:e_book_new*
 }
 {
@@ -1231,6 +1234,7 @@
    Memcheck:Leak
    ...
    fun:g_signal_*
+   ...
    fun:e_book_new*
 }
 
@@ -4643,6 +4647,13 @@
 {
    icaltimezone_get_component IV
    Memcheck:Value8
+   ...
+   fun:icalcomponent_as_ical_string*
+   fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
+{
+   icaltimezone_get_component V
+   Memcheck:Cond
    ...
    fun:icalcomponent_as_ical_string*
    fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
