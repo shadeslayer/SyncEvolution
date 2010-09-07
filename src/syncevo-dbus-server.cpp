@@ -27,6 +27,7 @@
 #include <syncevo/LogRedirect.h>
 #include <syncevo/util.h>
 #include <syncevo/SyncContext.h>
+#include <syncevo/TransportAgent.h>
 #include <syncevo/SoupTransportAgent.h>
 #include <syncevo/SyncSource.h>
 #include <syncevo/SyncML.h>
