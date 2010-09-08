@@ -1,3 +1,30 @@
+SyncEvolution 1.0.1 -> 1.1, xxxxxxxxxx
+======================================
+
+An incremental update, resolving issues where the fixes would have
+been too intrusive for a 1.0.x release. In particular compatibility
+with Nokia phones was improved. Some new features were also included.
+
+Details:
+
+* Nokia phones: avoid data loss in two-way sync due to X-EVOLUTION-UI-SLOT (MBC #2566)
+* Nokia phones: alarm times in UTC, sending PHOTO (BMC #1657, #5860)
+* included all phone templates submitted to syncevolution.org Wiki (BMC #5727)
+* syncevo-phone-config: set consumerReady in output, more useful for Wiki (BMC #3803)
+* workaround for D-Bus timeouts in EDS libecal/libebook (MBC #4026)
+* sync-ui (GTK version): app is now listed as "SyncEvolution (GTK)" under "Office"
+* added generic command line options for importing, exporting, updating, listing
+  and deleting items in the different backends (http://syncevolution.org/blogs/pohly/2010/manipulate-evolution-kcalextendedmkcal-qtcontacts-pim-items-uniform-command-line)
+* added backends for mKCal and QtContacts (MeeGo PIM storage),
+  meant to be used for manipulating this data on the command line
+* enhanced D-Bus interface (BMC #3558, #3559, #3560, #3562, #3563)
+* the command line tool now warns when running against a different D-Bus daemon (BMC #3563)
+* creating and configuring sources in a context (without peer-specific
+  properties) is now supported
+* improved documentation: README.rst, man page, and --help output
+* fixed some compile issues (MBC #6367), improved nightly testing
+
+
 SyncEvolution 1.0 -> 1.0.1, 16.07.2010
 ======================================
 
