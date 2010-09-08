@@ -3470,6 +3470,25 @@
    fun:e_book_handle_response
 }
 
+# ==32215== 34 bytes in 34 blocks are definitely lost in loss record 988 of 2,156
+# ==32215==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==32215==    by 0x6432504: g_malloc (in /lib/libglib-2.0.so.0.2400.1)
+# ==32215==    by 0x6449D7D: g_strdup (in /lib/libglib-2.0.so.0.2400.1)
+# ==32215==    by 0x505F75A: e_contact_get (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==32215==    by 0x505F5B0: e_contact_get_const (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==32215==    by 0x505FD9F: e_contact_new_from_vcard (in /usr/lib/libebook-1.2.so.9.3.1)
+# ==32215==    by 0x59ADE8: SyncEvo::EvolutionContactSource::insertItem(std::string const&, std::string const&, bool) (EvolutionContactSource.cpp:318)
+{
+   e_contact_new_from_vcard + g_strdup
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_strdup
+   fun:e_contact_get
+   fun:e_contact_get_const
+   fun:e_contact_new_from_vcard
+}
+
 # ==7097== 2,236 (116 direct, 2,120 indirect) bytes in 1 blocks are definitely lost in loss record 16 of 31
 # ==7097==    at 0x401C7EF: calloc (vg_replace_malloc.c:279)
 # ==7097==    by 0x4455994: g_malloc0 (gmem.c:151)
