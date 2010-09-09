@@ -175,7 +175,11 @@ class Context:
 
     def runCommand(self, cmd):
         """Log and run the given command, throwing an exception if it fails."""
-        print "%s: %s" % (os.getcwd(), cmd)
+        if "valgrindcheck.sh" in cmd:
+            print "*** ( cd %s; env VALGRIND_LOG='%s' VALGRIND_ARGS='%s' %s )" % \
+                (os.getcwd(), os.getenv("VALGRIND_LOG", ""), os.getenv("VALGRIND_ARGS", ""), cmd)
+        else:
+            print "*** ( cd %s; %s )" % (os.getcwd(), cmd)
         sys.stdout.flush()
         result = os.system(cmd)
         if result != 0:
