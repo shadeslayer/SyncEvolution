@@ -389,7 +389,11 @@ if test $enable_dbus_service == "yes"; then
                  AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
                  [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
     need_glib=yes
-    PKG_CHECK_MODULES(LIBNOTIFY, [libnotify], HAVE_LIBNOTIFY=yes, HAVE_LIBNOTIFY=no)
+    # Recent libnotify releases work with gtk+-2.0 and gtk+-3.0. We
+    # pick gtk+-2.0 here, to be compatible with old libnotify releases
+    # which had that hard-cored and because sync-ui also depends on
+    # gtk+-2.0.
+    PKG_CHECK_MODULES(LIBNOTIFY, [libnotify gtk+-2.0], HAVE_LIBNOTIFY=yes, HAVE_LIBNOTIFY=no)
     AC_ARG_ENABLE(notify,
                   AS_HELP_STRING([--enable-notify],
                                  [send notifications for automatic sync events]),
