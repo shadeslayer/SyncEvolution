@@ -198,6 +198,54 @@ library code. Most likely the suppressions are system
 dependent and might have to be updated from time to time.
 
 
+Committing Changes
+------------------
+
+Here are some guidelines for well-formed commits:
+- Avoid unnecessary white space changes in the source code.
+- Don't mix unrelated changes in one single commit. Every
+  single commit should leave the code in a functional state
+  (compiles, unit tests pass, ...).
+- Document new functions and structures with Doxygen comments.
+  These comments should really add information, not just
+  repeat the name of the entity. At least paraphrase the names.
+- Each commit message should follow the format
+  <item>: <summary> [(BMC #1234)]
+  <blank line>
+  <body>
+- <item> here refers to the module, class or functionality modified
+  in the commit, for example "autotools" for the build scripts,
+  "EvolutionContactSource" for the EDS contact backend, etc.
+- <summary> should be consise enough to describe the patch on
+  its own.
+- The optional bugs.meego.com (BMC) number in round brackets
+  refers to the issue addressed by the commit. Most changes,
+  in particular bug fixes, should have such an issue filed
+  for tracking purposes.
+- The body (hard-wrapped, multiple paragraphs for long text)
+  should include the following pieces of information,
+  if applicable:
+  - problem statement (*why* is the change relevant?)
+  - summary of the solution (*how* is the problem solved?)
+  - what other solutions were considered and rejected (*context*
+    for the solution)
+  - known gaps (in particularly useful during code review,
+    which will start with the oldest, possibly incomplete patch first)
+
+When writing source code comments and commit messages, always remember
+that you are communicating with someone. This person might be even be
+you in some distant future, trying to remember why the heck something
+was done the way it was done... There might not be a chance to ask
+questions, so think about what such a person might want to know and
+answer it in advance.
+
+There is a certain redundancy between source code comments, commit
+messages and issue tracker comments. Whenever possible, the
+description of the solution should be in the source code itself, with
+only a brief summary and/or pointer in the commit message. It's fine
+to copy-and-paste to reduce the overall effort.
+
+
 Building a Release
 ------------------
 
