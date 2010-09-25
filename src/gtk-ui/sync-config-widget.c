@@ -253,8 +253,7 @@ get_config_for_overwrite_prevention_cb (SyncevoSession *session,
 static void
 save_config (save_config_data *data,
              SyncevoSession *session)
-{
-    char *is_client;
+{   
     SyncConfigWidget *w = data->widget;
 
     if (data->delete) {
@@ -266,8 +265,7 @@ save_config (save_config_data *data,
      * need to test that we aren't overwriting existing
      * configs */
     /* TODO: This might be a good thing to do for any configurations.*/
-    syncevo_config_get_value (w->config, NULL, "PeerIsClient", &is_client);                                
-    if (is_client && g_strcmp0 ("1", is_client) == 0 && 
+    if (peer_is_client (w->config) &&
         !w->configured && !data->temporary) {
 
         syncevo_session_get_config (session,
@@ -389,6 +387,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         GHashTableIter iter;
         source_widgets *widgets;
         char *name;
+        gboolean client = peer_is_client (self->config);
 
         send = toggle_get_active (self->send_check);
         receive = toggle_get_active (self->receive_check);
@@ -396,9 +395,13 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         if (send && receive) {
             mode = SYNCEVO_SYNC_TWO_WAY;
         } else if (send) {
-            mode = SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT;
+            mode = client ?
+                SYNCEVO_SYNC_ONE_WAY_FROM_SERVER :
+                SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT;
         } else if (receive) {
-            mode = SYNCEVO_SYNC_ONE_WAY_FROM_SERVER;
+            mode = client ?
+                SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT :
+                SYNCEVO_SYNC_ONE_WAY_FROM_SERVER;
         } else {
             mode = SYNCEVO_SYNC_NONE;
         }
@@ -549,9 +552,7 @@ static void update_buttons (SyncConfigWidget *self)
 
 
     if (self->current && self->config) {
-        char *client;
-        syncevo_config_get_value (self->config, NULL, "PeerIsClient", &client);
-        if (client && g_strcmp0 (client, "1") == 0) {
+        if (peer_is_client (self->config)) {
             gtk_button_set_label (GTK_BUTTON (self->stop_button),
                                               _("Stop using device"));
         } else {
@@ -836,10 +837,11 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     char *password = "";
     char *sync_url = "";
     const char *descr;
-    char *str, *device;
+    char *str;
     GtkWidget *label, *align;
     SyncevoSyncMode mode = SYNCEVO_SYNC_NONE;
     gboolean send, receive;
+    gboolean client;
 
     gtk_container_foreach (GTK_CONTAINER (self->server_settings_table),
                            (GtkCallback)remove_child,
@@ -852,8 +854,8 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
     gtk_table_resize (GTK_TABLE (self->mode_table),
                       2, 1);
 
-    syncevo_config_get_value (self->config, NULL, "PeerIsClient", &device);
-    if (device && g_strcmp0 (device, "1") == 0) {
+    client = peer_is_client (self->config);
+    if (client) {
         if (!self->device_template_selected) {
             gtk_widget_hide (self->settings_box);
             gtk_widget_show (self->device_selector_box);
@@ -880,12 +882,22 @@ sync_config_widget_update_expander (SyncConfigWidget *self)
         send = receive = TRUE;
         break;
     case SYNCEVO_SYNC_ONE_WAY_FROM_CLIENT:
-        send = TRUE;
-        receive = FALSE;
+        if (client) {
+            send = FALSE;
+            receive = TRUE;
+        } else {
+            send = TRUE;
+            receive = FALSE;
+        }
         break;
     case SYNCEVO_SYNC_ONE_WAY_FROM_SERVER:
-        send = FALSE;
-        receive = TRUE;
+        if (client) {
+            send = TRUE;
+            receive = FALSE;
+        } else {
+            send = FALSE;
+            receive = TRUE;
+        }
         break;
     default:
         gtk_widget_show (self->complex_config_info_bar);

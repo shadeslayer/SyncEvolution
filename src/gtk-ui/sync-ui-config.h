@@ -87,4 +87,9 @@ typedef struct server_data {
 server_data* server_data_new (const char *name, gpointer *data);
 void server_data_free (server_data *data, gboolean free_config);
 
+/**
+ * utility function: TRUE if the config belongs to a client (PeerIsClient)
+ */
+gboolean peer_is_client (SyncevoConfig *config);
+
 #endif

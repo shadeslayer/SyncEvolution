@@ -419,12 +419,12 @@ refresh_from_server_clicked_cb (GtkButton *btn, app_data *data)
     operation_data *op_data;
     char *message;
 
-    /* TRANSLATORS: confirmation dialog for refresh-from-server. Placeholder
+    /* TRANSLATORS: confirmation dialog for "refresh from peer". Placeholder
      * is service/device name */
     message = g_strdup_printf (_("Do you want to delete all local data and replace it with "
                                  "data from %s? This is not usually advised."),
                                data->current_service->pretty_name);
-    /* TRANSLATORS: refresh-from-server confirmation dialog buttons */
+    /* TRANSLATORS: "refresh from peer" confirmation dialog buttons */
     if (!show_confirmation (data->sync_win, message,
                             _("Yes, delete and replace"), _("No"))) {
         g_free (message);
@@ -434,7 +434,9 @@ refresh_from_server_clicked_cb (GtkButton *btn, app_data *data)
 
     op_data = g_slice_new (operation_data);
     op_data->data = data;
-    op_data->operation = OP_SYNC_REFRESH_FROM_SERVER;
+    op_data->operation = peer_is_client (data->current_service->config) ?
+        OP_SYNC_REFRESH_FROM_CLIENT :
+        OP_SYNC_REFRESH_FROM_SERVER;
     op_data->started = FALSE;
     syncevo_server_start_session (data->server,
                                   data->current_service->name,
@@ -450,12 +452,12 @@ refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
     operation_data *op_data;
     char *message;
 
-    /* TRANSLATORS: confirmation dialog for refresh-from-client. Placeholder
+    /* TRANSLATORS: confirmation dialog for "refresh from local side". Placeholder
      * is service/device name */
     message = g_strdup_printf (_("Do you want to delete all data in %s and replace it with "
                                  "your local data? This is not usually advised."),
                                data->current_service->pretty_name);
-    /* TRANSLATORS: refresh-from-client confirmation dialog buttons */
+    /* TRANSLATORS: "refresh from local side" confirmation dialog buttons */
     if (!show_confirmation (data->sync_win, message,
                             _("Yes, delete and replace"), _("No"))) {
         g_free (message);
@@ -465,7 +467,9 @@ refresh_from_client_clicked_cb (GtkButton *btn, app_data *data)
 
     op_data = g_slice_new (operation_data);
     op_data->data = data;
-    op_data->operation = OP_SYNC_REFRESH_FROM_CLIENT;
+    op_data->operation = peer_is_client (data->current_service->config) ?
+        OP_SYNC_REFRESH_FROM_SERVER :
+        OP_SYNC_REFRESH_FROM_CLIENT;
     op_data->started = FALSE;
     syncevo_server_start_session (data->server,
                                   data->current_service->name,
