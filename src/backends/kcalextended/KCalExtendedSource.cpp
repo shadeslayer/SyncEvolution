@@ -30,6 +30,7 @@
 #include <journal.h>
 #include <extendedcalendar.h>
 #include <extendedstorage.h>
+#include <sqlitestorage.h>
 #include <icalformat.h>
 #include <memorycalendar.h>
 
@@ -200,16 +201,62 @@ void KCalExtendedSource::open()
     m_data = new KCalExtendedData(this, getDatabaseID(),
                                   KCalCore::IncidenceBase::TypeEvent);
     m_data->m_calendar = mKCal::ExtendedCalendar::Ptr(new mKCal::ExtendedCalendar(KDateTime::Spec::LocalZone()));
-    m_data->m_storage = mKCal::ExtendedCalendar::defaultStorage(m_data->m_calendar);
 
-    if (!m_data->m_storage->open()) {
-        throwError("failed to open storage");
+    // read specified database name from evolutionsource property
+    const char *databaseID = getDatabaseID();
+
+    if ( strcmp(databaseID, "" ) == 0 || boost::starts_with(databaseID, "file://") ) {
+        // if databaseID is empty, create default storage at default location
+        // else if databaseID has a "file://" prefix, create storage at the specified place
+        // use default notebook in default storage
+        if ( boost::starts_with(databaseID, "file://") ) {
+            mKCal::SqliteStorage::Ptr ss = mKCal::SqliteStorage::Ptr( new mKCal::SqliteStorage ( m_data->m_calendar , QString(databaseID + 7), true ) );
+            m_data->m_storage = ss.staticCast<mKCal::ExtendedStorage>();
+        } else {
+            m_data->m_storage = mKCal::ExtendedCalendar::defaultStorage(m_data->m_calendar);
+        }
+        if (!m_data->m_storage->open()) {
+            throwError("failed to open storage");
+        }
+        mKCal::Notebook::Ptr defaultNotebook = m_data->m_storage->defaultNotebook();
+        if (!defaultNotebook) {
+            throwError("no default Notebook");
+        }
+        m_data->m_notebookUID = defaultNotebook->uid();
+    } else {
+        // use databaseID as notebook name to search for an existing notebook
+        // if found use it, otherwise:
+        // 1) with "SyncEvolution_Test_" prefix, create a new notebook with given name and add it to default storage
+        // 2) without a special prefix, throw an error
+        m_data->m_storage = mKCal::ExtendedCalendar::defaultStorage(m_data->m_calendar);
+        if (!m_data->m_storage->open()) {
+            throwError("failed to open storage");
+        }
+        QString name = databaseID;
+        mKCal::Notebook::Ptr notebook;
+        mKCal::Notebook::List notebookList = m_data->m_storage->notebooks();
+        mKCal::Notebook::List::Iterator it;
+
+        for ( it = notebookList.begin(); it != notebookList.end(); ++it ) {
+            if ( name == (*it)->name() ) {
+                break;
+            }
+        }
+        if ( it == notebookList.end() ) {
+            if ( boost::starts_with(databaseID, "SyncEvolution_Test_") ) {
+                notebook = mKCal::Notebook::Ptr ( new mKCal::Notebook(QString(), name, QString(), QString(), false, true, false, false,true) );
+                if ( !notebook ) {
+                    throwError("failed to create notebook");
+                }
+                m_data->m_storage->addNotebook(notebook, false);
+            } else {
+                throwError(string("no such notebook with name \"") + string(databaseID) + string("\" in default storage"));
+            }
+        } else {
+            notebook = *it;
+        }
+        m_data->m_notebookUID = notebook->uid();
     }
-    mKCal::Notebook::Ptr defaultNotebook = m_data->m_storage->defaultNotebook();
-    if (!defaultNotebook) {
-        throwError("no default Notebook");
-    }
-    m_data->m_notebookUID = defaultNotebook->uid();
 }
 
 bool KCalExtendedSource::isEmpty()
@@ -242,8 +289,23 @@ KCalExtendedSource::Databases KCalExtendedSource::getDatabases()
 {
     Databases result;
 
-    result.push_back(Database("select database via Notebook name",
-                              ""));
+    m_data = new KCalExtendedData(this, getDatabaseID(),
+                                  KCalCore::IncidenceBase::TypeEvent);
+    m_data->m_calendar = mKCal::ExtendedCalendar::Ptr(new mKCal::ExtendedCalendar(KDateTime::Spec::LocalZone()));
+    m_data->m_storage = mKCal::ExtendedCalendar::defaultStorage(m_data->m_calendar);
+    if (!m_data->m_storage->open()) {
+        throwError("failed to open storage");
+    }
+    mKCal::Notebook::List notebookList = m_data->m_storage->notebooks();
+    mKCal::Notebook::List::Iterator it;
+    for ( it = notebookList.begin(); it != notebookList.end(); ++it ) {
+        bool useTracker = (*it)->isDefault();
+        result.push_back(Database( (*it)->name().toStdString(), 
+                                   (m_data->m_storage).staticCast<mKCal::SqliteStorage>()->databaseName().toStdString(), 
+                                   (*it)->isDefault()));
+    }
+    m_data->m_storage->close();
+    m_data->m_calendar->close();
     return result;
 }
 
