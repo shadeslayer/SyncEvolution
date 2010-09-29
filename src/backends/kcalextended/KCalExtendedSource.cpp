@@ -154,7 +154,7 @@ KCalCore::Incidence::Ptr KCalExtendedData::findIncidence(const string &luid)
     QString uid = id.getIDString();
     KDateTime rid = id.getDateTime();
     if (!m_storage->load(uid, rid)) {
-        m_parent->throwError("failed to load incidence");
+        m_parent->throwError(string("failed to load incidence ") + luid);
     }
     KCalCore::Incidence::Ptr incidence = m_calendar->incidence(uid, rid);
     return incidence;
@@ -403,10 +403,10 @@ void KCalExtendedSource::deleteItem(const string &uid)
 {
     KCalCore::Incidence::Ptr incidence = m_data->findIncidence(uid);
     if (!incidence) {
-        throwError("incidence not found");
+        throwError(string("incidence ") + uid + " not found");
     }
     if (!m_data->m_calendar->deleteIncidence(incidence)) {
-        throwError("could not delete incidence");
+        throwError(string("could not delete incidence") + uid);
     }
     m_data->m_modified = true;
 }
