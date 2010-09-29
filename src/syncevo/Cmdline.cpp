@@ -519,6 +519,17 @@ bool Cmdline::run() {
             checkForPeerProps();
         }
 
+        // True if the target configuration is a context like @default
+        // or @foobar. Relevant in several places in the following
+        // code.
+        bool configureContext;
+        {
+            string peer, context;
+            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_server), peer, context);
+            configureContext = peer.empty();
+        }
+
+
         // Both config changes and migration are implemented as copying from
         // another config (template resp. old one). Migration also moves
         // the old config.
@@ -571,8 +582,7 @@ bool Cmdline::run() {
                 if (m_template.empty()) {
                     // template is the peer name
                     configTemplate = m_server;
-                    SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context);
-                    if (peer.empty()) {
+                    if (configureContext) {
                         // configuring a context, template doesn't matter =>
                         // use default "SyncEvolution" template
                         configTemplate =
@@ -635,9 +645,26 @@ bool Cmdline::run() {
             from->setConfigFilter(false, entry.first, entry.second);
         }
 
-        // write into the requested configuration, creating it if necessary
+        // Write into the requested configuration, creating it if necessary.
+        //
+        // Which sources are configured is determined as follows:
+        // - all sources in the template by default, except when
+        // - sources are listed explicitly, and either
+        // - updating an existing config or
+        // - configuring a context.
+        //
+        // This implies that when configuring a peer from scratch, all
+        // sources in the template will be created, with command line
+        // source properties applied to all of them. This might not be
+        // what we want, but because this is how we have done it
+        // traditionally, I keep this behavior for now.
+        set<string> *sources = NULL;
+        if (!m_sources.empty() &&
+            (!fromScratch || configureContext)) {
+            sources = &m_sources;
+        }
         boost::shared_ptr<SyncContext> to(createSyncClient());
-        to->copy(*from, !fromScratch && !m_sources.empty() ? &m_sources : NULL);
+        to->copy(*from, sources);
 
         // Sources are active now according to the server default.
         // Disable all sources not selected by user (if any selected)
@@ -679,18 +706,27 @@ bool Cmdline::run() {
                     }
                 }
 
+                // Do sanity checking of source (can it be enabled?),
+                // but only set the sync mode if configuring a peer.
+                // A context-only config doesn't have the "sync"
+                // property.
+                string syncMode;
                 if (!disable.empty()) {
                     // abort if the user explicitly asked for the sync source
                     // and it cannot be enabled, otherwise disable it silently
                     if (selected) {
                         SyncContext::throwError(source + ": " + disable);
                     }
-                    sourceConfig->setSync("disabled");
+                    syncMode = "disabled";
                 } else if (selected) {
                     // user absolutely wants it: enable even if off by default
                     FilterConfigNode::ConfigFilter::const_iterator sync =
                         m_sourceProps.find(SyncSourceConfig::m_sourcePropSync.getName());
-                    sourceConfig->setSync(sync == m_sourceProps.end() ? "two-way" : sync->second);
+                    syncMode = sync == m_sourceProps.end() ? "two-way" : sync->second;
+                }
+                if (!syncMode.empty() &&
+                    !configureContext) {
+                    sourceConfig->setSync(syncMode);
                 }
             }
 
@@ -1703,6 +1739,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testAddSource);
     CPPUNIT_TEST(testSync);
     CPPUNIT_TEST(testConfigure);
+    CPPUNIT_TEST(testConfigureSources);
     CPPUNIT_TEST(testOldConfigure);
     CPPUNIT_TEST(testListSources);
     CPPUNIT_TEST(testMigrate);
@@ -2553,6 +2590,87 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF(syncProperties + sourceProperties,
                                       filterIndented(cmdline.m_out.str()));
         }
+    }
+
+    void testConfigureSources() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+
+        // create from scratch with only addressbook configured
+        {
+            TestCmdline cmdline("--configure",
+                                "--source-property", "evolutionsource = file://tmp/test",
+                                "--source-property", "type = file:text/vcard:3.0",
+                                "@foobar",
+                                "addressbook",
+                                NULL);
+            cmdline.doit();
+        }
+        string root = m_testDir;
+        root += "/syncevolution/foobar";
+        string res = scanFiles(root);
+        removeRandomUUID(res);
+        string expected =
+            "config.ini:# logdir = \n"
+            "config.ini:# maxlogdirs = 10\n"
+            "config.ini:deviceId = fixed-devid\n"
+            "sources/addressbook/config.ini:type = file:text/vcard:3.0\n"
+            "sources/addressbook/config.ini:evolutionsource = file://tmp/test\n"
+            "sources/addressbook/config.ini:# evolutionuser = \n"
+            "sources/addressbook/config.ini:# evolutionpassword = \n";
+        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+
+        // add calendar
+        {
+            TestCmdline cmdline("--configure",
+                                "--source-property", "evolutionsource = file://tmp/test2",
+                                "--source-property", "type = calendar",
+                                "@foobar",
+                                "calendar",
+                                NULL);
+            cmdline.doit();
+        }
+        res = scanFiles(root);
+        removeRandomUUID(res);
+        expected +=
+            "sources/calendar/config.ini:type = calendar\n"
+            "sources/calendar/config.ini:evolutionsource = file://tmp/test2\n"
+            "sources/calendar/config.ini:# evolutionuser = \n"
+            "sources/calendar/config.ini:# evolutionpassword = \n";
+        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+
+        // add ScheduleWorld peer
+        {
+            TestCmdline cmdline("--configure",
+                                "scheduleworld@foobar",
+                                NULL);
+            cmdline.doit();
+        }
+        res = scanFiles(root);
+        removeRandomUUID(res);
+        expected = ScheduleWorldConfig();
+        boost::replace_all(expected,
+                           "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard",
+                           "peers/scheduleworld/sources/addressbook/config.ini:type = file:text/vcard:3.0");
+        boost::replace_all(expected,
+                           "addressbook/config.ini:# evolutionsource = ",
+                           "addressbook/config.ini:evolutionsource = file://tmp/test");
+        boost::replace_all(expected,
+                           "calendar/config.ini:# evolutionsource = ",
+                           "calendar/config.ini:evolutionsource = file://tmp/test2");
+        sortConfig(expected);
+        // Known problem (BMC #1023): type is reset to what is in the template,
+        // should be preserved.
+        //
+        // Temporarily fix the "expected" result so
+        // that we can pass the rest of the test.
+        boost::replace_all(expected,
+                           "peers/scheduleworld/sources/addressbook/config.ini:type = file:text/vcard:3.0",
+                           "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard");
+        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
     }
 
     void testOldConfigure() {
