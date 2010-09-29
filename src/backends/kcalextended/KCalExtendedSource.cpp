@@ -24,7 +24,7 @@
 
 #include "KCalExtendedSource.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 
 #include <event.h>
 #include <journal.h>
@@ -58,9 +58,6 @@ class KCalExtendedData
     QString m_notebookUID;
     KCalCore::IncidenceBase::IncidenceType m_type;
 
-    // needed when using Qt code
-    static QApplication *m_app;
-
     mKCal::ExtendedCalendar::Ptr m_calendar;
     mKCal::ExtendedStorage::Ptr m_storage;
 
@@ -73,10 +70,10 @@ public:
         m_notebook(notebook),
         m_type(type)
     {
-        if (!m_app) {
+        if (!qApp) {
             static const char *argv[] = { "SyncEvolution" };
             static int argc = 1;
-            m_app = new QApplication(argc, (char **)argv);
+            new QCoreApplication(argc, (char **)argv);
         }
     }
 
@@ -170,8 +167,6 @@ KCalExtendedData::ItemID KCalExtendedData::getItemID(const KCalCore::Incidence::
     }
     return ItemID(qstring2std(uid), ridStr);
 }
-
-QApplication *KCalExtendedData::m_app;
 
 KCalExtendedSource::KCalExtendedSource(const SyncSourceParams &params) :
     TestingSyncSource(params)

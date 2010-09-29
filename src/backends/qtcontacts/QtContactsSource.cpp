@@ -24,7 +24,7 @@
 
 #include "QtContactsSource.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 
 #include <QContact>
 #include <QContactManager>
@@ -53,19 +53,16 @@ class QtContactsData
     QString m_managerURI;
     cxxptr<QContactManager> m_manager;
 
-    // needed when using Qt code
-    static QApplication *m_app;
-
 public:
     QtContactsData(QtContactsSource *parent,
                    const QString &managerURI) :
         m_parent(parent),
         m_managerURI(managerURI)
     {
-        if (!m_app) {
+        if (!qApp) {
             static const char *argv[] = { "SyncEvolution" };
             static int argc = 1;
-            m_app = new QApplication(argc, (char **)argv);
+            new QCoreApplication(argc, (char **)argv);
         }
     }
 
@@ -125,8 +122,6 @@ public:
 
     friend class QtContactsSource;
 };
-
-QApplication *QtContactsData::m_app;
 
 QtContactsSource::QtContactsSource(const SyncSourceParams &params) :
     TrackingSyncSource(params)
