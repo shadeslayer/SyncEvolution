@@ -554,7 +554,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """check the Server.GetCapabilities() call"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
-        self.failUnlessEqual(capabilities, ['ConfigChanged', 'GetConfigName', 'Notifications', 'SessionFlags', 'Version'])
+        self.failUnlessEqual(capabilities, ['ConfigChanged', 'GetConfigName', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
 
     def testVersions(self):
         """check the Server.GetVersions() call"""
@@ -907,6 +907,13 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
 
     def testCreateSession(self):
         """ask for session"""
+        self.failUnlessEqual(self.session.GetFlags(), [])
+        self.failUnlessEqual(self.session.GetConfigName(), "@default");
+
+    def testAttachSession(self):
+        """attach to running session"""
+        self.session.Attach()
+        self.session.Detach()
         self.failUnlessEqual(self.session.GetFlags(), [])
         self.failUnlessEqual(self.session.GetConfigName(), "@default");
 

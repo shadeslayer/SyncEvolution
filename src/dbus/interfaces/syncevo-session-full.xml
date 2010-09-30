@@ -2,8 +2,18 @@
 <node name="/" xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
   <interface name="org.syncevolution.Session">
     <doc:doc><doc:description>
-      <doc:para>A Session object is used to do do syncs and to modify the server configurations. Clients can create a Session with Server.StartSession() and detach from it with Session.Detach().</doc:para>
-      <doc:para>Commands (other than Detach()) cannot be used before the status changes to "idle" (see GetStatus() and StatusChanged).</doc:para>
+        <doc:para>
+          A Session object is used to do do syncs and to modify
+          the server configurations. Clients can create a Session with
+          Server.StartSession(), attach to a session started by some other
+          client with Session.Attach(), and detach from it with
+          Session.Detach().
+        </doc:para>
+        <doc:para>
+          Commands (other than Attach() and Detach()) cannot be used
+          before the status changes to "idle" (see GetStatus() and
+          StatusChanged).
+        </doc:para>
     </doc:description></doc:doc>
 
     <method name="GetFlags">

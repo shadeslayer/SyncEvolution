@@ -65,6 +65,12 @@
                 </doc:definition>
               </doc:item>
              
+              <doc:item><doc:term>SessionAttach</doc:term>
+                <doc:definition>Session.Attach()
+                  implemented
+                </doc:definition>
+              </doc:item>
+             
               <doc:item><doc:term>Notifications</doc:term>
                 <doc:definition>Server.DisableNotifications()
                   and Server.EnableNotifications() implemented

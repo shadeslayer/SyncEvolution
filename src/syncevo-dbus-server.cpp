@@ -1822,6 +1822,9 @@ class Session : public DBusObjectHelper,
     /** Cmdline to execute command line args */
     boost::shared_ptr<CmdlineWrapper> m_cmdline;
 
+    /** Session.Attach() */
+    void attach(const Caller_t &caller);
+
     /** Session.Detach() */
     void detach(const Caller_t &caller);
 
@@ -1868,13 +1871,30 @@ class Session : public DBusObjectHelper,
     static string syncStatusToString(SyncStatus state);
 
 public:
+    /**
+     * Sessions must always be held in a shared pointer
+     * because some operations depend on that. This
+     * constructor function here ensures that and
+     * also adds a weak pointer to the instance itself,
+     * so that it can create more shared pointers as
+     * needed.
+     */
+    static boost::shared_ptr<Session> createSession(DBusServer &server,
+                                                    const std::string &peerDeviceID,
+                                                    const std::string &config_name,
+                                                    const std::string &session,
+                                                    const std::vector<std::string> &flags = std::vector<std::string>());
+    ~Session();
+
+private:
     Session(DBusServer &server,
             const std::string &peerDeviceID,
             const std::string &config_name,
             const std::string &session,
             const std::vector<std::string> &flags = std::vector<std::string>());
-    ~Session();
+    boost::weak_ptr<Session> m_me;
 
+public:
     enum {
         PRI_CMDLINE = -10,
         PRI_DEFAULT = 0,
@@ -2890,6 +2910,19 @@ string DBusSync::askPassword(const string &passwordName,
 
 /***************** Session implementation ***********************/
 
+void Session::attach(const Caller_t &caller)
+{
+    boost::shared_ptr<Client> client(m_server.findClient(caller));
+    if (!client) {
+        throw runtime_error("unknown client");
+    }
+    boost::shared_ptr<Session> me = m_me.lock();
+    if (!me) {
+        throw runtime_error("session already deleted?!");
+    }
+    client->attach(me);
+}
+
 void Session::detach(const Caller_t &caller)
 {
     boost::shared_ptr<Client> client(m_server.findClient(caller));
@@ -3163,6 +3196,17 @@ string Session::syncStatusToString(SyncStatus state)
     };
 }
 
+boost::shared_ptr<Session> Session::createSession(DBusServer &server,
+                                                  const std::string &peerDeviceID,
+                                                  const std::string &config_name,
+                                                  const std::string &session,
+                                                  const std::vector<std::string> &flags)
+{
+    boost::shared_ptr<Session> me(new Session(server, peerDeviceID, config_name, session, flags));
+    me->m_me = me;
+    return me;
+}
+
 Session::Session(DBusServer &server,
                  const std::string &peerDeviceID,
                  const std::string &config_name,
@@ -3199,6 +3243,7 @@ Session::Session(DBusServer &server,
     emitStatus(*this, "StatusChanged"),
     emitProgress(*this, "ProgressChanged")
 {
+    add(this, &Session::attach, "Attach");
     add(this, &Session::detach, "Detach");
     add(this, &Session::getFlags, "GetFlags");
     add(this, &Session::getNormalConfigName, "GetConfigName");
@@ -4053,10 +4098,10 @@ void Connection::process(const Caller_t &caller,
 
             // run session as client or server
             m_state = PROCESSING;
-            m_session.reset(new Session(m_server,
-                                        peerDeviceID,
-                                        config,
-                                        m_sessionID));
+            m_session = Session::createSession(m_server,
+                                               peerDeviceID,
+                                               config,
+                                               m_sessionID);
             if (serverMode) {
                 m_session->initServer(SharedBuffer(reinterpret_cast<const char *>(message.second),
                                                    message.first),
@@ -4691,6 +4736,7 @@ vector<string> DBusServer::getCapabilities()
     capabilities.push_back("Notifications");
     capabilities.push_back("Version");
     capabilities.push_back("SessionFlags");
+    capabilities.push_back("SessionAttach");
     return capabilities;
 }
 
@@ -4789,11 +4835,11 @@ void DBusServer::startSessionWithFlags(const Caller_t &caller,
                                                  caller,
                                                  watch);
     std::string new_session = getNextSession();   
-    boost::shared_ptr<Session> session(new Session(*this,
-                                                   "is this a client or server session?",
-                                                   server,
-                                                   new_session,
-                                                   flags));
+    boost::shared_ptr<Session> session = Session::createSession(*this,
+                                                                "is this a client or server session?",
+                                                                server,
+                                                                new_session,
+                                                                flags);
     client->attach(session);
     session->activate();
     enqueue(session);
@@ -5737,10 +5783,10 @@ void AutoSyncManager::startTask()
         m_activeTask.reset(new AutoSyncTask(m_workQueue.front()));
         m_workQueue.pop_front();
         string newSession = m_server.getNextSession();   
-        m_session.reset(new Session(m_server,
-                                    "",
-                                    m_activeTask->m_peer,
-                                    newSession));
+        m_session = Session::createSession(m_server,
+                                           "",
+                                           m_activeTask->m_peer,
+                                           newSession);
         m_session->setPriority(Session::PRI_AUTOSYNC);
         m_session->addListener(this);
         m_server.enqueue(m_session);
