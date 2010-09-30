@@ -17,7 +17,7 @@ Details:
   and deleting items in the different backends (http://syncevolution.org/blogs/pohly/2010/manipulate-evolution-kcalextendedmkcal-qtcontacts-pim-items-uniform-command-line)
 * added backends for mKCal and QtContacts (MeeGo PIM storage),
   meant to be used for manipulating this data on the command line
-* enhanced D-Bus interface (BMC #3558, #3559, #3560, #3562, #3563)
+* enhanced D-Bus interface (BMC #3558, #3559, #3560, #3562, #3563, #7761, #7766)
 * the command line tool now warns when running against a different D-Bus daemon (BMC #3563)
 * creating and configuring sources in a context (without peer-specific
   properties) is now supported
