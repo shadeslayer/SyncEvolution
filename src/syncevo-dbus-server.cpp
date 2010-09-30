@@ -185,6 +185,65 @@ static DBusMessage* SyncEvoHandleException(DBusMessage *msg)
 }
 
 /**
+ * Utility class which makes it easier to work with g_timeout_add_seconds().
+ * Instantiate this class with a specific callback. Use boost::bind()
+ * to attach specific parameters to that callback. Then activate
+ * the timeout. Destructing this class will automatically remove
+ * the timeout and thus ensure that it doesn't trigger without
+ * valid parameters.
+ */
+class Timeout
+{
+    guint m_tag;
+    boost::function<bool ()> m_callback;
+
+public:
+    Timeout() :
+        m_tag(0)
+    {
+    }
+
+    ~Timeout()
+    {
+        if (m_tag) {
+            g_source_remove(m_tag);
+        }
+    }
+
+    /**
+     * call the callback at regular intervals until it returns false
+     */
+    void activate(int seconds,
+                  const boost::function<bool ()> &callback)
+    {
+        m_callback = callback;
+        m_tag = g_timeout_add_seconds(seconds, triggered, static_cast<gpointer>(this));
+        if (!m_tag) {
+            SE_THROW("g_timeout_add_seconds() failed");
+        }
+    }
+
+    /**
+     * stop calling the callback, drop callback
+     */
+    void deactivate()
+    {
+        if (m_tag) {
+            g_source_remove(m_tag);
+            m_tag = 0;
+        }
+        m_callback = 0;
+    }
+
+private:       
+    static gboolean triggered(gpointer data)
+    {
+        Timeout *me = static_cast<Timeout *>(data);
+        return me->m_callback();
+    }
+};
+
+/**
  * Implements the read-only methods in a Session and the Server.
  * Only data is the server configuration name, everything else
  * is created and destroyed inside the methods.
@@ -935,6 +994,8 @@ private:
     SignalWatch2 <string,boost::variant<vector<string>, string> > m_propertyChanged;
 };
 
+
+
 /**
  * Implements the main org.syncevolution.Server interface.
  *
@@ -1188,6 +1249,19 @@ class DBusServer : public DBusObjectHelper,
     //send signals to clients and put logs in the parent logger.
     LoggerBase &m_parentLogger;
 
+    /**
+     * All active timeouts created by addTimeout().
+     * Each timeout which requests to be not called
+     * again will be removed from this list.
+     */
+    list< boost::shared_ptr<Timeout> > m_timeouts;
+
+    /**
+     * called each time a timeout triggers,
+     * removes those which are done
+     */
+    bool callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost::function<bool ()> &callback);
+
 public:
     DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration);
     ~DBusServer();
@@ -1241,6 +1315,15 @@ public:
      * and if so, activates the first one in the queue.
      */
     void checkQueue();
+
+    /**
+     * Invokes the given callback once in the given amount of seconds.
+     * Keeps a copy of the callback. If the DBusServer is destructed
+     * before that time, then the callback will be deleted without
+     * being called.
+     */
+    void addTimeout(const boost::function<bool ()> &callback,
+                    int seconds);
 
     boost::shared_ptr<InfoReq> createInfoReq(const string &type, 
                                              const std::map<string, string> &parameters,
@@ -5128,6 +5211,30 @@ void DBusServer::checkQueue()
             return;
         }
     }
+}
+
+bool DBusServer::callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost::function<bool ()> &callback)
+{
+    if (!callback()) {
+        m_timeouts.remove(timeout);
+        return false;
+    } else {
+        return true;
+    }
+}
+
+void DBusServer::addTimeout(const boost::function<bool ()> &callback,
+                            int seconds)
+{
+    boost::shared_ptr<Timeout> timeout(new Timeout);
+    m_timeouts.push_back(timeout);
+    timeout->activate(seconds,
+                      boost::bind(&DBusServer::callTimeout,
+                                  this,
+                                  // avoid copying the shared pointer here,
+                                  // otherwise the Timeout will never be deleted
+                                  boost::ref(m_timeouts.back()),
+                                  callback));
 }
 
 void DBusServer::infoResponse(const Caller_t &caller,
