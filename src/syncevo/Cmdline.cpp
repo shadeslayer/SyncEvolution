@@ -44,6 +44,7 @@ using namespace std;
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+#include <boost/range.hpp>
 #include <fstream>
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -376,6 +377,42 @@ bool Cmdline::dontRun() const
         return m_dontrun;
     }
 }
+
+/**
+ * Finds first instance of delimiter string in other string. In
+ * addition, it treats "\n\n" in a special way: that delimiter also
+ * matches "\n\r\n".
+ */
+class FindDelimiter {
+    const string m_delimiter;
+public:
+    FindDelimiter(const string &delimiter) :
+        m_delimiter(delimiter)
+    {}
+    boost::iterator_range<string::iterator> operator()(string::iterator begin,
+                                                       string::iterator end)
+    {
+        if (m_delimiter == "\n\n") {
+            // match both "\n\n" and "\n\r\n"
+            while (end - begin >= 2) {
+                if (*begin == '\n') {
+                    if (*(begin + 1) == '\n') {
+                        return boost::iterator_range<string::iterator>(begin, begin + 2);
+                    } else if (end - begin >= 3 &&
+                               *(begin + 1) == '\r' &&
+                               *(begin + 2) == '\n') {
+                        return boost::iterator_range<string::iterator>(begin, begin + 3);
+                    }
+                }
+                ++begin;
+            }
+            return boost::iterator_range<string::iterator>(end, end);
+        } else {
+            boost::sub_range<string> range(begin, end);
+            return boost::find_first(range, m_delimiter);
+        }
+    }
+};
 
 bool Cmdline::run() {
     // --dry-run is only supported by some operations.
@@ -878,12 +915,13 @@ bool Cmdline::run() {
                     } else {
                         typedef boost::split_iterator<string::iterator> string_split_iterator;
                         int count = 0;
+                        FindDelimiter finder(m_delimiter);
+
                         // when updating, check number of luids in advance
                         if (m_update) {
                             unsigned long total = 0;
                             for (string_split_iterator it =
-                                     boost::make_split_iterator(content,
-                                                                boost::first_finder(m_delimiter, boost::is_iequal()));
+                                     boost::make_split_iterator(content, finder);
                                  it != string_split_iterator();
                                  ++it) {
                                 total++;
@@ -895,8 +933,7 @@ bool Cmdline::run() {
                         }
                         list<string>::const_iterator luidit = m_luids.begin();
                         for (string_split_iterator it =
-                                 boost::make_split_iterator(content,
-                                                            boost::first_finder(m_delimiter, boost::is_iequal()));
+                                 boost::make_split_iterator(content, finder);
                              it != string_split_iterator();
                              ++it) {
                             m_out << "#" << count << ": ";

@@ -347,10 +347,15 @@ a list of valid values.
   separated by the chosen delimiter string. stdout can be selected with
   a dash.
 
-  The default delimiter are two newline characters for a blank line. This
-  works for vCard 3.0 and iCalendar 2.0, which never contain blank lines.
-  Because items may or may not end in a newline, as a special case the
-  initial newline of a delimiter is skipped if the item ends in a newline.
+  The default delimiter (two line breaks) matches a blank line. As a special
+  case, it also matches a blank line with DOS line ending (line break,
+  carriage return, line break). This works for vCard 3.0 and iCalendar 2.0,
+  which never contain blank lines.
+
+  When exporting, the default delimiter will always insert two line
+  breaks regardless whether the items contain DOS line ends. As a
+  special case, the initial newline of a delimiter is skipped if the
+  item already ends in a newline.
 
 \--import
   Adds all items found in the directory or input file to the
