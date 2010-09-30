@@ -1403,6 +1403,8 @@ public:
  */
 class Client
 {
+    DBusServer &m_server;
+
     typedef std::list< boost::shared_ptr<Resource> > Resources_t;
     Resources_t m_resources;
 
@@ -1412,19 +1414,20 @@ class Client
     /** current client setting for notifications (see HAS_NOTIFY) */
     bool m_notificationsEnabled;
 
+    /** called 1 minute after last client detached from a session */
+    static bool sessionExpired(const boost::shared_ptr<Session> &session);
+
 public:
     const Caller_t m_ID;
 
-    Client(const Caller_t &ID) :
+    Client(DBusServer &server,
+           const Caller_t &ID) :
+        m_server(server),
         m_attachCount(0),
         m_notificationsEnabled(true),
         m_ID(ID)
     {}
-
-    ~Client()
-    {
-        SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s is destructing", m_ID.c_str());
-    }
+    ~Client();
 
     void increaseAttachCount() { ++m_attachCount; }
     void decreaseAttachCount() { --m_attachCount; }
@@ -1450,20 +1453,8 @@ public:
      * session. It's an error to call detach() more often than
      * attach().
      */
-    void detach(Resource *resource)
-    {
-        for (Resources_t::iterator it = m_resources.begin();
-             it != m_resources.end();
-             ++it) {
-            if (it->get() == resource) {
-                // got it
-                m_resources.erase(it);
-                return;
-            }
-        }
+    void detach(Resource *resource);
 
-        SE_THROW_EXCEPTION(InvalidCall, "cannot detach from resource that client is not attached to");
-    }
     void detach(boost::shared_ptr<Resource> resource)
     {
         detach(resource.get());
@@ -1830,6 +1821,11 @@ class Session : public DBusObjectHelper,
     bool m_active;
 
     /**
+     * True once done() was called.
+     */
+    bool m_done;
+
+    /**
      * Indicates whether this session was initiated by the peer or locally.
      */
     bool m_remoteInitiated;
@@ -1967,7 +1963,14 @@ public:
                                                     const std::string &config_name,
                                                     const std::string &session,
                                                     const std::vector<std::string> &flags = std::vector<std::string>());
+
+    /**
+     * automatically marks the session as completed before deleting it
+     */
     ~Session();
+
+    /** explicitly mark the session as completed, even if it doesn't get deleted yet */
+    void done();
 
 private:
     Session(DBusServer &server,
@@ -2504,6 +2507,66 @@ private:
     /** a timer */
     Timer m_timer;
 };
+
+
+/***************** Client implementation ****************/
+
+Client::~Client()
+{
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s is destructing", m_ID.c_str());
+
+    // explicitly detach all resources instead of just freeing the
+    // list, so that the special behavior for sessions in detach() is
+    // triggered
+    while (!m_resources.empty()) {
+        detach(m_resources.front().get());
+    }
+}
+
+bool Client::sessionExpired(const boost::shared_ptr<Session> &session)
+{
+    SE_LOG_DEBUG(NULL, NULL, "session %s expired",
+                 session->getSessionID().c_str());
+    // don't call me again
+    return false;
+}
+
+void Client::detach(Resource *resource)
+{
+    for (Resources_t::iterator it = m_resources.begin();
+         it != m_resources.end();
+         ++it) {
+        if (it->get() == resource) {
+            if (it->unique()) {
+                boost::shared_ptr<Session> session = boost::dynamic_pointer_cast<Session>(*it);
+                if (session) {
+                    // Special behavior for sessions: keep them
+                    // around for another minute after the last
+                    // client detaches. This allows another client
+                    // to attach and/or get information about the
+                    // session.
+                    // This is implemented as a timeout which holds
+                    // a reference to the session. Once the timeout
+                    // fires, it is called and then removed, which
+                    // removes the reference.
+                    m_server.addTimeout(boost::bind(&Client::sessionExpired,
+                                                    session),
+                                        60 /* 1 minute */);
+
+                    // allow other sessions to start
+                    session->done();
+                }
+            }
+            // this will trigger removal of the resource if
+            // the client was the last remaining owner
+            m_resources.erase(it);
+            return;
+        }
+    }
+
+    SE_THROW_EXCEPTION(InvalidCall, "cannot detach from resource that client is not attached to");
+}
+
 
 /***************** ReadOperations implementation ****************/
 
@@ -3309,6 +3372,7 @@ Session::Session(DBusServer &server,
     m_tempConfig(false),
     m_setConfig(false),
     m_active(false),
+    m_done(false),
     m_remoteInitiated(false),
     m_syncStatus(SYNC_QUEUEING),
     m_stepIsWaiting(false),
@@ -3348,10 +3412,14 @@ Session::Session(DBusServer &server,
     add(emitProgress);
 }
 
-Session::~Session()
+void Session::done()
 {
+    if (m_done) {
+        return;
+    }
+
     /* update auto sync manager when a config is changed */
-    if(m_setConfig) {
+    if (m_setConfig) {
         m_server.getAutoSyncManager().update(m_configName);
     }
     m_server.dequeue(this);
@@ -3360,8 +3428,17 @@ Session::~Session()
     if (m_setConfig) {
         m_server.configChanged();
     }
+
+    // typically set by m_server.dequeue(), but let's really make sure...
+    m_active = false;
+
+    m_done = true;
 }
-    
+
+Session::~Session()
+{
+    done();
+}
 
 void Session::setActive(bool active)
 {
@@ -5082,7 +5159,7 @@ boost::shared_ptr<Client> DBusServer::addClient(const DBusConnectionPtr &conn,
     if (client) {
         return client;
     }
-    client.reset(new Client(ID));
+    client.reset(new Client(*this, ID));
     // add to our list *before* checking that peer exists, so
     // that clientGone() can remove it if the check fails
     m_clients.push_back(std::make_pair(watch, client));

@@ -917,6 +917,39 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(self.session.GetFlags(), [])
         self.failUnlessEqual(self.session.GetConfigName(), "@default");
 
+    @timeout(70)
+    def testAttachOldSession(self):
+        """attach to session which no longer has clients"""
+        self.session.Detach()
+        time.sleep(5)
+        # This used to be impossible with SyncEvolution 1.0 because it
+        # removed the session right after the previous client
+        # left. SyncEvolution 1.1 makes it possible by keeping
+        # sessions around for a minute. However, the session is
+        # no longer listed because it really should only be used
+        # by clients which heard about it before.
+        self.failUnlessEqual(self.server.GetSessions(), [])
+        self.session.Attach()
+        self.failUnlessEqual(self.session.GetFlags(), [])
+        self.failUnlessEqual(self.session.GetConfigName(), "@default");
+        time.sleep(60)
+        self.failUnlessEqual(self.session.GetFlags(), [])        
+
+    @timeout(70)
+    def testExpireSession(self):
+        """ensure that session stays around for a minute"""
+        self.session.Detach()
+        time.sleep(5)
+        self.failUnlessEqual(self.session.GetFlags(), [])
+        self.failUnlessEqual(self.session.GetConfigName(), "@default");
+        time.sleep(60)
+        try:
+            self.session.GetFlags()
+        except:
+            pass
+        else:
+            self.fail("Session.GetFlags() should have failed")
+
     def testCreateSessionWithFlags(self):
         """ask for session with some specific flags and config"""
         self.session.Detach()
