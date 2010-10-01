@@ -15,6 +15,7 @@ if test "$enable_qtcontacts" = "yes"; then
         AC_DEFINE(ENABLE_QTCONTACTS, 1, [QtContacts available])
         # AC_WITH_QT() will be called in configure-post if need_qt_modules is not empty,
         # setting QT_* flags.
+        need_qt_modules="$need_qt_modules +gui" # GUI needed for QVersit
         qt_config="$qt_config +mobility"
         qt_misc="$qt_misc
 MOBILITY += contacts versit"
