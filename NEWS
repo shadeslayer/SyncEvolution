@@ -7,12 +7,13 @@ with Nokia phones was improved. Some new features were also included.
 
 Details:
 
-* Nokia phones: avoid data loss in two-way sync due to X-EVOLUTION-UI-SLOT (MBC #2566)
+* bug fix in sync-ui: wrong direction of one-way data transfers with devices (BMC #7091)
+* sync-ui (GTK version): app is now listed as "SyncEvolution (GTK)" under "Office"
+* Nokia phones: avoid data loss in two-way sync due to X-EVOLUTION-UI-SLOT (BMC #2566)
 * Nokia phones: alarm times in UTC, sending PHOTO (BMC #1657, #5860)
 * included all phone templates submitted to syncevolution.org Wiki (BMC #5727)
 * syncevo-phone-config: set consumerReady in output, more useful for Wiki (BMC #3803)
-* workaround for D-Bus timeouts in EDS libecal/libebook (MBC #4026)
-* sync-ui (GTK version): app is now listed as "SyncEvolution (GTK)" under "Office"
+* workaround for D-Bus timeouts in EDS libecal/libebook (BMC #4026)
 * added generic command line options for importing, exporting, updating, listing
   and deleting items in the different backends (http://syncevolution.org/blogs/pohly/2010/manipulate-evolution-kcalextendedmkcal-qtcontacts-pim-items-uniform-command-line)
 * added backends for mKCal and QtContacts (MeeGo PIM storage),
@@ -22,7 +23,7 @@ Details:
 * creating and configuring sources in a context (without peer-specific
   properties) is now supported
 * improved documentation: README.rst, man page, and --help output
-* fixed some compile issues (MBC #6367), improved nightly testing
+* fixed some compile issues (BMC #6367), improved nightly testing
 
 
 SyncEvolution 1.0 -> 1.0.1, 16.07.2010
@@ -37,7 +38,7 @@ Details:
 
 * compile fix for FC 13 (and possibly others): use private copy of gdbus (BMC #3556)
 
-* sync-ui: prevent overwriting device configs by accident (MBC #3566,1194)
+* sync-ui: prevent overwriting device configs by accident (BMC #3566,1194)
   Setting up a phone used the template name as config name and overwrote
   an existing configuration of another phone that was created using that
   same template. Now the code uses the Bluetooth device name as set on the
@@ -111,7 +112,7 @@ SyncML servers:
   properties before importing them (MB #10458)
 * desknow.com works when switching to SyncMLVersion = 1.1
 * Funambol, Memotoo (and probably others): preserve meeting series when
-  receiving update for detached recurrence (MBC #1916)
+  receiving update for detached recurrence (BMC #1916)
 
 Evolution:
 * addressbook backend: avoid picking CouchDB, second try (MB #7877)
@@ -131,7 +132,7 @@ Performance and reliability improvements (MB #7708):
 * message resending helps under unreliable network connectivity ("RetryInterval")
 * full support for suspend&resume in SyncEvolution client to SyncEvolution or
   Synthesis server syncs
-* better handling of certain third-party time zone definitions (MBC #1332)
+* better handling of certain third-party time zone definitions (BMC #1332)
 
 Improved GTK sync-UI:
 * revised config screen: all in one list where entries can be expanded,
@@ -153,7 +154,7 @@ Command line:
   operations done by other clients; for testing purposes (like
   running a client which talks to a local server in the daemon) it is
   still possible to ignore the daemon (--daemon=no, MB #5043)
-* revised README, now also available as man page (MBC #690)
+* revised README, now also available as man page (BMC #690)
 
 Redesigned and reimplemented D-Bus API, used by sync-UI and command line:
 * central syncevo-dbus-server controls configurations and sync sessions:
@@ -208,34 +209,34 @@ SyncEvolution 1.0 beta 3 -> 1.0 final, 11.06.2010
 
 Bug fixes and new features:
 
-* Configuration templates are stored in a single file (MBC #1208).
+* Configuration templates are stored in a single file (BMC #1208).
   New templates (like something downloaded from http://syncevolution.org/wiki)
   can be dropped into $HOME/.config/syncevolution-templates using an arbitrary
   file name.
 * Progress and per-source status are now also reported and recorded when
-  running in server mode (MBC #1359). There are still several limitations
+  running in server mode (BMC #1359). There are still several limitations
   (sync mode not reported, no information about sent/received/processed items
-  while the sync runs, see MBC #2786).
-* Better handling of certain third-party time zone definitions (MBC #1332).
+  while the sync runs, see BMC #2786).
+* Better handling of certain third-party time zone definitions (BMC #1332).
   Better logging to track down such problems.
-* D-Bus server + command line: return error code when failed (MBC #2193)
+* D-Bus server + command line: return error code when failed (BMC #2193)
 * syncevo-phone-config: simplified command line options, several bug fixes
-  (syntax error, incorrect handling of calendar+todo, MBC #1197)
-* Revised README, now also available as man page (MBC #690). Conversion of D-Bus API
-  documentation into .html page (MBC #1745).
+  (syntax error, incorrect handling of calendar+todo, BMC #1197)
+* Revised README, now also available as man page (BMC #690). Conversion of D-Bus API
+  documentation into .html page (BMC #1745).
 * Funambol, Memotoo (and probably others): preserve meeting series when
-  receiving update for detached recurrence (MBC #1916)
-* Fix for potential out-of-bounds memory access (MBC #1007).
+  receiving update for detached recurrence (BMC #1916)
+* Fix for potential out-of-bounds memory access (BMC #1007).
 * HTTP server: fix for potential crash when second session was requested while an
   older one was still running, initial sync was done without libical time zone
-  information and thus may have mismatched times (MBC #2435)
-* Nokia E55: convert alarm times (MBC #1657). This is done via a new remote rule
+  information and thus may have mismatched times (BMC #2435)
+* Nokia E55: convert alarm times (BMC #1657). This is done via a new remote rule
   in /usr/share/syncevolution/xml/remoterules/server/46_E55.xml
   If another phone needs the same treatment, then copy that file to
   ~/.config/syncevolution-xml/remoterules/server and edit the <model> element.
-* GTK GUI: styling fix (MBC #1372), updated toolbar for MeeGo 1.0 (MBC #1970),
+* GTK GUI: styling fix (BMC #1372), updated toolbar for MeeGo 1.0 (BMC #1970),
   avoid duplicating configs when selecting a config created by syncevo-phone-config 
-  or the command line (MBC #1266), scroll bars for emergency window (MBC #1296),
+  or the command line (BMC #1266), scroll bars for emergency window (BMC #1296),
   avoid compile problem on Fedora Core 13 due to name collision with system sync()
   call, updated translations.
 
