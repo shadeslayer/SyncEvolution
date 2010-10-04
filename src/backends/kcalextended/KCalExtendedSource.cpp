@@ -370,15 +370,11 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
             incidence->setRecurrenceId(original->recurrenceId());
         }
 
-        // also preserve original creation time, unless explicitly
-        // set in update
-        // TODO: if created() == CREATED, then preserving it
-        // unconditionally is right. If created() == DTSTAMP,
-        // then it has to be conditionally.
-        // TODO: handle both DTSTAMP and CREATED
-        if (true || !incidence->created().isValid()) {
-            incidence->setCreated(original->created());
-        }
+        // created() corresponds to the CREATED property (= time when
+        // item was created in the local storage for the first time),
+        // so it can never be modified by our peer and must be
+        // preserved unconditionally in updates.
+        incidence->setCreated(original->created());
 
         // now overwrite item in calendar
         (KCalCore::IncidenceBase &)*original = (KCalCore::IncidenceBase &)*incidence;
