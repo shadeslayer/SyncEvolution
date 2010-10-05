@@ -103,8 +103,8 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
         ne_debug_init(stderr,
                       NE_DBG_FLUSH|NE_DBG_HTTP|NE_DBG_HTTPAUTH|
                       (logLevel >= 4 ? NE_DBG_HTTPBODY : 0) |
-                      (logLevel >= 5 ? (NE_DBG_XML|NE_DBG_LOCKS|NE_DBG_SSL) : 0)|
-                      (logLevel >= 6 ? (NE_DBG_XMLPARSE) : 0)|
+                      (logLevel >= 5 ? (NE_DBG_LOCKS|NE_DBG_SSL) : 0)|
+                      (logLevel >= 6 ? (NE_DBG_XML|NE_DBG_XMLPARSE) : 0)|
                       (logLevel >= 11 ? (NE_DBG_HTTPPLAIN) : 0));
     } else {
         ne_debug_init(NULL, 0);
