@@ -6,6 +6,9 @@
 
 #ifdef ENABLE_DAV
 
+#include <boost/bind.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
 SE_BEGIN_CXX
 
 WebDAVSource::WebDAVSource(const SyncSourceParams &params,
@@ -47,10 +50,58 @@ void WebDAVSource::open()
                  m_session->getURL().c_str(),
                  Flags2String(caps, descr).c_str());
 
-    // Check that base URL really is a calendar collection.
-    // This also checks credentials.
-    
-    
+    // Run a few property queries.
+    //
+    // This also checks credentials because typically the properties
+    // are protected.
+    // 
+    // First dump WebDAV "allprops" properties (does not contain
+    // properties which must be asked for explicitly!).
+    m_session->propfindProp(m_session->getURI().m_path, 0, NULL,
+                            boost::bind(&WebDAVSource::openPropCallback,
+                                        this, _1, _2, _3, _4));
+
+    // Now ask for some specific properties of interest for us.
+    // Using CALDAV:allprop would be nice, but doesn't seem to
+    // be possible with Neon.
+    static const ne_propname caldav[] = {
+        { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
+        { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
+        { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
+        { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
+        { "urn:ietf:params:xml:ns:caldav", "supported-calendar-data" },
+        { "urn:ietf:params:xml:ns:caldav", "max-resource-size" },
+        { "urn:ietf:params:xml:ns:caldav", "min-date-time" },
+        { "urn:ietf:params:xml:ns:caldav", "max-date-time" },
+        { "urn:ietf:params:xml:ns:caldav", "max-instances" },
+        { "urn:ietf:params:xml:ns:caldav", "max-attendees-per-instance" },
+        { NULL, NULL }
+    };
+    m_session->propfindProp(m_session->getURI().m_path, 0, caldav,
+                            boost::bind(&WebDAVSource::openPropCallback,
+                                        this, _1, _2, _3, _4));
+
+    // TODO: avoid hard-coded path to Google events
+    m_session->propfindProp(boost::replace_last_copy(m_session->getURI().m_path, "/user", "/events"), 0, caldav,
+                            boost::bind(&WebDAVSource::openPropCallback,
+                                        this, _1, _2, _3, _4));
+}
+
+void WebDAVSource::openPropCallback(const Neon::URI &uri,
+                                    const ne_propname *prop,
+                                    const char *value,
+                                    const ne_status *status)
+{
+    // TODO: verify that DAV:resourcetype contains DAV:collection
+    // TODO: recognize CALDAV:calendar-home-set and redirect to it
+    // TODO: recognize CALDAV:calendar-timezone and use it for local time conversion of events
+    SE_LOG_DEBUG(NULL, NULL,
+                 "%s: %s:%s = %s (%s)",
+                 uri.toURL().c_str(),
+                 prop->nspace ? prop->nspace : "<no namespace>",
+                 prop->name,
+                 value ? value : "<no value>",
+                 Neon::Status2String(status).c_str());
 }
 
 bool WebDAVSource::isEmpty()
