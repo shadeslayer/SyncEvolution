@@ -57,9 +57,10 @@ void WebDAVSource::open()
     // 
     // First dump WebDAV "allprops" properties (does not contain
     // properties which must be asked for explicitly!).
-    m_session->propfindProp(m_session->getURI().m_path, 0, NULL,
-                            boost::bind(&WebDAVSource::openPropCallback,
-                                        this, _1, _2, _3, _4));
+    Neon::Session::PropfindPropCallback_t callback =
+        boost::bind(&WebDAVSource::openPropCallback,
+                    this, _1, _2, _3, _4);
+    m_session->propfindProp(m_session->getURI().m_path, 0, NULL, callback);
 
     // Now ask for some specific properties of interest for us.
     // Using CALDAV:allprop would be nice, but doesn't seem to
@@ -77,14 +78,11 @@ void WebDAVSource::open()
         { "urn:ietf:params:xml:ns:caldav", "max-attendees-per-instance" },
         { NULL, NULL }
     };
-    m_session->propfindProp(m_session->getURI().m_path, 0, caldav,
-                            boost::bind(&WebDAVSource::openPropCallback,
-                                        this, _1, _2, _3, _4));
+    m_session->propfindProp(m_session->getURI().m_path, 0, caldav, callback);
 
     // TODO: avoid hard-coded path to Google events
-    m_session->propfindProp(boost::replace_last_copy(m_session->getURI().m_path, "/user", "/events"), 0, caldav,
-                            boost::bind(&WebDAVSource::openPropCallback,
-                                        this, _1, _2, _3, _4));
+    std::string events = boost::replace_last_copy(m_session->getURI().m_path, "/user", "/events");
+    m_session->propfindProp(events, 0, caldav, callback);
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,
