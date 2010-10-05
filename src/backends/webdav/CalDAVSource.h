@@ -17,7 +17,7 @@ SE_BEGIN_CXX
 class CalDAVSource : public WebDAVSource
 {
  public:
-    CalDAVSource(const SyncSourceParams &params);
+    CalDAVSource(const SyncSourceParams &params, const boost::shared_ptr<SyncEvo::Neon::Settings> &settings);
 
     /* implementation of SyncSource interface */
     virtual const char *getMimeType() const { return "text/calendar"; }

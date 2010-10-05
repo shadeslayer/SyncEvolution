@@ -8,14 +8,49 @@
 
 SE_BEGIN_CXX
 
-WebDAVSource::WebDAVSource(const SyncSourceParams &params) :
-    TrackingSyncSource(params)
+WebDAVSource::WebDAVSource(const SyncSourceParams &params,
+                           const boost::shared_ptr<Neon::Settings> &settings) :
+    TrackingSyncSource(params),
+    m_settings(settings)
 {
 }
 
 void WebDAVSource::open()
 {
-    // TODO
+    SE_LOG_DEBUG(NULL, NULL, "using libneon %s with %s",
+                 ne_version_string(), Neon::features().c_str());
+    m_session.reset(new Neon::Session(m_settings));
+
+    // Start by checking server capabilities.
+    // Verifies URL.
+    int caps = m_session->options();
+    static const Flag descr[] = {
+        { NE_CAP_DAV_CLASS1, "Class 1 WebDAV (RFC 2518)" },
+        { NE_CAP_DAV_CLASS2, "Class 2 WebDAV (RFC 2518)" },
+        { NE_CAP_DAV_CLASS3, "Class 3 WebDAV (RFC 4918)" },
+        { NE_CAP_MODDAV_EXEC, "mod_dav 'executable' property" },
+        { NE_CAP_DAV_ACL, "WebDAV ACL (RFC 3744)" },
+        { NE_CAP_VER_CONTROL, "DeltaV version-control" },
+        { NE_CAP_CO_IN_PLACE, "DeltaV checkout-in-place" },
+        { NE_CAP_VER_HISTORY, "DeltaV version-history" },
+        { NE_CAP_WORKSPACE, "DeltaV workspace" },
+        { NE_CAP_UPDATE, "DeltaV update" },
+        { NE_CAP_LABEL, "DeltaV label" },
+        { NE_CAP_WORK_RESOURCE, "DeltaV working-resouce" },
+        { NE_CAP_MERGE, "DeltaV merge" },
+        { NE_CAP_BASELINE, "DeltaV baseline" },
+        { NE_CAP_ACTIVITY, "DeltaV activity" },
+        { NE_CAP_VC_COLLECTION, "DeltaV version-controlled-collection" },
+        { 0, NULL }
+    };
+    SE_LOG_DEBUG(NULL, NULL, "%s WebDAV capabilities: %s",
+                 m_session->getURL().c_str(),
+                 Flags2String(caps, descr).c_str());
+
+    // Check that base URL really is a calendar collection.
+    // This also checks credentials.
+    
+    
 }
 
 bool WebDAVSource::isEmpty()
@@ -26,6 +61,7 @@ bool WebDAVSource::isEmpty()
 
 void WebDAVSource::close()
 {
+    m_session.reset();
 }
 
 WebDAVSource::Databases WebDAVSource::getDatabases()
@@ -61,6 +97,7 @@ void WebDAVSource::removeItem(const string &uid)
 {
     // TODO
 }
+
 
 SE_END_CXX
 

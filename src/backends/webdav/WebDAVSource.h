@@ -26,7 +26,11 @@ SE_BEGIN_CXX
 class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
 {
  public:
-    WebDAVSource(const SyncSourceParams &params);
+    /**
+     * @param settings     instance which provides necessary settings callbacks for Neon
+     */
+    WebDAVSource(const SyncSourceParams &params,
+                 const boost::shared_ptr<Neon::Settings> &settings);
 
  protected:
     /* implementation of SyncSource interface */
@@ -42,7 +46,8 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     virtual void removeItem(const string &uid);
 
  private:
-    
+    boost::shared_ptr<Neon::Settings> m_settings;
+    boost::shared_ptr<Neon::Session> m_session;
 };
 
 SE_END_CXX

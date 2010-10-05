@@ -9,8 +9,9 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-CalDAVSource::CalDAVSource(const SyncSourceParams &params) :
-    WebDAVSource(params)
+CalDAVSource::CalDAVSource(const SyncSourceParams &params,
+                           const boost::shared_ptr<Neon::Settings> &settings) :
+    WebDAVSource(params, settings)
 {
 }
 

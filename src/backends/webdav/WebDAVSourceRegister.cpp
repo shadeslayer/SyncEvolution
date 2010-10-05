@@ -20,7 +20,43 @@ static SyncSource *createSource(const SyncSourceParams &params)
             sourceType.m_format == "text/x-calendar" ||
             sourceType.m_format == "text/x-vcalendar") {
 #ifdef ENABLE_DAV
-            return new CalDAVSource(params);
+            class EnvSettings : public Neon::Settings {
+                virtual std::string getURL()
+                {
+                    const char *var = getenv("WEBDAV_URL");
+                    if (!var) {
+                        SE_THROW("no WEBDAV_URL");
+                    }
+                    return var;
+                }
+
+                virtual bool verifySSLHost() { return !getenv("WEBDAV_NO_SSL_HOST"); }
+                virtual bool verifySSLCertificate() { return !getenv("WEBDAV_NO_SSL_CERT"); }
+
+                virtual void getCredentials(const std::string &realm,
+                                            std::string &username,
+                                            std::string &password)
+                {
+                    const char *var = getenv("WEBDAV_USERNAME");
+                    if (!var) {
+                        SE_THROW("no WEBDAV_USERNAME");
+                    }
+                    username = var;
+                    var = getenv("WEBDAV_PASSWORD");
+                    if (var) {
+                        password = var;
+                    }
+                }
+
+                virtual int logLevel()
+                {
+                    const char *var = getenv("WEBDAV_LOGLEVEL");
+                    return var ? atoi(var) : 0;
+                }
+            };
+            
+            boost::shared_ptr<Neon::Settings> settings(static_cast<Neon::Settings *>(new EnvSettings));
+            return new CalDAVSource(params, settings);
 #else
             return RegisterSyncSource::InactiveSource;
 #endif
