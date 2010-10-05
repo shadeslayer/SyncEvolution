@@ -48,6 +48,7 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
  private:
     boost::shared_ptr<Neon::Settings> m_settings;
     boost::shared_ptr<Neon::Session> m_session;
+    Neon::URI m_calendar;
 
     void openPropCallback(const Neon::URI &uri,
                           const ne_propname *prop,

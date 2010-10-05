@@ -89,6 +89,12 @@ struct URI {
 
     static URI fromNeon(const ne_uri &other);
 
+    /**
+     * produce new URI from current path and new one (may be absolute
+     * and relative)
+     */
+    URI resolve(const std::string &path) const;
+
     /** compose URL from parts */
     std::string toURL() const;
 };

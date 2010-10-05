@@ -69,6 +69,20 @@ URI URI::fromNeon(const ne_uri &uri)
     return res;
 }
 
+URI URI::resolve(const std::string &path) const
+{
+    ne_uri tmp[2];
+    ne_uri full;
+    memset(tmp, 0, sizeof(tmp));
+    tmp[0].path = const_cast<char *>(m_path.c_str());
+    tmp[1].path = const_cast<char *>(path.c_str());
+    ne_uri_resolve(tmp + 0, tmp + 1, &full);
+    URI res(*this);
+    res.m_path = full.path;
+    ne_uri_free(&full);
+    return res;
+}
+
 std::string URI::toURL() const
 {
     return StringPrintf("%s://%s@%s:%u/%s#%s",

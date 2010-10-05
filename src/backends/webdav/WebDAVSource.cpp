@@ -8,6 +8,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 SE_BEGIN_CXX
 
@@ -81,8 +82,12 @@ void WebDAVSource::open()
     m_session->propfindProp(m_session->getURI().m_path, 0, caldav, callback);
 
     // TODO: avoid hard-coded path to Google events
-    std::string events = boost::replace_last_copy(m_session->getURI().m_path, "/user", "/events");
-    m_session->propfindProp(events, 0, caldav, callback);
+    m_calendar = m_session->getURI();
+    if (boost::ends_with(m_calendar.m_path, "/user/") ||
+        boost::ends_with(m_calendar.m_path, "/user")) {
+        m_calendar = m_calendar.resolve("../events/");
+    }
+    m_session->propfindProp(m_calendar.m_path, 0, caldav, callback);
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,
