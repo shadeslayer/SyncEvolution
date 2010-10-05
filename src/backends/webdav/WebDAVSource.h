@@ -54,6 +54,11 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
                           const ne_propname *prop,
                           const char *value,
                           const ne_status *status);
+
+    void listAllItemsCallback(const Neon::URI &uri,
+                              const ne_prop_result_set *results,
+                              RevisionMap_t &revisions,
+                              bool &failed);
 };
 
 SE_END_CXX

@@ -87,7 +87,13 @@ void WebDAVSource::open()
         boost::ends_with(m_calendar.m_path, "/user")) {
         m_calendar = m_calendar.resolve("../events/");
     }
+    // Sanitizing the path becomes redundant once we take the path from
+    // the server's response. Right now it is necessary so that foo@google.com
+    // in the URL matches the correct foo%40google.com in the server's
+    // responses.
+    boost::replace_all(m_calendar.m_path, "@", "%40");
     m_session->propfindProp(m_calendar.m_path, 0, caldav, callback);
+    m_session->propfindProp(m_calendar.m_path, 1, NULL, callback);
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,
@@ -109,8 +115,10 @@ void WebDAVSource::openPropCallback(const Neon::URI &uri,
 
 bool WebDAVSource::isEmpty()
 {
-    // TODO
-    return false;
+    // listing all items is relatively efficient, let's use that
+    RevisionMap_t revisions;
+    listAllItems(revisions);
+    return revisions.empty();
 }
 
 void WebDAVSource::close()
@@ -130,7 +138,45 @@ WebDAVSource::Databases WebDAVSource::getDatabases()
 
 void WebDAVSource::listAllItems(RevisionMap_t &revisions)
 {
-    // TODO
+    static const ne_propname props[] = {
+        { "DAV:", "getetag" },
+        { NULL, NULL }
+    };
+
+    bool failed = false;
+    m_session->propfindURI(m_calendar.m_path, 1, props,
+                           boost::bind(&WebDAVSource::listAllItemsCallback,
+                                       this, _1, _2, boost::ref(revisions),
+                                       boost::ref(failed)));
+    if (failed) {
+        SE_THROW("incomplete listing of all items");
+    }
+}
+
+void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
+                                        const ne_prop_result_set *results,
+                                        RevisionMap_t &revisions,
+                                        bool &failed)
+{
+    static const ne_propname prop = {
+        "DAV:", "getetag"
+    };
+    const char *etag = ne_propset_value(results, &prop);
+    std::string uid = uri.m_path;
+    boost::replace_first(uid, m_calendar.m_path, "");
+    if (uid.empty()) {
+        // skip collection itself
+        return;
+    }
+    if (etag) {
+        revisions[uid] = etag;
+    } else {
+        failed = true;
+        SE_LOG_ERROR(NULL, NULL,
+                     "%s: %s",
+                     uri.toURL().c_str(),
+                     Neon::Status2String(ne_propset_status(results, &prop)).c_str());
+    }
 }
 
 void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
