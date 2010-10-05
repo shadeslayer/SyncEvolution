@@ -486,6 +486,10 @@ int main( int argc, char **argv )
     free(exe);
 
     try {
+        if (getenv("SYNCEVOLUTION_DEBUG")) {
+            LoggerBase::instance().setLevel(Logger::DEBUG);
+        }
+
         /*
          * don't log errors to cerr: LogRedirect cannot distinguish
          * between our valid error messages and noise from other
