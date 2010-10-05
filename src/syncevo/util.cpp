@@ -30,6 +30,7 @@
 
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -740,6 +741,19 @@ std::vector<std::string> unescapeJoinedString (const std::string& src, char sep)
         }
     }
     return splitStrings;
+}
+
+std::string Flags2String(int flags, const Flag *descr, const std::string &sep)
+{
+    std::list<std::string> tmp;
+
+    while (descr->m_flag) {
+        if (flags & descr->m_flag) {
+            tmp.push_back(descr->m_description);
+        }
+        ++descr;
+    }
+    return boost::join(tmp, ", ");
 }
 
 ScopedEnvChange::ScopedEnvChange(const string &var, const string &value) :

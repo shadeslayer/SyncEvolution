@@ -382,6 +382,23 @@ inline string getHome() {
 std::vector<std::string> unescapeJoinedString (const std::string &src, char separator);
 
 /**
+ * mapping from int flag to explanation
+ */
+struct Flag {
+    int m_flag;
+    const char *m_description;
+};
+
+/**
+ * turn flags into comma separated list of explanations
+ *
+ * @param flags     bit mask
+ * @param descr     array with zero m_flag as end marker
+ * @param sep       used to join m_description strings
+ */
+std::string Flags2String(int flags, const Flag *descr, const std::string &sep = ", ");
+
+/**
  * Temporarily set env variable, restore old value on destruction.
  * Useful for unit tests which depend on the environment.
  */
