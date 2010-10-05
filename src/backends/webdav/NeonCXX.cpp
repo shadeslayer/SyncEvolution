@@ -8,6 +8,7 @@
 
 #include <list>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/bind.hpp>
 
 #include <syncevo/TransportAgent.h>
 #include <syncevo/util.h>
@@ -37,18 +38,12 @@ std::string features()
 
 URI URI::parse(const std::string &url)
 {
-    URI res;
-
     ne_uri uri;
     int error = ne_uri_parse(url.c_str(), &uri);
-    if (uri.scheme) { res.m_scheme = uri.scheme; }
-    if (uri.host) { res.m_host = uri.host; }
-    if (uri.userinfo) { res.m_userinfo = uri.userinfo; }
-    if (uri.path) { res.m_path = uri.path; }
-    if (uri.query) { res.m_query = uri.query; }
-    if (uri.fragment) { res.m_fragment = uri.fragment; }
-    res.m_port = uri.port ?
-        uri.port : ne_uri_defaultport(res.m_scheme.c_str());
+    URI res = fromNeon(uri);
+    if (!res.m_port) {
+        res.m_port = ne_uri_defaultport(res.m_scheme.c_str());
+    }
     ne_uri_free(&uri);
     if (error) {
         SE_THROW_EXCEPTION(TransportException,
@@ -56,6 +51,21 @@ URI URI::parse(const std::string &url)
                                         url.c_str(),
                                         res.toURL().c_str()));
     }
+    return res;
+}
+
+URI URI::fromNeon(const ne_uri &uri)
+{
+    URI res;
+
+    if (uri.scheme) { res.m_scheme = uri.scheme; }
+    if (uri.host) { res.m_host = uri.host; }
+    if (uri.userinfo) { res.m_userinfo = uri.userinfo; }
+    if (uri.path) { res.m_path = uri.path; }
+    if (uri.query) { res.m_query = uri.query; }
+    if (uri.fragment) { res.m_fragment = uri.fragment; }
+    res.m_port = uri.port;
+
     return res;
 }
 
@@ -68,6 +78,19 @@ std::string URI::toURL() const
                         m_port,
                         m_path.c_str(),
                         m_fragment.c_str());
+}
+
+std::string Status2String(const ne_status *status)
+{
+    if (!status) {
+        return "<NULL status>";
+    }
+    return StringPrintf("<status %d.%d, code %d, class %d, %s>",
+                        status->major_version,
+                        status->minor_version,
+                        status->code,
+                        status->klass,
+                        status->reason_phrase ? status->reason_phrase : "\"\"");
 }
 
 Session::Session(const boost::shared_ptr<Settings> &settings) :
@@ -159,6 +182,57 @@ unsigned int Session::options()
     unsigned int caps;
     check(ne_options2(m_session, m_uri.m_path.c_str(), &caps));
     return caps;
+}
+
+void Session::propfindURI(const std::string &path, int depth,
+                          const ne_propname *props,
+                          const PropfindURICallback_t &callback)
+{
+    check(ne_simple_propfind(m_session, path.c_str(), depth,
+                             props, propsResult, const_cast<void *>(static_cast<const void *>(&callback))));
+}
+
+void Session::propsResult(void *userdata, const ne_uri *uri,
+                          const ne_prop_result_set *results) throw()
+{
+    try {
+        PropfindURICallback_t *callback = static_cast<PropfindURICallback_t *>(userdata);
+        (*callback)(URI::fromNeon(*uri), results);
+    } catch (...) {
+        Exception::handle();
+    }
+}
+
+void Session::propfindProp(const std::string &path, int depth,
+                           const ne_propname *props,
+                           const PropfindPropCallback_t &callback)
+{
+    propfindURI(path, depth, props,
+                boost::bind(&Session::propsIterate, _1, _2, boost::cref(callback)));
+}
+
+void Session::propsIterate(const URI &uri, const ne_prop_result_set *results,
+                           const PropfindPropCallback_t &callback)
+{
+    PropIteratorUserdata_t data(uri, callback);
+    ne_propset_iterate(results,
+                       propIterator,
+                       &data);
+}
+
+int Session::propIterator(void *userdata,
+                           const ne_propname *pname,
+                           const char *value,
+                           const ne_status *status) throw()
+{
+    try {
+        const PropIteratorUserdata_t *data = static_cast<const PropIteratorUserdata_t *>(userdata);
+        data->second(data->first, pname, value, status);
+        return 0;
+    } catch (...) {
+        Exception::handle();
+        return 1; // abort iterating
+    }
 }
 
 void Session::check(int error)

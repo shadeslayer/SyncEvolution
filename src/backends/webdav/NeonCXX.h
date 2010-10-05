@@ -13,10 +13,12 @@
 #include <ne_session.h>
 #include <ne_utils.h>
 #include <ne_basic.h>
+#include <ne_props.h>
 
 #include <string>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -85,9 +87,14 @@ struct URI {
      */
     static URI parse(const std::string &url);
 
+    static URI fromNeon(const ne_uri &other);
+
     /** compose URL from parts */
     std::string toURL() const;
 };
+
+/** produce debug string for status, which may be NULL */
+std::string Status2String(const ne_status *status);
 
 /**
  * Wraps all session related activities.
@@ -104,8 +111,32 @@ class Session {
     /** ne_options2() */
     unsigned int options();
 
+    /**
+     * called with URI and complete result set; exceptions are logged, but ignored
+     */
+    typedef boost::function<void (const URI &, const ne_prop_result_set *)> PropfindURICallback_t;
+
+    /**
+     * called with URI and specific property, value string may be NULL (error case);
+     * exceptions are logged and abort iterating over properties (but not URIs)
+     */
+    typedef boost::function<void (const URI &, const ne_propname *, const char *, const ne_status *)> PropfindPropCallback_t;
+
+    /** ne_simple_propfind(): invoke callback for each URI */
+    void propfindURI(const std::string &path, int depth,
+                  const ne_propname *props,
+                  const PropfindURICallback_t &callback);
+
+    /** ne_simple_propfind(): invoke callback for each property of each URI */
+    void propfindProp(const std::string &path, int depth,
+                      const ne_propname *props,
+                      const PropfindPropCallback_t &callback);
+
     /** URL which is in use */
     std::string getURL() const { return m_uri.toURL(); }
+
+    /** same as getURL() split into parts */
+    const URI &getURI() const { return m_uri; }
 
  private:
     boost::shared_ptr<Settings> m_settings;
@@ -117,6 +148,23 @@ class Session {
 
     /** ne_ssl_set_verify() callback */
     static int sslVerify(void *userdata, int failures, const ne_ssl_certificate *cert) throw();
+
+    /** ne_props_result callback which invokes a PropfindURICallback_t as user data */
+    static void propsResult(void *userdata, const ne_uri *uri,
+                            const ne_prop_result_set *results) throw();
+
+    /** iterate over properties in result set */
+    static void propsIterate(const URI &uri, const ne_prop_result_set *results,
+                             const PropfindPropCallback_t &callback);
+
+    /** ne_propset_iterator callback which invokes pair<URI, PropfindPropCallback_t> */
+    static int propIterator(void *userdata,
+                            const ne_propname *pname,
+                            const char *value,
+                            const ne_status *status) throw();
+
+    typedef std::pair<const URI &, const PropfindPropCallback_t &> PropIteratorUserdata_t;
+
 
     /** throw error if error code indicates failure */
     void check(int error);
