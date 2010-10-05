@@ -307,6 +307,11 @@ std::string StringPrintf(const char *format, ...)
 std::string StringPrintfV(const char *format, va_list ap);
 
 /**
+ * strncpy() which inserts adds 0 byte
+ */
+char *Strncpy(char *dest, const char *src, size_t n);
+
+/**
  * an exception which records the source file and line
  * where it was thrown
  *

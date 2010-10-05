@@ -625,6 +625,16 @@ std::string StringPrintfV(const char *format, va_list ap)
     return res;
 }
 
+char *Strncpy(char *dest, const char *src, size_t n)
+{
+    strncpy(dest, src, n);
+    if (n) {
+        dest[n - 1] = 0;
+    }
+    return dest;
+}
+
+
 SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger)
 {
     // any problem here is a fatal local problem, unless set otherwise
