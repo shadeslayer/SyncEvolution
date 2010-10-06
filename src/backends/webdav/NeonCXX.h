@@ -14,6 +14,7 @@
 #include <ne_utils.h>
 #include <ne_basic.h>
 #include <ne_props.h>
+#include <ne_request.h>
 
 #include <string>
 
@@ -144,6 +145,11 @@ class Session {
     /** same as getURL() split into parts */
     const URI &getURI() const { return m_uri; }
 
+    /** throw error if error code indicates failure */
+    void check(int error);
+
+    ne_session *getSession() const { return m_session; }
+
  private:
     boost::shared_ptr<Settings> m_settings;
     ne_session *m_session;
@@ -170,14 +176,46 @@ class Session {
                             const ne_status *status) throw();
 
     typedef std::pair<const URI &, const PropfindPropCallback_t &> PropIteratorUserdata_t;
+};
 
+/**
+ * encapsulates a ne_request, with std::string as read and write buffer
+ */
+class Request
+{
+ public:
+    /**
+     * read and write buffers owned by caller
+     */
+    Request(Session &session,
+            const std::string &method,
+            const std::string &path,
+            const std::string &body,
+            std::string &result);
+    ~Request();
 
-    /** throw error if error code indicates failure */
-    void check(int error);
+    void setFlag(ne_request_flag flag, int value) { ne_set_request_flag(m_req, flag, value); }
+    void addHeader(const std::string &name, const std::string &value) {
+        ne_add_request_header(m_req, name.c_str(), value.c_str());
+    }
+    void run() { m_session.check(ne_request_dispatch(m_req)); }
+    std::string getResponseHeader(const std::string &name) {
+        const char *value = ne_get_response_header(m_req, name.c_str());
+        return value ? value : "";
+    }
+    int getStatusCode() { return ne_get_status(m_req)->code; }
+    const ne_status *getStatus() { return ne_get_status(m_req); }
+
+ private:
+    Session &m_session;
+    ne_request *m_req;
+    std::string &m_result;
+
+    /** ne_block_reader implementation */
+    static int addResultData(void *userdata, const char *buf, size_t len);
 };
 
 }
-
 SE_END_CXX
 
 #endif // INCL_NEONCXX

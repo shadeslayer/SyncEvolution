@@ -259,6 +259,32 @@ void Session::check(int error)
     }
 }
 
+Request::Request(Session &session,
+                 const std::string &method,
+                 const std::string &path,
+                 const std::string &body,
+                 std::string &result) :
+    m_session(session),
+    m_result(result)
+{
+    m_req = ne_request_create(session.getSession(), method.c_str(), path.c_str());
+    ne_set_request_body_buffer(m_req, body.c_str(), body.size());
+    ne_add_response_body_reader(m_req, ne_accept_2xx,
+                                addResultData, this);
+}
+
+Request::~Request()
+{
+    ne_request_destroy(m_req);
+}
+
+int Request::addResultData(void *userdata, const char *buf, size_t len)
+{
+    Request *me = static_cast<Request *>(userdata);
+    me->m_result.append(buf, len);
+    return 0;
+}
+
 }
 
 SE_END_CXX

@@ -48,6 +48,8 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
  private:
     boost::shared_ptr<Neon::Settings> m_settings;
     boost::shared_ptr<Neon::Session> m_session;
+
+    /** normalized path: including backslash, URI encoded */
     Neon::URI m_calendar;
 
     void openPropCallback(const Neon::URI &uri,
@@ -59,6 +61,37 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
                               const ne_prop_result_set *results,
                               RevisionMap_t &revisions,
                               bool &failed);
+
+    /**
+     * A resource path is turned into a locally unique ID by
+     * stripping the calendar path prefix, or keeping the full
+     * path for resources outside of the calendar.
+     */
+    std::string path2luid(const std::string &path);
+
+    /**
+     * Full path can be reconstructed from relative LUID by
+     * appending it to the calendar path, or using the path
+     * as it is.
+     */
+    std::string luid2path(const std::string &luid);
+
+    /**
+     * ETags are turned into revision strings by ignoring the W/ weak
+     * marker (because we don't care for literal storage of items) and
+     * by stripping the quotation marks.
+     */
+    std::string ETag2Rev(const std::string &etag);
+
+    /**
+     * Extracts ETag from response header, empty if not found.
+     */
+    std::string getETag(Neon::Request &req) { return ETag2Rev(req.getResponseHeader("ETag")); }
+
+    /**
+     * Extracts new LUID from response header, empty if not found.
+     */
+    std::string getLUID(Neon::Request &req);
 };
 
 SE_END_CXX

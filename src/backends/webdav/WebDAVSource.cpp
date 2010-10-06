@@ -136,15 +136,15 @@ WebDAVSource::Databases WebDAVSource::getDatabases()
     return result;
 }
 
+static const ne_propname getetag[] = {
+    { "DAV:", "getetag" },
+    { NULL, NULL }
+};
+
 void WebDAVSource::listAllItems(RevisionMap_t &revisions)
 {
-    static const ne_propname props[] = {
-        { "DAV:", "getetag" },
-        { NULL, NULL }
-    };
-
     bool failed = false;
-    m_session->propfindURI(m_calendar.m_path, 1, props,
+    m_session->propfindURI(m_calendar.m_path, 1, getetag,
                            boost::bind(&WebDAVSource::listAllItemsCallback,
                                        this, _1, _2, boost::ref(revisions),
                                        boost::ref(failed)));
@@ -169,7 +169,10 @@ void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
         return;
     }
     if (etag) {
-        revisions[uid] = etag;
+        std::string rev = ETag2Rev(etag);
+        SE_LOG_DEBUG(NULL, NULL, "item %s = rev %s",
+                     uid.c_str(), rev.c_str());
+        revisions[uid] = rev;
     } else {
         failed = true;
         SE_LOG_ERROR(NULL, NULL,
@@ -179,19 +182,148 @@ void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
     }
 }
 
+std::string WebDAVSource::path2luid(const std::string &path)
+{
+    if (boost::starts_with(path, m_calendar.m_path)) {
+        return path.substr(m_calendar.m_path.size());
+    } else {
+        return path;
+    }
+}
+
+std::string WebDAVSource::luid2path(const std::string &luid)
+{
+    return m_calendar.resolve(luid).m_path;
+}
+
 void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
 {
-    // TODO
+    Neon::Request req(*m_session, "GET", luid2path(uid),
+                      "", item);
+    req.run();
 }
 
 TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid, const std::string &item, bool raw)
 {
-    // TODO
-    return InsertItemResult("",
-                            "",
-                            false /* true if adding item was turned into update */);
+    std::string new_uid;
+    std::string rev;
+    bool update = false;  /* true if adding item was turned into update */
+
+    std::string result;
+    if (uid.empty()) {
+        // TODO: set UID if not present
+        // Pick a random resource name,
+        // catch unexpected conflicts via If-None-Match: *.
+        new_uid = UUID::UUID();
+        Neon::Request req(*m_session, "PUT", luid2path(new_uid),
+                          item, result);
+        req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
+        req.addHeader("If-None-Match", "*");
+        req.run();
+        SE_LOG_DEBUG(NULL, NULL, "add item status: %s",
+                     Neon::Status2String(req.getStatus()).c_str());
+        switch (req.getStatusCode()) {
+        case 204:
+            // stored, potentially in a different resource than requested
+            // when the UID was recognized
+            break;
+        case 201:
+            // created
+            break;
+        default:
+            SE_THROW(std::string("unexpected status for insert: ") +
+                     Neon::Status2String(req.getStatus()));
+            break;
+        }
+        rev = getETag(req);
+        std::string real_luid = getLUID(req);
+        if (!real_luid.empty()) {
+            SE_LOG_DEBUG(NULL, NULL, "new item mapped to existing one at %s", real_luid.c_str());
+            new_uid = real_luid;
+            update = true;
+        }
+    } else {
+        // TODO: preserve original UID and RECURRENCE-ID,
+        // update just one VEVENT in a meeting series (which is
+        // one resource in CalDAV)
+        new_uid = uid;
+        Neon::Request req(*m_session, "PUT", luid2path(new_uid),
+                          item, result);
+        req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
+        // TODO: match exactly the expected revision, aka ETag,
+        // or implement locking. Note that the ETag might not be
+        // known, for example in this case:
+        // - PUT succeeds
+        // - PROPGET does not
+        // - insertItem() fails
+        // - Is retried? Might need slow sync in this case!
+        //
+        // req.addHeader("If-Match", etag);
+        req.run();
+        SE_LOG_DEBUG(NULL, NULL, "update item status: %s",
+                     Neon::Status2String(req.getStatus()).c_str());
+        switch (req.getStatusCode()) {
+        case 204:
+            // the expected outcome, as we were asking for an overwrite
+            break;
+        case 201:
+            // Huh? Shouldn't happen.
+            SE_THROW("unexpected creation instead of update");
+            break;
+        default:
+            SE_THROW(std::string("unexpected status for update: ") +
+                     Neon::Status2String(req.getStatus()));
+            break;
+        }
+        rev = getETag(req);
+        std::string real_luid = getLUID(req);
+        if (!real_luid.empty() && real_luid != new_uid) {
+            SE_THROW(StringPrintf("updating item: real luid %s does not match old luid %s",
+                                  real_luid.c_str(), new_uid.c_str()));
+        }
+    }
+
+    if (rev.empty()) {
+        // Server did not include etag header. Must request it
+        // explicitly (leads to race condition!). Google Calendar
+        // assigns a new ETag even if the body has not changed,
+        // so any kind of caching of ETag would not work either.
+        bool failed = false;
+        RevisionMap_t revisions;
+        m_session->propfindURI(luid2path(new_uid), 0, getetag,
+                               boost::bind(&WebDAVSource::listAllItemsCallback,
+                                           this, _1, _2, boost::ref(revisions),
+                                           boost::ref(failed)));
+        rev = revisions[new_uid];
+        if (failed || rev.empty()) {
+            SE_THROW("could not retrieve ETag");
+        }
+    }
+
+    return InsertItemResult(new_uid, rev, update);
 }
 
+std::string WebDAVSource::ETag2Rev(const std::string &etag)
+{
+    std::string res = etag;
+    if (boost::starts_with(res, "W/")) {
+        res.erase(0, 2);
+    }
+    if (res.size() >= 2) {
+        res = res.substr(1, res.size() - 2);
+    }
+    return res;
+}
+
+std::string WebDAVSource::getLUID(Neon::Request &req)
+{
+    std::string location = req.getResponseHeader("Location");
+    if (location.empty()) {
+        return location;
+    } else {
+        return path2luid(Neon::URI::parse(location).m_path);
+    }
+}
 
 void WebDAVSource::removeItem(const string &uid)
 {
