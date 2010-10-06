@@ -327,9 +327,25 @@ std::string WebDAVSource::getLUID(Neon::Request &req)
 
 void WebDAVSource::removeItem(const string &uid)
 {
-    // TODO
+    std::string item, result;
+    Neon::Request req(*m_session, "DELETE", luid2path(uid),
+                      item, result);
+    // TODO: match exactly the expected revision, aka ETag,
+    // or implement locking.
+    // req.addHeader("If-Match", etag);
+    req.run();
+    SE_LOG_DEBUG(NULL, NULL, "remove item status: %s",
+                 Neon::Status2String(req.getStatus()).c_str());
+    switch (req.getStatusCode()) {
+    case 204:
+        // the expected outcome
+        break;
+    default:
+        SE_THROW(std::string("unexpected status for removal: ") +
+                 Neon::Status2String(req.getStatus()));
+        break;
+    }
 }
-
 
 SE_END_CXX
 
