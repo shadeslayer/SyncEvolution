@@ -147,6 +147,9 @@ sub Normalize {
     # EXDATE;VALUE=DATE is the default, no need to show it
     s/^EXDATE;VALUE=DATE:/EXDATE:/mg;
 
+    # default opacity is OPAQUE
+    s/^TRANSP:OPAQUE\r?\n?//gm;
+
     # multiple EXDATEs may be joined into one, use separate properties as normal form
     s/^(EXDATE[^:]*):(.*)(\r?\n)/splitvalue($1, $2, $3)/mge;
 
