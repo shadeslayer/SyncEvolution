@@ -261,6 +261,11 @@ int main(int argc, char* argv[])
   }
   runner.eventManager().addListener(&syncListener);
 
+
+  if (getenv("SYNCEVOLUTION_DEBUG")) {
+      LoggerBase::instance().setLevel(Logger::DEBUG);
+  }
+
   try {
       // Run the tests.
       if (argc <= 1) {
