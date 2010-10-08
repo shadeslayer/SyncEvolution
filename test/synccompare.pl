@@ -203,7 +203,7 @@ sub Normalize {
     # remove fields which may differ
     s/^(PRODID|CREATED|DTSTAMP|LAST-MODIFIED|REV):.*\r?\n?//gm;
     # remove optional fields
-    s/^(METHOD|X-WSS-[A-Z]*):.*\r?\n?//gm;
+    s/^(METHOD|X-WSS-[A-Z]*|X-WR-[A-Z]*|CALSCALE):.*\r?\n?//gm;
 
     # trailing line break(s) in a DESCRIPTION may or may not be
     # removed or added by servers
@@ -289,6 +289,12 @@ sub Normalize {
       s!^TEL\;TYPE=CAR(.*)\n!TEL$1\n!mg;
       # some properties are lost
       s/^(X-EVOLUTION-FILE-AS|NICKNAME|BDAY|CATEGORIES|CALURI|FBURL|ROLE|URL|X-AIM|X-EVOLUTION-UI-SLOT|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-MANAGER|X-SPOUSE|X-MOZILLA-HTML|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
+
+      #several properties are not preserved by Google in icalendar2.0 format
+      s/^(SEQUENCE|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
+
+      # default status is CONFIRMED
+      s/^STATUS:CONFIRMED\r?\n?//gm;
     }
 
     if ($addressbook) {
