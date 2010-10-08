@@ -236,11 +236,12 @@ sub Normalize {
 
     # VTIMEZONE and TZID do not have to be preserved verbatim as long
     # as the replacement is still representing the same timezone.
-    # Reduce TZIDs which follow the Olson database pseudo-standard
+    # Reduce TZIDs which specify a proper location
     # to their location part and strip the VTIMEZONE - makes the
     # diff shorter, too.
-    s;^BEGIN:VTIMEZONE.*?^TZID:/[^/\n]*/[^/\n]*/(\S+).*^END:VTIMEZONE;BEGIN:VTIMEZONE\nTZID:$1 [...]\nEND:VTIMEZONE;gms;
-    s;TZID=/[^/\n]*/[^/\n]*/(.*)$;TZID=$1;gm;
+    my $location = "[^\n]*((?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Brazil|Canada|Chile|Egypt|Eire|Europe|Hongkong|Iceland|India|Iran|Israel|Jamaica|Japan|Kwajalein|Libya|Mexico|Mideast|Navajo|Pacific|Poland|Portugal|Singapore|Turkey|Zulu)[-a-zA-Z0-9_/]*)";
+    s;^BEGIN:VTIMEZONE.*?^TZID:$location.*^END:VTIMEZONE;BEGIN:VTIMEZONE\n  TZID:$1 [...]\nEND:VTIMEZONE;gms;
+    s;TZID=$location;TZID=$1;gm;
 
     # normalize iCalendar 2.0
     if (/^BEGIN:(VEVENT|VTODO|VJOURNAL)$/m) {
