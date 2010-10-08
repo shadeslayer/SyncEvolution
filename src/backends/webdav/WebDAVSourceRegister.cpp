@@ -133,7 +133,7 @@ namespace {
 
 static class CalDAVTest : public RegisterSyncSourceTest {
 public:
-    CalDAVTest() : RegisterSyncSourceTest("ical20", "ical20") {}
+    CalDAVTest() : RegisterSyncSourceTest("caldav_ical20", "ical20") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

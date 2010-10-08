@@ -252,6 +252,7 @@ std::string WebDAVSource::luid2path(const std::string &luid)
 
 void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
 {
+    item.clear();
     Neon::Request req(*m_session, "GET", luid2path(uid),
                       "", item);
     req.run();
@@ -292,9 +293,14 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         rev = getETag(req);
         std::string real_luid = getLUID(req);
         if (!real_luid.empty()) {
-            SE_LOG_DEBUG(NULL, NULL, "new item mapped to existing one at %s", real_luid.c_str());
+            // Google renames the resource automatically to something of the form
+            // <UID>.ics. Interestingly enough, our 1234567890!@#$%^&*()<>@dummy UID
+            // test case leads to a resource path which Google then cannot find
+            // via CalDAV. client-test must run with CLIENT_TEST_SIMPLE_UID=1...
+            SE_LOG_DEBUG(NULL, NULL, "new item mapped to %s", real_luid.c_str());
             new_uid = real_luid;
-            update = true;
+            // TODO: find a better way of detecting unexpected updates.
+            // update = true;
         }
     } else {
         // TODO: preserve original UID and RECURRENCE-ID,
