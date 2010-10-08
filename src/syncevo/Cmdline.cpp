@@ -451,7 +451,7 @@ bool Cmdline::run() {
         boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
         boost::shared_ptr<FilterConfigNode> serverNode(new VolatileConfigNode());
         SyncSourceNodes nodes(true, sharedNode, configNode, hiddenNode, trackingNode, serverNode, "");
-        SyncSourceParams params("list", nodes);
+        SyncSourceParams params("list", nodes, boost::shared_ptr<const SyncConfig>());
         
         BOOST_FOREACH(const RegisterSyncSource *source, registry) {
             BOOST_FOREACH(const Values::value_type &alias, source->m_typeValues) {
@@ -727,7 +727,7 @@ bool Cmdline::run() {
                     }
 
                     // check whether the sync source works
-                    SyncSourceParams params("list", to->getSyncSourceNodes(source));
+                    SyncSourceParams params("list", to->getSyncSourceNodes(source), to);
                     auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false, to.get()));
                     if (syncSource.get() == NULL) {
                         disable = "no backend available";
@@ -820,7 +820,7 @@ bool Cmdline::run() {
 
         string sourceName = *m_sources.begin();
         SyncSourceNodes sourceNodes = context->getSyncSourceNodesNoTracking(sourceName);
-        SyncSourceParams params(sourceName, sourceNodes);
+        SyncSourceParams params(sourceName, sourceNodes, context);
         cxxptr<SyncSource> source(SyncSource::createSource(params, true));
 
         sysync::TSyError err;

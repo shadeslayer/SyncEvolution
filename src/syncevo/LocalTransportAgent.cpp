@@ -133,7 +133,7 @@ void LocalTransportAgent::run()
     try {
         SE_LOG_INFO(NULL, NULL, "client is running");
         // TODO: password and abort handling in a derived class
-        SyncContext client(m_clientContext,
+        SyncContext client(std::string("source-config@") + m_clientContext,
                            m_server->getRootPath() + "/." + m_clientContext,
                            boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
                            true);

@@ -45,15 +45,26 @@ struct SyncSourceParams {
     /**
      * @param    name        the name needed by SyncSource
      * @param    nodes       a set of config nodes to be used by this source
+     * @param    context     Additional non-source config settings.
+     *                       When running as part of a normal sync, these are the
+     *                       settings for the peer. When running in a local sync,
+     *                       these settings come from the "source-config" peer
+     *                       config inside the config context of the source.
+     *                       Testing uses "source-config@client-test". On the
+     *                       command line, this is the config chosen by the
+     *                       user, which may or may not have peer-specific settings!
      */
     SyncSourceParams(const string &name,
-                     const SyncSourceNodes &nodes = SyncSourceNodes()) :
+                     const SyncSourceNodes &nodes,
+                     const boost::shared_ptr<const SyncConfig> &context) :
         m_name(name),
-        m_nodes(nodes)
+        m_nodes(nodes),
+        m_context(context)            
     {}
 
     string m_name;
     SyncSourceNodes m_nodes;
+    boost::shared_ptr<const SyncConfig> m_context;
 };
 
 /**
@@ -1139,7 +1150,7 @@ class DummySyncSource : public SyncSource
        SyncSource(params) {}
 
     DummySyncSource(const std::string &name) :
-       SyncSource(SyncSourceParams(name)) {}
+       SyncSource(SyncSourceParams(name, SyncSourceNodes(), boost::shared_ptr<const SyncConfig>())) {}
 
     virtual Databases getDatabases() { return Databases(); }
     virtual void open() {}

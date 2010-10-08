@@ -2818,7 +2818,7 @@ void ReadOperations::checkSource(const std::string &sourceName)
     bool checked = false;
     try {
         // this can already throw exceptions when the config is invalid
-        SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
+        SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), config);
         auto_ptr<SyncSource> syncSource(SyncSource::createSource(params, false, config.get()));
 
         if (syncSource.get()) {
@@ -2839,7 +2839,7 @@ void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &d
     boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
     setFilters(*config);
 
-    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName));
+    SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), config);
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
         SyncSource *source = sourceInfo->m_create(params);

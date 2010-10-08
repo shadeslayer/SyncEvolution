@@ -1908,7 +1908,7 @@ void SyncContext::initSources(SourceList &sourceList)
             if (sourceType.m_backend == "virtual") {
                 //This is a virtual sync source, check and enable the referenced
                 //sub syncsources here
-                SyncSourceParams params(name, source);
+                SyncSourceParams params(name, source, boost::shared_ptr<SyncConfig>(this, SyncConfigNOP()));
                 boost::shared_ptr<VirtualSyncSource> vSource = boost::shared_ptr<VirtualSyncSource> (new VirtualSyncSource (params));
                 std::vector<std::string> mappedSources = vSource->getMappedSources();
                 BOOST_FOREACH (std::string source, mappedSources) {
@@ -1953,7 +1953,8 @@ void SyncContext::initSources(SourceList &sourceList)
         if (enabled) {
             if (sourceType.m_backend != "virtual") {
                 SyncSourceParams params(name,
-                        source);
+                                        source,
+                                        boost::shared_ptr<SyncConfig>(this, SyncConfigNOP()));
                 cxxptr<SyncSource> syncSource(SyncSource::createSource(params));
                 if (!syncSource) {
                     throwError(name + ": type unknown" );

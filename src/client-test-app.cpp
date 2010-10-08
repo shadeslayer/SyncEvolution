@@ -440,10 +440,10 @@ private:
     /** called internally in this class */
     TestingSyncSource *createSource(const string &name, bool isSourceA) {
         string database = getDatabaseName(name);
-        SyncConfig config("client-test-changes");
-        SyncSourceNodes nodes = config.getSyncSourceNodes(name,
-                                                          string("_") + m_clientID +
-                                                          "_" + (isSourceA ? "A" : "B"));
+        boost::shared_ptr<SyncConfig> context(new SyncConfig("source-config@client-test"));
+        SyncSourceNodes nodes = context->getSyncSourceNodes(name,
+                                                            string("_") + m_clientID +
+                                                            "_" + (isSourceA ? "A" : "B"));
 
         // always set this property: the name might have changes since last test run
         nodes.getProperties()->setProperty("evolutionsource", database.c_str());
@@ -451,8 +451,8 @@ private:
         nodes.getProperties()->setProperty("evolutionpassword", m_evoPassword.c_str());
 
         SyncSourceParams params(name,
-                                nodes);
-
+                                nodes,
+                                context);
         const RegisterSyncSourceTest *test = m_configs[name];
         ClientTestConfig testConfig;
         getSourceConfig(test, testConfig);

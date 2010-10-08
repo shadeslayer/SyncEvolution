@@ -1549,6 +1549,14 @@ class SyncSourceNodes {
 };
 
 /**
+ * nop deleter for boost::shared_ptr<SyncConfig>
+ */
+struct SyncConfigNOP
+{
+    void operator() (SyncConfig *) {}
+};
+
+/**
  * same as SyncSourceNodes, but with only read access to properties
  */
 class ConstSyncSourceNodes : private SyncSourceNodes

@@ -350,9 +350,9 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
 SyncSource *SyncSource::createTestingSource(const string &name, const string &type, bool error,
                                             const char *prefix)
 {
-    SyncConfig config("testing@client-test");
-    SyncSourceNodes nodes = config.getSyncSourceNodes(name);
-    SyncSourceParams params(name, nodes);
+    boost::shared_ptr<SyncConfig> context(new SyncConfig("source-config@client-test"));
+    SyncSourceNodes nodes = context->getSyncSourceNodes(name);
+    SyncSourceParams params(name, nodes, context);
     PersistentSyncSourceConfig sourceconfig(name, nodes);
     sourceconfig.setSourceType(type);
     if (prefix) {
@@ -367,7 +367,7 @@ VirtualSyncSource::VirtualSyncSource(const SyncSourceParams &params, SyncConfig 
     if (config) {
         BOOST_FOREACH(std::string name, getMappedSources()) {
             SyncSourceNodes source = config->getSyncSourceNodes(name);
-            SyncSourceParams params(name, source);
+            SyncSourceParams params(name, source, boost::shared_ptr<SyncConfig>(config, SyncConfigNOP()));
             boost::shared_ptr<SyncSource> syncSource(createSource(params, true, config));
             m_sources.push_back(syncSource);
         }
