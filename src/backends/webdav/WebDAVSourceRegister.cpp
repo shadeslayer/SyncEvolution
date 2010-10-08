@@ -54,8 +54,9 @@ static SyncSource *createSource(const SyncSourceParams &params)
                     return var ? atoi(var) : 0;
                 }
             };
-            
-            boost::shared_ptr<Neon::Settings> settings(static_cast<Neon::Settings *>(new EnvSettings));
+
+            // settings now derived from source params context
+            boost::shared_ptr<Neon::Settings> settings;
             return new CalDAVSource(params, settings);
 #else
             return RegisterSyncSource::InactiveSource;

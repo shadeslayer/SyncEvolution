@@ -12,11 +12,65 @@
 
 SE_BEGIN_CXX
 
+/**
+ * Retrieve settings from SyncConfig.
+ * NULL pointer for config is allowed.
+ */
+class ContextSettings : public Neon::Settings {
+    boost::shared_ptr<const SyncConfig> m_context;
+public:
+    ContextSettings(const boost::shared_ptr<const SyncConfig> &context) :
+        m_context(context)
+    {}
+
+    virtual std::string getURL()
+    {
+        if (m_context) {
+            vector<string> urls = m_context->getSyncURL();
+            return urls.empty() ?
+                "" :
+                urls.front();
+        } else {
+            return "";
+        }
+    }
+
+    virtual bool verifySSLHost()
+    {
+        return !m_context || m_context->getSSLVerifyHost();
+    }
+
+    virtual bool verifySSLCertificate()
+    {
+        return !m_context || m_context->getSSLVerifyServer();
+    }
+
+    virtual void getCredentials(const std::string &realm,
+                                std::string &username,
+                                std::string &password)
+    {
+        if (m_context) {
+            username = m_context->getUsername();
+            password = m_context->getPassword();
+        }
+    }
+
+    virtual int logLevel()
+    {
+        return m_context ?
+            m_context->getLogLevel() :
+            0;
+    }
+};
+
 WebDAVSource::WebDAVSource(const SyncSourceParams &params,
                            const boost::shared_ptr<Neon::Settings> &settings) :
     TrackingSyncSource(params),
     m_settings(settings)
 {
+    if (!m_settings) {
+        m_settings.reset(new ContextSettings(params.m_context));
+    }
 }
 
 void WebDAVSource::open()
