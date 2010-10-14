@@ -460,6 +460,39 @@ std::string SHA_256(const std::string &data)
 #endif
 }
 
+StringEscape::StringEscape(char escapeChar, const char *forbidden) :
+    m_escapeChar(escapeChar)
+{
+    while (*forbidden) {
+        m_forbidden.insert(*forbidden);
+        ++forbidden;
+    }
+}
+
+string StringEscape::escape(const string &str) const
+{
+    if (m_mode != SET) {
+        return escape(str, m_escapeChar, m_mode);
+    }
+
+    string res;
+    char buffer[4];
+
+    res.reserve(str.size() * 3);
+    BOOST_FOREACH(char c, str) {
+        if(c != m_escapeChar &&
+           m_forbidden.find(c) == m_forbidden.end()) {
+            res += c;
+        } else {
+            sprintf(buffer, "%c%02x",
+                    m_escapeChar,
+                    (unsigned int)(unsigned char)c);
+            res += buffer;
+        }
+    }
+    return res;
+}
+
 string StringEscape::escape(const string &str, char escapeChar, Mode mode)
 {
     string res;

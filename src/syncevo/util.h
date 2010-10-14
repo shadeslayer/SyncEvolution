@@ -181,6 +181,7 @@ class StringEscape
 {
  public:
     enum Mode {
+        SET,               /**< explicit list of characters to be escaped */
         INI_VALUE,         /**< right hand side of .ini assignment:
                               escape all spaces at start and end (but not in the middle) and the equal sign */
         INI_WORD,          /**< same as before, but keep it one word:
@@ -192,6 +193,7 @@ class StringEscape
  private:
     char m_escapeChar;
     Mode m_mode;
+    std::set<char> m_forbidden;
 
  public:
     /**
@@ -203,6 +205,12 @@ class StringEscape
         m_mode(mode)
     {}
 
+    /**
+     * @param escapeChar        character used to introduce escape sequence
+     * @param forbidden         explicit list of characters which are to be escaped
+     */
+    StringEscape(char escapeChar, const char *forbidden);
+
     /** special character which introduces two-char hex encoded original character */
     char getEscapeChar() const { return m_escapeChar; }
     void setEscapeChar(char escapeChar) { m_escapeChar = escapeChar; }
@@ -213,7 +221,7 @@ class StringEscape
     /**
      * escape string according to current settings
      */
-    string escape(const string &str) const { return escape(str, m_escapeChar, m_mode); }
+    string escape(const string &str) const;
 
     /** escape string with the given settings */
     static string escape(const string &str, char escapeChar, Mode mode);
