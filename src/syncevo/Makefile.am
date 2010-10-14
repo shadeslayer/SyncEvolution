@@ -105,6 +105,9 @@ SYNCEVOLUTION_SOURCES  = \
 	FileConfigTree.h \
 	FileConfigTree.cpp \
 	\
+	MapSyncSource.h \
+	MapSyncSource.cpp \
+	\
 	TrackingSyncSource.h \
 	TrackingSyncSource.cpp
 

@@ -77,9 +77,14 @@ class TrackingSyncSource : public TestingSyncSource,
      *                       of seconds which has to pass before changes
      *                       are detected reliably (see SyncSourceRevisions
      *                       for details), otherwise pass 0
+     * @param trackingNode   a ConfigNode instance which will be used to store
+     *                       luid/revision string pairs; if not set, TrackingSyncSource
+     *                       will create its own node with the tracking node
+     *                       in params as storage
      */
     TrackingSyncSource(const SyncSourceParams &params,
-                       int granularitySeconds = 1);
+                       int granularitySeconds = 1,
+                       const boost::shared_ptr<ConfigNode> &trackingNode = boost::shared_ptr<ConfigNode>());
     ~TrackingSyncSource() {}
 
     /**
