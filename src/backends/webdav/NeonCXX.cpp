@@ -285,6 +285,14 @@ int Request::addResultData(void *userdata, const char *buf, size_t len)
     return 0;
 }
 
+void Request::check(int error)
+{
+    m_session.check(error);
+    if (getStatus()->klass != 2) {
+        SE_THROW(std::string("bad status: ") + Status2String(getStatus()));
+    }
+}
+
 }
 
 SE_END_CXX

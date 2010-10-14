@@ -198,7 +198,7 @@ class Request
     void addHeader(const std::string &name, const std::string &value) {
         ne_add_request_header(m_req, name.c_str(), value.c_str());
     }
-    void run() { m_session.check(ne_request_dispatch(m_req)); }
+    void run() { check(ne_request_dispatch(m_req)); }
     std::string getResponseHeader(const std::string &name) {
         const char *value = ne_get_response_header(m_req, name.c_str());
         return value ? value : "";
@@ -213,6 +213,9 @@ class Request
 
     /** ne_block_reader implementation */
     static int addResultData(void *userdata, const char *buf, size_t len);
+
+    /** throw error if error code *or* current status indicates failure */
+    void check(int error);
 };
 
 }
