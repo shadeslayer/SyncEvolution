@@ -157,12 +157,12 @@ static int countItems(TestingSyncSource *source) { return countItemsOfType(sourc
 
 
 /** insert new item, return LUID */
-static std::string importItem(TestingSyncSource *source, std::string &data)
+static std::string importItem(TestingSyncSource *source, const ClientTestConfig &config, std::string &data)
 {
     CPPUNIT_ASSERT(source);
     if (data.size()) {
         SyncSourceRaw::InsertItemResult res;
-        SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw("", data));
+        SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw("", config.mangleItem(data.c_str()).c_str()));
         CPPUNIT_ASSERT(!res.m_luid.empty());
         return res.m_luid;
     } else {
@@ -243,7 +243,7 @@ std::string LocalTests::insert(CreateSource createSource, const char *data, bool
     int numItems = 0;
     CPPUNIT_ASSERT_NO_THROW(numItems = countItems(source.get()));
     SyncSourceRaw::InsertItemResult res;
-    SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw("", data));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw("", config.mangleItem(data)));
     CPPUNIT_ASSERT(!res.m_luid.empty());
 
     // delete source again
@@ -265,7 +265,7 @@ std::string LocalTests::insert(CreateSource createSource, const char *data, bool
 }
 
 /** deletes specific item locally via sync source */
-static std::string updateItem(CreateSource createSource, const std::string &uid, const char *data) {
+static std::string updateItem(CreateSource createSource, const ClientTestConfig &config, const std::string &uid, const char *data) {
     std::string newuid;
 
     CPPUNIT_ASSERT(createSource.createSource);
@@ -275,7 +275,7 @@ static std::string updateItem(CreateSource createSource, const std::string &uid,
 
     // insert item
     SyncSourceRaw::InsertItemResult res;
-    SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw(uid, data));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw(uid, config.mangleItem(data).c_str()));
     SOURCE_ASSERT(source.get(), !res.m_luid.empty());
 
     return res.m_luid;
@@ -305,7 +305,7 @@ void LocalTests::update(CreateSource createSource, const char *data, bool check)
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
     CPPUNIT_ASSERT(it != source->getAllItems().end());
     string luid = *it;
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, data));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data)));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     if (!check) {
@@ -332,7 +332,7 @@ void LocalTests::update(CreateSource createSource, const char *data, const std::
     TestingSyncSourcePtr source(createSource());
 
     // update it
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, data));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data).c_str()));
 }
 
 /** deletes all items locally via sync source */
@@ -404,7 +404,7 @@ bool LocalTests::compareDatabases(const char *refFile, TestingSyncSource &copy, 
 
 std::string LocalTests::createItem(int item, const std::string &revision, int size)
 {
-    std::string data = config.templateItem;
+    std::string data = config.mangleItem(config.templateItem);
     std::stringstream prefix;
 
     prefix << std::setfill('0') << std::setw(3) << item << " ";
@@ -526,7 +526,7 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
     int lastIndex = firstIndex + (numItems >= 1 ? numItems : config.numItems) - 1;
     for (int item = firstIndex; item <= lastIndex; item++) {
         std::string data = createItem(item, "", size);
-        luids.push_back(importItem(source.get(), data));
+        luids.push_back(importItem(source.get(), config, data));
     }
 
     return luids;
@@ -726,7 +726,7 @@ void LocalTests::testImport() {
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     std::string testcases;
-    SOURCE_ASSERT_EQUAL(source.get(), 0, config.import(client, *source.get(), config.testcases, testcases));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, config.import(client, *source.get(), config, config.testcases, testcases));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // export again and compare against original file
@@ -1229,7 +1229,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = updateItem(createSourceA, parent, config.parentItem);
+    parent = updateItem(createSourceA, config, parent, config.parentItem);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
@@ -1277,7 +1277,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = updateItem(createSourceA, child, config.childItem);
+    child = updateItem(createSourceA, config, child, config.childItem);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
@@ -1326,7 +1326,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = updateItem(createSourceA, child, config.childItem);
+    child = updateItem(createSourceA, config, child, config.childItem);
 
     // child has to be listed as modified, parent may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1380,7 +1380,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = updateItem(createSourceA, parent, config.parentItem);
+    parent = updateItem(createSourceA, config, parent, config.parentItem);
 
     // parent has to be listed as modified, child may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -2916,6 +2916,7 @@ void SyncTests::doInterruptResume(int changes,
             if (changes & SERVER_UPDATE) {
                 // update third item
                 updateItem(sources[i].second->createSourceA,
+                           sources[i].second->config,
                            *(++ ++clientAluids[i].begin()),
                            sources[i].second->createItem(3, "updated", changedItemSize).c_str());
                                               
@@ -2941,6 +2942,7 @@ void SyncTests::doInterruptResume(int changes,
             if (changes & CLIENT_UPDATE) {
                 // update third item
                 updateItem(accessClientB->sources[i].second->createSourceA,
+                           accessClientB->sources[i].second->config,
                            *(++ ++clientBluids[i].begin()),
                            accessClientB->sources[i].second->createItem(13, "updated", changedItemSize).c_str());
             }
@@ -3471,12 +3473,13 @@ void ClientTest::getItems(const char *file, list<string> &items, std::string &te
     }
 }
 
-int ClientTest::import(ClientTest &client, TestingSyncSource &source, const char *file, std::string &realfile)
+int ClientTest::import(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
+                       const char *file, std::string &realfile)
 {
     list<string> items;
     getItems(file, items, realfile);
     BOOST_FOREACH(string &data, items) {
-        importItem(&source, data);
+        importItem(&source, config, data);
     }
     return 0;
 }
@@ -3531,6 +3534,56 @@ void ClientTest::postSync(int res, const std::string &logname)
 #endif
 }
 
+static string mangleNOP(const char *data) { return data; }
+
+static string mangleICalendar20(const char *data)
+{
+    std::string item = data;
+
+    if (getenv("CLIENT_TEST_NO_UID")) {
+        boost::replace_all(item, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
+    } else if (getenv("CLIENT_TEST_SIMPLE_UID")) {
+        boost::replace_all(item, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
+    }
+
+    if (getenv("CLIENT_TEST_UNIQUE_UID")) {
+        // Making UID unique per client-test run avoids issues
+        // when the source already holds older copies.
+        // Might still be an issue in real life?!
+        static time_t start = time(NULL);
+        std::string unique = StringPrintf("UID:%llu-", (long long unsigned)start);
+        boost::replace_all(item, "UID:", unique);
+    }
+
+    size_t offset = item.find("\nLAST-MODIFIED:");
+    static const size_t len = strlen("\nLAST-MODIFIED:20100131T235959Z");
+    if (offset != item.npos) {
+        // Special semantic for iCalendar 2.0: LAST-MODIFIED should be
+        // incremented in updated items. Emulate that by inserting the
+        // current time.
+        time_t now = time(NULL);
+        struct tm tm;
+        gmtime_r(&now, &tm);
+        std::string mod = StringPrintf("\nLAST-MODIFIED:%04d%02d%02dT%02d%02d%02dZ",
+                                       tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                                       tm.tm_hour, tm.tm_min, tm.tm_sec);
+        item.replace(offset, len, mod);
+    }
+
+    const static string sequence("\nSEQUENCE:XXX");
+    offset = item.find(sequence);
+    if (offset != item.npos) {
+        // Increment sequence number in steps of 100 to ensure that our
+        // new item is considered more recent than any corresponding
+        // item in the source. Some storages (Google CalDAV) check that.
+        static int counter = 100;
+        item.replace(offset, sequence.size(), StringPrintf("\nSEQUENCE:%d", counter));
+        counter += 100;
+    }
+
+    return item;
+}
+
 void ClientTest::getTestData(const char *type, Config &config)
 {
     memset(&config, 0, sizeof(config));
@@ -3555,6 +3608,8 @@ void ClientTest::getTestData(const char *type, Config &config)
     if (env && !strcmp (env, "t")) {
         noutc = true;
     }
+
+    config.mangleItem = mangleNOP;
 
     if (!strcmp(type, "vcard30")) {
         config.sourceName = "vcard30";
@@ -3692,7 +3747,8 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.sourceNameServerTemplate = "calendar";
         config.uri = "cal2"; // ScheduleWorld
         config.type = "text/x-vcalendar";
-        static string insertItem =
+        config.mangleItem = mangleICalendar20;
+        config.insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3703,16 +3759,16 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART:20060406T160000Z\n"
             "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
-            "LAST-MODIFIED:20060409T213201\n"
+            "LAST-MODIFIED:20060409T213201Z\n"
             "CREATED:20060409T213201\n"
             "LOCATION:my office\n"
             "DESCRIPTION:let's talk<<REVISION>>\n"
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:1\n"
+            "SEQUENCE:XXX\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-        static string updateItem =
+        config.updateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3723,17 +3779,17 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART:20060406T160000Z\n"
             "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
-            "LAST-MODIFIED:20060409T213201\n"
+            "LAST-MODIFIED:20060409T213201Z\n"
             "CREATED:20060409T213201\n"
+            "SEQUENCE:XXX\n"
             "LOCATION:big meeting room\n"
             "DESCRIPTION:nice to see you\n"
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:1\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location and description of insertItem in testMerge(), add alarm */
-        static string mergeItem1 =
+        config.mergeItem1 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3744,13 +3800,13 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART:20060406T160000Z\n"
             "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
-            "LAST-MODIFIED:20060409T213201\n"
+            "LAST-MODIFIED:20060409T213201Z\n"
             "CREATED:20060409T213201\n"
+            "SEQUENCE:XXX\n"
             "LOCATION:calling from home\n"
             "DESCRIPTION:let's talk\n"
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:1\n"
             "BEGIN:VALARM\n"
             "DESCRIPTION:alarm\n"
             "ACTION:DISPLAY\n"
@@ -3759,7 +3815,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location to something else, add category */
-        static string mergeItem2 =
+        config.mergeItem2 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -3770,33 +3826,16 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART:20060406T160000Z\n"
             "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
-            "LAST-MODIFIED:20060409T213201\n"
+            "LAST-MODIFIED:20060409T213201Z\n"
             "CREATED:20060409T213201\n"
+            "SEQUENCE:XXX\n"
             "LOCATION:my office\n"
             "CATEGORIES:WORK\n"
             "DESCRIPTION:what the heck\\, let's even shout a bit\n"
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:1\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-
-        if (getenv("CLIENT_TEST_NO_UID")) {
-            boost::replace_all(insertItem, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
-            boost::replace_all(updateItem, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
-            boost::replace_all(mergeItem1, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
-            boost::replace_all(mergeItem2, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
-        } else if (getenv("CLIENT_TEST_SIMPLE_UID")) {
-            boost::replace_all(insertItem, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
-            boost::replace_all(updateItem, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
-            boost::replace_all(mergeItem1, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
-            boost::replace_all(mergeItem2, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
-        }
-
-        config.insertItem = insertItem.c_str();
-        config.updateItem = updateItem.c_str();
-        config.mergeItem1 = mergeItem1.c_str();
-        config.mergeItem2 = mergeItem2.c_str();
 
         config.parentItem =
             "BEGIN:VCALENDAR\n"
@@ -3809,13 +3848,13 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART:20080406T090000Z\n"
             "DTEND:20080406T093000Z\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:2\n"
+            "SEQUENCE:XXX\n"
             "SUMMARY:Recurring\n"
             "DESCRIPTION:recurs each Monday\\, 10 times\n"
             "CLASS:PUBLIC\n"
             "RRULE:FREQ=WEEKLY;COUNT=10;INTERVAL=1;BYDAY=SU\n"
             "CREATED:20080407T193241\n"
-            "LAST-MODIFIED:20080407T193241\n"
+            "LAST-MODIFIED:20080407T193241Z\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         config.childItem =
@@ -3829,15 +3868,16 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART:20080413T090000Z\n"
             "DTEND:20080413T093000Z\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:7\n"
+            "SEQUENCE:XXX\n"
             "SUMMARY:Recurring: Modified\n"
             "CLASS:PUBLIC\n"
             "CREATED:20080407T193241\n"
-            "LAST-MODIFIED:20080407T193647\n"
+            "LAST-MODIFIED:20080407T193647Z\n"
             "RECURRENCE-ID:20080413T090000Z\n"
             "DESCRIPTION:second instance modified\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
+
         config.templateItem = config.insertItem;
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
         config.sizeProperty = "DESCRIPTION";
@@ -3906,6 +3946,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.sourceNameServerTemplate = "calendar";
         config.uri = "cal2"; // ScheduleWorld
         config.type = "text/x-vcalendar";
+        config.mangleItem = mangleICalendar20;
         config.insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -3935,13 +3976,13 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART;TZID=/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai:20060406T160000\n"
             "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
-            "LAST-MODIFIED:20060409T213201\n"
+            "LAST-MODIFIED:20060409T213201Z\n"
             "CREATED:20060409T213201\n"
             "LOCATION:my office\n"
             "DESCRIPTION:let's talk<<REVISION>>\n"
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:1\n"
+            "SEQUENCE:XXX\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         config.updateItem =
@@ -3973,13 +4014,13 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DTSTART;TZID=/freeassociation.sourceforge.net/Tzfile/Asia/Shanghai:20060406T160000\n"
             "UID:1234567890!@#$%^&*()<>@dummy\n"
             "DTSTAMP:20060406T211449Z\n"
-            "LAST-MODIFIED:20060409T213201\n"
+            "LAST-MODIFIED:20060409T213201Z\n"
             "CREATED:20060409T213201\n"
             "LOCATION:big meeting room\n"
             "DESCRIPTION:nice to see you\n"
             "CLASS:PUBLIC\n"
             "TRANSP:OPAQUE\n"
-            "SEQUENCE:1\n"
+            "SEQUENCE:XXX\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location and description of insertItem in testMerge(), add alarm */
@@ -3996,6 +4037,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.sourceNameServerTemplate = "todo";
         config.uri = "task2"; // ScheduleWorld
         config.type = "text/x-vcalendar";
+        config.mangleItem = mangleICalendar20;
         config.insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -4009,7 +4051,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRIORITY:0\n"
             "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
-            "LAST-MODIFIED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712Z\n"
             "END:VTODO\n"
             "END:VCALENDAR\n";
         config.updateItem =
@@ -4025,7 +4067,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRIORITY:1\n"
             "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
-            "LAST-MODIFIED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712Z\n"
             "END:VTODO\n"
             "END:VCALENDAR\n";
         /* change summary in insertItem in testMerge() */
@@ -4042,7 +4084,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRIORITY:0\n"
             "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
-            "LAST-MODIFIED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712Z\n"
             "END:VTODO\n"
             "END:VCALENDAR\n";
         config.mergeItem2 =
@@ -4058,7 +4100,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRIORITY:7\n"
             "STATUS:IN-PROCESS\n"
             "CREATED:20060417T173712\n"
-            "LAST-MODIFIED:20060417T173712\n"
+            "LAST-MODIFIED:20060417T173712Z\n"
             "END:VTODO\n"
             "END:VCALENDAR\n";
         config.templateItem = config.insertItem;
@@ -4076,6 +4118,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.sourceNameServerTemplate = "memo";
         config.type = "memo";
         config.itemType = "text/calendar";
+        config.mangleItem = mangleICalendar20;
         config.insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"

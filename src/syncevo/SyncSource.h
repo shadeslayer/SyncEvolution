@@ -261,6 +261,13 @@ struct ClientTestConfig{
     const char *itemType;
 
     /**
+     * callback which is invoked with a specific item as paramter
+     * to do data type specific conversions before actually
+     * using the test item; default is a NOP function
+     */
+    string (*mangleItem)(const char *data);
+
+    /**
      * A very simple item that is inserted during basic tests. Ideally
      * it only contains properties supported by all servers.
      */
@@ -358,7 +365,8 @@ struct ClientTestConfig{
      *                   this may depend on the current server that is being tested
      * @return error code, 0 for success
      */
-    int (*import)(ClientTest &client, TestingSyncSource &source, const char *file, std::string &realfile);
+    int (*import)(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
+                  const char *file, std::string &realfile);
 
     /**
      * a function which compares two files with items in the format used by "dump"
