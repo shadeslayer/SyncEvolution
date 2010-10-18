@@ -236,6 +236,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         if (!found) {
             SE_THROW("event not found");
         }
+        event.m_subids.erase(subid);
         // TODO: avoid updating the item immediately
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
         InsertItemResult res = insertItem(davLUID, icalstr.get(), true);
