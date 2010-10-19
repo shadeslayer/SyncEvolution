@@ -2,6 +2,10 @@
  * Copyright (C) 2010 Patrick Ohly <patrick.ohly@gmx.de>
  */
 
+#include <config.h>
+
+#ifdef ENABLE_DAV
+
 #include "NeonCXX.h"
 #include <ne_socket.h>
 #include <ne_auth.h>
@@ -297,3 +301,4 @@ void Request::check(int error)
 
 SE_END_CXX
 
+#endif // ENABLE_DAV

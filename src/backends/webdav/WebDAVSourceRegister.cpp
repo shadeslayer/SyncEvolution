@@ -3,6 +3,7 @@
  */
 
 #include "CalDAVSource.h"
+#include <syncevo/SyncSource.h>
 #include "test.h"
 
 #include <syncevo/declarations.h>
