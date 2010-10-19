@@ -62,6 +62,8 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &davL
     boost::shared_ptr<Event> newEvent(new Event);
     newEvent->m_calendar.set(icalcomponent_new_from_string(item.c_str()),
                              "parsing iCalendar 2.0");
+    struct icaltimetype lastmodtime = icaltime_null_time();
+    int sequenceval = 0;
     for (icalcomponent *comp = icalcomponent_get_first_component(newEvent->m_calendar, ICAL_VEVENT_COMPONENT);
          comp;
          comp = icalcomponent_get_next_component(newEvent->m_calendar, ICAL_VEVENT_COMPONENT)) {
@@ -83,8 +85,13 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &davL
         if (dtstamp) {
             icalproperty *lastmod = icalcomponent_get_first_property(comp, ICAL_LASTMODIFIED_PROPERTY);
             if (lastmod) {
-                icalproperty_set_dtstamp(dtstamp, icalproperty_get_lastmodified(lastmod));
+                lastmodtime = icalproperty_get_lastmodified(lastmod);
+                icalproperty_set_dtstamp(dtstamp, lastmodtime);
             }
+        }
+        icalproperty *sequence = icalcomponent_get_first_property(comp, ICAL_SEQUENCE_PROPERTY);
+        if (sequence) {
+            sequenceval = icalproperty_get_sequence(sequence);
         }
     }
     if (newEvent->m_subids.size() != 1) {
@@ -138,21 +145,39 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &davL
         subres.m_subid = subid;
         subres.m_revision = event.m_etag;
 
-        // update sub component in cache: find old VEVENT and remove it
-        // before adding new one
-        bool found = false;
+        // update cache: find old VEVENT and remove it before adding new one,
+        // update last modified time of all other components
+        icalcomponent *removeme = NULL;
         for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
              comp;
              comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
             if (Event::getSubID(comp) == subid) {
-                icalcomponent_remove_component(event.m_calendar, comp);
-                found = true;
-                break;
+                removeme = comp;
+            } else {
+                // increase modification time stamps and sequence to that of the new item,
+                // Google rejects the whole update otherwise
+                if (!icaltime_is_null_time(lastmodtime)) {
+                    icalproperty *dtstamp = icalcomponent_get_first_property(comp, ICAL_DTSTAMP_PROPERTY);
+                    if (dtstamp) {
+                        icalproperty_set_dtstamp(dtstamp, lastmodtime);
+                    }
+                    icalproperty *lastmod = icalcomponent_get_first_property(comp, ICAL_LASTMODIFIED_PROPERTY);
+                    if (lastmod) {
+                        icalproperty_set_lastmodified(lastmod, lastmodtime);
+                    }
+                }
+                if (sequenceval) {
+                    icalproperty *sequence = icalcomponent_get_first_property(comp, ICAL_SEQUENCE_PROPERTY);
+                    if (sequence) {
+                        icalproperty_set_sequence(sequence, sequenceval);
+                    }
+                }
             }
         }
-        if (!found) {
+        if (!removeme) {
             SE_THROW("event not found");
         }
+        icalcomponent_remove_component(event.m_calendar, removeme);
         icalcomponent_merge_component(event.m_calendar,
                                       newEvent->m_calendar.release()); // function destroys merged calendar
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
