@@ -115,7 +115,7 @@ class SmartPtr
     };
     ~SmartPtr()
     {
-        set( NULL );
+        set(0);
     }
 
     /** assignment and copy construction transfer ownership to the copy */

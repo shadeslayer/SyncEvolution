@@ -41,7 +41,7 @@ SoupTransportAgent::SoupTransportAgent(GMainLoop *loop) :
            "Soup main loop"),
     m_status(INACTIVE),
     m_cb(NULL),
-    m_response(NULL)
+    m_response(0)
 {
 #ifdef HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H
     // use default GNOME proxy settings
