@@ -54,13 +54,13 @@ static RegisterSyncSource registerMe("KCalExtended",
                                      createSource,
                                      "mkcal = KCalExtended = calendar\n"
                                      "   iCalendar 2.0 = text/calendar\n"
-                                     "   \"evolutionsource\" either refers to a calendar\n"
-                                     "   inside the default calendar storage, if it starts\n" 
-                                     "   with the SyncEvolution_Test_ prefix non-existing,\n"
-                                     "   calendar will be created else error will be thrown,\n"
-                                     "   or if it starts with the file:// prefix, to the\n"
-                                     "   default calendar in that file. The file will be\n"
-                                     "   created if it does not exist yet.\n",
+                                     "   \"evolutionsource\" normally is the name of a calendar\n"
+                                     "   inside the default calendar storage. If it starts\n" 
+                                     "   with the \"SyncEvolution_Test_\" prefix, it will be\n"
+                                     "   created as needed, otherwise it must exist.\n"
+                                     "   If it starts with the \"file://\" prefix, the default\n"
+                                     "   calendar in the specified SQLite storage file will\n"
+                                     "   created (if needed) and used.\n",
                                      Values() +
                                      (Aliases("mkcal") + "KCalExtended" + "MeeGo Calendar"));
 
