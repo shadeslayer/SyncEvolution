@@ -904,6 +904,13 @@ void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
 {
     initRevisions();
 
+    // Delay setProperty calls until after checking all uids.
+    // Necessary for MapSyncSource, which shares the revision among
+    // several uids. Another advantage is that we can do the "find
+    // deleted items" check with less entries (new items not added
+    // yet).
+    StringMap revUpdates;
+
     BOOST_FOREACH(const StringPair &mapping, m_revisions) {
         const string &uid = mapping.first;
         const string &revision = mapping.second;
@@ -914,11 +921,11 @@ void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
         string serverRevision(trackingNode.readProperty(uid));
         if (!serverRevision.size()) {
             addItem(uid, NEW);
-            trackingNode.setProperty(uid, revision);
+            revUpdates[uid] = revision;
         } else {
             if (revision != serverRevision) {
                 addItem(uid, UPDATED);
-                trackingNode.setProperty(uid, revision);
+                revUpdates[uid] = revision;
             }
         }
     }
@@ -933,6 +940,11 @@ void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
             addItem(uid, DELETED);
             trackingNode.removeProperty(uid);
         }
+    }
+
+    // now update tracking node
+    BOOST_FOREACH(const StringPair &update, revUpdates) {
+        trackingNode.setProperty(update.first, update.second);
     }
 }
 
