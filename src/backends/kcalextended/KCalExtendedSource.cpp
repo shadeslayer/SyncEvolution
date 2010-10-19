@@ -210,7 +210,7 @@ void KCalExtendedSource::open()
         // else if databaseID has a "file://" prefix, create storage at the specified place
         // use default notebook in default storage
         if ( boost::starts_with(databaseID, "file://") ) {
-            mKCal::SqliteStorage::Ptr ss = mKCal::SqliteStorage::Ptr( new mKCal::SqliteStorage ( m_data->m_calendar , QString(databaseID + 7), true ) );
+            mKCal::SqliteStorage::Ptr ss(new mKCal::SqliteStorage(m_data->m_calendar, QString(databaseID + 7), false));
             m_data->m_storage = ss.staticCast<mKCal::ExtendedStorage>();
         } else {
             m_data->m_storage = mKCal::ExtendedCalendar::defaultStorage(m_data->m_calendar);
