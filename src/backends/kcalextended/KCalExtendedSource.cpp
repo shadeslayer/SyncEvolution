@@ -299,10 +299,10 @@ KCalExtendedSource::Databases KCalExtendedSource::getDatabases()
     mKCal::Notebook::List notebookList = m_data->m_storage->notebooks();
     mKCal::Notebook::List::Iterator it;
     for ( it = notebookList.begin(); it != notebookList.end(); ++it ) {
-        bool useTracker = (*it)->isDefault();
+        bool isDefault = (*it)->isDefault();
         result.push_back(Database( (*it)->name().toStdString(), 
                                    (m_data->m_storage).staticCast<mKCal::SqliteStorage>()->databaseName().toStdString(), 
-                                   (*it)->isDefault()));
+                                   isDefault));
     }
     m_data->m_storage->close();
     m_data->m_calendar->close();
