@@ -45,23 +45,6 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     void readItem(const std::string &luid, std::string &item, bool raw);
     virtual void removeItem(const string &uid);
 
- private:
-    boost::shared_ptr<Neon::Settings> m_settings;
-    boost::shared_ptr<Neon::Session> m_session;
-
-    /** normalized path: including backslash, URI encoded */
-    Neon::URI m_calendar;
-
-    void openPropCallback(const Neon::URI &uri,
-                          const ne_propname *prop,
-                          const char *value,
-                          const ne_status *status);
-
-    void listAllItemsCallback(const Neon::URI &uri,
-                              const ne_prop_result_set *results,
-                              RevisionMap_t &revisions,
-                              bool &failed);
-
     /**
      * A resource path is turned into a locally unique ID by
      * stripping the calendar path prefix, or keeping the full
@@ -82,6 +65,28 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
      * by stripping the quotation marks.
      */
     std::string ETag2Rev(const std::string &etag);
+
+ protected:
+    // access to neon session and calendar, valid between open() and close()
+    boost::shared_ptr<Neon::Session> getSession() { return m_session; }
+    Neon::URI &getCalendar() { return m_calendar; }
+
+ private:
+    boost::shared_ptr<Neon::Settings> m_settings;
+    boost::shared_ptr<Neon::Session> m_session;
+
+    /** normalized path: including backslash, URI encoded */
+    Neon::URI m_calendar;
+
+    void openPropCallback(const Neon::URI &uri,
+                          const ne_propname *prop,
+                          const char *value,
+                          const ne_status *status);
+
+    void listAllItemsCallback(const Neon::URI &uri,
+                              const ne_prop_result_set *results,
+                              RevisionMap_t &revisions,
+                              bool &failed);
 
     /**
      * Extracts ETag from response header, empty if not found.
