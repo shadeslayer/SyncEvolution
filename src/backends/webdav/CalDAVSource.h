@@ -85,6 +85,12 @@ class CalDAVSource : public WebDAVSource,
 
     Event &loadItem(const std::string &davLUID);
     Event &loadItem(Event &event);
+
+    /** callback for listAllSubItems: parse and add new item */
+    int appendItem(SubRevisionMap_t &revisions,
+                   std::string &href,
+                   std::string &etag,
+                   std::string &data);
 };
 
 SE_END_CXX

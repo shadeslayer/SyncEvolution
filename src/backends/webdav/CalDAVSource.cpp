@@ -6,6 +6,8 @@
 
 #ifdef ENABLE_DAV
 
+#include <boost/bind.hpp>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -20,37 +22,81 @@ CalDAVSource::CalDAVSource(const SyncSourceParams &params,
 
 void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
 {
-    if (!m_cache.m_initialized) {
-        // TODO: replace with more efficient CalDAV specific code
-        RevisionMap_t items;
-        listAllItems(items);
-        BOOST_FOREACH(const RevisionMap_t::value_type &item, items) {
-            const std::string &davLUID = item.first;
-            const std::string &etag = item.second;
-            std::string data;
-            readItem(davLUID, data, true);
-            boost::shared_ptr<Event> entry(new Event);
-            entry->m_calendar.set(icalcomponent_new_from_string(data.c_str()),
-                                 "parsing iCalendar 2.0 failed");
-            entry->m_DAVluid = davLUID;
-            entry->m_etag = etag;
-            for (icalcomponent *comp = icalcomponent_get_first_component(entry->m_calendar, ICAL_VEVENT_COMPONENT);
-                 comp;
-                 comp = icalcomponent_get_next_component(entry->m_calendar, ICAL_VEVENT_COMPONENT)) {
-                std::string subid = Event::getSubID(comp);
-                entry->m_subids.insert(subid);
-            }
-            m_cache[davLUID] = entry;
-        }
-        m_cache.m_initialized = true;
+    revisions.clear();
+
+    const std::string query =
+        "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
+        "<C:calendar-query xmlns:D=\"DAV:\"\n"
+        "xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
+        "<D:prop>\n"
+        "<D:getetag/>\n"
+        "<C:calendar-data>\n"
+        "<C:comp name=\"VCALENDAR\">\n"
+        "<C:prop name=\"VERSION\"/>\n"
+        "<C:comp name=\"VEVENT\">\n"
+        "<C:prop name=\"SUMMARY\"/>\n"
+        "<C:prop name=\"UID\"/>\n"
+        "<C:prop name=\"RECURRENCE-ID\"/>\n"
+        "</C:comp>\n"
+        "<C:comp name=\"VTIMEZONE\"/>\n"
+        "</C:comp>\n"
+        "</C:calendar-data>\n"
+        "</D:prop>\n"
+        "</C:calendar-query>\n";
+    string result;
+    string href, etag, data;
+    Neon::XMLParser parser;
+    parser.pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "multistatus", _2, _3))
+        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "response", _2, _3))
+        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "href", _2, _3),
+                     boost::bind(Neon::XMLParser::append, boost::ref(href), _2, _3))
+        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "propstat", _2, _3))
+        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "status", _2, _3) /* check status? */)
+        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "prop", _2, _3))
+        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "getetag", _2, _3),
+                     boost::bind(Neon::XMLParser::append, boost::ref(etag), _2, _3))
+        .pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                     boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
+                     boost::bind(&CalDAVSource::appendItem, this,
+                                 boost::ref(revisions),
+                                 boost::ref(href), boost::ref(etag), boost::ref(data)));
+    Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+    report.addHeader("Depth", "1");
+    report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+    report.run();
+    m_cache.m_initialized = true;
+}
+
+int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
+                             std::string &href,
+                             std::string &etag,
+                             std::string &data)
+{
+    eptr<icalcomponent> calendar(icalcomponent_new_from_string(data.c_str()),
+                                 "iCalendar 2.0");
+    std::string davLUID = path2luid(Neon::URI::parse(href).m_path);
+    pair<string, set<string> > &rev = revisions[davLUID];
+    rev.first = ETag2Rev(etag);
+    for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
+         comp;
+         comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
+        std::string subid = Event::getSubID(comp);
+        rev.second.insert(subid);
     }
 
-    BOOST_FOREACH(const EventCache::value_type &entry, m_cache) {
-        const Event &event = *entry.second;
-        pair<string, set<string> > &rev = revisions[event.m_DAVluid];
-        rev.first = event.m_etag;
-        rev.second = event.m_subids;
+    if (!m_cache.m_initialized) {
+        boost::shared_ptr<Event> event(new Event);
+        event->m_DAVluid = davLUID;
+        event->m_etag = rev.first;
+        event->m_subids = rev.second;
+        m_cache.insert(make_pair(davLUID, event));
     }
+
+    // reset data for next item
+    data.clear();
+    href.clear();
+    etag.clear();
+    return 0;
 }
 
 SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &davLUID, const std::string &callerSubID,
