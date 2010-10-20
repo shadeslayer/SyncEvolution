@@ -17,6 +17,7 @@
 #include <ne_request.h>
 
 #include <string>
+#include <list>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
@@ -179,6 +180,93 @@ class Session {
 };
 
 /**
+ * encapsulates a ne_xml_parser
+ */
+class XMLParser
+{
+ public:
+    XMLParser();
+    ~XMLParser();
+
+    ne_xml_parser *get() const { return m_parser; }
+
+    /**
+     * See ne_xml_startelm_cb:
+     * arguments are parent state, namespace, name, attributes (NULL terminated)
+     * @return < 0 abort, 0 decline, > 0 accept
+     */
+    typedef boost::function<int (int, const char *, const char *, const char **)> StartCB_t;
+
+    /**
+     * See ne_xml_cdata_cb:
+     * arguments are state of element, data and data len
+     * May be NULL.
+     * @return != 0 to abort
+     */
+    typedef boost::function<int (int, const char *, size_t)> DataCB_t;
+
+    /**
+     * See ne_xml_endelm_cb:
+     * arguments are state of element, namespace, name
+     * May be NULL.
+     * @return != 0 to abort
+     */
+    typedef boost::function<int (int, const char *, const char *)> EndCB_t;
+
+    /**
+     * add new handler, see ne_xml_push_handler()
+     */
+    XMLParser &pushHandler(const StartCB_t &start,
+                           const DataCB_t &data = DataCB_t(),
+                           const EndCB_t &end = EndCB_t());
+
+    /**
+     * StartCB_t: accepts a new element if namespace and name match
+     */
+    static int accept(const std::string &nspaceExpected,
+                      const std::string &nameExpected,
+                      const char *nspace,
+                      const char *name);
+
+    /**
+     * DataCB_t: append to std::string
+     */
+    static int append(std::string &buffer,
+                      const char *data,
+                      size_t len);
+
+    /**
+     * EndCB_t: clear std::string
+     */
+    static int reset(std::string &buffer);
+
+ private:
+    ne_xml_parser *m_parser;
+    struct Callbacks {
+        Callbacks(const StartCB_t &start,
+                  const DataCB_t &data = DataCB_t(),
+                  const EndCB_t &end = EndCB_t()) :
+            m_start(start),
+            m_data(data),
+            m_end(end)
+        {}
+        StartCB_t m_start;
+        DataCB_t m_data;
+        EndCB_t m_end;
+    };
+    std::list<Callbacks> m_stack;
+
+    static int startCB(void *userdata, int parent,
+                       const char *nspace, const char *name,
+                       const char **atts);
+    static int dataCB(void *userdata, int state,
+                      const char *cdata, size_t len);
+    static int endCB(void *userdata, int state, 
+                     const char *nspace, const char *name);
+
+};
+
+/**
  * encapsulates a ne_request, with std::string as read and write buffer
  */
 class Request
@@ -192,13 +280,22 @@ class Request
             const std::string &path,
             const std::string &body,
             std::string &result);
+    /**
+     * read from buffer (owned by caller!) and
+     * parse result as XML
+     */
+    Request(Session &session,
+            const std::string &method,
+            const std::string &path,
+            const std::string &body,
+            XMLParser &parser);
     ~Request();
 
     void setFlag(ne_request_flag flag, int value) { ne_set_request_flag(m_req, flag, value); }
     void addHeader(const std::string &name, const std::string &value) {
         ne_add_request_header(m_req, name.c_str(), value.c_str());
     }
-    void run() { check(ne_request_dispatch(m_req)); }
+    void run();
     std::string getResponseHeader(const std::string &name) {
         const char *value = ne_get_response_header(m_req, name.c_str());
         return value ? value : "";
@@ -209,7 +306,8 @@ class Request
  private:
     Session &m_session;
     ne_request *m_req;
-    std::string &m_result;
+    std::string *m_result;
+    XMLParser *m_parser;
 
     /** ne_block_reader implementation */
     static int addResultData(void *userdata, const char *buf, size_t len);

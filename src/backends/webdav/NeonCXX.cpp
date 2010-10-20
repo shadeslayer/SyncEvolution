@@ -9,6 +9,7 @@
 #include "NeonCXX.h"
 #include <ne_socket.h>
 #include <ne_auth.h>
+#include <ne_xmlreq.h>
 
 #include <list>
 #include <boost/algorithm/string/join.hpp>
@@ -263,18 +264,124 @@ void Session::check(int error)
     }
 }
 
+XMLParser::XMLParser()
+{
+    m_parser = ne_xml_create();
+}
+
+XMLParser::~XMLParser()
+{
+    ne_xml_destroy(m_parser);
+}
+
+XMLParser &XMLParser::pushHandler(const StartCB_t &start,
+                                  const DataCB_t &data,
+                                  const EndCB_t &end)
+{
+    m_stack.push_back(Callbacks(start, data, end));
+    Callbacks &cb = m_stack.back();
+    ne_xml_push_handler(m_parser,
+                        startCB, dataCB, endCB,
+                        &cb);
+    return *this;
+}
+
+int XMLParser::startCB(void *userdata, int parent,
+                       const char *nspace, const char *name,
+                       const char **atts)
+{
+    Callbacks *cb = static_cast<Callbacks *>(userdata);
+    try {
+        return cb->m_start(parent, nspace, name, atts);
+    } catch (...) {
+        Exception::handle();
+        SE_LOG_ERROR(NULL, NULL, "startCB %s %s failed", nspace, name);
+        return -1;
+    }
+}
+
+int XMLParser::dataCB(void *userdata, int state,
+                      const char *cdata, size_t len)
+{
+    Callbacks *cb = static_cast<Callbacks *>(userdata);
+    try {
+        return cb->m_data ?
+            cb->m_data(state, cdata, len) :
+            0;
+    } catch (...) {
+        Exception::handle();
+        SE_LOG_ERROR(NULL, NULL, "dataCB failed");
+        return -1;
+    }
+}
+
+int XMLParser::endCB(void *userdata, int state, 
+                     const char *nspace, const char *name)
+{
+    Callbacks *cb = static_cast<Callbacks *>(userdata);
+    try {
+        return cb->m_end ?
+            cb->m_end(state, nspace, name) :
+            0;
+    } catch (...) {
+        Exception::handle();
+        SE_LOG_ERROR(NULL, NULL, "endCB %s %s failed", nspace, name);
+        return -1;
+    }
+}
+
+
+int XMLParser::accept(const std::string &nspaceExpected,
+                      const std::string &nameExpected,
+                      const char *nspace,
+                      const char *name)
+{
+    if (nspace && nspaceExpected == nspace &&
+        name && nameExpected == name) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int XMLParser::append(std::string &buffer,
+                      const char *data,
+                      size_t len)
+{
+    buffer.append(data, len);
+    return 0;
+}
+
+int XMLParser::reset(std::string &buffer)
+{
+    buffer.clear();
+    return 0;
+}
+
 Request::Request(Session &session,
                  const std::string &method,
                  const std::string &path,
                  const std::string &body,
                  std::string &result) :
     m_session(session),
-    m_result(result)
+    m_result(&result),
+    m_parser(NULL)
 {
     m_req = ne_request_create(session.getSession(), method.c_str(), path.c_str());
     ne_set_request_body_buffer(m_req, body.c_str(), body.size());
-    ne_add_response_body_reader(m_req, ne_accept_2xx,
-                                addResultData, this);
+}
+
+Request::Request(Session &session,
+                 const std::string &method,
+                 const std::string &path,
+                 const std::string &body,
+                 XMLParser &parser) :
+    m_session(session),
+    m_result(NULL),
+    m_parser(&parser)
+{
+    m_req = ne_request_create(session.getSession(), method.c_str(), path.c_str());
+    ne_set_request_body_buffer(m_req, body.c_str(), body.size());
 }
 
 Request::~Request()
@@ -282,10 +389,22 @@ Request::~Request()
     ne_request_destroy(m_req);
 }
 
+void Request::run()
+{
+    if (m_result) {
+        m_result->clear();
+        ne_add_response_body_reader(m_req, ne_accept_2xx,
+                                    addResultData, this);
+        check(ne_request_dispatch(m_req));
+    } else {
+        check(ne_xml_dispatch_request(m_req, m_parser->get()));
+    }
+}
+
 int Request::addResultData(void *userdata, const char *buf, size_t len)
 {
     Request *me = static_cast<Request *>(userdata);
-    me->m_result.append(buf, len);
+    me->m_result->append(buf, len);
     return 0;
 }
 
