@@ -23,6 +23,7 @@
 #include <syncevo/LogRedirect.h>
 
 #include <stddef.h>
+#include <sys/socket.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
