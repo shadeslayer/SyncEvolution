@@ -4655,7 +4655,17 @@ void PresenceStatus::init(){
             vector<string> urls = config.getSyncURL();
             m_peers[server.first].clear();
             BOOST_FOREACH (const string &url, urls) {
-                m_peers[server.first].push_back(make_pair(url,MIGHTWORK));
+                // take current status into account,
+                // PresenceStatus::checkPresence() calls init() and
+                // expects up-to-date information
+                PeerStatus status;
+                if ((boost::starts_with(url, "obex-bt") && m_btPresence) ||
+                    (boost::starts_with (url, "http") && m_httpPresence)) {
+                    status = MIGHTWORK;
+                } else {
+                    status = NOTRANSPORT;
+                }
+                m_peers[server.first].push_back(make_pair(url, status));
             }
         }
         m_initiated = true;
@@ -4715,8 +4725,6 @@ void PresenceStatus::updatePresenceStatus (bool newStatus, PresenceStatus::Trans
 void PresenceStatus::updatePresenceStatus (bool httpPresence, bool btPresence) {
     bool httpChanged = (m_httpPresence != httpPresence);
     bool btChanged = (m_btPresence != btPresence);
-    m_httpPresence = httpPresence;
-    m_btPresence = btPresence;
     if(httpChanged) {
         m_httpTimer.reset();
     }
@@ -4729,11 +4737,15 @@ void PresenceStatus::updatePresenceStatus (bool httpPresence, bool btPresence) {
         return;
     }
 
-    //initialize the configured peer list
+    //initialize the configured peer list using old presence status
     bool initiated = m_initiated;
     if (!m_initiated) {
         init();
     }
+
+    // switch to new status
+    m_httpPresence = httpPresence;
+    m_btPresence = btPresence;
 
     //iterate all configured peers and fire singals
     BOOST_FOREACH (StatusPair &peer, m_peers) {
