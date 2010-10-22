@@ -134,10 +134,17 @@ void LocalTransportAgent::run()
     try {
         SE_LOG_INFO(NULL, NULL, "client is running");
         // TODO: password and abort handling in a derived class
-        SyncContext client(std::string("source-config@") + m_clientContext,
+        SyncContext client(std::string("source-config") + m_clientContext,
                            m_server->getRootPath() + "/." + m_clientContext,
                            boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
                            true);
+
+        // disable all sources temporarily, will be enabled by next loop
+        BOOST_FOREACH(const string &targetName, client.getSyncSources()) {
+            SyncSourceNodes targetNodes = client.getSyncSourceNodes(targetName);
+            SyncSourceConfig targetSource(targetName, targetNodes);
+            targetSource.setSync("disabled", true);
+        }
 
         // activate all sources in client targeted by main config,
         // with right uri
@@ -174,7 +181,6 @@ void LocalTransportAgent::run()
         // now sync
         client.setLogLevel(m_server->getLogLevel(), true);
         client.setPrintChanges(m_server->getPrintChanges(), true);
-        client.setSyncURL(string("local://") + m_server->getPeer());
         client.sync(&m_clientReport);
     } catch(...) {
         SyncMLStatus status = m_clientReport.getStatus();
