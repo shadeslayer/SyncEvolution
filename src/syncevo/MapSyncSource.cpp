@@ -137,6 +137,13 @@ public:
     }
 };
 
+SDKInterface *SubSyncSource::getSynthesisAPI() const
+{
+    return m_parent ?
+        m_parent->getSynthesisAPI() :
+        NULL;
+}
+
 MapSyncSource::MapSyncSource(const SyncSourceParams &params,
                              int granularitySeconds,
                              const boost::shared_ptr<SubSyncSource> &sub) :
@@ -148,6 +155,7 @@ MapSyncSource::MapSyncSource(const SyncSourceParams &params,
     SyncSourceLogging::init(std::list<std::string>(),
                             ", ",
                             m_operations);
+    m_sub->setParent(this);
 }
 
 void MapSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisions)

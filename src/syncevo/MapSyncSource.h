@@ -27,6 +27,8 @@
 SE_BEGIN_CXX
 using namespace std;
 
+class MapSyncSource;
+
 /**
  * This is the API that must be implemented in addition to
  * TrackingSyncSource and SyncSourceLogging by a source to
@@ -42,7 +44,7 @@ using namespace std;
  * the same merged item will get modified when manipulating
  * one of its sub items.
  */
-class SubSyncSource
+class SubSyncSource : virtual public SyncSourceBase
 {
  public:
     class SubItemResult {
@@ -74,6 +76,17 @@ class SubSyncSource
         bool m_merged;
     };
 
+    SubSyncSource() : m_parent(NULL) {}
+
+    /**
+     * tells SubSyncSource about MapSyncSource which wraps it,
+     * for getSynthesisAPI()
+     */
+    void setParent(MapSyncSource *parent) { m_parent = parent; }
+    MapSyncSource *getParent() const { return m_parent; }
+
+    virtual SDKInterface *getSynthesisAPI() const;
+
     /**
      * uid to rev + list of subid
      *
@@ -98,6 +111,9 @@ class SubSyncSource
     virtual void flushItem(const string &uid) = 0;
 
     virtual std::string getSubDescription(const string &uid, const string &subid) = 0;
+
+ private:
+    MapSyncSource *m_parent;
 };
 
 /**
