@@ -269,7 +269,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         // TODO: set UID if not present
         // Pick a random resource name,
         // catch unexpected conflicts via If-None-Match: *.
-        new_uid = UUID::UUID();
+        new_uid = UUID();
         Neon::Request req(*m_session, "PUT", luid2path(new_uid),
                           item, result);
         req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
