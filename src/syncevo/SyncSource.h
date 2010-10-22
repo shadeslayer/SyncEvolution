@@ -53,18 +53,26 @@ struct SyncSourceParams {
      *                       Testing uses "source-config@client-test". On the
      *                       command line, this is the config chosen by the
      *                       user, which may or may not have peer-specific settings!
+     * @param    contextName optional name of context in which the source is defined,
+     *                       needed to disambiguates "name" when sources from
+     *                       different contexts are active in a sync
      */
     SyncSourceParams(const string &name,
                      const SyncSourceNodes &nodes,
-                     const boost::shared_ptr<const SyncConfig> &context) :
+                     const boost::shared_ptr<const SyncConfig> &context,
+                     const string &contextName = "") :
         m_name(name),
         m_nodes(nodes),
-        m_context(context)            
+        m_context(context),
+        m_contextName(contextName)
     {}
+
+    std::string getDisplayName() const { return m_contextName.empty() ? m_name : m_contextName + "/" + m_name; }
 
     string m_name;
     SyncSourceNodes m_nodes;
     boost::shared_ptr<const SyncConfig> m_context;
+    string m_contextName;
 };
 
 /**
@@ -555,8 +563,20 @@ class SyncSourceBase : public Logger {
  public:
     virtual ~SyncSourceBase() {}
 
-    /** the unique name of the sync source (for example, "addressbook") */
+    /**
+     * the name of the sync source (for example, "addressbook"),
+     * unique in the context of its own configuration
+     **/
     virtual const char *getName() const { return "uninitialized SyncSourceBase"; }
+
+    /**
+     * the name of the sync source as it should be displayed to users
+     * in debug messages; typically the same as getName(), but may
+     * also include a context ("@foobar/addressbook") to disambiguate
+     * the name when "addressbook" is used multiple times in a sync (as
+     * with local sync)
+     */
+    virtual const char *getDisplayName() const { return "uninitialized SyncSourceBase"; }
 
     /**
      * Convenience function, to be called inside a catch() block of
@@ -751,12 +771,7 @@ class SyncSourceBase : public Logger {
 class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, public SyncSourceReport
 {
  public:
-    SyncSource(const SyncSourceParams &params) :
-        SyncSourceConfig(params.m_name, params.m_nodes),
-        m_numDeleted(0),
-        m_forceSlowSync(false)
-        {
-        }
+    SyncSource(const SyncSourceParams &params);
     virtual ~SyncSource() {}
 
     /**
@@ -1109,6 +1124,7 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
 
     /* implementation of SyncSourceBase */
     virtual const char * getName() const { return SyncSourceConfig::getName(); }
+    virtual const char * getDisplayName() const { return m_name.c_str(); }
     virtual long getNumDeleted() const { return m_numDeleted; }
     virtual void setNumDeleted(long num) { m_numDeleted = num; }
     virtual void incrementNumDeleted() { m_numDeleted++; }
@@ -1146,6 +1162,9 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      * the engine is running.
      */
     std::vector<sysync::SDK_InterfaceType *> m_synthesisAPI;
+
+    /** actual name of the source */
+    std::string m_name;
 };
 
 /**
@@ -1157,8 +1176,8 @@ class DummySyncSource : public SyncSource
     DummySyncSource(const SyncSourceParams &params) :
        SyncSource(params) {}
 
-    DummySyncSource(const std::string &name) :
-       SyncSource(SyncSourceParams(name, SyncSourceNodes(), boost::shared_ptr<const SyncConfig>())) {}
+     DummySyncSource(const std::string &name, const std::string &contextName) :
+       SyncSource(SyncSourceParams(name, SyncSourceNodes(), boost::shared_ptr<const SyncConfig>(), contextName)) {}
 
     virtual Databases getDatabases() { return Databases(); }
     virtual void open() {}

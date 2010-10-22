@@ -1539,20 +1539,20 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             // not active, suppress output
         } else if (extra2) {
             SE_LOG_INFO(NULL, NULL, "%s: preparing %d/%d",
-                        source.getName(), extra1, extra2);
+                        source.getDisplayName(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: preparing %d",
-                        source.getName(), extra1);
+                        source.getDisplayName(), extra1);
         }
         break;
     case sysync::PEV_DELETING:
         /* deleting (zapping datastore), extra1=progress, extra2=total */
         if (extra2) {
             SE_LOG_INFO(NULL, NULL, "%s: deleting %d/%d",
-                        source.getName(), extra1, extra2);
+                        source.getDisplayName(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: deleting %d",
-                        source.getName(), extra1);
+                        source.getDisplayName(), extra1);
         }
         break;
     case sysync::PEV_ALERTED: {
@@ -1562,7 +1562,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         // -1 is used for alerting a restore from backup. Synthesis won't use this
         if (extra1 != -1) {
             SE_LOG_INFO(NULL, NULL, "%s: %s %s sync%s",
-                        source.getName(),
+                        source.getDisplayName(),
                         extra2 ? "resuming" : "starting",
                         extra1 == 0 ? "normal" :
                         extra1 == 1 ? "slow" :
@@ -1607,7 +1607,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             source.recordFirstSync(extra1 == 2);
             source.recordResumeSync(extra2 == 1);
         } else {
-            SE_LOG_INFO(NULL, NULL, "%s: restore from backup", source.getName());
+            SE_LOG_INFO(NULL, NULL, "%s: restore from backup", source.getDisplayName());
             source.recordFinalSyncMode(SYNC_RESTORE_FROM_BACKUP);
         }
         break;
@@ -1615,7 +1615,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
     case sysync::PEV_SYNCSTART:
         /* sync started */
         SE_LOG_INFO(NULL, NULL, "%s: started",
-                    source.getName());
+                    source.getDisplayName());
         break;
     case sysync::PEV_ITEMRECEIVED:
         /* item received, extra1=current item count,
@@ -1623,10 +1623,10 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         if (source.getFinalSyncMode() == SYNC_NONE) {
         } else if (extra2 > 0) {
             SE_LOG_INFO(NULL, NULL, "%s: received %d/%d",
-                        source.getName(), extra1, extra2);
+                        source.getDisplayName(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: received %d",
-                     source.getName(), extra1);
+                     source.getDisplayName(), extra1);
         }
         break;
     case sysync::PEV_ITEMSENT:
@@ -1635,10 +1635,10 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         if (source.getFinalSyncMode() == SYNC_NONE) {
         } else if (extra2 > 0) {
             SE_LOG_INFO(NULL, NULL, "%s: sent %d/%d",
-                     source.getName(), extra1, extra2);
+                     source.getDisplayName(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: sent %d",
-                     source.getName(), extra1);
+                     source.getDisplayName(), extra1);
         }
         break;
     case sysync::PEV_ITEMPROCESSED:
@@ -1648,7 +1648,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         if (source.getFinalSyncMode() == SYNC_NONE) {
         } else if (source.getFinalSyncMode() != SYNC_NONE) {
             SE_LOG_INFO(NULL, NULL, "%s: added %d, updated %d, removed %d",
-                        source.getName(), extra1, extra2, extra3);
+                        source.getDisplayName(), extra1, extra2, extra3);
         }
         break;
     case sysync::PEV_SYNCEND:
@@ -1656,14 +1656,14 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
            syncmode in extra2 (0=normal, 1=slow, 2=first time), 
            extra3=1 for resumed session) */
         if (source.getFinalSyncMode() == SYNC_NONE) {
-            SE_LOG_INFO(NULL, NULL, "%s: inactive", source.getName());
+            SE_LOG_INFO(NULL, NULL, "%s: inactive", source.getDisplayName());
         } else if(source.getFinalSyncMode() == SYNC_RESTORE_FROM_BACKUP) {
             SE_LOG_INFO(NULL, NULL, "%s: restore done %s", 
-                        source.getName(),
+                        source.getDisplayName(),
                         extra1 ? "unsuccessfully" : "successfully" );
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: %s%s sync done %s",
-                        source.getName(),
+                        source.getDisplayName(),
                         extra3 ? "resumed " : "",
                         extra2 == 0 ? "normal" :
                         extra2 == 1 ? "slow" :
@@ -1792,7 +1792,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         break;
     default:
         SE_LOG_DEBUG(NULL, NULL, "%s: progress event %d, extra %d/%d/%d",
-                  source.getName(),
+                  source.getDisplayName(),
                   type, extra1, extra2, extra3);
     }
 }
@@ -1896,6 +1896,15 @@ void SyncContext::initSources(SourceList &sourceList)
     list<string> configuredSources = getSyncSources();
     map<string, string> subSources;
 
+    // Disambiguate source names because we have multiple with the same
+    // name active?
+    string contextName;
+    if (m_localSync) {
+        string dummy;
+        splitConfigString(getConfigName(), dummy, contextName);
+        contextName.insert(0, "@");
+    }
+
     // Phase 1, check all virtual sync soruces
     BOOST_FOREACH(const string &name, configuredSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
@@ -1908,7 +1917,7 @@ void SyncContext::initSources(SourceList &sourceList)
             if (sourceType.m_backend == "virtual") {
                 //This is a virtual sync source, check and enable the referenced
                 //sub syncsources here
-                SyncSourceParams params(name, source, boost::shared_ptr<SyncConfig>(this, SyncConfigNOP()));
+                SyncSourceParams params(name, source, boost::shared_ptr<SyncConfig>(this, SyncConfigNOP()), contextName);
                 boost::shared_ptr<VirtualSyncSource> vSource = boost::shared_ptr<VirtualSyncSource> (new VirtualSyncSource (params));
                 std::vector<std::string> mappedSources = vSource->getMappedSources();
                 BOOST_FOREACH (std::string source, mappedSources) {
@@ -1954,7 +1963,8 @@ void SyncContext::initSources(SourceList &sourceList)
             if (sourceType.m_backend != "virtual") {
                 SyncSourceParams params(name,
                                         source,
-                                        boost::shared_ptr<SyncConfig>(this, SyncConfigNOP()));
+                                        boost::shared_ptr<SyncConfig>(this, SyncConfigNOP()),
+                                        contextName);
                 cxxptr<SyncSource> syncSource(SyncSource::createSource(params));
                 if (!syncSource) {
                     throwError(name + ": type unknown" );
@@ -1968,7 +1978,7 @@ void SyncContext::initSources(SourceList &sourceList)
             // the Synthesis engine is never going to see this source,
             // therefore we have to mark it as 100% complete and
             // "done"
-            class DummySyncSource source(name);
+            class DummySyncSource source(name, contextName);
             source.recordFinalSyncMode(SYNC_NONE);
             displaySourceProgress(sysync::PEV_PREPARING,
                                   source,
@@ -2444,7 +2454,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                     sourceType.m_forceFormat != subType.m_forceFormat)) {
                     SE_LOG_WARNING(NULL, NULL, 
                                    "Virtual data source \"%s\" and sub data source \"%s\" have different data format. Will use the format in virtual data source.",
-                                   vSource->getName(), source.c_str());
+                                   vSource->getDisplayName(), source.c_str());
                 }
             }
 
@@ -2698,6 +2708,9 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     SwapContext syncSentinel(this);
     try {
         m_sourceListPtr = &sourceList;
+        if (boost::starts_with(getUsedSyncURL(), "local://")) {
+            m_localSync = true;
+        }
 
         if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
             // Enable libgnutls debugging without creating a hard dependency on it,
@@ -2730,10 +2743,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                                 getMaxLogDirs(),
                                 getLogLevel(),
                                 report);
-
-        if (boost::starts_with(getUsedSyncURL(), "local://")) {
-            m_localSync = true;
-        }
 
         /* Must detect server or client session before creating the
          * underlying SynthesisEngine 

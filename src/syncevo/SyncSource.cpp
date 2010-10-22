@@ -54,7 +54,7 @@ void SyncSourceBase::throwError(const string &action, int error)
 
 void SyncSourceBase::throwError(const string &failure)
 {
-    SyncContext::throwError(string(getName()) + ": " + failure);
+    SyncContext::throwError(string(getDisplayName()) + ": " + failure);
 }
 
 SyncMLStatus SyncSourceBase::handleException()
@@ -73,7 +73,7 @@ void SyncSourceBase::messagev(Level level,
                               const char *format,
                               va_list args)
 {
-    string newprefix = getName();
+    string newprefix = getDisplayName();
     if (prefix) {
         newprefix += ": ";
         newprefix += prefix;
@@ -175,6 +175,14 @@ string SyncSourceBase::getNativeDatatypeName()
     XMLConfigFragments fragments;
     getSynthesisInfo(info, fragments);
     return info.m_native;
+}
+
+SyncSource::SyncSource(const SyncSourceParams &params) :
+    SyncSourceConfig(params.m_name, params.m_nodes),
+    m_numDeleted(0),
+    m_forceSlowSync(false),
+    m_name(params.getDisplayName())
+{
 }
 
 SDKInterface *SyncSource::getSynthesisAPI() const
@@ -317,7 +325,7 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
         SyncSource *source = NULL;
         source = new VirtualSyncSource(params, config);
         if (error && !source) {
-            SyncContext::throwError(params.m_name + ": virtual source cannot be instantiated");
+            SyncContext::throwError(params.getDisplayName() + ": virtual source cannot be instantiated");
         }
         return source;
     }
@@ -327,8 +335,8 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
         SyncSource *source = sourceInfos->m_create(params);
         if (source) {
             if (source == RegisterSyncSource::InactiveSource) {
-                SyncContext::throwError(params.m_name + ": access to " + sourceInfos->m_shortDescr +
-                                                " not enabled, therefore type = " + sourceTypeString + " not supported");
+                SyncContext::throwError(params.getDisplayName() + ": access to " + sourceInfos->m_shortDescr +
+                                        " not enabled, therefore type = " + sourceTypeString + " not supported");
             }
             return source;
         }

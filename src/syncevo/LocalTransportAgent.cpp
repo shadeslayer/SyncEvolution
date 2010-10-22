@@ -132,7 +132,7 @@ void LocalTransportAgent::run()
     // process.
     int res = 0;
     try {
-        SE_LOG_INFO(NULL, NULL, "client is running");
+        SE_LOG_DEBUG(NULL, NULL, "client is running");
         // TODO: password and abort handling in a derived class
         SyncContext client(std::string("source-config") + m_clientContext,
                            m_server->getRootPath() + "/." + m_clientContext,
