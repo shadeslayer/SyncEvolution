@@ -18,6 +18,9 @@ CalDAVSource::CalDAVSource(const SyncSourceParams &params,
                            const boost::shared_ptr<Neon::Settings> &settings) :
     WebDAVSource(params, settings)
 {
+    SyncSourceLogging::init(InitList<std::string>("SUMMARY") + "LOCATION",
+                            ", ",
+                            m_operations);
 }
 
 void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
@@ -329,10 +332,40 @@ void CalDAVSource::flushItem(const string &davLUID)
     }
 }
 
-std::string CalDAVSource::getSubDescription(const string &uid, const string &subid)
+std::string CalDAVSource::getSubDescription(const string &davLUID, const string &subid)
 {
-    // TODO: CalDAV query
+    Event &event = loadItem(davLUID);
+    for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
+         comp;
+         comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
+        if (Event::getSubID(comp) == subid) {
+            std::string descr;
+
+            const char *summary = icalcomponent_get_summary(comp);
+            if (summary && summary[0]) {
+                descr += summary;
+            }
+        
+            if (true /* is event */) {
+                const char *location = icalcomponent_get_location(comp);
+                if (location && location[0]) {
+                    if (!descr.empty()) {
+                        descr += ", ";
+                    }
+                    descr += location;
+                }
+            }
+            // TODO: other item types
+            return descr;
+        }
+    }
     return "";
+}
+
+std::string CalDAVSource::getDescription(const string &luid)
+{
+    StringPair ids = MapSyncSource::splitLUID(luid);
+    return getSubDescription(ids.first, ids.second);
 }
 
 CalDAVSource::Event &CalDAVSource::loadItem(const std::string &davLUID)

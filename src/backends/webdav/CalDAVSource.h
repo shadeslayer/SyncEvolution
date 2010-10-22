@@ -21,7 +21,8 @@
 SE_BEGIN_CXX
 
 class CalDAVSource : public WebDAVSource,
-    public SubSyncSource
+    public SubSyncSource,
+    public SyncSourceLogging
 {
  public:
     CalDAVSource(const SyncSourceParams &params, const boost::shared_ptr<SyncEvo::Neon::Settings> &settings);
@@ -38,6 +39,12 @@ class CalDAVSource : public WebDAVSource,
     virtual std::string removeSubItem(const string &uid, const std::string &subid);
     virtual void flushItem(const string &uid);
     virtual std::string getSubDescription(const string &uid, const string &subid);
+
+    // implementation of SyncSourceLogging callback
+    virtual std::string getDescription(const string &luid);
+
+    // disambiguate getSynthesisAPI()
+    SDKInterface *getSynthesisAPI() const { return SubSyncSource::getSynthesisAPI(); }
 
  private:
     /**
