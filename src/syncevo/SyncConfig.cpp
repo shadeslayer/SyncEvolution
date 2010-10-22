@@ -878,6 +878,11 @@ list<string> SyncConfig::getSyncSources() const
 SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
                                                const string &changeId)
 {
+    if (m_nodeCache.find(name) != m_nodeCache.end()) {
+        // reuse existing set of nodes
+        return m_nodeCache[name];
+    }
+
     /** shared source properties */
     boost::shared_ptr<FilterConfigNode> sharedNode;
     /** per-peer source properties */
@@ -958,7 +963,9 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         }
     }
 
-    return SyncSourceNodes(!peerPath.empty(), sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode, cacheDir);
+    SyncSourceNodes nodes(!peerPath.empty(), sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode, cacheDir);
+    m_nodeCache.insert(make_pair(name, nodes));
+    return nodes;
 }
 
 ConstSyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
@@ -1678,8 +1685,10 @@ void SyncConfig::setConfigFilter(bool sync,
             m_globalNode->setFilter(filter);
         }
     } else if (source.empty()) {
+        m_nodeCache.clear();
         m_sourceFilter = filter;
     } else {
+        m_nodeCache.clear();
         m_sourceFilters[source] = filter;
     }
 }

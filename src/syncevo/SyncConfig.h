@@ -1054,6 +1054,9 @@ class SyncConfig {
      * all sources. This can be used to e.g. temporarily override
      * the active sync mode.
      *
+     * All future calls of getSyncSourceNodes() will have these
+     * filters applied.
+     *
      * @param sync     true if the filter applies to sync properties,
      *                 false if it applies to sources
      * @param source   empty string if filter applies to all sources,
@@ -1109,6 +1112,14 @@ class SyncConfig {
     /**
      * Creates config nodes for a certain node. The nodes are not
      * yet created in the backend if they do not yet exist.
+     *
+     * Calling this for the same name repeatedly will return the
+     * same set of node instances. This allows to set properties
+     * temporarily in one place and have them used elsewhere.
+     *
+     * setConfigFilter() resets this cache of nodes. Requesting nodes
+     * after that call will create a new set of nodes with properties
+     * modified temporarily according to these filters.
      *
      * @param name       the name of the sync source
      * @param trackName  additional part of the tracking node name (used for unit testing)
@@ -1467,7 +1478,9 @@ private:
         return xdg_root_str ? string(xdg_root_str) + "/syncevolution" :
             getHome() + "/.config/syncevolution";
     }
- 
+
+    /** remember all SyncSourceNodes so that temporary changes survive */
+    map<string, SyncSourceNodes> m_nodeCache;
 };
 
 /**
