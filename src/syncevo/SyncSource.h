@@ -683,141 +683,6 @@ class SyncSourceBase : public Logger {
     virtual void enableServerMode() = 0;
     virtual bool serverModeEnabled() const = 0;
 
- protected:
-    struct SynthesisInfo {
-        /**
-         * name to use for MAKE/PARSETEXTWITHPROFILE,
-         * leave empty when acessing the field list directly
-         */
-        std::string m_profile;
-
-        /**
-         * the second parameter for MAKE/PARSETEXTWITHPROFILE
-         * which specifies a remote rule to be applied when
-         * converting to and from the backend
-         */
-        std::string m_backendRule;
-    
-        /** list of supported datatypes in "<use .../>" format */
-        std::string m_datatypes;
-
-        /** native datatype (see getNativeDatatypeName()) */
-        std::string m_native;
-
-        /** name of the field list used by the datatypes */
-        std::string m_fieldlist;
-
-        /**
-         * One or more Synthesis script statements, separated
-         * and terminated with a semicolon. Can be left empty.
-         *
-         * If not empty, then these statements are executed directly
-         * before converting the current item fields into
-         * a single string with MAKETEXTWITHPROFILE() in the sync source's
-         * <beforewritescript> (see SyncSourceBase::getDatastoreXML()).
-         *
-         * This value is currently only used by sync sources which
-         * set m_profile.
-         */
-        std::string m_beforeWriteScript;
-
-        /**
-         * Same as m_beforeWriteScript, but used directly after
-         * converting a string into fields with PARSETEXTWITHPROFILE()
-         * in <afterreadscript>.
-         */
-        std::string m_afterReadScript;
-    };
-
-    /**
-     * helper function for getDatastoreXML(): fill in information
-     * as necessary
-     *
-     * @retval fragments   the necessary definitions for the other
-     *                     return values have to be added here
-     */
-    virtual void getSynthesisInfo(SynthesisInfo &info,
-                                  XMLConfigFragments &fragments) = 0;
-
-    /**
-     * utility code: creates Synthesis <use datatype=...>
-     * statements, using the predefined vCard21/vCard30/vcalendar10/icalendar20
-     * types. Throws an error if no suitable result can be returned (empty or invalid type)
-     *
-     * @param type         the format specifier as used in SyncEvolution configs, with and without version
-     *                     (text/x-vcard:2.1, text/x-vcard, text/x-vcalendar, text/calendar, text/plain, ...);
-     *                     see SourceType::m_format
-     * @param forceFormat  if true, then don't allow alternative formats (like vCard 3.0 in addition to 2.1);
-     *                     see SourceType::m_force
-     * @return generated XML fragment
-     */
-    std::string getDataTypeSupport(const std::string &type,
-                                   bool forceFormat);
-};
-
-/**
- * SyncEvolution accesses all sources through this interface.
- *
- * Certain functionality is optional or can be implemented in
- * different ways. These methods are accessed through functors
- * (function objects) which may be unset. The expected usage is that
- * derived classes fill in the pieces that they provide by binding the
- * functors to normal methods. For example, TrackingSyncSource
- * provides a normal base class with pure virtual functions which have
- * to be provided by users of that class.
- *
- * Error reporting is done via the Log class.
- */
-class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, public SyncSourceReport
-{
- public:
-    SyncSource(const SyncSourceParams &params);
-    virtual ~SyncSource() {}
-
-    /**
-     * SyncSource implementations must register themselves here via
-     * RegisterSyncSource
-     */
-    static SourceRegistry &getSourceRegistry();
-
-    /**
-     * SyncSource tests are registered here by the constructor of
-     * RegisterSyncSourceTest
-     */
-    static TestRegistry &getTestRegistry();
-
-    struct Database {
-    Database(const string &name, const string &uri, bool isDefault = false) :
-        m_name( name ), m_uri( uri ), m_isDefault(isDefault) {}
-        string m_name;
-        string m_uri;
-        bool m_isDefault;
-    };
-    typedef vector<Database> Databases;
-    
-    /**
-     * returns a list of all know data sources for the kind of items
-     * supported by this sync source
-     */
-    virtual Databases getDatabases() = 0;
-
-    /**
-     * Actually opens the data source specified in the constructor,
-     * will throw the normal exceptions if that fails. Should
-     * not modify the state of the sync source.
-     *
-     * The expectation is that this call is fairly light-weight, but
-     * does enough checking to determine whether the source is
-     * usable. More expensive operations (like determining changes)
-     * should be done in the m_startDataRead callback (bound to
-     * beginSync() in some of the utility classes).
-     *
-     * In clients, it will be called for all sources before
-     * the sync starts. In servers, it is called for each source once
-     * the client asks for it, but not sooner.
-     */
-    virtual void open() = 0;
-
     /**
      * The optional operations.
      *
@@ -1041,7 +906,152 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
         boost::function<DeleteBlob_t> m_deleteBlob;
         /**@}*/
     };
-    const Operations &getOperations() { return m_operations; }
+
+    /**
+     * Read-only access to operations.
+     */
+    virtual const Operations &getOperations() = 0;
+
+ protected:
+    struct SynthesisInfo {
+        /**
+         * name to use for MAKE/PARSETEXTWITHPROFILE,
+         * leave empty when acessing the field list directly
+         */
+        std::string m_profile;
+
+        /**
+         * the second parameter for MAKE/PARSETEXTWITHPROFILE
+         * which specifies a remote rule to be applied when
+         * converting to and from the backend
+         */
+        std::string m_backendRule;
+    
+        /** list of supported datatypes in "<use .../>" format */
+        std::string m_datatypes;
+
+        /** native datatype (see getNativeDatatypeName()) */
+        std::string m_native;
+
+        /** name of the field list used by the datatypes */
+        std::string m_fieldlist;
+
+        /**
+         * One or more Synthesis script statements, separated
+         * and terminated with a semicolon. Can be left empty.
+         *
+         * If not empty, then these statements are executed directly
+         * before converting the current item fields into
+         * a single string with MAKETEXTWITHPROFILE() in the sync source's
+         * <beforewritescript> (see SyncSourceBase::getDatastoreXML()).
+         *
+         * This value is currently only used by sync sources which
+         * set m_profile.
+         */
+        std::string m_beforeWriteScript;
+
+        /**
+         * Same as m_beforeWriteScript, but used directly after
+         * converting a string into fields with PARSETEXTWITHPROFILE()
+         * in <afterreadscript>.
+         */
+        std::string m_afterReadScript;
+    };
+
+    /**
+     * helper function for getDatastoreXML(): fill in information
+     * as necessary
+     *
+     * @retval fragments   the necessary definitions for the other
+     *                     return values have to be added here
+     */
+    virtual void getSynthesisInfo(SynthesisInfo &info,
+                                  XMLConfigFragments &fragments) = 0;
+
+    /**
+     * utility code: creates Synthesis <use datatype=...>
+     * statements, using the predefined vCard21/vCard30/vcalendar10/icalendar20
+     * types. Throws an error if no suitable result can be returned (empty or invalid type)
+     *
+     * @param type         the format specifier as used in SyncEvolution configs, with and without version
+     *                     (text/x-vcard:2.1, text/x-vcard, text/x-vcalendar, text/calendar, text/plain, ...);
+     *                     see SourceType::m_format
+     * @param forceFormat  if true, then don't allow alternative formats (like vCard 3.0 in addition to 2.1);
+     *                     see SourceType::m_force
+     * @return generated XML fragment
+     */
+    std::string getDataTypeSupport(const std::string &type,
+                                   bool forceFormat);
+};
+
+/**
+ * SyncEvolution accesses all sources through this interface.
+ *
+ * Certain functionality is optional or can be implemented in
+ * different ways. These methods are accessed through functors
+ * (function objects) which may be unset. The expected usage is that
+ * derived classes fill in the pieces that they provide by binding the
+ * functors to normal methods. For example, TrackingSyncSource
+ * provides a normal base class with pure virtual functions which have
+ * to be provided by users of that class.
+ *
+ * Error reporting is done via the Log class.
+ */
+class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, public SyncSourceReport
+{
+ public:
+    SyncSource(const SyncSourceParams &params);
+    virtual ~SyncSource() {}
+
+    /**
+     * SyncSource implementations must register themselves here via
+     * RegisterSyncSource
+     */
+    static SourceRegistry &getSourceRegistry();
+
+    /**
+     * SyncSource tests are registered here by the constructor of
+     * RegisterSyncSourceTest
+     */
+    static TestRegistry &getTestRegistry();
+
+    struct Database {
+    Database(const string &name, const string &uri, bool isDefault = false) :
+        m_name( name ), m_uri( uri ), m_isDefault(isDefault) {}
+        string m_name;
+        string m_uri;
+        bool m_isDefault;
+    };
+    typedef vector<Database> Databases;
+    
+    /**
+     * returns a list of all know data sources for the kind of items
+     * supported by this sync source
+     */
+    virtual Databases getDatabases() = 0;
+
+    /**
+     * Actually opens the data source specified in the constructor,
+     * will throw the normal exceptions if that fails. Should
+     * not modify the state of the sync source.
+     *
+     * The expectation is that this call is fairly light-weight, but
+     * does enough checking to determine whether the source is
+     * usable. More expensive operations (like determining changes)
+     * should be done in the m_startDataRead callback (bound to
+     * beginSync() in some of the utility classes).
+     *
+     * In clients, it will be called for all sources before
+     * the sync starts. In servers, it is called for each source once
+     * the client asks for it, but not sooner.
+     */
+    virtual void open() = 0;
+
+    /**
+     * Read-only access to operations.  Derived classes can modify
+     * them via m_operations.
+     */
+    virtual const Operations &getOperations() { return m_operations; }
 
     /**
      * outside users of the source are only allowed to add callbacks,
