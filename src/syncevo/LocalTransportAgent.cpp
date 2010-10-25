@@ -73,9 +73,7 @@ void LocalTransportAgent::start()
                               m_clientContext.c_str(),
                               context.c_str()));
     }
-    SyncConfig::splitConfigString(m_server->getConfigName(),
-                                  peer, context);
-    if (m_clientContext == string("@") + context) {
+    if (m_clientContext == m_server->getContextName()) {
         SE_THROW(StringPrintf("invalid local sync inside context '%s', need second context with different databases", context.c_str()));
     }
 
