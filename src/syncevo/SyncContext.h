@@ -90,6 +90,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     bool m_dryrun;
 
     bool m_localSync;
+    string m_localPeerContext; /**< context name (including @) if doing local sync */
     string m_localClientRootPath;
     bool m_serverMode;
     std::string m_sessionID;
@@ -186,13 +187,15 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * Constructor for client in a local sync.
      *
      * @param client     identifies the client context to be used (@foobar)
+     * @param server     identifies the server peer (foo@bar)
      * @param rootPath   use this directory as config directory for the
      *                   peer-specific files (located inside peer directory
      *                   of server config)
      * @param agent      transport agent, ready for communication with server
      * @param doLogging  write additional log and datatbase files about the sync
      */
-    SyncContext(const string &config,
+    SyncContext(const string &client,
+                const string &server,
                 const string &rootPath,
                 const boost::shared_ptr<TransportAgent> &agent,
                 bool doLogging = false);
@@ -211,6 +214,8 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 
     bool getDryRun() { return m_dryrun; }
     void setDryRun(bool dryrun) { m_dryrun = dryrun; }
+
+    bool isLocalSync() const { return m_localSync; }
 
     /** only for server: device ID of peer */
     void setSyncDeviceID(const std::string &deviceID) { m_syncDeviceID = deviceID; }
@@ -727,6 +732,12 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * populate source list with active sources and open
      */
     void initSources(SourceList &sourceList);
+
+    /**
+     * set m_localSync and m_localPeerContext
+     * @param config    config name of peer
+     */
+    void initLocalSync(const string &config);
 
     /**
      * called by SynthesDBPlugin in SyncEvolution_StartDataRead()

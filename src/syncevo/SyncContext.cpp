@@ -148,20 +148,29 @@ SyncContext::SyncContext(const string &server,
     m_doLogging = doLogging;
 }
 
-SyncContext::SyncContext(const string &config,
+SyncContext::SyncContext(const string &client,
+                         const string &server,
                          const string &rootPath,
                          const boost::shared_ptr<TransportAgent> &agent,
                          bool doLogging) :
-    SyncConfig(config,
+    SyncConfig(client,
                boost::shared_ptr<ConfigTree>(),
                rootPath),
-    m_server(config),
+    m_server(client),
     m_localClientRootPath(rootPath),
     m_agent(agent)
 {
     init();
-    m_localSync = true;
+    initLocalSync(server);
     m_doLogging = doLogging;
+}
+
+void SyncContext::initLocalSync(const string &config)
+{
+    m_localSync = true;
+    string tmp;
+    splitConfigString(config, tmp, m_localPeerContext);
+    m_localPeerContext.insert(0, "@");
 }
 
 void SyncContext::setOutput(ostream *out)
@@ -1239,7 +1248,7 @@ public:
                 oldDir = databaseName(*source, oldSuffix, oldSession);
             }
             string newDir = databaseName(*source, newSuffix);
-            out << "*** " << source->getName() << " ***\n" << flush;
+            out << "*** " << source->getDisplayName() << " ***\n" << flush;
             string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 " + config + " synccompare '" ) +
                 oldDir + "' '" + newDir + "'";
             int ret = Execute(cmd, EXECUTE_NO_STDERR);
@@ -1269,7 +1278,9 @@ public:
             // dump initial databases
             dumpDatabases("before", &SyncSourceReport::m_backupBefore, excludeSource);
             // compare against the old "after" database dump
-            dumpLocalChanges("", "after", "before", excludeSource);
+            dumpLocalChanges("", "after", "before", excludeSource,
+                             StringPrintf("%s data changes to be applied during synchronization:\n",
+                                          m_client.isLocalSync() ? m_client.getContextName().c_str() : "Local"));
         }
     }
 
@@ -1336,9 +1347,9 @@ public:
                 // compare databases?
                 dumpLocalChanges(m_logdir.getLogdir(),
                                  "before", "after", "",
-                                 "\nData modified locally during synchronization:\n",
+                                 StringPrintf("\nData modified %s during synchronization:\n",
+                                              m_client.isLocalSync() ? m_client.getContextName().c_str() : "locally"),
                                  "CLIENT_TEST_LEFT_NAME='before sync' CLIENT_TEST_RIGHT_NAME='after sync' CLIENT_TEST_REMOVED='removed during sync' CLIENT_TEST_ADDED='added during sync'");
-
                 m_logdir.expire();
             }
         }
@@ -2703,8 +2714,9 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
     SwapContext syncSentinel(this);
     try {
         m_sourceListPtr = &sourceList;
-        if (boost::starts_with(getUsedSyncURL(), "local://")) {
-            m_localSync = true;
+        string url = getUsedSyncURL();
+        if (boost::starts_with(url, "local://")) {
+            initLocalSync(url.substr(strlen("local://")));
         }
 
         if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
@@ -2729,6 +2741,10 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             report = &buffer;
         }
         report->clear();
+        if (m_localSync) {
+            report->setRemoteName(m_localPeerContext);
+            report->setLocalName(getContextName());
+        }
 
         // let derived classes override settings, like the log dir
         prepare();
