@@ -1499,6 +1499,75 @@ class SyncSourceSerialize : virtual public SyncSourceBase, virtual public SyncSo
 };
 
 /**
+ * Mapping from Hash() value to file.
+ * Used by SyncSourceRevisions, but may be of use for
+ * other backup implementations.
+ */
+class ItemCache
+{
+public:
+#ifdef USE_SHA256
+    typedef std::string Hash_t;
+    Hash_t hashFunc(const std::string &data) { return SHA_256(data); }
+#else
+    typedef unsigned long Hash_t;
+    Hash_t hashFunc(const std::string &data) { return Hash(data); }
+#endif
+    typedef unsigned long Counter_t;
+
+    /** mark the algorithm used for the hash via different suffices */
+    static const char *m_hashSuffix;
+
+    /**
+     * Collect information about stored hashes. Provides
+     * access to file name via hash.
+     *
+     * If no hashes were written (as in an old SyncEvoltion
+     * version), we could read the files to recreate the
+     * hashes. This is not done because it won't occur
+     * often enough.
+     *
+     * Hashes are also not verified. Users should better
+     * not edit them or file contents...
+     *
+     * @param oldBackup     existing backup to read; may be empty
+     * @param newBackup     new backup to be created
+     * @param legacy        legacy mode includes a bug
+     *                      which cannot be fixed without breaking on-disk format
+     */
+    void init(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+              const SyncSource::Operations::BackupInfo &newBackup,
+              bool legacy);
+
+    /**
+     * create file name for a specific hash, empty if no such hash
+     */
+    string getFilename(Hash_t hash);
+
+    /**
+     * add a new item, reusing old one if possible
+     *
+     * @param item       new item data
+     * @param uid        its unique ID
+     * @param rev        revision string
+     */
+    void backupItem(const std::string &item,
+                    const std::string &uid,
+                    const std::string &rev);
+
+    /** to be called after init() and all backupItem() calls */
+    void finalize(BackupReport &report);
+
+private:
+    typedef std::map<Hash_t, Counter_t> Map_t;
+    Map_t m_hash2counter;
+    string m_dirname;
+    SyncSource::Operations::BackupInfo m_backup;
+    bool m_legacy;
+    unsigned long m_counter;
+};
+
+/**
  * Implements change tracking based on a "revision" string, a string
  * which is guaranteed to change automatically each time an item is
  * modified. Backup/restore is optionally implemented by this class if
