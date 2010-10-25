@@ -1001,6 +1001,12 @@ class SyncConfig {
     string getConfigName() const { return m_peer; }
 
     /**
+     * The normalized context used by this instance.
+     * Includes @ sign.
+     */
+    string getContextName() const;
+
+    /**
      * Do something before doing flush to files. This is particularly
      * useful when user interface wants to do preparation jobs, such
      * as savePassword and others.

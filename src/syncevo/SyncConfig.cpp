@@ -781,6 +781,13 @@ bool SyncConfig::exists() const
         m_peerNode->exists();
 }
 
+string SyncConfig::getContextName() const
+{
+    string peer, context;
+    splitConfigString(getConfigName(), peer, context);
+    return string("@") + context;
+}
+
 void SyncConfig::preFlush(ConfigUserInterface &ui)
 {
     /* Iterator over all sync global and source properties 
