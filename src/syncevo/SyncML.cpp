@@ -533,10 +533,10 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
     if (!(flags & WITHOUT_REJECTS) || !(flags & WITHOUT_CONFLICTS)) {
         out << "|" << fill(' ', name_width);
         if (!(flags & WITHOUT_CLIENT)) {
-            out << '|' << center(' ', "LOCAL", client_width);
+            out << '|' << center(' ', m_localName, client_width);
         }
         if (!(flags & WITHOUT_SERVER)) {
-            out << '|' << center(' ', "REMOTE", server_width);
+            out << '|' << center(' ', m_remoteName, server_width);
         }
         if (!(flags & WITHOUT_CONFLICTS)) {
             out << '|' << center(' ', "FLI", conflict_width);

@@ -287,13 +287,19 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
     time_t m_start, m_end;
     SyncMLStatus m_status;
     std::string m_error;
+    std::string m_localName, m_remoteName;
 
  public:
     SyncReport() :
         m_start(0),
         m_end(0),
-        m_status(STATUS_OK)
+        m_status(STATUS_OK),
+        m_localName("LOCAL"),
+        m_remoteName("REMOTE")
         {}
+
+    void setLocalName(const std::string &name) { m_localName = name; }
+    void setRemoteName(const std::string &name) { m_remoteName = name; }
 
     typedef std::pair<std::string, SyncSourceReport> SourceReport_t;
 
