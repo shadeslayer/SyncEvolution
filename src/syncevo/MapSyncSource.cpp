@@ -156,6 +156,16 @@ MapSyncSource::MapSyncSource(const SyncSourceParams &params,
                             ", ",
                             m_operations);
     m_sub->setParent(this);
+    // Redirect backup/restore into sub source, if it defines a backup
+    // operation. Otherwise continue to use our own,
+    // SyncSourceRevision based implementation. The expectation is
+    // that a custom backup operation implies a custom restore,
+    // because of custom data formats in the data dump. Therefore if()
+    // only checks the m_backupData pointer.
+    if (m_sub->getOperations().m_backupData) {
+        m_operations.m_backupData = m_sub->getOperations().m_backupData;
+        m_operations.m_restoreData = m_sub->getOperations().m_restoreData;
+    }
 }
 
 void MapSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisions)
