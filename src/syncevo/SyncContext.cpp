@@ -1061,10 +1061,7 @@ public:
         // Identify all logdirs of current context, of any peer.  Used
         // to search for previous backups of each source, if
         // necessary.
-        string peer = m_client.getConfigName();
-        string peerName, contextName;
-        SyncConfig::splitConfigString(peer, peerName, contextName);
-        SyncContext context(string("@") + contextName);
+        SyncContext context(m_client.getContextName());
         LogDir logdir(context);
         vector<string> dirs;
         logdir.previousLogdirs(dirs);
@@ -1900,9 +1897,7 @@ void SyncContext::initSources(SourceList &sourceList)
     // name active?
     string contextName;
     if (m_localSync) {
-        string dummy;
-        splitConfigString(getConfigName(), dummy, contextName);
-        contextName.insert(0, "@");
+        contextName = getContextName();
     }
 
     // Phase 1, check all virtual sync soruces
