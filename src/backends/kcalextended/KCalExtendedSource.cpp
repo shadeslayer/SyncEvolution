@@ -151,9 +151,9 @@ KCalCore::Incidence::Ptr KCalExtendedData::findIncidence(const string &luid)
     ItemID id(luid);
     QString uid = id.getIDString();
     KDateTime rid = id.getDateTime();
-    if (!m_storage->load(uid, rid)) {
-        m_parent->throwError(string("failed to load incidence ") + luid);
-    }
+    // if (!m_storage->load(uid, rid)) {
+    // m_parent->throwError(string("failed to load incidence ") + luid);
+    // }
     KCalCore::Incidence::Ptr incidence = m_calendar->incidence(uid, rid);
     return incidence;
 }
@@ -217,6 +217,9 @@ void KCalExtendedSource::open()
         }
         if (!m_data->m_storage->open()) {
             throwError("failed to open storage");
+        }
+        if (!m_data->m_storage->load()) {
+            throwError("failed to load calendar");
         }
         mKCal::Notebook::Ptr defaultNotebook = m_data->m_storage->defaultNotebook();
         if (!defaultNotebook) {
@@ -396,7 +399,7 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
         QString id = incidences[0]->uid();
         KDateTime rid = incidences[0]->recurrenceId();
         if (!id.isEmpty()) {
-            m_data->m_storage->load(id, rid);
+            // m_data->m_storage->load(id, rid);
             KCalCore::Incidence::Ptr incidence = m_data->m_calendar->incidence(id, rid);
             if (incidence) {
                 oldUID = m_data->getItemID(incidence).getLUID();
