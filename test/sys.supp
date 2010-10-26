@@ -470,3 +470,75 @@
    obj:*
    fun:g_main_loop_run
 }
+
+# TODO: fix issue in libsynthesis/SyncML TK (BMC #8936)
+# ==25141== Invalid read of size 1
+# ==25141==    at 0x7AB318: show_decode_error (xltdec.c:129)
+# ==25141==    by 0x7AE9B9: xltDecWbxmlInit (xltdecwbxml.c:472)
+# ==25141==    by 0x7AEB9B: subdtdDecodeWbxml (xltdecwbxml.c:993)
+# ==25141==    by 0x7ABFFE: buildItem (xltdec.c:2026)
+# ==25141==    by 0x7AC81C: appendItemList (xltdec.c:2500)
+# ==25141==    by 0x7AD958: buildGenericCmd (xltdec.c:1216)
+# ==25141==    by 0x7AE1CC: xltDecNext (xltdec.c:523)
+# ==25141==    by 0x7A8B07: smlProcessData (mgrcmddispatcher.c:303)
+# ==25141==    by 0x783B6A: sysync::TSyncAgent::ClientProcessingStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:3453)
+# ==25141==    by 0x787968: sysync::TSyncAgent::ClientSessionStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:3321)
+# ==25141==    by 0x789D1D: sysync::TSyncAgent::SessionStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:2925)
+# ==25141==    by 0x6A05DC: SyncEvo::SharedEngine::SessionStep(boost::shared_ptr<sysync::SessionType> const&, unsigned short&, sysync::TEngineProgressType*) (SynthesisEngine.cpp:96)
+# ==25141==    by 0x62FAC7: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3252)
+# ==25141==    by 0x63BAD9: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2774)
+# ==25141==    by 0x4C640D: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:398)
+# ==25141==    by 0x4E96F7: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3264)
+# ==25141==    by 0x580EA1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:782)
+# ==25141==    by 0x4DA7BF: SyncEvo::SyncTests::deleteAll(SyncEvo::SyncTests::DeleteAllMode) (ClientTest.cpp:1636)
+# ==25141==    by 0x4E45FF: SyncEvo::SyncTests::doCopy() (ClientTest.cpp:1664)
+# ==25141==    by 0x57B17C: SyncEvo::SyncTests::testCopy() (ClientTest.h:680)
+# ==25141==    by 0x595B406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x594D7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x5957278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x5956FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x5962D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B09C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B9FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B9FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==  Address 0xe580fcf is 0 bytes after a block of size 31 alloc'd
+# ==25141==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==25141==    by 0x7AEB11: subdtdDecodeWbxml (xltdecwbxml.c:970)
+# ==25141==    by 0x7ABFFE: buildItem (xltdec.c:2026)
+# ==25141==    by 0x7AC81C: appendItemList (xltdec.c:2500)
+# ==25141==    by 0x7AD958: buildGenericCmd (xltdec.c:1216)
+# ==25141==    by 0x7AE1CC: xltDecNext (xltdec.c:523)
+# ==25141==    by 0x7A8B07: smlProcessData (mgrcmddispatcher.c:303)
+# ==25141==    by 0x783B6A: sysync::TSyncAgent::ClientProcessingStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:3453)
+# ==25141==    by 0x787968: sysync::TSyncAgent::ClientSessionStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:3321)
+# ==25141==    by 0x789D1D: sysync::TSyncAgent::SessionStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:2925)
+# ==25141==    by 0x6A05DC: SyncEvo::SharedEngine::SessionStep(boost::shared_ptr<sysync::SessionType> const&, unsigned short&, sysync::TEngineProgressType*) (SynthesisEngine.cpp:96)
+# ==25141==    by 0x62FAC7: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3252)
+# ==25141==    by 0x63BAD9: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2774)
+# ==25141==    by 0x4C640D: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:398)
+# ==25141==    by 0x4E96F7: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3264)
+# ==25141==    by 0x580EA1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:782)
+# ==25141==    by 0x4DA7BF: SyncEvo::SyncTests::deleteAll(SyncEvo::SyncTests::DeleteAllMode) (ClientTest.cpp:1636)
+# ==25141==    by 0x4E45FF: SyncEvo::SyncTests::doCopy() (ClientTest.cpp:1664)
+# ==25141==    by 0x57B17C: SyncEvo::SyncTests::testCopy() (ClientTest.h:680)
+# ==25141==    by 0x595B406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x594D7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x5957278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x5956FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x5962D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B09C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B9FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B9FB: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x595B925: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==25141==    by 0x5962B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+{
+    SyncML Toolkit buffer overrun
+    Memcheck:Addr1
+    fun:show_decode_error
+    ...
+    fun:smlProcessData
+}
+
