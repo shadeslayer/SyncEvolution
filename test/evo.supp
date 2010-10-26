@@ -1255,8 +1255,15 @@
     libecal + D-Bus leaks
     Memcheck:Leak
     ...
-    fun:dbus_g_*
+    fun:dbus_*
     fun:e_cal_*
+}
+{
+    libebook + D-Bus leaks
+    Memcheck:Leak
+    ...
+    fun:dbus_*
+    fun:e_book_*
 }
 
 # ==28758== 3 bytes in 1 blocks are possibly lost in loss record 31 of 10,032
