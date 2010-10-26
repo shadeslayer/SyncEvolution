@@ -456,7 +456,10 @@ void KCalExtendedSource::deleteItem(const string &uid)
 {
     KCalCore::Incidence::Ptr incidence = m_data->findIncidence(uid);
     if (!incidence) {
-        throwError(string("incidence ") + uid + " not found");
+        // throwError(string("incidence ") + uid + " not found");
+        // don't treat this as error, it can happen, for example
+        // when the master event was removed before (MBC #6061)
+        return;
     }
     if (!m_data->m_calendar->deleteIncidence(incidence)) {
         throwError(string("could not delete incidence") + uid);
