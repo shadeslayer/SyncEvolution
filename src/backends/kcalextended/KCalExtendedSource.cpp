@@ -407,6 +407,19 @@ TestingSyncSource::InsertItemResult KCalExtendedSource::insertItem(const string 
         }
     }
 
+    // Brute-force copying of all time zone definitions. Ignores name
+    // conflicts, which is something better handled in a generic mKCal
+    // API function (BMC #8604).
+    KCalCore::ICalTimeZones *source = calendar->timeZones();
+    if (source) {
+        KCalCore::ICalTimeZones *target = m_data->m_calendar->timeZones();
+        if (target) {
+            BOOST_FOREACH(const KCalCore::ICalTimeZone &zone, source->zones().values()) {
+                target->add(zone);
+            }
+        }
+    }
+
     if (oldUID.empty()) {
         KCalCore::Incidence::Ptr incidence = incidences[0];
 
