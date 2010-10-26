@@ -1,13 +1,17 @@
-SyncEvolution 1.0.1 -> 1.1, xxxxxxxxxx
+SyncEvolution 1.0.1 -> 1.1, 26.10.2010
 ======================================
 
 An incremental update, resolving issues where the fixes would have
 been too intrusive for a 1.0.x release. In particular compatibility
-with Nokia phones was improved. Some new features were also included.
+with Nokia phones was improved. Some new features were also included
+(command line options for manipulating items, backends for MeeGo PIM
+storages).
 
 Details:
 
 * bug fix in sync-ui: wrong direction of one-way data transfers with devices (BMC #7091)
+* bug fix in syncevo-dbus-server: incorrect Presence status after config change (BMC #8453)
+  Shows up in sync-ui as "'Sync Now' button active after creating a config while offline".
 * sync-ui (GTK version): app is now listed as "SyncEvolution (GTK)" under "Office"
 * Nokia phones: avoid data loss in two-way sync due to X-EVOLUTION-UI-SLOT (BMC #2566)
 * Nokia phones: alarm times in UTC, sending PHOTO (BMC #1657, #5860)
