@@ -14,6 +14,9 @@ s/::/:/g;
 # avoid special \-- which was necessary for some options
 s/^\\--/--/gm;
 
+# remove escape sequence
+s/\\\*/*/g;
+
 # extract parts
 /SYNOPSIS\n===+\n\n(.*?)\nDESCRIPTION/s || die "no synopsis";
 my $synopsis = $1;

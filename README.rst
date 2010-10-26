@@ -55,7 +55,7 @@ Update item(s)
   syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
 
 Remove item(s):
-  syncevolution --delete-items <config> <source> <luid> ...
+  syncevolution --delete-items <config> <source> (<luid> ... | \*)
 
 DESCRIPTION
 ===========
@@ -244,13 +244,14 @@ refresh-from-client" in the next run. ::
   syncevolution [--delimiter <string>|none] --import <dir>|<file>|- <config> <source>
   syncevolution --update <dir> <config> <source>
   syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
-  syncevolution --delete-items <config> <source> <luid> ...
+  syncevolution --delete-items <config> <source> (<luid> ... | *)
 
 Restore depends on the specific format of the automatic backups
 created by SyncEvolution. Arbitrary access to item data is provided
 with additional options. <luid> here is the unique local identifier
 assigned to each item in the source, transformed so that it contains
-only alphanumeric characters, dash and underscore.
+only alphanumeric characters, dash and underscore. A star * in
+--delete-items selects all items for deletion.
 
 <config> and <source> must be given, but they do not have to refer to
 existing configurations. In that case, the desired backend and must be
@@ -376,7 +377,8 @@ a list of valid values.
   typically leads to an ERROR message, but is not reflected in a
   non-zero result of the command line invocation itself because the
   situation is not reported as an error by backends (removal of
-  non-existent items is not an error in SyncML).
+  non-existent items is not an error in SyncML). Use a star \* instead
+  or in addition to listing individual luids to delete all items.
 
 --sync-property|-y <property>=<value>|<property>=?|?
   Overrides a source-independent configuration property for the

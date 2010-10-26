@@ -852,8 +852,15 @@ bool Cmdline::run() {
             if (!ops.m_deleteItem) {
                 source->throwError("deleting items not supported");
             }
+            list<string> luids;
+            bool deleteAll = std::find(m_luids.begin(), m_luids.end(), "*") != m_luids.end();
             err = ops.m_startDataRead("", "");
             CHECK_ERROR("reading items");
+            if (deleteAll) {
+                readLUIDs(source, luids);
+            } else {
+                luids = m_luids;
+            }
             if (ops.m_endDataRead) {
                 err = ops.m_endDataRead();
                 CHECK_ERROR("stop reading items");
@@ -862,7 +869,7 @@ bool Cmdline::run() {
                 err = ops.m_startDataWrite();
                 CHECK_ERROR("writing items");
             }
-            BOOST_FOREACH(const string &luid, m_luids) {
+            BOOST_FOREACH(const string &luid, luids) {
                 sysync::ItemIDType id;
                 id.item = (char *)luid.c_str();
                 err = ops.m_deleteItem(&id);
