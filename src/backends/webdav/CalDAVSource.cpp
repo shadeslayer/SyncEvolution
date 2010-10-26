@@ -21,6 +21,12 @@ CalDAVSource::CalDAVSource(const SyncSourceParams &params,
     SyncSourceLogging::init(InitList<std::string>("SUMMARY") + "LOCATION",
                             ", ",
                             m_operations);
+    // override default backup/restore from base class with our own
+    // version
+    m_operations.m_backupData = boost::bind(&CalDAVSource::backupData,
+                                            this, _1, _2, _3);
+    m_operations.m_restoreData = boost::bind(&CalDAVSource::restoreData,
+                                             this, _1, _2, _3);
 }
 
 void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
@@ -49,20 +55,12 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
     string result;
     string href, etag, data;
     Neon::XMLParser parser;
-    parser.pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "multistatus", _2, _3))
-        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "response", _2, _3))
-        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "href", _2, _3),
-                     boost::bind(Neon::XMLParser::append, boost::ref(href), _2, _3))
-        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "propstat", _2, _3))
-        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "status", _2, _3) /* check status? */)
-        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "prop", _2, _3))
-        .pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "getetag", _2, _3),
-                     boost::bind(Neon::XMLParser::append, boost::ref(etag), _2, _3))
-        .pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
-                     boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
-                     boost::bind(&CalDAVSource::appendItem, this,
-                                 boost::ref(revisions),
-                                 boost::ref(href), boost::ref(etag), boost::ref(data)));
+    parser.initReportParser(href, etag);
+    parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                       boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
+                       boost::bind(&CalDAVSource::appendItem, this,
+                                   boost::ref(revisions),
+                                   boost::ref(href), boost::ref(etag), boost::ref(data)));
     Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
     report.addHeader("Depth", "1");
     report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
@@ -406,6 +404,63 @@ std::string CalDAVSource::Event::getSubID(icalcomponent *comp)
 {
     struct icaltimetype rid = icalcomponent_get_recurrenceid(comp);
     return icalTime2Str(rid);
+}
+
+void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                              const SyncSource::Operations::BackupInfo &newBackup,
+                              BackupReport &backupReport)
+{
+    ItemCache cache;
+    cache.init(oldBackup, newBackup, false);
+
+    // stream directly from REPORT with full data into backup
+    const std::string query =
+        "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
+        "<C:calendar-query xmlns:D=\"DAV:\"\n"
+        "xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
+        "<D:prop>\n"
+        "<D:getetag/>\n"
+        "<C:calendar-data/>\n"
+        "</D:prop>\n"
+        "</C:calendar-query>\n";
+    string result;
+    string href, etag, data;
+    Neon::XMLParser parser;
+    parser.initReportParser(href, etag);
+    parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                       boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
+                       boost::bind(&CalDAVSource::backupItem, this,
+                                   boost::ref(cache),
+                                   boost::ref(href), boost::ref(etag), boost::ref(data)));
+    Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+    report.addHeader("Depth", "1");
+    report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+    report.run();
+    cache.finalize(backupReport);
+}
+
+int CalDAVSource::backupItem(ItemCache &cache,
+                             std::string &href,
+                             std::string &etag,
+                             std::string &data)
+{
+    std::string luid = path2luid(Neon::URI::parse(href).m_path);
+    std::string rev = ETag2Rev(etag);
+    cache.backupItem(data, luid, rev);
+
+    // reset data for next item
+    data.clear();
+    href.clear();
+    etag.clear();
+    return 0;
+}
+
+void CalDAVSource::restoreData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                               bool dryrun,
+                               SyncSourceReport &report)
+{
+    // TODO: implement restore
+    throw("not implemented");
 }
 
 SE_END_CXX

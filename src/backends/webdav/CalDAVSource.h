@@ -43,6 +43,22 @@ class CalDAVSource : public WebDAVSource,
     // implementation of SyncSourceLogging callback
     virtual std::string getDescription(const string &luid);
 
+    /**
+     * Dump each resource item unmodified into the given directory.
+     * The ConfigNode stores the luid/etag mapping.
+     */
+    void backupData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                    const SyncSource::Operations::BackupInfo &newBackup,
+                    BackupReport &report);
+
+    /**
+     * Restore database from data stored in backupData(). Will be
+     * called inside open()/close() pair. beginSync() is *not* called.
+     */
+    void restoreData(const SyncSource::Operations::ConstBackupInfo &oldBackup,
+                     bool dryrun,
+                     SyncSourceReport &report);
+
     // disambiguate getSynthesisAPI()
     SDKInterface *getSynthesisAPI() const { return SubSyncSource::getSynthesisAPI(); }
 
@@ -95,6 +111,12 @@ class CalDAVSource : public WebDAVSource,
 
     /** callback for listAllSubItems: parse and add new item */
     int appendItem(SubRevisionMap_t &revisions,
+                   std::string &href,
+                   std::string &etag,
+                   std::string &data);
+
+    /** callback for backupData(): dump into backup */
+    int backupItem(ItemCache &cache,
                    std::string &href,
                    std::string &etag,
                    std::string &data);

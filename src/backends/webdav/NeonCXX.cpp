@@ -358,6 +358,20 @@ int XMLParser::reset(std::string &buffer)
     return 0;
 }
 
+void XMLParser::initReportParser(std::string &href,
+                                 std::string &etag)
+{
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "multistatus", _2, _3));
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "response", _2, _3));
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "href", _2, _3),
+                boost::bind(Neon::XMLParser::append, boost::ref(href), _2, _3));
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "propstat", _2, _3));
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "status", _2, _3) /* check status? */);
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "prop", _2, _3));
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "getetag", _2, _3),
+                boost::bind(Neon::XMLParser::append, boost::ref(etag), _2, _3));
+}
+
 Request::Request(Session &session,
                  const std::string &method,
                  const std::string &path,

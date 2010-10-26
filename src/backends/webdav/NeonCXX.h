@@ -240,6 +240,17 @@ class XMLParser
      */
     static int reset(std::string &buffer);
 
+    /**
+     * Setup parser for handling REPORT result.
+     * Caller still needs to push a handler for
+     * "urn:ietf:params:xml:ns:caldav", "calendar-data".
+     * 
+     * @param href      caller's buffer for DAV:href
+     * @param etag      caller's buffer for DAV:getetag
+     */
+    void initReportParser(std::string &href,
+                          std::string &etag);
+
  private:
     ne_xml_parser *m_parser;
     struct Callbacks {
