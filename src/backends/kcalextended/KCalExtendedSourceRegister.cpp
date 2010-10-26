@@ -95,6 +95,9 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "KCalExtended:text/calendar";
+        // currently removing the parent also removes the child (BMC #6061)
+        // with no workaround in our code
+        config.linkedItemsRelaxedSemantic = false;
     }
 } iCal20Test;
 
