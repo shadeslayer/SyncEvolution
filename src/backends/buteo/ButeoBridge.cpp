@@ -50,6 +50,7 @@ bool ButeoBridge::startSync()
         // analyze result
         const SyncReport &report = sync.getReport();
         SyncMLStatus status = report.getStatus();
+        std::string explanation = Status2String(status);
         switch (status) {
         case STATUS_OK:
         case STATUS_HTTP_OK:
@@ -59,8 +60,15 @@ bool ButeoBridge::startSync()
                 emit error(getProfileName(), "internal error", Buteo::SyncResults::INTERNAL_ERROR);
             }
             break;
+        case STATUS_UNAUTHORIZED:
+        case STATUS_FORBIDDEN:
+            emit error(getProfileName(), explanation.c_str(), Buteo::SyncResults::AUTHENTICATION_FAILURE);
+            break;
+        case STATUS_TRANSPORT_FAILURE:
+            emit error(getProfileName(), explanation.c_str(), Buteo::SyncResults::CONNECTION_ERROR);
+            break;
         default:
-            emit error(getProfileName(), Status2String(status).c_str(), Buteo::SyncResults::INTERNAL_ERROR);
+            emit error(getProfileName(), explanation.c_str(), Buteo::SyncResults::INTERNAL_ERROR);
             break;
         }
 
