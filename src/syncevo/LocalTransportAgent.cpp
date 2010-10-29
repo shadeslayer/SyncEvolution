@@ -24,6 +24,8 @@
 
 #include <stddef.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -51,12 +53,19 @@ LocalTransportAgent::LocalTransportAgent(SyncContext *server,
     m_loop(static_cast<GMainLoop *>(loop)),
     m_status(INACTIVE),
     m_receiveBufferSize(0),
-    m_receivedBytes(0)
+    m_receivedBytes(0),
+    m_pid(0)
 {
 }
 
 LocalTransportAgent::~LocalTransportAgent()
 {
+    if (m_pid) {
+        SE_LOG_DEBUG(NULL, NULL, "starting to wait for child process %ld in destructor", (long)m_pid);
+        int status;
+        pid_t res = waitpid(m_pid, &status, 0);
+        SE_LOG_DEBUG(NULL, NULL, "child %ld completed, status %d", (long)res, status);
+    }
 }
 
 void LocalTransportAgent::start()
@@ -100,6 +109,7 @@ void LocalTransportAgent::start()
         m_messageFD = sockets[0];
         // first message must come from child
         m_status = ACTIVE;
+        m_pid = pid;
         break;
     }
 }
@@ -198,7 +208,7 @@ void LocalTransportAgent::run()
     if (redirect) {
         redirect->flush();
     }
-    exit(res);
+    _exit(res);
 }
 
 void LocalTransportAgent::getClientSyncReport(SyncReport &report)
@@ -221,8 +231,15 @@ void LocalTransportAgent::shutdown()
 {
     if (m_pid) {
         // TODO: get sync report, then wait for exit in child.
+        close(m_messageFD);
+        int status;
+        SE_LOG_DEBUG(NULL, NULL, "starting to wait for child process %ld in shutdown()", (long)m_pid);
+        pid_t res = waitpid(m_pid, &status, 0);
+        SE_LOG_DEBUG(NULL, NULL, "child %ld completed, status %d", (long)res, status);
+        m_pid = 0;
+    } else {
+        close(m_messageFD);
     }
-    close(m_messageFD);
 }
 
 void LocalTransportAgent::send(const char *data, size_t len)
@@ -252,10 +269,19 @@ void LocalTransportAgent::send(const char *data, size_t len)
         vec[1].iov_base = (void *)data;
         vec[1].iov_len = len;
         // TODO: handle timeouts and aborts while writing
+        SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes",
+                     m_pid ? "parent" : "child",
+                     (long)len);
         if (writev(m_messageFD, vec, 2) == -1) {
+            SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes failed",
+                         m_pid ? "parent" : "child",
+                         (long)len);
             SE_THROW_EXCEPTION(TransportException,
                                StringPrintf("writev(): %s", strerror(errno)));
         }
+        SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes done",
+                     m_pid ? "parent" : "child",
+                     (long)len);
     }
     m_status = ACTIVE;
 }
@@ -285,9 +311,13 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
                 fd_set readfds;
                 FD_ZERO(&readfds);
                 FD_SET(m_messageFD, &readfds);
+                SE_LOG_DEBUG(NULL, NULL, "%s: waiting",
+                             m_pid ? "parent" : "child");
                 int res = select(m_messageFD + 1, &readfds, NULL, NULL, NULL);
                 switch (res) {
                 case 0:
+                    SE_LOG_DEBUG(NULL, NULL, "%s: select timeout",
+                                 m_pid ? "parent" : "child");
                     // TODO: timeout
                     SE_THROW("internal error, unexpected timeout");
                     break;
@@ -302,10 +332,15 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
                         m_receiveBuffer.set(static_cast<Message *>(realloc(m_receiveBuffer.release(), m_receiveBuffer->m_length)),
                                             "Message Buffer");
                     }
+                    SE_LOG_DEBUG(NULL, NULL, "%s: recv",
+                                 m_pid ? "parent" : "child");
                     ssize_t recvd = recv(m_messageFD,
                                          (char *)m_receiveBuffer.get() + m_receivedBytes,
                                          m_receiveBufferSize - m_receivedBytes,
                                          MSG_DONTWAIT);
+                    SE_LOG_DEBUG(NULL, NULL, "%s: received %ld",
+                                 m_pid ? "parent" : "child",
+                                 (long)recvd);
                     if (recvd < 0) {
                         SE_THROW_EXCEPTION(TransportException,
                                            StringPrintf("message receive: %s", strerror(errno)));
@@ -317,6 +352,9 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
                     break;
                 }
                 default:
+                    SE_LOG_DEBUG(NULL, NULL, "%s: select errror: %s",
+                                 m_pid ? "parent" : "child",
+                                 strerror(errno));
                     SE_THROW_EXCEPTION(TransportException,
                                        StringPrintf("select(): %s", strerror(errno)));
                     break;
