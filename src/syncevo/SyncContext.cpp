@@ -578,8 +578,9 @@ public:
             level = INFO;
             break;
         default:
-            if (m_logfile.empty()) {
-                // no log file: print all information to the console
+            if (m_logfile.empty() || getenv("SYNCEVOLUTION_DEBUG")) {
+                // no log file or user wants to see everything:
+                // print all information to the console
                 level = DEBUG;
             } else {
                 // have log file: avoid excessive output to the console,
