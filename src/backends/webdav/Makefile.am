@@ -21,6 +21,6 @@ SYNCDAV_SOURCES = \
 	NeonCXX.cpp
 
 syncdav_la_SOURCES = $(SYNCDAV_SOURCES)
-syncdav_la_LIBADD = $(NEON_LIBS) 
+syncdav_la_LIBADD = $(NEON_LIBS) ../../syncevo/libsyncevolution.la
 syncdav_la_LDFLAGS = -module -avoid-version
 syncdav_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(NEON_CFLAGS)
