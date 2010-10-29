@@ -214,6 +214,16 @@ class TransportException : public Exception
     ~TransportException() throw() {}
 };
 
+class TransportStatusException : public StatusException
+{
+ public:
+    TransportStatusException(const std::string &file,
+                             int line,
+                             const std::string &what,
+                             SyncMLStatus status) :
+    StatusException(file, line, what, status) {}
+    ~TransportStatusException() throw() {}
+};
 
 SE_END_CXX
 #endif // INCL_TRANSPORTAGENT
