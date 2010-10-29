@@ -109,29 +109,34 @@ bool ButeoBridge::init()
         }
 
         // configure local sync of calendar with CalDAV
-        Cmdline target(std::cout, std::cerr,
-                       "buteo-sync",
-                       "--template", "SyncEvolution",
-                       "--sync-property", url.c_str(),
-                       "--source-property", "type=CalDAV",
-                       StringPrintf("source-config@%s", m_config.c_str()).c_str(),
-                       "calendar",
-                       NULL);
-        bool res = target.parse() && target.run();
-        if (!res) {
-            SE_THROW("client configuration failed");
+        std::string config = StringPrintf("source-config@%s", m_config.c_str());
+        if (!SyncConfig(config).exists()) {
+            Cmdline target(std::cout, std::cerr,
+                           "buteo-sync",
+                           "--template", "SyncEvolution",
+                           "--sync-property", url.c_str(),
+                           "--source-property", "type=CalDAV",
+                           config.c_str(),
+                           "calendar",
+                           NULL);
+            bool res = target.parse() && target.run();
+            if (!res) {
+                SE_THROW("client configuration failed");
+            }
         }
-        Cmdline server(std::cout, std::cerr,
-                       "buteo-sync",
-                       "--template", "SyncEvolution",
-                       "--sync-property", "peerIsClient=1",
-                       "--sync-property", StringPrintf("syncURL=local://@%s", m_config.c_str()).c_str(),
-                       m_config.c_str(),
-                       "calendar",
-                       NULL);
-        res = server.parse() && server.run();
-        if (!res) {
-            SE_THROW("server configuration failed");
+        if (!SyncConfig(m_config).exists()) {
+            Cmdline server(std::cout, std::cerr,
+                           "buteo-sync",
+                           "--template", "SyncEvolution",
+                           "--sync-property", "peerIsClient=1",
+                           "--sync-property", StringPrintf("syncURL=local://@%s", m_config.c_str()).c_str(),
+                           m_config.c_str(),
+                           "calendar",
+                           NULL);
+            bool res = server.parse() && server.run();
+            if (!res) {
+                SE_THROW("server configuration failed");
+            }
         }
         return true;
     } catch (...) {
