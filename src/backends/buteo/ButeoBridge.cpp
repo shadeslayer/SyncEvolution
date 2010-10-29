@@ -3,6 +3,20 @@
  */
 
 #include "ButeoBridge.h"
+#include "test.h"
+#include <syncevo/util.h>
+#include <syncevo/Cmdline.h>
+#include <syncevo/Logging.h>
+
+#include <QDebug>
+
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <libsyncprofile/SyncResults.h>
+
 SE_BEGIN_CXX
 
 ButeoBridge::ButeoBridge(const QString &pluginName,
@@ -10,21 +24,126 @@ ButeoBridge::ButeoBridge(const QString &pluginName,
                          Buteo::PluginCbInterface *cbInterface) :
     ClientPlugin(pluginName, profile, cbInterface)
 {
+    m_username = profile.key("Username", "no username set").toUtf8().data();
+    m_password = profile.key("Password", "no password set").toUtf8().data();
 }
 
 bool ButeoBridge::startSync()
 {
+    std::string explanation("internal error");
+    try {
+        if (m_config.empty()) {
+            SE_THROW("init() not called");
+        }
+
+        // run sync
+        Cmdline sync(std::cout, std::cerr,
+                     "buteo-sync",
+                     "--run",
+                     "--sync-property", StringPrintf("username=%s", m_username.c_str()).c_str(),
+                     "--sync-property", StringPrintf("password=%s", m_password.c_str()).c_str(),
+                     "--sync-property", "preventSlowSync=0",
+                     m_config.c_str(),
+                     NULL);
+        bool res = sync.parse() && sync.run();
+
+        // analyze result
+        const SyncReport &report = sync.getReport();
+        SyncMLStatus status = report.getStatus();
+        switch (status) {
+        case STATUS_OK:
+        case STATUS_HTTP_OK:
+            if (res) {
+                emit success(getProfileName(), "done");
+            } else {
+                emit error(getProfileName(), "internal error", Buteo::SyncResults::INTERNAL_ERROR);
+            }
+            break;
+        default:
+            emit error(getProfileName(), Status2String(status).c_str(), Buteo::SyncResults::INTERNAL_ERROR);
+            break;
+        }
+
+        // Client/Configuration errors 4xx
+        // INTERNAL_ERROR = 401,
+        // AUTHENTICATION_FAILURE,
+        // DATABASE_FAILURE,
+
+        // Server/Network errors 5xx
+        // SUSPENDED = 501,
+        // ABORTED,
+        // CONNECTION_ERROR,
+        // INVALID_SYNCML_MESSAGE,
+        // UNSUPPORTED_SYNC_TYPE,
+        // UNSUPPORTED_STORAGE_TYPE,
+        //Upto here
+
+        //Context Error Code
+        // LOW_BATTERY_POWER = 601,
+        // POWER_SAVING_MODE,
+        // OFFLINE_MODE,
+        // BACKUP_IN_PROGRESS,
+        // LOW_MEMORY
+        return true;
+    } catch (...) {
+        Exception::handle(explanation);
+    }
+    emit error(getProfileName(), explanation.c_str(), Buteo::SyncResults::INTERNAL_ERROR);
     return false;
 }
 
 bool ButeoBridge::init()
 {
+    try {
+        if (getenv("SYNCEVOLUTION_DEBUG")) {
+            LoggerBase::instance().setLevel(Logger::DEBUG);
+        }
+
+        // determine parameters for configuration
+        std::string url;
+        if (getProfileName() == "google-calendar") {
+            m_config = "google";
+            url = "syncURL=https://www.google.com/calendar/dav/%u/user/";
+        } else {
+            return false;
+        }
+
+        // configure local sync of calendar with CalDAV
+        Cmdline target(std::cout, std::cerr,
+                       "buteo-sync",
+                       "--template", "SyncEvolution",
+                       "--sync-property", url.c_str(),
+                       "--source-property", "type=CalDAV",
+                       StringPrintf("source-config@%s", m_config.c_str()).c_str(),
+                       "calendar",
+                       NULL);
+        bool res = target.parse() && target.run();
+        if (!res) {
+            SE_THROW("client configuration failed");
+        }
+        Cmdline server(std::cout, std::cerr,
+                       "buteo-sync",
+                       "--template", "SyncEvolution",
+                       "--sync-property", "peerIsClient=1",
+                       "--sync-property", StringPrintf("syncURL=local://@%s", m_config.c_str()).c_str(),
+                       m_config.c_str(),
+                       "calendar",
+                       NULL);
+        res = server.parse() && server.run();
+        if (!res) {
+            SE_THROW("server configuration failed");
+        }
+        return true;
+    } catch (...) {
+        Exception::handle();
+    }
     return false;
 }
 
 bool ButeoBridge::uninit()
 {
-    return false;
+    // nothing to do
+    return true;
 }
 
 void ButeoBridge::connectivityStateChanged(Sync::ConnectivityType type,
@@ -43,5 +162,37 @@ extern "C" void destroyPlugin(ButeoBridge *client)
 {
     delete client;
 }
+
+#ifdef ENABLE_UNIT_TESTS
+
+/**
+ * The library containing this test is not normally
+ * linked into client-test. To use the test, compile
+ * client-test manually without -Wl,-as-needed
+ * and add libsyncevo-buteo.so.
+ */
+class ButeoTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(ButeoTest);
+    CPPUNIT_TEST(init);
+    CPPUNIT_TEST_SUITE_END();
+
+    std::string m_testDir;
+
+public:
+    ButeoTest() :
+        m_testDir("ButeoTest")
+    {}
+
+    void init() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        Buteo::SyncProfile profile("google-calendar");
+        ButeoBridge client("google-calendar", profile, NULL);
+        CPPUNIT_ASSERT(client.init());
+    }
+};
+
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(ButeoTest);
+
+#endif // ENABLE_UNIT_TESTS
 
 SE_END_CXX

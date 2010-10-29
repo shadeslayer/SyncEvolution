@@ -18,8 +18,8 @@ class ButeoBridge : public Buteo::ClientPlugin
 
  public:
     ButeoBridge(const QString &pluginName,
-                const Buteo::SyncProfile &profile,
-                Buteo::PluginCbInterface *cbInterface);
+                 const Buteo::SyncProfile &profile,
+                 Buteo::PluginCbInterface *cbInterface);
 
     // implementation of ClientPlugin interface
     virtual bool startSync();
@@ -29,6 +29,12 @@ class ButeoBridge : public Buteo::ClientPlugin
 public slots:
     virtual void connectivityStateChanged(Sync::ConnectivityType type,
                                           bool state);
+
+ private:
+    /** credentials set in constructor from profile */
+    std::string m_username, m_password;
+    /** config name to be used by sync, set in init() */
+    std::string m_config;
 };
 
 extern "C" ButeoBridge *createPlugin(const QString &pluginName,
@@ -38,4 +44,4 @@ extern "C" void destroyPlugin(ButeoBridge *client);
 
 } // namespace SyncEvo
 
-#endif // INCL_SYNCEVOBUTEO
+#endif // INCL_SYNCEVO_BUTEOBRIDGE
