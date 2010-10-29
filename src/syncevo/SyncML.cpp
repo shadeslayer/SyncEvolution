@@ -151,6 +151,9 @@ std::string Status2String(SyncMLStatus status)
     case STATUS_DATA_MERGED:
         error = "data merged";
         break;
+    case STATUS_UNAUTHORIZED:
+        error = "authorization failed";
+        break;
     case STATUS_FORBIDDEN:
         error = "access denied";
         break;

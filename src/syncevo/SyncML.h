@@ -108,6 +108,8 @@ enum SyncMLStatus {
     /** external data has been merged */
     STATUS_DATA_MERGED = 207,
 
+    /** The request requires user authentication. */
+    STATUS_UNAUTHORIZED = 401,
     /** forbidden / access denied */
     STATUS_FORBIDDEN = 403,
     /** object not found / unassigned field */
@@ -122,6 +124,11 @@ enum SyncMLStatus {
     STATUS_DATASTORE_FAILURE = 510,
     /** database / memory full error */
     STATUS_FULL = 420,
+
+    /* sysync error codes also used by SyncEvolution */
+
+    /** transport failure, sysync::LOCERR_TRANSPFAIL */
+    STATUS_TRANSPORT_FAILURE = 20043,
 
     /* error codes in the range reserved by Synthesis for the application follow */
 
