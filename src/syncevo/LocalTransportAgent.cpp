@@ -138,6 +138,16 @@ void LocalTransportAgent::run()
                            boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
                            true);
 
+        // Copy some changes from main config: this is the only way
+        // how they can be set temporarily during a sync.
+        // TODO: find a way to have separate temporary settings
+        // for both sides.
+        client.setLogLevel(m_server->getLogLevel(), true);
+        client.setUsername(m_server->getUsername(), true);
+        client.setPassword(m_server->getPassword(), true);
+        client.setPreventSlowSync(m_server->getPreventSlowSync(), true);
+        client.setPrintChanges(m_server->getPrintChanges(), true);
+
         // disable all sources temporarily, will be enabled by next loop
         BOOST_FOREACH(const string &targetName, client.getSyncSources()) {
             SyncSourceNodes targetNodes = client.getSyncSourceNodes(targetName);
@@ -178,8 +188,6 @@ void LocalTransportAgent::run()
         }
 
         // now sync
-        client.setLogLevel(m_server->getLogLevel(), true);
-        client.setPrintChanges(m_server->getPrintChanges(), true);
         client.sync(&m_clientReport);
     } catch(...) {
         SyncMLStatus status = m_clientReport.getStatus();
