@@ -10,6 +10,8 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <syncevo/TransportAgent.h>
+
 SE_BEGIN_CXX
 
 /**
@@ -25,14 +27,16 @@ public:
 
     virtual std::string getURL()
     {
+        std::string url;
         if (m_context) {
             vector<string> urls = m_context->getSyncURL();
-            return urls.empty() ?
-                "" :
-                urls.front();
-        } else {
-            return "";
+            if (!urls.empty()) {
+                url = urls.front();
+                std::string username = m_context->getUsername();
+                boost::replace_all(url, "%u", username);
+            }
         }
+        return url;
     }
 
     virtual bool verifySSLHost()
@@ -286,8 +290,10 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
             // created
             break;
         default:
-            SE_THROW(std::string("unexpected status for insert: ") +
-                     Neon::Status2String(req.getStatus()));
+            SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+                                      std::string("unexpected status for insert: ") +
+                                      Neon::Status2String(req.getStatus()),
+                                      SyncMLStatus(req.getStatus()->code));
             break;
         }
         rev = getETag(req);
@@ -331,8 +337,10 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
             SE_THROW("unexpected creation instead of update");
             break;
         default:
-            SE_THROW(std::string("unexpected status for update: ") +
-                     Neon::Status2String(req.getStatus()));
+            SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+                                      std::string("unexpected status for update: ") +
+                                      Neon::Status2String(req.getStatus()),
+                                      SyncMLStatus(req.getStatus()->code));
             break;
         }
         rev = getETag(req);
@@ -401,8 +409,10 @@ void WebDAVSource::removeItem(const string &uid)
         // the expected outcome
         break;
     default:
-        SE_THROW(std::string("unexpected status for removal: ") +
-                 Neon::Status2String(req.getStatus()));
+        SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+                                  std::string("unexpected status for removal: ") +
+                                  Neon::Status2String(req.getStatus()),
+                                  SyncMLStatus(req.getStatus()->code));
         break;
     }
 }

@@ -256,11 +256,22 @@ int Session::propIterator(void *userdata,
 
 void Session::check(int error)
 {
-    if (error) {
+    switch (error) {
+    case NE_AUTH:
+        SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+                                  StringPrintf("Neon error code %d: %s",
+                                               error,
+                                               ne_get_error(m_session)),
+                                  STATUS_UNAUTHORIZED);
+        break;
+    case NE_OK:
+        break;
+    default:
         SE_THROW_EXCEPTION(TransportException,
                            StringPrintf("Neon error code %d: %s",
                                         error,
                                         ne_get_error(m_session)));
+        break;
     }
 }
 
@@ -426,7 +437,9 @@ void Request::check(int error)
 {
     m_session.check(error);
     if (getStatus()->klass != 2) {
-        SE_THROW(std::string("bad status: ") + Status2String(getStatus()));
+        SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+                                  std::string("bad status: ") + Status2String(getStatus()),
+                                  SyncMLStatus(getStatus()->code));
     }
 }
 
