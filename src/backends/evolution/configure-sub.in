@@ -75,16 +75,12 @@ AM_CONDITIONAL([ENABLE_ECAL], [test "$enable_ecal" == "yes"])
 if test "$enable_ecal" = "yes"; then
         test "x${ECALFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ecal requires pkg-config information for libecal, which was not found"])
         AC_DEFINE(ENABLE_ECAL, 1, [libecal available])
+        AC_DEFINE(ENABLE_ICAL, 1, [libical in use])
         enable_evo="yes"
 else
         ECAL_CFLAGS=
         ECAL_LIBS=
 fi
-
-PKG_CHECK_MODULES(LIBICAL_AVAILABLE,
-                  libical >= 0.43,
-                  AC_DEFINE(HAVE_LIBICAL_R, 1, [have recent enough libical with _r variants]),
-                  pass)
 
 if test "$enable_evo" = "yes"; then
         need_glib="yes"

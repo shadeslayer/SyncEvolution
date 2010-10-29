@@ -71,7 +71,7 @@ class Unref {
 #ifdef ENABLE_EBOOK
     static void unref(EBookQuery *pointer) { e_book_query_unref(pointer); }
 #endif
-#ifdef ENABLE_ECAL
+#ifdef ENABLE_ICAL
     static void unref(icalcomponent *pointer) { icalcomponent_free(pointer); }
     static void unref(icaltimezone *pointer) { icaltimezone_free(pointer, 1); }
 #endif
