@@ -98,6 +98,12 @@ public:
 
     bool run();
 
+    /**
+     * sync report as owned by this instance, not filled in unless
+     * run() executed a sync
+     */
+    const SyncReport &getReport() const { return m_report; }
+
     /** the run() call modified configurations (added, updated, removed) */
     bool configWasModified() const { return m_configModified; }
 
@@ -140,6 +146,9 @@ protected:
 
     //array to store pointers of arguments
     boost::scoped_array<const char *> m_argvArray;
+
+    /** result of sync, if one was executed */
+    SyncReport m_report;
 
     Bool m_quiet;
     Bool m_dryrun;

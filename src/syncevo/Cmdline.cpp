@@ -1179,7 +1179,7 @@ bool Cmdline::run() {
                 return false;
             }
 
-            return (context->sync() == STATUS_OK);
+            return (context->sync(&m_report) == STATUS_OK);
         }
     }
 
