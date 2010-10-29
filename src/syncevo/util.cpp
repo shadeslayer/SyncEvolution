@@ -669,35 +669,43 @@ char *Strncpy(char *dest, const char *src, size_t n)
 }
 
 
-SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger)
+SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger, std::string *explanation)
 {
     // any problem here is a fatal local problem, unless set otherwise
     // by the specific exception
     SyncMLStatus new_status = SyncMLStatus(STATUS_FATAL + sysync::LOCAL_STATUS_CODE);
+    std::string error;
 
     try {
         throw;
     } catch (const TransportException &ex) {
         SE_LOG_DEBUG(logger, NULL, "TransportException thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        SE_LOG_ERROR(logger, NULL, "%s", ex.what());
+        error = ex.what();
         new_status = SyncMLStatus(sysync::LOCERR_TRANSPFAIL);
     } catch (const BadSynthesisResult &ex) {
         new_status = SyncMLStatus(ex.result());
-        SE_LOG_DEBUG(logger, NULL, "error code from Synthesis engine %s",
-                     Status2String(new_status).c_str());
+        error = StringPrintf("error code from Synthesis engine %s",
+                             Status2String(new_status).c_str());
     } catch (const StatusException &ex) {
         new_status = ex.syncMLStatus();
-        SE_LOG_DEBUG(logger, NULL, "error code from SyncEvolution %s and exception thrown at %s:%d",
-                     Status2String(new_status).c_str(), ex.m_file.c_str(), ex.m_line);
+        SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
+                     ex.m_file.c_str(), ex.m_line);
+        error = StringPrintf("error code from SyncEvolution %s",
+                             Status2String(new_status).c_str());
     } catch (const Exception &ex) {
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        SE_LOG_ERROR(logger, NULL, "%s", ex.what());
+        error = ex.what();
     } catch (const std::exception &ex) {
-        SE_LOG_ERROR(logger, NULL, "%s", ex.what());
+        error = ex.what();
     } catch (...) {
-        SE_LOG_ERROR(logger, NULL, "unknown error");
+        error = "unknown error";
+    }
+    SE_LOG_ERROR(logger, NULL, "%s", error.c_str());
+
+    if (explanation) {
+        *explanation = error;
     }
 
     if (status && *status == STATUS_OK) {

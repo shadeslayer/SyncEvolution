@@ -348,9 +348,11 @@ class Exception : public std::runtime_error
      * Returns updated status code.
      *
      * @param logger    the class which does the logging
+     * @retval explanation   set to explanation for problem, if non-NULL
      */
-    static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL);
+    static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL, std::string *explanation = NULL);
     static SyncMLStatus handle(Logger *logger) { return handle(NULL, logger); }
+    static SyncMLStatus handle(std::string &explanation) { return handle(NULL, NULL, &explanation); }
 };
 
 /**
