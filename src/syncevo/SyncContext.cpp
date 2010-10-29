@@ -1275,13 +1275,15 @@ public:
     // @param excludeSource   when non-empty, limit preparation to that source
     void syncPrepare(const string &excludeSource = "") {
         if (m_logdir.getLogfile().size() &&
-            m_doLogging) {
+            (m_client.getDumpData() || m_doLogging)) {
             // dump initial databases
             dumpDatabases("before", &SyncSourceReport::m_backupBefore, excludeSource);
-            // compare against the old "after" database dump
-            dumpLocalChanges("", "after", "before", excludeSource,
-                             StringPrintf("%s data changes to be applied during synchronization:\n",
-                                          m_client.isLocalSync() ? m_client.getContextName().c_str() : "Local"));
+            if (m_doLogging) {
+                // compare against the old "after" database dump
+                dumpLocalChanges("", "after", "before", excludeSource,
+                                 StringPrintf("%s data changes to be applied during synchronization:\n",
+                                              m_client.isLocalSync() ? m_client.getContextName().c_str() : "Local"));
+            }
         }
     }
 
@@ -1294,21 +1296,25 @@ public:
             report->setStatus(status == 0 ? STATUS_HTTP_OK : status);
         }
 
+        // dump database after sync if explicitly enabled or
+        // needed for comparison;
+        // in the latter case only if dumping it at the beginning completed
+        if (m_client.getDumpData() ||
+            (m_doLogging && m_reportTodo && !m_prepared.empty())) {
+            try {
+                dumpDatabases("after", &SyncSourceReport::m_backupAfter);
+            } catch (...) {
+                Exception::handle();
+                // not exactly sure what the problem was, but don't
+                // try it again
+                m_prepared.clear();
+            }
+        }
+
         if (m_doLogging) {
-            // dump database after sync, but not if already dumping it at the beginning didn't complete
-            if (m_reportTodo && !m_prepared.empty()) {
-                try {
-                    dumpDatabases("after", &SyncSourceReport::m_backupAfter);
-                } catch (...) {
-                    Exception::handle();
-                    // not exactly sure what the problem was, but don't
-                    // try it again
-                    m_prepared.clear();
-                }
-                if (report) {
-                    // update report with more recent information about m_backupAfter
-                    updateSyncReport(*report);
-                }
+            if (m_reportTodo && !m_prepared.empty() && report) {
+                // update report with more recent information about m_backupAfter
+                updateSyncReport(*report);
             }
 
             // ensure that stderr is seen again, also writes out session status
@@ -3684,8 +3690,10 @@ void SyncContext::status()
     if (found) {
         try {
             sourceList.setPath(prevLogdir);
-            sourceList.dumpDatabases("current", NULL);
-            sourceList.dumpLocalChanges("", "after", "current", "");
+            if (getPrintChanges() || getDumpData()) {
+                sourceList.dumpDatabases("current", NULL);
+                sourceList.dumpLocalChanges("", "after", "current", "");
+            }
         } catch(...) {
             Exception::handle();
         }
@@ -3801,8 +3809,10 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
         source->open();
     }
 
-    if (!m_quiet) {
+    if (!m_quiet || getDumpData()) {
         sourceList.dumpDatabases("current", NULL);
+    }
+    if (!m_quiet) {
         sourceList.dumpLocalChanges(dirname, "current", datadump, "",
                                     "Data changes to be applied locally during restore:\n",
                                     "CLIENT_TEST_LEFT_NAME='current data' "

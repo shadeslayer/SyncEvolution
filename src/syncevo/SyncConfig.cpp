@@ -1128,6 +1128,10 @@ static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
                                                "1");
+static BoolConfigProperty syncPropDumpData("dumpData",
+                                           "enables or disables the automatic backup of database content\n"
+                                           "before and after a sync session (always enabled if printChanges is enabled)",
+                                           "1");
 static SecondsConfigProperty syncPropRetryDuration("RetryDuration",
                                           "The total amount of time in seconds in which the client\n"
                                           "tries to get a response from the server.\n"
@@ -1308,6 +1312,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropLogDir);
         registry.push_back(&syncPropLogLevel);
         registry.push_back(&syncPropPrintChanges);
+        registry.push_back(&syncPropDumpData);
         registry.push_back(&syncPropMaxLogDirs);
         registry.push_back(&syncPropAutoSync);
         registry.push_back(&syncPropAutoSyncInterval);
@@ -1625,6 +1630,8 @@ void SyncConfig::setPeerName(const string &name) { syncPropPeerName.setProperty(
 
 bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getPropertyValue(*getNode(syncPropPrintChanges)); }
 void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*getNode(syncPropPrintChanges), value, temporarily); }
+bool SyncConfig::getDumpData() const { return syncPropDumpData.getPropertyValue(*getNode(syncPropDumpData)); }
+void SyncConfig::setDumpData(bool value, bool temporarily) { syncPropDumpData.setProperty(*getNode(syncPropDumpData), value, temporarily); }
 std::string SyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*getNode(syncPropWebURL)); }
 void SyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*getNode(syncPropWebURL), url, temporarily); }
 std::string SyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*getNode(syncPropIconURI)); }

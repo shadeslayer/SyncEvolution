@@ -1225,6 +1225,9 @@ class SyncConfig {
     virtual bool getPrintChanges() const;
     virtual void setPrintChanges(bool value, bool temporarily = false);
 
+    virtual bool getDumpData() const;
+    virtual void setDumpData(bool value, bool temporarily = false);
+
     virtual std::string getWebURL() const;
     virtual void setWebURL(const std::string &url, bool temporarily = false);
 
