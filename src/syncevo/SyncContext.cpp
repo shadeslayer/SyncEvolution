@@ -2542,7 +2542,13 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         const char *user = getUsername();
         const char *password = getPassword();
 
-        if (user[0] || password[0]) {
+        /*
+         * Do not check username/pwd if this local sync or over
+         * bluetooth transport. Need credentials for checking.
+         */
+        if (!m_localSync &&
+            !boost::starts_with(getUsedSyncURL(), "obex-bt") &&
+            (user[0] || password[0])) {
             // require authentication with the configured password
             substTag(xml, "defaultauth",
                      "<requestedauth>md5</requestedauth>\n"
@@ -2761,13 +2767,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
          * */
         if ( getPeerIsClient()) {
             m_serverMode = true;
-            /* Do not check username/pwd if this is a server session over
-             * bluetooth transport or local sync */
-            if (boost::starts_with (getUsedSyncURL(), "obex-bt") ||
-                m_localSync) {
-                setUsername ("", true);
-                setPassword ("", true);
-            }
         } else if (m_localSync && !m_agent) {
             throwError("configuration error, syncURL = local can only be used in combination with peerIsClient = 1");
         }
