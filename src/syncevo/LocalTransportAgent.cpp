@@ -157,6 +157,7 @@ void LocalTransportAgent::run()
         client.setPassword(m_server->getPassword(), true);
         client.setPreventSlowSync(m_server->getPreventSlowSync(), true);
         client.setPrintChanges(m_server->getPrintChanges(), true);
+        client.setDumpData(m_server->getDumpData(), true);
 
         // disable all sources temporarily, will be enabled by next loop
         BOOST_FOREACH(const string &targetName, client.getSyncSources()) {
