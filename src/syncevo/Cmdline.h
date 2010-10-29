@@ -72,6 +72,7 @@ public:
      */
     Cmdline(int argc, const char * const *argv, ostream &out, ostream &err);
     Cmdline(const vector<string> &args, ostream &out, ostream &err);
+    Cmdline(ostream &out, ostream &err, const char *arg, ...);
 
     /**
      * parse the command line options

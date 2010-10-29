@@ -76,6 +76,28 @@ Cmdline::Cmdline(const vector<string> &args, ostream &out, ostream &err) :
     m_argv = m_argvArray.get();
 }
 
+Cmdline::Cmdline(ostream &out, ostream &err, const char *arg, ...) :
+    m_out(out),
+    m_err(err),
+    m_validSyncProps(SyncConfig::getRegistry()),
+    m_validSourceProps(SyncSourceConfig::getRegistry())
+{
+    va_list argList;
+    va_start(argList, arg);
+    for (const char *curr = arg;
+         curr;
+         curr = va_arg(argList, const char *)) {
+        m_args.push_back(curr);
+    }
+    va_end(argList);
+    m_argc = m_args.size();
+    m_argvArray.reset(new const char *[m_args.size()]);
+    for (int i = 0; i < m_argc; i++) {
+        m_argvArray[i] = m_args[i].c_str();
+    }
+    m_argv = m_argvArray.get();
+}
+
 bool Cmdline::parse()
 {
     vector<string> parsed;
