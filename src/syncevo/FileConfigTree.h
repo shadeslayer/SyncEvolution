@@ -20,7 +20,8 @@
 #ifndef INCL_EVOLUTION_FILE_CONFIG_TREE
 # define INCL_EVOLUTION_FILE_CONFIG_TREE
 
-#include <ConfigTree.h>
+#include <syncevo/ConfigTree.h>
+#include <syncevo/SyncConfig.h>
 
 #include <string>
 #include <map>
@@ -41,11 +42,14 @@ class FileConfigTree : public ConfigTree {
      * @param root              absolute filesystem path for
      *                          .syncj4/evolution or .config/syncevolution
      * @param peer              the relative path to the peer configuration
-     * @param oldLayout         true: use pre-0.7 file names
+     * @param layout            determines file names to be used;
+     *                          HTTP_SERVER_LAYOUT and SHARED_LAYOUT are the same except
+     *                          that SHARED_LAYOUT creates the "peers" directory during
+     *                          flushing
      */
     FileConfigTree(const string &root,
                    const string &peer,
-                   bool oldLayout);
+                   SyncConfig::Layout layout);
 
     void setReadOnly(bool readonly) { m_readonly = readonly; }
     bool getReadOnly() const { return m_readonly; }
@@ -70,7 +74,7 @@ class FileConfigTree : public ConfigTree {
  private:
     const string m_root;
     const string m_peer;
-    const bool m_oldLayout;
+    SyncConfig::Layout m_layout;
     bool m_readonly;
 
     typedef map< string, boost::shared_ptr<ConfigNode> > NodeCache_t;

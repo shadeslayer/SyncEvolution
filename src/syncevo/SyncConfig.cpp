@@ -203,7 +203,7 @@ SyncConfig::SyncConfig(const string &peer,
         }
         m_tree.reset(new FileConfigTree(root,
                                         m_peerPath.empty() ? m_contextPath : m_peerPath,
-                                        m_layout == SYNC4J_LAYOUT));
+                                        m_layout));
     }
 
     string path;
@@ -319,7 +319,7 @@ string SyncConfig::getRootPath() const
 void SyncConfig::addPeers(const string &root,
                           const std::string &configname,
                           SyncConfig::ConfigList &res) {
-    FileConfigTree tree(root, "", false);
+    FileConfigTree tree(root, "", SyncConfig::HTTP_SERVER_LAYOUT);
     list<string> servers = tree.getChildren("");
     BOOST_FOREACH(const string &server, servers) {
         // sanity check: only list server directories which actually

@@ -33,7 +33,7 @@ SE_BEGIN_CXX
 class VolatileConfigTree : public FileConfigTree {
  public:
  VolatileConfigTree() :
-    FileConfigTree("/dev/null", "", false)
+    FileConfigTree("/dev/null", "", SyncConfig::SHARED_LAYOUT)
         {}
 
     virtual void flush() {}

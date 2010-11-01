@@ -1364,7 +1364,6 @@ class SyncConfig {
     virtual const char*  getDevType() const;
     /**@}*/
 
-private:
     enum Layout {
         SYNC4J_LAYOUT,        /**< .syncj4/evolution/<server>, SyncEvolution <= 0.7.x */
         HTTP_SERVER_LAYOUT,   /**< .config/syncevolution/<server> with sources
@@ -1374,6 +1373,7 @@ private:
                                  SyncEvolution >= 1.0 */
     };
 
+private:
     /**
      * scans for peer configurations
      * @param root         absolute directory path
