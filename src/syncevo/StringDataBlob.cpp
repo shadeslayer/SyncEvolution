@@ -25,6 +25,22 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
+class FinalizeWrite {
+    boost::shared_ptr<std::string> m_data;
+public:
+    FinalizeWrite(const boost::shared_ptr<std::string> &data) :
+        m_data(data)
+    {}
+
+    void operator() (std::ostringstream *stream)
+    {
+        if (stream) {
+            m_data->assign(stream->str());
+            delete stream;
+        }
+    }
+};
+
 StringDataBlob::StringDataBlob(const std::string &name,
                                const boost::shared_ptr<std::string> &data,
                                bool readonly) :
@@ -36,7 +52,7 @@ StringDataBlob::StringDataBlob(const std::string &name,
  
 boost::shared_ptr<std::ostream> StringDataBlob::write()
 {
-    SE_THROW("internal error: StringDataBlob::write() not implemented");
+    return boost::shared_ptr<std::ostringstream>(new ostringstream, FinalizeWrite(m_data));
 }
 
 boost::shared_ptr<std::istream> StringDataBlob::read()

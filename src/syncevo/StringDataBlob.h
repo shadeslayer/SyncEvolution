@@ -47,6 +47,7 @@ class StringDataBlob : public DataBlob
                    const boost::shared_ptr<std::string> &data,
                    bool readonly);
 
+    /** writing ends and data is updated when the ostream pointer is destructed */
     virtual boost::shared_ptr<std::ostream> write();
     virtual boost::shared_ptr<std::istream> read();
 
