@@ -53,6 +53,12 @@ struct Message
 
     /** length including header */
     size_t m_length;
+
+    /** payload */
+    char m_data[0];
+
+    /** length excluding header */
+    size_t getDataLength() const { return m_length - offsetof(Message, m_data); }
 };
 
 
@@ -118,13 +124,30 @@ class LocalTransportAgent : public TransportAgent
     Message::Type m_sendType;
 
     /** buffer for message, with total length of buffer as size */
-    SmartPtr<Message *, Message *, UnrefFree<Message> > m_receiveBuffer;    
-    size_t m_receiveBufferSize;
+    class Buffer {
+    public:
+    Buffer() :
+        m_size(0),
+        m_used(0)
+        {}    
+        /** actual message */
+        SmartPtr<Message *, Message *, UnrefFree<Message> > m_message;
+        /** number of allocated bytes */
+        size_t m_size;
+        /** number of valid bytes in buffer */
+        size_t m_used;
 
-    /** number of received bytes in buffer */
-    size_t m_receivedBytes;
+        bool haveMessage() {
+            return m_used >= sizeof(Message) &&
+                m_message->m_length <= m_used;
+        }
+    } m_receiveBuffer;
 
-    /** read/write stream socket for sending/receiving messages */
+    /**
+     * Read/write stream socket for sending/receiving messages.
+     * Data is sent as struct Message (includes type and length),
+     * with per-type payload.
+     */
     int m_messageFD;
 
     /** 0 in client, child PID in server */
@@ -133,6 +156,20 @@ class LocalTransportAgent : public TransportAgent
     SyncReport m_clientReport;
 
     void run();
+
+    /**
+     * Write Message with given type into file descriptor.
+     * Retries until error or all data written.
+     */
+    void writeMessage(int fd, Message::Type type, const char *data, size_t len);
+
+    /**
+     * Read bytes into buffer until complete Message
+     * is assembled. Will read additional bytes beyond
+     * end of that Message if available. An existing
+     * complete message is not overwritten.
+     */
+    void readMessage(int fd, Buffer &buffer);
 };
 
 SE_END_CXX
