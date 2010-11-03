@@ -48,7 +48,8 @@ struct Message
         MSG_SYNCML_XML,
         MSG_SYNCML_WBXML,
         MSG_PASSWORD_REQUEST,
-        MSG_PASSWORD_RESPONSE        
+        MSG_PASSWORD_RESPONSE,
+        MSG_SYNC_REPORT
     } m_type;
 
     /** length including header */
@@ -150,6 +151,15 @@ class LocalTransportAgent : public TransportAgent
      */
     int m_messageFD;
 
+    /**
+     * Second read/write stream socket for transferring final
+     * status. Same communication method as for m_messageFD.
+     * Necessary because the regular communication
+     * channel needs to be closed in case of a failure, to
+     * notify the peer.
+     */
+    int m_statusFD;
+
     /** 0 in client, child PID in server */
     pid_t m_pid;
 
@@ -170,6 +180,12 @@ class LocalTransportAgent : public TransportAgent
      * complete message is not overwritten.
      */
     void readMessage(int fd, Buffer &buffer);
+
+    /** utility function for parent: copy child's report into m_clientReport */
+    void receiveChildReport();
+
+    /** utility function for parent: check m_clientReport and log/throw errors */
+    void checkChildReport();
 };
 
 SE_END_CXX
