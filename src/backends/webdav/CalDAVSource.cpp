@@ -7,6 +7,7 @@
 #ifdef ENABLE_DAV
 
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -74,6 +75,7 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
                              std::string &etag,
                              std::string &data)
 {
+    Event::unescapeRecurrenceID(data);
     eptr<icalcomponent> calendar(icalcomponent_new_from_string(data.c_str()),
                                  "iCalendar 2.0");
     std::string davLUID = path2luid(Neon::URI::parse(href).m_path);
@@ -190,7 +192,18 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         // Case 2 is not currently handled and causes the sync to fail.
         // This is in line with the current design ("concurrency detected,
         // causes error, fixed by trying again in slow sync").
-        InsertItemResult res = insertItem("", item, true);
+        InsertItemResult res;
+        if (subid.empty()) {
+            // avoid re-encoding item data
+            res = insertItem("", item, true);
+        } else {
+            // sanitize item first: when adding child event without parent,
+            // then the RECURRENCE-ID confuses Google
+            eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(newEvent->m_calendar)));
+            std::string data = icalstr.get();
+            Event::escapeRecurrenceID(data);
+            res = insertItem("", data, true);
+        }
         subres.m_uid = res.m_luid;
         subres.m_subid = subid;
         subres.m_revision = res.m_revision;
@@ -281,8 +294,17 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         icalcomponent_merge_component(event.m_calendar,
                                       newEvent->m_calendar.release()); // function destroys merged calendar
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
+        std::string data = icalstr.get();
+
+        // Google gets confused when adding a child without parent,
+        // replace in that case.
+        bool haveParent = event.m_subids.find("") != event.m_subids.end();
+        if (!haveParent) {
+            Event::escapeRecurrenceID(data);
+        }
+
         // TODO: avoid updating item on server immediately?
-        InsertItemResult res = insertItem(event.m_DAVluid, icalstr.get(), true);
+        InsertItemResult res = insertItem(event.m_DAVluid, data, true);
         if (res.m_merged ||
             res.m_luid != event.m_DAVluid) {
             // should not merge with anything, if so, our cache was invalid
@@ -333,6 +355,20 @@ void CalDAVSource::readSubItem(const std::string &davLUID, const std::string &su
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(calendar)));
         item = icalstr.get();
     }
+}
+
+void CalDAVSource::Event::escapeRecurrenceID(std::string &data)
+{
+    boost::replace_all(data,
+                       "\nRECURRENCE-ID",
+                       "\nX-SYNCEVOLUTION-RECURRENCE-ID");
+}
+
+void CalDAVSource::Event::unescapeRecurrenceID(std::string &data)
+{
+    boost::replace_all(data,
+                       "\nX-SYNCEVOLUTION-RECURRENCE-ID",
+                       "\nRECURRENCE-ID");
 }
 
 std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string &subid)
@@ -433,6 +469,7 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
     if (!event.m_calendar) {
         std::string item;
         readItem(event.m_DAVluid, item, true);
+        Event::unescapeRecurrenceID(item);
         event.m_calendar.set(icalcomponent_new_from_string(item.c_str()),
                              "parsing iCalendar 2.0");
         // sequence number might have been increased by last save,
@@ -559,6 +596,7 @@ int CalDAVSource::backupItem(ItemCache &cache,
                              std::string &etag,
                              std::string &data)
 {
+    Event::unescapeRecurrenceID(data);
     std::string luid = path2luid(Neon::URI::parse(href).m_path);
     std::string rev = ETag2Rev(etag);
     cache.backupItem(data, luid, rev);

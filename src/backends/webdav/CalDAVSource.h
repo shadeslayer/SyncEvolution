@@ -111,11 +111,26 @@ class CalDAVSource : public WebDAVSource,
         /** UID, empty if none */
         static std::string getUID(icalcomponent *icomp);
         static void setUID(icalcomponent *icomp, const std::string &uid);
+
+        /** rename RECURRENCE-ID to X-SYNCEVOLUTION-RECURRENCE-ID and vice versa */
+        static void escapeRecurrenceID(std::string &data);
+        static void unescapeRecurrenceID(std::string &data);
     };
 
     /**
      * A cache of information about each merged item. Maps from
-     * WebDAVSource local ID to Event.
+     * WebDAVSource local ID to Event. Items in the cache are in the
+     * format as expected by the local side, with RECURRENCE-ID.
+     *
+     * This is not necessarily how the data is sent to the server:
+     * - RECURRENCE-ID in an item which has no master event
+     *   is replaced by X-SYNCEVOLUTION-RECURRENCE-ID because
+     *   Google gets confused by a single detached event without
+     *   parent (Event::escapeRecurrenceID()).
+     *
+     * When retrieving an EVENT from the server this is substituted
+     * again before parsing (depends on server preserving X-
+     * extensions, see Event::unescapeRecurrenceID()).
      */
     class EventCache : public std::map<std::string, boost::shared_ptr<Event> >
     {
