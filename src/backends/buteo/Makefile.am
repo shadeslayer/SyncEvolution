@@ -19,7 +19,8 @@ BUILT_SOURCES = ButeoBridge.moc.cpp
 
 libsyncevo_buteo_client_la_SOURCES = \
 	ButeoBridge.h \
-	ButeoBridge.cpp \
+	ButeoBridge.cpp
+nodist_libsyncevo_buteo_client_la_SOURCES = \
 	$(BUILT_SOURCES)
 
 libsyncevo_buteo_client_la_LIBADD = $(BUTEO_LIBS) $(QT_LIBS) ../../syncevo/libsyncevolution.la
