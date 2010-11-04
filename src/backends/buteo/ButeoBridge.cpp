@@ -110,7 +110,7 @@ bool ButeoBridge::init()
         // determine parameters for configuration
         std::string url;
         if (getProfileName() == "google-calendar") {
-            m_config = "google";
+            m_config = "google-calendar";
             url = "syncURL=https://www.google.com/calendar/dav/%u/user/";
         } else {
             return false;
