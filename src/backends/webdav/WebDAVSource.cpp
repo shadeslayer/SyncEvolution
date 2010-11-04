@@ -332,8 +332,9 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
             // the expected outcome, as we were asking for an overwrite
             break;
         case 201:
-            // Huh? Shouldn't happen.
-            SE_THROW("unexpected creation instead of update");
+            // Huh? Shouldn't happen, but Google sometimes reports it
+            // even when updating an item. Accept it.
+            // SE_THROW("unexpected creation instead of update");
             break;
         default:
             SE_THROW_EXCEPTION_STATUS(TransportStatusException,
