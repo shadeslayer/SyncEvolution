@@ -68,11 +68,21 @@ class CalDAVSource : public WebDAVSource,
      */
     class Event : boost::noncopyable {
     public:
+        Event() :
+            m_sequence(0)
+        {}
+
         /** the ID used by WebDAVSource */
         std::string m_DAVluid;
 
+        /** the iCalendar 2.0 UID */
+        std::string m_UID;
+
         /** revision string in WebDAVSource */
         std::string m_etag;
+
+        /** maximum sequence number of any sub item */
+        long m_sequence;
 
         /**
          * the list of simplified RECURRENCE-IDs (without time zone,
@@ -93,6 +103,14 @@ class CalDAVSource : public WebDAVSource,
 
         /** RECURRENCE-ID, empty if none */
         static std::string getSubID(icalcomponent *icomp);
+
+        /** SEQUENCE number, 0 if none */
+        static int getSequence(icalcomponent *icomp);
+        static void setSequence(icalcomponent *icomp, int sequenceval);
+
+        /** UID, empty if none */
+        static std::string getUID(icalcomponent *icomp);
+        static void setUID(icalcomponent *icomp, const std::string &uid);
     };
 
     /**
@@ -104,6 +122,8 @@ class CalDAVSource : public WebDAVSource,
       public:
         EventCache() : m_initialized(false) {}
         bool m_initialized;
+
+        iterator findByUID(const std::string &uid);
     } m_cache;
 
     Event &loadItem(const std::string &davLUID);

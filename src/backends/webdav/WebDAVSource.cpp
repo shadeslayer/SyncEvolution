@@ -270,7 +270,6 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
 
     std::string result;
     if (uid.empty()) {
-        // TODO: set UID if not present
         // Pick a random resource name,
         // catch unexpected conflicts via If-None-Match: *.
         new_uid = UUID();
