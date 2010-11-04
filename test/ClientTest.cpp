@@ -3573,12 +3573,16 @@ static string mangleICalendar20(const char *data)
     const static string sequence("\nSEQUENCE:XXX");
     offset = item.find(sequence);
     if (offset != item.npos) {
-        // Increment sequence number in steps of 100 to ensure that our
-        // new item is considered more recent than any corresponding
-        // item in the source. Some storages (Google CalDAV) check that.
-        static int counter = 100;
-        item.replace(offset, sequence.size(), StringPrintf("\nSEQUENCE:%d", counter));
-        counter += 100;
+        if (getenv("CLIENT_TEST_INCREASE_SEQUENCE")) {
+            // Increment sequence number in steps of 100 to ensure that our
+            // new item is considered more recent than any corresponding
+            // item in the source. Some storages (Google CalDAV) check that.
+            static int counter = 100;
+            item.replace(offset, sequence.size(), StringPrintf("\nSEQUENCE:%d", counter));
+            counter += 100;
+        } else {
+            item.replace(offset, sequence.size(), "\nSEQUENCE:1");
+        }
     }
 
     return item;
