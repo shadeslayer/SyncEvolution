@@ -53,6 +53,13 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
         "</C:comp>\n"
         "</C:calendar-data>\n"
         "</D:prop>\n"
+        // filter expected by Yahoo! Calendar
+        "<C:filter>\n"
+        "<C:comp-filter name=\"VCALENDAR\">\n"
+        "<C:comp-filter name=\"VEVENT\">\n"
+        "</C:comp-filter>\n"
+        "</C:comp-filter>\n"
+        "</C:filter>\n"
         "</C:calendar-query>\n";
     string result;
     string href, etag, data;
@@ -574,6 +581,13 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
         "<D:getetag/>\n"
         "<C:calendar-data/>\n"
         "</D:prop>\n"
+        // filter expected by Yahoo! Calendar
+        "<C:filter>\n"
+        "<C:comp-filter name=\"VCALENDAR\">\n"
+        "<C:comp-filter name=\"VEVENT\">\n"
+        "</C:comp-filter>\n"
+        "</C:comp-filter>\n"
+        "</C:filter>\n"
         "</C:calendar-query>\n";
     string result;
     string href, etag, data;
