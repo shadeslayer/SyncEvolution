@@ -78,6 +78,10 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     /** normalized path: including backslash, URI encoded */
     Neon::URI m_calendar;
 
+    /** information about certain paths (path->property->value)*/
+    typedef std::map<std::string, std::map<std::string, std::string> > Props_t;
+    Props_t m_davProps;
+
     void openPropCallback(const Neon::URI &uri,
                           const ne_propname *prop,
                           const char *value,

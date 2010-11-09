@@ -9,6 +9,7 @@
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 #include <syncevo/TransportAgent.h>
 
@@ -85,6 +86,8 @@ void WebDAVSource::open()
 
     // Start by checking server capabilities.
     // Verifies URL.
+    SE_LOG_DEBUG(NULL, NULL, "read capabilities of %s",
+                 m_session->getURI().toURL().c_str());
     int caps = m_session->options();
     static const Flag descr[] = {
         { NE_CAP_DAV_CLASS1, "Class 1 WebDAV (RFC 2518)" },
@@ -109,49 +112,158 @@ void WebDAVSource::open()
                  m_session->getURL().c_str(),
                  Flags2String(caps, descr).c_str());
 
-    // Run a few property queries.
+    // Find default calendar.
     //
-    // This also checks credentials because typically the properties
-    // are protected.
-    // 
-    // First dump WebDAV "allprops" properties (does not contain
-    // properties which must be asked for explicitly!).
+    // Stops when:
+    // - current path is calendar collection (= contains VEVENTs)
+    // Gives up:
+    // - when running in circles
+    // - nothing else to try out
+    // - tried 10 times
+    // Follows:
+    // - CalDAV calendar-home-set (assumed to be on same server)
+    // - collections
+    //
+    // TODO: support more than one calendar. Instead of stopping at the first one,
+    // scan more throroughly, then decide deterministically.
+    // TODO: make this independent of calendar and/or VEVENT
+    int counter = 0;
+    const int limit = 10;
+    std::set<std::string> tried;
+    std::set<std::string> candidates;
+    std::string path = m_session->getURI().m_path;
+    // Must end in slash for sub-string substraction path2luid() and
+    // comparison against results returned by server.
+    if (!boost::ends_with(path, "/")) {
+        path += '/';
+    }
     Neon::Session::PropfindPropCallback_t callback =
         boost::bind(&WebDAVSource::openPropCallback,
                     this, _1, _2, _3, _4);
-    m_session->propfindProp(m_session->getURI().m_path, 0, NULL, callback);
 
-    // Now ask for some specific properties of interest for us.
-    // Using CALDAV:allprop would be nice, but doesn't seem to
-    // be possible with Neon.
-    static const ne_propname caldav[] = {
-        { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
-        { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
-        { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
-        { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
-        { "urn:ietf:params:xml:ns:caldav", "supported-calendar-data" },
-        { "urn:ietf:params:xml:ns:caldav", "max-resource-size" },
-        { "urn:ietf:params:xml:ns:caldav", "min-date-time" },
-        { "urn:ietf:params:xml:ns:caldav", "max-date-time" },
-        { "urn:ietf:params:xml:ns:caldav", "max-instances" },
-        { "urn:ietf:params:xml:ns:caldav", "max-attendees-per-instance" },
-        { NULL, NULL }
-    };
-    m_session->propfindProp(m_session->getURI().m_path, 0, caldav, callback);
+    while (true) {
+        SE_LOG_DEBUG(NULL, NULL, "testing %s", path.c_str());
+        tried.insert(path);
 
-    // TODO: avoid hard-coded path to Google events
-    m_calendar = m_session->getURI();
-    if (boost::ends_with(m_calendar.m_path, "/user/") ||
-        boost::ends_with(m_calendar.m_path, "/user")) {
-        m_calendar = m_calendar.resolve("../events/");
+        // Property queries also checks credentials because typically
+        // the properties are protected.
+        // 
+        // First dump WebDAV "allprops" properties (does not contain
+        // properties which must be asked for explicitly!). Only
+        // relevant for debugging.
+        if (LoggerBase::instance().getLevel() >= Logger::DEV) {
+            SE_LOG_DEBUG(NULL, NULL, "read all WebDAV properties of %s", path.c_str());
+            Neon::Session::PropfindPropCallback_t callback =
+                boost::bind(&WebDAVSource::openPropCallback,
+                            this, _1, _2, _3, _4);
+            m_session->propfindProp(path, 0, NULL, callback);
+        }
+        
+        // Now ask for some specific properties of interest for us.
+        // Using CALDAV:allprop would be nice, but doesn't seem to
+        // be possible with Neon.
+        m_davProps.clear();        
+        static const ne_propname caldav[] = {
+            // WebDAV ACL
+            { "DAV:", "alternate-URI-set" },
+            { "DAV:", "principal-URL" },
+            { "DAV:", "group-member-set" },
+            { "DAV:", "group-membership" },
+            { "DAV:", "displayname" },
+            { "DAV:", "resourcetype" },
+            // CalDAV
+            { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
+            { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
+            { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
+            { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
+            { "urn:ietf:params:xml:ns:caldav", "supported-calendar-data" },
+            { "urn:ietf:params:xml:ns:caldav", "max-resource-size" },
+            { "urn:ietf:params:xml:ns:caldav", "min-date-time" },
+            { "urn:ietf:params:xml:ns:caldav", "max-date-time" },
+            { "urn:ietf:params:xml:ns:caldav", "max-instances" },
+            { "urn:ietf:params:xml:ns:caldav", "max-attendees-per-instance" },
+            { NULL, NULL }
+        };
+        m_session->propfindProp(path, 0, caldav, callback);
+
+        // all of the find() calls rely on normalization of the value by Neon
+        const std::string &components = m_davProps[path]["urn:ietf:params:xml:ns:caldav:supported-calendar-component-set"];
+        if (components.find("<urn:ietf:params:xml:ns:caldavcomp name='VEVENT'></urn:ietf:params:xml:ns:caldavcomp>") != components.npos) {
+            // found it
+            break;
+        }
+
+        // find next path
+        static const std::string hrefStart = "<DAV:href>";
+        static const std::string hrefEnd = "</DAV:href";
+        std::string next;
+        const std::string &home = m_davProps[path]["urn:ietf:params:xml:ns:caldav:calendar-home-set"];
+        if (!home.empty()) {
+            size_t start = home.find(hrefStart);
+            if (start != home.npos) {
+                size_t end = home.find(hrefEnd, start);
+                if (end != home.npos) {
+                    start += hrefStart.size();
+                    next = home.substr(start, end - start);
+                    SE_LOG_DEBUG(NULL, NULL, "follow calendar-home-set to %s", next.c_str());
+                }
+            }
+        }
+        if (next.empty()) {
+            const std::string &type = m_davProps[path]["DAV::resourcetype"];
+            if (type.find("<DAV:collection></DAV:collection>") != type.npos) {
+                // List members and find new candidates.
+                // Yahoo! Calendar does not return resources contained in /dav/<user>/Calendar/
+                // if <allprops> is used. Properties must be requested explicitly.
+                SE_LOG_DEBUG(NULL, NULL, "list items in %s", path.c_str());
+                static const ne_propname props[] = {
+                    { "DAV:", "displayname" },
+                    { "DAV:", "resourcetype" },
+                    { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
+                    { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
+                    { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
+                    { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
+                    { NULL, NULL }
+                };
+                m_davProps.clear();
+                m_session->propfindProp(path, 1, props, callback);
+                BOOST_FOREACH(Props_t::value_type &entry, m_davProps) {
+                    const std::string &sub = entry.first;
+                    const std::string &subType = entry.second["DAV::resourcetype"];
+                    // new candidates are:
+                    // - untested
+                    // - not already a candidate
+                    // - a resource
+                    if (tried.find(sub) == tried.end() &&
+                        candidates.find(sub) == candidates.end() &&
+                        subType.find("<DAV:collection></DAV:collection>") != subType.npos) {
+                        candidates.insert(sub);
+                        SE_LOG_DEBUG(NULL, NULL, "new candidate: %s", sub.c_str());
+                    }
+                }
+            }
+        }
+        if (next.empty()) {
+            // use next candidate
+            if (candidates.empty()) {
+                throwError(StringPrintf("no calendar found in %s", m_settings->getURL().c_str()));
+            }
+            next = *candidates.begin();
+            candidates.erase(candidates.begin());
+            SE_LOG_DEBUG(NULL, NULL, "follow candidate %s", next.c_str());
+        }
+
+        counter++;
+        if (counter > limit) {
+            throwError(StringPrintf("giving up search for calendar after %d attempts", limit));
+        }
+        path = next;
     }
-    // Sanitizing the path becomes redundant once we take the path from
-    // the server's response. Right now it is necessary so that foo@google.com
-    // in the URL matches the correct foo%40google.com in the server's
-    // responses.
-    boost::replace_all(m_calendar.m_path, "@", "%40");
-    m_session->propfindProp(m_calendar.m_path, 0, caldav, callback);
-    m_session->propfindProp(m_calendar.m_path, 1, NULL, callback);
+
+    // Pick final path.
+    m_calendar = m_session->getURI();
+    m_calendar.m_path = path;
+    SE_LOG_DEBUG(NULL, NULL, "picked final path %s", m_calendar.m_path.c_str());
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,
@@ -159,16 +271,25 @@ void WebDAVSource::openPropCallback(const Neon::URI &uri,
                                     const char *value,
                                     const ne_status *status)
 {
-    // TODO: verify that DAV:resourcetype contains DAV:collection
-    // TODO: recognize CALDAV:calendar-home-set and redirect to it
     // TODO: recognize CALDAV:calendar-timezone and use it for local time conversion of events
+    std::string name;
+    if (prop->nspace) {
+        name = prop->nspace;
+    }
+    name += ":";
+    name += prop->name;
     SE_LOG_DEBUG(NULL, NULL,
-                 "%s: %s:%s = %s (%s)",
+                 "%s: %s = %s (%s)",
                  uri.toURL().c_str(),
-                 prop->nspace ? prop->nspace : "<no namespace>",
-                 prop->name,
+                 name.c_str(),
                  value ? value : "<no value>",
                  Neon::Status2String(status).c_str());
+
+    if (value) {
+        m_davProps[uri.m_path][name] = value;
+        boost::trim_if(m_davProps[uri.m_path][name],
+                       boost::is_space());
+    }
 }
 
 bool WebDAVSource::isEmpty()
