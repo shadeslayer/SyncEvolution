@@ -99,6 +99,12 @@ struct URI {
 
     /** compose URL from parts */
     std::string toURL() const;
+
+    /**
+     * URL-escape string
+     */
+    static std::string escape(const std::string &text);
+    static std::string unescape(const std::string &text);
 };
 
 /** produce debug string for status, which may be NULL */

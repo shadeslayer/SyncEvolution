@@ -18,6 +18,7 @@
 #include <syncevo/TransportAgent.h>
 #include <syncevo/util.h>
 #include <syncevo/Logging.h>
+#include <syncevo/SmartPtr.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -97,6 +98,18 @@ std::string URI::toURL() const
                         m_port,
                         m_path.c_str(),
                         m_fragment.c_str());
+}
+
+std::string URI::escape(const std::string &text)
+{
+    SmartPtr<char *> tmp(ne_path_escape(text.c_str()));
+    return tmp.get();
+}
+
+std::string URI::unescape(const std::string &text)
+{
+    SmartPtr<char *> tmp(ne_path_unescape(text.c_str()));
+    return tmp.get();
 }
 
 std::string Status2String(const ne_status *status)
