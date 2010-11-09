@@ -200,16 +200,18 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         // This is in line with the current design ("concurrency detected,
         // causes error, fixed by trying again in slow sync").
         InsertItemResult res;
+        // Yahoo expects resource names to match UID + ".ics".
+        std::string name = newEvent->m_UID + ".ics";
         if (subid.empty()) {
             // avoid re-encoding item data
-            res = insertItem("", item, true);
+            res = insertItem(name, item, true);
         } else {
             // sanitize item first: when adding child event without parent,
             // then the RECURRENCE-ID confuses Google
             eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(newEvent->m_calendar)));
             std::string data = icalstr.get();
             Event::escapeRecurrenceID(data);
-            res = insertItem("", data, true);
+            res = insertItem(name, data, true);
         }
         subres.m_uid = res.m_luid;
         subres.m_subid = subid;

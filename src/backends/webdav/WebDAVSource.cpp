@@ -341,8 +341,7 @@ void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
         "DAV:", "getetag"
     };
     const char *etag = ne_propset_value(results, &prop);
-    std::string uid = uri.m_path;
-    boost::replace_first(uid, m_calendar.m_path, "");
+    std::string uid = path2luid(uri.m_path);
     if (uid.empty()) {
         // skip collection itself
         return;
@@ -364,7 +363,7 @@ void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
 std::string WebDAVSource::path2luid(const std::string &path)
 {
     if (boost::starts_with(path, m_calendar.m_path)) {
-        return path.substr(m_calendar.m_path.size());
+        return Neon::URI::unescape(path.substr(m_calendar.m_path.size()));
     } else {
         return path;
     }
@@ -372,7 +371,11 @@ std::string WebDAVSource::path2luid(const std::string &path)
 
 std::string WebDAVSource::luid2path(const std::string &luid)
 {
-    return m_calendar.resolve(luid).m_path;
+    if (boost::starts_with(luid, "/")) {
+        return luid;
+    } else {
+        return m_calendar.resolve(Neon::URI::escape(luid)).m_path;
+    }
 }
 
 void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
@@ -398,6 +401,8 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
                           item, result);
         req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
         req.addHeader("If-None-Match", "*");
+        // TODO: other CardDAV
+        req.addHeader("Content-Type", "text/calendar; charset=utf-8");
         req.run();
         SE_LOG_DEBUG(NULL, NULL, "add item status: %s",
                      Neon::Status2String(req.getStatus()).c_str());
@@ -436,6 +441,8 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         Neon::Request req(*m_session, "PUT", luid2path(new_uid),
                           item, result);
         req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
+        // TODO: other CardDAV
+        req.addHeader("Content-Type", "text/calendar; charset=utf-8");
         // TODO: match exactly the expected revision, aka ETag,
         // or implement locking. Note that the ETag might not be
         // known, for example in this case:
