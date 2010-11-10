@@ -111,7 +111,7 @@ bool ButeoBridge::init()
         std::string url;
         if (getProfileName() == "google-calendar") {
             m_config = "google-calendar";
-            url = "syncURL=https://www.google.com/calendar/dav/%u/user/";
+            url = "syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=UpdateHack,ChildHack";
         } else {
             return false;
         }
