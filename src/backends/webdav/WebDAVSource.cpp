@@ -35,7 +35,7 @@ public:
             if (!urls.empty()) {
                 m_url = urls.front();
                 std::string username = m_context->getUsername();
-                boost::replace_all(m_url, "%u", username);
+                boost::replace_all(m_url, "%u", Neon::URI::escape(username));
             }
             Neon::URI uri = Neon::URI::parse(m_url);
             typedef boost::split_iterator<string::iterator> string_split_iterator;
