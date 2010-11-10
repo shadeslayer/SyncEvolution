@@ -149,6 +149,7 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
                                   m_uri.m_port);
     ne_set_server_auth(m_session, getCredentials, this);
     ne_ssl_set_verify(m_session, sslVerify, this);
+    ne_ssl_trust_default_ca(m_session);
 
     // hack for Yahoo: need a client certificate
     ne_ssl_client_cert *cert = ne_ssl_clicert_read("client.p12");
