@@ -21,24 +21,56 @@ SE_BEGIN_CXX
  */
 class ContextSettings : public Neon::Settings {
     boost::shared_ptr<const SyncConfig> m_context;
+    std::string m_url;
+    bool m_googleUpdateHack;
+    bool m_googleChildHack;
+
+
 public:
     ContextSettings(const boost::shared_ptr<const SyncConfig> &context) :
         m_context(context)
-    {}
-
-    virtual std::string getURL()
     {
-        std::string url;
         if (m_context) {
             vector<string> urls = m_context->getSyncURL();
             if (!urls.empty()) {
-                url = urls.front();
+                m_url = urls.front();
                 std::string username = m_context->getUsername();
-                boost::replace_all(url, "%u", username);
+                boost::replace_all(m_url, "%u", username);
+            }
+            Neon::URI uri = Neon::URI::parse(m_url);
+            typedef boost::split_iterator<string::iterator> string_split_iterator;
+            for (string_split_iterator arg =
+                     boost::make_split_iterator(uri.m_query, boost::first_finder("&", boost::is_iequal()));
+                 arg != string_split_iterator();
+                 ++arg) {
+                static const std::string keyword = "SyncEvolution=";
+                if (boost::istarts_with(*arg, keyword)) {
+                    std::string params(arg->begin() + keyword.size(), arg->end());
+                    for (string_split_iterator flag =
+                             boost::make_split_iterator(params,
+                                                        boost::first_finder(",", boost::is_iequal()));
+                         flag != string_split_iterator();
+                         ++flag) {
+                        if (boost::iequals(*flag, "UpdateHack")) {
+                            m_googleUpdateHack = true;
+                        } else if (boost::iequals(*flag, "ChildHack")) {
+                            m_googleChildHack = true;
+                        } else {
+                            SE_THROW(StringPrintf("unknown SyncEvolution flag %s in URL %s",
+                                                  std::string(flag->begin(), flag->end()).c_str(),
+                                                  m_url.c_str()));
+                        }
+                    }
+                } else {
+                    SE_THROW(StringPrintf("unknown parameter %s in URL %s",
+                                          std::string(arg->begin(), arg->end()).c_str(),
+                                          m_url.c_str()));
+                }
             }
         }
-        return url;
     }
+
+    virtual std::string getURL() { return m_url; }
 
     virtual bool verifySSLHost()
     {
@@ -49,6 +81,9 @@ public:
     {
         return !m_context || m_context->getSSLVerifyServer();
     }
+
+    virtual bool googleUpdateHack() { return m_googleUpdateHack; }
+    virtual bool googleChildHack() { return m_googleChildHack; }
 
     virtual void getCredentials(const std::string &realm,
                                 std::string &username,

@@ -202,7 +202,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         InsertItemResult res;
         // Yahoo expects resource names to match UID + ".ics".
         std::string name = newEvent->m_UID + ".ics";
-        if (subid.empty()) {
+        if (!settings().googleChildHack() || subid.empty()) {
             // avoid re-encoding item data
             res = insertItem(name, item, true);
         } else {
@@ -250,7 +250,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         // Google hack: increase sequence number if smaller or equal to
         // sequence on server. Server rejects update otherwise.
         // See http://code.google.com/p/google-caldav-issues/issues/detail?id=26
-        if (newEvent->m_sequence <= event.m_sequence) {
+        if (settings().googleUpdateHack() && newEvent->m_sequence <= event.m_sequence) {
             event.m_sequence++;
             Event::setSequence(firstcomp, event.m_sequence);
         }
@@ -263,7 +263,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
              comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
             if (Event::getSubID(comp) == subid) {
                 removeme = comp;
-            } else {
+            } else if (settings().googleUpdateHack()) {
                 // increase modification time stamps and sequence to that of the new item,
                 // Google rejects the whole update otherwise
                 if (!icaltime_is_null_time(lastmodtime)) {
@@ -308,7 +308,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         // Google gets confused when adding a child without parent,
         // replace in that case.
         bool haveParent = event.m_subids.find("") != event.m_subids.end();
-        if (!haveParent) {
+        if (settings().googleChildHack() && !haveParent) {
             Event::escapeRecurrenceID(data);
         }
 

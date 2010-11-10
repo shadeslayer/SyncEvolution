@@ -71,6 +71,9 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     boost::shared_ptr<Neon::Session> getSession() { return m_session; }
     Neon::URI &getCalendar() { return m_calendar; }
 
+    // access to settings owned by this instance
+    Neon::Settings &settings() { return *m_settings; }
+
  private:
     boost::shared_ptr<Neon::Settings> m_settings;
     boost::shared_ptr<Neon::Session> m_session;
