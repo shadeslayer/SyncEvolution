@@ -300,18 +300,29 @@ void LocalTransportAgent::shutdown()
 
 void LocalTransportAgent::receiveChildReport()
 {
-    SE_LOG_DEBUG(NULL, NULL, "parent: receiving report");
-    m_receiveBuffer.m_used = 0;
-    readMessage(m_statusFD, m_receiveBuffer);
-    boost::shared_ptr<std::string> data(new std::string);
-    data->assign(m_receiveBuffer.m_message->m_data, m_receiveBuffer.m_message->getDataLength());
-    boost::shared_ptr<StringDataBlob> dump(new StringDataBlob("buffer", data, false));
-    IniHashConfigNode node(dump);
-    node >> m_clientReport;
-    SE_LOG_DEBUG(NULL, NULL, "parent: received report (%s/ERROR '%s'):\n%s",
-                 Status2String(m_clientReport.getStatus()).c_str(),
-                 m_clientReport.getError().c_str(),
-                 data->c_str());
+    // don't try this again
+    if (m_statusFD >= 0) {
+        int statusFD = m_statusFD;
+        m_statusFD = -1;
+        try {
+            SE_LOG_DEBUG(NULL, NULL, "parent: receiving report");
+            m_receiveBuffer.m_used = 0;
+            readMessage(statusFD, m_receiveBuffer);
+            boost::shared_ptr<std::string> data(new std::string);
+            data->assign(m_receiveBuffer.m_message->m_data, m_receiveBuffer.m_message->getDataLength());
+            boost::shared_ptr<StringDataBlob> dump(new StringDataBlob("buffer", data, false));
+            IniHashConfigNode node(dump);
+            node >> m_clientReport;
+            SE_LOG_DEBUG(NULL, NULL, "parent: received report (%s/ERROR '%s'):\n%s",
+                         Status2String(m_clientReport.getStatus()).c_str(),
+                         m_clientReport.getError().c_str(),
+                         data->c_str());
+        } catch (...) {
+            close(statusFD);
+            throw;
+        }
+        close(statusFD);
+    }
 }
 
 void LocalTransportAgent::checkChildReport()
