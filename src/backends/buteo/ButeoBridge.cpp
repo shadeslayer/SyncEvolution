@@ -109,9 +109,13 @@ bool ButeoBridge::init()
 
         // determine parameters for configuration
         std::string url;
-        if (getProfileName() == "google-calendar") {
+        QString profile = getProfileName();
+        if (profile == "google-calendar") {
             m_config = "google-calendar";
             url = "syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=UpdateHack,ChildHack";
+        } else if (profile == "yahoo") {
+            m_config = "yahoo";
+            url = "syncURL=https://caldav.calendar.yahoo.com/dav/%u/Calendar/";
         } else {
             return false;
         }
