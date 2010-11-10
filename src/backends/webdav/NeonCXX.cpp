@@ -152,13 +152,15 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
 
     // hack for Yahoo: need a client certificate
     ne_ssl_client_cert *cert = ne_ssl_clicert_read("client.p12");
-    SE_LOG_DEBUG(NULL, NULL, "client cert is %s", ne_ssl_clicert_encrypted(cert) ? "encrypted" : "unencrypted");
-    if (ne_ssl_clicert_encrypted(cert)) {
-        if (ne_ssl_clicert_decrypt(cert, "meego")) {
-            SE_LOG_DEBUG(NULL, NULL, "decryption failed");
+    SE_LOG_DEBUG(NULL, NULL, "client cert is %s", !cert ? "missing" : ne_ssl_clicert_encrypted(cert) ? "encrypted" : "unencrypted");
+    if (cert) {
+        if (ne_ssl_clicert_encrypted(cert)) {
+            if (ne_ssl_clicert_decrypt(cert, "meego")) {
+                SE_LOG_DEBUG(NULL, NULL, "decryption failed");
+            }
         }
+        ne_ssl_set_clicert(m_session, cert);
     }
-    ne_ssl_set_clicert(m_session, cert);
 }
 
 Session::~Session()
