@@ -168,6 +168,15 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     bool m_remoteInitiated;
   public:
     /**
+     * Common initialization code which needs to be done once
+     * at the start of main() in any application using SyncEvolution.
+     * For example, initializes (if applicable) glib and EDS.
+     *
+     * @param appname     static string, must remain valid, defines name of executable (see g_set_prgname())
+     */
+    static void initMain(const char *appname);
+
+    /**
      * SyncContext using a volatile config
      * and no logging.
      */

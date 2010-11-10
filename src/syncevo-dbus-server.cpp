@@ -6193,16 +6193,7 @@ int main(int argc, char **argv)
         opt++;
     }
     try {
-        g_type_init();
-        g_thread_init(NULL);
-        g_set_application_name("SyncEvolution");
-
-        // Initializing a potential use of EDS early is necessary for
-        // libsynthesis when compiled with
-        // --enable-evolution-compatibility: in that mode libical will
-        // only be found by libsynthesis after EDSAbiWrapperInit()
-        // pulls it into the process by loading libecal.
-        EDSAbiWrapperInit();
+        SyncContext::initMain("syncevo-dbus-server");
 
         loop = g_main_loop_new (NULL, FALSE);
 

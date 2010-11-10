@@ -2705,6 +2705,41 @@ void SyncContext::initEngine(bool logXML)
     }
 }
 
+void SyncContext::initMain(const char *appname)
+{
+#if defined(HAVE_GLIB)
+    // this is required when using glib directly or indirectly
+    g_type_init();
+    g_thread_init(NULL);
+    g_set_prgname(appname);
+#endif
+
+    // Initializing a potential use of EDS early is necessary for
+    // libsynthesis when compiled with
+    // --enable-evolution-compatibility: in that mode libical will
+    // only be found by libsynthesis after EDSAbiWrapperInit()
+    // pulls it into the process by loading libecal.
+    EDSAbiWrapperInit();
+
+    if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
+        // Enable libgnutls debugging without creating a hard dependency on it,
+        // because we don't call it directly and might not even be linked against
+        // it. Therefore check for the relevant symbols via dlsym().
+        void (*set_log_level)(int);
+        void (*set_log_function)(void (*func)(int level, const char *str));
+        
+        set_log_level = (typeof(set_log_level))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_level");
+        set_log_function = (typeof(set_log_function))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_function");
+
+        if (set_log_level && set_log_function) {
+            set_log_level(atoi(getenv("SYNCEVOLUTION_GNUTLS_DEBUG")));
+            set_log_function(GnutlsLogFunction);
+        } else {
+            SE_LOG_ERROR(NULL, NULL, "SYNCEVOLUTION_GNUTLS_DEBUG debugging not possible, log functions not found");
+        }
+    }
+}
+
 SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
@@ -2730,24 +2765,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
         string url = getUsedSyncURL();
         if (boost::starts_with(url, "local://")) {
             initLocalSync(url.substr(strlen("local://")));
-        }
-
-        if (getenv("SYNCEVOLUTION_GNUTLS_DEBUG")) {
-            // Enable libgnutls debugging without creating a hard dependency on it,
-            // because we don't call it directly and might not even be linked against
-            // it. Therefore check for the relevant symbols via dlsym().
-            void (*set_log_level)(int);
-            void (*set_log_function)(void (*func)(int level, const char *str));
-
-            set_log_level = (typeof(set_log_level))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_level");
-            set_log_function = (typeof(set_log_function))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_function");
-
-            if (set_log_level && set_log_function) {
-                set_log_level(atoi(getenv("SYNCEVOLUTION_GNUTLS_DEBUG")));
-                set_log_function(GnutlsLogFunction);
-            } else {
-                SE_LOG_ERROR(NULL, NULL, "SYNCEVOLUTION_GNUTLS_DEBUG debugging not possible, log functions not found");
-            }
         }
 
         if (!report) {

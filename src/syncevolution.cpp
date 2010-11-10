@@ -459,12 +459,7 @@ int main( int argc, char **argv )
     // output.
     LogRedirect redirect(false);
 
-#if defined(HAVE_GLIB)
-    // this is required when using glib directly or indirectly
-    g_type_init();
-    g_thread_init(NULL);
-    g_set_prgname("syncevolution");
-#endif
+    SyncContext::initMain("syncevolution");
 
     setvbuf(stderr, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
