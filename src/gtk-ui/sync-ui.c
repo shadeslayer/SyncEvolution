@@ -3456,7 +3456,7 @@ server_presence_changed_cb (SyncevoServer *server,
 {
     if (data->current_service &&
         config_name && status &&
-        strcmp (data->current_service->name, config_name) == 0) {
+        g_strcasecmp (data->current_service->name, config_name) == 0) {
 
         set_online_status (data, strcmp (status, "") == 0);
     }
