@@ -3549,9 +3549,9 @@ sync_ui_create ()
                       G_CALLBACK (server_shutdown_cb), data);
     g_signal_connect (data->server, "session-changed",
                       G_CALLBACK (server_session_changed_cb), data);
-    g_signal_connect (data->server, "presence_changed",
+    g_signal_connect (data->server, "presence-changed",
                       G_CALLBACK (server_presence_changed_cb), data);
-    g_signal_connect (data->server, "templates_changed",
+    g_signal_connect (data->server, "templates-changed",
                       G_CALLBACK (server_templates_changed_cb), data);
     g_signal_connect (data->server, "info-request",
                       G_CALLBACK (info_request_cb), data);
