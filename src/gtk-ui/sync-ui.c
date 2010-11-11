@@ -185,7 +185,7 @@ static void update_services_list (app_data *data);
 static void update_service_ui (app_data *data);
 static void setup_new_service_clicked (GtkButton *btn, app_data *data);
 static gboolean source_config_update_widget (source_config *source);
-static void get_presence_cb (SyncevoServer *server, char *status, char *transport,
+static void get_presence_cb (SyncevoServer *server, char *status, char **transport,
                              GError *error, app_data *data);
 static void get_reports_cb (SyncevoServer *server, SyncevoReports *reports, 
                             GError *error, app_data *data);
@@ -3328,7 +3328,7 @@ set_online_status (app_data *data, gboolean online)
 static void
 get_presence_cb (SyncevoServer *server,
                  char *status,
-                 char *transport,
+                 char **transports,
                  GError *error,
                  app_data *data)
 {
@@ -3343,7 +3343,7 @@ get_presence_cb (SyncevoServer *server,
         set_online_status (data, strcmp (status, "") == 0);
     }
     g_free (status);
-    g_free (transport);
+    g_strfreev (transports);
 }
 
 static void

@@ -127,7 +127,7 @@ void syncevo_server_get_sessions (SyncevoServer *syncevo,
 
 typedef void (*SyncevoServerGetPresenceCb) (SyncevoServer *syncevo,
                                             char *status,
-                                            char *transport,
+                                            char **transports,
                                             GError *error,
                                             gpointer userdata);
 void syncevo_server_get_presence (SyncevoServer *syncevo,

@@ -705,14 +705,14 @@ syncevo_server_get_sessions (SyncevoServer *syncevo,
 static void
 check_presence_callback (SyncevoServer *syncevo,
                          char *status,
-                         char *transport,
+                         char **transports,
                          GError *error,
                          ServerAsyncData *data)
 {
     if (data->callback) {
         (*(SyncevoServerGetPresenceCb)data->callback) (data->server,
                                                        status,
-                                                       transport,
+                                                       transports,
                                                        error,
                                                        data->userdata);
     }
