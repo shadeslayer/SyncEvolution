@@ -17,7 +17,7 @@
       <field name="SUMMARY" type="multiline" compare="always"/>
       <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
       <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
-      <field name="URL" type="url" compare="conflict"/>
+      <field name="URL" type="url" compare="conflict" merge="fillempty"/>
 
       <!-- recurrence rule block, fields must be in that order, including
            DTSTART as last field !! -->
