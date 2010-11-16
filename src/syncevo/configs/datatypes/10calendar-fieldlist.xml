@@ -65,7 +65,7 @@
       <field name="ALARM_MSG" type="string" compare="conflict/scripted"/>
       <field name="ALARM_ACTION" type="string" compare="conflict/scripted"/>
       <field name="ALARM_REL" type="integer" compare="never/scripted"/>
-      <field name="ALARM_UID" type="string" compare="conflict/scripted"/>
+      <field name="ALARM_UID" type="string" compare="never" merge="fillempty"/>
 
       <!-- non-standard -->
       <field name="PARENT_UID" type="string" compare="never/scripted"/>
