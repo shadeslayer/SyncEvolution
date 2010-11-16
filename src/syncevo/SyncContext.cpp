@@ -2325,6 +2325,47 @@ void SyncContext::getConfigXML(string &xml, string &configname)
              clientorserver.str(),
              true);
 
+    // Poor man's regex match/replace:
+    // turn compare="foo/bar" into compare="foo" or compare="bar",
+    // depending on whether the first or second value is
+    // desired. See 10calendar-fieldlist.xml.
+    ostringstream modified;
+    size_t last = 0;
+    std::string value;
+    value.reserve(20);
+    static std::string sep("compare=\"");
+    // Choosing between the parts is a hack: in local sync mode,
+    // the iCalendar 2.0 semantic is always picked.
+    bool useFirst = !m_localSync;
+    for (size_t next = xml.find(sep, last);
+         next != xml.npos;
+         next = xml.find(sep, last)) {
+        modified.write(xml.c_str() + last, next - last);
+        modified << sep;
+        last = next + sep.size();
+        value.clear();
+        char c;
+        bool collect = true;
+        while (last != xml.size() &&
+               (c = xml[last]) != '"') {
+            if (c == '/') {
+                if (useFirst) {
+                    collect = false;
+                } else {
+                    // forget first value, use second one instead
+                    value.clear();
+                }
+            } else if (collect) {
+                value += c;
+            }
+            last++;
+        }
+        modified << value;
+    }
+    modified.write(xml.c_str() + last, xml.size() - last);
+    xml = modified.str();
+    modified.str("");
+
     tag = "<debug/>";
     index = xml.find(tag);
     if (index != xml.npos) {
