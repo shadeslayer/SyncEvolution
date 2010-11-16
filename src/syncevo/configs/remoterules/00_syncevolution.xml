@@ -3,5 +3,15 @@
       <model>SyncEvolution</model>
 
       <include rule="HAVE-EVOLUTION-UI-SLOT"/>
+      <!-- Merging between SyncEvolution instances is expected to work
+           well, so allow the engine to update items on both
+           sides also in the "non-first" slow sync case.
+
+           This is turned off by default for other clients
+           because small changes would propagate to other
+           clients of the server. Hopefully with SyncEvolution as
+           client we'll have not much such changes. -->
+      <updateclientinslowsync>yes</updateclientinslowsync>
+      <updateserverinslowsync>yes</updateserverinslowsync>
     </remoterule>
 
