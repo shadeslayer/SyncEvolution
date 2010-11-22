@@ -51,6 +51,11 @@ class Settings {
     virtual bool verifySSLCertificate() = 0;
 
     /**
+     * proxy URL, empty for system default
+     */
+    virtual std::string proxy() = 0;
+
+    /**
      * fill in username and password for specified realm (URL?),
      * throw error if not available
      */

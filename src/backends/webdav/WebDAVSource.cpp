@@ -82,6 +82,16 @@ public:
         return !m_context || m_context->getSSLVerifyServer();
     }
 
+    virtual std::string proxy()
+    {
+        if (!m_context ||
+            !m_context->getUseProxy()) {
+            return "";
+        } else {
+            return m_context->getProxyHost();
+        }
+    }
+
     virtual bool googleUpdateHack() { return m_googleUpdateHack; }
     virtual bool googleChildHack() { return m_googleChildHack; }
 

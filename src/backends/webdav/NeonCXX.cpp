@@ -162,6 +162,14 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
         }
         ne_ssl_set_clicert(m_session, cert);
     }
+
+    std::string proxyurl = settings->proxy();
+    if (proxyurl.empty()) {
+        ne_session_system_proxy(m_session, 0);
+    } else {
+        URI proxyuri = URI::parse(proxyurl);
+        ne_session_proxy(m_session, proxyuri.m_host.c_str(), proxyuri.m_port);
+    }
 }
 
 Session::~Session()
