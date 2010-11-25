@@ -33,6 +33,8 @@ namespace Neon {
 /** comma separated list of features supported by libneon in use */
 std::string features();
 
+class Request;
+
 class Settings {
  public:
     /**
@@ -182,10 +184,17 @@ class Session {
 
     ne_session *getSession() const { return m_session; }
 
+    /**
+     * time when last successul request completed, must be maintained by Request::run()
+     */
+    time_t getLastRequestEnd() const { return m_lastRequestEnd; }
+    void setLastRequestEnd(time_t end) { m_lastRequestEnd = end; }
+
  private:
     boost::shared_ptr<Settings> m_settings;
     ne_session *m_session;
     URI m_uri;
+    time_t m_lastRequestEnd;
 
     /** ne_set_server_auth() callback */
     static int getCredentials(void *userdata, const char *realm, int attempt, char *username, char *password) throw();

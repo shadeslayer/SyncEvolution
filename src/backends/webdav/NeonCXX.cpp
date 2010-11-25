@@ -149,8 +149,8 @@ std::string Status2String(const ne_status *status)
 
 Session::Session(const boost::shared_ptr<Settings> &settings) :
     m_settings(settings),
-    m_session(NULL)
-    
+    m_session(NULL),
+    m_lastRequestEnd(0)
 {
     int logLevel = m_settings->logLevel();
     if (logLevel >= 3) {
@@ -217,8 +217,39 @@ int Session::getCredentials(void *userdata, const char *realm, int attempt, char
         session->m_settings->getCredentials(realm, user, pw);
         SyncEvo::Strncpy(username, user.c_str(), NE_ABUFSIZ);
         SyncEvo::Strncpy(password, pw.c_str(), NE_ABUFSIZ);
-        // allow only one attempt, credentials are not expected to change in most cases
-        return attempt;
+
+        if (attempt) {
+            // Already sent credentials once, still rejected:
+            // observed with Google Calendar (to throttle request rate?).
+            time_t last = session->getLastRequestEnd();
+            if (!last) {
+                // first request immediately failed, prevent further retries
+                SE_LOG_DEBUG(NULL, NULL, "credential error, abort request");
+                return 1;
+            } else {
+                // repeat request after exponentially increasing
+                // delays since the last successful request (5
+                // seconds, 10 seconds, 20 seconds, ...) until it
+                // succeeds, but not for more than 1 minute
+                time_t delay = 5 * (1<<attempt);
+                if (delay > 60) {
+                    SE_LOG_DEBUG(NULL, NULL, "credential error, abort request after %ld seconds",
+                                 (long)(time(NULL) - last));
+                    return 1;
+                } else {
+                    time_t now = time(NULL);
+                    if (now < last + delay) {
+                        SE_LOG_DEBUG(NULL, NULL, "credential error due to throttling (?), retry #%d in %ld seconds",
+                                     attempt,
+                                     (long)(last + delay - now));
+                        sleep(last + delay - now);
+                    }
+                }
+            }
+        }
+
+        // try again with credentials
+        return 0;
     } catch (...) {
         Exception::handle();
         SE_LOG_ERROR(NULL, NULL, "no credentials for %s", realm);
@@ -479,14 +510,18 @@ Request::~Request()
 
 void Request::run()
 {
+    int error;
+
     if (m_result) {
         m_result->clear();
         ne_add_response_body_reader(m_req, ne_accept_2xx,
                                     addResultData, this);
-        check(ne_request_dispatch(m_req));
+        error = ne_request_dispatch(m_req);
     } else {
-        check(ne_xml_dispatch_request(m_req, m_parser->get()));
+        error = ne_xml_dispatch_request(m_req, m_parser->get());
     }
+    check(error);
+    m_session.setLastRequestEnd(time(NULL));
 }
 
 int Request::addResultData(void *userdata, const char *buf, size_t len)
