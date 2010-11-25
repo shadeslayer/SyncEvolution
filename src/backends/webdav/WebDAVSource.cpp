@@ -396,13 +396,23 @@ void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
     static const ne_propname prop = {
         "DAV:", "getetag"
     };
-    const char *etag = ne_propset_value(results, &prop);
-    std::string uid = path2luid(uri.m_path);
-    if (uid.empty()) {
-        // skip collection itself
+    static const ne_propname resourcetype = {
+        "DAV:", "resourcetype"
+    };
+
+    const char *type = ne_propset_value(results, &resourcetype);
+    if (type && strstr(type, "<DAV:collection></DAV:collection>")) {
+        // skip collections
         return;
     }
-    // TODO: skip sub-collection
+
+    std::string uid = path2luid(uri.m_path);
+    if (uid.empty()) {
+        // skip collection itself (should have been detected as collection already)
+        return;
+    }
+
+    const char *etag = ne_propset_value(results, &prop);
     if (etag) {
         std::string rev = ETag2Rev(etag);
         SE_LOG_DEBUG(NULL, NULL, "item %s = rev %s",
