@@ -3547,10 +3547,15 @@ static string mangleICalendar20(const char *data)
     }
 
     if (getenv("CLIENT_TEST_UNIQUE_UID")) {
-        // Making UID unique per client-test run avoids issues
+        // Making UID unique per test to avoid issues
         // when the source already holds older copies.
         // Might still be an issue in real life?!
-        static time_t start = time(NULL);
+        static time_t start;
+        static std::string test;
+        if (test != getCurrentTest()) {
+            start = time(NULL);
+            test = getCurrentTest();
+        }
         std::string unique = StringPrintf("UID:%llu-", (long long unsigned)start);
         boost::replace_all(item, "UID:", unique);
     }
