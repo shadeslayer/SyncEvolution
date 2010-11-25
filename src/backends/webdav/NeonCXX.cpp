@@ -13,6 +13,7 @@
 
 #include <list>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/bind.hpp>
 
 #include <syncevo/TransportAgent.h>
@@ -67,7 +68,7 @@ URI URI::fromNeon(const ne_uri &uri)
     if (uri.scheme) { res.m_scheme = uri.scheme; }
     if (uri.host) { res.m_host = uri.host; }
     if (uri.userinfo) { res.m_userinfo = uri.userinfo; }
-    if (uri.path) { res.m_path = uri.path; }
+    if (uri.path) { res.m_path = normalizePath(uri.path, false); }
     if (uri.query) { res.m_query = uri.query; }
     if (uri.fragment) { res.m_fragment = uri.fragment; }
     res.m_port = uri.port;
@@ -112,6 +113,27 @@ std::string URI::unescape(const std::string &text)
     return tmp.get();
 }
 
+std::string URI::normalizePath(const std::string &path, bool collection)
+{
+    std::string res;
+    res.reserve(path.size() * 150 / 100);
+
+    typedef boost::split_iterator<string::const_iterator> string_split_iterator;
+    string_split_iterator it =
+        boost::make_split_iterator(path, boost::first_finder("/", boost::is_iequal()));
+    while (!it.eof()) {
+        res += escape(unescape(std::string(it->begin(), it->end())));
+        ++it;
+        if (!it.eof()) {
+            res += '/';
+        }
+    }
+    if (collection && !boost::ends_with(res, "/")) {
+        res += '/';
+    }
+    return res;
+}
+
 std::string Status2String(const ne_status *status)
 {
     if (!status) {
@@ -148,19 +170,26 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
                                   m_uri.m_host.c_str(),
                                   m_uri.m_port);
     ne_set_server_auth(m_session, getCredentials, this);
-    ne_ssl_set_verify(m_session, sslVerify, this);
-    ne_ssl_trust_default_ca(m_session);
+    if (m_uri.m_scheme == "https") {
+        // neon only initializes session->ssl_context if
+        // using https and segfaults in ne_ssl_trust_default_ca()
+        // of ne_gnutls.c if ne_ssl_trust_default_ca()
+        // is called for non-https. So better call these
+        // functions only when needed.
+        ne_ssl_set_verify(m_session, sslVerify, this);
+        ne_ssl_trust_default_ca(m_session);
 
-    // hack for Yahoo: need a client certificate
-    ne_ssl_client_cert *cert = ne_ssl_clicert_read("client.p12");
-    SE_LOG_DEBUG(NULL, NULL, "client cert is %s", !cert ? "missing" : ne_ssl_clicert_encrypted(cert) ? "encrypted" : "unencrypted");
-    if (cert) {
-        if (ne_ssl_clicert_encrypted(cert)) {
-            if (ne_ssl_clicert_decrypt(cert, "meego")) {
-                SE_LOG_DEBUG(NULL, NULL, "decryption failed");
+        // hack for Yahoo: need a client certificate
+        ne_ssl_client_cert *cert = ne_ssl_clicert_read("client.p12");
+        SE_LOG_DEBUG(NULL, NULL, "client cert is %s", !cert ? "missing" : ne_ssl_clicert_encrypted(cert) ? "encrypted" : "unencrypted");
+        if (cert) {
+            if (ne_ssl_clicert_encrypted(cert)) {
+                if (ne_ssl_clicert_decrypt(cert, "meego")) {
+                    SE_LOG_DEBUG(NULL, NULL, "decryption failed");
+                }
             }
+            ne_ssl_set_clicert(m_session, cert);
         }
-        ne_ssl_set_clicert(m_session, cert);
     }
 
     std::string proxyurl = settings->proxy();

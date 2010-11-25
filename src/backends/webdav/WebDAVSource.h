@@ -74,6 +74,44 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     // access to settings owned by this instance
     Neon::Settings &settings() { return *m_settings; }
 
+    /**
+     * return true if resource with the given properties is something we can work with;
+     * properties which are queried are currently hard-coded in WebDAVSource::open()
+     *
+     * @param props    mapping from fully qualified properties to their values,
+     *                 normalized by neon library
+     */
+    virtual bool typeMatches(const StringMap &props) const = 0;
+
+    /**
+     * property pointing to URL path with suitable collections ("calendar-home-set", "address-home-set", ...);
+     * must be known to WebDAVSource::open() already
+     */
+    virtual std::string homeSetProp() const = 0;
+
+    /**
+     * HTTP content type for PUT
+     */
+    virtual std::string contentType() const = 0;
+
+    /**
+     * create new resource name (only last component, not full path)
+     *
+     * Some servers require that this matches the item content,
+     * for example Yahoo CardDAV wants <uid>.vcf.
+     *
+     * @param item    original item data
+     * @param buffer  empty, may be filled with modified item data
+     * @retval luid   new resource name, not URL encoded
+     * @return item data to be sent
+     */
+    virtual const std::string *createResourceName(const std::string &item, std::string &buffer, std::string &luid) { luid = UUID(); return &item; }
+
+    /**
+     * optionally modify item content to match the luid of the item we are going to update
+     */
+    virtual const std::string *setResourceName(const std::string &item, std::string &buffer, const std::string &luid) { return &item; }
+
  private:
     boost::shared_ptr<Neon::Settings> m_settings;
     boost::shared_ptr<Neon::Session> m_session;

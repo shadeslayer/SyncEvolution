@@ -632,6 +632,17 @@ void CalDAVSource::restoreData(const SyncSource::Operations::ConstBackupInfo &ol
     throw("not implemented");
 }
 
+bool CalDAVSource::typeMatches(const StringMap &props) const
+{
+    StringMap::const_iterator it = props.find("urn:ietf:params:xml:ns:caldav:supported-calendar-component-set");
+    if (it != props.end() &&
+        it->second.find("<urn:ietf:params:xml:ns:caldavcomp name='VEVENT'></urn:ietf:params:xml:ns:caldavcomp>") != std::string::npos) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 SE_END_CXX
 
 #endif // ENABLE_DAV

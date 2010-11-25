@@ -157,7 +157,8 @@ void WebDAVSource::open()
                  m_session->getURL().c_str(),
                  Flags2String(caps, descr).c_str());
 
-    // Find default calendar.
+    // Find default calendar. Same for address book, with slightly
+    // different parameters.
     //
     // Stops when:
     // - current path is calendar collection (= contains VEVENTs)
@@ -171,22 +172,18 @@ void WebDAVSource::open()
     //
     // TODO: support more than one calendar. Instead of stopping at the first one,
     // scan more throroughly, then decide deterministically.
-    // TODO: make this independent of calendar and/or VEVENT
     int counter = 0;
     const int limit = 10;
     std::set<std::string> tried;
     std::set<std::string> candidates;
     std::string path = m_session->getURI().m_path;
-    // Must end in slash for sub-string substraction path2luid() and
-    // comparison against results returned by server.
-    if (!boost::ends_with(path, "/")) {
-        path += '/';
-    }
     Neon::Session::PropfindPropCallback_t callback =
         boost::bind(&WebDAVSource::openPropCallback,
                     this, _1, _2, _3, _4);
 
     while (true) {
+        // must normalize so that we can compare against results from server
+        path = Neon::URI::normalizePath(path, true);
         SE_LOG_DEBUG(NULL, NULL, "testing %s", path.c_str());
         tried.insert(path);
 
@@ -207,7 +204,7 @@ void WebDAVSource::open()
         // Now ask for some specific properties of interest for us.
         // Using CALDAV:allprop would be nice, but doesn't seem to
         // be possible with Neon.
-        m_davProps.clear();        
+        m_davProps.clear();
         static const ne_propname caldav[] = {
             // WebDAV ACL
             { "DAV:", "alternate-URI-set" },
@@ -227,13 +224,18 @@ void WebDAVSource::open()
             { "urn:ietf:params:xml:ns:caldav", "max-date-time" },
             { "urn:ietf:params:xml:ns:caldav", "max-instances" },
             { "urn:ietf:params:xml:ns:caldav", "max-attendees-per-instance" },
+            // CardDAV
+            { "urn:ietf:params:xml:ns:carddav", "addressbook-home-set" },
+            { "urn:ietf:params:xml:ns:carddav", "principal-address" },
+            { "urn:ietf:params:xml:ns:carddav", "addressbook-description" },
+            { "urn:ietf:params:xml:ns:carddav", "supported-address-data" },
+            { "urn:ietf:params:xml:ns:carddav", "max-resource-size" },
             { NULL, NULL }
         };
         m_session->propfindProp(path, 0, caldav, callback);
 
-        // all of the find() calls rely on normalization of the value by Neon
-        const std::string &components = m_davProps[path]["urn:ietf:params:xml:ns:caldav:supported-calendar-component-set"];
-        if (components.find("<urn:ietf:params:xml:ns:caldavcomp name='VEVENT'></urn:ietf:params:xml:ns:caldavcomp>") != components.npos) {
+        StringMap &props = m_davProps[path];
+        if (typeMatches(props)) {
             // found it
             break;
         }
@@ -242,7 +244,7 @@ void WebDAVSource::open()
         static const std::string hrefStart = "<DAV:href>";
         static const std::string hrefEnd = "</DAV:href";
         std::string next;
-        const std::string &home = m_davProps[path]["urn:ietf:params:xml:ns:caldav:calendar-home-set"];
+        const std::string &home = props[homeSetProp()];
         if (!home.empty()) {
             size_t start = home.find(hrefStart);
             if (start != home.npos) {
@@ -250,12 +252,12 @@ void WebDAVSource::open()
                 if (end != home.npos) {
                     start += hrefStart.size();
                     next = home.substr(start, end - start);
-                    SE_LOG_DEBUG(NULL, NULL, "follow calendar-home-set to %s", next.c_str());
+                    SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", next.c_str());
                 }
             }
         }
         if (next.empty()) {
-            const std::string &type = m_davProps[path]["DAV::resourcetype"];
+            const std::string &type = props["DAV::resourcetype"];
             if (type.find("<DAV:collection></DAV:collection>") != type.npos) {
                 // List members and find new candidates.
                 // Yahoo! Calendar does not return resources contained in /dav/<user>/Calendar/
@@ -268,6 +270,9 @@ void WebDAVSource::open()
                     { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
                     { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
                     { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
+                    { "urn:ietf:params:xml:ns:carddav", "addressbook-home-set" },
+                    { "urn:ietf:params:xml:ns:carddav", "addressbook-description" },
+                    { "urn:ietf:params:xml:ns:carddav", "supported-address-data" },
                     { NULL, NULL }
                 };
                 m_davProps.clear();
@@ -283,6 +288,10 @@ void WebDAVSource::open()
                         candidates.find(sub) == candidates.end() &&
                         subType.find("<DAV:collection></DAV:collection>") != subType.npos) {
                         candidates.insert(sub);
+                        if (next.empty() && typeMatches(entry.second)) {
+                            // try this one before or all other candidates
+                            next = sub;
+                        }
                         SE_LOG_DEBUG(NULL, NULL, "new candidate: %s", sub.c_str());
                     }
                 }
@@ -291,7 +300,7 @@ void WebDAVSource::open()
         if (next.empty()) {
             // use next candidate
             if (candidates.empty()) {
-                throwError(StringPrintf("no calendar found in %s", m_settings->getURL().c_str()));
+                throwError(StringPrintf("no collection found in %s", m_settings->getURL().c_str()));
             }
             next = *candidates.begin();
             candidates.erase(candidates.begin());
@@ -300,7 +309,7 @@ void WebDAVSource::open()
 
         counter++;
         if (counter > limit) {
-            throwError(StringPrintf("giving up search for calendar after %d attempts", limit));
+            throwError(StringPrintf("giving up search for collection after %d attempts", limit));
         }
         path = next;
     }
@@ -340,6 +349,7 @@ void WebDAVSource::openPropCallback(const Neon::URI &uri,
 bool WebDAVSource::isEmpty()
 {
     // listing all items is relatively efficient, let's use that
+    // TODO: use truncated result search
     RevisionMap_t revisions;
     listAllItems(revisions);
     return revisions.empty();
@@ -362,6 +372,7 @@ WebDAVSource::Databases WebDAVSource::getDatabases()
 
 static const ne_propname getetag[] = {
     { "DAV:", "getetag" },
+    { "DAV:", "resourcetype" },
     { NULL, NULL }
 };
 
@@ -391,6 +402,7 @@ void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
         // skip collection itself
         return;
     }
+    // TODO: skip sub-collection
     if (etag) {
         std::string rev = ETag2Rev(etag);
         SE_LOG_DEBUG(NULL, NULL, "item %s = rev %s",
@@ -428,6 +440,8 @@ void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
     item.clear();
     Neon::Request req(*m_session, "GET", luid2path(uid),
                       "", item);
+    // useful with CardDAV: server might support more than vCard 3.0, but we don't
+    req.addHeader("Accept", contentType());
     req.run();
 }
 
@@ -439,15 +453,15 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
 
     std::string result;
     if (uid.empty()) {
-        // Pick a random resource name,
+        // Pick a resource name (done by derived classes, by default random),
         // catch unexpected conflicts via If-None-Match: *.
-        new_uid = UUID();
+        std::string buffer;
+        const std::string *data = createResourceName(item, buffer, new_uid);
         Neon::Request req(*m_session, "PUT", luid2path(new_uid),
-                          item, result);
+                          *data, result);
         req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
         req.addHeader("If-None-Match", "*");
-        // TODO: other CardDAV
-        req.addHeader("Content-Type", "text/calendar; charset=utf-8");
+        req.addHeader("Content-Type", contentType().c_str());
         req.run();
         SE_LOG_DEBUG(NULL, NULL, "add item status: %s",
                      Neon::Status2String(req.getStatus()).c_str());
@@ -477,17 +491,42 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
             new_uid = real_luid;
             // TODO: find a better way of detecting unexpected updates.
             // update = true;
+        } else if (!rev.empty()) {
+            // Yahoo Contacts returns an etag, but no href. For items
+            // that were really created as requested, that's okay. But
+            // Yahoo Contacts silently merges the new contact with an
+            // existing one, presumably if it is "similar" enough. The
+            // web interface allows creating identical contacts
+            // multiple times; not so CardDAV.  We are not even told
+            // the path of that other contact...  Detect this by
+            // checking whether the item really exists.
+            RevisionMap_t revisions;
+            bool failed = false;
+            m_session->propfindURI(luid2path(new_uid), 0, getetag,
+                                   boost::bind(&WebDAVSource::listAllItemsCallback,
+                                               this, _1, _2, boost::ref(revisions),
+                                               boost::ref(failed)));
+            // Turns out we get a result for our original path even in
+            // the case of a merge, although the original path is not
+            // listed when looking at the collection.  Let's use that
+            // to return the "real" uid to our caller.
+            if (revisions.size() == 1 &&
+                revisions.begin()->first != new_uid) {
+                SE_LOG_DEBUG(NULL, NULL, "%s mapped to %s by peer",
+                             new_uid.c_str(),
+                             revisions.begin()->first.c_str());
+                new_uid = revisions.begin()->first;
+                update = true;
+            }
         }
     } else {
-        // TODO: preserve original UID and RECURRENCE-ID,
-        // update just one VEVENT in a meeting series (which is
-        // one resource in CalDAV)
         new_uid = uid;
+        std::string buffer;
+        const std::string *data = setResourceName(item, buffer, new_uid);
         Neon::Request req(*m_session, "PUT", luid2path(new_uid),
-                          item, result);
+                          *data, result);
         req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
-        // TODO: other CardDAV
-        req.addHeader("Content-Type", "text/calendar; charset=utf-8");
+        req.addHeader("Content-Type", contentType());
         // TODO: match exactly the expected revision, aka ETag,
         // or implement locking. Note that the ETag might not be
         // known, for example in this case:

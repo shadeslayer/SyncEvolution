@@ -103,7 +103,7 @@ struct URI {
     /**
      * Split URL into parts. Throws TransportAgentException on
      * invalid url.  Port will be set to default for scheme if not set
-     * in URL.
+     * in URL. Path is normalized.
      */
     static URI parse(const std::string &url);
 
@@ -123,6 +123,13 @@ struct URI {
      */
     static std::string escape(const std::string &text);
     static std::string unescape(const std::string &text);
+
+    /**
+     * Removes differences caused by escaping different characters.
+     * Appends slash if path is a collection (or meant to be one) and
+     * doesn't have a trailing slash.
+     */
+    static std::string normalizePath(const std::string &path, bool collection);
 };
 
 /** produce debug string for status, which may be NULL */

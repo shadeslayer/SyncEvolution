@@ -15,6 +15,8 @@ MAINTAINERCLEANFILES = Makefile.in
 SYNCDAV_SOURCES = \
 	CalDAVSource.h \
 	CalDAVSource.cpp \
+	CardDAVSource.h \
+	CardDAVSource.cpp \
 	WebDAVSource.h \
 	WebDAVSource.cpp \
 	NeonCXX.h \
