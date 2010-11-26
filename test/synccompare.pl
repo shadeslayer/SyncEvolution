@@ -799,7 +799,12 @@ if($#ARGV > 1) {
   # normalize
   my $in;
   if( $#ARGV >= 0 ) {
-    open(IN, "<$ARGV[0]") || die "$ARGV[0]: $!";
+    my $file1 = $ARGV[0];
+    if (-d $file1) {
+        open(IN, "-|:utf8", "find $file1 -type f -print0 | xargs -0 cat") || die "$file1: $!";
+    } else {
+        open(IN, "<:utf8", $file1) || die "$file1: $!";
+    }
     $in = *IN{IO};
   } else {
     $in = *STDIN{IO};
