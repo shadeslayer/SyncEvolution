@@ -105,17 +105,12 @@ sub splitvalue {
   return join("", @res);
 }
 
-# parameters: text, width to use for reformatted lines
-# returns list of lines without line breaks
-sub Normalize {
-  $_ = shift;
-  my $width = shift;
+# called for one VCALENDAR (with single VEVENT/VTODO/VJOURNAL) or VCARD,
+# returns normalized one
+sub NormalizeItem {
+    my $width = shift;
+    $_ = shift;
 
-  s/\r//g;
-
-  my @items = ();
-
-  foreach $_ ( split( /(?:(?<=\nEND:VCARD)|(?<=\nEND:VCALENDAR))\n*/ ) ) {
     # undo line continuation
     s/\n\s//gs;
     # ignore charset specifications, assume UTF-8
@@ -559,10 +554,40 @@ sub Normalize {
       }
     }
 
-    push @items, ${$formatted[0]}[0];
-  }
+    return ${$formatted[0]}[0];
+}
 
-  return split( /\n/, join( "\n\n", sort @items ));
+# parameters: text, width to use for reformatted lines
+# returns list of lines without line breaks
+sub Normalize {
+    $_ = shift;
+    my $width = shift;
+
+    s/\r//g;
+
+    my @items = ();
+
+    # split into individual items
+    foreach $_ ( split( /(?:(?<=\nEND:VCARD)|(?<=\nEND:VCALENDAR))\n*/ ) ) {
+        if (/END:VEVENT\s+BEGIN:VEVENT/s) {
+            # remove multiple events from calendar item
+            s/(BEGIN:VEVENT.*END:VEVENT\n)//s;
+            my $events = $1;
+            my $calendar = $_;
+            my $event;
+            # inject every single one back into the calendar and process the result
+            foreach $event ( split ( /(?:(?<=\nEND:VEVENT))\n*/, $events ) ) {
+                $_ = $calendar;
+                s/\nEND:VCALENDAR/\n$event\nEND:VCALENDAR/;
+                push @items, NormalizeItem($width, $_);
+            }
+        } else {
+            # already a single item
+            push @items, NormalizeItem($width, $_);
+        }
+    }
+
+    return split( /\n/, join( "\n\n", sort @items ));
 }
 
 # number of columns available for output:
