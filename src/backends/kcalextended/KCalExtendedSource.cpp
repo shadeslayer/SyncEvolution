@@ -218,9 +218,6 @@ void KCalExtendedSource::open()
         if (!m_data->m_storage->open()) {
             throwError("failed to open storage");
         }
-        if (!m_data->m_storage->load()) {
-            throwError("failed to load calendar");
-        }
         mKCal::Notebook::Ptr defaultNotebook = m_data->m_storage->defaultNotebook();
         if (!defaultNotebook) {
             throwError("no default Notebook");
@@ -259,6 +256,13 @@ void KCalExtendedSource::open()
             notebook = *it;
         }
         m_data->m_notebookUID = notebook->uid();
+    }
+
+    // we are not currently using partial loading because there were
+    // issues with it (BMC #6061); the load() calls elsewhere in this
+    // file are commented out
+    if (!m_data->m_storage->load()) {
+        throwError("failed to load calendar");
     }
 }
 
