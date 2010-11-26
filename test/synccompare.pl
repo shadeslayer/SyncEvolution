@@ -62,6 +62,7 @@ my $mobical = $server =~ /mobical/;
 my $memotoo = $server =~ /memotoo/;
 my $nokia_7210c = $server =~ /nokia_7210c/;
 my $ovi = $server =~ /Ovi/;
+my $unique_uid = $ENV{CLIENT_TEST_UNIQUE_UID};
 
 # TODO: this hack ensures that any synchronization is limited to
 # properties supported by Synthesis. Remove this again.
@@ -124,6 +125,11 @@ sub Normalize {
     # in calendar events the UID needs to be preserved to handle
     # meeting invitations/replies correctly
     s/((VCARD|VJOURNAL).*)^UID:[^\n]*\n/$1/msg;
+
+    # intentional changes to UID are acceptable when running with CLIENT_TEST_UNIQUE_UID
+    if ($unique_uid) {
+        s/UID:UNIQUE-UID-\d+-/UID:/g;
+    }
 
     # exact order of categories is irrelevant
     s/^CATEGORIES:(\S+)/"CATEGORIES:" . sortlist($1)/mge;

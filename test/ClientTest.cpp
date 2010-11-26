@@ -3556,7 +3556,7 @@ static string mangleICalendar20(const char *data)
             start = time(NULL);
             test = getCurrentTest();
         }
-        std::string unique = StringPrintf("UID:%llu-", (long long unsigned)start);
+        std::string unique = StringPrintf("UID:UNIQUE-UID-%llu-", (long long unsigned)start);
         boost::replace_all(item, "UID:", unique);
     }
 
