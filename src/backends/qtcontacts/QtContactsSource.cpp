@@ -112,7 +112,7 @@ public:
             checkError(op, req);
         } else {
             list<string> res;
-            foreach (int index, errors) {
+            foreach (int index, errors.keys()) {
                 res.push_back(StringPrintf("entry #%d failed with error %d", index, errors[index]));
             }
             m_parent->throwError(StringPrintf("%s: failed with error %d, ", op, req.error()) +
