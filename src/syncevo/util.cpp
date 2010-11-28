@@ -117,9 +117,10 @@ void splitPath(const string &path, string &dir, string &file)
 
 bool relToAbs(string &path)
 {
-    char buffer[PATH_MAX+1];
-    if (realpath(path.c_str(), buffer)) {
+    char *buffer;
+    if ((buffer = realpath(path.c_str(), NULL)) != NULL) {
         path = buffer;
+	free(buffer);
         return true;
     } else {
         return false; 
