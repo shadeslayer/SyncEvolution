@@ -75,14 +75,20 @@ class Settings {
      * if true, then manipulate SEQUENCE and LAST-MODIFIED properties
      * so that Google CalDAV server accepts updates
      */
-    virtual bool googleUpdateHack() = 0;
+    virtual bool googleUpdateHack() const = 0;
 
     /**
      * if true, then avoid RECURRENCE-ID in sub items without
      * corresponding parent by replacing it with
      * X-SYNCEVOLUTION-RECURRENCE-ID
      */
-    virtual bool googleChildHack() = 0;
+    virtual bool googleChildHack() const = 0;
+
+    /**
+     * if true, then check whether server has added an unwanted alarm
+     * and resend to get rid of it
+     */
+    virtual bool googleAlarmHack() const = 0;
 
     /**
      * use this to create a boost_shared pointer for a

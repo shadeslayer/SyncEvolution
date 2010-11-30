@@ -24,11 +24,14 @@ class ContextSettings : public Neon::Settings {
     std::string m_url;
     bool m_googleUpdateHack;
     bool m_googleChildHack;
-
+    bool m_googleAlarmHack;
 
 public:
     ContextSettings(const boost::shared_ptr<const SyncConfig> &context) :
-        m_context(context)
+        m_context(context),
+        m_googleUpdateHack(false),
+        m_googleChildHack(false),
+        m_googleAlarmHack(false)
     {
         if (m_context) {
             vector<string> urls = m_context->getSyncURL();
@@ -55,6 +58,12 @@ public:
                             m_googleUpdateHack = true;
                         } else if (boost::iequals(*flag, "ChildHack")) {
                             m_googleChildHack = true;
+                        } else if (boost::iequals(*flag, "AlarmHack")) {
+                            m_googleAlarmHack = true;
+                        } else if (boost::iequals(*flag, "Google")) {
+                            m_googleUpdateHack =
+                                m_googleChildHack =
+                                m_googleAlarmHack = true;
                         } else {
                             SE_THROW(StringPrintf("unknown SyncEvolution flag %s in URL %s",
                                                   std::string(flag->begin(), flag->end()).c_str(),
@@ -92,8 +101,9 @@ public:
         }
     }
 
-    virtual bool googleUpdateHack() { return m_googleUpdateHack; }
-    virtual bool googleChildHack() { return m_googleChildHack; }
+    virtual bool googleUpdateHack() const { return m_googleUpdateHack; }
+    virtual bool googleChildHack() const { return m_googleChildHack; }
+    virtual bool googleAlarmHack() const { return m_googleChildHack; }
 
     virtual void getCredentials(const std::string &realm,
                                 std::string &username,

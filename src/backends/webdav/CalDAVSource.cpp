@@ -202,17 +202,20 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         InsertItemResult res;
         // Yahoo expects resource names to match UID + ".ics".
         std::string name = newEvent->m_UID + ".ics";
+        std::string buffer;
+        const std::string *data;
         if (!settings().googleChildHack() || subid.empty()) {
             // avoid re-encoding item data
-            res = insertItem(name, item, true);
+            data = &item;
         } else {
             // sanitize item first: when adding child event without parent,
             // then the RECURRENCE-ID confuses Google
             eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(newEvent->m_calendar)));
-            std::string data = icalstr.get();
-            Event::escapeRecurrenceID(data);
-            res = insertItem(name, data, true);
+            buffer = icalstr.get();
+            Event::escapeRecurrenceID(buffer);
+            data = &buffer;
         }
+        res = insertItem(name, *data, true);
         subres.m_uid = res.m_luid;
         subres.m_subid = subid;
         subres.m_revision = res.m_revision;
@@ -232,10 +235,58 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             icalcomponent_merge_component(event.m_calendar,
                                           newEvent->m_calendar.release()); // function destroys merged calendar
         } else {
-            // add to cache
-            newEvent->m_DAVluid = res.m_luid;
-            newEvent->m_etag = res.m_revision;
-            m_cache[newEvent->m_DAVluid] = newEvent;
+            // Google Calendar adds a default alarm each time a VEVENT is added
+            // anew. Avoid that by resending our data if necessary (= no alarm set).
+            if (settings().googleAlarmHack() &&
+                !icalcomponent_get_first_component(firstcomp, ICAL_VALARM_COMPONENT)) {
+                // add to cache, then update it
+                newEvent->m_DAVluid = res.m_luid;
+                newEvent->m_etag = res.m_revision;
+                m_cache[newEvent->m_DAVluid] = newEvent;
+
+                // potentially need to know sequence and mod time on server:
+                // keep pointer (clears pointer in newEvent),
+                // then get and parse new copy from server
+                eptr<icalcomponent> calendar = newEvent->m_calendar;
+
+                if (settings().googleUpdateHack()) {
+                    loadItem(*newEvent);
+
+                    // increment in original data
+                    newEvent->m_sequence++;
+                    newEvent->m_lastmodtime++;
+                    Event::setSequence(firstcomp, newEvent->m_sequence);
+                    icalproperty *lastmod = icalcomponent_get_first_property(firstcomp, ICAL_LASTMODIFIED_PROPERTY);
+                    if (lastmod) {
+                        lastmodtime = icaltime_from_timet(newEvent->m_lastmodtime, false);
+                        icalproperty_set_lastmodified(lastmod, lastmodtime);
+                    }
+                    icalproperty *dtstamp = icalcomponent_get_first_property(firstcomp, ICAL_DTSTAMP_PROPERTY);
+                    if (dtstamp) {
+                        icalproperty_set_dtstamp(dtstamp, lastmodtime);
+                    }
+                    // re-encode below
+                    data = &buffer;
+                }
+                bool mangleRecurrenceID = settings().googleChildHack() && !subid.empty();
+                if (data == &buffer || mangleRecurrenceID) {
+                    eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(calendar)));
+                    buffer = icalstr.get();
+                }
+                if (mangleRecurrenceID) {
+                    Event::escapeRecurrenceID(buffer);
+                }
+                SE_LOG_DEBUG(NULL, NULL, "resending VEVENT to get rid of VALARM");
+                res = insertItem(name, *data, true);
+                newEvent->m_etag =
+                    subres.m_revision = res.m_revision;
+                newEvent->m_calendar = calendar;
+            } else {
+                // add to cache without further changes
+                newEvent->m_DAVluid = res.m_luid;
+                newEvent->m_etag = res.m_revision;
+                m_cache[newEvent->m_DAVluid] = newEvent;
+            }
         }
     } else {
         if (subid != knownSubID) {
@@ -489,6 +540,14 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
             long sequence = Event::getSequence(comp);
             if (sequence > event.m_sequence) {
                 event.m_sequence = sequence;
+            }
+            icalproperty *lastmod = icalcomponent_get_first_property(comp, ICAL_LASTMODIFIED_PROPERTY);
+            if (lastmod) {
+                icaltimetype lastmodtime = icalproperty_get_lastmodified(lastmod);
+                time_t mod = icaltime_as_timet(lastmodtime);
+                if (mod > event.m_lastmodtime) {
+                    event.m_lastmodtime = mod;
+                }
             }
         }
     }

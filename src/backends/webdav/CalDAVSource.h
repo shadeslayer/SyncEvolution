@@ -76,7 +76,8 @@ class CalDAVSource : public WebDAVSource,
     class Event : boost::noncopyable {
     public:
         Event() :
-            m_sequence(0)
+            m_sequence(0),
+            m_lastmodtime(0)
         {}
 
         /** the ID used by WebDAVSource */
@@ -90,6 +91,9 @@ class CalDAVSource : public WebDAVSource,
 
         /** maximum sequence number of any sub item */
         long m_sequence;
+
+        /** maximum modification time of any sub item */
+        time_t m_lastmodtime;
 
         /**
          * the list of simplified RECURRENCE-IDs (without time zone,
