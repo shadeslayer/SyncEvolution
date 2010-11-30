@@ -549,6 +549,19 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                     event.m_lastmodtime = mod;
                 }
             }
+
+            // clean all X-LIC-ERROR warnings added by libical, for example:
+            // X-LIC-ERROR;X-LIC-ERRORTYPE=VALUE-PARSE-ERROR:No value for LOCATION property. Removing entire property:
+            icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_ANY_PROPERTY);
+            while (prop) {
+                icalproperty *next = icalcomponent_get_next_property(comp, ICAL_ANY_PROPERTY);
+                const char *name = icalproperty_get_property_name(prop);
+                if (name && !strcmp("X-LIC-ERROR", name)) {
+                    icalcomponent_remove_property(comp, prop);
+                    icalproperty_free(prop);
+                }
+                prop = next;
+            }
         }
     }
     return event;
