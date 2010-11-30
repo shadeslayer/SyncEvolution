@@ -332,13 +332,6 @@ void WebDAVSource::openPropCallback(const Neon::URI &uri,
     }
     name += ":";
     name += prop->name;
-    SE_LOG_DEBUG(NULL, NULL,
-                 "%s: %s = %s (%s)",
-                 uri.toURL().c_str(),
-                 name.c_str(),
-                 value ? value : "<no value>",
-                 Neon::Status2String(status).c_str());
-
     if (value) {
         m_davProps[uri.m_path][name] = value;
         boost::trim_if(m_davProps[uri.m_path][name],
