@@ -127,11 +127,13 @@ public:
     void startTest (CppUnit::Test *test) {
         m_currentTest = test->getName();
         std::cerr << m_currentTest;
-        string logfile = m_currentTest + ".log";
-        simplifyFilename(logfile);
-        m_logger.reset(new LoggerStdout(logfile));
-        m_logger->setLevel(Logger::DEBUG);
-        LoggerBase::pushLogger(m_logger.get());
+        if (!getenv("SYNCEVOLUTION_DEBUG")) {
+            string logfile = m_currentTest + ".log";
+            simplifyFilename(logfile);
+            m_logger.reset(new LoggerStdout(logfile));
+            m_logger->setLevel(Logger::DEBUG);
+            LoggerBase::pushLogger(m_logger.get());
+        }
         SE_LOG_DEBUG(NULL, NULL, "*** starting %s ***", m_currentTest.c_str());
         m_failures.reset();
         m_testFailed = false;
@@ -176,7 +178,9 @@ public:
         if (!failure.empty()) {
             SE_LOG_DEBUG(NULL, NULL, "%s", failure.c_str());
         }
-        LoggerBase::popLogger();
+        if (&LoggerBase::instance() == m_logger.get()) {
+            LoggerBase::popLogger();
+        }
         m_logger.reset();
 
         string logfile = m_currentTest + ".log";
