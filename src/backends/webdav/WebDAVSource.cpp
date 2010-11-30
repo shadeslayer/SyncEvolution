@@ -127,7 +127,7 @@ void WebDAVSource::open()
 {
     SE_LOG_DEBUG(NULL, NULL, "using libneon %s with %s",
                  ne_version_string(), Neon::features().c_str());
-    m_session.reset(new Neon::Session(m_settings));
+    m_session = Neon::Session::create(m_settings);
 
     // Start by checking server capabilities.
     // Verifies URL.

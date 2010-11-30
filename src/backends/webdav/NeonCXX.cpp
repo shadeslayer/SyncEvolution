@@ -192,11 +192,11 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
         }
     }
 
-    std::string proxyurl = settings->proxy();
-    if (proxyurl.empty()) {
+    m_proxyURL = settings->proxy();
+    if (m_proxyURL.empty()) {
         ne_session_system_proxy(m_session, 0);
     } else {
-        URI proxyuri = URI::parse(proxyurl);
+        URI proxyuri = URI::parse(m_proxyURL);
         ne_session_proxy(m_session, proxyuri.m_host.c_str(), proxyuri.m_port);
     }
 }
@@ -208,6 +208,24 @@ Session::~Session()
     }
     ne_sock_exit();
 }
+
+boost::shared_ptr<Session> Session::m_cachedSession;
+
+boost::shared_ptr<Session> Session::create(const boost::shared_ptr<Settings> &settings)
+{
+    URI uri = URI::parse(settings->getURL());
+    if (m_cachedSession &&
+        m_cachedSession->m_uri == uri &&
+        m_cachedSession->m_proxyURL == settings->proxy()) {
+        // reuse existing session with new settings pointer
+        m_cachedSession->m_settings = settings;
+        return m_cachedSession;
+    }
+    // create new session
+    m_cachedSession.reset(new Session(settings));
+    return m_cachedSession;
+}
+
 
 int Session::getCredentials(void *userdata, const char *realm, int attempt, char *username, char *password) throw()
 {

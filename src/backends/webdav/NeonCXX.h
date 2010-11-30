@@ -132,6 +132,16 @@ struct URI {
      * doesn't have a trailing slash.
      */
     static std::string normalizePath(const std::string &path, bool collection);
+
+    bool operator == (const URI &other) {
+        return m_scheme == other.m_scheme &&
+        m_host == other.m_host &&
+        m_userinfo == other.m_userinfo &&
+        m_port == other.m_port &&
+        m_path == other.m_path &&
+        m_query == other.m_query &&
+        m_fragment == other.m_fragment;
+    }
 };
 
 /** produce debug string for status, which may be NULL */
@@ -142,11 +152,21 @@ std::string Status2String(const ne_status *status);
  * Throws transport errors for fatal problems.
  */
 class Session {
- public:
     /**
      * @param settings    must provide information about settings on demand
      */
     Session(const boost::shared_ptr<Settings> &settings);
+    static boost::shared_ptr<Session> m_cachedSession;
+
+ public:
+    /**
+     * Create or reuse Session instance.
+     * 
+     * One Session instance is kept alive throughout the life of the process,
+     * to reuse proxy information (libproxy has a considerably delay during
+     * initialization) and HTTP connection/authentication.
+     */
+    static boost::shared_ptr<Session> create(const boost::shared_ptr<Settings> &settings);
     ~Session();
 
     /** ne_options2() */
@@ -194,6 +214,7 @@ class Session {
     boost::shared_ptr<Settings> m_settings;
     ne_session *m_session;
     URI m_uri;
+    std::string m_proxyURL;
     time_t m_lastRequestEnd;
 
     /** ne_set_server_auth() callback */
