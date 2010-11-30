@@ -474,9 +474,10 @@ public:
      * regardless whether the data source already contains items or not
      *
      * @param relaxed   if true, then disable some of the additional checks after adding the item
+     * @retval inserted    actual data that was inserted, optional
      * @return the LUID of the inserted item
      */
-    virtual std::string insert(CreateSource createSource, const char *data, bool relaxed = false);
+    virtual std::string insert(CreateSource createSource, const char *data, bool relaxed = false, std::string *inserted = NULL);
 
     /**
      * assumes that exactly one element is currently inserted and updates it with the given item
@@ -505,6 +506,11 @@ public:
      * @return true if the two databases are equal
      */
     virtual bool compareDatabases(const char *refFile, TestingSyncSource &copy, bool raiseAssert = true);
+
+    /**
+     * compare data in source with vararg list of std::string pointers, NULL terminated
+     */
+    void compareDatabases(TestingSyncSource &copy, ...);
 
     /**
      * insert artificial items, number of them determined by TEST_EVOLUTION_NUM_ITEMS
