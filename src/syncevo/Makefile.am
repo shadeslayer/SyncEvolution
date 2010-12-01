@@ -114,7 +114,9 @@ SYNCEVOLUTION_SOURCES  = \
 libsyncevolution_includedir= $(includedir)/syncevo
 libsyncevolution_include_HEADERS = \
 	declarations.h \
+        Cmdline.h \
 	TrackingSyncSource.h  \
+        MapSyncSource.h \
 	FileConfigNode.h \
 								  FilterConfigNode.h \
 								  PrefixConfigNode.h \
