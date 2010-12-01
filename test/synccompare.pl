@@ -624,8 +624,10 @@ if($#ARGV > 1) {
       } else {
           open(IN2, "<:utf8", $file2) || die "$file2: $!";
       }
-      @normal1 = Normalize(join("", <IN1>), $singlewidth);
-      @normal2 = Normalize(join("", <IN2>), $singlewidth);
+      my $buf1 = join("", <IN1>);
+      my $buf2 = join("", <IN2>);
+      @normal1 = Normalize($buf1, $singlewidth);
+      @normal2 = Normalize($buf2, $singlewidth);
       close(IN1);
       close(IN2);
   }
@@ -770,5 +772,6 @@ if($#ARGV > 1) {
     $in = *STDIN{IO};
   }
 
-  print STDOUT join("\n", Normalize(join("", <$in>), $columns)), "\n";
+  my $buf = join("", <$in>);
+  print STDOUT join("\n", Normalize($buf, $columns)), "\n";
 }
