@@ -70,12 +70,12 @@ class Unref {
     }
 #ifdef ENABLE_EBOOK
     static void unref(EBookQuery *pointer) { e_book_query_unref(pointer); }
-#endif
+#endif // ENABLE_EBOOK
+#endif // HAVE_GLIB
 #ifdef ENABLE_ICAL
     static void unref(icalcomponent *pointer) { icalcomponent_free(pointer); }
     static void unref(icaltimezone *pointer) { icaltimezone_free(pointer, 1); }
-#endif
-#endif
+#endif // ENABLE_ICAL
 };
 
 #ifdef HAVE_GLIB
