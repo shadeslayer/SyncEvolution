@@ -373,6 +373,27 @@ protected:
     SyncMLStatus m_status;
 };
 
+class TransportException : public Exception
+{
+ public:
+    TransportException(const std::string &file,
+                       int line,
+                       const std::string &what) :
+    Exception(file, line, what) {}
+    ~TransportException() throw() {}
+};
+
+class TransportStatusException : public StatusException
+{
+ public:
+    TransportStatusException(const std::string &file,
+                             int line,
+                             const std::string &what,
+                             SyncMLStatus status) :
+    StatusException(file, line, what, status) {}
+    ~TransportStatusException() throw() {}
+};
+
 /**
  * replace ${} with environment variables, with
  * XDG_DATA_HOME, XDG_CACHE_HOME and XDG_CONFIG_HOME having their normal
