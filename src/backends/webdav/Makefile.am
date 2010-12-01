@@ -1,4 +1,5 @@
-AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+# "test" only works when compiling as part of SyncEvolution
+AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
@@ -23,6 +24,6 @@ SYNCDAV_SOURCES = \
 	NeonCXX.cpp
 
 syncdav_la_SOURCES = $(SYNCDAV_SOURCES)
-syncdav_la_LIBADD = $(NEON_LIBS) ../../syncevo/libsyncevolution.la
+syncdav_la_LIBADD = $(NEON_LIBS) $(SYNCEVOLUTION_LIBS)
 syncdav_la_LDFLAGS = -module -avoid-version
-syncdav_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(NEON_CFLAGS)
+syncdav_la_CXXFLAGS = $(NEON_CFLAGS)

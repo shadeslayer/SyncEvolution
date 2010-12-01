@@ -11,8 +11,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
-#include <syncevo/TransportAgent.h>
-
 SE_BEGIN_CXX
 
 /**

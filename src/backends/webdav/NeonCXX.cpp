@@ -16,7 +16,6 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/bind.hpp>
 
-#include <syncevo/TransportAgent.h>
 #include <syncevo/util.h>
 #include <syncevo/Logging.h>
 #include <syncevo/SmartPtr.h>

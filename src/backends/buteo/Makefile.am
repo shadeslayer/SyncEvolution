@@ -1,6 +1,7 @@
 include $(top_srcdir)/m4-repo/autotroll.mk
 
-AM_CPPFLAGS = -I$(srcdir)/../../ -I$(srcdir)/../../../test
+# "test" only works when compiling as part of SyncEvolution
+AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(srcdir)/../../../test
 EXTRA_DIST = configure-sub.in
 MAINTAINERCLEANFILES = Makefile.in
 
@@ -25,7 +26,7 @@ libsyncevo_buteo_client_la_SOURCES = \
 nodist_libsyncevo_buteo_client_la_SOURCES = \
 	$(BUILT_SOURCES)
 
-libsyncevo_buteo_client_la_LIBADD = $(BUTEO_LIBS) $(QT_LIBS) ../../syncevo/libsyncevolution.la
+libsyncevo_buteo_client_la_LIBADD = $(BUTEO_LIBS) $(QT_LIBS) $(SYNCEVOLUTION_LIBS)
 libsyncevo_buteo_client_la_LDFLAGS = -module -avoid-version $(QT_LDFLAGS)
 libsyncevo_buteo_client_la_CPPFLAGS = $(AM_CPPFLAGS) $(QT_CPPFLAGS)
 

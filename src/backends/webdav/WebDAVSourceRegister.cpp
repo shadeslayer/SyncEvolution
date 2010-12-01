@@ -5,7 +5,9 @@
 #include "CalDAVSource.h"
 #include "CardDAVSource.h"
 #include <syncevo/SyncSource.h>
+#ifdef ENABLE_UNIT_TESTS
 #include "test.h"
+#endif
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX

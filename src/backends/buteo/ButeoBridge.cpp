@@ -3,7 +3,9 @@
  */
 
 #include "ButeoBridge.h"
+#ifdef ENABLE_UNIT_TESTS
 #include "test.h"
+#endif
 #include <syncevo/util.h>
 #include <syncevo/Cmdline.h>
 #include <syncevo/Logging.h>
@@ -14,6 +16,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <iostream>
 
 #include <libsyncprofile/SyncResults.h>
 
