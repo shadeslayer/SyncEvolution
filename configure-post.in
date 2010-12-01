@@ -144,6 +144,19 @@ if test "$enable_dbus_timeout_hack" = "yes"; then
    AC_DEFINE(ENABLE_DBUS_TIMEOUT_HACK, 1, [overrides the default D-Bus timeout so that synchronous calls never time out])
 fi
 
+# Avoid hard-coding paths in backends. These names are chosen so
+# that a backend can alternatively use its own top-level configure
+# with PKG_CHECK_MODULES(SYNCEVOLUTION, "syncevolution") to set them.
+if test "$builddir" = "$srcdir"; then
+   # need absolute path, use pwd instead of relative $srcdir
+   SYNCEVOLUTION_CFLAGS=-I`pwd`/src
+else
+   SYNCEVOLUTION_CFLAGS=-I$srcdir/src
+fi
+SYNCEVOLUTION_LIBS=`pwd`/src/syncevo/libsyncevolution.la
+AC_SUBST(SYNCEVOLUTION_CFLAGS)
+AC_SUBST(SYNCEVOLUTION_LIBS)
+
 AC_CONFIG_FILES(Makefile src/dbus/interfaces/Makefile src/gdbus/Makefile src/dbus/Makefile src/Makefile src/syncevo/Makefile src/syncevo/syncevolution.pc src/syncevo/configs/Makefile src/synthesis-includes/Makefile src/gtk-ui/Makefile po/Makefile.in test/Makefile src/dbus/syncevo-dbus.pc)
 AC_OUTPUT
 
