@@ -147,12 +147,8 @@ fi
 # Avoid hard-coding paths in backends. These names are chosen so
 # that a backend can alternatively use its own top-level configure
 # with PKG_CHECK_MODULES(SYNCEVOLUTION, "syncevolution") to set them.
-if test "$builddir" = "$srcdir"; then
-   # need absolute path, use pwd instead of relative $srcdir
-   SYNCEVOLUTION_CFLAGS=-I`pwd`/src
-else
-   SYNCEVOLUTION_CFLAGS=-I$srcdir/src
-fi
+# need absolute path, use pwd instead of relative $srcdir
+SYNCEVOLUTION_CFLAGS=-I`cd $srcdir && pwd`/src
 SYNCEVOLUTION_LIBS=`pwd`/src/syncevo/libsyncevolution.la
 AC_SUBST(SYNCEVOLUTION_CFLAGS)
 AC_SUBST(SYNCEVOLUTION_LIBS)
