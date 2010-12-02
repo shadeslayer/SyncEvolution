@@ -33,6 +33,8 @@
 #include <QContactSaveRequest>
 #include <QContactTimestamp>
 #include <QContactLocalIdFilter>
+#include <QContactThumbnail>
+#include <QContactAvatar>
 
 #include <QVersitContactExporter>
 #include <QVersitContactImporter>
@@ -208,9 +210,22 @@ void QtContactsSource::readItem(const string &uid, std::string &item, bool raw)
     fetch.setFilter(QtContactsData::createFilter(uid));
     fetch.start();
     fetch.waitForFinished();
-    QContact contact = fetch.contacts().first();
+
+    QList<QContact> contacts = fetch.contacts();
+    for (int i = 0; i < contacts.size(); ++i) {
+        QContact &contact = contacts[i];
+        const QContactAvatar avatar = contact.detail(QContactAvatar::DefinitionName);
+        const QContactThumbnail thumb = contact.detail(QContactThumbnail::DefinitionName);
+        if (!avatar.isEmpty() && thumb.isEmpty()) {
+            QImage image(avatar.imageUrl().path());
+            QContactThumbnail thumbnail;
+            thumbnail.setThumbnail(image);
+            contact.saveDetail(&thumbnail);
+        }
+    }
+
     QVersitContactExporter exporter;
-    if (!exporter.exportContacts(fetch.contacts(), QVersitDocument::VCard30Type)) {
+    if (!exporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
         throwError(uid + ": encoding as vCard 3.0 failed");
     }
     QByteArray vcard;
