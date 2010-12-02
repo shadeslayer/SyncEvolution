@@ -1,7 +1,7 @@
 # "test" only works when compiling as part of SyncEvolution
 AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
-EXTRA_DIST = configure-sub.in
+EXTRA_DIST = configure-sub.in WebDAVSourceRegister.cpp
 
 SYNCSOURCES = syncdav.la
 MOSTLYCLEANFILES = $(SYNCSOURCES)
