@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
@@ -19,7 +19,7 @@ SYNCSQLITE_SOURCES = \
 	SQLiteContactSource.cpp
 
 syncsqlite_la_SOURCES = $(SYNCSQLITE_SOURCES)
-syncsqlite_la_LIBADD = $(SQLITE_LIBS)
+syncsqlite_la_LIBADD = $(SQLITE_LIBS) $(SYNCEVOLUTION_LIBS)
 syncsqlite_la_LDFLAGS = -module -avoid-version
 syncsqlite_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 

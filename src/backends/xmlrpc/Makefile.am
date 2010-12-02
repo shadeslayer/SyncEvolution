@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
@@ -17,7 +17,7 @@ SYNCXMLRPC_SOURCES = \
 	XMLRPCSyncSource.cpp
 
 syncxmlrpc_la_SOURCES = $(SYNCXMLRPC_SOURCES)
-syncxmlrpc_la_LIBADD = $(XMLRPC_LIBS)
+syncxmlrpc_la_LIBADD = $(XMLRPC_LIBS) $(SYNCEVOLUTION_LIBS)
 syncxmlrpc_la_LDFLAGS = -module -avoid-version
 syncxmlrpc_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 # If you need special test cases for your sync source, then

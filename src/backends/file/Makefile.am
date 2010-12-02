@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
@@ -17,7 +17,7 @@ SYNCFILE_SOURCES = \
 	FileSyncSource.cpp
 
 syncfile_la_SOURCES = $(SYNCFILE_SOURCES)
-syncfile_la_LIBADD = $(FILE_LIBS)
+syncfile_la_LIBADD = $(FILE_LIBS) $(SYNCEVOLUTION_LIBS)
 syncfile_la_LDFLAGS = -module -avoid-version
 syncfile_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS)
 # If you need special test cases for your sync source, then

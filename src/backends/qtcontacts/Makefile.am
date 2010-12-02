@@ -1,6 +1,6 @@
 include $(top_srcdir)/m4-repo/autotroll.mk
 
-AM_CPPFLAGS = -I$(srcdir)/../../ -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
 EXTRA_DIST = configure-sub.in
 
@@ -18,7 +18,7 @@ syncqtcontacts_la_SOURCES = \
 	QtContactsSource.h \
 	QtContactsSource.cpp
 
-syncqtcontacts_la_LIBADD = $(QT_CONTACTS_LIBS) $(QT_LIBS)
+syncqtcontacts_la_LIBADD = $(QT_CONTACTS_LIBS) $(QT_LIBS) $(SYNCEVOLUTION_LIBS)
 syncqtcontacts_la_LDFLAGS = -module -avoid-version $(QT_LDFLAGS)
 syncqtcontacts_la_CPPFLAGS = $(AM_CPPFLAGS) $(QT_CPPFLAGS)
 # Allow Qt to set some compile flags, but not the ones normally set via configure.
