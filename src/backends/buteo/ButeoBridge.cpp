@@ -19,8 +19,13 @@
 #include <iostream>
 
 #include <libsyncprofile/SyncResults.h>
+#include <syncevo/SyncSource.h>
 
 SE_BEGIN_CXX
+
+// this ensures that backends are initialized once inside the
+// Buteo bridge
+static std::string backends = SyncSource::backendsInfo();
 
 ButeoBridge::ButeoBridge(const QString &pluginName,
                          const Buteo::SyncProfile &profile,
