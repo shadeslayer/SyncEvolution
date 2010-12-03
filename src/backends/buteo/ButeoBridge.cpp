@@ -32,12 +32,13 @@ ButeoBridge::ButeoBridge(const QString &pluginName,
                          Buteo::PluginCbInterface *cbInterface) :
     ClientPlugin(pluginName, profile, cbInterface)
 {
-    m_username = profile.key("Username", "no username set").toUtf8().data();
-    m_password = profile.key("Password", "no password set").toUtf8().data();
 }
 
 bool ButeoBridge::startSync()
 {
+    std::string username = iProfile.key("Username", "no username set").toUtf8().data();
+    std::string password = iProfile.key("Password", "no password set").toUtf8().data();
+
     std::string explanation("internal error");
     try {
         if (m_config.empty()) {
@@ -48,8 +49,8 @@ bool ButeoBridge::startSync()
         Cmdline sync(std::cout, std::cerr,
                      "buteo-sync",
                      "--run",
-                     "--sync-property", StringPrintf("username=%s", m_username.c_str()).c_str(),
-                     "--sync-property", StringPrintf("password=%s", m_password.c_str()).c_str(),
+                     "--sync-property", StringPrintf("username=%s", username.c_str()).c_str(),
+                     "--sync-property", StringPrintf("password=%s", password.c_str()).c_str(),
                      "--sync-property", "preventSlowSync=0",
                      m_config.c_str(),
                      NULL);

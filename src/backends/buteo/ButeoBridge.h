@@ -31,8 +31,6 @@ public slots:
                                           bool state);
 
  private:
-    /** credentials set in constructor from profile */
-    std::string m_username, m_password;
     /** config name to be used by sync, set in init() */
     std::string m_config;
 };
