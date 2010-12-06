@@ -6108,7 +6108,11 @@ void AutoSyncManager::Notification::send(const char *summary,
         notify_notification_clear_actions(m_notification);
         notify_notification_close(m_notification, NULL);
     }
+#if !defined(NOTIFY_CHECK_VERSION)
     m_notification = notify_notification_new(summary, body, NULL, NULL);
+#else // NOTIFY_CHECK_VERSION(0,7,0) is redundant, because 0.7.0 introduced NOTIFY_CHECK_VERSION
+    m_notification = notify_notification_new(summary, body, NULL);
+#endif
     //if actions are not supported, don't add actions
     //An example is Ubuntu Notify OSD. It uses an alert box
     //instead of a bubble when a notification is appended with actions.
