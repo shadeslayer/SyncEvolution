@@ -347,6 +347,18 @@ public:
                 setWBXML(m_options.m_isWBXML, true);
                 setRetryDuration(m_options.m_retryDuration, true);
                 setRetryInterval(m_options.m_retryInterval, true);
+                if (m_options.m_syncMode == SYNC_TWO_WAY &&
+                    m_options.m_checkReport.syncMode == SYNC_NONE) {
+                    // For this test, any kind of final sync mode is
+                    // acceptable. Disable slow sync prevention
+                    // temporarily. The check for the requested sync
+                    // mode is perhaps too conservative, but in
+                    // practice the only test where slow sync
+                    // prevention caused a test failure was
+                    // Client::Sync::vcard30::testTwoWaySync after
+                    // some other failed test, so let's be conservative...
+                    setPreventSlowSync(false);
+                }
                 SyncContext::prepare();
             }
 
