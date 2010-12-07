@@ -55,6 +55,11 @@
 #include <boost/bind.hpp>
 
 #include <syncevo/declarations.h>
+
+#ifdef ENABLE_BUTEO_TESTS
+#include "client-test-buteo.h"
+#endif
+
 SE_BEGIN_CXX
 
 static set<ClientTest::Cleanup_t> cleanupSet;
@@ -170,6 +175,24 @@ static std::string importItem(TestingSyncSource *source, const ClientTestConfig 
     }
 }
 
+static void restoreStorage(const ClientTest::Config &config, ClientTest &client)
+{
+#ifdef ENABLE_BUTEO_TESTS
+    if (boost::iequals(config.sourceName,"qt_vcard30")) { 
+        QtContactsSwitcher::restoreStorage(client); 
+    }
+#endif
+}
+
+static void backupStorage(const ClientTest::Config &config, ClientTest &client)
+{
+#ifdef ENABLE_BUTEO_TESTS
+    if (boost::iequals(config.sourceName,"qt_vcard30")) { 
+        QtContactsSwitcher::backupStorage(client); 
+    }
+#endif
+}
+
 /** adds the supported tests to the instance itself */
 void LocalTests::addTests() {
     if (config.createSourceA) {
@@ -236,6 +259,8 @@ void LocalTests::addTests() {
 }
 
 std::string LocalTests::insert(CreateSource createSource, const char *data, bool relaxed, std::string *inserted) {
+    restoreStorage(config, client);
+
     // create source
     TestingSyncSourcePtr source(createSource());
 
@@ -264,6 +289,7 @@ std::string LocalTests::insert(CreateSource createSource, const char *data, bool
         CPPUNIT_ASSERT(countUpdatedItems(source.get()) == 0);
         CPPUNIT_ASSERT(countDeletedItems(source.get()) == 0);
     }
+    backupStorage(config, client);
 
     return res.m_luid;
 }
@@ -305,6 +331,8 @@ void LocalTests::update(CreateSource createSource, const char *data, bool check)
     CPPUNIT_ASSERT(createSource.createSource);
     CPPUNIT_ASSERT(data);
 
+    restoreStorage(config, client);
+
     // create source
     TestingSyncSourcePtr source(createSource());
 
@@ -330,23 +358,29 @@ void LocalTests::update(CreateSource createSource, const char *data, bool check)
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
     CPPUNIT_ASSERT(it != source->getAllItems().end());
     CPPUNIT_ASSERT_EQUAL(luid, *it);
+
+    backupStorage(config, client);
 }
 
 void LocalTests::update(CreateSource createSource, const char *data, const std::string &luid) {
     CPPUNIT_ASSERT(createSource.createSource);
     CPPUNIT_ASSERT(data);
 
+    restoreStorage(config, client);
     // create source
     TestingSyncSourcePtr source(createSource());
 
     // update it
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data).c_str()));
+
+    backupStorage(config, client);
 }
 
 /** deletes all items locally via sync source */
 void LocalTests::deleteAll(CreateSource createSource) {
     CPPUNIT_ASSERT(createSource.createSource);
 
+    restoreStorage(config, client);
     // create source
     TestingSyncSourcePtr source(createSource());
 
@@ -363,6 +397,7 @@ void LocalTests::deleteAll(CreateSource createSource) {
     CPPUNIT_ASSERT_EQUAL( 0, countNewItems(source.get()) );
     CPPUNIT_ASSERT_EQUAL( 0, countUpdatedItems(source.get()) );
     CPPUNIT_ASSERT_EQUAL( 0, countDeletedItems(source.get()) );
+    backupStorage(config, client);
 }
 
 /** deletes specific item locally via sync source */
@@ -543,6 +578,7 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
     CPPUNIT_ASSERT(config.templateItem);
     CPPUNIT_ASSERT(config.uniqueProperties);
 
+    restoreStorage(config, client);
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     CPPUNIT_ASSERT(startIndex > 1 || !countItems(source.get()));
@@ -556,6 +592,7 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
         std::string data = createItem(item, "", size);
         luids.push_back(importItem(source.get(), config, data));
     }
+    backupStorage(config, client);
 
     return luids;
 }
@@ -753,8 +790,10 @@ void LocalTests::testImport() {
     // import via sync source A
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+    restoreStorage(config, client);
     std::string testcases;
     SOURCE_ASSERT_EQUAL(source.get(), 0, config.import(client, *source.get(), config, config.testcases, testcases));
+    backupStorage(config, client);
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // export again and compare against original file
@@ -2648,9 +2687,16 @@ void SyncTests::testComplexRefreshFromServerSemantic()
     testCopy();
 
     // check refresh with one item on server
-    accessClientB->doSync("refresh-one",
-                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                                      CheckSyncReport(1,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+    const char *value = getenv ("CLIENT_TEST_NOREFRESH");
+    // If refresh_from_server or refresh_from_client (depending on this is a
+    // server or client) is not supported, we can still test via slow sync.
+    if (value) {
+        accessClientB->refreshClient();
+    } else {
+        accessClientB->doSync("refresh-one",
+                              SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                                          CheckSyncReport(1,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+    }
 
     // delete that item via A, check again
     BOOST_FOREACH(source_array_t::value_type &source_pair, sources)  {
@@ -2659,9 +2705,13 @@ void SyncTests::testComplexRefreshFromServerSemantic()
     doSync("delete-item",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
-    accessClientB->doSync("refresh-none",
-                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                                      CheckSyncReport(0,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+    if (value) {
+        accessClientB->refreshClient();
+    } else {
+        accessClientB->doSync("refresh-none",
+                              SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                                          CheckSyncReport(0,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+    }
 }
 
 /**

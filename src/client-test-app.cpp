@@ -41,6 +41,11 @@
 #include <syncevo/VolatileConfigNode.h>
 
 #include <syncevo/declarations.h>
+
+#ifdef ENABLE_BUTEO_TESTS
+#include "client-test-buteo.h"
+#endif
+
 SE_BEGIN_CXX
 
 /*
@@ -319,14 +324,41 @@ public:
         return false;
     }
 
+#ifdef ENABLE_BUTEO_TESTS
+    virtual void setup() {
+        QtContactsSwitcher::prepare(*this);
+    }
+#endif
+
     virtual SyncMLStatus doSync(const int *sources,
                                 const std::string &logbase,
                                 const SyncOptions &options)
     {
+        // check whether using buteo to do sync
+        const char *buteo = getenv("CLIENT_TEST_BUTEO");
+        bool useButeo = false;
+        if (buteo && 
+                (boost::equals(buteo, "1") || boost::iequals(buteo, "t"))) {
+            useButeo = true;
+        }
+
         string server = getenv("CLIENT_TEST_SERVER") ? getenv("CLIENT_TEST_SERVER") : "funambol";
         server += "_";
         server += m_clientID;
         
+
+        if (useButeo) {
+#ifdef ENABLE_BUTEO_TESTS
+            ButeoTest buteo(*this, server, logbase, options);
+            buteo.prepareSources(sources, m_syncSource2Config);
+            SyncReport report;
+            SyncMLStatus status = buteo.doSync(&report);
+            options.m_checkReport.check(status, report);
+            return status;
+#else
+            throw runtime_error("This client-test was built without enabling buteo testing.");
+#endif
+        }
         class ClientTest : public CmdlineSyncClient {
         public:
             ClientTest(const string &server,

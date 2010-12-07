@@ -1,3 +1,5 @@
+include $(top_srcdir)/m4-repo/autotroll.mk
+
 BACKENDS = @BACKENDS@
 
 # start with building nothing and add more targets below
@@ -209,6 +211,12 @@ client_test_SOURCES = \
 	$(CORE_SOURCES)
 nodist_client_test_SOURCES = ../test/test.cpp
 
+if ENABLE_BUTEO_TESTS
+client_test_SOURCES += client-test-buteo.h
+client_test_SOURCES += client-test-buteo.cpp
+nodist_client_test_SOURCES += client-test-buteo.moc.cpp
+endif
+
 # list of test file base files
 #
 # Generated files (testcases/ical20.ics.funambol.tem) are derived from
@@ -235,10 +243,10 @@ TEST_FILES_PATCHED = $(wildcard testcases/*.tem)
 # add files created via patches
 CLIENT_LIB_TEST_FILES += $(TEST_FILES_GENERATED)
 
-client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS)
-client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS)
-client_test_LDFLAGS = `cppunit-config --libs` `nm syncevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'` $(CORE_LD_FLAGS) $(KEYRING_LIBS)
-client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE)
+client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(AM_CPPFLAGS) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(QT_CPPFLAGS)
+client_test_CXXFLAGS = `cppunit-config --cflags` $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(filter-out -O2 -g -W -Wall, $(QT_CXXFLAGS))
+client_test_LDFLAGS = `cppunit-config --libs` `nm syncevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-u /'` $(CORE_LD_FLAGS) $(KEYRING_LIBS) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LDFLAGS)
+client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LIBS)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test.
 
@@ -287,6 +295,8 @@ $(filter-out %.tem, $(filter testcases/%, $(subst $(srcdir)/../test/,,$(CLIENT_L
 # Listing the dependencies here is done to ensure that one doesn't accidentally
 # runs the binary with out-dated auxiliary files.
 client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch synccompare templates
+
+CLEANFILES += client-test-buteo.moc.cpp
 
 # copy template directory into current working directory, if not there
 # yet
