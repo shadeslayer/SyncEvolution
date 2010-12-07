@@ -341,6 +341,18 @@ void LocalTransportAgent::checkChildReport()
     }
 }
 
+bool LocalTransportAgent::Buffer::haveMessage()
+{
+    bool complete = m_used >= sizeof(Message) &&
+        m_message->m_length <= m_used;
+    SE_LOG_DEBUG(NULL, NULL, "message of size %ld/%ld/%ld, %s",
+                 (long)m_used,
+                 m_used < sizeof(Message) ? -1l : (long)m_message->m_length,
+                 (long)m_size,
+                 complete ? "complete" : "incomplete");
+    return complete;
+}
+
 void LocalTransportAgent::send(const char *data, size_t len)
 {
     if (m_loop) {
@@ -470,6 +482,7 @@ void LocalTransportAgent::readMessage(int fd, Buffer &buffer)
                        buffer.m_message->m_length > buffer.m_size) {
                 buffer.m_message.set(static_cast<Message *>(realloc(buffer.m_message.release(), buffer.m_message->m_length)),
                                      "Message Buffer");
+                buffer.m_size = buffer.m_message->m_length;
             }
             SE_LOG_DEBUG(NULL, NULL, "%s: recv %ld bytes",
                          m_pid ? "parent" : "child",

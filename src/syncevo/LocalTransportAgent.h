@@ -138,10 +138,7 @@ class LocalTransportAgent : public TransportAgent
         /** number of valid bytes in buffer */
         size_t m_used;
 
-        bool haveMessage() {
-            return m_used >= sizeof(Message) &&
-                m_message->m_length <= m_used;
-        }
+        bool haveMessage();
     } m_receiveBuffer;
 
     /**
