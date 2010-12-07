@@ -88,6 +88,7 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "qt-contacts:text/vcard";
+        config.testcases = "testcases/qt_vcard30.vcf";
     }
 } vCard30Test;
 

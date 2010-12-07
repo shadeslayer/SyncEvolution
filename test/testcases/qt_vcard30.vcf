@@ -1,0 +1,390 @@
+BEGIN:VCARD
+VERSION:3.0
+UID:af7ce3bb-4201-4cba-813f-7c635596b5bf
+N:colon;unquoted;;;
+FN:colon
+NICKNAME:user13
+NOTE:a colon is not a special character so here it comes : and not quoting n
+ ecessary
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:pas-id-43C0F07900000004
+N:;PNG;;Mrs.;
+FN:Mrs. PNG
+NICKNAME:user4
+NOTE:image in PNG format
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:pas-id-43C0F04B00000003
+N:;GIF;;Mr.;
+FN:Mr. GIF
+NICKNAME:user3
+NOTE:image in GIF format
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+BDAY:2006-01-08
+UID:pas-id-43C0ED3900000001
+N:Doe;John;;;
+FN:John Doe
+NICKNAME:user1
+NOTE:This is a test case which uses almost all Evolution fields.
+TITLE:Senior Tester
+ORG:Test Inc.
+ROLE:professional test case
+ADR;TYPE=HOME,POSTAL:Test Box #1;;Test Drive 1;Test Village;Lower Test Count
+ y;12345;Testovia
+ADR;TYPE=HOME,POSTAL:Test Box #3;;Test Drive 3;Test Megacity;Test County;123
+ 47;New Testonia
+ADR;TYPE=WORK,POSTAL:Test Box #2;;Test Drive 2;Test Town;Upper Test County;1
+ 2346;Old Testovia
+EMAIL;TYPE=HOME:john.doe@home.priv
+EMAIL;TYPE=HOME:john.doe@other.world
+EMAIL;TYPE=HOME:john.doe@yet.another.world
+EMAIL;TYPE=WORK:john.doe@work.com
+TEL;TYPE=HOME,VOICE,CAR:car 7
+TEL;TYPE=HOME,VOICE:home 2
+TEL;TYPE=HOME,FAX:homefax 5
+TEL;TYPE=HOME,CELL,VOICE:mobile 3
+TEL;TYPE=HOME,PAGER:pager 6
+TEL;TYPE=HOME,VOICE:primary 8
+TEL;TYPE=WORK,VOICE:business 1
+TEL;TYPE=WORK,FAX:businessfax 4
+CATEGORIES:TEST
+URL;TYPE=HOME:http://john.doe.com
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:pas-id-43C15D55000001AA
+N:Last;First \; special \;;middle;Mr.;
+FN:Mr. First \; special \; middle Last
+NICKNAME:user6
+NOTE:The first name is "First \; special \;".
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:pas-id-43C0F0B500000005
+N:;JPG;;Ms.;
+FN:Ms. JPG
+NICKNAME:user5
+NOTE:image in JPG format
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:pas-id-43C0EF0A00000002
+N:Ü;Ä;Ö;Umlaut;ß
+FN:Umlaut Ä Ö Ü ß
+NICKNAME:user2
+NOTE:This user tests some of the advanced aspects of vcards:\n- non-ASCII ch
+ aracters (with umlauts in the name)\n- line break (in this note and the mai
+ ling address)\n- long lines (in this note)\n- special characters (in this n
+ ote)\n- tabs (in this note)\n\nVery long line\, very very long this time...
+  still not finished... blah blah blah blah blah 1 2 3 4 5 6 7 8 9 10 11 12 
+ 13 14 15 16\n\ncomma \,\ncolon :\nsemicolon \;\nbackslash \\\n\nThe same\, 
+ in the middle of a line:\ncomma \, comma\ncolon : colon\nsemicolon \; semic
+ olon\nbackslash \\ backslash\n\nA tab 	tab done\n	line starts with tab
+ADR;TYPE=HOME,POSTAL:test 5;;Umlaut Ä in Line 1;test 1;test 3;test 2;test 4
+ 
+CATEGORIES:Business
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:pas-id-43C15DFB000001AB
+N:breaks;line;;;
+FN:line breaks
+NICKNAME:user7
+NOTE:This test case uses line breaks. This is line 1.\nLine 2.\n\nLine break
+ s in vcard 2.1 are encoded as =0D=0A.\nThat means the = has to be encoded i
+ tself...
+ADR;TYPE=HOME,POSTAL:;;Address Line 1;;;;
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:pas-id-43C15E84000001AC
+N:characters;special;;;
+FN:special characters
+NICKNAME:user8
+NOTE:Here are some special characters: comma \, colon : semicolon \;
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:2e94de8b-8c33-42a0-b709-822cdf96f57b
+N:name;spouse;;;
+FN:spouse name
+NICKNAME:user15
+NOTE:Spouse's Name: foobar
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:c20443b6-2722-4029-a52e-356cf654d2d0
+N:marks;quotation;;;
+FN:quotation marks
+NICKNAME:user14
+NOTE:here are some quotation marks: single ' double " back ` - none of them 
+ is special
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:d8f1ca71-4a07-4469-b894-ff59faab7e2f
+N:set;char;;;
+FN:charset
+NICKNAME:user9
+NOTE:Tests charset specification with quotation marks.
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:b028e3e3-2272-47f2-ae6a-bc5a47a52a0d
+N:line;long;;;
+FN:long line
+NICKNAME:user11
+NOTE:This is a long line without any special characters. This is a simpler e
+ xample that should require folding in vcards. Does folding insert a crlf be
+ fore a space or does it insert crlf _plus_ a space? vCard 2.1 inserts befor
+ e a space\, 3.0 inserts line break plus space.
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:2712eb21-d127-4465-867f-d1786801f8c8
+N:xml;entities;;;
+FN:xml entities
+NICKNAME:user12
+NOTE:ampersand entity &amp\; less-than entity &lt\;
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:5fee6a9c-67d7-43bd-b8ea-71b3138334c9
+N:;vcard;;large;
+FN:large vcard
+NICKNAME:user10
+NOTE:large vcard with plenty of special chars < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < 
+ & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+  & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & 
+ < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < &
+  < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+ 
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:b453e903-a87f-47de-92b6-72b6025fa332
+N:incomplete;;;;
+FN:incomplete
+NICKNAME:user16
+NOTE:test case with empty email
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:37aaf929-f430-43a0-ab43-40298c449e57
+N:parserbug=;;;;
+FN:parserbug=
+NICKNAME:user17
+NOTE:triggers parser bug in Funambol 3.0: trailing = is mistaken for soft li
+ ne break=
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:bb1dc0d1-3082-4c68-be8b-7883946397b4
+N:Doe;John123;;;
+FN:John123 Doe
+X-GENDER:Male
+NOTE:This is a test for qt_vcard30 from gmail contact.
+TITLE:Engineer
+ORG:IT Company\; testing\; test
+ADR;TYPE=HOME,POSTAL:;;home\, address;;;;
+ADR;TYPE=WORK,POSTAL:;;company address;;;;
+EMAIL;TYPE=HOME:john.doe@homemail.com
+EMAIL;TYPE=WORK:john.doe@orgmail.com
+TEL;TYPE=HOME,VOICE:11111111
+TEL;TYPE=HOME,CELL,VOICE:0123456789
+TEL;TYPE=WORK,VOICE:98765432
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+URL:urlurlurl
+BDAY:1988-01-01
+ORG:Testing Inc.
+TITLE:titletitle
+ROLE:rolerole
+NICKNAME:nickname
+X-EVOLUTION-SPOUSE:spouse
+X-ANNIVERSARY:x-anniversary
+X-ASSISTANT:x-assistant
+X-ASSISTANT-TEL;TYPE=VOICE;TYPE=HOME:x-assistant-tel
+X-ICQ;TYPE=HOME:icq
+X-GENDER:Male
+X-SIP;TYPE=HOME:sip
+X-SPOUSE:spousex
+NOTE: qtcontacts properties test
+FN:Ms. Test
+N:;Test;;Ms.;
+CATEGORIES:Business
+IMPP;TYPE=HOME:impp
+UID:pas-id-44C0F0B500000005
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+BDAY:1988-01-01
+X-GENDER:Male
+UID:pas-id-43C0F0B500023005
+N:;Test;;Ms.;
+FN:Ms. Test
+NICKNAME:nickname
+NOTE: full qtcontacts testing
+TITLE:tester
+ORG:Testing Inc.
+X-ASSISTANT:x-assistant
+ROLE:My Role
+ADR;TYPE=HOME,POSTAL: first address;;;;;;
+ADR;TYPE=HOME,POSTAL:;;home address;;;;
+ADR;TYPE=WORK,POSTAL:;;work address;;;;
+EMAIL;TYPE=HOME:first email
+EMAIL;TYPE=HOME:google.test@homemail.com
+EMAIL;TYPE=HOME:internet@homemail.com
+EMAIL;TYPE=WORK:google.test@orgmail.com
+IMPP;TYPE=HOME:jabber
+X-SIP;TYPE=HOME:sip
+IMPP;TYPE=HOME:impp
+IMPP;TYPE=HOME:x-impp
+IMPP;TYPE=HOME:x-jabber
+TEL;TYPE=HOME,VOICE:11111111
+TEL;TYPE=HOME,VOICE:123456789
+TEL;TYPE=HOME,VOICE:first tel
+TEL;TYPE=HOME,VOICE:google voice
+TEL;TYPE=HOME,FAX:home fax
+TEL;TYPE=HOME,PAGER:pager
+TEL;TYPE=HOME,VOICE:second cell
+TEL;TYPE=HOME,VOICE:second home tel
+X-ASSISTANT-TEL;TYPE=HOME,VOICE:x-assistant-tel
+TEL;TYPE=WORK,VOICE:98765432
+TEL;TYPE=WORK,FAX:work fax
+CATEGORIES:Business
+URL;TYPE=HOME:urlurlurl
+END:VCARD
+
+BEGIN:VCARD
+VERSION:3.0
+UID:{c5ec0b66-99e4-41d1-9342-74f713eca118}
+N:People;Tablet;;;
+FN:Tablet People
+ORG:Tablet people inc.
+NOTE: contact created by meego-handset-people
+ADR;TYPE=HOME,POSTAL:;;home address 001;xuhui;shanghai;200030;China
+ADR;TYPE=HOME,POSTAL:;;xuhui;shanghai;200030;China;World
+ADR;TYPE=WORK,POSTAL:;;zixing road 880;minhang;shanghai;200241;China
+EMAIL;TYPE=HOME:people@meego.com
+TEL;TYPE=HOME,VOICE:13866192019                                                                     
+TEL;TYPE=HOME,VOICE:66101617
+TEL;TYPE=WORK,VOICE:88217940
+END:VCARD
