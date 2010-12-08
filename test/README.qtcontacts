@@ -1,0 +1,41 @@
+This document is used to show the limitation of qtcontacts
+and interoperability test information between Buteo and Google.
+
+QtContacts
+    -- Below properties are not supported in Qtcontacts:
+       X-AIM, X-GROUPWISE, X-ICQ, X-YAHOO, FBURL, CALURI, LOGO,
+       LABEL
+    -- Other Qtcontacts limitations
+       X-GENDER: Male or Female, first letter in upper-case, others in lower-case
+       TEL: type [HOME | WORK] and [VOICE | FAX | PAGER] are mandantory
+       ADR: type POSTAL is mandantory
+       EMAIL: type INTERNET is not supported
+       ORG: only value of the first field in organization are supported
+
+VCard30 (interoperability)
+    -- Google contacts limitations
+       Below properties can be set on web page and are kept by Google
+       but are not transferred when doing sync: Birthday, Anniversary,
+       Home-URL, Profile-URL, Blog-URL, Work-URL, Relationship, AIM,
+       Google Talk, Yahoo, Skype, QQ, MSN, ICQ, Jabber, Phonetic Name,
+       File As.
+       ADR: Once updated on Google web page, its value is empty if
+       doing sync with client.
+       TEL doesn't support TYPE PAGER. But 'TYPE VOICE' is added by
+       default.
+       BDAY, X-GENDER, X-ASSISTANT, X-ASSISTANT-TEL, URL and X-SIP
+       are kept by Google, but they are not shown in Google web page. 
+       X-IMPP, CATEGORIES, X-NICKNAME and ROLE are not supported,
+       thus not keep them
+
+* Known test failures:
+Client::Sync::vcard21
+  -- Client::Sync::qt_vcard30::testDeleteAllRefresh
+     Client::Sync::qt_vcard30::testRefreshFromClientSync
+     Client::Sync::qt_vcard30::testConversion
+     Client::Sync::qt_vcard30::testRefreshFromClientSemantic
+     Client::Sync::qt_vcard30::testRefreshStatus
+     Client::Sync::qt_vcard30::testComplexUpdate
+     Client::Sync::qt_vcard30::testItemsXML
+     Client::Sync::qt_vcard30::testOneWayFromServer
+     Client::Sync::qt_vcard30::testOneWayFromClient
