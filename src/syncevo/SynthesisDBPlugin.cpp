@@ -496,8 +496,13 @@ bool SyncEvolution_ReadNextMapItem( CContext aContext, MapID mID, bool aFirst )
         res = source->handleException();
     }
 
-    SE_LOG_DEBUG(source, NULL, "ReadNextMapItem %08lX first=%s res=%d",
-                 (long)mID, aFirst ? "yes" : "no", res);
+    SE_LOG_DEBUG(source, NULL, "ReadNextMapItem '%s' + %x = '%s' + %d first=%s res=%d",
+                 res ? NullPtrCheck(mID->localID) : "(none)",
+                 res ? mID->ident : 0,
+                 res ? NullPtrCheck(mID->remoteID) : "(none)",
+                 res ? mID->flags : 0,
+                 aFirst ? "yes" : "no",
+                 res);
     return res;
 } /* ReadNextMapItem */
 
@@ -519,8 +524,10 @@ TSyError SyncEvolution_InsertMapItem( CContext aContext, cMapID mID )
         res = source->handleException();
     }
 
-    SE_LOG_DEBUG(source, NULL, "InsertMapItem '%s' '%s' %04X %d, res=%d", 
-                 mID->localID, mID->remoteID, mID->flags, mID->ident, res);
+    SE_LOG_DEBUG(source, NULL, "InsertMapItem '%s' + %x = '%s' + %x res=%d", 
+                 NullPtrCheck(mID->localID), mID->ident,
+                 NullPtrCheck(mID->remoteID), mID->flags,
+                 res);
     return res;
 } /* InsertMapItem */
 
@@ -542,8 +549,10 @@ TSyError SyncEvolution_UpdateMapItem( CContext aContext, cMapID mID )
         res = source->handleException();
     }
 
-    SE_LOG_DEBUG(source, NULL, "UpdateMapItem '%s' '%s' %04X %d, res=%d", 
-                 mID->localID, mID->remoteID, mID->flags, mID->ident, res);
+    SE_LOG_DEBUG(source, NULL, "UpdateMapItem '%s' + %x = '%s' + %x, res=%d", 
+                 mID->localID, mID->ident,
+                 mID->remoteID, mID->flags,
+                 res);
 
     return res;
 } /* UpdateMapItem */
@@ -566,8 +575,10 @@ TSyError SyncEvolution_DeleteMapItem( CContext aContext, cMapID mID )
         res = source->handleException();
     }
 
-    SE_LOG_DEBUG(source, NULL, "DeleteMapItem '%s' '%s' %04X %d res=%d",
-                 mID->localID, mID->remoteID, mID->flags, mID->ident, res);
+    SE_LOG_DEBUG(source, NULL, "DeleteMapItem '%s' + %x = '%s' + %x res=%d",
+                 mID->localID, mID->ident,
+                 mID->remoteID, mID->flags,
+                 res);
     return res;
 } /* DeleteMapItem */
 
