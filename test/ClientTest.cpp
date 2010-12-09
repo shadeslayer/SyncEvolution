@@ -470,7 +470,9 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
     std::string data = config.mangleItem(config.templateItem);
     std::stringstream prefix;
 
-    prefix << std::setfill('0') << std::setw(3) << item << " ";
+    // string to be inserted at start of unique properties;
+    // avoid adding white space (not sure whether it is valid for UID)
+    prefix << std::setfill('0') << std::setw(3) << item << "-";
 
     const char *prop = config.uniqueProperties;
     const char *nextProp;
