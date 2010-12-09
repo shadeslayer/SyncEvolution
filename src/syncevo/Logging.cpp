@@ -28,7 +28,7 @@
 SE_BEGIN_CXX
 
 static LoggerStdout DefaultLogger;
-
+std::string Logger::m_processName;
 static std::vector<LoggerBase *> loggers;
 LoggerBase &LoggerBase::instance()
 {

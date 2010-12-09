@@ -105,6 +105,7 @@ void LocalTransportAgent::start()
             break;
         case 0:
             // child
+            Logger::setProcessName(m_clientContext);
             close(sockets[0][0]);
             m_messageFD = sockets[0][1];
             close(sockets[1][0]);
