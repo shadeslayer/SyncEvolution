@@ -174,13 +174,15 @@ void LocalTransportAgent::run()
     // process.
     int res = 0;
     try {
-        SE_LOG_DEBUG(NULL, NULL, "client is running");
+        SE_LOG_DEBUG(NULL, NULL, "client is running, %s log redirection",
+                     redirect ? "with" : "without");
         // TODO: password and abort handling in a derived class
+        bool doLogging = m_server->getDoLogging();
         SyncContext client(std::string("source-config") + m_clientContext,
                            m_server->getConfigName(),
                            m_server->getRootPath() + "/." + m_clientContext,
                            boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
-                           true);
+                           doLogging);
 
         // Copy some changes from main config: this is the only way
         // how they can be set temporarily during a sync.
@@ -192,6 +194,12 @@ void LocalTransportAgent::run()
         client.setPreventSlowSync(m_server->getPreventSlowSync(), true);
         client.setPrintChanges(m_server->getPrintChanges(), true);
         client.setDumpData(m_server->getDumpData(), true);
+
+        // debugging mode: write logs inside sub-directory of parent,
+        // otherwise use normal log settings
+        if (!doLogging) {
+            client.setLogDir(std::string(m_server->getLogDir()) + "/child", true);
+        }
 
         // disable all sources temporarily, will be enabled by next loop
         BOOST_FOREACH(const string &targetName, client.getSyncSources()) {
