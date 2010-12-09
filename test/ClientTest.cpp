@@ -2046,8 +2046,8 @@ void SyncTests::testMerge() {
         SOURCE_ASSERT_NO_FAILURE(copy.get(), numItems = countItems(copy.get()));
         CPPUNIT_ASSERT(numItems >= 1);
         CPPUNIT_ASSERT(numItems <= 2);
-        std::cout << " \"" << it->second->config.sourceName << ": " << (numItems == 1 ? "conflicting items were merged" : "both of the conflicting items were preserved") << "\" ";
-        std::cout.flush();
+        std::cerr << " \"" << it->second->config.sourceName << ": " << (numItems == 1 ? "conflicting items were merged" : "both of the conflicting items were preserved") << "\" ";
+        std::cerr.flush();
         CPPUNIT_ASSERT_NO_THROW(copy.reset());        
     }
 
@@ -3132,15 +3132,15 @@ void SyncTests::doInterruptResume(int changes,
         if (interruptAtMessage != -1 &&
             !compareDatabases(refFileBase.c_str(), false)) {
             equal = false;
-            std::cout << "====> comparison of client B against reference file(s) failed after interrupting at message #" <<
+            std::cerr << "====> comparison of client B against reference file(s) failed after interrupting at message #" <<
                 interruptAtMessage << std::endl;
-            std::cout.flush();
+            std::cerr.flush();
         }
         if (!compareDatabases(NULL, false)) {
             equal = false;
-            std::cout << "====> comparison of client A and B failed after interrupting at message #" <<
+            std::cerr << "====> comparison of client A and B failed after interrupting at message #" <<
                 interruptAtMessage << std::endl;
-            std::cout.flush();
+            std::cerr.flush();
         }
 
         // save reference files from uninterrupted run?
@@ -3640,7 +3640,7 @@ void ClientTest::postSync(int res, const std::string &logname)
         if (fd >= 0) {
             std::string cmd = std::string("cp ") + serverLogFileName + " " + logname + ".server.log";
             if (system(cmd.c_str())) {
-                fprintf(stderr, "copying log file failed: %s\n", cmd.c_str());
+                fprintf(stdout, "copying log file failed: %s\n", cmd.c_str());
             }
             if (ftruncate(fd, 0)) {
                 perror("truncating log file");

@@ -40,6 +40,7 @@
 
 #include <Logging.h>
 #include <LogStdout.h>
+#include <syncevo/LogRedirect.h>
 #include "ClientTest.h"
 
 #include <stdlib.h>
@@ -126,7 +127,7 @@ public:
 
     void startTest (CppUnit::Test *test) {
         m_currentTest = test->getName();
-        std::cerr << m_currentTest;
+        std::cout << m_currentTest;
         if (!getenv("SYNCEVOLUTION_DEBUG")) {
             string logfile = m_currentTest + ".log";
             simplifyFilename(logfile);
@@ -195,9 +196,9 @@ public:
             }
         }
 
-        std::cerr << " " << result << "\n";
+        std::cout << " " << result << "\n";
         if (!failure.empty()) {
-            std::cerr << failure << "\n";
+            std::cout << failure << "\n";
         }
     }
 
@@ -237,6 +238,13 @@ static void printTests(CppUnit::Test *test, int indention)
 extern "C"
 int main(int argc, char* argv[])
 {
+  // Intercept stderr and route it through our logging.
+  // stdout is printed normally and used by the testing code for
+  // progress and error messages. Deconstructing it when
+  // leaving main() does one final processing of pending
+  // output.
+  LogRedirect redirect(false);
+
   // Get the top level suite from the registry
   CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 
@@ -256,7 +264,7 @@ int main(int argc, char* argv[])
 
   // Change the default outputter to a compiler error format outputter
   runner.setOutputter( new ClientOutputter( &runner.result(),
-                                            std::cerr ) );
+                                            std::cout ) );
 
   // track current test and failure state
   const char *allowedFailures = getenv("CLIENT_TEST_FAILURES");
@@ -287,7 +295,7 @@ int main(int argc, char* argv[])
       return syncListener.hasFailed() ? 1 : 0;
   } catch (invalid_argument e) {
       // Test path not resolved
-      std::cerr << std::endl
+      std::cout << std::endl
                 << "ERROR: " << e.what()
                 << std::endl;
 
