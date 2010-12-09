@@ -71,6 +71,7 @@ my $unique_uid = $ENV{CLIENT_TEST_UNIQUE_UID};
 my $egroupware = $server =~ /egroupware/;
 my $funambol = $server =~ /funambol/;
 my $google = $server =~ /google/;
+my $google_valarm = $ENV{CLIENT_TEST_GOOGLE_VALARM};
 my $evolution = $client =~ /evolution/;
 my $addressbook = $client =~ /addressbook/;
 
@@ -297,6 +298,11 @@ sub NormalizeItem {
 
       # default status is CONFIRMED
       s/^STATUS:CONFIRMED\r?\n?//gm;
+    }
+
+    # Google randomly (?!) adds a standard alarm to events.
+    if ($google_valarm) {
+        s/BEGIN:VALARM\nDESCRIPTION:This is an event reminder\nACTION:DISPLAY\nTRIGGER;VALUE=DURATION:-PT10M\n(X-KDE-KCALCORE-ENABLED:TRUE\n)END:VALARM\n//s;
     }
 
     if ($addressbook) {
