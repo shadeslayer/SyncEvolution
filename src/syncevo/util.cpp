@@ -691,8 +691,8 @@ SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger, std::string
         new_status = ex.syncMLStatus();
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        error = StringPrintf("error code from SyncEvolution %s",
-                             Status2String(new_status).c_str());
+        error = StringPrintf("error code from SyncEvolution %s: %s",
+                             Status2String(new_status).c_str(), ex.what());
     } catch (const Exception &ex) {
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
