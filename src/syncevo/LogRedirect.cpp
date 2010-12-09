@@ -79,6 +79,17 @@ void LogRedirect::init()
         m_stdout.m_read =
         m_stdout.m_write =
         m_stdout.m_copy = -1;
+
+    const char *lines = getenv("SYNCEVOLUTION_SUPPRESS_ERRORS");
+    if (lines) {
+        typedef boost::split_iterator<const char *> string_split_iterator;
+        string_split_iterator it =
+            boost::make_split_iterator(lines, boost::first_finder("\n", boost::is_iequal()));
+        while (it != string_split_iterator()) {
+            m_knownErrors.push_back(std::string(it->begin(), it->end()));
+            ++it;
+        }
+    }
 }
 
 LogRedirect::LogRedirect(bool both) throw()
@@ -407,8 +418,10 @@ bool LogRedirect::process(FDs &fds) throw()
 
                 // If the text contains the word "error", it probably
                 // is severe enough to show to the user, regardless of
-                // who produced it.
-                if (strcasestr(text, "error")) {
+                // who produced it... except for errors suppressed
+                // explicitly.
+                if (strcasestr(text, "error") &&
+                    !ignoreError(text)) {
                     level = Logger::ERROR;
                 }
             }
@@ -422,6 +435,15 @@ bool LogRedirect::process(FDs &fds) throw()
     return data_read;
 }
 
+bool LogRedirect::ignoreError(const std::string &text)
+{
+    BOOST_FOREACH(const std::string &entry, m_knownErrors) {
+        if (text.find(entry) != text.npos) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void LogRedirect::process()
 {

@@ -104,6 +104,7 @@ class LogRedirect : public LoggerStdout
     size_t m_len;           /** total length of buffer */
     bool m_processing;      /** flag to detect recursive process() calls */
     static LogRedirect *m_redirect; /**< single active instance, for signal handler */
+    std::list<std::string> m_knownErrors; /** texts contained in errors which are to be ignored */
 
     // non-virtual helper functions which can always be called,
     // including the constructor and destructor
@@ -113,6 +114,13 @@ class LogRedirect : public LoggerStdout
     /** @return true if data was available */
     bool process(FDs &fds) throw();
     static void abortHandler(int sig) throw();
+
+    /**
+     * ignore error messages containing text listed in
+     * SYNCEVOLUTION_SUPPRESS_ERRORS env variable (new-line
+     * separated)
+     */
+    bool ignoreError(const std::string &text);
 
     void init();
 
