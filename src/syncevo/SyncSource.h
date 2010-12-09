@@ -668,6 +668,7 @@ class SyncSourceBase : public Logger {
                           const char *function,
                           const char *format,
                           va_list args);
+    virtual bool isProcessSafe() const { return true; }
 
     /**
      * return Synthesis API pointer, if one currently is available

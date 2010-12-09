@@ -70,6 +70,8 @@ class LoggerStdout : public LoggerBase
                           const char *function,
                           const char *format,
                           va_list args);
+
+    virtual bool isProcessSafe() const { return true; }
 };
 
 SE_END_CXX

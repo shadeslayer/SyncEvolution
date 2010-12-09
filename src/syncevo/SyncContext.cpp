@@ -809,6 +809,8 @@ public:
         m_parentLogger.messagev(level, prefix, file, line, function, format, args);
     }
 
+    virtual bool isProcessSafe() const { return false; }
+
     /**
      * Compare two database dumps just based on their inodes.
      * @return true    if inodes differ

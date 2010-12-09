@@ -141,16 +141,31 @@ void LocalTransportAgent::run()
     // reading from the existing in-process variables. So let's
     // try without exec, after some clean up.
 
-    // Remove writing into the parent's log file => implemented as
-    // removing every logger until we run into the parents LogRedirect
-    // instance. That instance needs to be remembered and flushed
-    // before this process may terminate.
+    // The parent may or may not have installed output redirection.
+    // That instance needs to be remembered and flushed before this
+    // process may terminate. The parent will also do the same kind of
+    // flushing (race condition?!), but it might die before being
+    // able to do so.
+    //
+    // This loop used to remove all other loggers above the
+    // redirection, to get rid of the one which writes into the
+    // -log.html file of the parent.  This was too coarse and also
+    // removed the LoggerStdout which was installed by
+    // client-test. Now the logger for -log.html is detected via
+    // Logger::isProcessSafe().
     int index = LoggerBase::numLoggers();
     LogRedirect *redirect = NULL;
+    bool removing = true;
     --index;
     while (index >= 0 &&
            !(redirect = dynamic_cast<LogRedirect *>(LoggerBase::loggerAt(index)))) {
-        LoggerBase::popLogger();
+        if (removing) {
+            if (!LoggerBase::loggerAt(index)->isProcessSafe()) {
+                LoggerBase::popLogger();
+            } else {
+                removing = false;
+            }
+        }
         --index;
     }
 
