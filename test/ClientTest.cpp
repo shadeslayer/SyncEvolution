@@ -65,6 +65,39 @@ SE_BEGIN_CXX
 static set<ClientTest::Cleanup_t> cleanupSet;
 
 /**
+ * true when running as server,
+ * relevant for sources instantiated by us
+ * and testConversion, which does not work in
+ * server mode (Synthesis engine not in the right
+ * state when we try to run the test)
+ */
+static bool isServerMode()
+{
+    const char *serverMode = getenv("CLIENT_TEST_MODE");
+    return serverMode && !strcmp(serverMode, "server");
+}
+
+static SyncMode RefreshFromPeerMode()
+{
+    return isServerMode() ? SYNC_REFRESH_FROM_CLIENT : SYNC_REFRESH_FROM_SERVER;
+}
+
+static SyncMode RefreshFromLocalMode()
+{
+    return isServerMode() ? SYNC_REFRESH_FROM_SERVER : SYNC_REFRESH_FROM_CLIENT;
+}
+
+static SyncMode OneWayFromPeerMode()
+{
+    return isServerMode() ? SYNC_ONE_WAY_FROM_CLIENT : SYNC_ONE_WAY_FROM_SERVER;
+}
+
+static SyncMode OneWayFromLocalMode()
+{
+    return isServerMode() ? SYNC_ONE_WAY_FROM_SERVER : SYNC_ONE_WAY_FROM_CLIENT;
+}
+
+/**
  * Using this pointer automates the open()/beginSync()/endSync()/close()
  * life cycle: it automatically calls these functions when a new
  * pointer is assigned or deleted.
@@ -89,8 +122,7 @@ public:
         SOURCE_ASSERT_NO_FAILURE(source, source->open());
         string node = source->getTrackingNode()->getName();
         SOURCE_ASSERT_NO_FAILURE(source, source->beginSync(m_anchors[node], ""));
-        const char * serverMode = getenv ("CLIENT_TEST_MODE");
-        if (serverMode && !strcmp (serverMode, "server")) {
+        if (isServerMode()) {
             SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
         }
     }
@@ -115,8 +147,7 @@ public:
             SOURCE_ASSERT_NO_FAILURE(source, source->open());
             string node = source->getTrackingNode()->getName();
             SOURCE_ASSERT_NO_FAILURE(source, source->beginSync(m_anchors[node], ""));
-            const char * serverMode = getenv ("CLIENT_TEST_MODE");
-            if (serverMode && !strcmp (serverMode, "server")) {
+            if (isServerMode()) {
                 SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
             }
             BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
@@ -1585,7 +1616,8 @@ void SyncTests::addTests() {
         ADD_TEST(SyncTests, testRefreshFromClientSync);
 
         if (config.compare &&
-            config.testcases) {
+            config.testcases &&
+            !isServerMode()) {
             ADD_TEST(SyncTests, testConversion);
         }
 
@@ -1756,8 +1788,8 @@ void SyncTests::deleteAll(DeleteAllMode mode) {
             it->second->deleteAll(it->second->createSourceA);
         }
         doSync("refreshserver",
-               SyncOptions(SYNC_REFRESH_FROM_CLIENT,
-                           CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_REFRESH_FROM_CLIENT)));
+               SyncOptions(RefreshFromLocalMode(),
+                           CheckSyncReport(0,0,0, 0,0,-1, true, RefreshFromLocalMode())));
         break;
     }
 }
@@ -1854,8 +1886,8 @@ void SyncTests::testRefreshFromServerSemantic() {
         it->second->testSimpleInsert();
     }
     doSync("refresh",
-           SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                       CheckSyncReport(0,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+           SyncOptions(RefreshFromPeerMode(),
+                       CheckSyncReport(0,0,-1, 0,0,0, true, RefreshFromPeerMode())));
 
     // check
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -1892,13 +1924,13 @@ void SyncTests::testRefreshFromClientSemantic() {
 
     // refresh from client
     doSync("refresh",
-           SyncOptions(SYNC_REFRESH_FROM_CLIENT,
-                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_CLIENT)));
+           SyncOptions(RefreshFromLocalMode(),
+                       CheckSyncReport(0,0,0, 0,0,0, true, RefreshFromLocalMode())));
 
     // check
     doSync("check",
-           SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+           SyncOptions(RefreshFromPeerMode(),
+                       CheckSyncReport(0,0,0, 0,0,0, true, RefreshFromPeerMode())));
 }
 
 // tests the following sequence of events:
@@ -1920,9 +1952,9 @@ void SyncTests::testRefreshStatus() {
         it->second->testSimpleInsert();
     }
     doSync("refresh-from-client",
-           SyncOptions(SYNC_REFRESH_FROM_CLIENT,
+           SyncOptions(RefreshFromLocalMode(),
                        CheckSyncReport(0,0,0, -1,-1,-1, /* strictly speaking 1,0,0, but not sure exactly what the server will be told */
-                                       true, SYNC_REFRESH_FROM_CLIENT)));
+                                       true, RefreshFromLocalMode())));
     doSync("two-way",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
@@ -2064,8 +2096,8 @@ void SyncTests::testMerge() {
     // Furthermore, it should be identical with the server.
     // Be extra careful and pull that data anew and compare once more.
     doSync("check",
-           SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_SERVER)));
+           SyncOptions(RefreshFromPeerMode(),
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, RefreshFromPeerMode())));
     compareDatabases();
 }
 
@@ -2168,8 +2200,8 @@ void SyncTests::testOneWayFromServer() {
         }
     }
     accessClientB->doSync("recv",
-                          SyncOptions(SYNC_ONE_WAY_FROM_SERVER,
-                                      CheckSyncReport(1,0,0, 0,0,0, true, SYNC_ONE_WAY_FROM_SERVER)));
+                          SyncOptions(OneWayFromPeerMode(),
+                                      CheckSyncReport(1,0,0, 0,0,0, true, OneWayFromPeerMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             TestingSyncSourcePtr source;
@@ -2231,8 +2263,8 @@ void SyncTests::testOneWayFromServer() {
     // sync the same change to second client
     // => one item left (the one inserted locally)
     accessClientB->doSync("delete",
-                          SyncOptions(SYNC_ONE_WAY_FROM_SERVER,
-                                      CheckSyncReport(0,0,1, 0,0,0, true, SYNC_ONE_WAY_FROM_SERVER)));
+                          SyncOptions(OneWayFromPeerMode(),
+                                      CheckSyncReport(0,0,1, 0,0,0, true, OneWayFromPeerMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             TestingSyncSourcePtr source;
@@ -2315,8 +2347,8 @@ void SyncTests::testOneWayFromClient() {
         }
     }
     accessClientB->doSync("send",
-                          SyncOptions(SYNC_ONE_WAY_FROM_CLIENT,
-                                      CheckSyncReport(0,0,0, 1,0,0, true, SYNC_ONE_WAY_FROM_CLIENT)));
+                          SyncOptions(OneWayFromLocalMode(),
+                                      CheckSyncReport(0,0,0, 1,0,0, true, OneWayFromLocalMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             TestingSyncSourcePtr source;
@@ -2361,8 +2393,8 @@ void SyncTests::testOneWayFromClient() {
         }
     }
     accessClientB->doSync("delete",
-                          SyncOptions(SYNC_ONE_WAY_FROM_CLIENT,
-                                      CheckSyncReport(0,0,0, 0,0,1, true, SYNC_ONE_WAY_FROM_CLIENT)));
+                          SyncOptions(OneWayFromLocalMode(),
+                                      CheckSyncReport(0,0,0, 0,0,1, true, OneWayFromLocalMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.createSourceB) {
             TestingSyncSourcePtr source;
@@ -2634,8 +2666,8 @@ void SyncTests::testManyDeletes() {
 
     // update second client
     accessClientB->doSync("delete-client",
-                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                                      CheckSyncReport(0,0,num_items, 0,0,0, true, SYNC_REFRESH_FROM_SERVER),
+                          SyncOptions(RefreshFromPeerMode(),
+                                      CheckSyncReport(0,0,num_items, 0,0,0, true, RefreshFromPeerMode()),
                                       10 & 1024));
 }
 
@@ -2668,8 +2700,8 @@ void SyncTests::testSlowSyncSemantic()
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     accessClientB->doSync("check",
-                          SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                                      CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+                          SyncOptions(RefreshFromPeerMode(),
+                                      CheckSyncReport(0,0,0, 0,0,0, true, RefreshFromPeerMode())));
 
     // now the item should also be deleted on A
     doSync("delete",
@@ -2696,8 +2728,8 @@ void SyncTests::testComplexRefreshFromServerSemantic()
         accessClientB->refreshClient();
     } else {
         accessClientB->doSync("refresh-one",
-                              SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                                          CheckSyncReport(1,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+                              SyncOptions(RefreshFromPeerMode(),
+                                          CheckSyncReport(1,0,1, 0,0,0, true, RefreshFromPeerMode())));
     }
 
     // delete that item via A, check again
@@ -2711,8 +2743,8 @@ void SyncTests::testComplexRefreshFromServerSemantic()
         accessClientB->refreshClient();
     } else {
         accessClientB->doSync("refresh-none",
-                              SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                                          CheckSyncReport(0,0,1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER)));
+                              SyncOptions(RefreshFromPeerMode(),
+                                          CheckSyncReport(0,0,1, 0,0,0, true, RefreshFromPeerMode())));
     }
 }
 
@@ -2761,8 +2793,8 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
         accessClientB->refreshClient();
     } else {
         accessClientB->doSync("recv",
-                SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                    CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_SERVER), // number of items received from server depends on source
+                SyncOptions(RefreshFromPeerMode(),
+                    CheckSyncReport(-1,0,-1, 0,0,0, true, RefreshFromPeerMode()), // number of items received from server depends on source
                     withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
                     withMaxMsgSize ? maxMsgSize * 100 : 0,
                     withLargeObject));
@@ -3007,10 +3039,10 @@ void SyncTests::doInterruptResume(int changes,
                 sources[i].second->insertManyItems(sources[i].second->createSourceA,
                                                    1, 3, 0);
         }
-        doSync("fromA", SyncOptions(SYNC_REFRESH_FROM_CLIENT));
+        doSync("fromA", SyncOptions(RefreshFromLocalMode()));
 
         // init client B and add its items to server and client A
-        accessClientB->doSync("initB", SyncOptions(SYNC_REFRESH_FROM_SERVER));
+        accessClientB->doSync("initB", SyncOptions(RefreshFromPeerMode()));
         clientBluids.resize(sources.size());
         for (i = 0; i < sources.size(); i++) {
             clientBluids[i] =
