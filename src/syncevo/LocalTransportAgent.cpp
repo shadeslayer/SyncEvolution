@@ -500,6 +500,9 @@ void LocalTransportAgent::readMessage(int fd, Buffer &buffer)
             // data ready, ensure that buffer is available
             if (!buffer.m_size) {
                 buffer.m_size = m_server->getMaxMsgSize();
+                if (!buffer.m_size) {
+                    buffer.m_size = 1024;
+                }
                 buffer.m_message.set(static_cast<Message *>(malloc(buffer.m_size)),
                                      "Message Buffer");
             } else if (buffer.m_used >= sizeof(Message) &&
