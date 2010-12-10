@@ -72,6 +72,7 @@ my $egroupware = $server =~ /egroupware/;
 my $funambol = $server =~ /funambol/;
 my $google = $server =~ /google/;
 my $google_valarm = $ENV{CLIENT_TEST_GOOGLE_VALARM};
+my $yahoo = $server =~ /yahoo/;
 my $evolution = $client =~ /evolution/;
 my $addressbook = $client =~ /addressbook/;
 
@@ -243,7 +244,7 @@ sub NormalizeItem {
     # diff shorter, too.
     my $location = "[^\n]*((?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Brazil|Canada|Chile|Egypt|Eire|Europe|Hongkong|Iceland|India|Iran|Israel|Jamaica|Japan|Kwajalein|Libya|Mexico|Mideast|Navajo|Pacific|Poland|Portugal|Singapore|Turkey|Zulu)[-a-zA-Z0-9_/]*)";
     s;^BEGIN:VTIMEZONE.*?^TZID:$location.*^END:VTIMEZONE;BEGIN:VTIMEZONE\n  TZID:$1 [...]\nEND:VTIMEZONE;gms;
-    s;TZID=$location;TZID=$1;gm;
+    s;TZID="?$location"?;TZID=$1;gm;
 
     # normalize iCalendar 2.0
     if (/^BEGIN:(VEVENT|VTODO|VJOURNAL)$/m) {
@@ -295,7 +296,9 @@ sub NormalizeItem {
 
       #several properties are not preserved by Google in icalendar2.0 format
       s/^(SEQUENCE|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
 
+    if ($google || $yahoo) {
       # default status is CONFIRMED
       s/^STATUS:CONFIRMED\r?\n?//gm;
     }
@@ -303,6 +306,10 @@ sub NormalizeItem {
     # Google randomly (?!) adds a standard alarm to events.
     if ($google_valarm) {
         s/BEGIN:VALARM\nDESCRIPTION:This is an event reminder\nACTION:DISPLAY\nTRIGGER;VALUE=DURATION:-PT10M\n(X-KDE-KCALCORE-ENABLED:TRUE\n)END:VALARM\n//s;
+    }
+
+    if ($yahoo) {
+        s/^(X-MICROSOFT-[-A-Z0-9]*)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     if ($addressbook) {
