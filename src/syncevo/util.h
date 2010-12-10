@@ -254,6 +254,15 @@ class UUID : public string {
 };
 
 /**
+ * Safety check for string pointer.
+ * Returns pointer if valid, otherwise the default string.
+ */
+inline const char *NullPtrCheck(const char *ptr, const char *def = "(null)")
+{
+    return ptr ? ptr : def;
+}
+
+/**
  * A C++ wrapper around readir() which provides the names of all
  * directory entries, excluding . and ..
  *
