@@ -2668,7 +2668,7 @@ void SyncTests::testManyDeletes() {
     accessClientB->doSync("delete-client",
                           SyncOptions(RefreshFromPeerMode(),
                                       CheckSyncReport(0,0,num_items, 0,0,0, true, RefreshFromPeerMode()),
-                                      10 & 1024));
+                                      10 * 1024));
 }
 
 /**
