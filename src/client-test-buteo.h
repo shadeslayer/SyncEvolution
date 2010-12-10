@@ -139,6 +139,8 @@ public:
      * 3. restart tracker
      */
     static void backupStorage(ClientTest &client);
+    
+    static void setDatabases(const string databases[]);
 private:
     // get the file path of databases
     static std::string getDatabasePath(int index = 0);
@@ -153,7 +155,7 @@ private:
     static void copyDatabases(ClientTest &client, bool fromDefault = true);
 
     //databases used by tracker
-    static std::string m_databases[];
-    static std::string m_dirs[];
+    static std::string m_databases[5];
+    static std::string m_dirs[2];
 };
 #endif

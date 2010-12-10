@@ -27,6 +27,24 @@
 #include <QDomDocument>
 #include <QtDBus>
 
+// 3 databases used by tracker to store contacts
+// empty string is used as separator
+const string trackerdb_old[5] = {"meta.db", 
+                                 "contents.db",
+                                 "fulltext.db", // 3 databases used by tracker
+                                 "", // separator
+                                 "hcontacts.db" // database to record deleted contact items 
+};
+const string trackerdb_new[5] = {"meta.db", 
+                                 "meta.db-shm",
+                                 "meta.db-wal", // 3 databases used by tracker
+                                 "", // separator
+                                 "hcontacts.db" // database to record deleted contact items 
+                                };
+string QtContactsSwitcher::m_databases[5] = {};
+string QtContactsSwitcher::m_dirs[2] = {"/.cache/tracker/",
+                                       "/.sync/sync-app/"};
+
 using namespace Buteo;
 using namespace SyncEvo;
 
@@ -503,17 +521,6 @@ static bool isButeo()
     return useButeo;
 }
 
-// 3 databases used by tracker to store contacts
-// empty string is used as separator
-string QtContactsSwitcher::m_databases[] = {"meta.db", 
-                                            "contents.db",
-                                            "fulltext.db", // 3 databases used by tracker
-                                            "", // separator
-                                            "hcontacts.db" // database to record deleted contact items 
-                                            };
-string QtContactsSwitcher::m_dirs[] = {"/.cache/tracker/",
-                                       "/.sync/sync-app/"};
-
 string QtContactsSwitcher::getId(ClientTest &client) {
     if (client.getClientB()) {
         return "1";
@@ -522,6 +529,22 @@ string QtContactsSwitcher::getId(ClientTest &client) {
 }
 
 void QtContactsSwitcher::prepare(ClientTest &client) {
+    // check if version of tracker is equal or greater than 0.9.26
+    // set tracker databases according it's version
+    FILE *fp;
+    int version;
+    char cmd[] = "tracker-control -V | awk 'NR==2 {print $2}' | awk '{split($0,A,\".\"); X=256*256*A[1]+256*A[2]+A[3];print X;}'";
+    char buffer[10];
+    fp = popen(cmd,"r");
+    fgets(buffer,sizeof(buffer),fp);
+    sscanf(buffer,"%d", &version);
+    pclose(fp);
+    if (version >= 2330) {
+        QtContactsSwitcher::setDatabases(trackerdb_new);
+    } else {
+        QtContactsSwitcher::setDatabases(trackerdb_old);
+    }
+
     int index = 0;
     for (int i = 0; i < sizeof(m_databases)/sizeof(m_databases[0]); i++) {
         if (m_databases[i].empty()) {
@@ -564,6 +587,12 @@ void QtContactsSwitcher::backupStorage(ClientTest &client)
     start();
 }
 
+void QtContactsSwitcher::setDatabases(const string databases[])
+{
+    for (int i = 0; i < sizeof(m_databases)/sizeof(m_databases[0]); i++) {
+        m_databases[i] = databases[i];
+    }
+}
 string QtContactsSwitcher::getDatabasePath(int index)
 {
     string m_path = getHome() + m_dirs[index];
