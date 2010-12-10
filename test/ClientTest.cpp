@@ -2664,9 +2664,14 @@ void SyncTests::testManyDeletes() {
                        CheckSyncReport(0,0,0, 0,0,num_items, true, SYNC_TWO_WAY),
                        10 * 1024));
 
+    // Reporting locally deleted items depends on sync mode
+    // recognition, see SyncContext.cpp.
+    const char* checkSyncModeStr = getenv("CLIENT_TEST_NOCHECK_SYNCMODE");    
+
     // update second client
     accessClientB->doSync("delete-client",
                           SyncOptions(RefreshFromPeerMode(),
+                                      checkSyncModeStr ? CheckSyncReport() :
                                       CheckSyncReport(0,0,num_items, 0,0,0, true, RefreshFromPeerMode()),
                                       10 * 1024));
 }
@@ -2720,6 +2725,10 @@ void SyncTests::testComplexRefreshFromServerSemantic()
 {
     testCopy();
 
+    // Reporting locally deleted items depends on sync mode
+    // recognition, see SyncContext.cpp.
+    const char* checkSyncModeStr = getenv("CLIENT_TEST_NOCHECK_SYNCMODE");    
+
     // check refresh with one item on server
     const char *value = getenv ("CLIENT_TEST_NOREFRESH");
     // If refresh_from_server or refresh_from_client (depending on this is a
@@ -2729,6 +2738,7 @@ void SyncTests::testComplexRefreshFromServerSemantic()
     } else {
         accessClientB->doSync("refresh-one",
                               SyncOptions(RefreshFromPeerMode(),
+                                          checkSyncModeStr ? CheckSyncReport() :
                                           CheckSyncReport(1,0,1, 0,0,0, true, RefreshFromPeerMode())));
     }
 
@@ -2744,6 +2754,7 @@ void SyncTests::testComplexRefreshFromServerSemantic()
     } else {
         accessClientB->doSync("refresh-none",
                               SyncOptions(RefreshFromPeerMode(),
+                                          checkSyncModeStr ? CheckSyncReport() :
                                           CheckSyncReport(0,0,1, 0,0,0, true, RefreshFromPeerMode())));
     }
 }
