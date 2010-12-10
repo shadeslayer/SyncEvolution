@@ -1394,6 +1394,8 @@ public:
                           const char *function,
                           const char *format,
                           va_list args);
+
+    virtual bool isProcessSafe() const { return false; }
 };
 
 /**
