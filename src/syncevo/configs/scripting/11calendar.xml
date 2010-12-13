@@ -66,6 +66,19 @@
           }  
         }
 
+        // Transform absolute alarm time back to relative time (mirrors the code in
+        // VCALENDAR_OUTGOING_SCRIPT, see also BMC #11233). This applies to all
+        // events, recurring or not, if the "alarmTimeToUTC" workaround is applied.
+        // With a peer which cannot distinguish between absolute and relative
+        // alarms we better treat all alarms as relative, because that is presented
+        // more nicely to the user on the local side.
+        if (ITEMDATATYPE()=="vCalendar10" &&
+            ALARM_TIME!=EMPTY &&
+            !ISDURATION(ALARM_TIME) &&
+            SESSIONVAR("alarmTimeToUTC")) { 
+            ALARM_TIME = ALARM_TIME - DTSTART;
+        }
+
         // - shape attendees (and make sure ATTENDEES[] is assigned even for empty email addresses)
         i=0;
         while(i<SIZE(ATTENDEES) || i<SIZE(ATTENDEE_CNS)) {
@@ -151,7 +164,11 @@
       }
 
       // for 'ALARM_TIME', convert duration time to UTC time
-      // This workaround is for Mobical.net can't understand duration time
+      // This workaround is for Mobical.net which can't understand duration time.
+      // Also used with phones. The interpretation at least by Nokia
+      // is that the absolute alarm time repeats together with the
+      // event (BMC #11233). VCALENDAR_INCOMING_SCRIPT has the
+      // corresponding transformation back (important for recurring events).
       if (SESSIONVAR("alarmTimeToUTC") && ITEMDATATYPE()=="vCalendar10"
             && ALARM_TIME!=EMPTY && ISDURATION(ALARM_TIME)) {
         TIMESTAMP ts;
