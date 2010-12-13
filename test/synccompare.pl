@@ -250,6 +250,8 @@ sub NormalizeItem {
     if (/^BEGIN:(VEVENT|VTODO|VJOURNAL)$/m) {
         # CLASS=PUBLIC is the default, no need to show it
         s/^CLASS:PUBLIC\r?\n//m;
+        # RELATED=START is the default behavior
+        s/^TRIGGER([^\n:]*);RELATED=START/TRIGGER$1/mg;
     }
 
     if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo) {
@@ -305,7 +307,7 @@ sub NormalizeItem {
 
     # Google randomly (?!) adds a standard alarm to events.
     if ($google_valarm) {
-        s/BEGIN:VALARM\nDESCRIPTION:This is an event reminder\nACTION:DISPLAY\nTRIGGER;VALUE=DURATION:-PT10M\n(X-KDE-KCALCORE-ENABLED:TRUE\n)END:VALARM\n//s;
+        s/BEGIN:VALARM\nDESCRIPTION:This is an event reminder\nACTION:DISPLAY\nTRIGGER:-PT10M\n(X-KDE-KCALCORE-ENABLED:TRUE\n)END:VALARM\n//s;
     }
 
     if ($yahoo) {
@@ -475,8 +477,6 @@ sub NormalizeItem {
       }
       if (/^BEGIN:VEVENT/m ) {
         s/^(UID|SEQUENCE|TRANSP|RECURRENCE-ID|X-EVOLUTION-ALARM-UID|ORGANIZER)(;[^:;\n]*)*:.*\r?\n?//gm;
-        # RELATED=START is the default behavior though server will lost it
-        s/^TRIGGER([^\n:]*);RELATED=START/TRIGGER$1/mg;
         # some parameters of 'ATTENDEE' will be lost by server
         s/^ATTENDEE([^\n:]*);CUTYPE=([^\n;:]*)/ATTENDEE$1/mg;
         s/^ATTENDEE([^\n:]*);LANGUAGE=([^\n;:]*)/ATTENDEE$1/mg;
