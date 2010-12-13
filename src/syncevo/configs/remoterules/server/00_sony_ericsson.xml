@@ -1,0 +1,13 @@
+    <remoterule name="SonyEricsson">
+      <!-- defaults for *all* Sony Ericsson phones; can be overridden for
+specific models later on -->
+      <manufacturer>SonyEricsson</manufacturer>
+      <finalrule>no</finalrule>
+
+      <!-- At least the Sony Ericsson T700 is only able to deal with alarm
+times in UTC,
+           but rejects relative times. BMC #10091 -->
+      <rulescript><![CDATA[
+        alarmTimeToUTC = TRUE;
+      ]]></rulescript>      
+    </remoterule>
