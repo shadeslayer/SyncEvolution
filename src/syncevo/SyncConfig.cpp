@@ -602,7 +602,11 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         boost::iequals(server, "default")) {
         config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
         config->setWebURL("http://www.scheduleworld.com");
-        config->setConsumerReady(true);
+        // ScheduleWorld was shut down end of November 2010.
+        // Completely removing all traces of it from SyncEvolution
+        // source code is too intrusive for the time being, so
+        // just disable it in the UI.
+        // config->setConsumerReady(false);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
         source->setSourceType("addressbook:text/vcard");
