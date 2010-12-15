@@ -450,7 +450,7 @@ sometimes also a beta or alpha suffix),
       <arg type="s" name="config" direction="in">
         <doc:doc><doc:summary>name of configuration to be created or used in session</doc:summary></doc:doc>
       </arg>
-      <arg type="a(s)" name="flags" direction="in">
+      <arg type="as" name="flags" direction="in">
         <doc:doc><doc:summary>optional flags</doc:summary></doc:doc>
       </arg>
       <arg type="o" name="session" direction="out">

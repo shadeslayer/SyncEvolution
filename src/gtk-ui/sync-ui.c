@@ -1210,7 +1210,7 @@ autosync_toggle_cb (GtkWidget *widget, gpointer x, app_data *data)
             op_data->data = data;
             op_data->operation = OP_SAVE;
             op_data->started = FALSE;
-            syncevo_server_start_session (data->server,
+            syncevo_server_start_no_sync_session (data->server,
                                           data->current_service->name,
                                           (SyncevoServerStartSessionCb)start_session_cb,
                                           op_data);

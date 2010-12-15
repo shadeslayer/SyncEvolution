@@ -244,7 +244,7 @@ get_config_for_overwrite_prevention_cb (SyncevoSession *session,
     sync_config_widget_set_name (data->widget, name);
     g_free (name);
 
-    syncevo_server_start_session (data->widget->server,
+    syncevo_server_start_no_sync_session (data->widget->server,
                                   data->widget->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
                                   data);
@@ -359,7 +359,7 @@ stop_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     data->widget = self;
     data->delete = FALSE;
     data->temporary = FALSE;
-    syncevo_server_start_session (self->server,
+    syncevo_server_start_no_sync_session (self->server,
                                   self->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
                                   data);
@@ -462,7 +462,7 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     data->delete = FALSE;
     data->temporary = FALSE;
     data->basename = g_strdup (self->config_name);
-    syncevo_server_start_session (self->server,
+    syncevo_server_start_no_sync_session (self->server,
                                   self->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
                                   data);
@@ -519,7 +519,7 @@ reset_delete_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
     data->delete = TRUE;
     data->temporary = FALSE;
 
-    syncevo_server_start_session (self->server,
+    syncevo_server_start_no_sync_session (self->server,
                                   self->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
                                   data);
@@ -777,7 +777,7 @@ init_source (char *name,
     data->temporary = TRUE;
     data->widgets = source_widgets_ref (widgets);
 
-    syncevo_server_start_session (self->server,
+    syncevo_server_start_no_sync_session (self->server,
                                   self->config_name,
                                   (SyncevoServerStartSessionCb)start_session_for_config_write_cb,
                                   data);
