@@ -293,6 +293,46 @@ generic_error (SessionAsyncData *data)
 }
 
 static void
+get_config_name_callback (DBusGProxy *proxy,
+                          char *name,
+                          GError *error,
+                          SessionAsyncData *data)
+{
+    if (data->callback) {
+        (*(SyncevoSessionGetConfigNameCb)data->callback) (data->session,
+                                                          name,
+                                                          error,
+                                                          data->userdata);
+    }
+    session_async_data_free (data);
+}
+
+void
+syncevo_session_get_config_name (SyncevoSession *session,
+                                 SyncevoSessionGetConfigNameCb callback,
+                                 gpointer userdata)
+{
+    SessionAsyncData *data;
+    SyncevoSessionPrivate *priv;
+
+    priv = GET_PRIVATE (session);
+
+    data = session_async_data_new (session, G_CALLBACK (callback), userdata);
+
+    if (!priv->proxy) {
+        if (callback) {
+            g_idle_add ((GSourceFunc)generic_error, data);
+        }
+        return;
+    }
+
+    org_syncevolution_Session_get_config_name_async
+            (priv->proxy,
+             (org_syncevolution_Session_get_config_name_reply) get_config_name_callback,
+             data);
+}
+
+static void
 get_config_callback (DBusGProxy *proxy,
                      SyncevoConfig *configuration,
                      GError *error,

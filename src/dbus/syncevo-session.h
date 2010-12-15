@@ -60,6 +60,14 @@ typedef void (*SyncevoSessionGenericCb) (SyncevoSession *session,
                                          GError *error,
                                          gpointer userdata);
 
+typedef void (*SyncevoSessionGetConfigNameCb) (SyncevoSession *session,
+                                               char *name,
+                                               GError *error,
+                                               gpointer userdata);
+void syncevo_session_get_config_name (SyncevoSession *session,
+                                      SyncevoSessionGetConfigNameCb callback,
+                                      gpointer userdata);
+
 typedef void (*SyncevoSessionGetConfigCb) (SyncevoSession *session,
                                            SyncevoConfig *config,
                                            GError *error,
