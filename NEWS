@@ -1,3 +1,84 @@
+SyncEvolution 1.1 -> 1.1.1, xxxxxxxxxx
+======================================
+
+Maintenance release, in particular improving syncing with phones.
+There was a bug that could cause all kinds of weird behavior after
+a failed sync with a phone, so updating is highly recommended.
+
+* Synthesis engine: fixed a corruption issue in internal meta data which
+  caused duplicates and other problems in a pretty indeterminstic way;
+  apparently caused by failed syncs (BMC #10358, #11044).
+
+* Synthesis engine: recurrence rules with end date now sent correctly to phones (BMC #11241).
+
+  The RRULE property was not encoded correctly previously during the
+  iCalendar 2.0 -> vCalendar 1.0 conversion. Events with recurrence count
+  were okay. Probably also affected SyncML servers without iCalendar 2.0
+  support.
+
+* Synthesis engine: fixed broken time zone information when sending to phone;
+  previously that broke sending calendar updates to Nokia phones (BMC #9600).
+
+  iCalendar 2.0 time zone definitions imported from libical were not
+  encoded correctly in vCalendar 1.0 items as sent to phones. Nokia
+  phones accepted such data when part of a new event, but rejected
+  updates of it.
+
+* ScheduleWorld: disable configuration template because service has shut down.
+
+  The template is only hidden from the GTK sync-ui, but remains in SyncEvolution
+  for the time being because it is referenced in several places.
+
+* GTK sync-ui: workaround for "Sync Now" button not reacting to online
+  status changed (BMC #9949).
+
+* Changed slow sync handling. Some users have complained about getting
+  duplicated contacts (BMC #10081). The exact reason is not known (no
+  useful logs provided yet), but it might be due to using "duplicate"
+  as resolution strategy during slow syncs.
+
+  This caused slightly different contacts to be duplicated instead of
+  merging the two copies, reasoning that "no data loss" is better than
+  "duplicates". This release switches to a mode where the engine
+  tries harder to avoid duplicates by merging data if modification
+  time stamps are available for contacts (usually they are). When fields
+  differ, the more recent data is kept.
+
+* convert absolute alarm back to relative (BMC #11233)
+
+  Experiments show that at least Nokia phones (and thus perhaps also
+  Mobical.com) interpret a fixed alarm as "repeat alarm with the same
+  relative offset as on first occurrence". The same transformation to
+  relative alarm times is applied whenever the transformation to
+  absolute alarm is enabled for a peer.
+
+* Sony Ericsson: enable conversion to absolute alarm times (BMC #10092)
+    
+  Like Nokia and Mobical.net, Sony Ericsson phones also seem to be unable
+  to deal with relative alarm times - verified with t700.
+
+* Sony Ericsson C510: workaround for SyncML violation
+
+  The phone does not sent identifiers for the target database;
+  using the source identifier as fallback allows a sync to
+  run.
+
+* Fixed a regression affecting users who had created a config
+  with SyncEvolution < 1.0. Using the config worked once, then
+  failed with "No configuration for ... found". Users must
+  manually remove the empty "peers" directory inside their
+  affected configuration, the fix only makes configs without that
+  directory usable again (BMC #9381).
+
+* Removed obsolete workaround for older mKCal calendar storage.
+* Fixed error message in QtContacts backend.
+* Same SYNCEVOLUTION_DEBUG code as in master branch.
+* Some updates to synccompare, including a workaround for a Perl
+  bug seen on Debian Testing with Perl 5.10.1-16 (Perl panic).
+* Fix compilation of syncevo-dbus-server with libnotify 0.7.0 (BMC #10453).
+* Fixed compilation on Debian GNU/Hurd (no MAX_PATH, Mac OS X confusion).
+
+
 SyncEvolution 1.0.1 -> 1.1, 26.10.2010
 ======================================
 
