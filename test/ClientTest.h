@@ -798,6 +798,7 @@ protected:
         SyncPrefix prefix(logPrefix, *this);
         doSync(options);
     }
+    virtual void postSync(int res, const std::string &logname);
 };
 
 /*

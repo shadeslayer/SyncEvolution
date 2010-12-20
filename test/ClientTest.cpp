@@ -3427,16 +3427,16 @@ void SyncTests::doSync(const SyncOptions &options)
                             logname,
                             options);
 
-        client.postSync(res, logname);
+        postSync(res, logname);
     } catch (CppUnit::Exception &ex) {
         res = 1;
-        client.postSync(res, logname);
+        postSync(res, logname);
 
         // report the original exception without altering the source line
         throw;
     } catch (...) {
         res = 1;
-        client.postSync(res, logname);
+        postSync(res, logname);
 
         // this logs the original exception using CPPUnit mechanisms,
         // with current line as source
@@ -3444,6 +3444,20 @@ void SyncTests::doSync(const SyncOptions &options)
     }
 }
 
+void SyncTests::postSync(int res, const std::string &logname)
+{
+    char *log = getenv("CLIENT_TEST_LOG");
+
+    client.postSync(res, logname);
+    if (log &&
+        !access(log, F_OK)) {
+        // give server time to finish writing its logs:
+        // more time after a failure
+        sleep(res ? 5 : 1);
+        system(StringPrintf("cp -a '%s' '%s/server-log'", log, logname.c_str()).c_str());
+        rm_r(log);
+    }
+}
 
 /** generates tests on demand based on what the client supports */
 class ClientTestFactory : public CppUnit::TestFactory {
