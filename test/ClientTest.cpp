@@ -3721,6 +3721,8 @@ static string mangleICalendar20(const char *data)
         }
         std::string unique = StringPrintf("UID:UNIQUE-UID-%llu-", (long long unsigned)start);
         boost::replace_all(item, "UID:", unique);
+    } else if (getenv("CLIENT_TEST_LONG_UID")) {
+        boost::replace_all(item, "UID:", "UID:this-is-a-ridiculously-long-uid-");
     }
 
     size_t offset = item.find("\nLAST-MODIFIED:");
