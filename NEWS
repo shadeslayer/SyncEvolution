@@ -7,7 +7,7 @@ a failed sync with a phone, so updating is highly recommended.
 
 * Synthesis engine: fixed a corruption issue in internal meta data which
   caused duplicates and other problems in a pretty indeterminstic way;
-  apparently caused by failed syncs (BMC #10358, #11044).
+  apparently caused by failed syncs (BMC #11044).
 
 * Synthesis engine: recurrence rules with end date now sent correctly to phones (BMC #11241).
 
@@ -15,6 +15,10 @@ a failed sync with a phone, so updating is highly recommended.
   iCalendar 2.0 -> vCalendar 1.0 conversion. Events with recurrence count
   were okay. Probably also affected SyncML servers without iCalendar 2.0
   support.
+
+  The fix was confirmed to work with Nokia phones. It also helps with Sony Ericsson
+  phones, but at least the t700 still has a problem: depending on the phone's
+  time zone, it repeats the event for one day too long (BMC #10092).
 
 * Synthesis engine: fixed broken time zone information when sending to phone;
   previously that broke sending calendar updates to Nokia phones (BMC #9600).
@@ -24,10 +28,26 @@ a failed sync with a phone, so updating is highly recommended.
   phones accepted such data when part of a new event, but rejected
   updates of it.
 
+* Synthesis engine: shorter TZIDs, might help N900 calendar (BMC #6680).
+
+  The shorter TZIDs will be included in iCalendar 2.0 data exported
+  by libsyntesis and thus SyncEvolution. This change is motivated primarily
+  by the observation that the N900 calendar storage can handle TZID=<location>,
+  but not TZID=/softwarestudio.org/Tzfile/<location>.
+
 * ScheduleWorld: disable configuration template because service has shut down.
 
   The template is only hidden from the GTK sync-ui, but remains in SyncEvolution
   for the time being because it is referenced in several places.
+
+* Evolution CalDAV: added workaround for "must sync twice" (BMC #10265)
+
+  The Evolution CalDAV backend seems to update its data when closing the
+  database, not when opening it. As a result, syncevolution had to be run
+  twice to see all data changes. The workaround is to open the database
+  twice at the start of the sync. This is done for all calendar databases,
+  regardless of which backend they use, in case that some other (yet unknown)
+  backend needs the same workaround.
 
 * GTK sync-ui: workaround for "Sync Now" button not reacting to online
   status changed (BMC #9949).
