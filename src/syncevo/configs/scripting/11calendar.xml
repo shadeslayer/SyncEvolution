@@ -7,8 +7,8 @@
       // make sure we have all trailing and leading spaces eliminated
       DESCRIPTION=NORMALIZED(DESCRIPTION);
       SUMMARY=NORMALIZED(SUMMARY);
-      // make sure that we have a DESCRIPTION
-      if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY;
+      // eliminate description that is the same as summary
+      if (DESCRIPTION==SUMMARY) DESCRIPTION=EMPTY;
       // calendar or todo
       if (ISEVENT) {
         // VEVENT
@@ -149,8 +149,10 @@
       // make sure we have at least a summary
       if (SUMMARY==EMPTY) SUMMARY=SUBSTR(DESCRIPTION,0,32); // derive from description
       if (SUMMARY==EMPTY) SUMMARY="unnamed"; // in case description is empty as well
-      // make sure that we have a DESCRIPTION
-      if (DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY;
+      // make sure that we have a DESCRIPTION, because some peers only support that;
+      // can be avoided for peers where we are certain (from CtCaps) that they can
+      // receive the text as part of the summary
+      if (ISAVAILABLE(SUMMARY)!=TRUE && DESCRIPTION==EMPTY) DESCRIPTION=SUMMARY;
       // do NOT send duration (some servers crash when doing so)
       DURATION = UNASSIGNED;
       // shape alarm
