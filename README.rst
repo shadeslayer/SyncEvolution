@@ -87,7 +87,7 @@ peer. Depending on which parameters are given, different operations
 are executed.
 
 Starting with SyncEvolution 1.0, <config> strings can have different
-meanings. Typically, a simple string like `scheduleworld` refers to
+meanings. Typically, a simple string like `memotoo` refers to
 the configuration for that peer, as it did in previous releases. A
 peer is either a SyncML server (the traditional usage of
 SyncEvolution) or a client (the new feature in 1.0).
@@ -107,7 +107,7 @@ the context name.
 When different peers are meant to synchronize different local
 databases, then different contexts have to be used when setting up the
 peers by appending a context name after the `at` sign, as in
-`scheduleworld2@other-context`. Later on, if `scheduleworld2` is
+`memotoo2@other-context`. Later on, if `memotoo2` is
 unique, the `@other-context` suffix becomes optional.
 
 Sometimes it is also useful to change configuration options of a
@@ -305,8 +305,8 @@ a list of valid values.
   of the template configurations (see --template option). When
   creating a new configuration and listing sources explicitly on the
   command line, only those sources will be set to active in the new
-  configuration, i.e. `syncevolution -c scheduleworld addressbook`
-  followed by `syncevolution scheduleworld` will only synchronize the
+  configuration, i.e. `syncevolution -c memotoo addressbook`
+  followed by `syncevolution memotoo` will only synchronize the
   address book. The other sources are created in a disabled state.
   When modifying an existing configuration and sources are specified,
   then the source properties of only those sources are modified.
@@ -412,7 +412,7 @@ a list of valid values.
   for known SyncML peers. Defaults to the <config> name, so --template
   only has to be specified when creating multiple different configurations
   for the same peer, or when using a template that is named differently
-  than the peer. `default` is an alias for `scheduleworld` and can be
+  than the peer. `default` is an alias for `memotoo` and can be
   used as the starting point for servers which do not have a built-in
   template.
 
@@ -475,12 +475,12 @@ List the known configuration templates::
 
    syncevolution --template ?
 
-Create a new configuration, using the existing ScheduleWorld template::
+Create a new configuration, using the existing Memotoo template::
 
   syncevolution --configure \
                 --sync-property "username=123456" \
                 --sync-property "password=!@#ABcd1234" \
-                scheduleworld
+                memotoo
 
 Note that putting passwords into the command line, even for
 short-lived processes as the one above, is a security risk in shared
@@ -493,29 +493,29 @@ This command shows the directory containing the file::
 
 Review configuration::
 
-   syncevolution --print-config scheduleworld
+   syncevolution --print-config memotoo
 
 Synchronize all sources::
 
-  syncevolution scheduleworld
+  syncevolution memotoo
 
 Deactivate all sources::
 
   syncevolution --configure \
                 --source-property sync=none \
-                scheduleworld
+                memotoo
 
 Activate address book synchronization again, using the --sync shortcut::
 
   syncevolution --configure \
                 --sync two-way \
-                scheduleworld addressbook
+                memotoo addressbook
 
 Change the password for a configuration::
 
   syncevolution --configure \
                 --sync-property password=foo \
-                scheduleworld
+                memotoo
 
 Set up another configuration for under a different account, using
 the same default databases as above::
@@ -523,8 +523,8 @@ the same default databases as above::
   syncevolution --configure \
                 --sync-property username=joe \
                 --sync-property password=foo \
-                --template scheduleworld \
-                scheduleworld_joe
+                --template memotoo \
+                memotoo_joe
 
 Set up another configuration using the same account, but different
 local databases (can be used to simulate synchronizing between two
@@ -534,7 +534,7 @@ clients, see `Exchanging Data`_::
                 --sync-property "username=123456" \
                 --sync-property "password=!@#ABcd1234" \
                 --source-property sync=none \
-                 scheduleworld@other
+                 memotoo@other
   
   syncevolution --configure \
                 --source-property evolutionsource=<name of other address book> \
@@ -542,16 +542,16 @@ clients, see `Exchanging Data`_::
 
   syncevolution --configure \
                 --source-property sync=two-way \
-                scheduleworld@other addressbook
+                memotoo@other addressbook
 
-  syncevolution scheduleworld 
-  syncevolution scheduleworld@other
+  syncevolution memotoo 
+  syncevolution memotoo@other
 
 Migrate a configuration from the <= 0.7 format to the current one
 and/or updates the configuration so that it looks like configurations
 created anew with the current syncevolution::
 
-  syncevolution --migrate scheduleworld
+  syncevolution --migrate memotoo
 
 
 NOTES
@@ -571,16 +571,9 @@ possible because it cannot represent all data that Evolution stores.
    the same applies to other data sources.
 
 How the server stores the items depends on its implementation and
-configuration. In the default Funambol server installation, contacts
-and calendar items are converted into an internal format, but at
-least for contacts it preserves most of the properties used by
-Evolution whereas iCalendar 2.0 items are not preserved properly 
-up to and including Funambol 8.0. ScheduleWorld uses the same format
-as Evolution for calendars and tasks and thus requires no conversion.
-
-To check which data is preserved, one can use this procedure
-(described for contacts, but works the same way for calendars and
-tasks):
+configuration. To check which data is preserved, one can use this
+procedure (described for contacts, but works the same way for
+calendars and tasks):
 
 1. synchronize the address book with the server
 2. create a new address book in Evolution and view it in Evolution

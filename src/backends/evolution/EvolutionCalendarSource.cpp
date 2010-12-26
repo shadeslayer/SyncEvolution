@@ -178,34 +178,45 @@ void EvolutionCalendarSource::open()
     ESource *source = findSource(sources, id);
     bool onlyIfExists = true;
     bool created = false;
-    if (!source) {
-        // might have been special "<<system>>" or "<<default>>", try that and
-        // creating address book from file:// URI before giving up
-        if ((id.empty() || id == "<<system>>") && m_newSystem) {
-            m_calendar.set(m_newSystem(), (string("system ") + m_typeName).c_str());
-        } else if (!id.compare(0, 7, "file://")) {
-            m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), (string("creating ") + m_typeName).c_str());
-        } else {
-            throwError(string("not found: '") + id + "'");
-        }
-        created = true;
-        onlyIfExists = false;
-    } else {
-        m_calendar.set(e_cal_new(source, m_type), m_typeName.c_str());
-    }
 
-    e_cal_set_auth_func(m_calendar, eCalAuthFunc, this);
+    // Open twice. This solves an issue where Evolution's CalDAV
+    // backend only updates its local cache *after* a sync (= while
+    // closing the calendar?), instead of doing it *before* a sync (in
+    // e_cal_open()).
+    //
+    // This workaround is applied to *all* backends because there might
+    // be others with similar problems and for local storage it is
+    // a reasonably cheap operation (so no harm there).
+    for (int retries = 0; retries < 2; retries++) {
+        if (!source) {
+            // might have been special "<<system>>" or "<<default>>", try that and
+            // creating address book from file:// URI before giving up
+            if ((id.empty() || id == "<<system>>") && m_newSystem) {
+                m_calendar.set(m_newSystem(), (string("system ") + m_typeName).c_str());
+            } else if (!id.compare(0, 7, "file://")) {
+                m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), (string("creating ") + m_typeName).c_str());
+            } else {
+                throwError(string("not found: '") + id + "'");
+            }
+            created = true;
+            onlyIfExists = false;
+        } else {
+            m_calendar.set(e_cal_new(source, m_type), m_typeName.c_str());
+        }
+
+        e_cal_set_auth_func(m_calendar, eCalAuthFunc, this);
     
-    if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
-        if (created) {
-            // opening newly created address books often failed, perhaps that also applies to calendars - try again
-            g_clear_error(&gerror);
-            sleep(5);
-            if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
+        if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
+            if (created) {
+                // opening newly created address books often failed, perhaps that also applies to calendars - try again
+                g_clear_error(&gerror);
+                sleep(5);
+                if (!e_cal_open(m_calendar, onlyIfExists, &gerror)) {
+                    throwError(string("opening ") + m_typeName, gerror );
+                }
+            } else {
                 throwError(string("opening ") + m_typeName, gerror );
             }
-        } else {
-            throwError(string("opening ") + m_typeName, gerror );
         }
     }
 

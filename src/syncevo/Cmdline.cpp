@@ -1854,7 +1854,7 @@ public:
                               "peers/scheduleworld/config.ini:# SSLVerifyHost = 1\n"
                               "peers/scheduleworld/config.ini:WebURL = http://www.scheduleworld.com\n"
                               "peers/scheduleworld/config.ini:# IconURI = \n"
-                              "peers/scheduleworld/config.ini:ConsumerReady = 1\n"
+                              "peers/scheduleworld/config.ini:# ConsumerReady = 0\n"
 
                               "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
                               "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"
@@ -3111,7 +3111,7 @@ private:
             "spds/syncml/config.txt:# SSLVerifyHost = 1\n"
             "spds/syncml/config.txt:WebURL = http://www.scheduleworld.com\n"
             "spds/syncml/config.txt:# IconURI = \n"
-            "spds/syncml/config.txt:ConsumerReady = 1\n"
+            "spds/syncml/config.txt:# ConsumerReady = 0\n"
             "spds/sources/addressbook/config.txt:sync = two-way\n"
             "spds/sources/addressbook/config.txt:type = addressbook:text/vcard\n"
             "spds/sources/addressbook/config.txt:# evolutionsource = \n"
@@ -3150,6 +3150,10 @@ private:
         boost::replace_first(config,
                              "WebURL = http://www.scheduleworld.com",
                              "WebURL = http://my.funambol.com");
+
+        boost::replace_first(config,
+                             "# ConsumerReady = 0",
+                             "ConsumerReady = 1");
 
         boost::replace_first(config,
                              "# enableWBXML = 1",
@@ -3194,10 +3198,6 @@ private:
         boost::replace_first(config,
                              "WebURL = http://www.scheduleworld.com",
                              "WebURL = http://www.synthesis.ch");        
-
-        boost::replace_first(config,
-                             "ConsumerReady = 1",
-                             "# ConsumerReady = 0");
 
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",

@@ -644,6 +644,35 @@ syncevo_server_start_session (SyncevoServer *syncevo,
              data);
 }
 
+void
+syncevo_server_start_no_sync_session (SyncevoServer *syncevo,
+                                      const char *config_name,
+                                      SyncevoServerStartSessionCb callback,
+                                      gpointer userdata)
+{
+    ServerAsyncData *data;
+    SyncevoServerPrivate *priv;
+    char *flags[2] = {"no-sync", NULL};
+
+    priv = GET_PRIVATE (syncevo);
+
+    data = server_async_data_new (syncevo, G_CALLBACK (callback), userdata);
+
+    if (!priv->proxy && !syncevo_server_get_new_proxy (syncevo)) {
+        if (callback) {
+            g_idle_add ((GSourceFunc)start_session_error, data);
+        }
+        return;
+    }
+
+    org_syncevolution_Server_start_session_with_flags_async
+            (priv->proxy,
+             config_name,
+             flags,
+             (org_syncevolution_Server_start_session_reply) start_session_callback,
+             data);
+}
+
 static void
 get_sessions_callback (SyncevoServer *syncevo,
                        SyncevoSessions *sessions,
@@ -705,14 +734,14 @@ syncevo_server_get_sessions (SyncevoServer *syncevo,
 static void
 check_presence_callback (SyncevoServer *syncevo,
                          char *status,
-                         char *transport,
+                         char **transports,
                          GError *error,
                          ServerAsyncData *data)
 {
     if (data->callback) {
         (*(SyncevoServerGetPresenceCb)data->callback) (data->server,
                                                        status,
-                                                       transport,
+                                                       transports,
                                                        error,
                                                        data->userdata);
     }

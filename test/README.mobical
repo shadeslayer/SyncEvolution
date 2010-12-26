@@ -58,6 +58,7 @@ http://bugzilla.moblin.org/show_bug.cgi?id=3009
   Client::Sync::text::testOneWayFromClient,                                 \
   Client::Sync::text::Retry,Client::Sync::text::Suspend,                    \
   
+  disable "prevent slow sync"
  
 * Test Profiles Settings
   N/A
