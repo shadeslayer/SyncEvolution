@@ -22,6 +22,7 @@ EXTRA_DIST = \
 	testcases/templates/clients/phone/nokia/S40/7210c.ini \
 	testcases/templates/clients/SyncEvolution.ini \
         syncevo-http-server.py \
+        syncevo-http-server-logging.conf \
         syncevo-phone-config.py \
 	$(wildcard testcases/*.patch) \
         synccompare.pl

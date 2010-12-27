@@ -14,13 +14,22 @@ import gobject
 import sys
 import urlparse
 import optparse
+import logging
+import logging.config
 
 import twisted.web
+import twisted.python.log
 from twisted.web import server, resource, http
 from twisted.internet import reactor
 
 bus = dbus.SessionBus()
 loop = gobject.MainLoop()
+
+# for output from this script itself
+logger = logging.getLogger("syncevo-http")
+
+# for output from core SyncEvolution
+loggerCore = logging.getLogger("sync")
 
 # cached information about previous POST and reply,
 # in case that we need to resend
@@ -31,7 +40,7 @@ class OldRequest:
     type = None
 
 def session_changed(object, ready):
-    print "SessionChanged:", object, ready
+    logger.debug("SessionChanged: %s %s", object, ready)
 
 bus.add_signal_receiver(session_changed,
                         'SessionChanged',
@@ -64,12 +73,12 @@ class SyncMLSession:
 
     def abort(self):
         '''D-Bus server requests to close connection, so cancel everything'''
-        print "connection", self.conpath, "went down"
+        logger.debug("connection %s went down", self.conpath)
         self.destruct(http.INTERNAL_SERVER_ERROR, "lost connection to SyncEvolution")
 
     def reply(self, data, type, meta, final, session):
         '''sent reply to HTTP client and/or close down normally'''
-        print "reply session", session, "final", final, "data len", len(data), meta
+        logger.debug("reply session %s final %s data len %d %s", session, final, len(data), meta)
         # When the D-Bus server sends an empty array, Python binding
         # puts the four chars in 'None' into the data array?!
         if data and len(data) > 0 and data != 'None':
@@ -87,7 +96,7 @@ class SyncMLSession:
                 self.connection.Close(False, "could not deliver reply")
                 self.connection = None
         if final:
-            print "closing connection for connection", self.conpath, "session", session
+            logger.debug("closing connection for connection %s session %s", self.conpath, session)
             if self.connection:
                 self.connection.Close(True, "")
                 self.connection = None
@@ -101,7 +110,7 @@ class SyncMLSession:
 
     def start(self, request, config, url):
         '''start a new session based on the incoming message'''
-        print "requesting new session"
+        logger.debug("requesting new session")
         self.object = dbus.Interface(bus.get_object('org.syncevolution',
                                                     '/org/syncevolution/Server'),
                                      'org.syncevolution.Server')
@@ -143,7 +152,7 @@ class SyncMLSession:
         '''process next message by client in running session'''
         if self.request:
             # message resend?! Ignore old request.
-            print "message resend?!"
+            logger.debug("message resend?!")
             self.request.finish()
             self.request = None
         deferred = request.notifyFinish()
@@ -159,6 +168,7 @@ class SyncMLPost(resource.Resource):
         self.url = url
 
     def render_GET(self, request):
+        logger.info("GET %s from %s", self.url, request.getClientIP())
         return "<html>SyncEvolution SyncML Server</html>"
 
     def render_POST(self, request):
@@ -172,8 +182,10 @@ class SyncMLPost(resource.Resource):
         sessionid = request.args.get('sessionid')
         if sessionid:
             sessionid = sessionid[0]
-        print "POST from", request.getClientIP(), "config", config, "type", type, "session", sessionid, "args", request.args, "length", len
+        logger.debug("POST from %s config %s type %s session %s args %s length %s",
+                     request.getClientIP(), config, type, sessionid, request.args, len)
         if not sessionid:
+            logger.info("new SyncML session for %s", request.getClientIP())
             session = SyncMLSession()
             session.start(request, config,
                           urlparse.urljoin(self.url.geturl(), request.path))
@@ -188,7 +200,7 @@ class SyncMLPost(resource.Resource):
             if sessionid == OldRequest.sessionid and \
                     OldRequest.data == data and \
                     OldRequest.reply:
-                print "resend reply session", sessionid
+                logger.debug("resend reply session %s", sessionid)
                 request.setHeader('Content-Type', OldRequest.type)
                 request.setResponseCode(http.OK)
                 request.write(OldRequest.reply)
@@ -204,11 +216,34 @@ class SyncMLPost(resource.Resource):
                 if session.sessionid == sessionid:
                     session.process(request, data)
                     return server.NOT_DONE_YET
-            print "unknown session", sessionid, "=>", http.NOT_FOUND
+            logger.error("unknown session %s => 404 error", sessionid)
             raise twisted.web.Error(http.NOT_FOUND)
 
 
-usage =  """usage: %prog http://localhost:<port>/<path>
+class TwistedLogging(object):
+    "same as Twisted's PythonLoggingObserver, except that it uses loglevels debug and error"
+    def __init__(self):
+        self.logger = logging.getLogger("twisted")
+
+    def emit(self, eventDict):
+        if 'logLevel' in eventDict:
+            level = eventDict['logLevel']
+        elif eventDict['isError']:
+            level = logging.ERROR
+        else:
+            level = logging.DEBUG
+        text = twisted.python.log.textFromEventDict(eventDict)
+        if text is None:
+            return
+        self.logger.log(level, text)
+
+    def start(self):
+        twisted.python.log.addObserver(self.emit)
+
+    def stop(self):
+        twisted.python.log.removeObserver(self.emit)
+
+usage =  """usage: %prog [options] http://localhost:<port>/<path>
 
 Runs a HTTP server which listens on all network interfaces on
 the given port and answers requests for the given path.
@@ -217,10 +252,50 @@ http://syncevolution.org/development/http-server-howto"""
 
 def main():
     parser = optparse.OptionParser(usage=usage)
+    parser.add_option("-d", "--debug",
+                      action="store_true", dest="debug", default=False,
+                      help="enables debug messages")
+    parser.add_option("-q", "--quiet",
+                      action="store_true", dest="quiet", default=False,
+                      help="limits output to real error messages; ignored if --debug is given")
+    parser.add_option("", "--log-config",
+                      action="store", type="string", dest="logConfig", default=None,
+                      help="configure logging via Python logging config file; --debug and --quiet override the log level in the root logger")
     (options, args) = parser.parse_args()
+
+    # determine level chosen via command line
+    level = None
+    if options.debug:
+        level = logging.DEBUG
+    elif options.quiet:
+        level = logging.ERROR
+    else:
+        level = None
+
+    # create logging infrastructure
+    if options.logConfig:
+        logging.config.fileConfig(options.logConfig)
+        # only override level if explicitly set
+        if level != None:
+            logging.getLogger().setLevel(level)
+    else:
+        root = logging.getLogger()
+        ch = logging.StreamHandler()
+        formatter = logging.Formatter("[%(levelname)s] %(name)s: %(message)s")
+        ch.setFormatter(formatter)
+        root.addHandler(ch)
+        if level == None:
+            level = logging.INFO
+        root.setLevel(level)
+
+    # redirect output from Twisted
+    observer = TwistedLogging()
+    observer.start()
+
     if len(args) != 1:
-        print "need exactly on URL as command line parameter"
+        logger.error("need exactly on URL as command line parameter")
         exit(1)
+
     url = urlparse.urlparse(args[0])
     root = resource.Resource()
     root.putChild(url.path[1:], SyncMLPost(url))
