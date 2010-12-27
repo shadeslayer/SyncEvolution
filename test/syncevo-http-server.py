@@ -243,6 +243,18 @@ class TwistedLogging(object):
     def stop(self):
         twisted.python.log.removeObserver(self.emit)
 
+evo2python = {
+    "DEBUG": logging.DEBUG,
+    "DEVELOPER": logging.DEBUG,
+    "INFO": logging.INFO,
+    "SHOW": logging.INFO,
+    "ERROR": logging.ERROR,
+    "WARNING": logging.WARNING
+}
+
+def logSyncEvoOutput(path, level, output):
+    loggerCore.log(evo2python.get(level, logging.ERROR), "%s", output)
+
 usage =  """usage: %prog [options] http://localhost:<port>/<path>
 
 Runs a HTTP server which listens on all network interfaces on
@@ -291,6 +303,13 @@ def main():
     # redirect output from Twisted
     observer = TwistedLogging()
     observer.start()
+
+    # catch output from syncevo-dbus-server
+    bus.add_signal_receiver(logSyncEvoOutput,
+                            "LogOutput",
+                            "org.syncevolution.Server",
+                            "org.syncevolution",
+                            None)
 
     if len(args) != 1:
         logger.error("need exactly on URL as command line parameter")
