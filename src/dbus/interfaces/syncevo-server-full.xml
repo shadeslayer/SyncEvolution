@@ -817,7 +817,7 @@ sometimes also a beta or alpha suffix),
           </doc:doc>
       </arg>
       <arg type="s" name="level">
-        <doc:doc><doc:summary>the output level (DEBUG/INFO/SHOW/ERROR/WARNING/DEV)</doc:summary></doc:doc>
+        <doc:doc><doc:summary>the output level (DEBUG/INFO/SHOW/ERROR/WARNING/DEVELOPER)</doc:summary></doc:doc>
       </arg>
       <arg type="s" name="output">
         <doc:doc><doc:summary>the output string to be broadcast</doc:summary></doc:doc>
