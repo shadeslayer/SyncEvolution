@@ -52,12 +52,17 @@ checksource () {
     describe=`git describe --tags`
     hash=`cat .git/HEAD | sed -e 's/ref: //'`
     hash=`git show-ref --abbrev --hash --verify $hash`
-    if echo $describe | grep -e '-[0-9]+-[0-9a-f]{8}$' -q; then
+    # detect -<number of changes>-g<hash> suffix added when tag is older than HEAD
+    if perl -e "exit !('$describe' =~ m/-[0-9]+-[0-9a-g]{8}\$/);"; then
+        # remove suffix to get tag (doesn't matter if we do not pick
+        # the most recent one)
         exact=
         tag=`echo $describe | sed -e 's/-[0123456789]*-g.*//'`
     else
+        # there is at least one tag matching HEAD;
+        # pick the most recent one (based on lexical sorting)
         exact=1
-        tag=$describe
+        tag=`git show-ref --tags | grep $hash | sort | tail -1 | sed -e 's;.*refs/tags/;;'`
     fi
     simpletag=$tag
     # Hyphens between numbers in the tag are dots in the version
