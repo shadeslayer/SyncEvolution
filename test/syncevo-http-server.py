@@ -229,7 +229,15 @@ class TwistedLogging(object):
         if 'logLevel' in eventDict:
             level = eventDict['logLevel']
         elif eventDict['isError']:
-            level = logging.ERROR
+            if 'failure' in eventDict and \
+                    eventDict['failure'].type == dbus.exceptions.DBusException and \
+                    eventDict['failure'].value.get_dbus_name() == "org.syncevolution.Exception":
+                # special case: errors inside the syncevo-dbus-server are better shown
+                # to users as part of the syncevo-dbus-server output, so treat the
+                # syncevo-http-server side of it as something for debugging.
+                level = logging.DEBUG
+            else:
+                level = logging.ERROR
         else:
             level = logging.DEBUG
         text = twisted.python.log.textFromEventDict(eventDict)
@@ -238,7 +246,7 @@ class TwistedLogging(object):
         self.logger.log(level, text)
 
     def start(self):
-        twisted.python.log.addObserver(self.emit)
+        twisted.python.log.startLoggingWithObserver(self.emit, setStdout=False)
 
     def stop(self):
         twisted.python.log.removeObserver(self.emit)
