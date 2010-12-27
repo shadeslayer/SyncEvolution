@@ -66,7 +66,14 @@ class SyncMLSession:
             self.request.finish()
             self.request = None
         if self.connection:
-            self.connection.Close(False, message)
+            try:
+                self.connection.Close(False, message)
+            except dbus.exceptions.DBusException, ex:
+                if ex.get_dbus_name() == "org.freedesktop.DBus.Error.UnknownMethod":
+                    # triggered if connection instance is already gone, hide from user
+                    logger.debug("self.connection.Close() failed, connection probably already gone: %s", ex)
+                else:
+                    raise
             self.connection = None
         if self in SyncMLSession.sessions:
             SyncMLSession.sessions.remove(self)
