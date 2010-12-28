@@ -1,0 +1,14 @@
+SSL keys for syncevo-http-server running on localhost.
+
+See http://twistedmatrix.com/documents/10.1.0/core/howto/ssl.html and
+HOWTOs like http://www.madboa.com/geek/openssl/#cert-self
+
+Debian + server on localhost:
+- openssl req -x509 -nodes -days 0 -newkey rsa:1024 -keyout localhost_pem.key -out localhost_pem.crt
+  Common Name = "localhost"
+- cat localhost_pem* >localhost.pem
+- sudo cp localhost_pem.crt /usr/local/share/ca-certificates/
+- sudo update-ca-certificates
+- ensure that "localhost" resolves to 127.0.0.1 (Twisted does not support listening to IPv6
+  and libsoup has no fallback to IPv4)
+- syncevo-http-server --server-certificate=localhost.pem https://localhost:9000/syncevolution

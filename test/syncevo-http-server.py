@@ -20,7 +20,7 @@ import logging.config
 import twisted.web
 import twisted.python.log
 from twisted.web import server, resource, http
-from twisted.internet import reactor
+from twisted.internet import ssl, reactor
 
 bus = dbus.SessionBus()
 loop = gobject.MainLoop()
@@ -288,6 +288,13 @@ def main():
     parser.add_option("", "--log-config",
                       action="store", type="string", dest="logConfig", default=None,
                       help="configure logging via Python logging config file; --debug and --quiet override the log level in the root logger")
+    parser.add_option("", "--server-certificate",
+                      action="store", type="string", dest="cert", default=None,
+                      help="certificate file used by the server to identify itself (required for https)")
+    parser.add_option("", "--server-key",
+                      action="store", type="string", dest="key", default=None,
+                      help="key file used by the server to identify itself (optional, certificate file is used as fallback, which then must contain key and certificate)")
+
     (options, args) = parser.parse_args()
 
     # determine level chosen via command line
@@ -334,7 +341,14 @@ def main():
     root = resource.Resource()
     root.putChild(url.path[1:], SyncMLPost(url))
     site = server.Site(root)
-    reactor.listenTCP(url.port, site)
+    if url.scheme == "https":
+        if not options.cert:
+            logger.error("need server certificate for https")
+            exit(1)
+        reactor.listenSSL(url.port, site,
+                          ssl.DefaultOpenSSLContextFactory(options.key or options.cert, options.cert))
+    else:
+        reactor.listenTCP(url.port, site)
     reactor.run()
 
 if __name__ == '__main__':
