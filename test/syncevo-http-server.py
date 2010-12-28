@@ -91,8 +91,6 @@ class Context:
         Context.checkServer()
         return None
 
-loop = gobject.MainLoop()
-
 class SyncMLSession:
     sessions = []
 
