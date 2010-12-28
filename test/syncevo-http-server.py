@@ -14,6 +14,10 @@ import gobject
 import sys
 import urlparse
 import optparse
+import os
+import atexit
+import signal
+import subprocess
 import logging
 import logging.config
 
@@ -21,9 +25,6 @@ import twisted.web
 import twisted.python.log
 from twisted.web import server, resource, http
 from twisted.internet import ssl, reactor
-
-bus = dbus.SessionBus()
-loop = gobject.MainLoop()
 
 # for output from this script itself
 logger = logging.getLogger("syncevo-http")
@@ -39,15 +40,11 @@ class OldRequest:
     reply = None
     type = None
 
-def session_changed(object, ready):
-    logger.debug("SessionChanged: %s %s", object, ready)
+# holds global variables which will be set later
+class Context:
+    bus = None
 
-bus.add_signal_receiver(session_changed,
-                        'SessionChanged',
-                        'org.syncevolution.Server',
-                        'org.syncevolution',
-                        None,
-                        byte_arrays=True)
+loop = gobject.MainLoop()
 
 class SyncMLSession:
     sessions = []
@@ -118,8 +115,8 @@ class SyncMLSession:
     def start(self, request, config, url):
         '''start a new session based on the incoming message'''
         logger.debug("requesting new session")
-        self.object = dbus.Interface(bus.get_object('org.syncevolution',
-                                                    '/org/syncevolution/Server'),
+        self.object = dbus.Interface(Context.bus.get_object('org.syncevolution',
+                                                            '/org/syncevolution/Server'),
                                      'org.syncevolution.Server')
         deferred = request.notifyFinish()
         deferred.addCallback(self.done)
@@ -129,24 +126,24 @@ class SyncMLSession:
                                             'URL': url},
                                            True,
                                            '')
-        self.connection = dbus.Interface(bus.get_object('org.syncevolution',
-                                                        self.conpath),
+        self.connection = dbus.Interface(Context.bus.get_object('org.syncevolution',
+                                                                self.conpath),
                                          'org.syncevolution.Connection')
 
-        bus.add_signal_receiver(self.abort,
-                                'Abort',
-                                'org.syncevolution.Connection',
-                                'org.syncevolution',
-                                self.conpath,
-                                utf8_strings=True,
-                                byte_arrays=True)
-        bus.add_signal_receiver(self.reply,
-                                'Reply',
-                                'org.syncevolution.Connection',
-                                'org.syncevolution',
-                                self.conpath,
-                                utf8_strings=True,
-                                byte_arrays=True)
+        Context.bus.add_signal_receiver(self.abort,
+                                        'Abort',
+                                        'org.syncevolution.Connection',
+                                        'org.syncevolution',
+                                        self.conpath,
+                                        utf8_strings=True,
+                                        byte_arrays=True)
+        Context.bus.add_signal_receiver(self.reply,
+                                        'Reply',
+                                        'org.syncevolution.Connection',
+                                        'org.syncevolution',
+                                        self.conpath,
+                                        utf8_strings=True,
+                                        byte_arrays=True)
 
         # feed new data into SyncEvolution and wait for reply
         request.content.seek(0, 0)
@@ -294,7 +291,17 @@ def main():
     parser.add_option("", "--server-key",
                       action="store", type="string", dest="key", default=None,
                       help="key file used by the server to identify itself (optional, certificate file is used as fallback, which then must contain key and certificate)")
-
+    parser.add_option("", "--start-dbus-session",
+                      action="store_true", dest="startDBus", default=False,
+                      help="""creates a new D-Bus session for
+communication with syncevo-dbus-server and (inside that server) with
+other D-Bus services like Evolution Data Server, removes it when
+shutting down; should only be used if it is guaranteed that the
+current user will not have another session running, because these
+services can get confused when started multiple times; without this
+option, syncevo-http-server a) uses the session specified in the
+environment or b) looks for a session of the current user (depends on
+ConsoleKit and might not always work)""")
     (options, args) = parser.parse_args()
 
     # determine level chosen via command line
@@ -326,12 +333,82 @@ def main():
     observer = TwistedLogging()
     observer.start()
 
+    # Set up D-Bus. First check for an existing session in env.
+    #
+    # Doing the check via ConsoleKit here would be nice, but that
+    # led to the following problem with --start-dbus-session:
+    # - dbus module is initialized in dbus.SystemBus()
+    # - DISPLAY remains unset, dbus-launch creates new DBUS_SESSION_BUS_ADDRESS
+    # - dbus.SessionBus() fails with "Autolaunch error: X11 initialization failed."
+    # Presumably the session bus address is not checked again after setting it.
+    # Not touching D-Bus before dbus-launch avoids that problem.
+    havedbus = os.environ.get("DBUS_SESSION_BUS_ADDRESS") or os.environ.get("DISPLAY")
+    if options.startDBus:
+        if havedbus:
+            logger.info("%s session found (DISPLAY=%s DBUS_SESSION_BUS_ADDRESS=%s), but starting a new D-Bus session as requested",
+                        os.environ.get("DBUS_SESSION_BUS_ADDRESS") and "D-Bus" or "potential",
+                        os.environ.get("DISPLAY", ""),
+                        os.environ.get("DBUS_SESSION_BUS_ADDRESS", ""))
+        p = subprocess.Popen("dbus-launch", stdout=subprocess.PIPE)
+        output = p.communicate()[0]
+        if p.wait():
+            logger.error("dbus-launch failed")
+            exit(1)
+        for line in output.split():
+            logger.debug("dbus-launch: %s", line)
+            var, value = line.split("=", 1)
+            if var == "DBUS_SESSION_BUS_PID":
+                # kill that process when we quit
+                atexit.register(os.kill, int(value), signal.SIGTERM)
+            os.environ[var] = value
+    else:
+        if not havedbus:
+            # code inspired by Ross Burton's http://burtonini.com/blog/computers/offlineimap-2008-11-04-20-00
+            logger.debug("looking for X11 session via ConsoleKit")
+            bus = dbus.SystemBus()
+            try:
+                manager_obj = bus.get_object('org.freedesktop.ConsoleKit', '/org/freedesktop/ConsoleKit/Manager')
+                manager = dbus.Interface(manager_obj, 'org.freedesktop.ConsoleKit.Manager')
+
+                for ssid in manager.GetSessionsForUnixUser(os.getuid()):
+                    obj = bus.get_object('org.freedesktop.ConsoleKit', ssid)
+                    session = dbus.Interface(obj, 'org.freedesktop.ConsoleKit.Session')
+                    dpy = session.GetX11Display()
+                    logger.debug("ConsoleKit session %s has DISPLAY=%s", session, dpy)
+                    if dpy:
+                        if havedbus:
+                            # already found a session earlier, now what?!
+                            logger.error("multiple X11 sessions found for current user, please set DISPLAY to the one to be used for syncing")
+                            exit(1)
+                        else:
+                            # use this X11 session to find D-Bus session bus
+                            os.environ["DISPLAY"] = dpy
+                            havedbus = True
+            except dbus.exceptions.DBusException, ex:
+                if ex.get_dbus_name() == "org.freedesktop.DBus.Error.ServiceUnknown":
+                    logger.debug("org.freedesktop.ConsoleKit service not available")
+                else:
+                    raise
+
+        if not havedbus:
+            logger.error("no D-Bus session, use --start-dbus-session")
+            exit(1)
+
+    # Now at least one of DISPLAY or DBUS_SESSION_BUS_ADDRESS should be set.
+    # DISPLAY is sufficient for the D-Bus autolaunch mechanism in libdbus (which
+    # reuses a session bus if one exists or creates a new one),
+    # whereas DBUS_SESSION_BUS_ADDRESS explicitly selects an existing bus.
+    logger.debug("connecting to D-Bus session with DISPLAY=%s DBUS_SESSION_BUS_ADDRESS=%s",
+                 os.environ.get("DISPLAY", ""),
+                 os.environ.get("DBUS_SESSION_BUS_ADDRESS", ""))
+    Context.bus = dbus.SessionBus()
+
     # catch output from syncevo-dbus-server
-    bus.add_signal_receiver(logSyncEvoOutput,
-                            "LogOutput",
-                            "org.syncevolution.Server",
-                            "org.syncevolution",
-                            None)
+    Context.bus.add_signal_receiver(logSyncEvoOutput,
+                                    "LogOutput",
+                                    "org.syncevolution.Server",
+                                    "org.syncevolution",
+                                    None)
 
     if len(args) != 1:
         logger.error("need exactly on URL as command line parameter")
