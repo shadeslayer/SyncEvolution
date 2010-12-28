@@ -17,6 +17,7 @@ import optparse
 import os
 import atexit
 import signal
+import time
 import subprocess
 import logging
 import logging.config
@@ -40,9 +41,55 @@ class OldRequest:
     reply = None
     type = None
 
-# holds global variables which will be set later
+# holds global variables which will be set later:
+# - bus = D-Bus session bus
+# - dbusserver = path to syncevo-dbus-server if it needs to be started, None if using system
 class Context:
     bus = None
+    dbusserver = None
+    _server = None
+
+    @staticmethod
+    def checkServer():
+        if Context._server:
+            retcode = Context._server.poll()
+            if retcode == None:
+                return
+            elif retcode < 0:
+                logger.error("syncevo-dbus-server was terminated by signal %d", -retcode)
+            elif retcode > 0:
+                logger.error("syncevo-dbus-server failed, return code %d", retcode)
+            else:
+                logger.debug("syncevo-dbus-server shut down normally")
+            Context._server = None
+
+    @staticmethod
+    def getDBusServer():
+        if not Context.dbusserver:
+            # standard D-Bus activation
+            return dbus.Interface(Context.bus.get_object('org.syncevolution',
+                                                         '/org/syncevolution/Server'),
+                                  'org.syncevolution.Server')
+
+        # check status of previously started server
+        Context.checkServer()
+
+        # start executable
+        if not Context._server:
+            logger.debug("starting %s", Context.dbusserver)
+            Context._server = subprocess.Popen(Context.dbusserver, stdout=open("/dev/null", "w"))
+
+        # wait until the daemon shows up on D-Bus (slightly racy)
+        while Context._server.poll() == None:
+            time.sleep(0.5)
+            if 'org.syncevolution' in Context.bus.list_names():
+                return dbus.Interface(Context.bus.get_object('org.syncevolution',
+                                                             '/org/syncevolution/Server'),
+                                      'org.syncevolution.Server')
+
+        # Startup failed?! Clean up, then give up and return nothing (probably triggers further errors).
+        Context.checkServer()
+        return None
 
 loop = gobject.MainLoop()
 
@@ -115,9 +162,7 @@ class SyncMLSession:
     def start(self, request, config, url):
         '''start a new session based on the incoming message'''
         logger.debug("requesting new session")
-        self.object = dbus.Interface(Context.bus.get_object('org.syncevolution',
-                                                            '/org/syncevolution/Server'),
-                                     'org.syncevolution.Server')
+        self.object = Context.getDBusServer()
         deferred = request.notifyFinish()
         deferred.addCallback(self.done)
         self.conpath = self.object.Connect({'description': 'syncevo-server-http.py',
@@ -302,6 +347,18 @@ services can get confused when started multiple times; without this
 option, syncevo-http-server a) uses the session specified in the
 environment or b) looks for a session of the current user (depends on
 ConsoleKit and might not always work)""")
+    parser.add_option("", "--start-syncevolution",
+                      action="store_true", dest="startSyncEvo", default=False,
+                      help="""sets up the right environment for
+syncevo-dbus-server and (re)starts it explicitly, instead of depending
+on D-Bus auto-activation; to be used when SyncEvolution is not
+installed at the location it was compiled for""")
+    parser.add_option("", "--syncevolution-path",
+                      action="store", type="string", dest="path", default=None,
+                      help="""sets the installation path (the
+directory which contains 'bin', 'libexec', etc.) to be used in
+--start-syncevolution, default is the location where
+syncevo-http-server itself is installed""")
     (options, args) = parser.parse_args()
 
     # determine level chosen via command line
@@ -409,6 +466,25 @@ ConsoleKit and might not always work)""")
                                     "org.syncevolution.Server",
                                     "org.syncevolution",
                                     None)
+
+    # start syncevo-dbus-server?
+    if options.startSyncEvo:
+        path = options.path
+        if not path:
+            path = os.path.dirname(os.path.dirname(sys.argv[0]))
+        Context.dbusserver = os.path.join(path, "libexec/syncevo-dbus-server")
+        logger.info("using SyncEvolution installation in %s", path)
+        os.environ["SYNCEVOLUTION_BACKEND_DIR"] = os.path.join(path, "lib/syncevolution/backends")
+        os.environ["LD_LIBRARY_PATH"] = ":".join((os.path.join(path, "lib/"),
+                                                  os.path.join(path, "lib/syncevolution"),
+                                                  os.environ.get("LD_LIBRARY_PATH", "")))
+        os.environ["PATH"] = ":".join((os.path.join(path, "libexec/"),
+                                       os.path.join(path, "bin"),
+                                       os.environ.get("PATH", "")))
+        os.environ["SYNCEVOLUTION_XML_CONFIG_DIR"] = os.path.join(path, "share/syncevolution/xml")
+        os.environ["SYNCEVOLUTION_TEMPLATE_DIR"] = os.path.join(path, "share/syncevolution/templates")
+        # try whether it can be started
+        Context.getDBusServer()
 
     if len(args) != 1:
         logger.error("need exactly on URL as command line parameter")
