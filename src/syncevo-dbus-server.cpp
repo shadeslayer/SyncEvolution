@@ -6108,9 +6108,12 @@ void AutoSyncManager::Notification::send(const char *summary,
         notify_notification_clear_actions(m_notification);
         notify_notification_close(m_notification, NULL);
     }
-#if !defined(NOTIFY_CHECK_VERSION)
+#ifndef NOTIFY_CHECK_VERSION
+# define NOTIFY_CHECK_VERSION(_x,_y,_z) 0
+#endif
+#if !NOTIFY_CHECK_VERSION(0,7,0)
     m_notification = notify_notification_new(summary, body, NULL, NULL);
-#else // NOTIFY_CHECK_VERSION(0,7,0) is redundant, because 0.7.0 introduced NOTIFY_CHECK_VERSION
+#else
     m_notification = notify_notification_new(summary, body, NULL);
 #endif
     //if actions are not supported, don't add actions
