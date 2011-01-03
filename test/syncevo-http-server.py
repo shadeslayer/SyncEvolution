@@ -137,6 +137,7 @@ class SyncMLSession:
             OldRequest.type = type
             if request:
                 request.setHeader('Content-Type', type)
+                request.setHeader('Content-Length', len(data))
                 request.setResponseCode(http.OK)
                 request.write(data)
                 request.finish()
