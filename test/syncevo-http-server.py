@@ -269,7 +269,9 @@ class SyncMLPost(resource.Resource):
                     session.process(request, data)
                     return server.NOT_DONE_YET
             logger.error("unknown session %s => 404 error", sessionid)
-            raise twisted.web.Error(http.NOT_FOUND)
+            request.setResponseCode(http.NOT_FOUND)
+            request.write("<html><body><h1>session not found</h1></body></html>")
+            request.finish()
 
 
 class TwistedLogging(object):
