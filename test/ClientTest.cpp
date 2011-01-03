@@ -1721,6 +1721,23 @@ void SyncTests::addTests() {
             addTest(FilterTest(resendTests));
         }
 
+        if (getenv("CLIENT_TEST_RESEND_PROXY") &&
+            config.insertItem &&
+            config.updateItem &&
+            accessClientB &&
+            config.dump &&
+            config.compare) {
+            CppUnit::TestSuite *resendTests = new CppUnit::TestSuite(getName() + "::ResendProxy");
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyClientAdd);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyClientRemove);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyClientUpdate);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyServerAdd);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyServerRemove);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyServerUpdate);
+            ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyFull);
+            addTest(FilterTest(resendTests));
+        }
+
     }
 }
 
@@ -2837,6 +2854,8 @@ public:
     ~TransportResendInjector() {
     }
 
+    virtual int getResendFailureThreshold() { return 0; }
+
     virtual void send(const char *data, size_t len)
     {
         m_messageCount++;
@@ -2916,6 +2935,75 @@ public:
         }
     }
 };
+
+/**
+ * Swallow data at various points:
+ * - between "client sent data" and "server receives data"
+ * - after "server received data" and before "server sends reply"
+ * - after "server has sent reply"
+ *
+ * The client deals with it by resending. This is similar to
+ * TransportResendInjector and the ::Resend tests, but more thorough,
+ * and stresses the HTTP server more (needs to deal with "reply not
+ * delivered" error).
+ *
+ * Each send() increments the counter by three, so that 0 aborts
+ * before the first message, 1 after sending it, and 2 after receiving
+ * its reply.
+ *
+ * Swallowing data is implemented via the proxy.py script. This is
+ * necessary because the wrapped agent has no API to trigger the second
+ * error scenario. The wrapped agent is told to use a specific port
+ * on localhost, with the base port passing message and reply through,
+ * "base + 1" intercepting the message, etc.
+ *
+ * Because of the use of a proxy, this cannot be used to test servers
+ * where a real proxy is needed.
+ */
+class TransportResendProxy : public TransportWrapper {
+private:
+    int port;
+public:
+    TransportResendProxy() : TransportWrapper() {
+        const char *s = getenv("CLIENT_TEST_RESEND_PROXY");
+        port = s ? atoi(s) : 0;
+    }
+
+    virtual int getResendFailureThreshold() { return 2; }
+
+    virtual void send(const char *data, size_t len)
+    {
+        HTTPTransportAgent *agent = dynamic_cast<HTTPTransportAgent *>(m_wrappedAgent.get());
+        CPPUNIT_ASSERT(agent);
+
+        m_messageCount += 3;
+        if (m_interruptAtMessage >= 0 &&
+            m_interruptAtMessage < m_messageCount &&
+            m_interruptAtMessage >= m_messageCount - 3) {
+            int offset = m_interruptAtMessage - m_messageCount + 4;
+            SE_LOG_DEBUG(NULL, NULL, "TransportResendProxy: interrupt %s",
+                         offset == 1 ? "before sending message" :
+                         offset == 2 ? "directly after sending message" :
+                         "after receiving reply");
+            agent->setProxy(StringPrintf("http://127.0.0.1:%d",
+                                         offset + port));
+        } else {
+            agent->setProxy("");
+        }
+        agent->send(data, len);
+        m_status = agent->wait();
+    }
+
+    virtual void getReply(const char *&data, size_t &len, std::string &contentType) {
+        if (m_status == FAILED) {
+            data = "";
+            len = 0;
+        } else {
+            m_wrappedAgent->getReply(data, len, contentType);
+        }
+    }
+};
+
 
 /**
  * Emulates a user suspend just after receving response 
@@ -3013,7 +3101,7 @@ void SyncTests::doInterruptResume(int changes,
     size_t i;
     std::string refFileBase = getCurrentTest() + ".ref.";
     bool equal = true;
-    bool resend = dynamic_cast <TransportResendInjector *> (wrapper.get()) != NULL;
+    bool resend = wrapper->getResendFailureThreshold() != -1;
     bool suspend = dynamic_cast <UserSuspendInjector *> (wrapper.get()) != NULL;
     bool interrupt = dynamic_cast <TransportFaultInjector *> (wrapper.get()) != NULL;
 
@@ -3117,7 +3205,7 @@ void SyncTests::doInterruptResume(int changes,
         int wasInterrupted;
         {
             CheckSyncReport check(-1, -1, -1, -1, -1, -1, false);
-            if (resend && interruptAtMessage != 0) {
+            if (resend && interruptAtMessage > wrapper->getResendFailureThreshold()) {
                 // resend tests must succeed, except for the first
                 // message in the session, which is not resent
                 check.mustSucceed = true;
@@ -3125,10 +3213,9 @@ void SyncTests::doInterruptResume(int changes,
             SyncOptions options(SYNC_TWO_WAY, check);
             options.setTransportAgent(wrapper);
             options.setMaxMsgSize(maxMsgSize);
-            if (!resend) {
-                // disable resending completely
-                options.setRetryInterval(0);
-            }
+            // disable resending completely or shorten the resend
+            // interval to speed up testing
+            options.setRetryInterval(resend ? 10 : 0);
             wrapper->setInterruptAtMessage(interruptAtMessage);
             accessClientB->doSync("changesFromB", options);
             wasInterrupted = interruptAtMessage != -1 &&
@@ -3150,7 +3237,7 @@ void SyncTests::doInterruptResume(int changes,
                 sleep (sleep_t);
 
             // no need for resend tests, unless they were interrupted at the first message
-            if (!resend || interruptAtMessage == 0) {
+            if (!resend || interruptAtMessage <= wrapper->getResendFailureThreshold()) {
                 SyncReport report;
                 accessClientB->doSync("retryB",
                                       SyncOptions(SYNC_TWO_WAY,
@@ -3384,6 +3471,43 @@ void SyncTests::testResendFull()
     doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
                       SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, 
                       boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+}
+
+void SyncTests::testResendProxyClientAdd()
+{
+    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+}
+
+void SyncTests::testResendProxyClientRemove()
+{
+    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+}
+
+void SyncTests::testResendProxyClientUpdate()
+{
+    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+}
+
+void SyncTests::testResendProxyServerAdd()
+{
+    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+}
+
+void SyncTests::testResendProxyServerRemove()
+{
+    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+}
+
+void SyncTests::testResendProxyServerUpdate()
+{
+    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+}
+
+void SyncTests::testResendProxyFull()
+{
+    doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
+                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, 
+                      boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
 }
 
 void SyncTests::doSync(const SyncOptions &options)

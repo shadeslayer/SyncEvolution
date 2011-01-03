@@ -66,10 +66,16 @@ void SoupTransportAgent::setURL(const std::string &url)
 
 void SoupTransportAgent::setProxy(const std::string &proxy)
 {
-    eptr<SoupURI, SoupURI, GLibUnref> uri(soup_uri_new(proxy.c_str()), "Proxy URI");
-    g_object_set(m_session.get(),
-                 SOUP_SESSION_PROXY_URI, uri.get(),
-                 NULL);
+    if (!proxy.empty()) {
+        eptr<SoupURI, SoupURI, GLibUnref> uri(soup_uri_new(proxy.c_str()), "Proxy URI");
+        g_object_set(m_session.get(),
+                     SOUP_SESSION_PROXY_URI, uri.get(),
+                     NULL);
+    } else {
+        g_object_set(m_session.get(),
+                     SOUP_SESSION_PROXY_URI, NULL,
+                     NULL);
+    }
 }
 
 void SoupTransportAgent::setProxyAuth(const std::string &user, const std::string &password)

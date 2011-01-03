@@ -781,6 +781,14 @@ protected:
     virtual void testResendServerUpdate();
     virtual void testResendFull();
 
+    virtual void testResendProxyClientAdd();
+    virtual void testResendProxyClientRemove();
+    virtual void testResendProxyClientUpdate();
+    virtual void testResendProxyServerAdd();
+    virtual void testResendProxyServerRemove();
+    virtual void testResendProxyServerUpdate();
+    virtual void testResendProxyFull();
+
     /**
      * implements testMaxMsg(), testLargeObject(), testLargeObjectEncoded()
      * using a sequence of items with varying sizes
@@ -824,6 +832,13 @@ public:
     }
     ~TransportWrapper() {
     }
+
+    /**
+     * -1 for wrappers which are meant to be used without message resending,
+     * otherwise the number x for which "interrupt" <= x will lead to
+     * an aborted sync (0 for TransportResendInjector, 2 for TransportResendProxy)
+     */
+    virtual int getResendFailureThreshold() { return -1; }
 
     virtual int getMessageCount() { return m_messageCount; }
 
