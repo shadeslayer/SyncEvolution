@@ -143,8 +143,9 @@ class SyncMLSession:
                 request.finish()
                 self.sessionid = session
             else:
-                self.connection.Close(False, "could not deliver reply")
-                self.connection = None
+                # syncevo-dbus-server does not need to know about lost connection
+                # to client, because client might still resend
+                logger.debug("could not send reply immediately, buffering it")
         if final:
             logger.debug("closing connection for connection %s session %s", self.conpath, session)
             if self.connection:
@@ -154,16 +155,19 @@ class SyncMLSession:
 
     def done(self, error):
         '''lost connection to HTTP client, either normally or in error'''
-        if error and self.connection:
-            self.connection.Close(False, error)
-            self.connection = None
+        logger.debug("done with request in session %s, error %s", self.sessionid, error)
+        # keep connection to syncevo-dbus-server, client might still
+        # retry the request
+        self.request = None
 
     def start(self, request, config, url):
         '''start a new session based on the incoming message'''
         logger.debug("requesting new session")
         self.object = Context.getDBusServer()
+        self.request = request
         deferred = request.notifyFinish()
         deferred.addCallback(self.done)
+        deferred.addErrback(self.done)
         self.conpath = self.object.Connect({'description': 'syncevo-server-http.py',
                                             'transport': 'HTTP',
                                             'config': config,
@@ -193,7 +197,6 @@ class SyncMLSession:
         request.content.seek(0, 0)
         self.connection.Process(request.content.read(),
                                 request.getHeader('content-type'))
-        self.request = request
         SyncMLSession.sessions.append(self)
 
     def process(self, request, data):
@@ -205,9 +208,10 @@ class SyncMLSession:
             self.request = None
         deferred = request.notifyFinish()
         deferred.addCallback(self.done)
+        deferred.addErrback(self.done)
+        self.request = request
         self.connection.Process(data,
                                 request.getHeader('content-type'))
-        self.request = request
 
 class SyncMLPost(resource.Resource):
     isLeaf = True
