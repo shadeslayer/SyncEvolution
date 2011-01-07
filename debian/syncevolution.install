@@ -1,4 +1,0 @@
-debian/tmp/usr/bin
-debian/tmp/usr/lib/lib*.so.*
-debian/tmp/usr/lib/syncevolution
-debian/tmp/usr/share
