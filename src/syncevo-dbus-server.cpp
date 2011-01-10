@@ -969,7 +969,7 @@ class PresenceStatus {
 };
 
 /*
- * Implements org.moblin.connman.Manager
+ * Implements org.connman.Manager
  * GetProperty  : getPropCb
  * PropertyChanged: propertyChanged
  **/
@@ -977,9 +977,9 @@ class ConnmanClient : public DBusRemoteObject
 {
 public:
     ConnmanClient (DBusServer &server);
-    virtual const char *getDestination() const {return "org.moblin.connman";}
+    virtual const char *getDestination() const {return "net.connman";}
     virtual const char *getPath() const {return "/";}
-    virtual const char *getInterface() const {return "org.moblin.connman.Manager";}
+    virtual const char *getInterface() const {return "net.connman.Manager";}
     virtual DBusConnection *getConnection() const {return m_connmanConn.get();}
 
     void propertyChanged(const string &name,
