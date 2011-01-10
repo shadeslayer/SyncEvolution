@@ -21,6 +21,7 @@
 #include <syncevo/Cmdline.h>
 #include <syncevo/FilterConfigNode.h>
 #include <syncevo/VolatileConfigNode.h>
+#include <syncevo/IniConfigNode.h>
 #include <syncevo/SyncSource.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/util.h>
@@ -730,6 +731,7 @@ bool Cmdline::run() {
             sources = &m_sources;
         }
         boost::shared_ptr<SyncContext> to(createSyncClient());
+        to->prepareConfigForWrite();
         to->copy(*from, sources);
 
         // Sources are active now according to the server default.
@@ -1799,6 +1801,9 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(CmdlineTest);
     CPPUNIT_TEST(testFramework);
     CPPUNIT_TEST(testSetupScheduleWorld);
+    CPPUNIT_TEST(testFutureConfig);
+    CPPUNIT_TEST(testPeerConfigMigration);
+    CPPUNIT_TEST(testContextConfigMigration);
     CPPUNIT_TEST(testSetupDefault);
     CPPUNIT_TEST(testSetupRenamed);
     CPPUNIT_TEST(testSetupFunambol);
@@ -1820,95 +1825,8 @@ class CmdlineTest : public CppUnit::TestFixture {
     
 public:
     CmdlineTest() :
-        m_testDir("CmdlineTest"),
-        // properties sorted by the order in which they are defined
-        // in the sync and sync source property registry
-        m_scheduleWorldConfig("peers/scheduleworld/.internal.ini:# HashCode = 0\n"
-                              "peers/scheduleworld/.internal.ini:# ConfigDate = \n"
-                              "peers/scheduleworld/.internal.ini:# lastNonce = \n"
-                              "peers/scheduleworld/.internal.ini:# deviceData = \n"
-                              "peers/scheduleworld/config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
-                              "peers/scheduleworld/config.ini:username = your SyncML server account name\n"
-                              "peers/scheduleworld/config.ini:password = your SyncML server password\n"
-                              "config.ini:# logdir = \n"
-                              "peers/scheduleworld/config.ini:# loglevel = 0\n"
-                              "peers/scheduleworld/config.ini:# printChanges = 1\n"
-                              "peers/scheduleworld/config.ini:# dumpData = 1\n"
-                              "config.ini:# maxlogdirs = 10\n"
-                              "peers/scheduleworld/config.ini:# autoSync = 0\n"
-                              "peers/scheduleworld/config.ini:# autoSyncInterval = 30M\n"
-                              "peers/scheduleworld/config.ini:# autoSyncDelay = 5M\n"
-                              "peers/scheduleworld/config.ini:# preventSlowSync = 1\n"
-                              "peers/scheduleworld/config.ini:# useProxy = 0\n"
-                              "peers/scheduleworld/config.ini:# proxyHost = \n"
-                              "peers/scheduleworld/config.ini:# proxyUsername = \n"
-                              "peers/scheduleworld/config.ini:# proxyPassword = \n"
-                              "peers/scheduleworld/config.ini:# clientAuthType = md5\n"
-                              "peers/scheduleworld/config.ini:# RetryDuration = 5M\n"
-                              "peers/scheduleworld/config.ini:# RetryInterval = 2M\n"
-                              "peers/scheduleworld/config.ini:# remoteIdentifier = \n"
-                              "peers/scheduleworld/config.ini:# PeerIsClient = 0\n"
-                              "peers/scheduleworld/config.ini:# SyncMLVersion = \n"
-                              "peers/scheduleworld/config.ini:# PeerName = \n"
-                              "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
-                              "peers/scheduleworld/config.ini:# remoteDeviceId = \n"
-                              "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
-                              "peers/scheduleworld/config.ini:# maxMsgSize = 150000\n"
-                              "peers/scheduleworld/config.ini:# maxObjSize = 4000000\n"
-                              "peers/scheduleworld/config.ini:# enableCompression = 0\n"
-                              "peers/scheduleworld/config.ini:# SSLServerCertificates = \n"
-                              "peers/scheduleworld/config.ini:# SSLVerifyServer = 1\n"
-                              "peers/scheduleworld/config.ini:# SSLVerifyHost = 1\n"
-                              "peers/scheduleworld/config.ini:WebURL = http://www.scheduleworld.com\n"
-                              "peers/scheduleworld/config.ini:# IconURI = \n"
-                              "peers/scheduleworld/config.ini:# ConsumerReady = 0\n"
-
-                              "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
-                              "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"
-                              "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
-                              "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
-                              "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n"
-                              "sources/addressbook/config.ini:# evolutionsource = \n"
-                              "peers/scheduleworld/sources/addressbook/config.ini:uri = card3\n"
-                              "sources/addressbook/config.ini:# evolutionuser = \n"
-                              "sources/addressbook/config.ini:# evolutionpassword = \n"
-
-                              "peers/scheduleworld/sources/calendar/.internal.ini:# adminData = \n"
-                              "peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0\n"
-                              "peers/scheduleworld/sources/calendar/config.ini:sync = two-way\n"
-                              "sources/calendar/config.ini:type = calendar\n"
-                              "peers/scheduleworld/sources/calendar/config.ini:type = calendar\n"
-                              "sources/calendar/config.ini:# evolutionsource = \n"
-                              "peers/scheduleworld/sources/calendar/config.ini:uri = cal2\n"
-                              "sources/calendar/config.ini:# evolutionuser = \n"
-                              "sources/calendar/config.ini:# evolutionpassword = \n"
-
-                              "peers/scheduleworld/sources/memo/.internal.ini:# adminData = \n"
-                              "peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0\n"
-                              "peers/scheduleworld/sources/memo/config.ini:sync = two-way\n"
-                              "sources/memo/config.ini:type = memo\n"
-                              "peers/scheduleworld/sources/memo/config.ini:type = memo\n"
-                              "sources/memo/config.ini:# evolutionsource = \n"
-                              "peers/scheduleworld/sources/memo/config.ini:uri = note\n"
-                              "sources/memo/config.ini:# evolutionuser = \n"
-                              "sources/memo/config.ini:# evolutionpassword = \n"
-
-                              "peers/scheduleworld/sources/todo/.internal.ini:# adminData = \n"
-                              "peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0\n"
-                              "peers/scheduleworld/sources/todo/config.ini:sync = two-way\n"
-                              "sources/todo/config.ini:type = todo\n"
-                              "peers/scheduleworld/sources/todo/config.ini:type = todo\n"
-                              "sources/todo/config.ini:# evolutionsource = \n"
-                              "peers/scheduleworld/sources/todo/config.ini:uri = task2\n"
-                              "sources/todo/config.ini:# evolutionuser = \n"
-                              "sources/todo/config.ini:# evolutionpassword = ")
+        m_testDir("CmdlineTest")
     {
-#ifdef ENABLE_LIBSOUP
-        // path to SSL certificates has to be set only for libsoup
-        boost::replace_first(m_scheduleWorldConfig,
-                             "SSLServerCertificates = ",
-                             "SSLServerCertificates = /etc/ssl/certs/ca-certificates.crt:/etc/pki/tls/certs/ca-bundle.crt:/usr/share/ssl/certs/ca-bundle.crt");
-#endif
     }
 
 protected:
@@ -2002,6 +1920,218 @@ protected:
         }
     }
 
+    void expectTooOld() {
+        bool caught = false;
+        try {
+            SyncConfig config("scheduleworld");
+        } catch (const StatusException &ex) {
+            caught = true;
+            if (ex.syncMLStatus() != STATUS_RELEASE_TOO_OLD) {
+                throw;
+            } else {
+                CPPUNIT_ASSERT_EQUAL(StringPrintf("SyncEvolution %s is too old to read configuration 'scheduleworld', please upgrade SyncEvolution.", VERSION),
+                                     string(ex.what()));
+            }
+        }
+        CPPUNIT_ASSERT(caught);
+    }
+
+    void testFutureConfig() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        doSetupScheduleWorld(false);
+        // bump min/cur version to something not supported, then
+        // try to read => should fail
+        IniFileConfigNode root(m_testDir, "/syncevolution/.internal.ini", false);
+        IniFileConfigNode context(m_testDir + "/syncevolution/default", ".internal.ini", false);
+        IniFileConfigNode peer(m_testDir + "/syncevolution/default/peers/scheduleworld", ".internal.ini", false);
+        root.setProperty("rootMinVersion", StringPrintf("%d", CONFIG_ROOT_MIN_VERSION + 1));
+        root.setProperty("rootCurVersion", StringPrintf("%d", CONFIG_ROOT_CUR_VERSION + 1));
+        root.flush();
+        context.setProperty("contextMinVersion", StringPrintf("%d", CONFIG_CONTEXT_MIN_VERSION + 1));
+        context.setProperty("contextCurVersion", StringPrintf("%d", CONFIG_CONTEXT_CUR_VERSION + 1));
+        context.flush();
+        peer.setProperty("peerMinVersion", StringPrintf("%d", CONFIG_PEER_MIN_VERSION + 1));
+        peer.setProperty("peerCurVersion", StringPrintf("%d", CONFIG_PEER_CUR_VERSION + 1));
+        peer.flush();
+
+        expectTooOld();
+
+        root.setProperty("rootMinVersion", StringPrintf("%d", CONFIG_ROOT_MIN_VERSION));
+        root.flush();
+        expectTooOld();
+
+        context.setProperty("contextMinVersion", StringPrintf("%d", CONFIG_CONTEXT_MIN_VERSION));
+        context.flush();
+        expectTooOld();
+
+        // okay now
+        peer.setProperty("peerMinVersion", StringPrintf("%d", CONFIG_PEER_MIN_VERSION));
+        peer.flush();
+        SyncConfig config("scheduleworld");
+    }
+
+    void expectMigration(const std::string &config) {
+        bool caught = false;
+        try {
+            SyncConfig c(config);
+            c.prepareConfigForWrite();
+        } catch (const StatusException &ex) {
+            caught = true;
+            if (ex.syncMLStatus() != STATUS_MIGRATION_NEEDED) {
+                throw;
+            } else {
+                CPPUNIT_ASSERT_EQUAL(StringPrintf("Proceeding would modify config '%s' such that the "
+                                                  "previous SyncEvolution release will not be able to use it. "
+                                                  "Stopping now. Please explicitly acknowledge this step by "
+                                                  "running the following command on the command line: "
+                                                  "syncevolution --migrate '%s'",
+                                                  config.c_str(),
+                                                  config.c_str()),
+                                     string(ex.what()));
+            }
+        }
+        CPPUNIT_ASSERT(caught);
+    }
+
+    void testPeerConfigMigration() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        doSetupScheduleWorld(false);
+        // decrease min/cur version to something no longer supported,
+        // then try to write => should migrate in release mode and fail otherwise
+        IniFileConfigNode peer(m_testDir + "/syncevolution/default/peers/scheduleworld", ".internal.ini", false);
+        peer.setProperty("peerMinVersion", StringPrintf("%d", CONFIG_PEER_CUR_VERSION - 1));
+        peer.setProperty("peerCurVersion", StringPrintf("%d", CONFIG_PEER_CUR_VERSION - 1));
+        peer.flush();
+
+        SyncContext::setStableRelease(false);
+        expectMigration("scheduleworld");
+
+        SyncContext::setStableRelease(true);
+        {
+            SyncConfig config("scheduleworld");
+            config.prepareConfigForWrite();
+        }
+        {
+            TestCmdline cmdline("--print-servers", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
+                                      "   scheduleworld = CmdlineTest/syncevolution/default/peers/scheduleworld\n"
+                                      "   scheduleworld.old = CmdlineTest/syncevolution/default/peers/scheduleworld.old\n",
+                                      cmdline.m_out.str());
+        }
+
+        // should be okay now
+        SyncContext::setStableRelease(false);
+        {
+            SyncConfig config("scheduleworld");
+            config.prepareConfigForWrite();
+        }
+
+        // do the same migration with command line
+        SyncContext::setStableRelease(false);
+        rm_r(m_testDir + "/syncevolution/default/peers/scheduleworld");
+        CPPUNIT_ASSERT_EQUAL(0, rename((m_testDir + "/syncevolution/default/peers/scheduleworld.old").c_str(),
+                                       (m_testDir + "/syncevolution/default/peers/scheduleworld").c_str()));
+        {
+            TestCmdline cmdline("--migrate", "scheduleworld", NULL);
+            cmdline.doit();
+        }
+        {
+            SyncConfig config("scheduleworld");
+            config.prepareConfigForWrite();
+        }        
+        {
+            TestCmdline cmdline("--print-servers", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
+                                      "   scheduleworld = CmdlineTest/syncevolution/default/peers/scheduleworld\n"
+                                      "   scheduleworld.old = CmdlineTest/syncevolution/default/peers/scheduleworld.old\n",
+                                      cmdline.m_out.str());
+        }
+    }
+
+    void testContextConfigMigration() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        doSetupScheduleWorld(false);
+        // decrease min/cur version to something no longer supported,
+        // then try to write => should migrate in release mode and fail otherwise
+        IniFileConfigNode context(m_testDir + "/syncevolution/default", ".internal.ini", false);
+        context.setProperty("contextMinVersion", StringPrintf("%d", CONFIG_CONTEXT_CUR_VERSION - 1));
+        context.setProperty("contextCurVersion", StringPrintf("%d", CONFIG_CONTEXT_CUR_VERSION - 1));
+        context.flush();
+
+#if 1
+        // context migration not implemented and not needed yet
+        SyncContext::setStableRelease(true);
+        bool caught = false;
+        try {
+            SyncConfig config("scheduleworld");
+            config.prepareConfigForWrite();
+        } catch (const Exception &ex) {
+            caught = true;
+            CPPUNIT_ASSERT_EQUAL(string("migration of config '@default' failed"),
+                                 string(ex.what()));
+        }
+        CPPUNIT_ASSERT(caught);
+#else
+        SyncContext::setStableRelease(false);
+        expectMigration("@default");
+
+        SyncContext::setStableRelease(true);
+        {
+            SyncConfig config("@default");
+            config.prepareConfigForWrite();
+        }
+        {
+            TestCmdline cmdline("--print-servers", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
+                                      "   scheduleworld = CmdlineTest/syncevolution/default/peers/scheduleworld\n"
+                                      "   scheduleworld.old = CmdlineTest/syncevolution/default/peers/scheduleworld.old\n",
+                                      cmdline.m_out.str());
+        }
+
+        // should be okay now
+        SyncContext::setStableRelease(false);
+        {
+            SyncConfig config("@default");
+            config.prepareConfigForWrite();
+        }
+
+        // do the same migration with command line
+        SyncContext::setStableRelease(false);
+        rm_r(m_testDir + "/syncevolution/default/peers/scheduleworld");
+        CPPUNIT_ASSERT_EQUAL(0, rename((m_testDir + "/syncevolution/default/peers/scheduleworld.old").c_str(),
+                                       (m_testDir + "/syncevolution/default/peers/scheduleworld").c_str()));
+        {
+            TestCmdline cmdline("--migrate", "@default", NULL);
+            cmdline.doit();
+        }
+        {
+            SyncConfig config("@default");
+            config.prepareConfigForWrite();
+        }        
+        {
+            TestCmdline cmdline("--print-servers", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
+                                      "   scheduleworld = CmdlineTest/syncevolution/default/peers/scheduleworld\n"
+                                      "   scheduleworld.old = CmdlineTest/syncevolution/default/peers/scheduleworld.old\n",
+                                      cmdline.m_out.str());
+        }
+#endif
+    }
+
+
     void testSetupDefault() {
         string root;
         ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
@@ -2023,6 +2153,7 @@ protected:
         boost::replace_all(expected, "/scheduleworld/", "/some-other-server/");
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
     }
+
     void testSetupRenamed() {
         string root;
         ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
@@ -2690,13 +2821,17 @@ protected:
         string res = scanFiles(root);
         removeRandomUUID(res);
         string expected =
-            "config.ini:# logdir = \n"
-            "config.ini:# maxlogdirs = 10\n"
-            "config.ini:deviceId = fixed-devid\n"
-            "sources/addressbook/config.ini:type = file:text/vcard:3.0\n"
-            "sources/addressbook/config.ini:evolutionsource = file://tmp/test\n"
-            "sources/addressbook/config.ini:# evolutionuser = \n"
-            "sources/addressbook/config.ini:# evolutionpassword = \n";
+            StringPrintf(".internal.ini:contextMinVersion = %d\n"
+                         ".internal.ini:contextCurVersion = %d\n"
+                         "config.ini:# logdir = \n"
+                         "config.ini:# maxlogdirs = 10\n"
+                         "config.ini:deviceId = fixed-devid\n"
+                         "sources/addressbook/config.ini:type = file:text/vcard:3.0\n"
+                         "sources/addressbook/config.ini:evolutionsource = file://tmp/test\n"
+                         "sources/addressbook/config.ini:# evolutionuser = \n"
+                         "sources/addressbook/config.ini:# evolutionpassword = \n",
+                         CONFIG_CONTEXT_MIN_VERSION,
+                         CONFIG_CONTEXT_CUR_VERSION);
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
 
         // add calendar
@@ -2763,6 +2898,12 @@ protected:
             "deviceData" +
             "adminData" +
             "synthesisID" +
+            "rootMinVersion" +
+            "rootCurVersion" +
+            "contextMinVersion" +
+            "contextCurVersion" +
+            "peerMinVersion" +
+            "peerCurVersion" +
             "lastNonce" +
             "last";
         BOOST_FOREACH(string &prop, props) {
@@ -2933,7 +3074,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
 
             string migratedConfig = scanFiles(newRoot);
-            string expected = m_scheduleWorldConfig;
+            string expected = ScheduleWorldConfig();
             sortConfig(expected);
             boost::replace_first(expected,
                                  "peers/scheduleworld/sources/addressbook/config.ini",
@@ -2991,9 +3132,7 @@ protected:
         }
     }
 
-    const string m_testDir;
-    string m_scheduleWorldConfig;
-        
+    const string m_testDir;        
 
 private:
 
@@ -3053,8 +3192,104 @@ private:
         boost::scoped_array<const char *> m_argv;
     };
 
-    string ScheduleWorldConfig() {
-        string config = m_scheduleWorldConfig;
+    string ScheduleWorldConfig(int contextMinVersion = CONFIG_CONTEXT_MIN_VERSION,
+                               int contextCurVersion = CONFIG_CONTEXT_CUR_VERSION,
+                               int peerMinVersion = CONFIG_PEER_MIN_VERSION,
+                               int peerCurVersion = CONFIG_PEER_CUR_VERSION) {
+        // properties sorted by the order in which they are defined
+        // in the sync and sync source property registry
+        string config =
+            StringPrintf("peers/scheduleworld/.internal.ini:peerMinVersion = %d\n"
+                         "peers/scheduleworld/.internal.ini:peerCurVersion = %d\n"
+                         "peers/scheduleworld/.internal.ini:# HashCode = 0\n"
+                         "peers/scheduleworld/.internal.ini:# ConfigDate = \n"
+                         "peers/scheduleworld/.internal.ini:# lastNonce = \n"
+                         "peers/scheduleworld/.internal.ini:# deviceData = \n"
+                         "peers/scheduleworld/config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
+                         "peers/scheduleworld/config.ini:username = your SyncML server account name\n"
+                         "peers/scheduleworld/config.ini:password = your SyncML server password\n"
+                         ".internal.ini:contextMinVersion = %d\n"
+                         ".internal.ini:contextCurVersion = %d\n"
+                         "config.ini:# logdir = \n"
+                         "peers/scheduleworld/config.ini:# loglevel = 0\n"
+                         "peers/scheduleworld/config.ini:# printChanges = 1\n"
+                         "peers/scheduleworld/config.ini:# dumpData = 1\n"
+                         "config.ini:# maxlogdirs = 10\n"
+                         "peers/scheduleworld/config.ini:# autoSync = 0\n"
+                         "peers/scheduleworld/config.ini:# autoSyncInterval = 30M\n"
+                         "peers/scheduleworld/config.ini:# autoSyncDelay = 5M\n"
+                         "peers/scheduleworld/config.ini:# preventSlowSync = 1\n"
+                         "peers/scheduleworld/config.ini:# useProxy = 0\n"
+                         "peers/scheduleworld/config.ini:# proxyHost = \n"
+                         "peers/scheduleworld/config.ini:# proxyUsername = \n"
+                         "peers/scheduleworld/config.ini:# proxyPassword = \n"
+                         "peers/scheduleworld/config.ini:# clientAuthType = md5\n"
+                         "peers/scheduleworld/config.ini:# RetryDuration = 5M\n"
+                         "peers/scheduleworld/config.ini:# RetryInterval = 2M\n"
+                         "peers/scheduleworld/config.ini:# remoteIdentifier = \n"
+                         "peers/scheduleworld/config.ini:# PeerIsClient = 0\n"
+                         "peers/scheduleworld/config.ini:# SyncMLVersion = \n"
+                         "peers/scheduleworld/config.ini:# PeerName = \n"
+                         "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
+                         "peers/scheduleworld/config.ini:# remoteDeviceId = \n"
+                         "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
+                         "peers/scheduleworld/config.ini:# maxMsgSize = 150000\n"
+                         "peers/scheduleworld/config.ini:# maxObjSize = 4000000\n"
+                         "peers/scheduleworld/config.ini:# enableCompression = 0\n"
+                         "peers/scheduleworld/config.ini:# SSLServerCertificates = \n"
+                         "peers/scheduleworld/config.ini:# SSLVerifyServer = 1\n"
+                         "peers/scheduleworld/config.ini:# SSLVerifyHost = 1\n"
+                         "peers/scheduleworld/config.ini:WebURL = http://www.scheduleworld.com\n"
+                         "peers/scheduleworld/config.ini:# IconURI = \n"
+                         "peers/scheduleworld/config.ini:# ConsumerReady = 0\n"
+
+                         "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
+                         "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"
+                         "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
+                         "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
+                         "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n"
+                         "sources/addressbook/config.ini:# evolutionsource = \n"
+                         "peers/scheduleworld/sources/addressbook/config.ini:uri = card3\n"
+                         "sources/addressbook/config.ini:# evolutionuser = \n"
+                         "sources/addressbook/config.ini:# evolutionpassword = \n"
+
+                         "peers/scheduleworld/sources/calendar/.internal.ini:# adminData = \n"
+                         "peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0\n"
+                         "peers/scheduleworld/sources/calendar/config.ini:sync = two-way\n"
+                         "sources/calendar/config.ini:type = calendar\n"
+                         "peers/scheduleworld/sources/calendar/config.ini:type = calendar\n"
+                         "sources/calendar/config.ini:# evolutionsource = \n"
+                         "peers/scheduleworld/sources/calendar/config.ini:uri = cal2\n"
+                         "sources/calendar/config.ini:# evolutionuser = \n"
+                         "sources/calendar/config.ini:# evolutionpassword = \n"
+
+                         "peers/scheduleworld/sources/memo/.internal.ini:# adminData = \n"
+                         "peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0\n"
+                         "peers/scheduleworld/sources/memo/config.ini:sync = two-way\n"
+                         "sources/memo/config.ini:type = memo\n"
+                         "peers/scheduleworld/sources/memo/config.ini:type = memo\n"
+                         "sources/memo/config.ini:# evolutionsource = \n"
+                         "peers/scheduleworld/sources/memo/config.ini:uri = note\n"
+                         "sources/memo/config.ini:# evolutionuser = \n"
+                         "sources/memo/config.ini:# evolutionpassword = \n"
+
+                         "peers/scheduleworld/sources/todo/.internal.ini:# adminData = \n"
+                         "peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0\n"
+                         "peers/scheduleworld/sources/todo/config.ini:sync = two-way\n"
+                         "sources/todo/config.ini:type = todo\n"
+                         "peers/scheduleworld/sources/todo/config.ini:type = todo\n"
+                         "sources/todo/config.ini:# evolutionsource = \n"
+                         "peers/scheduleworld/sources/todo/config.ini:uri = task2\n"
+                         "sources/todo/config.ini:# evolutionuser = \n"
+                         "sources/todo/config.ini:# evolutionpassword = ",
+                         peerMinVersion, peerCurVersion,
+                         contextMinVersion, contextCurVersion);
+#ifdef ENABLE_LIBSOUP
+        // path to SSL certificates has to be set only for libsoup
+        boost::replace_first(config,
+                             "SSLServerCertificates = ",
+                             "SSLServerCertificates = /etc/ssl/certs/ca-certificates.crt:/etc/pki/tls/certs/ca-bundle.crt:/usr/share/ssl/certs/ca-bundle.crt");
+#endif
 
 #if 0
         // Currently we don't have an icon for ScheduleWorld. If we
@@ -3147,7 +3382,7 @@ private:
     }
 
     string FunambolConfig() {
-        string config = m_scheduleWorldConfig;
+        string config = ScheduleWorldConfig();
         boost::replace_all(config, "/scheduleworld/", "/funambol/");
 
         boost::replace_first(config,
@@ -3195,7 +3430,7 @@ private:
     }
 
     string SynthesisConfig() {
-        string config = m_scheduleWorldConfig;
+        string config = ScheduleWorldConfig();
         boost::replace_all(config, "/scheduleworld/", "/synthesis/");
 
         boost::replace_first(config,

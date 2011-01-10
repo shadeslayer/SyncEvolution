@@ -177,6 +177,17 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     static void initMain(const char *appname);
 
     /**
+     * true if binary was compiled as stable release
+     * (see gen-autotools.sh)
+     */
+    static bool isStableRelease();
+
+    /**
+     * override stable release mode (for testing purposes)
+     */
+    static void setStableRelease(bool isStableRelease);
+
+    /**
      * SyncContext using a volatile config
      * and no logging.
      */

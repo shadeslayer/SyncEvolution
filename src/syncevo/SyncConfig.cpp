@@ -29,6 +29,7 @@
 #include <syncevo/DevNullConfigNode.h>
 #include <syncevo/MultiplexConfigNode.h>
 #include <syncevo/SingleFileConfigTree.h>
+#include <syncevo/Cmdline.h>
 #include <syncevo/lcs.h>
 #include <test.h>
 #include <synthesis/timeutil.h>
@@ -50,6 +51,31 @@ const char *const SourceAdminDataName = "adminData";
 static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
 static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source);
 static bool SourcePropSyncIsSet(boost::shared_ptr<SyncSourceConfig> source);
+
+int ConfigVersions[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX] =
+{
+    { CONFIG_ROOT_MIN_VERSION, CONFIG_ROOT_CUR_VERSION },
+    { CONFIG_CONTEXT_MIN_VERSION, CONFIG_CONTEXT_CUR_VERSION },
+    { CONFIG_PEER_MIN_VERSION, CONFIG_PEER_CUR_VERSION },
+};    
+
+std::string ConfigLevel2String(ConfigLevel level)
+{
+    switch (level) {
+    case CONFIG_LEVEL_ROOT:
+        return "config root";
+        break;
+    case CONFIG_LEVEL_CONTEXT:
+        return "context config";
+        break;
+    case CONFIG_LEVEL_PEER:
+        return "peer config";
+        break;
+    default:
+        return StringPrintf("config level %d (?)", level);
+        break;
+    }
+}
 
 void ConfigProperty::splitComment(const string &comment, list<string> &commentLines)
 {
@@ -130,8 +156,16 @@ bool SyncConfig::splitConfigString(const string &config, string &peer, string &c
     }    
 }
 
+static SyncConfig::ConfigWriteMode defaultConfigWriteMode()
+{
+    return SyncContext::isStableRelease() ?
+        SyncConfig::MIGRATE_AUTOMATICALLY :
+        SyncConfig::ASK_USER_TO_MIGRATE;
+}
+
 SyncConfig::SyncConfig() :
-    m_layout(HTTP_SERVER_LAYOUT) // use more compact layout with shorter paths and less source nodes
+    m_layout(HTTP_SERVER_LAYOUT), // use more compact layout with shorter paths and less source nodes
+    m_configWriteMode(defaultConfigWriteMode())
 {
     // initialize properties
     SyncConfig::getRegistry();
@@ -158,7 +192,8 @@ SyncConfig::SyncConfig(const string &peer,
                        boost::shared_ptr<ConfigTree> tree,
                        const string &redirectPeerRootPath) :
     m_layout(SHARED_LAYOUT),
-    m_redirectPeerRootPath(redirectPeerRootPath)
+    m_redirectPeerRootPath(redirectPeerRootPath),
+    m_configWriteMode(defaultConfigWriteMode())
 {
     // initialize properties
     SyncConfig::getRegistry();
@@ -220,6 +255,7 @@ SyncConfig::SyncConfig(const string &peer,
             m_contextNode = m_peerNode;
         m_hiddenPeerNode =
             m_contextHiddenNode =
+            m_globalHiddenNode =
             node;
         m_props[false] = m_peerNode;
         m_props[true].reset(new FilterConfigNode(m_hiddenPeerNode));
@@ -231,6 +267,9 @@ SyncConfig::SyncConfig(const string &peer,
         path = "";
         node = m_tree->open(path, ConfigTree::visible);
         m_globalNode.reset(new FilterConfigNode(node));
+        node = m_tree->open(path, ConfigTree::hidden);
+        m_globalHiddenNode = node;
+
         path = m_peerPath;      
         node = m_tree->open(path, ConfigTree::visible);
         m_peerNode.reset(new FilterConfigNode(node));
@@ -252,9 +291,16 @@ SyncConfig::SyncConfig(const string &peer,
                        m_peerNode);
         mnode->setNode(false, ConfigProperty::NO_SHARING,
                        m_peerNode);
-
-        // no multiplexing necessary for hidden nodes
-        m_props[true].reset(new FilterConfigNode(m_hiddenPeerNode));
+        mnode.reset(new MultiplexConfigNode(m_peerNode->getName(),
+                                            getRegistry(),
+                                            true));
+        m_props[true] = mnode;
+        mnode->setNode(true, ConfigProperty::GLOBAL_SHARING,
+                       m_globalHiddenNode);
+        mnode->setNode(true, ConfigProperty::SOURCE_SET_SHARING,
+                       m_peerNode);
+        mnode->setNode(true, ConfigProperty::NO_SHARING,
+                       m_peerNode);
         break;
     }
     case SHARED_LAYOUT:
@@ -262,6 +308,8 @@ SyncConfig::SyncConfig(const string &peer,
         path = "";
         node = m_tree->open(path, ConfigTree::visible);
         m_globalNode.reset(new FilterConfigNode(node));
+        node = m_tree->open(path, ConfigTree::hidden);
+        m_globalHiddenNode = node;
 
         path = m_peerPath;
         if (path.empty()) {
@@ -317,7 +365,136 @@ SyncConfig::SyncConfig(const string &peer,
                        m_contextHiddenNode);
         mnode->setNode(true, ConfigProperty::NO_SHARING,
                        m_hiddenPeerNode);
+        mnode->setNode(true, ConfigProperty::GLOBAL_SHARING,
+                       m_globalHiddenNode);
         break;
+    }
+
+    // read version check
+    for (ConfigLevel level = CONFIG_LEVEL_ROOT;
+         level < CONFIG_LEVEL_MAX;
+         level = (ConfigLevel)(level + 1)) {
+        if (exists(level)) {
+            if (getConfigVersion(level, CONFIG_MIN_VERSION) > ConfigVersions[level][CONFIG_CUR_VERSION]) {
+                SE_LOG_INFO(NULL, NULL, "config version check failed: %s has format %d, but this SyncEvolution release only supports format %d",
+                            ConfigLevel2String(level).c_str(),
+                            getConfigVersion(level, CONFIG_MIN_VERSION),
+                            ConfigVersions[level][CONFIG_CUR_VERSION]);
+                // our code is too old to read the config, reject it
+                SE_THROW_EXCEPTION_STATUS(StatusException,
+                                          StringPrintf("SyncEvolution %s is too old to read configuration '%s', please upgrade SyncEvolution.",
+                                                       VERSION, peer.c_str()),
+                                          STATUS_RELEASE_TOO_OLD);
+            }
+        }
+    }
+
+    // Note that the version check does not reject old configs because
+    // they are too old; so far, any release must be able to read any
+    // older config.
+}
+
+void SyncConfig::prepareConfigForWrite()
+{
+    // check versions before bumping to something incompatible with the
+    // previous user of the config
+    for (ConfigLevel level = CONFIG_LEVEL_ROOT;
+         level < CONFIG_LEVEL_MAX;
+         level = (ConfigLevel)(level + 1)) {
+        if (exists(level)) {
+            if (getConfigVersion(level, CONFIG_CUR_VERSION) < ConfigVersions[level][CONFIG_MIN_VERSION]) {
+                // release which created config will no longer be able to read
+                // updated config; either alert user or migrate automatically
+                string config;
+                switch (level) {
+                case CONFIG_LEVEL_CONTEXT:
+                    config = getContextName();
+                    break;
+                case CONFIG_LEVEL_PEER:
+                    config = getConfigName();
+                    break;
+                case CONFIG_LEVEL_ROOT:
+                case CONFIG_LEVEL_MAX:
+                    // keep compiler happy, not reached for _MAX
+                    break;
+                }
+                SE_LOG_INFO(NULL, NULL, "must change format of %s '%s' in backward-incompatible way",
+                            ConfigLevel2String(level).c_str(),
+                            config.c_str());
+                if (m_configWriteMode == MIGRATE_AUTOMATICALLY) {
+                    // migrate config and anything beneath it,
+                    // so no further checking needed
+                    migrate(config);
+                    break;
+                } else {
+                    SE_THROW_EXCEPTION_STATUS(StatusException,
+                                              StringPrintf("Proceeding would modify config '%s' such "
+                                                           "that the previous SyncEvolution release "
+                                                           "will not be able to use it. Stopping now. "
+                                                           "Please explicitly acknowledge this step by "
+                                                           "running the following command on the command "
+                                                           "line: syncevolution --migrate '%s'",
+                                                           config.c_str(),
+                                                           config.c_str()),
+                                              STATUS_MIGRATION_NEEDED);
+                }
+            }
+        }
+    }
+
+    // now set current versions at all levels,
+    // but without reducing versions: if a config has format
+    // "cur = 10", then properties or features added in that
+    // format remain even if the config is (temporarily?) used
+    // by a SyncEvolution binary which has "cur = 5".
+    for (ConfigLevel level = CONFIG_LEVEL_ROOT;
+         level < CONFIG_LEVEL_MAX;
+         level = (ConfigLevel)(level + 1)) {
+        if (level == CONFIG_LEVEL_PEER &&
+            m_peerPath.empty()) {
+            // no need (and no possibility) to set per-peer version)
+            break;
+        }
+        for (ConfigLimit limit = CONFIG_MIN_VERSION;
+             limit < CONFIG_VERSION_MAX;
+             limit = (ConfigLimit)(limit + 1)) {
+            // set if equal to ensure that version == 0 (the default)
+            // is set explicitly
+            if (getConfigVersion(level, limit) <= ConfigVersions[level][limit]) {
+                setConfigVersion(level, limit, ConfigVersions[level][limit]);
+            }
+        }
+    }
+    flush();
+}
+
+void SyncConfig::migrate(const std::string &config)
+{
+    if (config.empty()) {
+        // migrating root not yet supported
+        SE_THROW("internal error, migrating config root not implemented");
+    } else {
+        // migrate using the higher-level logic in the Cmdline class
+        ostringstream out, err;
+        Cmdline migrate(out, err,
+                        m_peer.c_str(),
+                        "--migrate",
+                        config.c_str(),
+                        NULL);
+        bool res = migrate.parse() && migrate.run();
+        if (!res) {
+            if (!err.str().empty()) {
+                SE_LOG_ERROR(NULL, NULL, "%s", err.str().c_str());
+            }
+            if (!out.str().empty()) {
+                SE_LOG_INFO(NULL, NULL, "%s", out.str().c_str());
+            }
+            SE_THROW(StringPrintf("migration of config '%s' failed", config.c_str()));
+        }
+
+        // files that our tree access may have changed, refresh our
+        // in-memory copy
+        m_tree->reload();
     }
 }
 
@@ -783,6 +960,23 @@ bool SyncConfig::exists() const
     return m_peerPath.empty() ?
         m_contextNode->exists() :
         m_peerNode->exists();
+}
+
+bool SyncConfig::exists(ConfigLevel level) const
+{
+    switch (level) {
+    case CONFIG_LEVEL_ROOT:
+        return m_globalNode->exists();
+        break;
+    case CONFIG_LEVEL_CONTEXT:
+        return m_contextNode->exists();
+        break;
+    case CONFIG_LEVEL_PEER:
+        return m_peerNode->exists();
+        break;
+    default:
+        return false;
+    }
 }
 
 string SyncConfig::getContextName() const
@@ -1310,6 +1504,49 @@ static SecondsConfigProperty syncPropAutoSyncDelay("autoSyncDelay",
                                                    "enough to complete the synchronization.\n",
                                                    "5M");
 
+/* config and on-disk file versionsing */
+static IntConfigProperty syncPropRootMinVersion("rootMinVersion", "");
+static IntConfigProperty syncPropRootCurVersion("rootCurVersion", "");
+static IntConfigProperty syncPropContextMinVersion("contextMinVersion", "");
+static IntConfigProperty syncPropContextCurVersion("contextCurVersion", "");
+static IntConfigProperty syncPropPeerMinVersion("peerMinVersion", "");
+static IntConfigProperty syncPropPeerCurVersion("peerCurVersion", "");
+
+static const IntConfigProperty *configVersioning[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX] = {
+    { &syncPropRootMinVersion, &syncPropRootCurVersion },
+    { &syncPropContextMinVersion, &syncPropContextCurVersion },
+    { &syncPropPeerMinVersion, &syncPropPeerCurVersion }
+};
+
+static const IntConfigProperty &getConfigVersionProp(ConfigLevel level, ConfigLimit limit)
+{
+    if (level < 0 || level >= CONFIG_LEVEL_MAX ||
+        limit < 0 || limit >= CONFIG_VERSION_MAX) {
+        SE_THROW("getConfigVersionProp: invalid args");
+    }
+    return *configVersioning[level][limit];
+}
+
+int SyncConfig::getConfigVersion(ConfigLevel level, ConfigLimit limit) const
+{
+    const IntConfigProperty &prop = getConfigVersionProp(level, limit);
+    return prop.getPropertyValue(*getNode(prop));
+}
+
+void SyncConfig::setConfigVersion(ConfigLevel level, ConfigLimit limit, int version)
+{
+    if (m_layout != SHARED_LAYOUT) {
+        // old-style layouts have version 0 by default, no need
+        // (and sometimes no possibility) to set this explicitly
+        if (version != 0) {
+            SE_THROW(StringPrintf("cannot bump config version in old-style config %s", m_peer.c_str()));
+        }
+    } else {
+        const IntConfigProperty &prop = getConfigVersionProp(level, limit);
+        prop.setProperty(*getNode(prop), version);
+    }
+}
+
 ConfigPropertyRegistry &SyncConfig::getRegistry()
 {
     static ConfigPropertyRegistry registry;
@@ -1357,6 +1594,17 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropDeviceData);
         registry.push_back(&syncPropDefaultPeer);
 
+#if 0
+        // Must not be registered! Not valid for --sync-property and
+        // must not be copied between configs.
+        registry.push_back(&syncPropRootMinVersion);
+        registry.push_back(&syncPropRootCurVersion);
+        registry.push_back(&syncPropContextMinVersion);
+        registry.push_back(&syncPropContextCurVersion);
+        registry.push_back(&syncPropPeerMinVersion);
+        registry.push_back(&syncPropPeerCurVersion);
+#endif
+
         // obligatory sync properties
         syncPropUsername.setObligatory(true);
         syncPropPassword.setObligatory(true);
@@ -1368,14 +1616,24 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         syncPropConfigDate.setHidden(true);
         syncPropNonce.setHidden(true);
         syncPropDeviceData.setHidden(true);
+        syncPropRootMinVersion.setHidden(true);
+        syncPropRootCurVersion.setHidden(true);
+        syncPropContextMinVersion.setHidden(true);
+        syncPropContextCurVersion.setHidden(true);
+        syncPropPeerMinVersion.setHidden(true);
+        syncPropPeerCurVersion.setHidden(true);
 
         // global sync properties
         syncPropDefaultPeer.setSharing(ConfigProperty::GLOBAL_SHARING);
+        syncPropRootMinVersion.setSharing(ConfigProperty::GLOBAL_SHARING);
+        syncPropRootCurVersion.setSharing(ConfigProperty::GLOBAL_SHARING);
 
         // peer independent sync properties
         syncPropLogDir.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         syncPropMaxLogDirs.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         syncPropDevID.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        syncPropContextMinVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        syncPropContextCurVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
 
         initialized = true;
     }
@@ -1723,7 +1981,7 @@ SyncConfig::getNode(const ConfigProperty &prop)
     switch (prop.getSharing()) {
     case ConfigProperty::GLOBAL_SHARING:
         if (prop.isHidden()) {
-            boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(new DevNullConfigNode("no hidden global properties"))));
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_globalHiddenNode));
         } else {
             return m_globalNode;
         }

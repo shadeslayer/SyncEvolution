@@ -46,6 +46,79 @@ using namespace std;
  * @{
  */
 
+/**
+ * The SyncEvolution configuration is versioned, so that incompatible
+ * changes to the on-disk config and files can be made more reliably.
+ *
+ * The on-disk configuration is versioned at three levels:
+ * - root level
+ * - context
+ * - peer
+ *
+ * This granularity allows migrating individual peers, contexts or
+ * everything to a new format.
+ *
+ * For each of these levels, two numbers are stored on disk and
+ * hard-coded in the binary:
+ * - current version = incremented each time the format is extended
+ * - minimum version = set to current version each time a backwards
+ *                     incompatible change is made
+ *
+ * This mirrors the libtool library versioning.
+ *
+ * Reading must check that the on-disk minimum version is <= the
+ * binary's current version. Otherwise the config is too recent to
+ * be used.
+ *
+ * Writing will bump minimum and current version on disk to the
+ * versions in the binary. It will never decrease versions. This
+ * works when the more recent format adds information that can
+ * be safely ignored by older releases. If that is not possible,
+ * then the "minimum" version must be increased to prevent older
+ * releases from using the config.
+ *
+ * If bumping the versions increases the minimum version
+ * beyond the version supported by the release which wrote the config,
+ * that release will no longer work. Experimental releases will throw
+ * an error and users must explicitly migrate to the current
+ * format. Stable releases will migrate automatically.
+ *
+ * The on-disks current version can be checked to determine how to
+ * handle it. It may be more obvious to simple check for the existence
+ * of certain properties (that's how this was handled before the
+ * introduction of versioning).
+ *
+ * Here are some simple rules for handling the versions:
+ * - increase CUR version when adding new properties or files
+ * - set MIN to CUR when it is not safe that older releases
+ *   read and write a config with the current format
+ *
+ * SyncEvolution < 1.2 had no versioning. It's format is 0.
+ */
+static const int CONFIG_ROOT_MIN_VERSION = 0;
+static const int CONFIG_ROOT_CUR_VERSION = 0;
+static const int CONFIG_CONTEXT_MIN_VERSION = 0;
+static const int CONFIG_CONTEXT_CUR_VERSION = 0;
+static const int CONFIG_PEER_MIN_VERSION = 0;
+static const int CONFIG_PEER_CUR_VERSION = 0;
+
+enum ConfigLevel {
+    CONFIG_LEVEL_ROOT,      /**< = GLOBAL_SHARING */
+    CONFIG_LEVEL_CONTEXT,   /**< = SOURCE_SET_SHARING */
+    CONFIG_LEVEL_PEER,      /**< = NO_SHARING */
+    CONFIG_LEVEL_MAX
+};
+
+std::string ConfigLevel2String(ConfigLevel level);
+
+enum ConfigLimit {
+    CONFIG_MIN_VERSION,
+    CONFIG_CUR_VERSION,
+    CONFIG_VERSION_MAX
+};
+
+extern int ConfigVersions[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX];
+
 class SyncSourceConfig;
 typedef SyncSourceConfig PersistentSyncSourceConfig;
 class ConfigTree;
@@ -834,6 +907,11 @@ class SyncConfig {
      * places. Will succeed even if config does not
      * yet exist: flushing such a config creates it.
      *
+     * Does a version check to ensure that the config can be
+     * read. Users of the instance must to an explicit
+     * prepareConfigForWrite() if the config or the files associated
+     * with it (Synthesis bin files) are going to be written.
+     *
      * @param peer   string that identifies the peer,
      *               matching regex (.*)(@([^@]*))? 
      *               where the $1 (the first part) is 
@@ -866,6 +944,31 @@ class SyncConfig {
      * Can be copied around, but not flushed.
      */
     SyncConfig();
+
+    /**
+     * determines whether the need to migrate a config causes a
+     * STATUS_MIGRATION_NEEDED error or does the migration
+     * automatically; default is to migrate automatically in
+     * stable releases and to ask in development releases
+     */
+    enum ConfigWriteMode {
+        MIGRATE_AUTOMATICALLY,
+        ASK_USER_TO_MIGRATE
+    };
+    ConfigWriteMode getConfigWriteMode() const { return m_configWriteMode; }
+    void setConfigWriteMode(ConfigWriteMode mode) { m_configWriteMode = mode; }
+
+    /**
+     * This does another version check which ensures that the config
+     * is not unintentionally altered so that it cannot be read by
+     * older SyncEvolution releases. If the config cannot be written
+     * without breaking older releases, then either the call will fail
+     * (development releases) or migrate the config (stable releases).
+     * Can be controlled via setConfigWriteMode();
+     *
+     * Also writes the current config versions into the config.
+     */
+    void prepareConfigForWrite();
 
    /** absolute directory name of the configuration root */
     string getRootPath() const;
@@ -991,8 +1094,19 @@ class SyncConfig {
      */
     static boost::shared_ptr<SyncConfig> createPeerTemplate(const string &peer);
 
-    /** true if the main configuration file already exists */
+    /**
+     * true if the main configuration file already exists;
+     * "main" here means the per-peer config or context config,
+     * depending on what the config refers to
+     */
     bool exists() const;
+
+    /**
+     * true if the config files for the selected level exist;
+     * false is returned for CONFIG_LEVEL_PEER and a config
+     * which refers to a context
+     */
+    bool exists(ConfigLevel level) const;
 
     /**
      * The normalized, unique config name used by this instance.
@@ -1417,6 +1531,16 @@ private:
                          const std::string &configname,
                          SyncConfig::ConfigList &res);
 
+    /* internal access to configuration versioning */
+    int getConfigVersion(ConfigLevel level, ConfigLimit limit) const;
+    void setConfigVersion(ConfigLevel level, ConfigLimit limit, int version);
+
+    /**
+     * migrate root (""), context or peer config and everything contained in them to
+     * the current config format
+     */
+    void migrate(const std::string &config);
+
     /**
      * set tree and nodes to VolatileConfigTree/Node
      */
@@ -1453,6 +1577,7 @@ private:
     string m_redirectPeerRootPath;
     string m_cachedPassword;
     string m_cachedProxyPassword;
+    ConfigWriteMode m_configWriteMode;
 
     /** holds all config nodes relative to the root that we found */
     boost::shared_ptr<ConfigTree> m_tree;
@@ -1460,7 +1585,8 @@ private:
     /** access to global sync properties, independent of
         the context (for example, "defaultPeer") */
     boost::shared_ptr<FilterConfigNode> m_globalNode;
-        
+    boost::shared_ptr<ConfigNode> m_globalHiddenNode;
+
     /** access to properties shared between peers */
     boost::shared_ptr<FilterConfigNode> m_contextNode;
     boost::shared_ptr<ConfigNode> m_contextHiddenNode;

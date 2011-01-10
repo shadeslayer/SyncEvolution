@@ -2783,6 +2783,17 @@ void SyncContext::initMain(const char *appname)
     }
 }
 
+// TODO: set via gen-autotools and configure
+static bool IsStableRelease = false;
+bool SyncContext::isStableRelease()
+{
+    return IsStableRelease;
+}
+void SyncContext::setStableRelease(bool isStableRelease)
+{
+    IsStableRelease = isStableRelease;
+}
+
 SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
@@ -2849,6 +2860,9 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
             SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
             SE_LOG_DEV(NULL, NULL, "%s", SyncSource::backendsDebug().c_str());
+
+            // ensure that config can be modified (might have to be migrated first)
+            prepareConfigForWrite();
 
             // instantiate backends, but do not open them yet
             initSources(sourceList);

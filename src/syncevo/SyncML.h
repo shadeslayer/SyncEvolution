@@ -153,6 +153,20 @@ enum SyncMLStatus {
      */
     STATUS_PASSWORD_TIMEOUT = 22003,
 
+    /**
+     * On-disk files (config, Synthesis binfiles) are too recent
+     * to be read and/or used by this SyncEvolution release.
+     * User must upgrade.
+     */
+    STATUS_RELEASE_TOO_OLD = 22004,
+
+    /**
+     * On-disk files would be changed in such a way that downgrading
+     * becomes impossible. User must explicitly migrate config if
+     * he wants to proceed.
+     */
+    STATUS_MIGRATION_NEEDED = 22005,
+
     STATUS_MAX = 0x7FFFFFF
 };
 
