@@ -62,6 +62,9 @@ class ConfigNode {
      */
     virtual void flush() = 0;
 
+    /** reload from background storage, discarding in-memory changes */
+    virtual void reload() {}
+
     /**
      * Returns the value of the given property
      *

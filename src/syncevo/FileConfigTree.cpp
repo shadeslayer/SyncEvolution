@@ -64,6 +64,13 @@ void FileConfigTree::flush()
     }
 }
 
+void FileConfigTree::reload()
+{
+    BOOST_FOREACH(const NodeCache_t::value_type &node, m_nodes) {
+        node.second->reload();
+    }
+}
+
 /**
  * remove config files, backup files of config files (with ~ at
  * the end) and empty directories

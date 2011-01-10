@@ -52,6 +52,7 @@ class IniBaseConfigNode: public ConfigNode {
 
   public:
     virtual void flush();
+    virtual void reload() = 0;
     virtual string getName() const { return m_data->getName(); }
     virtual bool exists() const { return m_data->exists(); }
 };
@@ -93,6 +94,7 @@ class IniFileConfigNode : public IniBaseConfigNode {
     virtual void readProperties(ConfigProps &props) const;
     virtual void removeProperty(const string &property);
     virtual void clear();
+    virtual void reload() { clear(); read(); }
 };
 
 /**
@@ -123,6 +125,7 @@ class IniHashConfigNode: public IniBaseConfigNode {
     virtual void writeProperties(const ConfigProps &props);
     virtual void removeProperty(const string &property);
     virtual void clear();
+    virtual void reload() { clear(); read(); }
 };
 
 

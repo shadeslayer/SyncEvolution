@@ -70,6 +70,9 @@ class ConfigTree {
     /** ensure that all changes are saved persistently */
     virtual void flush() = 0;
 
+    /** tell all nodes to reload from background storage, discarding in-memory changes */
+    virtual void reload() = 0;
+
     /**
      * Remove all configuration nodes below and including a certain
      * path and (if based on files) directories created for them, if

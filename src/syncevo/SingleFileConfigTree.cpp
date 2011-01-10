@@ -77,6 +77,11 @@ void SingleFileConfigTree::flush()
     // not implemented, cannot write anyway
 }
 
+void SingleFileConfigTree::reload()
+{
+    SE_THROW("SingleFileConfigTree::reload() not implemented");
+}
+
 void SingleFileConfigTree::remove(const string &path)
 {
     SE_THROW("internal error: SingleFileConfigTree::remove() called");

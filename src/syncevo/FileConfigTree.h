@@ -57,6 +57,7 @@ class FileConfigTree : public ConfigTree {
     /* ConfigTree API */
     virtual string getRootPath() const;
     virtual void flush();
+    virtual void reload();
     virtual void remove(const string &path);
     virtual void reset();
     virtual boost::shared_ptr<ConfigNode> open(const string &path,
