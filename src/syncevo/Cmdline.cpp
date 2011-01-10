@@ -606,6 +606,13 @@ bool Cmdline::run() {
                 }
             }
 
+            // cannot migrate context configs at the moment;
+            // will have to copy all peers inside it, too
+            if (!from->hasPeerProperties()) {
+                m_err << "ERROR: migrating context config '" << m_server << "' not implemented." << endl;
+                return false;
+            }
+
             int counter = 0;
             string oldRoot = from->getRootPath();
             string suffix;
