@@ -1007,6 +1007,11 @@ class SyncConfig {
     string getContextName() const;
 
     /**
+     * true if the config is for a peer, false if a context config
+     */
+    bool hasPeerProperties() const { return !m_peerPath.empty(); }
+
+    /**
      * Do something before doing flush to files. This is particularly
      * useful when user interface wants to do preparation jobs, such
      * as savePassword and others.
