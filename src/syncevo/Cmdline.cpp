@@ -574,23 +574,29 @@ bool Cmdline::run() {
 #endif
         }
 
+        // True if the target configuration is a context like @default
+        // or @foobar. Relevant in several places in the following
+        // code.
+        bool configureContext = false;
+
         bool fromScratch = false;
         string peer, context;
         SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_server), peer, context);
         if (peer.empty()) {
+            configureContext = true;
             checkForPeerProps();
         }
 
-        // True if the target configuration is a context like @default
-        // or @foobar. Relevant in several places in the following
-        // code.
-        bool configureContext;
-        {
-            string peer, context;
-            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_server), peer, context);
-            configureContext = peer.empty();
-        }
-
+        // Make m_server a fully-qualified name. Useful in error
+        // messages and essential for migrating "foo" where "foo"
+        // happens to map to "foo@bar".  Otherwise "foo" will be
+        // mapped incorrectly to "foo@default" after renaming
+        // "foo@bar" to "foo.old@bar".
+        //
+        // The inverse problem can occur for "foo@default": after
+        // renaming, "foo" without "@default" would be mapped to
+        // "foo@somewhere-else" if such a config exists.
+        m_server = peer + "@" + context;
 
         // Both config changes and migration are implemented as copying from
         // another config (template resp. old one). Migration also moves
@@ -611,7 +617,7 @@ bool Cmdline::run() {
 
             // cannot migrate context configs at the moment;
             // will have to copy all peers inside it, too
-            if (!from->hasPeerProperties()) {
+            if (configureContext) {
                 m_err << "ERROR: migrating context config '" << m_server << "' not implemented." << endl;
                 return false;
             }
@@ -3127,7 +3133,9 @@ protected:
             string renamedConfig = scanFiles(oldRoot + ".old");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
 
-            // migrate the migrated config again inside the "other" context
+            // migrate the migrated config again inside the "other" context,
+            // with no "default" context which might interfere with the tests
+            rm_r(newRoot);
             {
                 TestCmdline cmdline("--migrate",
                                     "scheduleworld@other",
@@ -3142,6 +3150,23 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old");
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old/");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
+
+            // migrate once more, this time without the explicit context in
+            // the config name => must not change the context, need second .old dir
+            {
+                TestCmdline cmdline("--migrate",
+                                    "scheduleworld",
+                                    NULL);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            }
+            migratedConfig = scanFiles(otherRoot, "scheduleworld");
+            boost::replace_all(expected, "/scheduleworld.old/", "/scheduleworld/");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
+            renamedConfig = scanFiles(otherRoot, "scheduleworld.old.1");
+            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.1/");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
         }
     }
