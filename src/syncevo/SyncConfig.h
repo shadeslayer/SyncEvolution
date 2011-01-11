@@ -94,13 +94,15 @@ using namespace std;
  *   read and write a config with the current format
  *
  * SyncEvolution < 1.2 had no versioning. It's format is 0.
+ * SyncEvolution 1.2:
+ * - config peer min/cur version 1, because of modified libsynthesis binfiles
  */
 static const int CONFIG_ROOT_MIN_VERSION = 0;
 static const int CONFIG_ROOT_CUR_VERSION = 0;
 static const int CONFIG_CONTEXT_MIN_VERSION = 0;
 static const int CONFIG_CONTEXT_CUR_VERSION = 0;
-static const int CONFIG_PEER_MIN_VERSION = 0;
-static const int CONFIG_PEER_CUR_VERSION = 0;
+static const int CONFIG_PEER_MIN_VERSION = 1;
+static const int CONFIG_PEER_CUR_VERSION = 1;
 
 enum ConfigLevel {
     CONFIG_LEVEL_ROOT,      /**< = GLOBAL_SHARING */

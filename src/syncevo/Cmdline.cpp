@@ -2916,7 +2916,19 @@ protected:
 
         rm_r(m_testDir);
         createFiles(m_testDir + "/.sync4j/evolution/scheduleworld", oldConfig);
-        doConfigure(oldConfig, "spds/sources/addressbook/config.txt:");
+
+        // Cannot read/and write old format anymore.
+        SyncContext::setStableRelease(false);
+        expectMigration("scheduleworld");
+
+        // Migrate explicitly.
+        {
+            TestCmdline cmdline("--migrate", "scheduleworld", NULL);
+            cmdline.doit();
+        }
+
+        // now test with new format
+        doConfigure(ScheduleWorldConfig(), "sources/addressbook/config.ini:");
     }
 
     string doConfigure(const string &SWConfig, const string &addressbookPrefix) {
