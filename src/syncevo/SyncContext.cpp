@@ -2783,8 +2783,13 @@ void SyncContext::initMain(const char *appname)
     }
 }
 
-// TODO: set via gen-autotools and configure
-static bool IsStableRelease = false;
+static bool IsStableRelease =
+#ifdef SYNCEVOLUTION_STABLE_RELEASE
+                   true
+#else
+                   false
+#endif
+                   ;
 bool SyncContext::isStableRelease()
 {
     return IsStableRelease;

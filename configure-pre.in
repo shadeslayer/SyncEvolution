@@ -12,6 +12,29 @@ AC_INIT([syncevolution], [1.1.99.1])
 # STABLE_VERSION=1.0.1+
 AC_SUBST(STABLE_VERSION)
 
+# Default value for --enable/disable-release-mode.
+# Determined by gen-autotools.sh based on versioning.
+# Official, stable releases enable it, pre-releases
+# disable it.
+define([STABLE_RELEASE], [no])
+
+# Line above is patched by gen-autotools.sh. Handle
+# both "yes" and "no".
+define([STABLE_RELEASE_HELP], ifelse(STABLE_RELEASE,yes,--disable-release-mode,--enable-release-mode))
+
+AC_ARG_ENABLE(release-mode,
+              AS_HELP_STRING([STABLE_RELEASE_HELP],
+                             [Controls whether resulting binary is for end-users or
+                              testers/developers. For example, stable releases automatically
+                              migrate on-disk files without asking, whereas other releases
+                              ask before making downgrades impossible (or difficult).
+                              Default in this source code is
+                              "stable release: STABLE_RELEASE"]),
+              enable_release_mode="$enableval", enable_release_mode="SYNCEVOLUTION_STABLE_RELEASE")
+if test "$enable_release_mode" = "yes"; then
+   AC_DEFINE(SYNCEVOLUTION_STABLE_RELEASE, 1, [binary is meant for end-users])
+fi
+
 AM_INIT_AUTOMAKE([tar-ustar])
 AC_CONFIG_MACRO_DIR([m4])
 define([SYNTHESISSRC_REPO], [])

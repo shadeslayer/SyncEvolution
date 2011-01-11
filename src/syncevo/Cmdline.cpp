@@ -446,7 +446,9 @@ bool Cmdline::run() {
     if (m_usage) {
         usage(true);
     } else if (m_version) {
-        printf("SyncEvolution %s\n", VERSION);
+        printf("SyncEvolution %s%s\n",
+               VERSION,
+               SyncContext::isStableRelease() ? "" : " (pre-release)");
         printf("%s", EDSAbiWrapperInfo());
         printf("%s", SyncSource::backendsInfo().c_str());
     } else if (m_printServers || boost::trim_copy(m_server) == "?") {

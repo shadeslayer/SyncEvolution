@@ -111,6 +111,13 @@ fi
 rm -f configure.in
 sed -e "s/^\\(AC_INIT.*\\)\\[\\(.*\\)\\]/\\1[\\2$versionsuffix]/" configure-pre.in >>configure.in
 
+# Very simplistic detection of pre-releases:
+# either the code isn't clean or properly tagged (versionsuffix non-empty)
+# or the version contains "99" (part of the rpm-style versioning scheme).
+if [ ! "$versionsuffix" ] && ! grep 'AC_INIT' configure.in | grep -q 99; then
+    perl -pi -e 's/define\(\[STABLE_RELEASE\], \[no\]\)/define([STABLE_RELEASE], [yes])/' configure.in
+fi
+
 BACKENDS=
 SUBS=
 for sub in src/backends/*/configure-sub.in; do
