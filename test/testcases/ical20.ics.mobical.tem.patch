@@ -42,7 +42,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -91,26 +71,7 @@
+@@ -90,25 +70,7 @@
  CLASS:PUBLIC
  CREATED:20060416T203924Z
  LAST-MODIFIED:20060416T203949Z
@@ -61,7 +61,6 @@
 -TRANSP:OPAQUE
 -SEQUENCE:2
 -SUMMARY:recurrence\, yearly\, two times
--DESCRIPTION:recurrence\, yearly\, two times
 -CLASS:PUBLIC
 -RRULE:FREQ=YEARLY;INTERVAL=1;UNTIL=20070406T180000Z
 -CREATED:20060416T204021Z
@@ -70,7 +69,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -197,11 +158,6 @@
+@@ -193,11 +155,6 @@
   ^\npercent %\ntilde ~\ntick `\nbacktick `\ndouble quotation - not tested 
   because Evolution encodes it incorrectly\nsingle quotation '\ncolon :\n
   semicolon \;\ncomma \,\n
@@ -82,7 +81,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -272,28 +228,11 @@
+@@ -267,28 +224,11 @@
  BEGIN:VCALENDAR
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0
