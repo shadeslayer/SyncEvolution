@@ -3825,12 +3825,29 @@ void SyncContext::checkSourceChanges(SourceList &sourceList, SyncReport &changes
 {
     changes.setStart(time(NULL));
     BOOST_FOREACH(SyncSource *source, sourceList) {
+        SyncSourceReport local;
         if (source->getOperations().m_checkStatus) {
-            SyncSourceReport local;
-
             source->getOperations().m_checkStatus(local);
-            changes.addSyncSourceReport(source->getName(), local);
+        } else {
+            // no information available
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_ADDED,
+                              SyncSourceReport::ITEM_TOTAL,
+                              -1);
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_UPDATED,
+                              SyncSourceReport::ITEM_TOTAL,
+                              -1);
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_REMOVED,
+                              SyncSourceReport::ITEM_TOTAL,
+                              -1);
+            local.setItemStat(SyncSourceReport::ITEM_LOCAL,
+                              SyncSourceReport::ITEM_ANY,
+                              SyncSourceReport::ITEM_TOTAL,
+                              -1);
         }
+        changes.addSyncSourceReport(source->getName(), local);
     }
     changes.setEnd(time(NULL));
 }
