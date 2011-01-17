@@ -652,7 +652,7 @@ syncevo_server_start_no_sync_session (SyncevoServer *syncevo,
 {
     ServerAsyncData *data;
     SyncevoServerPrivate *priv;
-    char *flags[2] = {"no-sync", NULL};
+    const char *flags[2] = {"no-sync", NULL};
 
     priv = GET_PRIVATE (syncevo);
 
