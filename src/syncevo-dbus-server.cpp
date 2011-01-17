@@ -4242,6 +4242,9 @@ void Connection::process(const Caller_t &caller,
                                     info.toString().c_str(),
                                     entry.first.c_str(),
                                     entry.second.c_str());
+                        // Stop searching. Other peer configs might have the same remoteDevID.
+                        // We go with the first one found, which because of the sort order
+                        // of getConfigs() ensures that "foo" is found before "foo.old".
                         break;
                     }
                 }

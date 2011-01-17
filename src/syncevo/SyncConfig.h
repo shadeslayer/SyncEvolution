@@ -1058,6 +1058,9 @@ class SyncConfig {
      * returns list of servers in either the old (.sync4j) or
      * new config directory (.config), given as server name
      * and absolute root of config
+     *
+     * Guaranteed to be sorted by the (context, peer name, path) tuple,
+     * in increasing order (foo@bar < abc@xyz < abc.old@xyz).
      */
     static ConfigList getConfigs();
 

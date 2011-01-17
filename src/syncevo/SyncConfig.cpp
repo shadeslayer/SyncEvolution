@@ -532,6 +532,23 @@ void SyncConfig::addPeers(const string &root,
     }
 }
 
+/** returns true if a precedes b (strict weak ordering) */
+static bool cmpConfigEntries(const StringPair &a, const StringPair &b)
+{
+    string peerA, contextA, peerB, contextB;
+    SyncConfig::splitConfigString(a.first, peerA, contextA);
+    SyncConfig::splitConfigString(b.first, peerB, contextB);
+    int res;
+    res = contextA.compare(contextB);
+    if (res == 0) {
+        res = peerA.compare(peerB);
+        if (res == 0) {
+            res = a.second.compare(b.second);
+        }
+    }
+    return res < 0;
+}
+
 SyncConfig::ConfigList SyncConfig::getConfigs()
 {
     ConfigList res;
@@ -539,8 +556,13 @@ SyncConfig::ConfigList SyncConfig::getConfigs()
     addPeers(getOldRoot(), "config.txt", res);
     addPeers(getNewRoot(), "config.ini", res);
 
-    // sort the list; better than returning it in random order
-    res.sort();
+    // Sort the list by (context, peer name, path);
+    // better than returning it in random order.
+    // This sort order (compared to simple lexical
+    // sorting based on the full config name) has
+    // the advantage that peer names or contexts with
+    // suffix (foo.old vs. foo) come later.
+    res.sort(cmpConfigEntries);
 
     return res;
 }
