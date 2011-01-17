@@ -574,6 +574,9 @@ bool Cmdline::run() {
 #endif
         }
 
+        // name of renamed config ("foo.old") after migration
+        string newname;
+
         // True if the target configuration is a context like @default
         // or @foobar. Relevant in several places in the following
         // code.
@@ -626,7 +629,6 @@ bool Cmdline::run() {
             string oldRoot = from->getRootPath();
             string suffix;
             while (true) {
-                string newname;
                 ostringstream newsuffix;
                 newsuffix << ".old";
                 if (counter) {
@@ -825,6 +827,19 @@ bool Cmdline::run() {
             if (isDir(fromDir)) {
                 cp_r(fromDir, toDir);
             }
+        }
+
+        // Succeeded so far, remove "ConsumerReady" flag from migrated
+        // config to hide that old config from normal UI users. Must
+        // do this without going through SyncConfig, because that
+        // would bump the version.
+        if (!newname.empty()) {
+            FileConfigNode node(newname, "config.ini", false);
+            BoolConfigProperty ready("ConsumerReady", "", "0");
+            if (ready.getPropertyValue(node)) {
+                ready.setProperty(node, false);
+            }
+            node.flush();
         }
     } else if (m_remove) {
         if (m_dryrun) {
@@ -3152,6 +3167,18 @@ protected:
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old/");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
 
+            // set ConsumerReady: must be removed during migration to hide
+            // the migrated config from average users
+            {
+                TestCmdline cmdline("--configure",
+                                    "--sync-property", "ConsumerReady=1",
+                                    "scheduleworld",
+                                    NULL);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            }
+
             // migrate once more, this time without the explicit context in
             // the config name => must not change the context, need second .old dir
             {
@@ -3164,9 +3191,11 @@ protected:
             }
             migratedConfig = scanFiles(otherRoot, "scheduleworld");
             boost::replace_all(expected, "/scheduleworld.old/", "/scheduleworld/");
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");          
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old.1");
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.1/");
+            boost::replace_all(expected, "ConsumerReady = 1", "ConsumerReady = 0");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
         }
     }
