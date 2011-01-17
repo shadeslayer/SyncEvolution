@@ -84,6 +84,13 @@ public:
     {
         foreach (KCalCore::Incidence::Ptr incidence, incidences) {
             if (incidence->type() == m_type) {
+                SE_LOG_DEBUG(NULL, NULL, "item %s %s",
+                             getItemID(incidence).getLUID().c_str(),
+                             state == SyncSourceChanges::ANY ? "exists" :
+                             state == SyncSourceChanges::NEW ? "is new" :
+                             state == SyncSourceChanges::UPDATED ? "is updated" :
+                             state == SyncSourceChanges::DELETED ? "was deleted" :
+                             "unknown state");
                 changes.addItem(getItemID(incidence).getLUID(),
                                 state);
             }
@@ -326,7 +333,8 @@ void KCalExtendedSource::beginSync(const std::string &lastToken, const std::stri
     }
     m_data->extractIncidences(incidences, SyncSourceChanges::ANY, *this);
     if (*anchor) {
-        KDateTime endSyncTime(QDateTime::fromString(QString(anchor), Qt::ISODate));
+        SE_LOG_DEBUG(NULL, NULL, "checking for changes since %s UTC", anchor);
+        KDateTime endSyncTime(QDateTime::fromString(QString(anchor), Qt::ISODate), KDateTime::Spec::UTC());
         KCalCore::Incidence::List added, modified, deleted;
         if (!m_data->m_storage->insertedIncidences(&added, endSyncTime, m_data->m_notebookUID)) {
             throwError("insertedIncidences() failed");
