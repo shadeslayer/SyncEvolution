@@ -1525,6 +1525,9 @@ class SyncConfig {
                                  SyncEvolution >= 1.0 */
     };
 
+    /** config versioning; setting is done internally */
+    int getConfigVersion(ConfigLevel level, ConfigLimit limit) const;
+
 private:
     /**
      * scans for peer configurations
@@ -1537,7 +1540,6 @@ private:
                          SyncConfig::ConfigList &res);
 
     /* internal access to configuration versioning */
-    int getConfigVersion(ConfigLevel level, ConfigLimit limit) const;
     void setConfigVersion(ConfigLevel level, ConfigLimit limit, int version);
 
     /**

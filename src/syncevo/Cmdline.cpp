@@ -840,6 +840,19 @@ bool Cmdline::run() {
                 ready.setProperty(node, false);
             }
             node.flush();
+
+            // Set ConsumerReady for migrated SyncEvolution < 1.2
+            // configs, because in older releases all existing
+            // configurations where shown. SyncEvolution 1.2 is more
+            // strict and assumes that ConsumerReady must be set
+            // explicitly. The sync-ui always has set the flag for
+            // configs created or modified with it, but the command
+            // line did not. Matches similar code in
+            // syncevo-dbus-server.          
+            if (from->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0 /* SyncEvolution < 1.2 */) {
+                to->setConsumerReady(true);
+                to->flush();
+            }
         }
     } else if (m_remove) {
         if (m_dryrun) {
@@ -3058,6 +3071,10 @@ protected:
             string migratedConfig = scanFiles(newRoot);
             string expected = ScheduleWorldConfig();
             sortConfig(expected);
+            // migrating SyncEvolution < 1.2 configs sets
+            // ConsumerReady, to keep config visible in the updated
+            // sync-ui
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
@@ -3085,6 +3102,7 @@ protected:
             string migratedConfig = scanFiles(newRoot, "scheduleworld");
             string expected = ScheduleWorldConfig();
             sortConfig(expected);
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(newRoot, "scheduleworld.old");
             boost::replace_all(createdConfig, "/scheduleworld/", "/scheduleworld.old/");
@@ -3111,6 +3129,7 @@ protected:
             string migratedConfig = scanFiles(newRoot);
             string expected = ScheduleWorldConfig();
             sortConfig(expected);
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
             boost::replace_first(expected,
                                  "peers/scheduleworld/sources/addressbook/config.ini",
                                  "peers/scheduleworld/sources/addressbook/.other.ini:foo = bar\n"
@@ -3144,12 +3163,17 @@ protected:
             string migratedConfig = scanFiles(otherRoot);
             string expected = ScheduleWorldConfig();
             sortConfig(expected);
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
 
             // migrate the migrated config again inside the "other" context,
             // with no "default" context which might interfere with the tests
+            //
+            // ConsumerReady was set as part of previous migration,
+            // must be removed during migration to hide the migrated
+            // config from average users.
             rm_r(newRoot);
             {
                 TestCmdline cmdline("--migrate",
@@ -3162,22 +3186,12 @@ protected:
             migratedConfig = scanFiles(otherRoot, "scheduleworld");
             expected = ScheduleWorldConfig();
             sortConfig(expected);
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old");
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old/");
+            boost::replace_all(expected, "ConsumerReady = 1", "ConsumerReady = 0");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
-
-            // set ConsumerReady: must be removed during migration to hide
-            // the migrated config from average users
-            {
-                TestCmdline cmdline("--configure",
-                                    "--sync-property", "ConsumerReady=1",
-                                    "scheduleworld",
-                                    NULL);
-                cmdline.doit();
-                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
-                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
-            }
 
             // migrate once more, this time without the explicit context in
             // the config name => must not change the context, need second .old dir
@@ -3191,11 +3205,39 @@ protected:
             }
             migratedConfig = scanFiles(otherRoot, "scheduleworld");
             boost::replace_all(expected, "/scheduleworld.old/", "/scheduleworld/");
-            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");          
+            boost::replace_all(expected, "ConsumerReady = 0", "ConsumerReady = 1");          
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old.1");
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.1/");
             boost::replace_all(expected, "ConsumerReady = 1", "ConsumerReady = 0");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
+
+            // remove ConsumerReady: must be remain unset when migrating
+            // hidden SyncEvolution >= 1.2 configs
+            {
+                TestCmdline cmdline("--configure",
+                                    "--sync-property", "ConsumerReady=0",
+                                    "scheduleworld",
+                                    NULL);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            }
+
+            // migrate once more => keep ConsumerReady unset
+            {
+                TestCmdline cmdline("--migrate",
+                                    "scheduleworld",
+                                    NULL);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            }
+            migratedConfig = scanFiles(otherRoot, "scheduleworld");
+            boost::replace_all(expected, "/scheduleworld.old.1/", "/scheduleworld/");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
+            renamedConfig = scanFiles(otherRoot, "scheduleworld.old.2");
+            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.2/");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
         }
     }

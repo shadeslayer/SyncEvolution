@@ -2737,6 +2737,17 @@ void ReadOperations::getConfig(bool getTemplate,
         }
     }
 
+    // Set ConsumerReady for existing SyncEvolution < 1.2 configs,
+    // because in older releases all existing configurations where
+    // shown. SyncEvolution 1.2 is more strict and assumes that
+    // ConsumerReady must be set explicitly. The sync-ui always has
+    // set the flag for configs created or modified with it, but the
+    // command line did not. Matches similar code in the Cmdline.cpp
+    // migration code.
+    if (syncConfig->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0 /* SyncEvolution < 1.2 */) {
+        localConfigs["ConsumerReady"] = "1";
+    }
+
     // insert 'configName' of the chosen config (m_configName is not normalized)
     localConfigs.insert(pair<string, string>("configName", syncConfig->getConfigName()));
 
