@@ -3182,6 +3182,7 @@ void Session::setConfig(bool update, bool temporary,
             from->setConfigFilter(false, it->first, it->second);
         }
         boost::shared_ptr<DBusSync> syncConfig(new DBusSync(getConfigName(), *this));
+        syncConfig->prepareConfigForWrite();
         syncConfig->copy(*from, NULL);
 
         syncConfig->preFlush(*syncConfig);
