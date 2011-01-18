@@ -428,9 +428,9 @@ public:
         // configure active sources with the desired sync mode,
         // disable the rest
         FilterConfigNode::ConfigFilter filter;
-        filter[SyncSourceConfig::m_sourcePropSync.getName()] = "none";
+        filter["sync"] = "none";
         client.setConfigFilter(false, "", filter);
-        filter[SyncSourceConfig::m_sourcePropSync.getName()] =
+        filter["sync"] =
             PrettyPrintSyncMode(options.m_syncMode);
         for(int i = 0; sources[i] >= 0; i++) {
             std::string &name = m_syncSource2Config[sources[i]];

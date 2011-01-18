@@ -131,12 +131,38 @@ class ConstSyncSourceNodes;
 /** name of the per-source admin data property */
 extern const char *const SourceAdminDataName;
 
+/** simplified creation of string lists: InitList("foo") + "bar" + ... */
+template<class T> class InitList : public list<T> {
+ public:
+    InitList() {}
+    InitList(const T &initialValue) {
+        push_back(initialValue);
+    }
+    InitList &operator + (const T &rhs) {
+        push_back(rhs);
+        return *this;
+    }
+    InitList &operator += (const T &rhs) {
+        push_back(rhs);
+        return *this;
+    }
+};
+typedef InitList<string> Aliases;
+typedef InitList<Aliases> Values;
+
+
 /**
  * A property has a name and a comment. Derived classes might have
  * additional code to read and write the property from/to a
  * ConfigNode. They might also one or more  of the properties
  * on the fly, therefore the virtual get methods which return a
  * string value and not just a reference.
+ *
+ * In addition to the name, it may also have aliases. When reading
+ * from a ConfigNode, all specified names are checked in the order in
+ * which they are listed, and the first one found is used. When
+ * writing, an existing key is overwritten, otherwise the main name is
+ * created as a new key.
  *
  * A default value is returned if the ConfigNode doesn't have
  * a value set (= empty string). Invalid values in the configuration
@@ -173,23 +199,41 @@ extern const char *const SourceAdminDataName;
  */
 class ConfigProperty {
  public:
-    ConfigProperty(const string &name, const string &comment,
+        ConfigProperty(const string &name, const string &comment,
+                       const string &def = string(""), const string &descr = string("")) :
+        m_obligatory(false),
+        m_hidden(false),
+        m_sharing(NO_SHARING),
+        m_flags(0),
+        m_names(name),
+        m_comment(boost::trim_right_copy(comment)),
+        m_defValue(def),
+        m_descr(descr)
+        {}
+
+    ConfigProperty(const Aliases &names, const string &comment,
                    const string &def = string(""), const string &descr = string("")) :
         m_obligatory(false),
         m_hidden(false),
         m_sharing(NO_SHARING),
         m_flags(0),
-        m_name(name),
+        m_names(names),
         m_comment(boost::trim_right_copy(comment)),
             m_defValue(def),
         m_descr(descr)
         {}
     virtual ~ConfigProperty() {}
-    
-    virtual string getName() const { return m_name; }
-    virtual string getComment() const { return m_comment; }
-    virtual string getDefValue() const { return m_defValue; }
-    virtual string getDescr() const { return m_descr; }
+
+    /** name to be used for a specific node: first name if not in node, otherwise existing key */
+    string getName(const ConfigNode &node) const;
+
+    /** primary name */
+    string getMainName() const { return m_names.front(); }
+
+    const Aliases &getNames() const { return m_names; }
+    string getComment() const { return m_comment; }
+    string getDefValue() const { return m_defValue; }
+    string getDescr() const { return m_descr; }
 
     /**
      * Check whether the given value is okay.
@@ -278,19 +322,21 @@ class ConfigProperty {
     int getFlags(void) const { return m_flags; }
 
     /** set value unconditionally, even if it is not valid */
-    void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(), value, getComment()); }
+    void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(node), value, getComment()); }
     void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) const {
+        string name = getName(node);
         if (temporarily) {
-            node.addFilter(m_name, value);
+            node.addFilter(name, value);
         } else {
-            node.setProperty(m_name, value, getComment());
+            node.setProperty(name, value, getComment());
         }
     }
 
     /** set default value of a property, marked as default unless forced setting */
     void setDefaultProperty(ConfigNode &node, bool force) const {
+        string name = getName(node);
         string defValue = getDefValue();
-        node.setProperty(m_name, defValue, getComment(), force ? NULL : &defValue);
+        node.setProperty(name, defValue, getComment(), force ? NULL : &defValue);
     }
 
     /**
@@ -302,7 +348,7 @@ class ConfigProperty {
      *                      the default was returned instead
      */
     virtual string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
-        string name = getName();
+        string name = getName(node);
         string value = node.readProperty(name);
         if (!value.empty()) {
             string error;
@@ -323,7 +369,7 @@ class ConfigProperty {
 
     // true if property is set to non-empty value
     bool isSet(const ConfigNode &node) const {
-        string name = getName();
+        string name = getName(node);
         string value = node.readProperty(name);
         return !value.empty();
     }
@@ -336,27 +382,9 @@ class ConfigProperty {
     bool m_hidden;
     Sharing m_sharing;
     int m_flags;
-    const string m_name, m_comment, m_defValue, m_descr;
+    const Aliases m_names;
+    const string m_comment, m_defValue, m_descr;
 };
-
-template<class T> class InitList : public list<T> {
- public:
-    InitList() {}
-    InitList(const T &initialValue) {
-        push_back(initialValue);
-    }
-    InitList &operator + (const T &rhs) {
-        push_back(rhs);
-        return *this;
-    }
-    InitList &operator += (const T &rhs) {
-        push_back(rhs);
-        return *this;
-    }
-};
-typedef InitList<string> Aliases;
-typedef InitList<Aliases> Values;
-
 
 /**
  * A string property which maps multiple different possible value
@@ -478,21 +506,22 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
         ostringstream out;
 
         out << value;
-        node.setProperty(getName(), out.str(), getComment());
+        node.setProperty(getName(node), out.str(), getComment());
     }
     void setProperty(FilterConfigNode &node, const T &value, bool temporarily = false) const {
         ostringstream out;
+        string name = getName(node);
 
         out << value;
         if (temporarily) {
-            node.addFilter(getName(), out.str());
+            node.addFilter(name, out.str());
         } else {
-            node.setProperty(getName(), out.str(), getComment());
+            node.setProperty(name, out.str(), getComment());
         }
     }
 
     T getPropertyValue(const ConfigNode &node, bool *isDefault = NULL) const {
-        string name = getName();
+        string name = getName(node);
         string value = node.readProperty(name);
         istringstream in(value);
         T res;
@@ -687,6 +716,9 @@ class PasswordConfigProperty : public ConfigProperty {
     PasswordConfigProperty(const string &name, const string &comment, const string &def = string(""),const string &descr = string("")) :
        ConfigProperty(name, comment, def, descr)
            {}
+    PasswordConfigProperty(const Aliases &names, const string &comment, const string &def = string(""),const string &descr = string("")) :
+       ConfigProperty(names, comment, def, descr)
+           {}
 
     /**
      * Check the password and cache the result.
@@ -835,8 +867,10 @@ class ConfigPropertyRegistry : public list<const ConfigProperty *> {
     /** case-insensitive search for property */
     const ConfigProperty *find(const string &propName) const {
         BOOST_FOREACH(const ConfigProperty *prop, *this) {
-            if (boost::iequals(prop->getName(), propName)) {
-                return prop;
+            BOOST_FOREACH(const string &name, prop->getNames()) {
+                if (boost::iequals(name, propName)) {
+                    return prop;
+                }
             }
         }
         return NULL;

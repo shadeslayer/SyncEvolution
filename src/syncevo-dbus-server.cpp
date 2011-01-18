@@ -2730,10 +2730,10 @@ void ReadOperations::getConfig(bool getTemplate,
     BOOST_FOREACH(const ConfigProperty *prop, syncRegistry) {
         bool isDefault = false;
         string value = prop->getProperty(*syncConfig->getProperties(), &isDefault);
-        if(boost::iequals(prop->getName(), "syncURL") && !syncURL.empty() ) {
-            localConfigs.insert(pair<string, string>(prop->getName(), syncURL));
+        if(boost::iequals(prop->getMainName(), "syncURL") && !syncURL.empty() ) {
+            localConfigs.insert(pair<string, string>(prop->getMainName(), syncURL));
         } else if(!isDefault) {
-            localConfigs.insert(pair<string, string>(prop->getName(), value));
+            localConfigs.insert(pair<string, string>(prop->getMainName(), value));
         }
     }
 
@@ -2763,7 +2763,7 @@ void ReadOperations::getConfig(bool getTemplate,
             bool isDefault = false;
             string value = prop->getProperty(*sourceNodes.getProperties(), &isDefault);
             if(!isDefault) {
-                localConfigs.insert(pair<string, string>(prop->getName(), value));
+                localConfigs.insert(pair<string, string>(prop->getMainName(), value));
             }
         }
         config.insert(pair<string, map<string, string> >( "source/" + name, localConfigs));
@@ -3233,7 +3233,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
     FilterConfigNode::ConfigFilter filter;
     filter = m_sourceFilter;
     if (!mode.empty()) {
-        filter[SyncSourceConfig::m_sourcePropSync.getName()] = mode;
+        filter["sync"] = mode;
     }
     m_sync->setConfigFilter(false, "", filter);
     BOOST_FOREACH(const std::string &source,
@@ -3241,7 +3241,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
         filter = m_sourceFilters[source];
         SourceModes_t::const_iterator it = source_modes.find(source);
         if (it != source_modes.end()) {
-            filter[SyncSourceConfig::m_sourcePropSync.getName()] = it->second;
+            filter["sync"] = it->second;
         }
         m_sync->setConfigFilter(false, source, filter);
     }
@@ -3705,12 +3705,12 @@ void Session::restore(const string &dir, bool before, const std::vector<std::str
     if(!sources.empty()) {
         BOOST_FOREACH(const std::string &source, sources) {
             FilterConfigNode::ConfigFilter filter;
-            filter[SyncSourceConfig::m_sourcePropSync.getName()] = "two-way";
+            filter["sync"] = "two-way";
             m_sync->setConfigFilter(false, source, filter);
         }
         // disable other sources
         FilterConfigNode::ConfigFilter disabled;
-        disabled[SyncSourceConfig::m_sourcePropSync.getName()] = "disabled";
+        disabled["sync"] = "disabled";
         m_sync->setConfigFilter(false, "", disabled);
     }
     m_restoreBefore = before;

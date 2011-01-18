@@ -27,7 +27,14 @@ MultiplexConfigNode::getNode(const string &property,
                              const ConfigProperty **found) const
 {
     BOOST_FOREACH(const ConfigProperty *prop, m_registry) {
-        if (boost::iequals(prop->getName(), property)) {
+        bool match = false;
+        BOOST_FOREACH(const std::string &name, prop->getNames()) {
+            if (name == property) {
+                match = true;
+                break;
+            }
+        }
+        if (match) {
             if (found) {
                 *found = prop;
             }

@@ -77,6 +77,28 @@ std::string ConfigLevel2String(ConfigLevel level)
     }
 }
 
+string ConfigProperty::getName(const ConfigNode &node) const
+{
+    if (m_names.empty()) {
+        // shouldn't happen
+        return "???";
+    }
+    if (m_names.size() == 1) {
+        // typical case for most properties
+        return m_names.front();
+    }
+    // pick the name already used in the node
+    BOOST_FOREACH(const std::string &name, m_names) {
+        string value;
+        if (node.getProperty(name, value)) {
+            return name;
+        }
+    }
+
+    // main name as fallback
+    return m_names.front();
+}
+
 void ConfigProperty::splitComment(const string &comment, list<string> &commentLines)
 {
     size_t start = 0;
@@ -1692,7 +1714,7 @@ void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
     string descr = getDescr(serverName,globalConfigNode,sourceName,sourceConfigNode);
     if (password == "-") {
         ConfigPasswordKey key = getPasswordKey(descr,serverName,globalConfigNode,sourceName,sourceConfigNode);
-        passwordSave = ui.askPassword(getName(),descr, key);
+        passwordSave = ui.askPassword(getMainName(),descr, key);
     } else if(boost::starts_with(password, "${") &&
               boost::ends_with(password, "}")) {
         string envname = password.substr(2, password.size() - 3);
@@ -1711,9 +1733,9 @@ void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
      * Previous impl use temp string to store them, this is not good for expansion in the backend */
     if(!passwordSave.empty()) {
         if(sourceConfigNode.get() == NULL) {
-            globalConfigNode.addFilter(getName(), passwordSave);
+            globalConfigNode.addFilter(getMainName(), passwordSave);
         } else {
-            sourceConfigNode->addFilter(getName(), passwordSave);
+            sourceConfigNode->addFilter(getMainName(), passwordSave);
         }
     }
 }
@@ -1741,7 +1763,7 @@ void PasswordConfigProperty::savePassword(ConfigUserInterface &ui,
     }
     string descr = getDescr(serverName,globalConfigNode,sourceName,sourceConfigNode);
     ConfigPasswordKey key = getPasswordKey(descr,serverName,globalConfigNode,sourceName,sourceConfigNode);
-    if(ui.savePassword(getName(), password, key)) {
+    if(ui.savePassword(getMainName(), password, key)) {
         string value = "-";
         if(sourceConfigNode.get() == NULL) {
             setProperty(globalConfigNode, value);
@@ -2121,9 +2143,9 @@ static void copyProperties(const ConfigNode &fromProps,
             (unshared ||
              prop->getSharing() != ConfigProperty::NO_SHARING ||
              (prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED))) {
-            string name = prop->getName();
             bool isDefault;
             string value = prop->getProperty(fromProps, &isDefault);
+            string name = prop->getName(toProps);
             toProps.setProperty(name, value, prop->getComment(),
                                 isDefault ? &value : NULL);
         }
@@ -2710,7 +2732,7 @@ bool SecondsConfigProperty::checkValue(const string &value, string &error) const
 
 unsigned int SecondsConfigProperty::getPropertyValue(const ConfigNode &node, bool *isDefault) const
 {
-    string name = getName();
+    string name = getName(node);
     string value = node.readProperty(name);
     if (value.empty()) {
         if (isDefault) {

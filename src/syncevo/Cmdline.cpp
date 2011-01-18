@@ -132,7 +132,7 @@ bool Cmdline::parse(vector<string> &parsed)
             string cmdopt(m_argv[opt - 1]);
             if (!parseProp(m_validSourceProps, m_sourceProps,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt],
-                           SyncSourceConfig::m_sourcePropSync.getName().c_str())) {
+                           "sync")) {
                 return false;
             }
             parsed.push_back(m_argv[opt]);
@@ -799,7 +799,7 @@ bool Cmdline::run() {
                 } else if (selected) {
                     // user absolutely wants it: enable even if off by default
                     FilterConfigNode::ConfigFilter::const_iterator sync =
-                        m_sourceProps.find(SyncSourceConfig::m_sourcePropSync.getName());
+                        m_sourceProps.find("sync");
                     syncMode = sync == m_sourceProps.end() ? "two-way" : sync->second;
                 }
                 if (!syncMode.empty() &&
@@ -1146,7 +1146,7 @@ bool Cmdline::run() {
                     // invalid source name in m_sources, remember and
                     // report this below
                     unmatchedSources.insert(source);
-                } else if (m_sourceProps.find(SyncSourceConfig::m_sourcePropSync.getName()) ==
+                } else if (m_sourceProps.find("sync") ==
                            m_sourceProps.end()) {
                     // Sync mode is not set, must override the
                     // "sync=disabled" set below with the original
@@ -1156,7 +1156,7 @@ bool Cmdline::run() {
                     // source activates it.
                     FilterConfigNode::ConfigFilter filter = m_sourceProps;
                     string sync = source_config->getSync();
-                    filter[SyncSourceConfig::m_sourcePropSync.getName()] =
+                    filter["sync"] =
                         sync == "disabled" ? "two-way" : sync;
                     context->setConfigFilter(false, source, filter);
                 } else {
@@ -1168,7 +1168,7 @@ bool Cmdline::run() {
 
             // temporarily disable the rest
             FilterConfigNode::ConfigFilter disabled;
-            disabled[SyncSourceConfig::m_sourcePropSync.getName()] = "disabled";
+            disabled["sync"] = "disabled";
             context->setConfigFilter(false, "", disabled);
         }
 
@@ -1365,7 +1365,7 @@ bool Cmdline::listProperties(const ConfigPropertyRegistry &validProps,
                 }
                 comment = newComment;
             }
-            m_out << prop->getName() << ":" << endl;
+            m_out << prop->getMainName() << ":" << endl;
         }
     }
     dumpComment(m_out, "   ", comment);
@@ -1503,7 +1503,7 @@ void Cmdline::dumpProperties(const ConfigNode &configuredProps,
         if (isDefault) {
             m_out << "# ";
         }
-        m_out << prop->getName() << " = " << prop->getProperty(configuredProps) << endl;
+        m_out << prop->getMainName() << " = " << prop->getProperty(configuredProps) << endl;
 
         list<string> *type = NULL;
         switch (prop->getSharing()) {
@@ -1518,7 +1518,7 @@ void Cmdline::dumpProperties(const ConfigNode &configuredProps,
             break;
         }
         if (type) {
-            type->push_back(prop->getName());
+            type->push_back(prop->getMainName());
         }
     }
 
