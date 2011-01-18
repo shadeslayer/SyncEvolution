@@ -204,20 +204,22 @@ KCalExtendedSource::~KCalExtendedSource()
 
 void KCalExtendedSource::open()
 {
+    // read specified database name from "database" property
+    std::string databaseID = getDatabaseID();
+
     // TODO: also support todoType
-    m_data = new KCalExtendedData(this, getDatabaseID(),
+    m_data = new KCalExtendedData(this, databaseID.c_str(),
                                   KCalCore::IncidenceBase::TypeEvent);
     m_data->m_calendar = mKCal::ExtendedCalendar::Ptr(new mKCal::ExtendedCalendar(KDateTime::Spec::LocalZone()));
 
-    // read specified database name from evolutionsource property
-    const char *databaseID = getDatabaseID();
-
-    if ( strcmp(databaseID, "" ) == 0 || boost::starts_with(databaseID, "file://") ) {
+    if (databaseID.empty() || boost::starts_with(databaseID, "file://") ) {
         // if databaseID is empty, create default storage at default location
         // else if databaseID has a "file://" prefix, create storage at the specified place
         // use default notebook in default storage
         if ( boost::starts_with(databaseID, "file://") ) {
-            mKCal::SqliteStorage::Ptr ss(new mKCal::SqliteStorage(m_data->m_calendar, QString(databaseID + 7), false));
+            mKCal::SqliteStorage::Ptr ss(new mKCal::SqliteStorage(m_data->m_calendar,
+                                                                  QString(databaseID.c_str() + strlen("file://")),
+                                                                  false));
             m_data->m_storage = ss.staticCast<mKCal::ExtendedStorage>();
         } else {
             m_data->m_storage = mKCal::ExtendedCalendar::defaultStorage(m_data->m_calendar);
@@ -239,7 +241,7 @@ void KCalExtendedSource::open()
         if (!m_data->m_storage->open()) {
             throwError("failed to open storage");
         }
-        QString name = databaseID;
+        QString name = databaseID.c_str();
         mKCal::Notebook::Ptr notebook;
         mKCal::Notebook::List notebookList = m_data->m_storage->notebooks();
         mKCal::Notebook::List::Iterator it;
@@ -303,7 +305,7 @@ KCalExtendedSource::Databases KCalExtendedSource::getDatabases()
 {
     Databases result;
 
-    m_data = new KCalExtendedData(this, getDatabaseID(),
+    m_data = new KCalExtendedData(this, getDatabaseID().c_str(),
                                   KCalCore::IncidenceBase::TypeEvent);
     m_data->m_calendar = mKCal::ExtendedCalendar::Ptr(new mKCal::ExtendedCalendar(KDateTime::Spec::LocalZone()));
     m_data->m_storage = mKCal::ExtendedCalendar::defaultStorage(m_data->m_calendar);

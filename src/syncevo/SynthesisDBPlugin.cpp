@@ -153,7 +153,7 @@ TSyError SyncEvolution_Module_DeleteContext( CContext mContext )
 {
     SyncSource  *source = MoC(mContext);
     SE_LOG_DEBUG(NULL, NULL, "Module_DeleteContext %s",
-                 source ? source->getName() : "'session'");
+                 source ? source->getName().c_str() : "'session'");
     if (source) {
         source->popSynthesisAPI();
     }

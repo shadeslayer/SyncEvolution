@@ -191,9 +191,9 @@ void EvolutionContactSource::open()
     // users are not expected to configure an authentication method,
     // so pick one automatically if the user indicated that he wants authentication
     // by setting user or password
-    const char *user = getUser(),
-        *passwd = getPassword();
-    if ((user && user[0]) || (passwd && passwd[0])) {
+    std::string user = getUser(),
+        passwd = getPassword();
+    if (!user.empty() || !passwd.empty()) {
         GList *authmethod;
         if (!e_book_get_supported_auth_methods(m_addressbook, &authmethod, &gerror)) {
             throwError("getting authentication methods", gerror );
@@ -202,11 +202,11 @@ void EvolutionContactSource::open()
             const char *method = (const char *)authmethod->data;
             SE_LOG_DEBUG(this, NULL, "trying authentication method \"%s\", user %s, password %s",
                          method,
-                         user && user[0] ? "configured" : "not configured",
-                         passwd && passwd[0] ? "configured" : "not configured");
+                         !user.empty() ? "configured" : "not configured",
+                         !passwd.empty() ? "configured" : "not configured");
             if (e_book_authenticate_user(m_addressbook,
-                                         user ? user : "",
-                                         passwd ? passwd : "",
+                                         user.c_str(),
+                                         passwd.c_str(),
                                          method,
                                          &gerror)) {
                 SE_LOG_DEBUG(this, NULL, "authentication succeeded");
@@ -410,7 +410,7 @@ std::string EvolutionContactSource::getDescription(const string &luid)
     }
 }
 
-const char *EvolutionContactSource::getMimeType() const
+std::string EvolutionContactSource::getMimeType() const
 {
     switch( m_vcardFormat ) {
      case EVC_FORMAT_VCARD_21:
@@ -423,7 +423,7 @@ const char *EvolutionContactSource::getMimeType() const
     }
 }
 
-const char *EvolutionContactSource::getMimeVersion() const
+std::string EvolutionContactSource::getMimeVersion() const
 {
     switch( m_vcardFormat ) {
      case EVC_FORMAT_VCARD_21:

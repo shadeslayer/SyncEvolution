@@ -1131,7 +1131,7 @@ bool Cmdline::run() {
                               context->getSyncSources()) {
                     boost::shared_ptr<PersistentSyncSourceConfig> source_config =
                         context->getSyncSourceConfig(source);
-                    if (strcmp(source_config->getSync(), "disabled")) {
+                    if (source_config->getSync() == "disabled") {
                         context->setConfigFilter(false, source, m_sourceProps);
                     }
                 }

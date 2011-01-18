@@ -64,12 +64,12 @@ FileSyncSource::FileSyncSource(const SyncSourceParams &params,
     m_supportedTypes = dataformat;
 }
 
-const char *FileSyncSource::getMimeType() const
+std::string FileSyncSource::getMimeType() const
 {
     return m_mimeType.c_str();
 }
 
-const char *FileSyncSource::getMimeVersion() const
+std::string FileSyncSource::getMimeVersion() const
 {
     return m_mimeVersion.c_str();
 }

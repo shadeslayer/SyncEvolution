@@ -183,8 +183,8 @@ class MapSyncSource : public TrackingSyncSource,
     virtual void readItem(const std::string &luid, std::string &item, bool raw);
     virtual void removeItem(const string &luid);
     virtual void close() { dynamic_cast<SyncSource &>(*m_sub).close(); }
-    virtual const char *getMimeType() const { return dynamic_cast<SyncSourceSerialize &>(*m_sub).getMimeType(); }
-    virtual const char *getMimeVersion() const { return dynamic_cast<SyncSourceSerialize &>(*m_sub).getMimeVersion(); }
+    virtual std::string getMimeType() const { return dynamic_cast<SyncSourceSerialize &>(*m_sub).getMimeType(); }
+    virtual std::string getMimeVersion() const { return dynamic_cast<SyncSourceSerialize &>(*m_sub).getMimeVersion(); }
     virtual std::string getDescription(sysync::KeyH aItemKey) { return dynamic_cast<SyncSourceLogging &>(*m_sub).getDescription(aItemKey); }
     virtual std::string getDescription(const string &luid);
 

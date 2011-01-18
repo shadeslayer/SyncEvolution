@@ -844,27 +844,6 @@ class ConfigPropertyRegistry : public list<const ConfigProperty *> {
 };
 
 /**
- * Store the current string value of a property in a cache
- * and return the "const char *" pointer that is expected by
- * the client library.
- */
-class ConfigStringCache {
- public:
-    const char *getProperty(const ConfigNode &node, const ConfigProperty &prop) {
-        string value = prop.getProperty(node);
-        return storeString(prop.getName(), value);
-    }
-
-    const char *storeString(const string &key, const string &value) {
-        const string &entry = m_cache[key] = value;
-        return entry.c_str();
-    }
-
- private:
-    map<string, string> m_cache;
-};
-
-/**
  * This class implements the client library configuration interface
  * by mapping values to properties to entries in a ConfigTree. The
  * mapping is either the traditional one used by SyncEvolution <= 0.7
@@ -1337,7 +1316,7 @@ class SyncConfig {
     virtual string getDefaultPeer() const;
     virtual void setDefaultPeer(const string &value);
 
-    virtual const char *getLogDir() const;
+    virtual std::string getLogDir() const;
     virtual void setLogDir(const string &value, bool temporarily = false);
 
     virtual int getMaxLogDirs() const;
@@ -1376,17 +1355,17 @@ class SyncConfig {
     /**@}*/
 
     /**
-     * @name Settings inherited from Funambol
+     * @name SyncML Settings
      *
-     * These settings are required by the Funambol C++ client library.
+     * These settings are required by the Synthesis engine.
      * Some of them are hard-coded in this class. A derived class could
      * make them configurable again, should that be desired.
      */
     /**@{*/
 
-    virtual const char*  getUsername() const;
+    virtual std::string getUsername() const;
     virtual void setUsername(const string &value, bool temporarily = false);
-    virtual const char*  getPassword() const;
+    virtual std::string getPassword() const;
     virtual void setPassword(const string &value, bool temporarily = false);
 
     /**
@@ -1409,26 +1388,26 @@ class SyncConfig {
     virtual void setPreventSlowSync(bool value, bool temporarily = false);
     virtual bool getUseProxy() const;
     virtual void setUseProxy(bool value, bool temporarily = false);
-    virtual const char*  getProxyHost() const;
+    virtual std::string getProxyHost() const;
     virtual void setProxyHost(const string &value, bool temporarily = false);
     virtual int getProxyPort() const { return 0; }
-    virtual const char* getProxyUsername() const;
+    virtual std::string getProxyUsername() const;
     virtual void setProxyUsername(const string &value, bool temporarily = false);
-    virtual const char* getProxyPassword() const;
+    virtual std::string getProxyPassword() const;
     virtual void checkProxyPassword(ConfigUserInterface &ui);
     virtual void saveProxyPassword(ConfigUserInterface &ui);
     virtual void setProxyPassword(const string &value, bool temporarily = false);
     virtual vector<string>  getSyncURL() const;
     virtual void setSyncURL(const string &value, bool temporarily = false);
     virtual void setSyncURL(const vector<string> &value, bool temporarily = false);
-    virtual const char*  getClientAuthType() const;
+    virtual std::string getClientAuthType() const;
     virtual void setClientAuthType(const string &value, bool temporarily = false);
     virtual unsigned long getMaxMsgSize() const;
     virtual void setMaxMsgSize(unsigned long value, bool temporarily = false);
     virtual unsigned int getMaxObjSize() const;
     virtual void setMaxObjSize(unsigned int value, bool temporarily = false);
     virtual unsigned long getReadBufferSize() const { return 0; }
-    virtual const char* getSSLServerCertificates() const;
+    virtual std::string getSSLServerCertificates() const;
 
     /**
      * iterate over files mentioned in getSSLServerCertificates()
@@ -1449,15 +1428,15 @@ class SyncConfig {
     virtual bool  getCompression() const;
     virtual void setCompression(bool value, bool temporarily = false);
     virtual unsigned int getResponseTimeout() const { return 0; }
-    virtual const char*  getDevID() const;
+    virtual std::string getDevID() const;
     virtual void setDevID(const string &value, bool temporarily = false);
 
     /*Used for Server Alerted Sync*/
-    virtual const char* getRemoteIdentifier() const;
+    virtual std::string getRemoteIdentifier() const;
     virtual void setRemoteIdentifier (const string &value, bool temporaritly = false);
     virtual bool getPeerIsClient () const;
     virtual void setPeerIsClient (bool value, bool temporarily = false);
-    virtual const char* getSyncMLVersion() const;
+    virtual std::string getSyncMLVersion() const;
     virtual void setSyncMLVersion (const string &value, bool temporarily = false);
 
     /**
@@ -1507,13 +1486,13 @@ class SyncConfig {
     virtual bool getWBXML() const;
     virtual void setWBXML(bool isWBXML, bool temporarily = false);
 
-    virtual const char*  getUserAgent() const { return "SyncEvolution"; }
-    virtual const char*  getMan() const { return "Patrick Ohly"; }
-    virtual const char*  getMod() const { return "SyncEvolution"; }
-    virtual const char*  getOem() const { return "Open Source"; }
-    virtual const char*  getHwv() const { return "unknown"; }
-    virtual const char*  getSwv() const;
-    virtual const char*  getDevType() const;
+    virtual std::string getUserAgent() const { return "SyncEvolution"; }
+    virtual std::string getMan() const { return "Patrick Ohly"; }
+    virtual std::string getMod() const { return "SyncEvolution"; }
+    virtual std::string getOem() const { return "Open Source"; }
+    virtual std::string getHwv() const { return "unknown"; }
+    virtual std::string getSwv() const;
+    virtual std::string getDevType() const;
     /**@}*/
 
     enum Layout {
@@ -1613,8 +1592,6 @@ private:
     /** temporary override for settings of specific sources */
     typedef std::map<std::string, FilterConfigNode::ConfigFilter> SourceFilters_t;
     SourceFilters_t m_sourceFilters;
-
-    mutable ConfigStringCache m_stringCache;
 
     static string getOldRoot() {
         return getHome() + "/.sync4j/evolution";
@@ -1762,7 +1739,7 @@ class SyncSourceConfig {
     }
     boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncSourceConfig *>(this)->getProperties(hidden); }
 
-    virtual const char*  getName() const { return m_name.c_str(); }
+    virtual std::string getName() const { return m_name.c_str(); }
 
     /**
      * Directory to be used by source when it needs to store
@@ -1801,10 +1778,10 @@ class SyncSourceConfig {
         return prop.isSet(*getProperties(prop.isHidden()));
     }
 
-    virtual const char *getUser() const;
+    virtual std::string getUser() const;
     virtual void setUser(const string &value, bool temporarily = false);
 
-    const char *getPassword() const;
+    virtual std::string getPassword() const;
     virtual void setPassword(const string &value, bool temporarily = false);
 
     /** same as SyncConfig::checkPassword() but with
@@ -1816,7 +1793,7 @@ class SyncSourceConfig {
     virtual void savePassword(ConfigUserInterface &ui, const string &serverName, FilterConfigNode& globalConfigNode);
 
     /** selects the backend database to use */
-    virtual const char *getDatabaseID() const;
+    virtual std::string getDatabaseID() const;
     virtual void setDatabaseID(const string &value, bool temporarily = false);
 
     /**
@@ -1852,7 +1829,7 @@ class SyncSourceConfig {
      * two different sync sources cannot access the same data at
      * the same time.
      */
-    virtual const char*  getURI() const;
+    virtual std::string getURI() const;
     virtual void setURI(const string &value, bool temporarily = false);
 
     /**
@@ -1867,13 +1844,12 @@ class SyncSourceConfig {
      * - refresh-from-server
      * - refresh-from-client
      */
-    virtual const char*  getSync() const;
+    virtual std::string getSync() const;
     virtual void setSync(const string &value, bool temporarily = false);
 
  private:
     string m_name;
     SyncSourceNodes m_nodes;
-    mutable ConfigStringCache m_stringCache;
     string m_cachedPassword;
 };
 

@@ -57,7 +57,7 @@ class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, pr
     virtual Databases getDatabases();
     virtual void enableServerMode();
     virtual bool serverModeEnabled() const;
-    virtual const char *getPeerMimeType() const { return "text/calendar"; }
+    virtual std::string getPeerMimeType() const { return "text/calendar"; }
 
     /* implementation of SyncSourceSession interface */
     virtual void beginSync(const std::string &lastToken, const std::string &resumeToken);
@@ -67,8 +67,8 @@ class KCalExtendedSource : public TestingSyncSource, private SyncSourceAdmin, pr
     virtual void deleteItem(const string &luid);
 
     /* implementation of SyncSourceSerialize interface */
-    virtual const char *getMimeType() const { return "text/calendar"; }
-    virtual const char *getMimeVersion() const { return "2.0"; }
+    virtual std::string getMimeType() const { return "text/calendar"; }
+    virtual std::string getMimeVersion() const { return "2.0"; }
     virtual InsertItemResult insertItem(const std::string &luid, const std::string &item);
     virtual void readItem(const std::string &luid, std::string &item);
 

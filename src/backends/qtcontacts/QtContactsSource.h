@@ -50,8 +50,8 @@ class QtContactsSource : public TrackingSyncSource, public SyncSourceLogging, pr
     virtual bool isEmpty();
     virtual void close();
     virtual Databases getDatabases();
-    virtual const char *getMimeType() const { return "text/vcard"; }
-    virtual const char *getMimeVersion() const { return "3.0"; }
+    virtual std::string getMimeType() const { return "text/vcard"; }
+    virtual std::string getMimeVersion() const { return "3.0"; }
 
     /* implementation of TrackingSyncSource interface */
     virtual void listAllItems(RevisionMap_t &revisions);

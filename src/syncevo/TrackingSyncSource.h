@@ -204,13 +204,13 @@ class TrackingSyncSource : public TestingSyncSource,
      * Returns the preferred mime type of the items handled by the sync source.
      * Example: "text/x-vcard"
      */
-    virtual const char *getMimeType() const = 0;
+    virtual std::string getMimeType() const = 0;
 
     /**
      * Returns the version of the mime type used by client.
      * Example: "2.1"
      */
-    virtual const char *getMimeVersion() const = 0;
+    virtual std::string getMimeVersion() const = 0;
 
     using SyncSource::getName;
 
@@ -227,7 +227,7 @@ class TrackingSyncSource : public TestingSyncSource,
     virtual void readItemRaw(const std::string &luid, std::string &item);
     virtual void enableServerMode();
     virtual bool serverModeEnabled() const;
-    virtual const char *getPeerMimeType() const;
+    virtual std::string getPeerMimeType() const;
 
     boost::shared_ptr<ConfigNode> m_trackingNode;
 };

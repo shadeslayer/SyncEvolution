@@ -50,12 +50,12 @@ XMLRPCSyncSource::XMLRPCSyncSource(const SyncSourceParams &params,
     m_serverUrl = m_splitDatabase[0];
 }
 
-const char *XMLRPCSyncSource::getMimeType() const
+std::string XMLRPCSyncSource::getMimeType() const
 {
     return m_mimeType.c_str();
 }
 
-const char *XMLRPCSyncSource::getMimeVersion() const
+std::string XMLRPCSyncSource::getMimeVersion() const
 {
     return m_mimeVersion.c_str();
 }

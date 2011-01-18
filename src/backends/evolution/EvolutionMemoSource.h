@@ -44,9 +44,8 @@ class EvolutionMemoSource : public EvolutionCalendarSource
     //
     virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
     void readItem(const std::string &luid, std::string &item, bool raw);
-    virtual const char *getMimeType() const { return "text/plain"; }
-    virtual const char *getMimeVersion() const { return "1.0"; }
-    virtual const char *getSupportedTypes() const { return "text/plain:1.0"; }    
+    virtual std::string getMimeType() const { return "text/plain"; }
+    virtual std::string getMimeVersion() const { return "1.0"; }
 
  private:
     bool isNativeType(const char *type);

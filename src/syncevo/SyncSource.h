@@ -567,7 +567,7 @@ class SyncSourceBase : public Logger {
      * the name of the sync source (for example, "addressbook"),
      * unique in the context of its own configuration
      **/
-    virtual const char *getName() const { return "uninitialized SyncSourceBase"; }
+    virtual std::string getName() const { return "uninitialized SyncSourceBase"; }
 
     /**
      * the name of the sync source as it should be displayed to users
@@ -576,7 +576,7 @@ class SyncSourceBase : public Logger {
      * the name when "addressbook" is used multiple times in a sync (as
      * with local sync)
      */
-    virtual const char *getDisplayName() const { return "uninitialized SyncSourceBase"; }
+    virtual std::string getDisplayName() const { return "uninitialized SyncSourceBase"; }
 
     /**
      * Convenience function, to be called inside a catch() block of
@@ -1131,11 +1131,11 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      * Mime type a backend communicates with the remote peer by default,
      * this is used to alert the remote peer in SAN during server alerted sync.
      */
-    virtual const char *getPeerMimeType() const =0;
+    virtual std::string getPeerMimeType() const =0;
 
     /* implementation of SyncSourceBase */
-    virtual const char * getName() const { return SyncSourceConfig::getName(); }
-    virtual const char * getDisplayName() const { return m_name.c_str(); }
+    virtual std::string getName() const { return SyncSourceConfig::getName(); }
+    virtual std::string getDisplayName() const { return m_name.c_str(); }
     virtual long getNumDeleted() const { return m_numDeleted; }
     virtual void setNumDeleted(long num) { m_numDeleted = num; }
     virtual void incrementNumDeleted() { m_numDeleted++; }
@@ -1197,7 +1197,7 @@ class DummySyncSource : public SyncSource
                                   XMLConfigFragments &fragments) {}
     virtual void enableServerMode() {}
     virtual bool serverModeEnabled() const { return false; }
-    virtual const char *getPeerMimeType() const {return "";} 
+    virtual std::string getPeerMimeType() const {return "";} 
 };
 
 /**
@@ -1434,13 +1434,13 @@ class SyncSourceSerialize : virtual public SyncSourceBase, virtual public SyncSo
      * Returns the preferred mime type of the items handled by the sync source.
      * Example: "text/x-vcard"
      */
-    virtual const char *getMimeType() const = 0;
+    virtual std::string getMimeType() const = 0;
 
     /**
      * Returns the version of the mime type used by client.
      * Example: "2.1"
      */
-    virtual const char *getMimeVersion() const = 0;
+    virtual std::string getMimeVersion() const = 0;
 
     /**
      * returns the backend selection and configuration

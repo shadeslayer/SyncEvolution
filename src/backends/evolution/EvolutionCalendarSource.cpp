@@ -157,12 +157,12 @@ SyncSource::Databases EvolutionCalendarSource::getDatabases()
 char *EvolutionCalendarSource::authenticate(const char *prompt,
                                             const char *key)
 {
-    const char *passwd = getPassword();
+    std::string passwd = getPassword();
 
     SE_LOG_DEBUG(this, NULL, "authentication requested, prompt \"%s\", key \"%s\" => %s",
                  prompt, key,
-                 passwd && passwd[0] ? "returning configured password" : "no password configured");
-    return passwd && passwd[0] ? strdup(passwd) : NULL;
+                 !passwd.empty() ? "returning configured password" : "no password configured");
+    return !passwd.empty() ? strdup(passwd.c_str()) : NULL;
 }
 
 void EvolutionCalendarSource::open()

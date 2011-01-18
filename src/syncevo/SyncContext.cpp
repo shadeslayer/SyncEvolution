@@ -363,10 +363,11 @@ public:
         rename(SubstEnvironment("${XDG_DATA_HOME}/applications/syncevolution").c_str(),
                SubstEnvironment("${XDG_CACHE_HOME}/syncevolution").c_str());
 
-        const char *path = m_client.getLogDir();
-        setLogdir(!path || !path[0] ?
-                  "${XDG_CACHE_HOME}/syncevolution" :
-                  path);
+        string path = m_client.getLogDir();
+        if (path.empty()) {
+            path = "${XDG_CACHE_HOME}/syncevolution";
+        }
+        setLogdir(path);
     }
 
     /**
@@ -400,11 +401,11 @@ public:
      * Set log dir and base name used for searching and creating sessions.
      * Default if not called is the getLogDir() value of the context.
      *
-     * @param logdir     "none" to disable sessions, NULL/"" for default, may contain ${}
+     * @param logdir     "none" to disable sessions, "" for default, may contain ${}
      *                   for environment variables
      */
-    void setLogdir(const char *logdir) {
-        if (!logdir || !logdir[0]) {
+    void setLogdir(const string &logdir) {
+        if (logdir.empty()) {
             return;
         }
         m_logdir = SubstEnvironment(logdir);
@@ -491,11 +492,11 @@ public:
     // @param maxlogdirs  number of backup dirs to preserve in path, 0 if unlimited
     // @param logLevel    0 = default, 1 = ERROR, 2 = INFO, 3 = DEBUG
     // @param report      record information about session here (may be NULL)
-    void startSession(const char *path, SessionMode mode, int maxlogdirs, int logLevel, SyncReport *report) {
+    void startSession(const string &path, SessionMode mode, int maxlogdirs, int logLevel, SyncReport *report) {
         m_maxlogdirs = maxlogdirs;
         m_report = report;
         m_logfile = "";
-        if (path && !strcasecmp(path, "none")) {
+        if (boost::iequals(path, "none")) {
             m_path = "";
         } else {
             setLogdir(path);
@@ -1157,7 +1158,7 @@ public:
     }
     
     // call as soon as logdir settings are known
-    void startSession(const char *logDirPath, int maxlogdirs, int logLevel, SyncReport *report) {
+    void startSession(const string &logDirPath, int maxlogdirs, int logLevel, SyncReport *report) {
         m_logdir.setLogdir(logDirPath);
         m_previousLogdir = m_logdir.previousLogdir();
         if (m_doLogging) {
@@ -1172,7 +1173,7 @@ public:
     }
 
     /** read-only access to existing session, identified in logDirPath */
-    void accessSession(const char *logDirPath) {
+    void accessSession(const string &logDirPath) {
         m_logdir.setLogdir(logDirPath);
         m_previousLogdir = m_logdir.previousLogdir();
         m_logdir.startSession(logDirPath, LogDir::SESSION_READ_ONLY, 0, 0, NULL);
@@ -1556,20 +1557,20 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             // not active, suppress output
         } else if (extra2) {
             SE_LOG_INFO(NULL, NULL, "%s: preparing %d/%d",
-                        source.getDisplayName(), extra1, extra2);
+                        source.getDisplayName().c_str(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: preparing %d",
-                        source.getDisplayName(), extra1);
+                        source.getDisplayName().c_str(), extra1);
         }
         break;
     case sysync::PEV_DELETING:
         /* deleting (zapping datastore), extra1=progress, extra2=total */
         if (extra2) {
             SE_LOG_INFO(NULL, NULL, "%s: deleting %d/%d",
-                        source.getDisplayName(), extra1, extra2);
+                        source.getDisplayName().c_str(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: deleting %d",
-                        source.getDisplayName(), extra1);
+                        source.getDisplayName().c_str(), extra1);
         }
         break;
     case sysync::PEV_ALERTED: {
@@ -1579,7 +1580,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         // -1 is used for alerting a restore from backup. Synthesis won't use this
         if (extra1 != -1) {
             SE_LOG_INFO(NULL, NULL, "%s: %s %s sync%s",
-                        source.getDisplayName(),
+                        source.getDisplayName().c_str(),
                         extra2 ? "resuming" : "starting",
                         extra1 == 0 ? "normal" :
                         extra1 == 1 ? "slow" :
@@ -1624,7 +1625,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             source.recordFirstSync(extra1 == 2);
             source.recordResumeSync(extra2 == 1);
         } else {
-            SE_LOG_INFO(NULL, NULL, "%s: restore from backup", source.getDisplayName());
+            SE_LOG_INFO(NULL, NULL, "%s: restore from backup", source.getDisplayName().c_str());
             source.recordFinalSyncMode(SYNC_RESTORE_FROM_BACKUP);
         }
         break;
@@ -1632,7 +1633,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
     case sysync::PEV_SYNCSTART:
         /* sync started */
         SE_LOG_INFO(NULL, NULL, "%s: started",
-                    source.getDisplayName());
+                    source.getDisplayName().c_str());
         break;
     case sysync::PEV_ITEMRECEIVED:
         /* item received, extra1=current item count,
@@ -1640,10 +1641,10 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         if (source.getFinalSyncMode() == SYNC_NONE) {
         } else if (extra2 > 0) {
             SE_LOG_INFO(NULL, NULL, "%s: received %d/%d",
-                        source.getDisplayName(), extra1, extra2);
+                        source.getDisplayName().c_str(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: received %d",
-                     source.getDisplayName(), extra1);
+                        source.getDisplayName().c_str(), extra1);
         }
         break;
     case sysync::PEV_ITEMSENT:
@@ -1652,10 +1653,10 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         if (source.getFinalSyncMode() == SYNC_NONE) {
         } else if (extra2 > 0) {
             SE_LOG_INFO(NULL, NULL, "%s: sent %d/%d",
-                     source.getDisplayName(), extra1, extra2);
+                        source.getDisplayName().c_str(), extra1, extra2);
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: sent %d",
-                     source.getDisplayName(), extra1);
+                        source.getDisplayName().c_str(), extra1);
         }
         break;
     case sysync::PEV_ITEMPROCESSED:
@@ -1665,7 +1666,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         if (source.getFinalSyncMode() == SYNC_NONE) {
         } else if (source.getFinalSyncMode() != SYNC_NONE) {
             SE_LOG_INFO(NULL, NULL, "%s: added %d, updated %d, removed %d",
-                        source.getDisplayName(), extra1, extra2, extra3);
+                        source.getDisplayName().c_str(), extra1, extra2, extra3);
         }
         break;
     case sysync::PEV_SYNCEND:
@@ -1673,14 +1674,14 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
            syncmode in extra2 (0=normal, 1=slow, 2=first time), 
            extra3=1 for resumed session) */
         if (source.getFinalSyncMode() == SYNC_NONE) {
-            SE_LOG_INFO(NULL, NULL, "%s: inactive", source.getDisplayName());
+            SE_LOG_INFO(NULL, NULL, "%s: inactive", source.getDisplayName().c_str());
         } else if(source.getFinalSyncMode() == SYNC_RESTORE_FROM_BACKUP) {
             SE_LOG_INFO(NULL, NULL, "%s: restore done %s", 
-                        source.getDisplayName(),
+                        source.getDisplayName().c_str(),
                         extra1 ? "unsuccessfully" : "successfully" );
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: %s%s sync done %s",
-                        source.getDisplayName(),
+                        source.getDisplayName().c_str(),
                         extra3 ? "resumed " : "",
                         extra2 == 0 ? "normal" :
                         extra2 == 1 ? "slow" :
@@ -1691,7 +1692,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         switch (extra1) {
         case 401:
             // TODO: reset cached password
-            SE_LOG_INFO(NULL, NULL, "authorization failed, check username '%s' and password", getUsername());
+            SE_LOG_INFO(NULL, NULL, "authorization failed, check username '%s' and password", getUsername().c_str());
             break;
         case 403:
             SE_LOG_INFO(&source, NULL, "log in succeeded, but server refuses access - contact server operator");
@@ -1700,7 +1701,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             SE_LOG_INFO(NULL, NULL, "proxy authorization failed, check proxy username and password");
             break;
         case 404:
-            SE_LOG_INFO(&source, NULL, "server database not found, check URI '%s'", source.getURI());
+            SE_LOG_INFO(&source, NULL, "server database not found, check URI '%s'", source.getURI().c_str());
             break;
         case 0:
             break;
@@ -1809,8 +1810,8 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         break;
     default:
         SE_LOG_DEBUG(NULL, NULL, "%s: progress event %d, extra %d/%d/%d",
-                  source.getDisplayName(),
-                  type, extra1, extra2, extra3);
+                     source.getDisplayName().c_str(),
+                     type, extra1, extra2, extra3);
     }
 }
 
@@ -2510,7 +2511,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                     sourceType.m_forceFormat != subType.m_forceFormat)) {
                     SE_LOG_WARNING(NULL, NULL, 
                                    "Virtual data source \"%s\" and sub data source \"%s\" have different data format. Will use the format in virtual data source.",
-                                   vSource->getDisplayName(), source.c_str());
+                                   vSource->getDisplayName().c_str(), source.c_str());
                 }
             }
 
@@ -2588,8 +2589,8 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     substTag(xml, "maxmsgsize", std::max(getMaxMsgSize(), 10000ul));
     substTag(xml, "maxobjsize", std::max(getMaxObjSize(), 1024u));
     if (m_serverMode) {
-        const char *user = getUsername();
-        const char *password = getPassword();
+        const string user = getUsername();
+        const string password = getPassword();
 
         /*
          * Do not check username/pwd if this local sync or over
@@ -2597,7 +2598,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
          */
         if (!m_localSync &&
             !boost::starts_with(getUsedSyncURL(), "obex-bt") &&
-            (user[0] || password[0])) {
+            (!user.empty() || !password.empty())) {
             // require authentication with the configured password
             substTag(xml, "defaultauth",
                      "<requestedauth>md5</requestedauth>\n"
@@ -2860,9 +2861,9 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
 
         try {
             // dump some summary information at the beginning of the log
-            SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername());
-            SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv(), getDevType());
-            SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID());
+            SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername().c_str());
+            SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv().c_str(), getDevType().c_str());
+            SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID().c_str());
             SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
             SE_LOG_DEV(NULL, NULL, "%s", SyncSource::backendsDebug().c_str());
 
@@ -3779,7 +3780,7 @@ void SyncContext::status()
     } else {
         ostream &out = getOutput();
         out << "Previous log directory not found.\n";
-        if (!getLogDir() || !getLogDir()[0]) {
+        if (getLogDir().empty()) {
             out << "Enable the 'logdir' option and synchronize to use this feature.\n";
         }
     }
@@ -4100,7 +4101,7 @@ private:
         SourceList list(*this, true);
         list.setLogLevel(SourceList::LOGGING_QUIET);
         SyncReport report;
-        list.startSession(NULL, m_maxLogDirs, 0, &report);
+        list.startSession("", m_maxLogDirs, 0, &report);
         va_list ap;
         va_start(ap, status);
         while (true) {
