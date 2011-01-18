@@ -2444,6 +2444,31 @@ protected:
             // override context and template properties
             TestCmdline cmdline("--print-config", "--template", "scheduleworld",
                                 "--sync-property", "syncURL=foo",
+                                "--source-property", "database=Personal",
+                                "--source-property", "sync=disabled",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            string expected = filterConfig(internalToIni(ScheduleWorldConfig()));
+            boost::replace_first(expected,
+                                 "syncURL = http://sync.scheduleworld.com/funambol/ds",
+                                 "syncURL = foo");
+            boost::replace_all(expected,
+                               "# database = ",
+                               "database = Personal");
+            boost::replace_all(expected,
+                               "sync = two-way",
+                               "sync = disabled");
+            string actual = injectValues(filterConfig(cmdline.m_out.str()));
+            CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected,
+                                      actual);
+        }
+
+        {
+            // override context and template properties, using legacy property name
+            TestCmdline cmdline("--print-config", "--template", "scheduleworld",
+                                "--sync-property", "syncURL=foo",
                                 "--source-property", "evolutionsource=Personal",
                                 "--source-property", "sync=disabled",
                                 NULL);
@@ -2454,8 +2479,8 @@ protected:
                                  "syncURL = http://sync.scheduleworld.com/funambol/ds",
                                  "syncURL = foo");
             boost::replace_all(expected,
-                               "# evolutionsource = ",
-                               "evolutionsource = Personal");
+                               "# database = ",
+                               "database = Personal");
             boost::replace_all(expected,
                                "sync = two-way",
                                "sync = disabled");
@@ -2481,7 +2506,7 @@ protected:
         {
             // change shared source properties, then check template again
             TestCmdline cmdline("--configure",
-                                "--source-property", "evolutionsource=Personal",
+                                "--source-property", "database=Personal",
                                 "funambol",
                                 NULL);
             cmdline.doit();
@@ -2497,8 +2522,8 @@ protected:
             string expected = filterConfig(internalToIni(ScheduleWorldConfig()));
             // from modified Funambol config
             boost::replace_all(expected,
-                               "# evolutionsource = ",
-                               "evolutionsource = Personal");
+                               "# database = ",
+                               "database = Personal");
             string actual = injectValues(filterConfig(cmdline.m_out.str()));
             CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
@@ -2613,9 +2638,9 @@ protected:
                 "peers/scheduleworld/sources/xyz/config.ini:# type = select backend\n"
                 "peers/scheduleworld/sources/xyz/config.ini:uri = dummy\n"
                 "sources/xyz/config.ini:# type = select backend\n"
-                "sources/xyz/config.ini:# evolutionsource = \n"
-                "sources/xyz/config.ini:# evolutionuser = \n"
-                "sources/xyz/config.ini:# evolutionpassword = ";
+                "sources/xyz/config.ini:# database = \n"
+                "sources/xyz/config.ini:# databaseUser = \n"
+                "sources/xyz/config.ini:# databasePassword = ";
             sortConfig(expected);
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
         }
@@ -2789,12 +2814,12 @@ protected:
                                 "\n"
                                 "type:\n"
                                 "\n"
-                                "evolutionsource:\n"
+                                "database:\n"
                                 "\n"
                                 "uri:\n"
                                 "\n"
-                                "evolutionuser:\n"
-                                "evolutionpassword:\n");
+                                "databaseUser:\n"
+                                "databasePassword:\n");
 
         {
             TestCmdline cmdline("--sync-property", "?",
@@ -2845,7 +2870,7 @@ protected:
         // create from scratch with only addressbook configured
         {
             TestCmdline cmdline("--configure",
-                                "--source-property", "evolutionsource = file://tmp/test",
+                                "--source-property", "database = file://tmp/test",
                                 "--source-property", "type = file:text/vcard:3.0",
                                 "@foobar",
                                 "addressbook",
@@ -2863,9 +2888,9 @@ protected:
                          "config.ini:# maxlogdirs = 10\n"
                          "config.ini:deviceId = fixed-devid\n"
                          "sources/addressbook/config.ini:type = file:text/vcard:3.0\n"
-                         "sources/addressbook/config.ini:evolutionsource = file://tmp/test\n"
-                         "sources/addressbook/config.ini:# evolutionuser = \n"
-                         "sources/addressbook/config.ini:# evolutionpassword = \n",
+                         "sources/addressbook/config.ini:database = file://tmp/test\n"
+                         "sources/addressbook/config.ini:# databaseUser = \n"
+                         "sources/addressbook/config.ini:# databasePassword = \n",
                          CONFIG_CONTEXT_MIN_VERSION,
                          CONFIG_CONTEXT_CUR_VERSION);
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
@@ -2873,7 +2898,7 @@ protected:
         // add calendar
         {
             TestCmdline cmdline("--configure",
-                                "--source-property", "evolutionsource = file://tmp/test2",
+                                "--source-property", "database = file://tmp/test2",
                                 "--source-property", "type = calendar",
                                 "@foobar",
                                 "calendar",
@@ -2884,9 +2909,9 @@ protected:
         removeRandomUUID(res);
         expected +=
             "sources/calendar/config.ini:type = calendar\n"
-            "sources/calendar/config.ini:evolutionsource = file://tmp/test2\n"
-            "sources/calendar/config.ini:# evolutionuser = \n"
-            "sources/calendar/config.ini:# evolutionpassword = \n";
+            "sources/calendar/config.ini:database = file://tmp/test2\n"
+            "sources/calendar/config.ini:# databaseUser = \n"
+            "sources/calendar/config.ini:# databasePassword = \n";
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
 
         // add ScheduleWorld peer
@@ -2903,11 +2928,11 @@ protected:
                            "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard",
                            "peers/scheduleworld/sources/addressbook/config.ini:type = file:text/vcard:3.0");
         boost::replace_all(expected,
-                           "addressbook/config.ini:# evolutionsource = ",
-                           "addressbook/config.ini:evolutionsource = file://tmp/test");
+                           "addressbook/config.ini:# database = ",
+                           "addressbook/config.ini:database = file://tmp/test");
         boost::replace_all(expected,
-                           "calendar/config.ini:# evolutionsource = ",
-                           "calendar/config.ini:evolutionsource = file://tmp/test2");
+                           "calendar/config.ini:# database = ",
+                           "calendar/config.ini:database = file://tmp/test2");
         sortConfig(expected);
         // Known problem (BMC #1023): type is reset to what is in the template,
         // should be preserved.
@@ -2964,6 +2989,9 @@ protected:
         // now test with new format
         string expected = ScheduleWorldConfig();
         boost::replace_first(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+        boost::replace_first(expected, "# database = ", "database = xyz");
+        boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+        boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
         doConfigure(expected, "sources/addressbook/config.ini:");
     }
 
@@ -3010,7 +3038,7 @@ protected:
         {
             TestCmdline cmdline("--configure",
                                 "--sync", "two-way",
-                                "-z", "evolutionsource=source",
+                                "-z", "database=source",
                                 "--sync-property", "maxlogdirs=20",
                                 "-y", "LOGDIR=logdir",
                                 "scheduleworld",
@@ -3025,8 +3053,11 @@ protected:
                                "sync = disabled",
                                "sync = two-way");
             boost::replace_all(expected,
-                               "# evolutionsource = ",
-                               "evolutionsource = source");
+                               "# database = ",
+                               "database = source");
+            boost::replace_all(expected,
+                               "database = xyz",
+                               "database = source");
             boost::replace_all(expected,
                                "# maxlogdirs = 10",
                                "maxlogdirs = 20");
@@ -3077,6 +3108,9 @@ protected:
             // ConsumerReady, to keep config visible in the updated
             // sync-ui
             boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+            boost::replace_first(expected, "# database = ", "database = xyz");
+            boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+            boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
@@ -3105,6 +3139,9 @@ protected:
             string expected = ScheduleWorldConfig();
             sortConfig(expected);
             boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+            boost::replace_first(expected, "# database = ", "database = xyz");
+            boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+            boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(newRoot, "scheduleworld.old");
             boost::replace_all(createdConfig, "/scheduleworld/", "/scheduleworld.old/");
@@ -3132,6 +3169,9 @@ protected:
             string expected = ScheduleWorldConfig();
             sortConfig(expected);
             boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+            boost::replace_first(expected, "# database = ", "database = xyz");
+            boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+            boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
             boost::replace_first(expected,
                                  "peers/scheduleworld/sources/addressbook/config.ini",
                                  "peers/scheduleworld/sources/addressbook/.other.ini:foo = bar\n"
@@ -3166,6 +3206,9 @@ protected:
             string expected = ScheduleWorldConfig();
             sortConfig(expected);
             boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+            boost::replace_first(expected, "# database = ", "database = xyz");
+            boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+            boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
@@ -3189,6 +3232,9 @@ protected:
             expected = ScheduleWorldConfig();
             sortConfig(expected);
             boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+            boost::replace_first(expected, "# database = ", "database = xyz");
+            boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+            boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old");
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old/");
@@ -3360,40 +3406,40 @@ private:
                          "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
                          "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
                          "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n"
-                         "sources/addressbook/config.ini:# evolutionsource = \n"
+                         "sources/addressbook/config.ini:# database = \n"
                          "peers/scheduleworld/sources/addressbook/config.ini:uri = card3\n"
-                         "sources/addressbook/config.ini:# evolutionuser = \n"
-                         "sources/addressbook/config.ini:# evolutionpassword = \n"
+                         "sources/addressbook/config.ini:# databaseUser = \n"
+                         "sources/addressbook/config.ini:# databasePassword = \n"
 
                          "peers/scheduleworld/sources/calendar/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0\n"
                          "peers/scheduleworld/sources/calendar/config.ini:sync = two-way\n"
                          "sources/calendar/config.ini:type = calendar\n"
                          "peers/scheduleworld/sources/calendar/config.ini:type = calendar\n"
-                         "sources/calendar/config.ini:# evolutionsource = \n"
+                         "sources/calendar/config.ini:# database = \n"
                          "peers/scheduleworld/sources/calendar/config.ini:uri = cal2\n"
-                         "sources/calendar/config.ini:# evolutionuser = \n"
-                         "sources/calendar/config.ini:# evolutionpassword = \n"
+                         "sources/calendar/config.ini:# databaseUser = \n"
+                         "sources/calendar/config.ini:# databasePassword = \n"
 
                          "peers/scheduleworld/sources/memo/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0\n"
                          "peers/scheduleworld/sources/memo/config.ini:sync = two-way\n"
                          "sources/memo/config.ini:type = memo\n"
                          "peers/scheduleworld/sources/memo/config.ini:type = memo\n"
-                         "sources/memo/config.ini:# evolutionsource = \n"
+                         "sources/memo/config.ini:# database = \n"
                          "peers/scheduleworld/sources/memo/config.ini:uri = note\n"
-                         "sources/memo/config.ini:# evolutionuser = \n"
-                         "sources/memo/config.ini:# evolutionpassword = \n"
+                         "sources/memo/config.ini:# databaseUser = \n"
+                         "sources/memo/config.ini:# databasePassword = \n"
 
                          "peers/scheduleworld/sources/todo/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0\n"
                          "peers/scheduleworld/sources/todo/config.ini:sync = two-way\n"
                          "sources/todo/config.ini:type = todo\n"
                          "peers/scheduleworld/sources/todo/config.ini:type = todo\n"
-                         "sources/todo/config.ini:# evolutionsource = \n"
+                         "sources/todo/config.ini:# database = \n"
                          "peers/scheduleworld/sources/todo/config.ini:uri = task2\n"
-                         "sources/todo/config.ini:# evolutionuser = \n"
-                         "sources/todo/config.ini:# evolutionpassword = ",
+                         "sources/todo/config.ini:# databaseUser = \n"
+                         "sources/todo/config.ini:# databasePassword = ",
                          peerMinVersion, peerCurVersion,
                          contextMinVersion, contextCurVersion);
 #ifdef ENABLE_LIBSOUP
@@ -3468,25 +3514,25 @@ private:
             "spds/syncml/config.txt:# ConsumerReady = 0\n"
             "spds/sources/addressbook/config.txt:sync = two-way\n"
             "spds/sources/addressbook/config.txt:type = addressbook:text/vcard\n"
-            "spds/sources/addressbook/config.txt:# evolutionsource = \n"
+            "spds/sources/addressbook/config.txt:evolutionsource = xyz\n"
             "spds/sources/addressbook/config.txt:uri = card3\n"
-            "spds/sources/addressbook/config.txt:# evolutionuser = \n"
-            "spds/sources/addressbook/config.txt:# evolutionpassword = \n"
+            "spds/sources/addressbook/config.txt:evolutionuser = foo\n"
+            "spds/sources/addressbook/config.txt:evolutionpassword = bar\n"
             "spds/sources/calendar/config.txt:sync = two-way\n"
             "spds/sources/calendar/config.txt:type = calendar\n"
-            "spds/sources/calendar/config.txt:# evolutionsource = \n"
+            "spds/sources/calendar/config.txt:# database = \n"
             "spds/sources/calendar/config.txt:uri = cal2\n"
             "spds/sources/calendar/config.txt:# evolutionuser = \n"
             "spds/sources/calendar/config.txt:# evolutionpassword = \n"
             "spds/sources/memo/config.txt:sync = two-way\n"
             "spds/sources/memo/config.txt:type = memo\n"
-            "spds/sources/memo/config.txt:# evolutionsource = \n"
+            "spds/sources/memo/config.txt:# database = \n"
             "spds/sources/memo/config.txt:uri = note\n"
             "spds/sources/memo/config.txt:# evolutionuser = \n"
             "spds/sources/memo/config.txt:# evolutionpassword = \n"
             "spds/sources/todo/config.txt:sync = two-way\n"
             "spds/sources/todo/config.txt:type = todo\n"
-            "spds/sources/todo/config.txt:# evolutionsource = \n"
+            "spds/sources/todo/config.txt:# database = \n"
             "spds/sources/todo/config.txt:uri = task2\n"
             "spds/sources/todo/config.txt:# evolutionuser = \n"
             "spds/sources/todo/config.txt:# evolutionpassword = \n";

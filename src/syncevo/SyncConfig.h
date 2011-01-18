@@ -95,7 +95,9 @@ using namespace std;
  *
  * SyncEvolution < 1.2 had no versioning. It's format is 0.
  * SyncEvolution 1.2:
- * - config peer min/cur version 1, because of modified libsynthesis binfiles
+ * - config peer min/cur version 1, because
+ *   a) of modified libsynthesis binfiles and
+ *   b) evolutionsource->database, evolutionuser/password->databaseUser/Password
  */
 static const int CONFIG_ROOT_MIN_VERSION = 0;
 static const int CONFIG_ROOT_CUR_VERSION = 0;
@@ -789,13 +791,13 @@ class ProxyPasswordConfigProperty : public PasswordConfigProperty {
 /**
  * A derived ConfigProperty class for the property "evolutionpassword"
  */
-class EvolutionPasswordConfigProperty : public PasswordConfigProperty {
+class DatabasePasswordConfigProperty : public PasswordConfigProperty {
  public:
-    EvolutionPasswordConfigProperty(const string &name, 
-                                    const string &comment, 
-                                    const string &def = string(""),
-                                    const string &descr = string("")): 
-                                    PasswordConfigProperty(name,comment,def,descr)
+    DatabasePasswordConfigProperty(const Aliases &names,
+                                   const string &comment, 
+                                   const string &def = string(""),
+                                   const string &descr = string("")): 
+    PasswordConfigProperty(names,comment,def,descr)
     {}
     virtual ConfigPasswordKey getPasswordKey(const string &descr,
                                              const string &serverName,

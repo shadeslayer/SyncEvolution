@@ -2267,7 +2267,7 @@ public:
                              "Right now such a virtual backend is limited to\n"
                              "combining one calendar source with events and one\n"
                              "task source. They have to be specified in the\n"
-                             "'evolutionsource' property, typically like this:\n"
+                             "'database' property, typically like this:\n"
                              "  calendar,todo\n"
                              "\n"
                              "In all cases the format of this configuration is\n"
@@ -2372,7 +2372,7 @@ static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source
     return source->isSet(sourcePropSourceType);
 }
 
-static ConfigProperty sourcePropDatabaseID("evolutionsource",
+static ConfigProperty sourcePropDatabaseID(Aliases("database") + "evolutionsource",
                                            "Picks one of backend data sources:\n"
                                            "enter either the name or the full URL.\n"
                                            "Most backends have a default data source,\n"
@@ -2385,7 +2385,7 @@ static ConfigProperty sourcePropDatabaseID("evolutionsource",
                                            "If your sub datastore has a comma in name, you\n"
                                            "must prevent taht comma from being mistaken as the\n"
                                            "separator by preceding it with a backslash, like this:\n"
-                                           "  evolutionsource=Source1PartA\\,PartB,Source2\\\\Backslash\n"
+                                           "  database=Source1PartA\\,PartB,Source2\\\\Backslash\n"
                                            "\n"
                                            "To get a full list of available data sources,\n"
                                            "run syncevolution without parameters. The name\n"
@@ -2402,14 +2402,14 @@ static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source)
     return source->isSet(sourcePropURI);
 }
 
-static ConfigProperty sourcePropUser("evolutionuser",
+static ConfigProperty sourcePropUser(Aliases("databaseUser") + "evolutionuser",
                                      "authentication for backend data source; password can be specified\n"
                                      "in multiple ways, see SyncML server password for details\n"
                                      "\n"
-                                     "Warning: setting evolutionuser/password in cases where it is not\n"
+                                     "Warning: setting database user/password in cases where it is not\n"
                                      "needed, as for example with local Evolution calendars and addressbooks,\n"
                                      "can cause the Evolution backend to hang.");
-static EvolutionPasswordConfigProperty sourcePropPassword("evolutionpassword", "","", "backend");
+static DatabasePasswordConfigProperty sourcePropPassword(Aliases("databasePassword") + "evolutionpassword", "","", "backend");
 
 static ConfigProperty sourcePropAdminData(SourceAdminDataName,
                                           "used by the Synthesis library internally; do not modify");
@@ -2570,11 +2570,11 @@ void SyncSourceConfig::setSourceType(const string &value, bool temporarily) { so
 const int SyncSourceConfig::getSynthesisID() const { return sourcePropSynthesisID.getPropertyValue(*getNode(sourcePropSynthesisID)); }
 void SyncSourceConfig::setSynthesisID(int value, bool temporarily) { sourcePropSynthesisID.setProperty(*getNode(sourcePropSynthesisID), value, temporarily); }
 
-ConfigPasswordKey EvolutionPasswordConfigProperty::getPasswordKey(const string &descr,
-                                                                  const string &serverName,
-                                                                  FilterConfigNode &globalConfigNode,
-                                                                  const string &sourceName,
-                                                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
+ConfigPasswordKey DatabasePasswordConfigProperty::getPasswordKey(const string &descr,
+                                                                 const string &serverName,
+                                                                 FilterConfigNode &globalConfigNode,
+                                                                 const string &sourceName,
+                                                                 const boost::shared_ptr<FilterConfigNode> &sourceConfigNode) const
 {
     ConfigPasswordKey key;
     key.user = sourcePropUser.getProperty(*sourceConfigNode);
