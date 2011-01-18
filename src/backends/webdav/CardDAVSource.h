@@ -27,8 +27,8 @@ class CardDAVSource : public WebDAVSource,
     CardDAVSource(const SyncSourceParams &params, const boost::shared_ptr<SyncEvo::Neon::Settings> &settings);
 
     /* implementation of SyncSourceSerialize interface */
-    virtual const char *getMimeType() const { return "text/vcard"; }
-    virtual const char *getMimeVersion() const { return "3.0"; }
+    virtual std::string getMimeType() const { return "text/vcard"; }
+    virtual std::string getMimeVersion() const { return "3.0"; }
 
     // implementation of SyncSourceLogging callback
     virtual std::string getDescription(const string &luid);

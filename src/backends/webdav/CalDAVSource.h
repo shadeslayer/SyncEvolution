@@ -28,8 +28,8 @@ class CalDAVSource : public WebDAVSource,
     CalDAVSource(const SyncSourceParams &params, const boost::shared_ptr<SyncEvo::Neon::Settings> &settings);
 
     /* implementation of SyncSourceSerialize interface */
-    virtual const char *getMimeType() const { return "text/calendar"; }
-    virtual const char *getMimeVersion() const { return "2.0"; }
+    virtual std::string getMimeType() const { return "text/calendar"; }
+    virtual std::string getMimeVersion() const { return "2.0"; }
 
     /* implementation of SubSyncSource interface */
     virtual void listAllSubItems(SubRevisionMap_t &revisions);
