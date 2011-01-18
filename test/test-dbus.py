@@ -690,7 +690,7 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
 
 class Connman (dbus.service.Object):
     count = 0
-    @dbus.service.method(dbus_interface='org.moblin.connman.Manager', in_signature='', out_signature='a{sv}')
+    @dbus.service.method(dbus_interface='net.connman.Manager', in_signature='', out_signature='a{sv}')
     def GetProperties(self):
         self.count = self.count+1
         if (self.count == 1):
@@ -718,7 +718,7 @@ class Connman (dbus.service.Object):
             return {"ConnectedTechnologies":["ethernet", "some other stuff"],
                     "AvailableTechnologies": ["bluetooth"]}
 
-    @dbus.service.signal(dbus_interface='org.moblin.connman.Manager', signature='sv')
+    @dbus.service.signal(dbus_interface='net.connman.Manager', signature='sv')
     def PropertyChanged(self, key, value):
         pass
 
@@ -748,7 +748,7 @@ class Connman (dbus.service.Object):
 
 class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     """Tests Presence signal and checkPresence API"""
-    name = dbus.service.BusName ("org.moblin.connman", bus);
+    name = dbus.service.BusName ("net.connman", bus);
     conn = Connman (bus, "/")
 
     def setUp(self):
