@@ -596,8 +596,8 @@ void EvolutionCalendarSource::removeItem(const string &luid)
                                             &gerror)) {
         if (gerror->domain == E_CALENDAR_ERROR &&
             gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
-            SE_LOG_DEBUG(this, NULL, "%s: %s: request to delete non-existant item ignored",
-                      getName(), luid.c_str());
+            SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant item ignored",
+                         luid.c_str());
             g_clear_error(&gerror);
         } else {
             throwError(string("deleting item " ) + luid, gerror);

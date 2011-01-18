@@ -200,10 +200,10 @@ void EvolutionContactSource::open()
         }
         while (authmethod) {
             const char *method = (const char *)authmethod->data;
-            SE_LOG_DEBUG(this, NULL, "%s: trying authentication method \"%s\", user %s, password %s",
-                      getName(), method,
-                      user && user[0] ? "configured" : "not configured",
-                      passwd && passwd[0] ? "configured" : "not configured");
+            SE_LOG_DEBUG(this, NULL, "trying authentication method \"%s\", user %s, password %s",
+                         method,
+                         user && user[0] ? "configured" : "not configured",
+                         passwd && passwd[0] ? "configured" : "not configured");
             if (e_book_authenticate_user(m_addressbook,
                                          user ? user : "",
                                          passwd ? passwd : "",
@@ -350,8 +350,8 @@ void EvolutionContactSource::removeItem(const string &uid)
     if (!e_book_remove_contact(m_addressbook, uid.c_str(), &gerror)) {
         if (gerror->domain == E_BOOK_ERROR &&
             gerror->code == E_BOOK_ERROR_CONTACT_NOT_FOUND) {
-            SE_LOG_DEBUG(this, NULL, "%s: %s: request to delete non-existant contact ignored",
-                         getName(), uid.c_str());
+            SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant contact ignored",
+                         uid.c_str());
             g_clear_error(&gerror);
         } else {
             throwError( string( "deleting contact " ) + uid,
