@@ -2962,7 +2962,9 @@ protected:
         }
 
         // now test with new format
-        doConfigure(ScheduleWorldConfig(), "sources/addressbook/config.ini:");
+        string expected = ScheduleWorldConfig();
+        boost::replace_first(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+        doConfigure(expected, "sources/addressbook/config.ini:");
     }
 
     string doConfigure(const string &SWConfig, const string &addressbookPrefix) {
