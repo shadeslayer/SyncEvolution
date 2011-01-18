@@ -529,15 +529,15 @@ class DBusUtil(Timeout):
             prefix = 'SyncEvolution_Test_'
         return prefix + source;
 
-    def getEvolutionSources(self, config):
-        # get 'evolutionsource' for each source
+    def getDatabases(self, config):
+        # get 'database' for each source
         updateProps = { }
         for key, value in config.items():
             if key != "":
                 tmpdict = { }
                 [source, sep, name] = key.partition('/')
                 if sep == '/':
-                    tmpdict["evolutionsource"] = self.getDatabaseName(name)
+                    tmpdict["database"] = self.getDatabaseName(name)
                 updateProps[key] = tmpdict
         return updateProps
 
@@ -1134,10 +1134,10 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                             }
         self.sources = ['addressbook', 'calendar', 'todo', 'memo']
 
-        #create default or user settings evolutionsource
-        updateProps = self.getEvolutionSources(self.config)
+        #create default or user settings database
+        updateProps = self.getDatabases(self.config)
         for key, dict in updateProps.items():
-            self.config[key]["evolutionsource"] = dict["evolutionsource"]
+            self.config[key]["database"] = dict["database"]
 
     def run(self, result):
         self.runTest(result)
@@ -1286,7 +1286,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testCheckSourceInvalidEvolutionSource(self):
         """ test the right error is reported when the evolutionsource is invalid """
         self.setupConfig()
-        config = { "source/memo" : { "evolutionsource" : "impossible-source"} }
+        config = { "source/memo" : { "database" : "impossible-source"} }
         self.session.SetConfig(True, False, config, utf8_strings=True)
         try:
             self.session.CheckSource("memo", utf8_strings=True)
@@ -1659,7 +1659,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.fail(str(ex) + 
                       ". To test this case, please first set up a correct config named 'dbus_unittest'.")
-        updateProps = self.getEvolutionSources(configProps)
+        updateProps = self.getDatabases(configProps)
         # temporarily set evolutionsource and don't change them
         self.session.SetConfig(True, True, updateProps, utf8_strings=True)
 
@@ -1828,9 +1828,9 @@ class TestConnection(unittest.TestCase, DBusUtil):
                        }
 
         #create default or user settings evolutionsource
-        updateProps = self.getEvolutionSources(self.config)
+        updateProps = self.getDatabases(self.config)
         for key, dict in updateProps.items():
-            self.config[key]["evolutionsource"] = dict["evolutionsource"]
+            self.config[key]["database"] = dict["database"]
 
     def setupConfig(self, name="dummy-test", deviceId="sc-api-nat"):
         self.setUpSession(name)
@@ -2072,7 +2072,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
 
     Creates and tests the configs 'foo', 'bar', 'foo@other_context',
     '@default' and checks that 'defaultPeer' (global), 'syncURL' (per
-    peer), 'evolutionsource' (per source), 'uri' (per source and peer)
+    peer), 'database' (per source), 'uri' (per source and peer)
     are shared correctly.
 
     Runs with a the server ready, without session."""
@@ -2108,7 +2108,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
                                         "deviceId" : "shared-device-identifier",
                                         "syncURL": "http://scheduleworld" },
                                  "source/calendar" : { "uri" : "cal3" },
-                                 "source/addressbook" : { "evolutionsource": "Personal",
+                                 "source/addressbook" : { "database": "Personal",
                                                           "sync" : "two-way",
                                                           "uri": "card3" } },
                                utf8_strings=True)
@@ -2119,11 +2119,11 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
-        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Personal")
+        self.failUnlessEqual(config["source/addressbook"]["database"], "Personal")
         self.session.SetConfig(True, False,
                                { "" : { "syncURL": "http://funambol" },
                                  "source/calendar" : { "uri" : "cal" },
-                                 "source/addressbook" : { "evolutionsource": "Work",
+                                 "source/addressbook" : { "database": "Work",
                                                           "sync" : "refresh-from-client",
                                                           "uri": "card" } },
                                utf8_strings=True)
@@ -2138,7 +2138,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
-        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
+        self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
         self.session.Detach()
 
@@ -2172,7 +2172,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
-        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
+        self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
 
     def testSharedType(self):
         """'type' must be set per-peer and shared"""
@@ -2238,7 +2238,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setUpSession("foo@other_context")
         config = self.session.GetConfig(False, utf8_strings=True)
         config[""]["syncURL"] = "http://scheduleworld2"
-        config["source/addressbook"] = { "evolutionsource": "Play",
+        config["source/addressbook"] = { "database": "Play",
                                          "uri": "card30" }
         self.session.SetConfig(True, False,
                                config,
@@ -2246,7 +2246,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld2")
-        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Play")
+        self.failUnlessEqual(config["source/addressbook"]["database"], "Play")
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
         self.session.Detach()
 
@@ -2255,7 +2255,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.session.GetConfig(False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
-        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Work")
+        self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
         self.session.Detach()
 
@@ -2318,7 +2318,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.server.GetConfig("foo@other_context", False, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld2")
-        self.failUnlessEqual(config["source/addressbook"]["evolutionsource"], "Play")
+        self.failUnlessEqual(config["source/addressbook"]["database"], "Play")
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
 
     def testRemoveContext(self):
