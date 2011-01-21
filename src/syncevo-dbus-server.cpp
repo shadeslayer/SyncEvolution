@@ -3091,24 +3091,52 @@ void Session::detach(const Caller_t &caller)
     client->detach(this);
 }
 
+/**
+ * validate key/value property and copy it to the filter
+ * if okay
+ */
+static void copyProperty(const StringPair &keyvalue,
+                         ConfigPropertyRegistry &registry,
+                         FilterConfigNode::ConfigFilter &filter)
+{
+    const std::string &name = keyvalue.first;
+    const std::string &value = keyvalue.second;
+    const ConfigProperty *prop = registry.find(name);
+    if (!prop) {
+        SE_THROW_EXCEPTION(InvalidCall, StringPrintf("unknown property '%s'", name.c_str()));
+    }
+    std::string error;
+    if (!prop->checkValue(value, error)) {
+        SE_THROW_EXCEPTION(InvalidCall, StringPrintf("invalid value '%s' for property '%s': '%s'",
+                                                     value.c_str(), name.c_str(), error.c_str()));
+    }
+    filter.insert(keyvalue);
+}                        
+
 static void setSyncFilters(const ReadOperations::Config_t &config,FilterConfigNode::ConfigFilter &syncFilter,std::map<std::string, FilterConfigNode::ConfigFilter> &sourceFilters)
 {
     ReadOperations::Config_t::const_iterator it;
     for (it = config.begin(); it != config.end(); it++) {
         map<string, string>::const_iterator sit;
-        if(it->first.empty()) {
+        string name = it->first;
+        if (name.empty()) {
+            ConfigPropertyRegistry &registry = SyncConfig::getRegistry();
             for (sit = it->second.begin(); sit != it->second.end(); sit++) {
-                syncFilter.insert(*sit);
-            }
-        } else {
-            string name = it->first;
-            if(name.find("source/") == 0) {
-                name = name.substr(7); ///> 7 is the length of "source/"
-                FilterConfigNode::ConfigFilter &sourceFilter = sourceFilters[name];
-                for (sit = it->second.begin(); sit != it->second.end(); sit++) {
-                    sourceFilter.insert(*sit);
+                if (boost::iequals(sit->first, "configName")) {
+                    // read-only properties can (and have to be) ignored
+                } else {
+                    copyProperty(*sit, registry, syncFilter);
                 }
             }
+        } else if (boost::starts_with(name, "source/")) {
+            name = name.substr(strlen("source/"));
+            FilterConfigNode::ConfigFilter &sourceFilter = sourceFilters[name];
+            ConfigPropertyRegistry &registry = SyncSourceConfig::getRegistry();
+            for (sit = it->second.begin(); sit != it->second.end(); sit++) {
+                copyProperty(*sit, registry, sourceFilter);
+            }
+        } else {
+            SE_THROW_EXCEPTION(InvalidCall, StringPrintf("invalid config entry '%s'", name.c_str()));
         }
     }
 }
@@ -3122,13 +3150,10 @@ void Session::setConfig(bool update, bool temporary,
         string msg = StringPrintf("%s started, cannot change configuration at this time", runOpToString(m_runOperation).c_str());
         SE_THROW_EXCEPTION(InvalidCall, msg);
     }
-    if (!update && temporary) {
-        throw std::runtime_error("Clearing existing configuration and temporary configuration changes which only affects the duration of the session are mutually exclusive");
-    }
 
     m_server.getPresenceStatus().updateConfigPeers (m_configName, config);
     /** check whether we need remove the entire configuration */
-    if(!update && config.empty()) {
+    if(!update && !temporary && config.empty()) {
         boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(getConfigName()));
         if(syncConfig.get()) {
             syncConfig->remove();
@@ -3136,14 +3161,36 @@ void Session::setConfig(bool update, bool temporary,
         }
         return;
     }
-    if(temporary) {
-        /* save temporary configs in session filters */
-        setSyncFilters(config, m_syncFilter, m_sourceFilters);
+
+    /*
+     * validate input config and convert to filters;
+     * if validation fails, no harm was done at this point yet
+     */
+    FilterConfigNode::ConfigFilter syncFilter;
+    SourceFilters_t sourceFilters;
+    setSyncFilters(config, syncFilter, sourceFilters);
+
+    if (temporary) {
+        /* save temporary configs in session filters, either erasing old
+           temporary settings or adding to them */
+        if (update) {
+            m_syncFilter.insert(syncFilter.begin(), syncFilter.end());
+            BOOST_FOREACH(SourceFilters_t::value_type &source, sourceFilters) {
+                SourceFilters_t::iterator it = m_sourceFilters.find(source.first);
+                if (it != m_sourceFilters.end()) {
+                    // add to existing source filter
+                    it->second.insert(source.second.begin(), source.second.end());
+                } else {
+                    // add source filter
+                    m_sourceFilters.insert(source);
+                }
+            }
+        } else {
+            m_syncFilter = syncFilter;
+            m_sourceFilters = sourceFilters;            
+        }
         m_tempConfig = true;
     } else {
-        FilterConfigNode::ConfigFilter syncFilter;
-        std::map<std::string, FilterConfigNode::ConfigFilter> sourceFilters;
-        setSyncFilters(config, syncFilter, sourceFilters);
         /* need to save configurations */
         boost::shared_ptr<SyncConfig> from(new SyncConfig(getConfigName()));
         /* if it is not clear mode and config does not exist, an error throws */
@@ -4926,6 +4973,7 @@ vector<string> DBusServer::getCapabilities()
     capabilities.push_back("Version");
     capabilities.push_back("SessionFlags");
     capabilities.push_back("SessionAttach");
+    capabilities.push_back("DatabaseProperties");
     return capabilities;
 }
 

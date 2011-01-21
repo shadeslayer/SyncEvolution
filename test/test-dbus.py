@@ -554,7 +554,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """check the Server.GetCapabilities() call"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
-        self.failUnlessEqual(capabilities, ['ConfigChanged', 'GetConfigName', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
+        self.failUnlessEqual(capabilities, ['ConfigChanged', 'DatabaseProperties', 'GetConfigName', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
 
     def testVersions(self):
         """check the Server.GetVersions() call"""
@@ -1151,17 +1151,30 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ create a server with full config. Used internally. """
         self.session.SetConfig(False, False, self.config, utf8_strings=True)
 
-    def testSetConfigInvalidParam(self):
-        """ test that the right error is reported when parameters are not correct """
-        try:
-            self.session.SetConfig(False, True, {}, utf8_strings=True)
-        except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.Exception: Clearing existing configuration "
-                                 "and temporary configuration changes which only affects the "
-                                 "duration of the session are mutually exclusive")
-        else:
-            self.fail("no exception thrown")
+    def testTemporaryConfig(self):
+        """various temporary config changes"""
+        ref = { "": { "loglevel": "2", "configName": "dummy-test" } }
+        config = copy.deepcopy(ref)
+        self.session.SetConfig(False, False, config, utf8_strings=True)
+        # reset
+        self.session.SetConfig(False, True, {}, utf8_strings=True)
+        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))
+        # add sync prop
+        self.session.SetConfig(True, True, { "": { "loglevel": "100" } }, utf8_strings=True)
+        config[""]["loglevel"] = "100"
+        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))
+        # add source
+        self.session.SetConfig(True, True, { "source/foobar": { "sync": "two-way" } }, utf8_strings=True)
+        config["source/foobar"] = { "sync": "two-way" }
+        self.session.SetConfig(True, True, { "": { "loglevel": "100" } }, utf8_strings=True)
+        # add source prop
+        self.session.SetConfig(True, True, { "source/foobar": { "database": "xyz" } }, utf8_strings=True)
+        config["source/foobar"]["database"] = "xyz"
+        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))
+        # reset temporary settings
+        self.session.SetConfig(False, True, { }, utf8_strings=True)
+        config = copy.deepcopy(ref)
+        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))        
 
     @timeout(20)
     def testCreateGetConfig(self):
@@ -1229,12 +1242,11 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.SetConfig(True, False, config, utf8_strings=True)
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.Exception: test-dbus/config/syncevolution/default/peers/"
-                                 "dummy-test/sources/addressbook/config.ini: "
-                                 "sync = invalid-value: not one of the valid values (two-way, "
-                                 "slow, refresh-from-client = refresh-client, refresh-from-server "
-                                 "= refresh-server = refresh, one-way-from-client = one-way-client, "
-                                 "one-way-from-server = one-way-server = one-way, disabled = none)")
+                                 "org.syncevolution.InvalidCall: invalid value 'invalid-value' for "
+                                 "property 'sync': 'not one of the valid values (two-way, slow, "
+                                 "refresh-from-client = refresh-client, refresh-from-server = "
+                                 "refresh-server = refresh, one-way-from-client = one-way-client, "
+                                 "one-way-from-server = one-way-server = one-way, disabled = none)'")
         else:
             self.fail("no exception thrown")
 
@@ -1245,6 +1257,40 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.failUnlessEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: The configuration 'dummy-test' doesn't exist")
+        else:
+            self.fail("no exception thrown")
+
+    def testUnknownConfigContent(self):
+        """config with unkown must be rejected"""
+        self.setupConfig()
+
+        try:
+            config1 = copy.deepcopy(self.config)
+            config1[""]["no-such-sync-property"] = "foo"
+            self.session.SetConfig(False, False, config1, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.InvalidCall: unknown property 'no-such-sync-property'")
+        else:
+            self.fail("no exception thrown")
+
+        try:
+            config1 = copy.deepcopy(self.config)
+            config1["source/addressbook"]["no-such-source-property"] = "foo"
+            self.session.SetConfig(False, False, config1, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.InvalidCall: unknown property 'no-such-source-property'")
+        else:
+            self.fail("no exception thrown")
+
+        try:
+            config1 = copy.deepcopy(self.config)
+            config1["no-such-key"] = { "foo": "bar" }
+            self.session.SetConfig(False, False, config1, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.failUnlessEqual(str(ex),
+                                 "org.syncevolution.InvalidCall: invalid config entry 'no-such-key'")
         else:
             self.fail("no exception thrown")
 
@@ -1314,7 +1360,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testCheckSourceNoType(self):
         """ test the right error is reported when the type is unset """
         self.setupConfig()
-        config = { "source/memo" : { "type" : "" } }
+        config = { "source/memo" : { "type" : "file:text/calendar:2.0", "database" : "file:///no/such/path" } }
         self.session.SetConfig(True, False, config, utf8_strings=True)
         try:
             self.session.CheckSource("memo", utf8_strings=True)

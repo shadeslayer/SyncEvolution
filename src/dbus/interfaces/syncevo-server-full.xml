@@ -89,6 +89,13 @@
                   and Session.GetFlags() are implemented
                 </doc:definition>
               </doc:item>
+
+              <doc:item><doc:term>DatabaseProperties</doc:term>
+                <doc:definition>uses "database", "databaseUser", "databasePassword"
+                  source properties instead of the older names "evolutionsource",
+                  "evolutionuser", "evolutionpassword"; semantic is unchanged
+                </doc:definition>
+              </doc:item>
             </doc:list>
           </doc:para>
         </doc:description>

@@ -94,9 +94,10 @@
       <arg type="b" name="temporary" direction="in">
         <doc:doc><doc:summary>TRUE if configuration changes should only be used for the duration of the session.
             This is useful to run a single sync session with different settings,
-            for example with an increased logging level. "update=FALSE" and
-            "temporary=TRUE" are mutually exclusive. Temporary config changes
-            do not affect getting or setting permanent configurations.
+            for example with an increased logging level. "update=FALSE" removes
+            all previous temporary settings before adding the current ones.
+            Temporary config changes modify the result of GetConfig(), but
+            are ignored when making permanent changes in SetConfig().
         </doc:summary></doc:doc>
       </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="in">
