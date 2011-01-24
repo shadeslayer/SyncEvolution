@@ -259,8 +259,7 @@ give via "--source-property type=<backend>", like this::
 
   syncevolution --print-items --source-property type=evolution-contacts dummy-config dummy-source
 
-The desired backend database can be chosen via "--source-property
-evolutionsource".
+The desired backend database can be chosen via "--source-property database".
 
 OPTIONS
 =======
@@ -537,7 +536,7 @@ clients, see `Exchanging Data`_::
                  memotoo@other
   
   syncevolution --configure \
-                --source-property evolutionsource=<name of other address book> \
+                --source-property database=<name of other address book> \
                 @other addressbook
 
   syncevolution --configure \
