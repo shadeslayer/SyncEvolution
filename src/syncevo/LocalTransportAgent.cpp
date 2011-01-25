@@ -185,16 +185,26 @@ void LocalTransportAgent::run()
                            boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
                            doLogging);
 
-        // Copy some changes from main config: this is the only way
-        // how they can be set temporarily during a sync.
-        // TODO: find a way to have separate temporary settings
-        // for both sides.
-        client.setLogLevel(m_server->getLogLevel(), true);
-        client.setUsername(m_server->getUsername(), true);
-        client.setPassword(m_server->getPassword(), true);
-        client.setPreventSlowSync(m_server->getPreventSlowSync(), true);
-        client.setPrintChanges(m_server->getPrintChanges(), true);
-        client.setDumpData(m_server->getDumpData(), true);
+        // Apply temporary config filters, stored for us in m_server by the
+        // command line.
+        const FullProps &props = m_server->getConfigProps();
+        client.setConfigFilter(true, "", props.createSyncFilter(client.getConfigName()));
+        BOOST_FOREACH(const string &sourceName, m_server->getSyncSources()) {
+            client.setConfigFilter(false, sourceName, props.createSourceFilter(client.getConfigName(), sourceName));
+        }
+
+        // Copy non-empty credentials from main config, because
+        // that is where the GUI knows how to store them. A better
+        // solution would be to require that credentials are in the
+        // "source-config" config.
+        string tmp = m_server->getUsername();
+        if (!tmp.empty()) {
+            client.setUsername(tmp, true);
+        }
+        tmp = m_server->getPassword();
+        if (!tmp.empty()) {
+            client.setPassword(tmp, true);
+        }
 
         // debugging mode: write logs inside sub-directory of parent,
         // otherwise use normal log settings

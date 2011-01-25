@@ -98,6 +98,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     string m_initialMessageType;
     string m_syncDeviceID;
 
+    FullProps m_configFilters;
     
     boost::shared_ptr<TransportAgent> m_agent;
     /**
@@ -236,6 +237,13 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void setDryRun(bool dryrun) { m_dryrun = dryrun; }
 
     bool isLocalSync() const { return m_localSync; }
+
+    /**
+     * Sets configuration filters. Currently only used in local sync
+     * to configure the sync client.
+     */
+    void setConfigProps(const FullProps &props) { m_configFilters = props; }
+    const FullProps &getConfigProps() const { return m_configFilters; }
 
     /** only for server: device ID of peer */
     void setSyncDeviceID(const std::string &deviceID) { m_syncDeviceID = deviceID; }

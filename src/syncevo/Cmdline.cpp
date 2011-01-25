@@ -1121,6 +1121,7 @@ bool Cmdline::run() {
         std::set<std::string> unmatchedSources;
         boost::shared_ptr<SyncContext> context;
         context.reset(createSyncClient());
+        context->setConfigProps(m_props);
         context->setQuiet(m_quiet);
         context->setDryRun(m_dryrun);
         context->setConfigFilter(true, "", m_props.createSyncFilter(m_server));
