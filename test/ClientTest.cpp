@@ -532,13 +532,7 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
         }
         prop = nextProp + 1;
     }
-    /** add check for if not found, STL will crash */
-    if(data.find("<<REVISION>>") != std::string::npos) {
-        data.replace(data.find("<<REVISION>>"), strlen("<<REVISION>>"), revision);
-    } else if (data.find("REVISION") != std::string::npos) {  
-        /* change "<<REVISION>>" to "REVISION" for memo */
-        data.replace(data.find("REVISION"), strlen("REVISION"), revision);
-    }
+    boost::replace_all(data, "<<REVISION>>", revision);
     if (size > 0 && (int)data.size() < size) {
         int additionalBytes = size - (int)data.size();
         int added = 0;
@@ -3937,7 +3931,6 @@ void ClientTest::getTestData(const char *type, Config &config)
             "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
             "X-MOZILLA-HTML:FALSE\n"
-            "NOTE:<<REVISION>>\n"
             "END:VCARD\n";
         config.updateItem =
             "BEGIN:VCARD\n"
@@ -3987,7 +3980,17 @@ void ClientTest::getTestData(const char *type, Config &config)
             "X-MOZILLA-HTML:TRUE\n"
             "BDAY:2006-01-08\n"
             "END:VCARD\n";
-        config.templateItem = config.insertItem;
+        // use NOTE and N to make the item unique
+        config.templateItem =
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "TITLE:tester\n"
+            "N:Doe;John;<<REVISION>>;;\n"
+            "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
+            "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+            "X-MOZILLA-HTML:FALSE\n"
+            "NOTE:<<REVISION>>\n"
+            "END:VCARD\n";  
         config.uniqueProperties = "FN:N:X-EVOLUTION-FILE-AS";
         config.sizeProperty = "NOTE";
         config.testcases = "testcases/vcard30.vcf";
@@ -4474,7 +4477,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "METHOD:PUBLISH\n"
             "BEGIN:VJOURNAL\n"
             "SUMMARY:Summary\n"
-            "DESCRIPTION:Summary\\nBody text REVISION\n"
+            "DESCRIPTION:Summary\\nBody text\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";
         config.updateItem =
@@ -4499,7 +4502,16 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DESCRIPTION:Summary\\nBody modified\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";                
-        config.templateItem = config.insertItem;
+        config.insertItem =
+            "BEGIN:VCALENDAR\n"
+            "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+            "VERSION:2.0\n"
+            "METHOD:PUBLISH\n"
+            "BEGIN:VJOURNAL\n"
+            "SUMMARY:Summary\n"
+            "DESCRIPTION:Summary\\nBody text <<REVISION>>\n"
+            "END:VJOURNAL\n"
+            "END:VCALENDAR\n";
         config.uniqueProperties = "SUMMARY:DESCRIPTION";
         config.sizeProperty = "DESCRIPTION";
         config.testcases = "testcases/imemo20.ics";
