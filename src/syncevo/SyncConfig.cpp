@@ -120,7 +120,7 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
-string SyncConfig::normalizeConfigString(const string &config)
+string SyncConfig::normalizeConfigString(const string &config, bool noDefaultContext)
 {
     string normal = config;
     boost::to_lower(normal);
@@ -133,7 +133,9 @@ string SyncConfig::normalizeConfigString(const string &config)
         }
     }
     if (boost::ends_with(normal, "@default")) {
-        normal.resize(normal.size() - strlen("@default"));
+        if (noDefaultContext) {
+            normal.resize(normal.size() - strlen("@default"));
+        }
     } else if (boost::ends_with(normal, "@")) {
         normal.resize(normal.size() - 1);
     } else {
@@ -152,6 +154,10 @@ string SyncConfig::normalizeConfigString(const string &config)
                     break;
                 }
             }
+        }
+        if (!noDefaultContext && normal.find('@') == normal.npos) {
+            // explicitly include @default context specifier
+            normal += "@default";
         }
     }
 

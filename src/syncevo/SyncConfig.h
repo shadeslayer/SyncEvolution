@@ -1180,10 +1180,12 @@ class SyncConfig {
      *   replaced by underscore
      * - when no context specified: search for peer config first in @default,
      *   then also in other contexts in alphabetical order
-     * - @default stripped
+     * - @default stripped if requested (dangerous: result "foo" may incorrectly
+     *   be mapped to "foo@bar" if the "foo@default" config gets removed),
+     *   otherwise added if missing
      * - empty string replaced with "@default"
      */
-    static string normalizeConfigString(const string &config);
+    static string normalizeConfigString(const string &config, bool noDefaultContext = true);
 
     /**
      * Split a config string (normalized or not) into the peer part
