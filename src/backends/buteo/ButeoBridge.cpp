@@ -45,7 +45,22 @@ bool ButeoBridge::startSync()
             SE_THROW("init() not called");
         }
 
-        // run sync
+        std::vector<const char *> sources;
+        int count = 0;
+        sources.resize(4, NULL);
+        QList<const Buteo::Profile *> storages = iProfile.storageProfiles();
+        BOOST_FOREACH(const Buteo::Profile *profile, storages) {
+            if (profile->isEnabled()) {
+                // translate between names in profile and names in SyncEvolution
+                if (profile->name() == "hcontacts") {
+                    sources[count++] = "addressbook";
+                } else if (profile->name() == "hcalendar") {
+                    sources[count++] = "calendar";
+                }
+            }
+        }
+
+        // run sync with just the enabled sources
         Cmdline sync(std::cout, std::cerr,
                      "buteo-sync",
                      "--run",
@@ -53,6 +68,7 @@ bool ButeoBridge::startSync()
                      "--sync-property", StringPrintf("password=%s", password.c_str()).c_str(),
                      "--sync-property", "preventSlowSync=0",
                      m_config.c_str(),
+                     sources[0], sources[1], sources[2], sources[3],
                      NULL);
         bool res = sync.parse() && sync.run();
 
@@ -118,18 +134,25 @@ bool ButeoBridge::init()
 
         // determine parameters for configuration
         std::string url;
+        std::vector<const char *> sources;
+        sources.resize(4, NULL);
         QString profile = getProfileName();
         if (profile == "google-calendar") {
             m_config = "google-calendar";
             url = "syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google";
+            sources[0] = "calendar";
         } else if (profile == "yahoo") {
             m_config = "yahoo";
-            url = "syncURL=https://caldav.calendar.yahoo.com/dav/%u/Calendar/";
+            url = "syncURL="; // depend on DNS SRV to find right host
+                              // for CalDAV/CardDAV (which currently
+                              // are different!)
+            sources[0] = "calendar";
+            sources[1] = "addressbook";
         } else {
             return false;
         }
 
-        // configure local sync of calendar with CalDAV
+        // configure local sync of calendar with CalDAV and/or CardDAV
         std::string config = StringPrintf("source-config@%s", m_config.c_str());
         if (!SyncConfig(config).exists()) {
             Cmdline target(std::cout, std::cerr,
@@ -138,9 +161,10 @@ bool ButeoBridge::init()
                            "--sync-property", url.c_str(),
                            "--sync-property", "printChanges=0",
                            "--sync-property", "dumpData=0",
-                           "--source-property", "type=CalDAV",
+                           "--source-property", "calendar/type=CalDAV",
+                           "--source-property", "addressbook/type=CalDAV",
                            config.c_str(),
-                           "calendar",
+                           sources[0], sources[1], sources[2], sources[3],
                            NULL);
             bool res = target.parse() && target.run();
             if (!res) {
@@ -156,7 +180,7 @@ bool ButeoBridge::init()
                            "--sync-property", "dumpData=0",
                            "--sync-property", StringPrintf("syncURL=local://@%s", m_config.c_str()).c_str(),
                            m_config.c_str(),
-                           "calendar",
+                           sources[0], sources[1], sources[2], sources[3],
                            NULL);
             bool res = server.parse() && server.run();
             if (!res) {

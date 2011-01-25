@@ -482,6 +482,38 @@ WebDAVSource::Databases WebDAVSource::getDatabases()
     return result;
 }
 
+void WebDAVSource::getSynthesisInfo(SynthesisInfo &info,
+                                    XMLConfigFragments &fragments)
+{
+    TrackingSyncSource::getSynthesisInfo(info, fragments);
+    // TODO: instead of identifying the peer based on the
+    // session URI, use some information gathered about
+    // it during open()
+    if (m_session) {
+        string host = m_session->getURI().m_host;
+        if (host.find("google") != host.npos) {
+            info.m_backendRule = "GOOGLE";
+            fragments.m_remoterules["GOOGLE"] =
+                "      <remoterule name='GOOGLE'>\n"
+                "          <deviceid>none</deviceid>\n"
+                "      </remoterule>";
+        } else if (host.find("yahoo") != host.npos) {
+            info.m_backendRule = "YAHOO";
+            fragments.m_remoterules["YAHOO"] =
+                "      <remoterule name='YAHOO'>\n"
+                "          <deviceid>none</deviceid>\n"
+                // Yahoo! Contacts reacts with a "500 - internal server error"
+                // to an empty X-GENDER property. In general, empty properties
+                // should never be necessary in CardDAV and CalDAV, because
+                // sent items conceptually replace the one on the server, so
+                // disable them all.
+                "          <noemptyproperties>yes</noemptyproperties>\n"
+                "      </remoterule>";
+        }
+        SE_LOG_DEBUG(this, NULL, "using data conversion rules for '%s'", info.m_backendRule.c_str());
+    }
+}
+
 static const ne_propname getetag[] = {
     { "DAV:", "getetag" },
     { "DAV:", "resourcetype" },

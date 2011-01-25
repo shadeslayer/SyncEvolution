@@ -8,6 +8,6 @@
     <key name="enabled" value="true"/>
   </profile>
   <profile name="hcontacts" type="storage">
-    <key name="enabled" value="false"/>
+    <key name="enabled" value="true"/>
   </profile>
 </profile>
