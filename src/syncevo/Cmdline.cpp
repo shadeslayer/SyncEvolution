@@ -1337,8 +1337,6 @@ bool Cmdline::parseProp(PropertyType propertyType,
         }
     }
 
-    // TODO: complain if sync property includes source prefix
-
     if (boost::trim_copy(string(param)) == "?") {
         m_dontrun = true;
         if (propname) {
@@ -1363,6 +1361,11 @@ bool Cmdline::parseProp(PropertyType propertyType,
                 } else {
                     ContextProps &props = m_props[spec.m_config];
                     if (validProps == &m_validSyncProps) {
+                        // complain if sync property includes source prefix
+                        if (!spec.m_source.empty()) {
+                            m_err << "ERROR: " << args << ": source name '" << spec.m_source << "' not allowed in sync property" << endl;
+                            return false;
+                        }
                         props.m_syncProps[spec.m_property] = paramstr;
                     } else {
                         props.m_sourceProps[spec.m_source][spec.m_property] = paramstr;
