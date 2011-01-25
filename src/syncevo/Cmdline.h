@@ -167,7 +167,7 @@ protected:
     Bool m_keyring;
     Bool m_monitor;
     Bool m_useDaemon;
-    FilterConfigNode::ConfigFilter m_syncProps, m_sourceProps;
+    FullProps m_props;
     const ConfigPropertyRegistry &m_validSyncProps;
     const ConfigPropertyRegistry &m_validSourceProps;
 
@@ -193,14 +193,13 @@ protected:
     /**
      * parse sync or source property
      *
-     * @param validProps     list of valid properties
-     * @retval props         add property name/value pair here
+     * @param propertyType   sync, source, or unknown (in which case the property name must be given and must be unique)
      * @param opt            command line option as it appeard in argv (e.g. --sync|--sync-property|-z)
      * @param param          the parameter following the opt, may be NULL if none given (error!)
      * @param propname       if given, then this is the property name and param contains the param value (--sync <param>)
      */
-    bool parseProp(const ConfigPropertyRegistry &validProps,
-                   FilterConfigNode::ConfigFilter &props,
+    
+    bool parseProp(PropertyType propertyType,
                    const char *opt,
                    const char *param,
                    const char *propname = NULL);
@@ -212,22 +211,8 @@ protected:
     bool listProperties(const ConfigPropertyRegistry &validProps,
                         const string &opt);
 
-    typedef map<string, ConfigProps> SourceFilters_t;
-
     /**
-     * read properties from context, then update with
-     * command line properties
-     *
-     * @param context         context name, without @ sign
-     * @retval syncFilter     global sync properties
-     * @retval sourceFilters  entries for specific sources, key "" as fallback
-     */
-    void getFilters(const string &context,
-                    ConfigProps &syncFilter,
-                    SourceFilters_t &sourceFilters);
-
-    /**
-     * check that m_syncProps and m_sourceProps don't contain
+     * check that m_props don't contain
      * properties which only apply to peers, throw error
      * if found
      */

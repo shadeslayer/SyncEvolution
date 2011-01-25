@@ -40,4 +40,11 @@ boost::shared_ptr<ConfigNode> ConfigNode::createFileNode(const string &filename)
     return savenode;
 }
 
+void ConfigNode::writeProperties(const ConfigProps &props)
+{
+    BOOST_FOREACH(const ConfigProps::value_type &entry, props) {
+        setProperty(entry.first, entry.second);
+    }
+}
+
 SE_END_CXX

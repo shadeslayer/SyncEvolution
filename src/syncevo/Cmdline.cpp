@@ -130,7 +130,7 @@ bool Cmdline::parse(vector<string> &parsed)
             opt++;
             string param;
             string cmdopt(m_argv[opt - 1]);
-            if (!parseProp(m_validSourceProps, m_sourceProps,
+            if (!parseProp(SOURCE_PROPERTY_TYPE,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt],
                            "sync")) {
                 return false;
@@ -143,7 +143,7 @@ bool Cmdline::parse(vector<string> &parsed)
         } else if(boost::iequals(m_argv[opt], "--sync-property") ||
                   boost::iequals(m_argv[opt], "-y")) {
                 opt++;
-                if (!parseProp(m_validSyncProps, m_syncProps,
+                if (!parseProp(SYNC_PROPERTY_TYPE,
                                m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                     return false;
                 }
@@ -151,7 +151,7 @@ bool Cmdline::parse(vector<string> &parsed)
         } else if(boost::iequals(m_argv[opt], "--source-property") ||
                   boost::iequals(m_argv[opt], "-z")) {
             opt++;
-            if (!parseProp(m_validSourceProps, m_sourceProps,
+            if (!parseProp(SOURCE_PROPERTY_TYPE,
                            m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt])) {
                 return false;
             }
@@ -382,7 +382,7 @@ bool Cmdline::isSync()
         !m_restore.empty() ||
         m_accessItems ||
         m_dryrun ||
-        (!m_run && (m_syncProps.size() || m_sourceProps.size()))) {
+        (!m_run && m_props.hasProperties())) {
         return false;
     } else {
         return true;
@@ -443,6 +443,9 @@ bool Cmdline::run() {
     // potentially harmful operations, otherwise users might
     // expect it to have an effect when it doesn't.
 
+    // TODO: check filter properties for invalid config and source
+    // names
+
     if (m_usage) {
         usage(true);
     } else if (m_version) {
@@ -495,7 +498,7 @@ bool Cmdline::run() {
     } else if (m_printConfig) {
         boost::shared_ptr<SyncConfig> config;
         ConfigProps syncFilter;
-        SourceFilters_t sourceFilters;
+        SourceProps sourceFilters;
 
         if (m_template.empty()) {
             if (m_server.empty()) {
@@ -508,8 +511,10 @@ bool Cmdline::run() {
                 return false;
             }
 
-            syncFilter = m_syncProps;
-            sourceFilters[""] = m_sourceProps;
+            // No need to include a context or additional sources,
+            // because reading the m_server config already includes
+            // the right information.
+            m_props.createFilters("", m_server, NULL, syncFilter, sourceFilters);
         } else {
             string peer, context;
             SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_template), peer, context);
@@ -520,7 +525,15 @@ bool Cmdline::run() {
                 return false;
             }
 
-            getFilters(context, syncFilter, sourceFilters);
+            // When instantiating a template, include the properties
+            // of the target context as filter to preserve shared
+            // properties, the final name inside that context as
+            // peer config name, and the sources defined in the template.
+            list<string> sourcelist = config->getSyncSources();
+            set<string> sourceset(sourcelist.begin(), sourcelist.end());
+            m_props.createFilters(std::string("@") + context, "",
+                                  &sourceset,
+                                  syncFilter, sourceFilters);
         }
 
         // determine whether we dump a peer or a context
@@ -547,12 +560,7 @@ bool Cmdline::run() {
                 m_out << endl << "[" << name << "]" << endl;
                 SyncSourceNodes nodes = config->getSyncSourceNodes(name);
                 boost::shared_ptr<FilterConfigNode> sourceProps = nodes.getProperties();
-                SourceFilters_t::const_iterator it = sourceFilters.find(name);
-                if (it != sourceFilters.end()) {
-                    sourceProps->setFilter(it->second);
-                } else {
-                    sourceProps->setFilter(sourceFilters[""]);
-                }
+                sourceProps->setFilter(sourceFilters.createSourceFilter(name));
                 dumpProperties(*sourceProps, SyncSourceConfig::getRegistry(),
                                flags | ((name != *(--sources.end())) ? HIDE_LEGEND : DUMP_PROPS_NORMAL));
             }
@@ -708,22 +716,6 @@ bool Cmdline::run() {
             }
         }
 
-        // Apply config changes on-the-fly. Regardless what we do
-        // (changing an existing config, migrating, creating from
-        // a template), existing shared properties in the desired
-        // context must be preserved unless explicitly overwritten.
-        // Therefore read those, update with command line properties,
-        // then set as filter.
-        ConfigProps syncFilter;
-        SourceFilters_t sourceFilters;
-        getFilters(context, syncFilter, sourceFilters);
-        from->setConfigFilter(true, "", syncFilter);
-        BOOST_FOREACH(const SourceFilters_t::value_type &entry, sourceFilters) {
-            from->setConfigFilter(false, entry.first, entry.second);
-        }
-
-        // Write into the requested configuration, creating it if necessary.
-        //
         // Which sources are configured is determined as follows:
         // - all sources in the template by default, except when
         // - sources are listed explicitly, and either
@@ -740,6 +732,22 @@ bool Cmdline::run() {
             (!fromScratch || configureContext)) {
             sources = &m_sources;
         }
+
+        // Apply config changes on-the-fly. Regardless what we do
+        // (changing an existing config, migrating, creating from
+        // a template), existing shared properties in the desired
+        // context must be preserved unless explicitly overwritten.
+        // Therefore read those, update with command line properties,
+        // then set as filter.
+        ConfigProps syncFilter;
+        SourceProps sourceFilters;
+        m_props.createFilters(string("@") + context, m_server, sources, syncFilter, sourceFilters);
+        from->setConfigFilter(true, "", syncFilter);
+        BOOST_FOREACH(const SourceProps::value_type &entry, sourceFilters) {
+            from->setConfigFilter(false, entry.first, entry.second);
+        }
+
+        // Write into the requested configuration, creating it if necessary.
         boost::shared_ptr<SyncContext> to(createSyncClient());
         to->prepareConfigForWrite();
         to->copy(*from, sources);
@@ -798,9 +806,9 @@ bool Cmdline::run() {
                     syncMode = "disabled";
                 } else if (selected) {
                     // user absolutely wants it: enable even if off by default
-                    FilterConfigNode::ConfigFilter::const_iterator sync =
-                        m_sourceProps.find("sync");
-                    syncMode = sync == m_sourceProps.end() ? "two-way" : sync->second;
+                    ConfigProps filter = m_props.createSourceFilter(m_server, source);
+                    ConfigProps::const_iterator sync = filter.find("sync");
+                    syncMode = sync == filter.end() ? "two-way" : sync->second;
                 }
                 if (!syncMode.empty() &&
                     !configureContext) {
@@ -861,8 +869,7 @@ bool Cmdline::run() {
 
         // extra sanity check
         if (!m_sources.empty() ||
-            !m_syncProps.empty() ||
-            !m_sourceProps.empty()) {
+            !m_props.hasProperties()) {
             usage(true, "too many parameters for --remove");
             return false;
         } else {
@@ -881,11 +888,13 @@ bool Cmdline::run() {
         context.reset(createSyncClient());
         context->setOutput(&m_out);
 
-        // apply filters
-        context->setConfigFilter(true, "", m_syncProps);
-        context->setConfigFilter(false, "", m_sourceProps);
-
+        // operating on exactly one source
         string sourceName = *m_sources.begin();
+
+        // apply filters
+        context->setConfigFilter(true, "", m_props.createSyncFilter(m_server));
+        context->setConfigFilter(false, "", m_props.createSourceFilter(m_server, sourceName));
+
         SyncSourceNodes sourceNodes = context->getSyncSourceNodesNoTracking(sourceName);
         SyncSourceParams params(sourceName, sourceNodes, context);
         cxxptr<SyncSource> source(SyncSource::createSource(params, true));
@@ -1114,26 +1123,21 @@ bool Cmdline::run() {
         context.reset(createSyncClient());
         context->setQuiet(m_quiet);
         context->setDryRun(m_dryrun);
-        context->setConfigFilter(true, "", m_syncProps);
+        context->setConfigFilter(true, "", m_props.createSyncFilter(m_server));
         context->setOutput(&m_out);
         if (m_sources.empty()) {
-            if (m_sourceProps.empty()) {
-                // empty source list, empty source filter => run with
-                // existing configuration without filtering it
-            } else {
-                // Special semantic of 'no source selected': apply
-                // filter only to sources which are
-                // *active*. Configuration of inactive sources is left
-                // unchanged. This way we don't activate sync sources
-                // accidentally when the sync mode is modified
-                // temporarily.
-                BOOST_FOREACH(const std::string &source,
-                              context->getSyncSources()) {
-                    boost::shared_ptr<PersistentSyncSourceConfig> source_config =
-                        context->getSyncSourceConfig(source);
-                    if (source_config->getSync() == "disabled") {
-                        context->setConfigFilter(false, source, m_sourceProps);
-                    }
+            // Special semantic of 'no source selected': apply
+            // filter (if any exists) only to sources which are
+            // *active*. Configuration of inactive sources is left
+            // unchanged. This way we don't activate sync sources
+            // accidentally when the sync mode is modified
+            // temporarily.
+            BOOST_FOREACH(const std::string &source,
+                          context->getSyncSources()) {
+                boost::shared_ptr<PersistentSyncSourceConfig> source_config =
+                    context->getSyncSourceConfig(source);
+                if (source_config->getSync() == "disabled") {
+                    context->setConfigFilter(false, source, m_props.createSourceFilter(m_server, source));
                 }
             }
         } else {
@@ -1142,19 +1146,18 @@ bool Cmdline::run() {
                           m_sources) {
                 boost::shared_ptr<PersistentSyncSourceConfig> source_config =
                         context->getSyncSourceConfig(source);
+                ConfigProps filter = m_props.createSourceFilter(m_server, source);
                 if (!source_config || !source_config->exists()) {
                     // invalid source name in m_sources, remember and
                     // report this below
                     unmatchedSources.insert(source);
-                } else if (m_sourceProps.find("sync") ==
-                           m_sourceProps.end()) {
+                } else if (filter.find("sync") == filter.end()) {
                     // Sync mode is not set, must override the
                     // "sync=disabled" set below with the original
                     // sync mode for the source or (if that is also
                     // "disabled") with "two-way". The latter is part
                     // of the command line semantic that listing a
                     // source activates it.
-                    FilterConfigNode::ConfigFilter filter = m_sourceProps;
                     string sync = source_config->getSync();
                     filter["sync"] =
                         sync == "disabled" ? "two-way" : sync;
@@ -1162,7 +1165,7 @@ bool Cmdline::run() {
                 } else {
                     // sync mode is set, can use m_sourceProps
                     // directly to apply it
-                    context->setConfigFilter(false, source, m_sourceProps);
+                    context->setConfigFilter(false, source, filter);
                 }
             }
 
@@ -1219,7 +1222,7 @@ bool Cmdline::run() {
             // safety catch: if props are given, then --run
             // is required
             if (!m_run &&
-                (m_syncProps.size() || m_sourceProps.size())) {
+                (m_props.hasProperties())) {
                 usage(false, "Properties specified, but neither '--configure' nor '--run' - what did you want?");
                 return false;
             }
@@ -1265,56 +1268,104 @@ string Cmdline::cmdOpt(const char *opt, const char *param)
     return res;
 }
 
-bool Cmdline::parseProp(const ConfigPropertyRegistry &validProps,
-                                     FilterConfigNode::ConfigFilter &props,
-                                     const char *opt,
-                                     const char *param,
-                                     const char *propname)
+bool Cmdline::parseProp(PropertyType propertyType,
+                        const char *opt,
+                        const char *param,
+                        const char *propname)
 {
+    std::string args = cmdOpt(opt, param);
+
     if (!param) {
-        usage(true, string("missing parameter for ") + cmdOpt(opt, param));
+        usage(true, string("missing parameter for ") + args);
         return false;
+    }
+
+    // determine property name and parameter for it
+    string propstr;
+    string paramstr;
+    if (propname) {
+        propstr = propname;
+        paramstr = param;
     } else if (boost::trim_copy(string(param)) == "?") {
-        m_dontrun = true;
-        if (propname) {
-            return listPropValues(validProps, propname, opt);
-        } else {
-            return listProperties(validProps, opt);
-        }
+        paramstr = param;
     } else {
-        string propstr;
-        string paramstr;
-        if (propname) {
-            propstr = propname;
-            paramstr = param;
-        } else {
-            const char *equal = strchr(param, '=');
-            if (!equal) {
-                usage(true, string("the '=<value>' part is missing in: ") + cmdOpt(opt, param));
+        const char *equal = strchr(param, '=');
+        if (!equal) {
+            usage(true, string("the '=<value>' part is missing in: ") + args);
+            return false;
+        }
+        propstr.assign(param, equal - param);
+        paramstr.assign(equal + 1);
+    }
+    boost::trim(propstr);
+    boost::trim_left(paramstr);
+
+    // parse full property string
+    PropertySpecifier spec = PropertySpecifier::StringToPropSpec(propstr);
+
+    // determine property type and registry
+    const ConfigPropertyRegistry *validProps = NULL;
+    switch (propertyType) {
+    case SYNC_PROPERTY_TYPE:
+        validProps = &m_validSyncProps;
+        break;
+    case SOURCE_PROPERTY_TYPE:
+        validProps = &m_validSourceProps;
+        break;
+    case UNKNOWN_PROPERTY_TYPE:
+        // must guess based on both registries
+        if (!propstr.empty()) {
+            bool isSyncProp = m_validSyncProps.find(spec.m_property) != NULL;
+            bool isSourceProp = m_validSourceProps.find(spec.m_property) != NULL;
+
+            if (isSyncProp) {
+                if (isSourceProp) {
+                    usage(true, StringPrintf("property '%s' in %s could be both a sync and a source property, use --sync-property or --source-property to disambiguate it", propname, args.c_str()));
+                    return false;
+                } else {
+                    validProps = &m_validSyncProps;
+                }
+            } else if (isSourceProp) {
+                validProps = &m_validSourceProps;
+            } else {
+                usage(true, StringPrintf("unrecognized property '%s' in %s", propname, args.c_str()));
                 return false;
             }
-            propstr.assign(param, equal - param);
-            paramstr.assign(equal + 1);
+        } else {
+            usage(true, StringPrintf("a property name must be given in '%s'", args.c_str()));
         }
+    }
 
-        boost::trim(propstr);
-        boost::trim_left(paramstr);
+    // TODO: complain if sync property includes source prefix
 
+    if (boost::trim_copy(string(param)) == "?") {
+        m_dontrun = true;
+        if (propname) {
+            return listPropValues(*validProps, spec.m_property, opt);
+        } else {
+            return listProperties(*validProps, opt);
+        }
+    } else {
         if (boost::trim_copy(paramstr) == "?") {
             m_dontrun = true;
-            return listPropValues(validProps, propstr, cmdOpt(opt, param));
+            return listPropValues(*validProps, spec.m_property, cmdOpt(opt, param));
         } else {
-            const ConfigProperty *prop = validProps.find(propstr);
+            const ConfigProperty *prop = validProps->find(spec.m_property);
             if (!prop) {
-                m_err << "ERROR: " << cmdOpt(opt, param) << ": no such property" << endl;
+                m_err << "ERROR: " << args << ": no such property" << endl;
                 return false;
             } else {
                 string error;
                 if (!prop->checkValue(paramstr, error)) {
-                    m_err << "ERROR: " << cmdOpt(opt, param) << ": " << error << endl;
+                    m_err << "ERROR: " << args << ": " << error << endl;
                     return false;
                 } else {
-                    props[propstr] = paramstr;
+                    ContextProps &props = m_props[spec.m_config];
+                    if (validProps == &m_validSyncProps) {
+                        props.m_syncProps[spec.m_property] = paramstr;
+                    } else {
+                        props.m_sourceProps[spec.m_source][spec.m_property] = paramstr;
+                    }
                     return true;                        
                 }
             }
@@ -1372,57 +1423,32 @@ bool Cmdline::listProperties(const ConfigPropertyRegistry &validProps,
     return true;
 }
 
-void Cmdline::getFilters(const string &context,
-                         ConfigProps &syncFilter,
-                         map<string, ConfigProps> &sourceFilters)
-{
-    // Read from context. If it does not exist, we simply set no properties
-    // as filter. Previously there was a check for existance, but that was
-    // flawed because it ignored the global property "defaultPeer".
-    boost::shared_ptr<SyncConfig> shared(new SyncConfig(string("@") + context));
-    shared->getProperties()->readProperties(syncFilter);
-    BOOST_FOREACH(StringPair entry, m_syncProps) {
-        syncFilter[entry.first] = entry.second;
-    }
-
-    BOOST_FOREACH(std::string source, shared->getSyncSources()) {
-        SyncSourceNodes nodes = shared->getSyncSourceNodes(source, "");
-        ConfigProps &props = sourceFilters[source];
-        nodes.getProperties()->readProperties(props);
-
-        // Special case "type" property: the value in the context
-        // is not preserved. Every new peer must ensure that
-        // its own value is compatible (= same backend) with
-        // the other peers.
-        props.erase("type");
-
-        BOOST_FOREACH(StringPair entry, m_sourceProps) {
-            props[entry.first] = entry.second;
-        }
-    }
-    sourceFilters[""] = m_sourceProps;
-}
-
 static void findPeerProps(FilterConfigNode::ConfigFilter &filter,
                           ConfigPropertyRegistry &registry,
-                          list<string> &peerProps)
+                          set<string> &peerProps)
 {
     BOOST_FOREACH(StringPair entry, filter) {
         const ConfigProperty *prop = registry.find(entry.first);
         if (prop &&
             prop->getSharing() == ConfigProperty::NO_SHARING &&
             !(prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED)) {
-            peerProps.push_back(entry.first);
+            peerProps.insert(entry.first);
         }
     }
 }
 
 void Cmdline::checkForPeerProps()
 {
-    list<string> peerProps;
+    set<string> peerProps;
 
-    findPeerProps(m_syncProps, SyncConfig::getRegistry(), peerProps);
-    findPeerProps(m_sourceProps, SyncSourceConfig::getRegistry(), peerProps);
+    BOOST_FOREACH(FullProps::value_type &entry, m_props) {
+        ContextProps &props = entry.second;
+
+        findPeerProps(props.m_syncProps, SyncConfig::getRegistry(), peerProps);
+        BOOST_FOREACH(SourceProps::value_type &entry, props.m_sourceProps) {
+            findPeerProps(entry.second, SyncSourceConfig::getRegistry(), peerProps);
+        }
+    }
     if (!peerProps.empty()) {
         SyncContext::throwError(string("per-peer (unshared) properties not allowed: ") +
                                 boost::join(peerProps, ", "));
@@ -2684,18 +2710,17 @@ protected:
         CPPUNIT_ASSERT(!filter.m_cmdline->run());
         CPPUNIT_ASSERT_EQUAL_DIFF("", filter.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("sync = refresh-from-server",
-                                  string(filter.m_cmdline->m_sourceProps));
-        CPPUNIT_ASSERT_EQUAL_DIFF("",
-                                  string(filter.m_cmdline->m_syncProps));
+                                  string(filter.m_cmdline->m_props[""].m_sourceProps[""]));
+        CPPUNIT_ASSERT_EQUAL_DIFF("",                                  string(filter.m_cmdline->m_props[""].m_syncProps));
 
         TestCmdline filter2("--source-property", "sync=refresh", NULL);
         CPPUNIT_ASSERT(filter2.m_cmdline->parse());
         CPPUNIT_ASSERT(!filter2.m_cmdline->run());
         CPPUNIT_ASSERT_EQUAL_DIFF("", filter2.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("sync = refresh",
-                                  string(filter2.m_cmdline->m_sourceProps));
+                                  string(filter2.m_cmdline->m_props[""].m_sourceProps[""]));
         CPPUNIT_ASSERT_EQUAL_DIFF("",
-                                  string(filter2.m_cmdline->m_syncProps));
+                                  string(filter2.m_cmdline->m_props[""].m_syncProps));
     }
 
     void testConfigure() {
@@ -2710,8 +2735,8 @@ protected:
         {
             // updating type for peer must also update type for context
             TestCmdline cmdline("--configure",
-                                "--source-property", "type=file:text/vcard:3.0",
-                                "scheduleworld", "addressbook",
+                                "--source-property", "addressbook/type=file:text/vcard:3.0",
+                                "scheduleworld",
                                 NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
@@ -2858,6 +2883,15 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF(syncProperties + sourceProperties,
                                       filterIndented(cmdline.m_out.str()));
         }
+
+        {
+            TestCmdline cmdline("--source-property", "sync=?",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("'--source-property sync=?'\n",
+                                      filterIndented(cmdline.m_out.str()));
+        }
     }
 
     void testConfigureSources() {
@@ -2898,7 +2932,7 @@ protected:
         // add calendar
         {
             TestCmdline cmdline("--configure",
-                                "--source-property", "database = file://tmp/test2",
+                                "--source-property", "database@foobar = file://tmp/test2",
                                 "--source-property", "type = calendar",
                                 "@foobar",
                                 "calendar",
@@ -2942,6 +2976,21 @@ protected:
         boost::replace_all(expected,
                            "peers/scheduleworld/sources/addressbook/config.ini:type = file:text/vcard:3.0",
                            "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard");
+        CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+
+        // disable all sources except for addressbook
+        {
+            TestCmdline cmdline("--configure",
+                                "--source-property", "addressbook/sync=two-way",
+                                "--source-property", "sync=none",
+                                "scheduleworld@foobar",
+                                NULL);
+            cmdline.doit();
+        }
+        res = scanFiles(root);
+        removeRandomUUID(res);
+        boost::replace_all(expected, "sync = two-way", "sync = disabled");
+        boost::replace_first(expected, "sync = disabled", "sync = two-way");
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
     }
 
@@ -3039,8 +3088,11 @@ protected:
             TestCmdline cmdline("--configure",
                                 "--sync", "two-way",
                                 "-z", "database=source",
-                                "--sync-property", "maxlogdirs=20",
-                                "-y", "LOGDIR=logdir",
+                                // note priority of suffix: most specific wins
+                                "--sync-property", "maxlogdirs@scheduleworld@default=20",
+                                "--sync-property", "maxlogdirs@default=10",
+                                "--sync-property", "maxlogdirs=5",
+                                "-y", "LOGDIR@default=logdir",
                                 "scheduleworld",
                                 NULL);
             cmdline.doit();

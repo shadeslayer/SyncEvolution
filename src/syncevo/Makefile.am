@@ -19,6 +19,8 @@ lib_LTLIBRARIES = libsyncevolution.la
 
 SYNCEVOLUTION_SOURCES  = \
 	ConfigTree.h \
+	ConfigFilter.h \
+	ConfigFilter.cpp \
 	ConfigNode.h \
 	ConfigNode.cpp \
 	HashConfigNode.h \
@@ -115,6 +117,7 @@ libsyncevolution_includedir= $(includedir)/syncevo
 libsyncevolution_include_HEADERS = \
 	declarations.h \
         Cmdline.h \
+	ConfigFilter.h \
 	TrackingSyncSource.h  \
         MapSyncSource.h \
 	FileConfigNode.h \

@@ -77,6 +77,58 @@ std::string ConfigLevel2String(ConfigLevel level)
     }
 }
 
+PropertySpecifier PropertySpecifier::StringToPropSpec(const std::string &spec, int flags)
+{
+    PropertySpecifier res;
+
+    size_t slash = spec.find('/');
+    if (slash != spec.npos) {
+        // no normalization needed at the moment
+        res.m_source = spec.substr(0, slash);
+        slash++;
+    } else {
+        slash = 0;
+    }
+    size_t at = spec.find('@', slash);
+    if (at != spec.npos) {
+        // Context or config?
+        if (spec.find('@', at + 1) != spec.npos) {
+            // has a second @ sign, must be config name
+            res.m_config = spec.substr(at + 1);
+        } else {
+            // context, include leading @ sign
+            res.m_config = spec.substr(at);
+        }
+        if (flags & NORMALIZE_CONFIG) {
+            res.m_config = SyncConfig::normalizeConfigString(res.m_config, false);
+        }
+    } else {
+        at = spec.size();
+    }
+    res.m_property = spec.substr(slash, at - slash);
+
+    return res;
+}
+
+std::string PropertySpecifier::toString()
+{
+    std::string res;
+    res.reserve(m_source.size() + 1 + m_property.size() + 1 + m_config.size());
+    res += m_source;
+    if (!m_source.empty()) {
+        res += '/';
+    }
+    res += m_property;
+    if (!m_config.empty()) {
+        if (m_config[0] != '@') {
+            res += '@';
+        }
+        res += m_config;
+    }
+
+    return res;
+}
+
 string ConfigProperty::getName(const ConfigNode &node) const
 {
     if (m_names.empty()) {
@@ -1120,9 +1172,14 @@ list<string> SyncConfig::getSyncSources() const
                                        "/sources"));
     }
     // get sources from filter and union them into returned sources
-    BOOST_FOREACH(const SourceFilters_t::value_type &value, m_sourceFilters) {
+    BOOST_FOREACH(const SourceProps::value_type &value, m_sourceFilters) {
+        if (value.first.empty()) {
+            // ignore filter for all sources
+            continue;
+        }
         list<string>::iterator it = std::find(sources.begin(), sources.end(), value.first);
-        if ( it == sources.end()) {
+        if (it == sources.end()) {
+            // found a filter for a source which does not exist yet
             sources.push_back(value.first); 
         }
     }
@@ -1181,12 +1238,7 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         cacheDir = m_tree->getRootPath() + "/" + peerPath + "/.cache";
 
         node = m_tree->open(peerPath, ConfigTree::visible);
-        peerNode.reset(new FilterConfigNode(node, m_sourceFilter));
-        SourceFilters_t::const_iterator filter = m_sourceFilters.find(name);
-        if (filter != m_sourceFilters.end()) {
-            peerNode =
-                boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(peerNode), filter->second));
-        }
+        peerNode.reset(new FilterConfigNode(node, m_sourceFilters.createSourceFilter(name)));
         hiddenPeerNode = m_tree->open(peerPath, ConfigTree::hidden);
         trackingNode = m_tree->open(peerPath, ConfigTree::other, changeId);
         serverNode = m_tree->open(peerPath, ConfigTree::server, changeId);
@@ -1216,12 +1268,7 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         sharedNode = peerNode;
     } else {
         node = m_tree->open(sharedPath, ConfigTree::visible);
-        sharedNode.reset(new FilterConfigNode(node, m_sourceFilter));
-        SourceFilters_t::const_iterator filter = m_sourceFilters.find(name);
-        if (filter != m_sourceFilters.end()) {
-            sharedNode =
-                boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(sharedNode), filter->second));
-        }
+        sharedNode.reset(new FilterConfigNode(node, m_sourceFilters.createSourceFilter(name)));
     }
 
     SyncSourceNodes nodes(!peerPath.empty(), sharedNode, peerNode, hiddenPeerNode, trackingNode, serverNode, cacheDir);
@@ -2014,9 +2061,6 @@ void SyncConfig::setConfigFilter(bool sync,
         if (m_globalNode != m_contextNode) {
             m_globalNode->setFilter(filter);
         }
-    } else if (source.empty()) {
-        m_nodeCache.clear();
-        m_sourceFilter = filter;
     } else {
         m_nodeCache.clear();
         m_sourceFilters[source] = filter;
@@ -2815,13 +2859,17 @@ class SyncConfigTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(SyncConfigTest);
     CPPUNIT_TEST(normalize);
     CPPUNIT_TEST(parseDuration);
+    CPPUNIT_TEST(propertySpec);
     CPPUNIT_TEST_SUITE_END();
 
 private:
     void normalize()
     {
-        ScopedEnvChange xdg("XDG_CONFIG_HOME", "/dev/null");
-        ScopedEnvChange home("HOME", "/dev/null");
+        // use same dir as CmdlineTest...
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", "CmdlineTest");
+        ScopedEnvChange home("HOME", "CmdlineTest");
+
+        rm_r("CmdlineTest");
 
         CPPUNIT_ASSERT_EQUAL(std::string("@default"),
                              SyncConfig::normalizeConfigString(""));
@@ -2835,6 +2883,31 @@ private:
                              SyncConfig::normalizeConfigString("FooBar@Something"));
         CPPUNIT_ASSERT_EQUAL(std::string("foo_bar_x_y_z"),
                              SyncConfig::normalizeConfigString("Foo/bar\\x:y:z"));
+
+        // keep @default if explicitly requested
+        CPPUNIT_ASSERT_EQUAL(std::string("foobar@default"),
+                             SyncConfig::normalizeConfigString("FooBar", false));
+
+        // test config lookup
+        SyncConfig foo_default("foo"), foo_other("foo@other"), bar("bar@other");
+        foo_default.flush();
+        foo_other.flush();
+        bar.flush();
+        CPPUNIT_ASSERT_EQUAL(std::string("foo"),
+                             SyncConfig::normalizeConfigString("foo"));
+        CPPUNIT_ASSERT_EQUAL(std::string("foo"),
+                             SyncConfig::normalizeConfigString("foo@default"));
+        CPPUNIT_ASSERT_EQUAL(std::string("foo@default"),
+                             SyncConfig::normalizeConfigString("foo", false));
+        CPPUNIT_ASSERT_EQUAL(std::string("foo@default"),
+                             SyncConfig::normalizeConfigString("foo@default", false));
+        CPPUNIT_ASSERT_EQUAL(std::string("foo@other"),
+                             SyncConfig::normalizeConfigString("foo@other"));
+        foo_default.remove();
+        CPPUNIT_ASSERT_EQUAL(std::string("foo@other"),
+                             SyncConfig::normalizeConfigString("foo"));
+        CPPUNIT_ASSERT_EQUAL(std::string("foo@other"),
+                             SyncConfig::normalizeConfigString("foo", false));
     }
 
     void parseDuration()
@@ -2867,6 +2940,55 @@ private:
         CPPUNIT_ASSERT_EQUAL(expected, seconds);
 
         CPPUNIT_ASSERT(!SecondsConfigProperty::parseDuration("m", error, seconds));
+    }
+
+    void propertySpec()
+    {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", "/dev/null");
+        ScopedEnvChange home("HOME", "/dev/null");
+        PropertySpecifier spec;
+
+        spec = PropertySpecifier::StringToPropSpec("foo");
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_source);
+        CPPUNIT_ASSERT_EQUAL(string("foo"), spec.m_property);
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_config);
+        CPPUNIT_ASSERT_EQUAL(string("foo"), spec.toString());
+
+        spec = PropertySpecifier::StringToPropSpec("source/foo@ContEXT");
+        CPPUNIT_ASSERT_EQUAL(string("source"), spec.m_source);
+        CPPUNIT_ASSERT_EQUAL(string("foo"), spec.m_property);
+        CPPUNIT_ASSERT_EQUAL(string("@context"), spec.m_config);       
+        CPPUNIT_ASSERT_EQUAL(string("source/foo@context"), spec.toString());
+
+        spec = PropertySpecifier::StringToPropSpec("source/foo@ContEXT", PropertySpecifier::NO_NORMALIZATION);
+        CPPUNIT_ASSERT_EQUAL(string("source"), spec.m_source);
+        CPPUNIT_ASSERT_EQUAL(string("foo"), spec.m_property);
+        CPPUNIT_ASSERT_EQUAL(string("@ContEXT"), spec.m_config);       
+        CPPUNIT_ASSERT_EQUAL(string("source/foo@ContEXT"), spec.toString());
+
+        spec = PropertySpecifier::StringToPropSpec("foo@peer@context");
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_source);
+        CPPUNIT_ASSERT_EQUAL(string("foo"), spec.m_property);
+        CPPUNIT_ASSERT_EQUAL(string("peer@context"), spec.m_config);
+        CPPUNIT_ASSERT_EQUAL(string("foo@peer@context"), spec.toString());
+
+        spec = PropertySpecifier::StringToPropSpec("foo@context");
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_source);
+        CPPUNIT_ASSERT_EQUAL(string("foo"), spec.m_property);
+        CPPUNIT_ASSERT_EQUAL(string("@context"), spec.m_config);
+        CPPUNIT_ASSERT_EQUAL(string("foo@context"), spec.toString());
+
+        spec = PropertySpecifier::StringToPropSpec("source/foo");
+        CPPUNIT_ASSERT_EQUAL(string("source"), spec.m_source);
+        CPPUNIT_ASSERT_EQUAL(string("foo"), spec.m_property);
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_config);
+        CPPUNIT_ASSERT_EQUAL(string("source/foo"), spec.toString());
+
+        spec = PropertySpecifier::StringToPropSpec("");
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_source);
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_property);
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.m_config);
+        CPPUNIT_ASSERT_EQUAL(string(""), spec.toString());
     }
 };
 

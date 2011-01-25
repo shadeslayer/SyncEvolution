@@ -32,14 +32,11 @@ using namespace std;
 
 #include <syncevo/declarations.h>
 #include <syncevo/util.h>
+#include <syncevo/ConfigFilter.h>
 SE_BEGIN_CXX
 
-/** a case-insensitive string to string mapping */
-class ConfigProps : public map<string, string, Nocase<string> > {
- public:
-    /** format as <key> = <value> lines */
-    operator string () const;
-};
+// see ConfigFilter.h
+class ConfigProps;
 
 /**
  * This class corresponds to the Funambol C++ client
@@ -176,12 +173,7 @@ class ConfigNode {
      * Add the given properties. To replace the content of the
      * node, call clear() first.
      */
-    virtual void writeProperties(const ConfigProps &props)
-    {
-        BOOST_FOREACH(const ConfigProps::value_type &entry, props) {
-            setProperty(entry.first, entry.second);
-        }
-    }
+    virtual void writeProperties(const ConfigProps &props);
 
     /**
      * Remove a certain property.

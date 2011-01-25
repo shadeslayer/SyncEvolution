@@ -152,6 +152,39 @@ template<class T> class InitList : public list<T> {
 typedef InitList<string> Aliases;
 typedef InitList<Aliases> Values;
 
+enum PropertyType {
+    /** sync properties occur once per config */
+    SYNC_PROPERTY_TYPE,
+    /** source properties occur once per source in each config */
+    SOURCE_PROPERTY_TYPE,
+    /** exact type is unknown */
+    UNKNOWN_PROPERTY_TYPE
+};
+
+/**
+ * A property name with optional source and context.
+ * String format is [<source>/]<property>[@<context>|@<peer>@<context>]
+ *
+ * Note that the part after the @ sign without another @ is always
+ * a context. The normal shorthand of just <peer> without context
+ * does not work here.
+ */
+class PropertySpecifier {
+ public:
+    std::string m_source;    /**< source name, empty if applicable to all or sync property */
+    std::string m_property;  /**< property name, must not be empty */
+    std::string m_config;    /**< config name, empty if none, otherwise @<context> or <peer>@<context> */
+
+    enum {
+        NO_NORMALIZATION = 0,
+        NORMALIZE_SOURCE = 1,
+        NORMALIZE_CONFIG = 2
+    };
+
+    /** parse, optionally also normalize source and config */
+    static PropertySpecifier StringToPropSpec(const std::string &spec, int flags = NORMALIZE_SOURCE|NORMALIZE_CONFIG);
+    std::string toString();
+};
 
 /**
  * A property has a name and a comment. Derived classes might have
@@ -1624,12 +1657,9 @@ private:
 
     /**
      * temporary override for all sync source settings
+     * ("" as key) or specific sources (source name as key)
      */
-    FilterConfigNode::ConfigFilter m_sourceFilter;
-
-    /** temporary override for settings of specific sources */
-    typedef std::map<std::string, FilterConfigNode::ConfigFilter> SourceFilters_t;
-    SourceFilters_t m_sourceFilters;
+    SourceProps m_sourceFilters;
 
     static string getOldRoot() {
         return getHome() + "/.sync4j/evolution";

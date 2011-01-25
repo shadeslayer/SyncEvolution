@@ -385,6 +385,26 @@ a list of valid values.
   to update the configuration. Can be used multiple times.  Specifying
   an unused property will trigger an error message.
 
+  The <property> has the following format: ``<name>[@<context>|@<peer>@<context>]``
+
+  The optional <context> or <peer>@<context> suffix limits the scope
+  of the value to that particular configuration. This is currently
+  only useful for a local sync, which involves a source and a target
+  configuration.
+
+  A string without a second @ sign inside is always interpreted as a
+  context name, so in contrast to the <server> string, "foo" cannot be
+  used to reference the "foo@default" configuration. Use the full name
+  including the context for that.
+
+  When no config or context is specified explicitly, a value is
+  changed in all active configs, typically the one given with
+  ``<server>``.  The priority of multiple values for the same config
+  is `more specific definition wins`, so ``<peer>@<context>``
+  overrides ``@<context>``, which overrides `no suffix given`.
+  Specifying some suffix which does not apply to the current operation
+  does not trigger an error, so beware of typos.
+
   When using the configuration layout introduced with 1.0, some of the
   sync properties are shared between peers, for example the directory
   where sessions are logged. Permanently changing such a shared
@@ -396,15 +416,39 @@ a list of valid values.
 --source-property|-z <property>=<value>|<property>=?|?
   Same as --sync-property, but applies to the configuration of all active
   sources. `--sync <mode>` is a shortcut for `--source-property sync=<mode>`.
-  
+
+  The <property> has the following format: ``[<source>/]<name>[@<context>|@<peer>@<context>]``
+
+  In it's simplest form without <source>, <context> or <config>,
+  the name specifies one of the know properties.
   When combined with `--configure`, the configuration of all sources
   is modified. The value is applied to all sources unless sources are
   listed explicitly on the command line. So if you want to change a
   source property of just one specific sync source, then use
   `--configure --source-property ... <server> <source>`.
-  
+
+  Adding the <source>/ prefix makes it possible to set the same
+  property differently for different sources in one command::
+
+    --configure --source-property addressbook/sync=two-way \
+                --source-property calendar/sync=one-way-from-server \
+                <server>
+
+  If the same property is set both with and without a <source>/ prefix,
+  then the more specific value with that prefix is used for that source,
+  regardless of the order on the command line. The following command
+  disables all sources except for the addressbook::
+
+    --configure --source-property addressbook/sync=none \
+                --source-property sync=two-way \
+                <server>
+
   As with sync properties, some properties are shared between peers,
-  in particular the selection of which local data to synchronize.
+  in particular the selection of which local data to synchronize.  The
+  optional configuration suffix in ``<property>`` also has the same
+  meaning as for sync properties. That suffix is checked first, so
+  "sync@foo@default" overrides "addressbook/sync", even though
+  "addressbook/sync" normally overrides "sync".
 
 --template|-l <peer name>|default|?<device>
   Can be used to select from one of the built-in default configurations
