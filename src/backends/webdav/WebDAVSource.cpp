@@ -11,6 +11,9 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
+#include <stdio.h>
+#include <errno.h>
+
 SE_BEGIN_CXX
 
 /**
@@ -77,6 +80,7 @@ public:
         }
     }
 
+    void setURL(const std::string url) { m_url = url; }
     virtual std::string getURL() { return m_url; }
 
     virtual bool verifySSLHost()
@@ -127,7 +131,8 @@ WebDAVSource::WebDAVSource(const SyncSourceParams &params,
     m_settings(settings)
 {
     if (!m_settings) {
-        m_settings.reset(new ContextSettings(params.m_context));
+        m_contextSettings.reset(new ContextSettings(params.m_context));
+        m_settings = m_contextSettings;
     }
 }
 
@@ -135,35 +140,69 @@ void WebDAVSource::open()
 {
     SE_LOG_DEBUG(NULL, NULL, "using libneon %s with %s",
                  ne_version_string(), Neon::features().c_str());
-    m_session = Neon::Session::create(m_settings);
 
-    // Start by checking server capabilities.
-    // Verifies URL.
-    SE_LOG_DEBUG(NULL, NULL, "read capabilities of %s",
-                 m_session->getURI().toURL().c_str());
-    int caps = m_session->options();
-    static const Flag descr[] = {
-        { NE_CAP_DAV_CLASS1, "Class 1 WebDAV (RFC 2518)" },
-        { NE_CAP_DAV_CLASS2, "Class 2 WebDAV (RFC 2518)" },
-        { NE_CAP_DAV_CLASS3, "Class 3 WebDAV (RFC 4918)" },
-        { NE_CAP_MODDAV_EXEC, "mod_dav 'executable' property" },
-        { NE_CAP_DAV_ACL, "WebDAV ACL (RFC 3744)" },
-        { NE_CAP_VER_CONTROL, "DeltaV version-control" },
-        { NE_CAP_CO_IN_PLACE, "DeltaV checkout-in-place" },
-        { NE_CAP_VER_HISTORY, "DeltaV version-history" },
-        { NE_CAP_WORKSPACE, "DeltaV workspace" },
-        { NE_CAP_UPDATE, "DeltaV update" },
-        { NE_CAP_LABEL, "DeltaV label" },
-        { NE_CAP_WORK_RESOURCE, "DeltaV working-resouce" },
-        { NE_CAP_MERGE, "DeltaV merge" },
-        { NE_CAP_BASELINE, "DeltaV baseline" },
-        { NE_CAP_ACTIVITY, "DeltaV activity" },
-        { NE_CAP_VC_COLLECTION, "DeltaV version-controlled-collection" },
-        { 0, NULL }
-    };
-    SE_LOG_DEBUG(NULL, NULL, "%s WebDAV capabilities: %s",
-                 m_session->getURL().c_str(),
-                 Flags2String(caps, descr).c_str());
+    std::string username, password;
+    m_contextSettings->getCredentials("", username, password);
+
+    // If no URL was configured, then try DNS SRV lookup.
+    // syncevo-webdav-lookup and at least one of the tools
+    // it depends on (host, nslookup, adnshost, ...) must
+    // be in the shell search path.
+    //
+    // Only our own m_contextSettings allows overriding the
+    // URL. Not an issue, in practice it is always used.
+    std::string url = m_settings->getURL();
+    if (url.empty() && m_contextSettings) {
+        size_t pos = username.find('@');
+        if (pos == username.npos) {
+            throwError(StringPrintf("syncURL not configured and username %s does not contain a domain", username.c_str()));
+        }
+        std::string domain = username.substr(pos + 1);
+
+        FILE *in = NULL;
+        try {
+            in = popen(StringPrintf("syncevo-webdav-lookup '%s' '%s'",
+                                    serviceType().c_str(),
+                                    domain.c_str()).c_str(),
+                       "r");
+            if (!in) {
+                throwError(StringPrintf("syncURL not configured and starting syncevo-webdav-lookup for DNS SRV lookup failed: %s", strerror(errno)));
+            }
+            // ridicuously long URLs are truncated...
+            char buffer[1024];
+            size_t read = fread(buffer, 1, sizeof(buffer) - 1, in);
+            buffer[read] = 0;
+            if (read > 0 && buffer[read - 1] == '\n') {
+                read--;
+            }
+            buffer[read] = 0;
+            m_contextSettings->setURL(buffer);
+            SE_LOG_DEBUG(this, NULL, "found syncURL '%s' via DNS SRV", buffer);
+            int res = pclose(in);
+            in = NULL;
+            switch (res) {
+            case 0:
+                break;
+            case 2:
+                throwError(StringPrintf("syncURL not configured and syncevo-webdav-lookup did not find a DNS utility to search for %s in %s", serviceType().c_str(), domain.c_str()));
+                break;
+            case 3:
+                throwError(StringPrintf("syncURL not configured and DNS SRV search for %s in %s did not find the service", serviceType().c_str(), domain.c_str()));
+                break;
+            default:
+                throwError(StringPrintf("syncURL not configured and DNS SRV search for %s in %s failed", serviceType().c_str(), domain.c_str()));
+                break;
+            }
+        } catch (...) {
+            if (in) {
+                pclose(in);
+            }
+            throw;
+        }
+    }
+
+    // start talking to host defined by m_settings->getURL()
+    m_session = Neon::Session::create(m_settings);
 
     // Find default calendar. Same for address book, with slightly
     // different parameters.
@@ -183,17 +222,43 @@ void WebDAVSource::open()
     int counter = 0;
     const int limit = 10;
     std::set<std::string> tried;
-    std::set<std::string> candidates;
+    std::list<std::string> candidates;
     std::string path = m_session->getURI().m_path;
     Neon::Session::PropfindPropCallback_t callback =
         boost::bind(&WebDAVSource::openPropCallback,
                     this, _1, _2, _3, _4);
 
     while (true) {
+        std::string next;
+
         // must normalize so that we can compare against results from server
         path = Neon::URI::normalizePath(path, true);
         SE_LOG_DEBUG(NULL, NULL, "testing %s", path.c_str());
         tried.insert(path);
+
+        // Accessing the well-known URIs should lead to a redirect, but
+        // with Yahoo! Calendar all I got was a 502 "connection refused".
+        // Yahoo! Contacts also doesn't redirect. Instead on ends with
+        // a Principal resource - perhaps reading that would lead further.
+        //
+        // So anyway, let's try the well-known URI first, but also add
+        // a hard-coded "well-known" fallback that will be tried
+        // next. Same for some other servers.
+        if (path == "/.well-known/caldav/") {
+            // remove trailing slash added by normalization, to be aligned with draft-daboo-srv-caldav-10
+            path.resize(path.size() - 1);
+
+            // Yahoo! Calendar
+            candidates.push_back(StringPrintf("/dav/%s/Calendar/", Neon::URI::escape(username).c_str()));
+            // TODO: Google Calendar, with workarounds
+            // candidates.push_back(StringPrintf("/calendar/dav/%s/user/", Neon::URI::escape(username).c_str()));
+        } else if (path == "/.well-known/carddav/") {
+            // remove trailing slash added by normalization, to be aligned with draft-daboo-srv-caldav-10
+            path.resize(path.size() - 1);
+
+            // Yahoo! Contacts
+            candidates.push_back(StringPrintf("/dav/%s/Contacts/", Neon::URI::escape(username).c_str()));
+        }
 
         // Property queries also checks credentials because typically
         // the properties are protected.
@@ -201,117 +266,135 @@ void WebDAVSource::open()
         // First dump WebDAV "allprops" properties (does not contain
         // properties which must be asked for explicitly!). Only
         // relevant for debugging.
-        if (LoggerBase::instance().getLevel() >= Logger::DEV) {
-            SE_LOG_DEBUG(NULL, NULL, "read all WebDAV properties of %s", path.c_str());
-            Neon::Session::PropfindPropCallback_t callback =
-                boost::bind(&WebDAVSource::openPropCallback,
-                            this, _1, _2, _3, _4);
-            m_session->propfindProp(path, 0, NULL, callback);
-        }
+        bool success = false;
+        try {
+            if (LoggerBase::instance().getLevel() >= Logger::DEV) {
+                SE_LOG_DEBUG(NULL, NULL, "read all WebDAV properties of %s", path.c_str());
+                Neon::Session::PropfindPropCallback_t callback =
+                    boost::bind(&WebDAVSource::openPropCallback,
+                                this, _1, _2, _3, _4);
+                m_session->propfindProp(path, 0, NULL, callback);
+            }
         
-        // Now ask for some specific properties of interest for us.
-        // Using CALDAV:allprop would be nice, but doesn't seem to
-        // be possible with Neon.
-        m_davProps.clear();
-        static const ne_propname caldav[] = {
-            // WebDAV ACL
-            { "DAV:", "alternate-URI-set" },
-            { "DAV:", "principal-URL" },
-            { "DAV:", "group-member-set" },
-            { "DAV:", "group-membership" },
-            { "DAV:", "displayname" },
-            { "DAV:", "resourcetype" },
-            // CalDAV
-            { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
-            { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
-            { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
-            { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
-            { "urn:ietf:params:xml:ns:caldav", "supported-calendar-data" },
-            { "urn:ietf:params:xml:ns:caldav", "max-resource-size" },
-            { "urn:ietf:params:xml:ns:caldav", "min-date-time" },
-            { "urn:ietf:params:xml:ns:caldav", "max-date-time" },
-            { "urn:ietf:params:xml:ns:caldav", "max-instances" },
-            { "urn:ietf:params:xml:ns:caldav", "max-attendees-per-instance" },
-            // CardDAV
-            { "urn:ietf:params:xml:ns:carddav", "addressbook-home-set" },
-            { "urn:ietf:params:xml:ns:carddav", "principal-address" },
-            { "urn:ietf:params:xml:ns:carddav", "addressbook-description" },
-            { "urn:ietf:params:xml:ns:carddav", "supported-address-data" },
-            { "urn:ietf:params:xml:ns:carddav", "max-resource-size" },
-            { NULL, NULL }
-        };
-        m_session->propfindProp(path, 0, caldav, callback);
-
-        StringMap &props = m_davProps[path];
-        if (typeMatches(props)) {
-            // found it
-            break;
-        }
-
-        // find next path
-        static const std::string hrefStart = "<DAV:href>";
-        static const std::string hrefEnd = "</DAV:href";
-        std::string next;
-        const std::string &home = props[homeSetProp()];
-        if (!home.empty()) {
-            size_t start = home.find(hrefStart);
-            if (start != home.npos) {
-                size_t end = home.find(hrefEnd, start);
-                if (end != home.npos) {
-                    start += hrefStart.size();
-                    next = home.substr(start, end - start);
-                    SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", next.c_str());
-                }
+            // Now ask for some specific properties of interest for us.
+            // Using CALDAV:allprop would be nice, but doesn't seem to
+            // be possible with Neon.
+            m_davProps.clear();
+            static const ne_propname caldav[] = {
+                // WebDAV ACL
+                { "DAV:", "alternate-URI-set" },
+                { "DAV:", "principal-URL" },
+                { "DAV:", "group-member-set" },
+                { "DAV:", "group-membership" },
+                { "DAV:", "displayname" },
+                { "DAV:", "resourcetype" },
+                // CalDAV
+                { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
+                { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
+                { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
+                { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
+                { "urn:ietf:params:xml:ns:caldav", "supported-calendar-data" },
+                { "urn:ietf:params:xml:ns:caldav", "max-resource-size" },
+                { "urn:ietf:params:xml:ns:caldav", "min-date-time" },
+                { "urn:ietf:params:xml:ns:caldav", "max-date-time" },
+                { "urn:ietf:params:xml:ns:caldav", "max-instances" },
+                { "urn:ietf:params:xml:ns:caldav", "max-attendees-per-instance" },
+                // CardDAV
+                { "urn:ietf:params:xml:ns:carddav", "addressbook-home-set" },
+                { "urn:ietf:params:xml:ns:carddav", "principal-address" },
+                { "urn:ietf:params:xml:ns:carddav", "addressbook-description" },
+                { "urn:ietf:params:xml:ns:carddav", "supported-address-data" },
+                { "urn:ietf:params:xml:ns:carddav", "max-resource-size" },
+                { NULL, NULL }
+            };
+            m_session->propfindProp(path, 0, caldav, callback);
+            success = true;
+        } catch (const Exception &ex) {
+            if (candidates.empty()) {
+                // nothing left to try, bail out with this error
+                throw;
+            } else {
+                // ignore the error (whatever it was!), try next
+                // candidate; needed to handle 502 "Connection
+                // refused" for /.well-known/caldav/ from Yahoo!
+                // Calendar
+                SE_LOG_DEBUG(NULL, NULL, "ignore error for URI candidate: %s", ex.what());
             }
         }
-        if (next.empty()) {
-            const std::string &type = props["DAV::resourcetype"];
-            if (type.find("<DAV:collection></DAV:collection>") != type.npos) {
-                // List members and find new candidates.
-                // Yahoo! Calendar does not return resources contained in /dav/<user>/Calendar/
-                // if <allprops> is used. Properties must be requested explicitly.
-                SE_LOG_DEBUG(NULL, NULL, "list items in %s", path.c_str());
-                static const ne_propname props[] = {
-                    { "DAV:", "displayname" },
-                    { "DAV:", "resourcetype" },
-                    { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
-                    { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
-                    { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
-                    { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
-                    { "urn:ietf:params:xml:ns:carddav", "addressbook-home-set" },
-                    { "urn:ietf:params:xml:ns:carddav", "addressbook-description" },
-                    { "urn:ietf:params:xml:ns:carddav", "supported-address-data" },
-                    { NULL, NULL }
-                };
-                m_davProps.clear();
-                m_session->propfindProp(path, 1, props, callback);
-                BOOST_FOREACH(Props_t::value_type &entry, m_davProps) {
-                    const std::string &sub = entry.first;
-                    const std::string &subType = entry.second["DAV::resourcetype"];
-                    // new candidates are:
-                    // - untested
-                    // - not already a candidate
-                    // - a resource
-                    if (tried.find(sub) == tried.end() &&
-                        candidates.find(sub) == candidates.end() &&
-                        subType.find("<DAV:collection></DAV:collection>") != subType.npos) {
-                        candidates.insert(sub);
-                        if (next.empty() && typeMatches(entry.second)) {
-                            // try this one before or all other candidates
-                            next = sub;
+
+        if (success) {
+            StringMap &props = m_davProps[path];
+            if (typeMatches(props)) {
+                // found it
+                break;
+            }
+
+            // find next path
+            static const std::string hrefStart = "<DAV:href>";
+            static const std::string hrefEnd = "</DAV:href";
+            const std::string &home = props[homeSetProp()];
+            if (!home.empty()) {
+                size_t start = home.find(hrefStart);
+                if (start != home.npos) {
+                    size_t end = home.find(hrefEnd, start);
+                    if (end != home.npos) {
+                        start += hrefStart.size();
+                        next = home.substr(start, end - start);
+                        SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", next.c_str());
+                    }
+                }
+            }
+            if (next.empty()) {
+                const std::string &type = props["DAV::resourcetype"];
+                if (type.find("<DAV:collection></DAV:collection>") != type.npos) {
+                    // List members and find new candidates.
+                    // Yahoo! Calendar does not return resources contained in /dav/<user>/Calendar/
+                    // if <allprops> is used. Properties must be requested explicitly.
+                    SE_LOG_DEBUG(NULL, NULL, "list items in %s", path.c_str());
+                    static const ne_propname props[] = {
+                        { "DAV:", "displayname" },
+                        { "DAV:", "resourcetype" },
+                        { "urn:ietf:params:xml:ns:caldav", "calendar-home-set" },
+                        { "urn:ietf:params:xml:ns:caldav", "calendar-description" },
+                        { "urn:ietf:params:xml:ns:caldav", "calendar-timezone" },
+                        { "urn:ietf:params:xml:ns:caldav", "supported-calendar-component-set" },
+                        { "urn:ietf:params:xml:ns:carddav", "addressbook-home-set" },
+                        { "urn:ietf:params:xml:ns:carddav", "addressbook-description" },
+                        { "urn:ietf:params:xml:ns:carddav", "supported-address-data" },
+                        { NULL, NULL }
+                    };
+                    m_davProps.clear();
+                    m_session->propfindProp(path, 1, props, callback);
+                    BOOST_FOREACH(Props_t::value_type &entry, m_davProps) {
+                        const std::string &sub = entry.first;
+                        const std::string &subType = entry.second["DAV::resourcetype"];
+                        // new candidates are:
+                        // - untested
+                        // - not already a candidate
+                        // - a resource
+                        if (tried.find(sub) == tried.end() &&
+                            std::find(candidates.begin(), candidates.end(), sub) == candidates.end() &&
+                            subType.find("<DAV:collection></DAV:collection>") != subType.npos) {
+                            // insert before other candidates (depth-first search)
+                            candidates.push_front(sub);
+                            if (next.empty() && typeMatches(entry.second)) {
+                                // try this one before or all other candidates
+                                next = sub;
+                            }
+                            SE_LOG_DEBUG(NULL, NULL, "new candidate: %s", sub.c_str());
                         }
-                        SE_LOG_DEBUG(NULL, NULL, "new candidate: %s", sub.c_str());
                     }
                 }
             }
         }
+
         if (next.empty()) {
             // use next candidate
             if (candidates.empty()) {
                 throwError(StringPrintf("no collection found in %s", m_settings->getURL().c_str()));
             }
-            next = *candidates.begin();
-            candidates.erase(candidates.begin());
+            next = candidates.front();
+            candidates.pop_front();
             SE_LOG_DEBUG(NULL, NULL, "follow candidate %s", next.c_str());
         }
 
@@ -326,6 +409,34 @@ void WebDAVSource::open()
     m_calendar = m_session->getURI();
     m_calendar.m_path = path;
     SE_LOG_DEBUG(NULL, NULL, "picked final path %s", m_calendar.m_path.c_str());
+
+    // Check some server capabilities. Purely informational at this point.
+    if (LoggerBase::instance().getLevel() >= Logger::DEV) {
+        SE_LOG_DEBUG(NULL, NULL, "read capabilities of %s", m_calendar.toURL().c_str());
+        int caps = m_session->options(path);
+        static const Flag descr[] = {
+            { NE_CAP_DAV_CLASS1, "Class 1 WebDAV (RFC 2518)" },
+            { NE_CAP_DAV_CLASS2, "Class 2 WebDAV (RFC 2518)" },
+            { NE_CAP_DAV_CLASS3, "Class 3 WebDAV (RFC 4918)" },
+            { NE_CAP_MODDAV_EXEC, "mod_dav 'executable' property" },
+            { NE_CAP_DAV_ACL, "WebDAV ACL (RFC 3744)" },
+            { NE_CAP_VER_CONTROL, "DeltaV version-control" },
+            { NE_CAP_CO_IN_PLACE, "DeltaV checkout-in-place" },
+            { NE_CAP_VER_HISTORY, "DeltaV version-history" },
+            { NE_CAP_WORKSPACE, "DeltaV workspace" },
+            { NE_CAP_UPDATE, "DeltaV update" },
+            { NE_CAP_LABEL, "DeltaV label" },
+            { NE_CAP_WORK_RESOURCE, "DeltaV working-resouce" },
+            { NE_CAP_MERGE, "DeltaV merge" },
+            { NE_CAP_BASELINE, "DeltaV baseline" },
+            { NE_CAP_ACTIVITY, "DeltaV activity" },
+            { NE_CAP_VC_COLLECTION, "DeltaV version-controlled-collection" },
+            { 0, NULL }
+        };
+        SE_LOG_DEBUG(NULL, NULL, "%s WebDAV capabilities: %s",
+                     m_session->getURL().c_str(),
+                     Flags2String(caps, descr).c_str());
+    }
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,

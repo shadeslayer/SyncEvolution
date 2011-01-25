@@ -175,8 +175,8 @@ class Session {
     static boost::shared_ptr<Session> create(const boost::shared_ptr<Settings> &settings);
     ~Session();
 
-    /** ne_options2() */
-    unsigned int options();
+    /** ne_options2() for a specific path*/
+    unsigned int options(const std::string &path);
 
     /**
      * called with URI and complete result set; exceptions are logged, but ignored

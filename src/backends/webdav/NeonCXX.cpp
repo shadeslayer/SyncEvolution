@@ -307,10 +307,10 @@ int Session::sslVerify(void *userdata, int failures, const ne_ssl_certificate *c
     }
 }
 
-unsigned int Session::options()
+unsigned int Session::options(const std::string &path)
 {
     unsigned int caps;
-    check(ne_options2(m_session, m_uri.m_path.c_str(), &caps));
+    check(ne_options2(m_session, path.c_str(), &caps));
     return caps;
 }
 

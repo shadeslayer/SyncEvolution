@@ -35,6 +35,7 @@ class CardDAVSource : public WebDAVSource,
 
  protected:
     // implementation of WebDAVSource callbacks
+    virtual std::string serviceType() const { return "carddav"; }
     virtual bool typeMatches(const StringMap &props) const;
     virtual std::string homeSetProp() const { return "urn:ietf:params:xml:ns:carddav:addressbook-home-set"; }
     virtual std::string contentType() const { return "text/vcard; charset=utf-8"; }

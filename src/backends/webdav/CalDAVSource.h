@@ -64,6 +64,7 @@ class CalDAVSource : public WebDAVSource,
 
  protected:
     // implementation of WebDAVSource callbacks
+    virtual std::string serviceType() const { return "caldav"; }
     virtual bool typeMatches(const StringMap &props) const;
     virtual std::string homeSetProp() const { return "urn:ietf:params:xml:ns:caldav:calendar-home-set"; }
     virtual std::string contentType() const { return "text/calendar; charset=utf-8"; }

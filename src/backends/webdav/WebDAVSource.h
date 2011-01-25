@@ -16,6 +16,8 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
+class ContextSettings;
+
 /**
  * Implements generic access to a WebDAV collection.
  *
@@ -75,6 +77,11 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     Neon::Settings &settings() { return *m_settings; }
 
     /**
+     * SRV type to be used for finding URL (caldav, carddav, ...)
+     */
+    virtual string serviceType() const = 0;
+
+    /**
      * return true if resource with the given properties is something we can work with;
      * properties which are queried are currently hard-coded in WebDAVSource::open()
      *
@@ -113,7 +120,10 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     virtual const std::string *setResourceName(const std::string &item, std::string &buffer, const std::string &luid) { return &item; }
 
  private:
+    /** settings to be used, never NULL, may be the same as m_contextSettings */
     boost::shared_ptr<Neon::Settings> m_settings;
+    /** settings constructed by us instead of caller, may be NULL */
+    boost::shared_ptr<ContextSettings> m_contextSettings;
     boost::shared_ptr<Neon::Session> m_session;
 
     /** normalized path: including backslash, URI encoded */
