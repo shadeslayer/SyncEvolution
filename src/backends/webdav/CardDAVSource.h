@@ -33,6 +33,9 @@ class CardDAVSource : public WebDAVSource,
     // implementation of SyncSourceLogging callback
     virtual std::string getDescription(const string &luid);
 
+    // implements vCard specific conversions on top of generic WebDAV readItem()
+    void readItem(const std::string &luid, std::string &item, bool raw);
+
  protected:
     // implementation of WebDAVSource callbacks
     virtual std::string serviceType() const { return "carddav"; }

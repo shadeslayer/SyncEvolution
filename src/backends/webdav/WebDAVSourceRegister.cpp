@@ -73,6 +73,7 @@ static RegisterSyncSource registerMe("DAV",
 class WebDAVTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(WebDAVTest);
     CPPUNIT_TEST(testInstantiate);
+    CPPUNIT_TEST(testHTMLEntities);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -84,6 +85,61 @@ protected:
         source.reset((TestingSyncSource *)SyncSource::createTestingSource("CardDAV", "CardDAV", true));
         source.reset((TestingSyncSource *)SyncSource::createTestingSource("CardDAV", "CardDAV:text/vcard", true));
         source.reset((TestingSyncSource *)SyncSource::createTestingSource("CardDAV", "CardDAV:text/x-vcard", true));
+    }
+
+    std::string decode(const char *item) {
+        std::string buffer = item;
+        CardDAVSource::replaceHTMLEntities(buffer);
+        return buffer;
+    }
+
+    void testHTMLEntities() {
+        // named entries
+        CPPUNIT_ASSERT_EQUAL(std::string("\" & ' < >"),
+                             decode("&quot; &amp; &apos; &lt; &gt;"));
+        // decimal and hex, encoded in different ways
+        CPPUNIT_ASSERT_EQUAL(std::string("\" & ' < >"),
+                             decode("&#x22; &#0038; &#x0027; &#x3C; &#x3e;"));
+        // no translation needed
+        CPPUNIT_ASSERT_EQUAL(std::string("hello world"),
+                             decode("hello world"));
+        // entity at start
+        CPPUNIT_ASSERT_EQUAL(std::string("< "),
+                             decode("&lt; "));
+        // entity at end
+        CPPUNIT_ASSERT_EQUAL(std::string(" <"),
+                             decode(" &lt;"));
+        // double quotation
+        CPPUNIT_ASSERT_EQUAL(std::string("\\"),
+                             decode("&amp;#92;"));
+        CPPUNIT_ASSERT_EQUAL(std::string("ampersand entity & less-than entity <"),
+                             decode("ampersand entity &amp; less-than entity &amp;lt;"));
+
+        // invalid entities
+        CPPUNIT_ASSERT_EQUAL(std::string(" &"),
+                             decode(" &"));
+        CPPUNIT_ASSERT_EQUAL(std::string("&"),
+                             decode("&"));
+        CPPUNIT_ASSERT_EQUAL(std::string("& "),
+                             decode("& "));
+        CPPUNIT_ASSERT_EQUAL(std::string("&;"),
+                             decode("&;"));
+        CPPUNIT_ASSERT_EQUAL(std::string("&; "),
+                             decode("&; "));
+        CPPUNIT_ASSERT_EQUAL(std::string(" &; "),
+                             decode(" &; "));
+        CPPUNIT_ASSERT_EQUAL(std::string(" &;"),
+                             decode(" &;"));
+        CPPUNIT_ASSERT_EQUAL(std::string("&xyz;"),
+                             decode("&xyz;"));
+        CPPUNIT_ASSERT_EQUAL(std::string("&#1f;"),
+                             decode("&#1f;"));
+        CPPUNIT_ASSERT_EQUAL(std::string("&#1f;"),
+                             decode("&#1f;"));
+        CPPUNIT_ASSERT_EQUAL(std::string("&#x1f ;"),
+                             decode("&#x1f ;"));
+        CPPUNIT_ASSERT_EQUAL(std::string("&#quot ;"),
+                             decode("&#quot ;"));
     }
 };
 

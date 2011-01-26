@@ -34,6 +34,12 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     WebDAVSource(const SyncSourceParams &params,
                  const boost::shared_ptr<Neon::Settings> &settings);
 
+    /**
+     * Utility function: replace HTML entities until none are left
+     * in the decoded string - for Yahoo! Contacts bug.
+     */
+    static void replaceHTMLEntities(std::string &item);
+
  protected:
     /* implementation of SyncSource interface */
     virtual void open();

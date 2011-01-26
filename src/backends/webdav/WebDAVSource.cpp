@@ -136,6 +136,120 @@ WebDAVSource::WebDAVSource(const SyncSourceParams &params,
     }
 }
 
+void WebDAVSource::replaceHTMLEntities(std::string &item)
+{
+    while (true) {
+        bool found = false;
+
+        std::string decoded;
+        size_t last = 0; // last character copied
+        size_t next = 0; // next character to be looked at
+        while (true) {
+            next = item.find('&', next);
+            size_t start = next;
+            if (next == item.npos) {
+                // finish decoding
+                if (found) {
+                    decoded.append(item, last, item.size() - last);
+                }
+                break;
+            }
+            next++;
+            size_t end = next;
+            while (end != item.size()) {
+                char c = item[end];
+                if ((c >= 'a' && c <= 'z') ||
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') ||
+                    (c == '#')) {
+                    end++;
+                } else {
+                    break;
+                }
+            }
+            if (end == item.size() || item[end] != ';') {
+                // Invalid character between & and ; or no
+                // proper termination? No entity, continue
+                // decoding in next loop iteration.
+                next = end;
+                continue;
+            }
+            unsigned char c = 0;
+            if (next < end) {
+                if (item[next] == '#') {
+                    // decimal or hexadecimal number
+                    next++;
+                    if (next < end) {
+                        int base;
+                        if (item[next] == 'x') {
+                            // hex
+                            base = 16;
+                            next++;
+                        } else {
+                            base = 10;
+                        }
+                        while (next < end) {
+                            unsigned char v = tolower(item[next]);
+                            if (v >= '0' && v <= '9') {
+                                next++;
+                                c = c * base + (v - '0');
+                            } else if (base == 16 && v >= 'a' && v <= 'f') {
+                                next++;
+                                c = c * base + (v - 'a') + 10;
+                            } else {
+                                // invalid character, abort scanning of this entity
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // check for entities
+                    struct {
+                        const char *m_name;
+                        unsigned char m_character;
+                    } entities[] = {
+                        // core entries, extend as needed...
+                        { "quot", '"' },
+                        { "amp", '&' },
+                        { "apos", '\'' },
+                        { "lt", '<' },
+                        { "gt", '>' },
+                        { NULL, 0 }
+                    };
+                    int i = 0;
+                    while (true) {
+                        const char *name = entities[i].m_name;
+                        if (!name) {
+                            break;
+                        }
+                        if (!item.compare(next, end - next, name)) {
+                            c = entities[i].m_character;
+                            next += strlen(name);
+                            break;
+                        }
+                        i++;
+                    }
+                }
+                if (next == end) {
+                    // swallowed all characters in entity, must be valid:
+                    // copy all uncopied characters plus the new one
+                    found = true;
+                    decoded.reserve(item.size());
+                    decoded.append(item, last, start - last);
+                    decoded.append(1, c);
+                    last = end + 1;
+                }
+            }
+            next = end + 1;
+        }
+        if (found) {
+            item = decoded;
+        } else {
+            break;
+        }
+    }
+}
+
 void WebDAVSource::open()
 {
     SE_LOG_DEBUG(NULL, NULL, "using libneon %s with %s",
