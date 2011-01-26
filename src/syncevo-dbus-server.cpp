@@ -994,6 +994,67 @@ private:
     SignalWatch2 <string,boost::variant<vector<string>, string> > m_propertyChanged;
 };
 
+/**
+ * Client for org.freedesktop.NetworkManager
+ * The initial state of NetworkManager is queried via
+ * org.freedesktop.DBus.Properties. Dynamic changes are listened via
+ * org.freedesktop.NetworkManager - StateChanged signal
+ */
+class NetworkManagerClient : public DBusRemoteObject
+{
+public:
+    enum NM_State
+      {
+        NM_STATE_UNKNOWN,
+        NM_STATE_ASLEEP,
+        NM_STATE_CONNECTING,
+        NM_STATE_CONNECTED,
+        NM_STATE_DISCONNECTED
+      };
+public:
+    NetworkManagerClient(DBusServer& server);
+    
+    virtual const char *getDestination() const {
+        return "org.freedesktop.NetworkManager";
+    }
+    virtual const char *getPath() const {
+        return "/org/freedesktop/NetworkManager";
+    }
+    virtual const char *getInterface() const {
+        return "org.freedesktop.NetworkManager";
+    }
+    virtual DBusConnection *getConnection() const {
+        return m_networkManagerConn.get();
+    }
+
+    void stateChanged(uint32_t uiState);
+
+private:
+
+    class NetworkManagerProperties : public DBusRemoteObject
+    {
+    public:
+        NetworkManagerProperties(NetworkManagerClient& manager);
+
+        virtual const char *getDestination() const {
+            return "org.freedesktop.NetworkManager";
+        }
+        virtual const char *getPath() const {
+            return "/org/freedesktop/NetworkManager";
+        }
+        virtual const char *getInterface() const {
+            return "org.freedesktop.DBus.Properties";
+        }
+        virtual DBusConnection* getConnection() const {
+            return m_manager.getConnection();
+        }
+    private:
+        NetworkManagerClient &m_manager;
+    };
+    DBusServer &m_server;
+    DBusConnectionPtr m_networkManagerConn;
+    SignalWatch1<uint32_t> m_stateChanged;
+};
 
 
 /**
@@ -1238,7 +1299,8 @@ class DBusServer : public DBusObjectHelper,
 
     PresenceStatus m_presence;
     ConnmanClient m_connman;
-
+    NetworkManagerClient m_networkManager;
+    
     /** manager to automatic sync */
     AutoSyncManager m_autoSync;
 
@@ -4941,6 +5003,37 @@ void ConnmanClient::propertyChanged(const string &name,
     }
 }
 
+/***************** NetworkManagerClient implementation *************/
+NetworkManagerClient::NetworkManagerClient(DBusServer &server) :
+    m_server(server),
+    m_stateChanged(*this, "StateChanged")
+{
+    m_networkManagerConn = b_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
+    if(m_networkManagerConn) {
+        // TODO: first should check current state
+        m_stateChanged.activate(boost::bind(
+                                    &NetworkManagerClient::stateChanged,
+                                    this, _1));
+    } else {
+        SE_LOG_ERROR(NULL, NULL,
+                     "DBus connection setup for NetworkManager failed");
+    }
+}
+
+void NetworkManagerClient::stateChanged(uint32_t uiState)
+{
+    if(uiState==NM_STATE_CONNECTED) {
+        SE_LOG_DEBUG(NULL, NULL, "NetworkManager connected");
+        m_server.getPresenceStatus().updatePresenceStatus(
+            true, PresenceStatus::HTTP_TRANSPORT);
+    } else {
+        SE_LOG_DEBUG(NULL, NULL, "NetworkManager connected");
+        m_server.getPresenceStatus().updatePresenceStatus(
+            false, PresenceStatus::HTTP_TRANSPORT);
+    }
+}
+
+
 /********************** DBusServer implementation ******************/
 
 void DBusServer::clientGone(Client *c)
@@ -5133,6 +5226,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     logOutput(*this, "LogOutput"),
     m_presence(*this),
     m_connman(*this),
+    m_networkManager(*this),
     m_autoSync(*this),
     m_autoTerm(m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
     m_parentLogger(LoggerBase::instance())
