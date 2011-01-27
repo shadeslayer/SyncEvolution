@@ -329,6 +329,12 @@ std::string StringPrintfV(const char *format, va_list ap);
 char *Strncpy(char *dest, const char *src, size_t n);
 
 /**
+ * sleep() with sub-second resolution. Might be interrupted by signals
+ * before the time has elapsed.
+ */
+void Sleep(double seconds);
+
+/**
  * an exception which records the source file and line
  * where it was thrown
  *

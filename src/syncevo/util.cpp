@@ -43,6 +43,7 @@
 #include <dirent.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <math.h>
 
 #if USE_SHA256 == 1
 # include <glib.h>
@@ -667,6 +668,14 @@ char *Strncpy(char *dest, const char *src, size_t n)
         dest[n - 1] = 0;
     }
     return dest;
+}
+
+void Sleep(double seconds)
+{
+    timeval delay;
+    delay.tv_sec = floor(seconds);
+    delay.tv_usec = (seconds - (double)delay.tv_sec) * 1e6;
+    select(0, NULL, NULL, NULL, &delay);
 }
 
 
