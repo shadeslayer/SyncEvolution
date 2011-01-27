@@ -121,6 +121,7 @@ libsyncevolution_include_HEADERS = \
 	TrackingSyncSource.h  \
         MapSyncSource.h \
         LogRedirect.h \
+        LogStdout.h \
 	FileConfigNode.h \
 								  FilterConfigNode.h \
 								  PrefixConfigNode.h \
