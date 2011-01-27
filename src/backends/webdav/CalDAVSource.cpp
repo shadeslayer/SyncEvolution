@@ -439,7 +439,19 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         if (*event.m_subids.begin() != subid) {
             SE_THROW("event not found");
         } else {
-            removeItem(event.m_DAVluid);
+            try {
+                removeItem(event.m_DAVluid);
+            } catch (const TransportStatusException &ex) {
+                if (ex.syncMLStatus() == 404) {
+                    // Someone must have created a detached recurrence on
+                    // the server without the master event - or the 
+                    // item was already removed while the sync ran.
+                    // Let's log the problem and ignore it.
+                    Exception::log();
+                } else {
+                    throw;
+                }
+            }
         }
         m_cache.erase(davLUID);
         return "";
@@ -528,7 +540,79 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
 {
     if (!event.m_calendar) {
         std::string item;
-        readItem(event.m_DAVluid, item, true);
+        try {
+            readItem(event.m_DAVluid, item, true);
+        } catch (const TransportStatusException &ex) {
+            if (ex.syncMLStatus() == 404) {
+                // Someone must have created a detached recurrence on
+                // the server without the master event. We avoid that
+                // with the "Google Child Hack", but have no control
+                // over other clients. So let's deal with this problem
+                // after logging it.
+                Exception::log();
+
+                // We know about the event because it showed up in a REPORT.
+                // So let's use such a REPORT to retrieve the desired item.
+                // Not as efficient as a GET (and thus not the default), but
+                // so be it.
+#if 0
+                // This would be fairly efficient, but runs into the same 404 error as a GET.
+                std::string query =
+                    StringPrintf("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+                                 "<C:calendar-multiget xmlns:D=\"DAV:\"\n"
+                                 "   xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
+                                 "<D:prop>\n"
+                                 "   <C:calendar-data/>\n"
+                                 "</D:prop>\n"
+                                 "<D:href><[CDATA[%s]]></D:href>\n"
+                                 "</C:calendar-multiget>",
+                                 event.m_DAVluid.c_str());
+                Neon::XMLParser parser;
+                std::string href, etag;
+                item = "";
+                parser.initReportParser(href, etag);
+                parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                                   boost::bind(Neon::XMLParser::append, boost::ref(item), _2, _3));
+                Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+                report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+                report.run();
+#else
+                std::string query =
+                    StringPrintf("<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
+                                 "<C:calendar-query xmlns:D=\"DAV:\"\n"
+                                 "xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
+                                 "<D:prop>\n"
+                                 "<D:getetag/>\n"
+                                 "<C:calendar-data/>\n"
+                                 "</D:prop>\n"
+                                 // filter expected by Yahoo! Calendar
+                                 "<C:filter>\n"
+                                 "<C:comp-filter name=\"VCALENDAR\">\n"
+                                 "<C:comp-filter name=\"VEVENT\">\n"
+                                 "<C:prop-filter name=\"UID\">\n"
+                                 "<C:text-match collation=\"i;octet\"><![CDATA[%s]]></C:text-match>\n"
+                                 "</C:prop-filter>\n"
+                                 "</C:comp-filter>\n"
+                                 "</C:comp-filter>\n"
+                                 "</C:filter>\n"
+                                 "</C:calendar-query>\n",
+                                 event.m_UID.c_str());
+                string result;
+                string href, etag;
+                Neon::XMLParser parser;
+                parser.initReportParser(href, etag);
+                item = "";
+                parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                                   boost::bind(Neon::XMLParser::append, boost::ref(item), _2, _3));
+                Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+                report.addHeader("Depth", "1");
+                report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+                report.run();
+#endif
+            } else {
+                throw;
+            }
+        }
         Event::unescapeRecurrenceID(item);
         event.m_calendar.set(icalcomponent_new_from_string(item.c_str()),
                              "parsing iCalendar 2.0");

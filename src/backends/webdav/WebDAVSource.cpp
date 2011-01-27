@@ -256,6 +256,8 @@ void WebDAVSource::open()
 {
     // ignore the "Request ends, status 207 class 2xx, error line:" printed by neon
     LogRedirect::addIgnoreError(", error line:");
+    // ignore error messages in returned data
+    LogRedirect::addIgnoreError("Read block (");
 
     SE_LOG_DEBUG(NULL, NULL, "using libneon %s with %s",
                  ne_version_string(), Neon::features().c_str());
