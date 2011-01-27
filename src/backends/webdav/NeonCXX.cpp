@@ -528,7 +528,9 @@ Request::~Request()
 void Request::run()
 {
     int error;
+    int attempt = 0;
 
+ retry:
     if (m_result) {
         m_result->clear();
         ne_add_response_body_reader(m_req, ne_accept_2xx,
@@ -537,6 +539,33 @@ void Request::run()
     } else {
         error = ne_xml_dispatch_request(m_req, m_parser->get());
     }
+
+    if (false && error == NE_OK && getStatus()->code == 500) {
+        // Internal server error: seems to be Yahoo! Contacts way of
+        // throttling requests. Try again later. A similar loop
+        // exists *inside* neon for the credentials error seen
+        // with Google Calendar, see Session::getCredentials().
+        time_t last = m_session.getLastRequestEnd();
+        if (last) {
+            // repeat request after exponentially increasing
+            // delays since the last successful request (5
+            // seconds, 10 seconds, 20 seconds, ...) until it
+            // succeeds, but not for more than 1 minute
+            time_t delay = 5 * (1<<attempt);
+            if (delay <= 60) {
+                time_t now = time(NULL);
+                if (now < last + delay) {
+                    SE_LOG_DEBUG(NULL, NULL, "500 internal server error due to throttling (?), retry #%d in %ld seconds",
+                                 attempt,
+                                 (long)(last + delay - now));
+                    sleep(last + delay - now);
+                }
+                attempt++;
+                goto retry;
+            }
+        }
+    }
+
     check(error);
     m_session.setLastRequestEnd(time(NULL));
 }
