@@ -93,18 +93,25 @@ void LogRedirect::init()
     }
 }
 
-LogRedirect::LogRedirect(bool both) throw()
+LogRedirect::LogRedirect(bool both, const char *filename) throw()
 {
     init();
     if (!getenv("SYNCEVOLUTION_DEBUG")) {
         redirect(STDERR_FILENO, m_stderr);
         if (both) {
             redirect(STDOUT_FILENO, m_stdout);
-            m_out = fdopen(dup(m_stdout.m_copy), "w");
+            m_out = filename ?
+                fopen(filename, "w") :
+                fdopen(dup(m_stdout.m_copy), "w");
             if (!m_out) {
                 restore(m_stdout);
                 restore(m_stderr);
-                perror("LogRedirect fdopen");
+                perror(filename ? filename : "LogRedirect fdopen");
+            }
+        } else if (filename) {
+            m_out = fopen(filename, "w");
+            if (!m_out) {
+                perror(filename);
             }
         }
     }

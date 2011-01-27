@@ -135,8 +135,12 @@ class LogRedirect : public LoggerStdout
      * Redirect both stderr and stdout or just stderr,
      * using UDP so that we don't block when not reading
      * redirected output.
+     *
+     * messagev() only writes messages to the previous stdout
+     * or the optional file which pass the filtering (relevant,
+     * suppress known errors, ...).
      */
-    LogRedirect(bool both = true) throw();
+    LogRedirect(bool both = true, const char *filename = NULL) throw();
     ~LogRedirect() throw();
 
     /**
