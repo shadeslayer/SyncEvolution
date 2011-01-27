@@ -679,7 +679,7 @@ void Sleep(double seconds)
 }
 
 
-SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger, std::string *explanation)
+SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger, std::string *explanation, Logger::Level level)
 {
     // any problem here is a fatal local problem, unless set otherwise
     // by the specific exception
@@ -712,7 +712,7 @@ SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger, std::string
     } catch (...) {
         error = "unknown error";
     }
-    SE_LOG_ERROR(logger, NULL, "%s", error.c_str());
+    SE_LOG(level, logger, NULL, "%s", error.c_str());
 
     if (explanation) {
         *explanation = error;

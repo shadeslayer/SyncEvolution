@@ -36,6 +36,8 @@
 #include <exception>
 #include <list>
 
+#include <syncevo/Logging.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 using namespace std;
@@ -357,17 +359,21 @@ class Exception : public std::runtime_error
     /**
      * Convenience function, to be called inside a catch(..) block.
      *
-     * Rethrows the exception to determine what it is, then logs it as
-     * an error. Turns certain known exceptions into the corresponding
+     * Rethrows the exception to determine what it is, then logs it
+     * at the chosen level (error by default).
+     *
+     * Turns certain known exceptions into the corresponding
      * status code if status still was STATUS_OK when called.
      * Returns updated status code.
      *
      * @param logger    the class which does the logging
      * @retval explanation   set to explanation for problem, if non-NULL
+     * @param level     level to be used for logging
      */
-    static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL, std::string *explanation = NULL);
+    static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL, std::string *explanation = NULL, Logger::Level = Logger::ERROR);
     static SyncMLStatus handle(Logger *logger) { return handle(NULL, logger); }
     static SyncMLStatus handle(std::string &explanation) { return handle(NULL, NULL, &explanation); }
+    static void log() { handle(NULL, NULL, NULL, Logger::DEBUG); }
 };
 
 /**
