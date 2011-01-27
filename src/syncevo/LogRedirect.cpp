@@ -47,6 +47,7 @@
 SE_BEGIN_CXX
 
 LogRedirect *LogRedirect::m_redirect;
+std::set<std::string> LogRedirect::m_knownErrors;
 
 void LogRedirect::abortHandler(int sig) throw()
 {
@@ -86,7 +87,7 @@ void LogRedirect::init()
         string_split_iterator it =
             boost::make_split_iterator(lines, boost::first_finder("\n", boost::is_iequal()));
         while (it != string_split_iterator()) {
-            m_knownErrors.push_back(std::string(it->begin(), it->end()));
+            m_knownErrors.insert(std::string(it->begin(), it->end()));
             ++it;
         }
     }
