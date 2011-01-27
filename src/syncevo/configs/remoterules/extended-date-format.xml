@@ -1,0 +1,2 @@
+    <!-- enable this rule if date fields like BDAY and REV shall use 1999-12-31 instead of 19991231 -->
+    <subrule name="EXTENDED-DATE-FORMAT"/>

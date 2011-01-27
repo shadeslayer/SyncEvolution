@@ -10,7 +10,10 @@
           <value conversion="prodid"/>
         </property>
 
-        <property name="REV">
+        <property name="REV" rule="EXTENDED-DATE-FORMAT">
+          <value field="REV" conversion="DATE+EXTFMT"/>
+        </property>
+        <property name="REV" rule="other">
           <value field="REV"/>
         </property>
 
@@ -264,7 +267,11 @@
           </parameter>
         </property>
 
-        <property name="BDAY">
+        
+        <property name="BDAY" rule="EXTENDED-DATE-FORMAT">
+          <value field="BDAY" conversion="DATE+EXTFMT"/>
+        </property>
+        <property name="BDAY" rule="other">
           <value field="BDAY"/>
         </property>
 
