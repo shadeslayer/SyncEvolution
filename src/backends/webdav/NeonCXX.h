@@ -205,6 +205,12 @@ class Session {
     /** same as getURL() split into parts */
     const URI &getURI() const { return m_uri; }
 
+    /**
+     * to be called after each operation which might have produced debugging output by neon;
+     * automatically called by check()
+     */
+    void flush();
+
     /** throw error if error code indicates failure */
     void check(int error);
 
@@ -218,6 +224,7 @@ class Session {
 
  private:
     boost::shared_ptr<Settings> m_settings;
+    bool m_debugging;
     ne_session *m_session;
     URI m_uri;
     std::string m_proxyURL;

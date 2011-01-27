@@ -18,6 +18,7 @@
 
 #include <syncevo/util.h>
 #include <syncevo/Logging.h>
+#include <syncevo/LogRedirect.h>
 #include <syncevo/SmartPtr.h>
 
 #include <syncevo/declarations.h>
@@ -148,6 +149,7 @@ std::string Status2String(const ne_status *status)
 
 Session::Session(const boost::shared_ptr<Settings> &settings) :
     m_settings(settings),
+    m_debugging(false),
     m_session(NULL),
     m_lastRequestEnd(0)
 {
@@ -159,6 +161,7 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
                       (logLevel >= 5 ? (NE_DBG_LOCKS|NE_DBG_SSL) : 0)|
                       (logLevel >= 6 ? (NE_DBG_XML|NE_DBG_XMLPARSE) : 0)|
                       (logLevel >= 11 ? (NE_DBG_HTTPPLAIN) : 0));
+        m_debugging = true;
     } else {
         ne_debug_init(NULL, 0);
     }
@@ -365,8 +368,21 @@ int Session::propIterator(void *userdata,
     }
 }
 
+void Session::flush()
+{
+    if (m_debugging &&
+        LogRedirect::redirectingStderr()) {
+        // flush stderr and wait a bit: this might help to get
+        // the redirected output via LogRedirect
+        fflush(stderr);
+        Sleep(0.001);
+    }
+}
+
 void Session::check(int error)
 {
+    flush();
+
     switch (error) {
     case NE_AUTH:
         SE_THROW_EXCEPTION_STATUS(TransportStatusException,
@@ -539,6 +555,8 @@ void Request::run()
     } else {
         error = ne_xml_dispatch_request(m_req, m_parser->get());
     }
+
+    m_session.flush();
 
     if (false && error == NE_OK && getStatus()->code == 500) {
         // Internal server error: seems to be Yahoo! Contacts way of
