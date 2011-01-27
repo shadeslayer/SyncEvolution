@@ -788,6 +788,17 @@ public:
                           const char *format,
                           va_list args)
     {
+        // always to parent first (usually stdout):
+        // if the parent is a LogRedirect instance, then
+        // it'll flush its own output first, which ensures
+        // that the new output comes later (as desired)
+        {
+            va_list argscopy;
+            va_copy(argscopy, args);
+            m_parentLogger.messagev(level, prefix, file, line, function, format, argscopy);
+            va_end(argscopy);
+        }
+
         if (m_report &&
             level <= ERROR &&
             m_report->getError().empty()) {
@@ -806,8 +817,6 @@ public:
             m_client.getEngine().doDebug(level, prefix, file, line, function, format, argscopy);
             va_end(argscopy);
         }
-        // always to parent (usually stdout)
-        m_parentLogger.messagev(level, prefix, file, line, function, format, args);
     }
 
     virtual bool isProcessSafe() const { return false; }
