@@ -627,6 +627,9 @@ void WebDAVSource::getSynthesisInfo(SynthesisInfo &info,
                 // sent items conceptually replace the one on the server, so
                 // disable them all.
                 "          <noemptyproperties>yes</noemptyproperties>\n"
+                // BDAY is ignored if it has the compact 19991231 instead of
+                // 1999-12-31, although both are valid.
+                "          <include rule='EXTENDED-DATE-FORMAT'/>\n"
                 "      </remoterule>";
         }
         SE_LOG_DEBUG(this, NULL, "using data conversion rules for '%s'", info.m_backendRule.c_str());
