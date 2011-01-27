@@ -131,7 +131,7 @@ public:
         if (!getenv("SYNCEVOLUTION_DEBUG")) {
             string logfile = m_currentTest + ".log";
             simplifyFilename(logfile);
-            m_logger.reset(new LoggerStdout(logfile));
+            m_logger.reset(new LogRedirect(false, logfile.c_str()));
             m_logger->setLevel(Logger::DEBUG);
             LoggerBase::pushLogger(m_logger.get());
         }
@@ -210,7 +210,7 @@ private:
     bool m_failed, m_testFailed;
     string m_currentTest;
     int m_alarmSeconds;
-    auto_ptr<LoggerStdout> m_logger;
+    auto_ptr<LoggerBase> m_logger;
     CppUnit::TestResultCollector m_failures;
 
     static void alarmTriggered(int signal) {
@@ -238,13 +238,6 @@ static void printTests(CppUnit::Test *test, int indention)
 extern "C"
 int main(int argc, char* argv[])
 {
-  // Intercept stderr and route it through our logging.
-  // stdout is printed normally and used by the testing code for
-  // progress and error messages. Deconstructing it when
-  // leaving main() does one final processing of pending
-  // output.
-  LogRedirect redirect(false);
-
   // Get the top level suite from the registry
   CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 
