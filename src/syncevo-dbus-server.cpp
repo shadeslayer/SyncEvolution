@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009 Intel Corporation
+ * Copyright (C) 2011 Symbio, Ville Nummela
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1048,12 +1049,17 @@ private:
         virtual DBusConnection* getConnection() const {
             return m_manager.getConnection();
         }
+        void get();
+        void getCallback(const boost::variant<uint32_t, std::string> &prop,
+                         const std::string &error);
     private:
         NetworkManagerClient &m_manager;
     };
+    
     DBusServer &m_server;
     DBusConnectionPtr m_networkManagerConn;
     SignalWatch1<uint32_t> m_stateChanged;
+    NetworkManagerProperties m_properties;
 };
 
 
@@ -5006,11 +5012,12 @@ void ConnmanClient::propertyChanged(const string &name,
 /***************** NetworkManagerClient implementation *************/
 NetworkManagerClient::NetworkManagerClient(DBusServer &server) :
     m_server(server),
-    m_stateChanged(*this, "StateChanged")
+    m_stateChanged(*this, "StateChanged"),
+    m_properties(*this)
 {
     m_networkManagerConn = b_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
     if(m_networkManagerConn) {
-        // TODO: first should check current state
+        m_properties.get();
         m_stateChanged.activate(boost::bind(
                                     &NetworkManagerClient::stateChanged,
                                     this, _1));
@@ -5027,12 +5034,39 @@ void NetworkManagerClient::stateChanged(uint32_t uiState)
         m_server.getPresenceStatus().updatePresenceStatus(
             true, PresenceStatus::HTTP_TRANSPORT);
     } else {
-        SE_LOG_DEBUG(NULL, NULL, "NetworkManager connected");
+        SE_LOG_DEBUG(NULL, NULL, "NetworkManager disconnected");
         m_server.getPresenceStatus().updatePresenceStatus(
             false, PresenceStatus::HTTP_TRANSPORT);
     }
 }
 
+NetworkManagerClient::NetworkManagerProperties::NetworkManagerProperties(
+    NetworkManagerClient& manager) :
+    m_manager(manager)
+{
+
+}
+
+void NetworkManagerClient::NetworkManagerProperties::get()
+{
+    DBusClientCall1<boost::variant<uint32_t, std::string> > get(*this, "Get");
+    get(std::string(""), std::string("State"),
+        boost::bind(&NetworkManagerProperties::getCallback, this, _1, _2));    
+}
+
+void NetworkManagerClient::NetworkManagerProperties::getCallback(
+    const boost::variant<uint32_t, std::string> &prop,
+    const std::string &error)
+{
+    if(!error.empty()) {
+        SE_LOG_DEBUG (
+            NULL, NULL,
+            "Error in calling Get of Interface "
+            "org.freedesktop.DBus.Properties : %s", error.c_str());
+    } else {
+        m_manager.stateChanged(boost::get<uint32_t>(prop));
+    }
+}
 
 /********************** DBusServer implementation ******************/
 
