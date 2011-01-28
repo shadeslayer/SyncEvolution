@@ -728,9 +728,18 @@ bool Cmdline::run() {
         // what we want, but because this is how we have done it
         // traditionally, I keep this behavior for now.
         set<string> *sources = NULL;
+        set<string> allSources;
         if (!m_sources.empty() &&
             (!fromScratch || configureContext)) {
+            // use explicitly selected sources
             sources = &m_sources;
+        } else {
+            // need an explicit list of all sources which will be copied,
+            // for the createFilters() call below
+            BOOST_FOREACH(const std::string &source, from->getSyncSources()) {
+                allSources.insert(source);
+            }
+            sources = &allSources;
         }
 
         // Apply config changes on-the-fly. Regardless what we do
@@ -2996,6 +3005,22 @@ protected:
         boost::replace_all(expected, "sync = two-way", "sync = disabled");
         boost::replace_first(expected, "sync = disabled", "sync = two-way");
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
+
+        // override type in template while creating from scratch
+        {
+            TestCmdline cmdline("--configure",
+                                "--template", "SyncEvolution",
+                                "--source-property", "addressbook/type=file:text/vcard:3.0",
+                                "--source-property", "calendar/type=file:text/calendar:2.0",
+                                "syncevo@syncevo",
+                                NULL);
+            cmdline.doit();
+        }
+        string syncevoroot = m_testDir + "/syncevolution/syncevo";
+        res = scanFiles(syncevoroot + "/sources/addressbook");
+        CPPUNIT_ASSERT(res.find("type = file:text/vcard:3.0") != res.npos);
+        res = scanFiles(syncevoroot + "/sources/calendar");
+        CPPUNIT_ASSERT(res.find("type = file:text/calendar:2.0") != res.npos);
     }
 
     void testOldConfigure() {
