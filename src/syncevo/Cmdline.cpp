@@ -3395,7 +3395,7 @@ private:
             if (m_err.str().size()) {
                 m_out << endl << m_err.str();
             }
-            CPPUNIT_ASSERT(success);
+            CPPUNIT_ASSERT_MESSAGE(m_out.str(), success);
         }
 
         ostringstream m_out, m_err;
