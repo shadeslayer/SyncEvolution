@@ -162,7 +162,7 @@ bool ButeoBridge::init()
                            "--sync-property", "printChanges=0",
                            "--sync-property", "dumpData=0",
                            "--source-property", "calendar/type=CalDAV",
-                           "--source-property", "addressbook/type=CalDAV",
+                           "--source-property", "addressbook/type=CardDAV",
                            config.c_str(),
                            sources[0], sources[1], sources[2], sources[3],
                            NULL);
