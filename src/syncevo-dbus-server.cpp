@@ -2737,7 +2737,8 @@ void ReadOperations::getConfig(bool getTemplate,
         }
     }
 
-    // Set ConsumerReady for existing SyncEvolution < 1.2 configs,
+    // Set ConsumerReady for existing SyncEvolution < 1.2 configs
+    // if not set explicitly,
     // because in older releases all existing configurations where
     // shown. SyncEvolution 1.2 is more strict and assumes that
     // ConsumerReady must be set explicitly. The sync-ui always has
@@ -2745,7 +2746,7 @@ void ReadOperations::getConfig(bool getTemplate,
     // command line did not. Matches similar code in the Cmdline.cpp
     // migration code.
     if (syncConfig->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0 /* SyncEvolution < 1.2 */) {
-        localConfigs["ConsumerReady"] = "1";
+        localConfigs.insert(make_pair("ConsumerReady", "1"));
     }
 
     // insert 'configName' of the chosen config (m_configName is not normalized)
@@ -3122,9 +3123,19 @@ static void setSyncFilters(const ReadOperations::Config_t &config,FilterConfigNo
         if (name.empty()) {
             ConfigPropertyRegistry &registry = SyncConfig::getRegistry();
             for (sit = it->second.begin(); sit != it->second.end(); sit++) {
-                if (boost::iequals(sit->first, "configName")) {
-                    // read-only properties can (and have to be) ignored
-                } else {
+                // read-only properties can (and have to be) ignored
+                static const char *init[] = {
+                    "configName",
+                    "description",
+                    "score",
+                    "deviceName",
+                    "templateName",
+                    "fingerprint"
+                };
+                static const set< std::string, Nocase<std::string> >
+                    special(init,
+                            init + (sizeof(init) / sizeof(*init)));
+                if (special.find(sit->first) == special.end()) {
                     copyProperty(*sit, registry, syncFilter);
                 }
             }
