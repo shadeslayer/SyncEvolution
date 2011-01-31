@@ -213,43 +213,9 @@ sometimes also a beta or alpha suffix),
 
         <doc:para>
         When retrieving the templates with GetConfig(), several additional
-        properties will be returned:
-        <doc:list>
-          <doc:item>
-            <doc:term>description</doc:term>
-            <doc:definition>the description for the template
-            (non-localized string)</doc:definition>
-          </doc:item>
-          <doc:item>
-            <doc:term>score</doc:term>
-            <doc:definition>the calculated score based on the device
-            name and template (1-5, 5 is best)</doc:definition>
-          </doc:item>
-          <doc:item>
-            <doc:term>deviceName</doc:term>
-            <doc:definition>the device name that the template is for
-            (copied verbatim from that device)</doc:definition>
-          </doc:item>
-            <doc:item>
-              <doc:term>templateName</doc:term>
-              <doc:definition>string identifying the class of devices
-                the templates works for, like "Nokia S40"; meant to be
-                shown to users; optional, fall back to first entry in
-                fingerPrint if not set</doc:definition>
-            </doc:item>
-            <doc:item>
-              <doc:term>fingerPrint</doc:term>
-              <doc:definition>comma separated list of devices which
-                work with this template, typically in "vendor model"
-                format; can be used by D-Bus clients to re-match with
-                user provided device information</doc:definition>
-            </doc:item>
-        </doc:list>
-        </doc:para>
-
-        <doc:para>
-        Together with these changes, a property value is changed: 'syncURL' in the
-        configuration is replaced with the mac address of the device.
+        properties will be returned which can be used to pick the right template for
+        a device, see GetConfig(). The 'syncURL' is already replaced with the mac address of the device
+        and thus can be used to find all templates refering to the same device.
         </doc:para>
       </doc:description></doc:doc>
       <arg type="b" name="tmplate" direction="in">
@@ -267,7 +233,74 @@ sometimes also a beta or alpha suffix),
 
     <method name="GetConfig">
       <doc:doc><doc:description>
-        Get the configuration of a specific server (or template)
+        <doc:para>Get the configuration of a specific server (or template).</doc:para>
+
+        <doc:para>The dictionary keys are "source/&lt;source name&gt;" for
+        sources and the empty string for the main server
+        configuration. More keys might be added in the future. The
+        values are "configuration dictionaries" which contain keys
+        and values matching those in the SyncEvolution server 
+        configuration files.</doc:para>
+
+        <doc:para>In addition, some special keys for read-only
+        values are added:
+        <doc:list>
+          <doc:item>
+            <doc:term>configName</doc:term>
+            <doc:definition>Normalized configuration. For example,
+            if a session is opened for "FooBar" and there is an
+            existing configuration "foobar@some-context", then the
+            latter is used for the session instead of the "FooBar"
+            shorthand. All configuration names sent by
+            syncevo-dbus-server are normalized. D-Bus clients should
+            compare that against the "configName" value instead of
+            the config name chosen by them or the
+            user.</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>description</doc:term>
+            <doc:definition>device template: the description for the template
+            (non-localized string)</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>score</doc:term>
+            <doc:definition>device template: the calculated score based on the device
+            name and template (1-5, 5 is best)</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>deviceName</doc:term>
+            <doc:definition>device template: the device name that the template is for
+            (copied verbatim from that device)</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>templateName</doc:term>
+            <doc:definition>device template: string identifying the class of devices
+            the templates works for, like "Nokia S40"; meant to be
+            shown to users; optional, fall back to first entry in
+            fingerPrint if not set</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>fingerPrint</doc:term>
+            <doc:definition>device template: comma separated list of devices which
+            work with this template, typically in "vendor model"
+            format; can be used by D-Bus clients to re-match with
+            user provided device information</doc:definition>
+          </doc:item>
+        </doc:list>
+        </doc:para>
+
+        <doc:para>Properties which are not set are also not present in the
+        configuration dictionaries. The semantic difference between
+        "not set" and "empty" or "set to default" is that unset
+        values will always use the default value, even after that
+        changed during a software update. Properties that are set
+        always use the chosen value.</doc:para>
+
+        <doc:para>Note that property keys are case insensitive. The D-Bus
+        interface specification would allow to send two
+        properties whose keys only differ in case to the
+        server. The result is undefined.</doc:para>
+
       </doc:description></doc:doc>
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
@@ -282,25 +315,6 @@ sometimes also a beta or alpha suffix),
         <doc:doc><doc:summary>
           server (or template) configuration
         </doc:summary></doc:doc>
-        <doc:doc><doc:description>
-          The dictionary keys are "source/&lt;source name&gt;" for
-          sources and the empty string for the main server
-          configuration. More keys might be added in the future. The
-          values are "configuration dictionaries" which contain keys
-          and values matching those in the SyncEvolution server 
-          configuration files. 
-          Properties which are not set are also not present in the
-          configuration dictionaries. The semantic difference between
-          "not set" and "empty" or "set to default" is that unset
-          values will always use the default value, even after that
-          changed during a software update. Properties that are set
-          always use the chosen value.
-
-          Note that property keys are case insensitive. The D-Bus
-          interface specification would allow to send two
-          properties whose keys only differ in case to the
-          server. The result is undefined.
-        </doc:description></doc:doc>
       </arg>
       <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
     </method>
