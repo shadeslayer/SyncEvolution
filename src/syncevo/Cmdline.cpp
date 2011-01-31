@@ -878,7 +878,7 @@ bool Cmdline::run() {
 
         // extra sanity check
         if (!m_sources.empty() ||
-            !m_props.hasProperties()) {
+            m_props.hasProperties()) {
             usage(true, "too many parameters for --remove");
             return false;
         } else {
