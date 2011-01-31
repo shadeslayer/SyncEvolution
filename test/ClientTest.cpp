@@ -4502,7 +4502,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DESCRIPTION:Summary\\nBody modified\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";                
-        config.insertItem =
+        config.templateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
