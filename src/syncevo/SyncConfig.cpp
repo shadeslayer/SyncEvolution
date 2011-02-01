@@ -1095,6 +1095,18 @@ string SyncConfig::getPeerName() const
     return peer;
 }
 
+list<string> SyncConfig::getPeers() const
+{
+    list<string> res;
+
+    if (!hasPeerProperties()) {
+        FileConfigTree tree(getRootPath(), "", SHARED_LAYOUT);
+        res = tree.getChildren("peers");
+    }
+
+    return res;
+}
+
 void SyncConfig::preFlush(ConfigUserInterface &ui)
 {
     /* Iterator over all sync global and source properties 

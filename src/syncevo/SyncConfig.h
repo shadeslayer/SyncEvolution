@@ -1184,6 +1184,12 @@ class SyncConfig {
     bool hasPeerProperties() const { return !m_peerPath.empty(); }
 
     /**
+     * returns names of peers inside this config;
+     * empty if not a context
+     */
+    list<string> getPeers() const;
+
+    /**
      * Do something before doing flush to files. This is particularly
      * useful when user interface wants to do preparation jobs, such
      * as savePassword and others.
