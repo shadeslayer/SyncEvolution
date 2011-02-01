@@ -2236,8 +2236,8 @@ protected:
         ScopedEnvChange home("HOME", m_testDir);
 
         root = m_testDir;
-        root += "/syncevolution/default";
         rm_r(root);
+        root += "/syncevolution/default";
         TestCmdline cmdline("--configure",
                             "--template", "scheduleworld",
                             "--sync-property", "deviceID = fixed-devid",
