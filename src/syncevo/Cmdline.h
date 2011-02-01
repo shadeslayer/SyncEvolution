@@ -191,6 +191,32 @@ protected:
     static string cmdOpt(const char *opt, const char *param = NULL);
 
     /**
+     * rename file or directory by appending .old or (if that already
+     * exists) .old.x for x >= 1
+     * @param oldname    original name, must exist
+     * @retval newname   full new name after renaming, including suffix
+     * @retval suffix    the suffix which was added
+     * @return false for failure, error printed to m_err
+     */
+    bool makeObsolete(const string &oldname, string &newname, string &suffix);
+
+    /**
+     * Copy from one config into another, with filters
+     * applied for the target. All sources are copied
+     * if selectedSources is empty, otherwise only
+     * those.
+     */
+    void copyConfig(const boost::shared_ptr<SyncConfig> &from,
+                    const boost::shared_ptr<SyncConfig> &to,
+                    const set<string> &selectedSources);
+
+    /**
+     * flush, move .synthesis dir, set ConsumerReady, ...
+     */
+    void finishCopy(const boost::shared_ptr<SyncConfig> &from,
+                    const boost::shared_ptr<SyncContext> &to);
+
+    /**
      * parse sync or source property
      *
      * @param propertyType   sync, source, or unknown (in which case the property name must be given and must be unique)

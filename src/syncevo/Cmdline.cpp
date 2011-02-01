@@ -401,6 +401,116 @@ bool Cmdline::dontRun() const
     }
 }
 
+bool Cmdline::makeObsolete(const string &oldname, string &newname, string &suffix)
+{
+    int counter = 0;
+    suffix = "";
+    while (true) {
+        ostringstream newsuffix;
+        newsuffix << ".old";
+        if (counter) {
+            newsuffix << "." << counter;
+        }
+        suffix = newsuffix.str();
+        newname = oldname + suffix;
+        if (!rename(oldname.c_str(),
+                    newname.c_str())) {
+            break;
+        } else if (errno != EEXIST && errno != ENOTEMPTY) {
+            m_err << "ERROR: renaming " << oldname << " to " <<
+                newname << ": " << strerror(errno) << endl;
+            return false;
+        }
+        counter++;
+    }
+    return true;
+}
+
+void Cmdline::copyConfig(const boost::shared_ptr<SyncConfig> &from,
+                         const boost::shared_ptr<SyncConfig> &to,
+                         const set<string> &selectedSources)
+{
+    const set<string> *sources = NULL;
+    set<string> allSources;
+    if (!selectedSources.empty()) {
+        // use explicitly selected sources
+        sources = &selectedSources;
+    } else {
+        // need an explicit list of all sources which will be copied,
+        // for the createFilters() call below
+        BOOST_FOREACH(const std::string &source, from->getSyncSources()) {
+            allSources.insert(source);
+        }
+        sources = &allSources;
+    }
+
+    // Apply config changes on-the-fly. Regardless what we do
+    // (changing an existing config, migrating, creating from
+    // a template), existing shared properties in the desired
+    // context must be preserved unless explicitly overwritten.
+    // Therefore read those, update with command line properties,
+    // then set as filter.
+    ConfigProps syncFilter;
+    SourceProps sourceFilters;
+    m_props.createFilters(to->getContextName(), to->getConfigName(), sources, syncFilter, sourceFilters);
+    from->setConfigFilter(true, "", syncFilter);
+    BOOST_FOREACH(const SourceProps::value_type &entry, sourceFilters) {
+        from->setConfigFilter(false, entry.first, entry.second);
+    }
+
+    // Write into the requested configuration, creating it if necessary.
+    to->prepareConfigForWrite();
+    to->copy(*from, sources);
+}
+
+void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
+                         const boost::shared_ptr<SyncContext> &to)
+{
+    // give a change to do something before flushing configs to files
+    to->preFlush(*to);
+
+    // done, now write it
+    m_configModified = true;
+    to->flush();
+
+    // migrating peer?
+    if (m_migrate &&
+        from->hasPeerProperties()) {
+        
+        // also copy .synthesis dir
+        string fromDir, toDir;
+        fromDir = from->getRootPath() + "/.synthesis";
+        toDir = to->getRootPath() + "/.synthesis";
+        if (isDir(fromDir)) {
+            cp_r(fromDir, toDir);
+        }
+
+        // Succeeded so far, remove "ConsumerReady" flag from migrated
+        // config to hide that old config from normal UI users. Must
+        // do this without going through SyncConfig, because that
+        // would bump the version.
+        FileConfigNode node(from->getRootPath(), "config.ini", false);
+        BoolConfigProperty ready("ConsumerReady", "", "0");
+        if (ready.getPropertyValue(node)) {
+            ready.setProperty(node, false);
+        }
+        node.flush();
+
+        // Set ConsumerReady for migrated SyncEvolution < 1.2
+        // configs, because in older releases all existing
+        // configurations where shown. SyncEvolution 1.2 is more
+        // strict and assumes that ConsumerReady must be set
+        // explicitly. The sync-ui always has set the flag for
+        // configs created or modified with it, but the command
+        // line did not. Matches similar code in
+        // syncevo-dbus-server.          
+        if (from->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0 /* SyncEvolution < 1.2 */) {
+            to->setConsumerReady(true);
+            to->flush();
+        }
+    }
+}
+
 /**
  * Finds first instance of delimiter string in other string. In
  * addition, it treats "\n\n" in a special way: that delimiter also
@@ -614,6 +724,11 @@ bool Cmdline::run() {
         // the old config.
         boost::shared_ptr<SyncConfig> from;
         if (m_migrate) {
+            if (!m_sources.empty()) {
+                m_err << "ERROR: cannot migrate individual sources" << endl;
+                return false;
+            }
+
             string oldContext = context;
             from.reset(new SyncConfig(m_server));
             if (!from->exists()) {
@@ -626,6 +741,19 @@ bool Cmdline::run() {
                 }
             }
 
+            // Check if we are migrating an individual peer inside
+            // a context which itself is too old. In that case,
+            // the whole context and everything inside it needs to
+            // be migrated.
+            if (false && // TODO
+                !configureContext &&
+                from->getConfigVersion(CONFIG_LEVEL_CONTEXT, CONFIG_VERSION_MAX) < CONFIG_CONTEXT_MIN_VERSION) {
+                m_server = string("@") + context;
+                from.reset(new SyncConfig(m_server));
+                peer = "";
+                configureContext = true;
+            }
+
             // cannot migrate context configs at the moment;
             // will have to copy all peers inside it, too
             if (configureContext) {
@@ -633,31 +761,20 @@ bool Cmdline::run() {
                 return false;
             }
 
-            int counter = 0;
             string oldRoot = from->getRootPath();
             string suffix;
-            while (true) {
-                ostringstream newsuffix;
-                newsuffix << ".old";
-                if (counter) {
-                    newsuffix << "." << counter;
-                }
-                suffix = newsuffix.str();
-                newname = oldRoot + suffix;
-                if (!rename(oldRoot.c_str(),
-                            newname.c_str())) {
-                    break;
-                } else if (errno != EEXIST && errno != ENOTEMPTY) {
-                    m_err << "ERROR: renaming " << oldRoot << " to " <<
-                        newname << ": " << strerror(errno) << endl;
-                    return false;
-                }
-                counter++;
+            makeObsolete(from->getRootPath(), newname, suffix);
+
+            string newConfigName;
+            if (configureContext) {
+                newConfigName = string("@") + oldContext + suffix;
+            } else {
+                newConfigName = peer + suffix +
+                    (oldContext.empty() ? "" : "@") +
+                    oldContext;
             }
 
-            from.reset(new SyncConfig(peer + suffix +
-                                      (oldContext.empty() ? "" : "@") +
-                                      oldContext));
+            from.reset(new SyncConfig(newConfigName));
         } else {
             from.reset(new SyncConfig(m_server));
             if (!from->exists()) {
@@ -717,7 +834,7 @@ bool Cmdline::run() {
         }
 
         // Which sources are configured is determined as follows:
-        // - all sources in the template by default, except when
+        // - all sources in the template by default (empty set), except when
         // - sources are listed explicitly, and either
         // - updating an existing config or
         // - configuring a context.
@@ -727,39 +844,22 @@ bool Cmdline::run() {
         // source properties applied to all of them. This might not be
         // what we want, but because this is how we have done it
         // traditionally, I keep this behavior for now.
-        set<string> *sources = NULL;
-        set<string> allSources;
-        if (!m_sources.empty() &&
+        //
+        // When migrating, m_sources is empty and thus the whole set of
+        // sources will be migrated. Checking it here for clarity's sake.
+        set<string> sources;
+        if (!m_migrate &&
+            !m_sources.empty() &&
             (!fromScratch || configureContext)) {
-            // use explicitly selected sources
-            sources = &m_sources;
-        } else {
-            // need an explicit list of all sources which will be copied,
-            // for the createFilters() call below
-            BOOST_FOREACH(const std::string &source, from->getSyncSources()) {
-                allSources.insert(source);
-            }
-            sources = &allSources;
+            sources = m_sources;
         }
 
-        // Apply config changes on-the-fly. Regardless what we do
-        // (changing an existing config, migrating, creating from
-        // a template), existing shared properties in the desired
-        // context must be preserved unless explicitly overwritten.
-        // Therefore read those, update with command line properties,
-        // then set as filter.
-        ConfigProps syncFilter;
-        SourceProps sourceFilters;
-        m_props.createFilters(string("@") + context, m_server, sources, syncFilter, sourceFilters);
-        from->setConfigFilter(true, "", syncFilter);
-        BOOST_FOREACH(const SourceProps::value_type &entry, sourceFilters) {
-            from->setConfigFilter(false, entry.first, entry.second);
-        }
-
-        // Write into the requested configuration, creating it if necessary.
+        // copy and filter into the target config: createSyncClient()
+        // creates a SyncContext for m_server, with propert
+        // implementation of the password handling methods in derived
+        // classes (D-Bus server, real command line)
         boost::shared_ptr<SyncContext> to(createSyncClient());
-        to->prepareConfigForWrite();
-        to->copy(*from, sources);
+        copyConfig(from, to, sources);
 
         // Sources are active now according to the server default.
         // Disable all sources not selected by user (if any selected)
@@ -829,47 +929,13 @@ bool Cmdline::run() {
                 SyncContext::throwError(string("no such source(s): ") + boost::join(sources, " "));
             }
         }
-        // give a change to do something before flushing configs to files
-        to->preFlush(*to);
 
-        // done, now write it
-        m_configModified = true;
-        to->flush();
+        // flush, move .synthesis dir, set ConsumerReady, ...
+        finishCopy(from, to);
 
-        // also copy .synthesis dir?
-        if (m_migrate) {
-            string fromDir, toDir;
-            fromDir = from->getRootPath() + "/.synthesis";
-            toDir = to->getRootPath() + "/.synthesis";
-            if (isDir(fromDir)) {
-                cp_r(fromDir, toDir);
-            }
-        }
-
-        // Succeeded so far, remove "ConsumerReady" flag from migrated
-        // config to hide that old config from normal UI users. Must
-        // do this without going through SyncConfig, because that
-        // would bump the version.
-        if (!newname.empty()) {
-            FileConfigNode node(newname, "config.ini", false);
-            BoolConfigProperty ready("ConsumerReady", "", "0");
-            if (ready.getPropertyValue(node)) {
-                ready.setProperty(node, false);
-            }
-            node.flush();
-
-            // Set ConsumerReady for migrated SyncEvolution < 1.2
-            // configs, because in older releases all existing
-            // configurations where shown. SyncEvolution 1.2 is more
-            // strict and assumes that ConsumerReady must be set
-            // explicitly. The sync-ui always has set the flag for
-            // configs created or modified with it, but the command
-            // line did not. Matches similar code in
-            // syncevo-dbus-server.          
-            if (from->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0 /* SyncEvolution < 1.2 */) {
-                to->setConsumerReady(true);
-                to->flush();
-            }
+        // Now also migrate all peers inside context?
+        if (configureContext && m_migrate) {
+            // TODO...
         }
     } else if (m_remove) {
         if (m_dryrun) {
