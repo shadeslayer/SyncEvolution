@@ -1088,6 +1088,13 @@ string SyncConfig::getContextName() const
     return string("@") + context;
 }
 
+string SyncConfig::getPeerName() const
+{
+    string peer, context;
+    splitConfigString(getConfigName(), peer, context);
+    return peer;
+}
+
 void SyncConfig::preFlush(ConfigUserInterface &ui)
 {
     /* Iterator over all sync global and source properties 
@@ -1988,8 +1995,8 @@ void SyncConfig::setPeerIsClient(bool value, bool temporarily) { syncPropPeerIsC
 std::string SyncConfig::getSyncMLVersion() const { return syncPropSyncMLVersion.getProperty(*getNode(syncPropSyncMLVersion)); }
 void SyncConfig::setSyncMLVersion(const string &value, bool temporarily) { syncPropSyncMLVersion.setProperty(*getNode(syncPropSyncMLVersion), value, temporarily); }
 
-string SyncConfig::getPeerName() const { return syncPropPeerName.getProperty(*getNode(syncPropPeerName)); }
-void SyncConfig::setPeerName(const string &name) { syncPropPeerName.setProperty(*getNode(syncPropPeerName), name); }
+string SyncConfig::getUserPeerName() const { return syncPropPeerName.getProperty(*getNode(syncPropPeerName)); }
+void SyncConfig::setUserPeerName(const string &name) { syncPropPeerName.setProperty(*getNode(syncPropPeerName), name); }
 
 bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getPropertyValue(*getNode(syncPropPrintChanges)); }
 void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*getNode(syncPropPrintChanges), value, temporarily); }

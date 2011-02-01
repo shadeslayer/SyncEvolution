@@ -1174,6 +1174,11 @@ class SyncConfig {
     string getContextName() const;
 
     /**
+     * the normalized peer name, empty if not a peer config
+     */
+    string getPeerName() const;
+
+    /**
      * true if the config is for a peer, false if a context config
      */
     bool hasPeerProperties() const { return !m_peerPath.empty(); }
@@ -1515,8 +1520,8 @@ class SyncConfig {
      * not necessarily unique. Can be used by a GUI instead
      * of the config name.
      */
-    virtual string getPeerName() const;
-    virtual void setPeerName(const string &name);
+    virtual string getUserPeerName() const;
+    virtual void setUserPeerName(const string &name);
 
     /**
      * The Device ID of our peer. Typically only relevant when the
