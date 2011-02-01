@@ -401,10 +401,11 @@ bool Cmdline::dontRun() const
     }
 }
 
-bool Cmdline::makeObsolete(const string &oldname, string &newname, string &suffix)
+void Cmdline::makeObsolete(boost::shared_ptr<SyncConfig> &from)
 {
+    string oldname = from->getRootPath();
+    string newname, suffix;
     int counter = 0;
-    suffix = "";
     while (true) {
         ostringstream newsuffix;
         newsuffix << ".old";
@@ -417,13 +418,22 @@ bool Cmdline::makeObsolete(const string &oldname, string &newname, string &suffi
                     newname.c_str())) {
             break;
         } else if (errno != EEXIST && errno != ENOTEMPTY) {
-            m_err << "ERROR: renaming " << oldname << " to " <<
-                newname << ": " << strerror(errno) << endl;
-            return false;
+            SE_THROW(StringPrintf("renaming %s to %s: %s",
+                                  oldname.c_str(),
+                                  newname.c_str(),
+                                  strerror(errno)));
         }
         counter++;
     }
-    return true;
+
+    string newConfigName;
+    string oldContext = from->getContextName();
+    if (from->hasPeerProperties()) {
+        newConfigName = from->getPeerName() + suffix + oldContext;
+    } else {
+        newConfigName = oldContext + suffix;
+    }
+    from.reset(new SyncConfig(newConfigName));
 }
 
 void Cmdline::copyConfig(const boost::shared_ptr<SyncConfig> &from,
@@ -761,20 +771,8 @@ bool Cmdline::run() {
                 return false;
             }
 
-            string oldRoot = from->getRootPath();
-            string suffix;
-            makeObsolete(from->getRootPath(), newname, suffix);
-
-            string newConfigName;
-            if (configureContext) {
-                newConfigName = string("@") + oldContext + suffix;
-            } else {
-                newConfigName = peer + suffix +
-                    (oldContext.empty() ? "" : "@") +
-                    oldContext;
-            }
-
-            from.reset(new SyncConfig(newConfigName));
+            // rename on disk and point "from" to it
+            makeObsolete(from);
         } else {
             from.reset(new SyncConfig(m_server));
             if (!from->exists()) {

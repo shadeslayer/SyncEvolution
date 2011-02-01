@@ -192,13 +192,9 @@ protected:
 
     /**
      * rename file or directory by appending .old or (if that already
-     * exists) .old.x for x >= 1
-     * @param oldname    original name, must exist
-     * @retval newname   full new name after renaming, including suffix
-     * @retval suffix    the suffix which was added
-     * @return false for failure, error printed to m_err
+     * exists) .old.x for x >= 1; updates config to point to the renamed directory
      */
-    bool makeObsolete(const string &oldname, string &newname, string &suffix);
+    void makeObsolete(boost::shared_ptr<SyncConfig> &from);
 
     /**
      * Copy from one config into another, with filters
