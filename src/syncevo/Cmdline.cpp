@@ -521,6 +521,17 @@ void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
     }
 }
 
+void Cmdline::migratePeer(const std::string &fromPeer, const std::string &toPeer)
+{
+    boost::shared_ptr<SyncConfig> from(new SyncConfig(fromPeer));
+    makeObsolete(from);
+    // hack: move to different target config for createSyncClient()
+    m_server = toPeer;
+    boost::shared_ptr<SyncContext> to(createSyncClient());
+    copyConfig(from, to, set<string>());
+    finishCopy(from, to);
+}
+
 /**
  * Finds first instance of delimiter string in other string. In
  * addition, it treats "\n\n" in a special way: that delimiter also
@@ -733,6 +744,7 @@ bool Cmdline::run() {
         // another config (template resp. old one). Migration also moves
         // the old config.
         boost::shared_ptr<SyncConfig> from;
+        string origPeer;
         if (m_migrate) {
             if (!m_sources.empty()) {
                 m_err << "ERROR: cannot migrate individual sources" << endl;
@@ -755,20 +767,34 @@ bool Cmdline::run() {
             // a context which itself is too old. In that case,
             // the whole context and everything inside it needs to
             // be migrated.
-            if (false && // TODO
-                !configureContext &&
-                from->getConfigVersion(CONFIG_LEVEL_CONTEXT, CONFIG_VERSION_MAX) < CONFIG_CONTEXT_MIN_VERSION) {
-                m_server = string("@") + context;
-                from.reset(new SyncConfig(m_server));
-                peer = "";
-                configureContext = true;
-            }
-
-            // cannot migrate context configs at the moment;
-            // will have to copy all peers inside it, too
-            if (configureContext) {
-                m_err << "ERROR: migrating context config '" << m_server << "' not implemented." << endl;
-                return false;
+            if (!configureContext) {
+                bool obsoleteContext = false;
+                if (from->getLayout() < SyncConfig::SHARED_LAYOUT) {
+                    // check whether @default context exists and is too old;
+                    // in that case migrate it first
+                    SyncConfig target("@default");
+                    if (target.exists() &&
+                        target.getConfigVersion(CONFIG_LEVEL_CONTEXT, CONFIG_CUR_VERSION) <
+                        CONFIG_CONTEXT_MIN_VERSION) {
+                        // migrate all peers inside @default *and* the one outside
+                        origPeer = m_server;
+                        m_server = "@default";
+                        obsoleteContext = true;
+                    }
+                } else {
+                    // config already is inside a context; need to check that context
+                    if (from->getConfigVersion(CONFIG_LEVEL_CONTEXT, CONFIG_CUR_VERSION) <
+                        CONFIG_CONTEXT_MIN_VERSION) {
+                        m_server = string("@") + context;
+                        obsoleteContext = true;
+                    }
+                }
+                if (obsoleteContext) {
+                    // hack: move to different config and back later
+                    from.reset(new SyncConfig(m_server));
+                    peer = "";
+                    configureContext = true;
+                }
             }
 
             // rename on disk and point "from" to it
@@ -933,7 +959,12 @@ bool Cmdline::run() {
 
         // Now also migrate all peers inside context?
         if (configureContext && m_migrate) {
-            // TODO...
+            BOOST_FOREACH(const string &peer, from->getPeers()) {
+                migratePeer(peer + from->getContextName(), peer + to->getContextName());
+            }
+            if (!origPeer.empty()) {
+                migratePeer(origPeer, origPeer + to->getContextName());
+            }
         }
     } else if (m_remove) {
         if (m_dryrun) {
@@ -2208,20 +2239,6 @@ protected:
         context.setProperty("contextCurVersion", StringPrintf("%d", CONFIG_CONTEXT_CUR_VERSION - 1));
         context.flush();
 
-#if 1
-        // context migration not implemented and not needed yet
-        SyncContext::setStableRelease(true);
-        bool caught = false;
-        try {
-            SyncConfig config("scheduleworld");
-            config.prepareConfigForWrite();
-        } catch (const Exception &ex) {
-            caught = true;
-            CPPUNIT_ASSERT_EQUAL(string("migration of config '@default' failed"),
-                                 string(ex.what()));
-        }
-        CPPUNIT_ASSERT(caught);
-#else
         SyncContext::setStableRelease(false);
         expectMigration("@default");
 
@@ -2235,7 +2252,7 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
                                       "   scheduleworld = CmdlineTest/syncevolution/default/peers/scheduleworld\n"
-                                      "   scheduleworld.old = CmdlineTest/syncevolution/default/peers/scheduleworld.old\n",
+                                      "   scheduleworld.old@default.old = CmdlineTest/syncevolution/default.old/peers/scheduleworld.old\n",
                                       cmdline.m_out.str());
         }
 
@@ -2248,9 +2265,11 @@ protected:
 
         // do the same migration with command line
         SyncContext::setStableRelease(false);
-        rm_r(m_testDir + "/syncevolution/default/peers/scheduleworld");
-        CPPUNIT_ASSERT_EQUAL(0, rename((m_testDir + "/syncevolution/default/peers/scheduleworld.old").c_str(),
-                                       (m_testDir + "/syncevolution/default/peers/scheduleworld").c_str()));
+        rm_r(m_testDir + "/syncevolution/default");
+        CPPUNIT_ASSERT_EQUAL(0, rename((m_testDir + "/syncevolution/default.old/peers/scheduleworld.old").c_str(),
+                                       (m_testDir + "/syncevolution/default.old/peers/scheduleworld").c_str()));
+        CPPUNIT_ASSERT_EQUAL(0, rename((m_testDir + "/syncevolution/default.old").c_str(),
+                                       (m_testDir + "/syncevolution/default").c_str()));
         {
             TestCmdline cmdline("--migrate", "@default", NULL);
             cmdline.doit();
@@ -2264,10 +2283,9 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("Configured servers:\n"
                                       "   scheduleworld = CmdlineTest/syncevolution/default/peers/scheduleworld\n"
-                                      "   scheduleworld.old = CmdlineTest/syncevolution/default/peers/scheduleworld.old\n",
+                                      "   scheduleworld.old@default.old = CmdlineTest/syncevolution/default.old/peers/scheduleworld.old\n",
                                       cmdline.m_out.str());
         }
-#endif
     }
 
 

@@ -96,13 +96,14 @@ using namespace std;
  * SyncEvolution < 1.2 had no versioning. It's format is 0.
  * SyncEvolution 1.2:
  * - config peer min/cur version 1, because
- *   a) of modified libsynthesis binfiles and
- *   b) evolutionsource->database, evolutionuser/password->databaseUser/Password
+ *   of modified libsynthesis binfiles and
+ * - context min/cur version 1, because
+ *   evolutionsource->database, evolutionuser/password->databaseUser/Password
  */
 static const int CONFIG_ROOT_MIN_VERSION = 0;
 static const int CONFIG_ROOT_CUR_VERSION = 0;
-static const int CONFIG_CONTEXT_MIN_VERSION = 0;
-static const int CONFIG_CONTEXT_CUR_VERSION = 0;
+static const int CONFIG_CONTEXT_MIN_VERSION = 1;
+static const int CONFIG_CONTEXT_CUR_VERSION = 1;
 static const int CONFIG_PEER_MIN_VERSION = 1;
 static const int CONFIG_PEER_CUR_VERSION = 1;
 

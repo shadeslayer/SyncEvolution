@@ -481,6 +481,12 @@ void SyncConfig::prepareConfigForWrite()
     for (ConfigLevel level = CONFIG_LEVEL_ROOT;
          level < CONFIG_LEVEL_MAX;
          level = (ConfigLevel)(level + 1)) {
+        if (getLayout() < SHARED_LAYOUT &&
+            level < CONFIG_LEVEL_PEER) {
+            // old configs do not have explicit root or context,
+            // only check peer config itself
+            continue;
+        }
         if (exists(level)) {
             if (getConfigVersion(level, CONFIG_CUR_VERSION) < ConfigVersions[level][CONFIG_MIN_VERSION]) {
                 // release which created config will no longer be able to read

@@ -213,6 +213,11 @@ protected:
                     const boost::shared_ptr<SyncContext> &to);
 
     /**
+     * migrate peer config; target context must be ready
+     */
+    void migratePeer(const std::string &fromPeer, const std::string &toPeer);
+
+    /**
      * parse sync or source property
      *
      * @param propertyType   sync, source, or unknown (in which case the property name must be given and must be unique)
