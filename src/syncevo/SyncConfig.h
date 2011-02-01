@@ -1589,6 +1589,9 @@ class SyncConfig {
     /** config versioning; setting is done internally */
     int getConfigVersion(ConfigLevel level, ConfigLimit limit) const;
 
+    /** file layout used by config */
+    Layout getLayout() const { return m_layout; }
+
 private:
     /**
      * scans for peer configurations
