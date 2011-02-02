@@ -2617,10 +2617,10 @@ std::string SyncSourceConfig::getURI() const { return sourcePropURI.getProperty(
 void SyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*getNode(sourcePropURI), value, temporarily); }
 std::string SyncSourceConfig::getSync() const { return m_sourcePropSync.getProperty(*getNode(m_sourcePropSync)); }
 void SyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*getNode(m_sourcePropSync), value, temporarily); }
-string SyncSourceConfig::getSourceTypeString(const SyncSourceNodes &nodes) { return sourcePropSourceType.getProperty(*nodes.getNode(sourcePropSourceType)); }
-SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
-    string type = getSourceTypeString(nodes);
-    SourceType sourceType;
+
+SourceType::SourceType(const string &type)
+{
+    m_forceFormat = false;
     size_t colon = type.find(':');
     if (colon != type.npos) {
         string backend = type.substr(0, colon);
@@ -2628,19 +2628,41 @@ SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
         sourcePropSourceType.normalizeValue(backend);
         size_t formatLen = format.size();
         if(format[formatLen - 1] == '!') {
-            sourceType.m_forceFormat = true;
+            m_forceFormat = true;
             format = format.substr(0, formatLen - 1);
         }
-        sourceType.m_backend = backend;
-        sourceType.m_format  = format;
+        m_backend = backend;
+        m_format  = format;
     } else {
-        sourceType.m_backend = type;
-        sourceType.m_format  = "";
+        m_backend = type;
+        m_format  = "";
     }
+}
+
+string SourceType::toString() const
+{
+    string type = m_backend;
+    if (!m_format.empty()) {
+        type += ":";
+        type += m_format;
+        if (m_forceFormat) {
+            type += "!";
+        }
+    }
+    return type;
+}
+
+SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
+    string type = sourcePropSourceType.getProperty(*nodes.getNode(sourcePropSourceType));
+    SourceType sourceType(type);
     return sourceType;
 }
 SourceType SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
-void SyncSourceConfig::setSourceType(const string &value, bool temporarily) { sourcePropSourceType.setProperty(*getNode(sourcePropSourceType), value, temporarily); }
+
+void SyncSourceConfig::setSourceType(const SourceType &type, bool temporarily)
+{
+    sourcePropSourceType.setProperty(*getNode(sourcePropSourceType), type.toString(), temporarily);
+}
 
 const int SyncSourceConfig::getSynthesisID() const { return sourcePropSynthesisID.getPropertyValue(*getNode(sourcePropSynthesisID)); }
 void SyncSourceConfig::setSynthesisID(int value, bool temporarily) { sourcePropSynthesisID.setProperty(*getNode(sourcePropSynthesisID), value, temporarily); }

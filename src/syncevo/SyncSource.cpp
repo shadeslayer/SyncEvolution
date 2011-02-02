@@ -318,7 +318,6 @@ string SyncSource::backendsDebug() {
 
 SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error, SyncConfig *config)
 {
-    string sourceTypeString = getSourceTypeString(params.m_nodes);
     SourceType sourceType = getSourceType(params.m_nodes);
 
     if (sourceType.m_backend == "virtual") {
@@ -336,16 +335,16 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
         if (source) {
             if (source == RegisterSyncSource::InactiveSource) {
                 SyncContext::throwError(params.getDisplayName() + ": access to " + sourceInfos->m_shortDescr +
-                                        " not enabled, therefore type = " + sourceTypeString + " not supported");
+                                        " not enabled");
             }
             return source;
         }
     }
 
     if (error) {
-        string problem = params.m_name + ": type '" + sourceTypeString + "' not supported";
+        string problem = params.m_name + ": backend '" + sourceType.m_backend + "' not supported";
         if (scannedModules.m_available.size()) {
-            problem += " by any of the backends (";
+            problem += " by any of the backend modules (";
             problem += boost::join(scannedModules.m_available, ", ");
             problem += ")";
         }

@@ -1796,8 +1796,24 @@ class ConstSyncSourceNodes : private SyncSourceNodes
 struct SourceType {
     SourceType():m_forceFormat(false)
     {}
+
+    /**
+     * Parses the SyncEvolution <= 1.1 type specifier:
+     * <backend>[:<format>[!]]
+     */
+    SourceType(const string &type);
+
+    /**
+     * converts back to SyncEvolution <= 1.1 type specifier
+     */
+    string toString() const;
+
     string m_backend; /**< identifies the SyncEvolution backend (either via a generic term like "addressbook" or a specific one like "Evolution Contacts") */
-    string m_format; /**< the format to be used (typically a MIME type) */
+#if 0 // to be enabled later
+    string m_localFormat;  /**< the format to be used inside the backend for storing items; typically
+                              hard-coded and not configurable */
+#endif
+    string m_format; /**< the format to be used (typically a MIME type) when talking to our peer */
     bool   m_forceFormat; /**< force to use the client's preferred format instead giving the engine and server a choice */
 };
 
@@ -1898,11 +1914,13 @@ class SyncSourceConfig {
      *         for details
      */
     static SourceType getSourceType(const SyncSourceNodes &nodes);
-    static string getSourceTypeString(const SyncSourceNodes &nodes);
     virtual SourceType getSourceType() const;
 
-    /** set the source type in <backend>[:format] style */
-    virtual void setSourceType(const string &value, bool temporarily = false);
+    /** set the source type */
+    virtual void setSourceType(const SourceType &type, bool temporarily = false);
+
+    /** convenience function which accepts old-style "type" string (see SourceType) */
+    void setSourceType(const string &type, bool temporarily = false) { setSourceType(SourceType(type), temporarily); }
 
     /**
      * Returns the SyncSource URI: used in SyncML to address the data
