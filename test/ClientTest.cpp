@@ -532,6 +532,7 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
         }
         prop = nextProp + 1;
     }
+    boost::replace_all(data, "<<UNIQUE>>", prefix.str());
     boost::replace_all(data, "<<REVISION>>", revision);
     if (size > 0 && (int)data.size() < size) {
         int additionalBytes = size - (int)data.size();
@@ -3985,13 +3986,14 @@ void ClientTest::getTestData(const char *type, Config &config)
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:tester\n"
-            "N:Doe;John;<<REVISION>>;;\n"
+            "N:Doe;<<UNIQUE>>;<<REVISION>>;;\n"
+            "FN:<<UNIQUE>> Doe\n"
             "TEL;TYPE=WORK;TYPE=VOICE:business 1\n"
-            "X-EVOLUTION-FILE-AS:Doe\\, John\n"
+            "X-EVOLUTION-FILE-AS:Doe\\, <<UNIQUE>>\n"
             "X-MOZILLA-HTML:FALSE\n"
             "NOTE:<<REVISION>>\n"
             "END:VCARD\n";  
-        config.uniqueProperties = "FN:N:X-EVOLUTION-FILE-AS";
+        config.uniqueProperties = "";
         config.sizeProperty = "NOTE";
         config.testcases = "testcases/vcard30.vcf";
     } else if (!strcmp(type, "vcard21")) {
