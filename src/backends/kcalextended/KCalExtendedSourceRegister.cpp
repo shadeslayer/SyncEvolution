@@ -94,9 +94,9 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "KCalExtended:text/calendar";
-        // currently removing the parent also removes the child (BMC #6061)
-        // with no workaround in our code
-        config.linkedItemsRelaxedSemantic = false;
+        // after fixing BMC #6061, mKCal is able to delete individual
+        // VEVENTs, without enforcing the "each child must have parent" rule
+        config.linkedItemsRelaxedSemantic = true;
     }
 } iCal20Test;
 
