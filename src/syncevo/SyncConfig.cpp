@@ -2256,8 +2256,7 @@ static void copyProperties(const ConfigNode &fromProps,
     BOOST_FOREACH(const ConfigProperty *prop, allProps) {
         if (prop->isHidden() == hidden &&
             (unshared ||
-             prop->getSharing() != ConfigProperty::NO_SHARING ||
-             (prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED))) {
+             prop->getSharing() != ConfigProperty::NO_SHARING)) {
             bool isDefault;
             string value = prop->getProperty(fromProps, &isDefault);
             string name = prop->getName(toProps);
@@ -2608,19 +2607,12 @@ SyncSourceNodes::getNode(const ConfigProperty &prop) const
         }
         break;
     case ConfigProperty::NO_SHARING:
-        if ((prop.getFlags() & ConfigProperty::SHARED_AND_UNSHARED) &&
-            !m_havePeerNode &&
-            !prop.isHidden()) {
-            // special case for "sync": use shared node because
-            // peer node does not exist
-            return m_sharedNode;
+        if (prop.isHidden()) {
+            return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
         } else {
-            if (prop.isHidden()) {
-                return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(m_hiddenPeerNode));
-            } else {
-                return m_peerNode;
-            }
+            return m_peerNode;
         }
+        break;
     }
     return boost::shared_ptr<FilterConfigNode>();
 }

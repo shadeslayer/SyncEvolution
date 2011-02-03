@@ -345,19 +345,6 @@ class ConfigProperty {
     Sharing getSharing() const { return m_sharing; }
     void setSharing(Sharing sharing) { m_sharing = sharing; }
 
-    /**
-     * special hacks for certain properties
-     */
-    enum Flags {
-        SHARED_AND_UNSHARED = 1<<0   /**< value is stored with
-                                        SOURCE_SET_SHARING and
-                                        NO_SHARING, the later taking
-                                        precedency when reading
-                                        ("type"!) */
-    };
-    void setFlags(int flags) { m_flags = flags; }
-    int getFlags(void) const { return m_flags; }
-
     /** set value unconditionally, even if it is not valid */
     void setProperty(ConfigNode &node, const string &value) const { node.setProperty(getName(node), value, getComment()); }
     void setProperty(FilterConfigNode &node, const string &value, bool temporarily = false) const {

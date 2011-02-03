@@ -1565,8 +1565,7 @@ static void findPeerProps(FilterConfigNode::ConfigFilter &filter,
     BOOST_FOREACH(StringPair entry, filter) {
         const ConfigProperty *prop = registry.find(entry.first);
         if (prop &&
-            prop->getSharing() == ConfigProperty::NO_SHARING &&
-            !(prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED)) {
+            prop->getSharing() == ConfigProperty::NO_SHARING) {
             peerProps.insert(entry.first);
         }
     }
@@ -1655,8 +1654,7 @@ void Cmdline::dumpProperties(const ConfigNode &configuredProps,
     BOOST_FOREACH(const ConfigProperty *prop, allProps) {
         if (prop->isHidden() ||
             ((flags & HIDE_PER_PEER) &&
-             prop->getSharing() == ConfigProperty::NO_SHARING &&
-             !(prop->getFlags() & ConfigProperty::SHARED_AND_UNSHARED))) {
+             prop->getSharing() == ConfigProperty::NO_SHARING)) {
             continue;
         }
         if (!m_quiet) {
