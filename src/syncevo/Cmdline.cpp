@@ -122,8 +122,27 @@ bool Cmdline::parse(vector<string> &parsed)
     bool ok;
     while (opt < m_argc) {
         parsed.push_back(m_argv[opt]);
-        if (m_argv[opt][0] != '-') {
+        if (boost::iequals(m_argv[opt], "--")) {
+            // separator between options and <config> <source>:
+            // swallow it and leave option parsing
+            opt++;
             break;
+        }
+        if (m_argv[opt][0] != '-') {
+            if (strchr(m_argv[opt], '=')) {
+                // property assignment
+                if (!parseProp(UNKNOWN_PROPERTY_TYPE,
+                               NULL,
+                               m_argv[opt],
+                               NULL)) {
+                    return false;
+                } else {
+                    opt++;
+                    continue;
+                }
+            } else {
+                break;
+            }
         }
         if (boost::iequals(m_argv[opt], "--sync") ||
             boost::iequals(m_argv[opt], "-s")) {
@@ -1364,9 +1383,13 @@ CmdlineLUID Cmdline::insertItem(SyncSourceRaw *source, const string &luid, const
 string Cmdline::cmdOpt(const char *opt, const char *param)
 {
     string res = "'";
-    res += opt;
-    if (param) {
+    if (opt) {
+        res += opt;
+    }
+    if (opt && param) {
         res += " ";
+    }
+    if (param) {
         res += param;
     }
     res += "'";
@@ -1445,14 +1468,14 @@ bool Cmdline::parseProp(PropertyType propertyType,
     if (boost::trim_copy(string(param)) == "?") {
         m_dontrun = true;
         if (propname) {
-            return listPropValues(*validProps, spec.m_property, opt);
+            return listPropValues(*validProps, spec.m_property, opt ? opt : "");
         } else {
-            return listProperties(*validProps, opt);
+            return listProperties(*validProps, opt ? opt : "");
         }
     } else {
         if (boost::trim_copy(paramstr) == "?") {
             m_dontrun = true;
-            return listPropValues(*validProps, spec.m_property, cmdOpt(opt, param));
+            return listPropValues(*validProps, spec.m_property, args);
         } else {
             const ConfigProperty *prop = validProps->find(spec.m_property);
             if (!prop && boost::iequals(spec.m_property, "type")) {
@@ -2596,8 +2619,8 @@ protected:
         {
             // override context and template properties
             TestCmdline cmdline("--print-config", "--template", "scheduleworld",
-                                "--sync-property", "syncURL=foo",
-                                "--source-property", "database=Personal",
+                                "syncURL=foo",
+                                "database=Personal",
                                 "--source-property", "sync=disabled",
                                 NULL);
             cmdline.doit();
@@ -3037,6 +3060,24 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("'--source-property sync=?'\n",
+                                      filterIndented(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("sync=?",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("'sync=?'\n",
+                                      filterIndented(cmdline.m_out.str()));
+        }
+
+        {
+            TestCmdline cmdline("syncURL=?",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("'syncURL=?'\n",
                                       filterIndented(cmdline.m_out.str()));
         }
     }
