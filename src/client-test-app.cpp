@@ -260,7 +260,7 @@ public:
                     boost::shared_ptr<SyncSourceConfig> scServerTemplate = from->getSyncSourceConfig(testconfig.sourceNameServerTemplate);
                     sc->setURI(scServerTemplate->getURI());
                 }
-                sc->setSourceType(testconfig.type);
+                sc->setSourceType(SourceType(testconfig.type));
             }
 
             // always set these properties: they might have changed since the last run
@@ -502,7 +502,7 @@ private:
         getSourceConfig(test, testConfig);
 
         PersistentSyncSourceConfig sourceConfig(params.m_name, params.m_nodes);
-        sourceConfig.setSourceType(testConfig.type);
+        sourceConfig.setSourceType(SourceType(testConfig.type));
 
         // downcasting here: anyone who registers his sources for testing
         // must ensure that they are indeed TestingSyncSource instances

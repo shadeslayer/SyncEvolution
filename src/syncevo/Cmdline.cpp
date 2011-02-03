@@ -1430,7 +1430,8 @@ bool Cmdline::parseProp(PropertyType propertyType,
                 } else {
                     validProps = &m_validSyncProps;
                 }
-            } else if (isSourceProp) {
+            } else if (isSourceProp ||
+                       boost::iequals(spec.m_property, "type")) {
                 validProps = &m_validSourceProps;
             } else {
                 usage(true, StringPrintf("unrecognized property '%s' in %s", propname, args.c_str()));
@@ -1454,7 +1455,27 @@ bool Cmdline::parseProp(PropertyType propertyType,
             return listPropValues(*validProps, spec.m_property, cmdOpt(opt, param));
         } else {
             const ConfigProperty *prop = validProps->find(spec.m_property);
-            if (!prop) {
+            if (!prop && boost::iequals(spec.m_property, "type")) {
+                // compatiblity mode for "type": map to the properties which
+                // replaced it
+                prop = validProps->find("backend");
+                if (!prop) {
+                    m_err << "ERROR: backend: no such property" << endl;
+                    return false;
+                }
+                SourceType sourceType(paramstr);
+                string error;
+                if (!prop->checkValue(sourceType.m_backend, error)) {
+                    m_err << "ERROR: " << args << ": " << error << endl;
+                    return false;
+                }
+                ContextProps &props = m_props[spec.m_config];
+                props.m_sourceProps[spec.m_source]["backend"] = sourceType.m_backend;
+                props.m_sourceProps[spec.m_source]["databaseFormat"] = sourceType.m_localFormat;
+                props.m_sourceProps[spec.m_source]["syncFormat"] = sourceType.m_format;
+                props.m_sourceProps[spec.m_source]["forceSyncFormat"] = sourceType.m_forceFormat ? "1" : "0";
+                return true;
+            } else if (!prop) {
                 m_err << "ERROR: " << args << ": no such property" << endl;
                 return false;
             } else {
@@ -1486,7 +1507,13 @@ bool Cmdline::listPropValues(const ConfigPropertyRegistry &validProps,
                                           const string &opt)
 {
     const ConfigProperty *prop = validProps.find(propName);
-    if (!prop) {
+    if (!prop && boost::iequals(propName, "type")) {
+        m_out << opt << endl;
+        m_out << "   <backend>[:<format>[:<version][!]]" << endl;
+        m_out << "   legacy property, replaced by 'backend', 'databaseFormat'," << endl;
+        m_out << "   'syncFormat', 'forceSyncFormat'" << endl;
+        return true;
+    } else if (!prop) {
         m_err << "ERROR: "<< opt << ": no such property" << endl;
         return false;
     } else {
@@ -1558,8 +1585,15 @@ void Cmdline::checkForPeerProps()
         }
     }
     if (!peerProps.empty()) {
-        SyncContext::throwError(string("per-peer (unshared) properties not allowed: ") +
-                                boost::join(peerProps, ", "));
+        string props = boost::join(peerProps, ", ");
+        if (props == "forceSyncFormat, syncFormat") {
+            // special case: these two properties might have been added by the
+            // legacy "sync" property, which applies to both shared and unshared
+            // properties => cannot determine that here anymore, so ignore it
+        } else {
+            SyncContext::throwError(string("per-peer (unshared) properties not allowed: ") +
+                                    props);
+        }
     }
 }
 
@@ -2756,10 +2790,12 @@ protected:
                 "peers/scheduleworld/sources/xyz/.internal.ini:# adminData = \n"
                 "peers/scheduleworld/sources/xyz/.internal.ini:# synthesisID = 0\n"
                 "peers/scheduleworld/sources/xyz/config.ini:# sync = disabled\n"
-                "peers/scheduleworld/sources/xyz/config.ini:# type = select backend\n"
                 "peers/scheduleworld/sources/xyz/config.ini:uri = dummy\n"
-                "sources/xyz/config.ini:# type = select backend\n"
+                "peers/scheduleworld/sources/xyz/config.ini:# syncFormat = \n"
+                "peers/scheduleworld/sources/xyz/config.ini:# forceSyncFormat = 0\n"
+                "sources/xyz/config.ini:# backend = select backend\n"
                 "sources/xyz/config.ini:# database = \n"
+                "sources/xyz/config.ini:# databaseFormat = \n"
                 "sources/xyz/config.ini:# databaseUser = \n"
                 "sources/xyz/config.ini:# databasePassword = ";
             sortConfig(expected);
@@ -2828,7 +2864,8 @@ protected:
         string expected = doConfigure(ScheduleWorldConfig(), "sources/addressbook/config.ini:");
 
         {
-            // updating type for peer must also update type for context
+            // updating "type" for peer is mapped to updating "backend",
+            // "databaseFormat", "syncFormat", "forceSyncFormat"
             TestCmdline cmdline("--configure",
                                 "--source-property", "addressbook/type=file:text/vcard:3.0",
                                 "scheduleworld",
@@ -2836,28 +2873,39 @@ protected:
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
-            boost::replace_all(expected,
-                               "type = addressbook:text/vcard",
-                               "type = file:text/vcard:3.0");
+            boost::replace_first(expected,
+                                 "backend = addressbook",
+                                 "backend = file");
+            boost::replace_first(expected,
+                                 "# databaseFormat = ",
+                                 "databaseFormat = text/vcard");
+            boost::replace_first(expected,
+                                 "# forceSyncFormat = 0",
+                                 "forceSyncFormat = 0");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       filterConfig(printConfig("scheduleworld")));
             string shared = filterConfig(printConfig("@default"));
-            CPPUNIT_ASSERT(shared.find("type = file:text/vcard:3.0") != shared.npos);
+            CPPUNIT_ASSERT(shared.find("backend = file") != shared.npos);
+            CPPUNIT_ASSERT(shared.find("databaseFormat = text/vcard") != shared.npos);
         }
 
         {
             // updating type for context must not affect peer
             TestCmdline cmdline("--configure",
-                                "--source-property", "type=file:text/vcard:2.1",
+                                "--source-property", "type=file:text/x-vcard:2.1",
                                 "@default", "addressbook",
                                 NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            boost::replace_first(expected,
+                                 "databaseFormat = text/vcard",
+                                 "databaseFormat = text/x-vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       filterConfig(printConfig("scheduleworld")));
             string shared = filterConfig(printConfig("@default"));
-            CPPUNIT_ASSERT(shared.find("type = file:text/vcard:2.1") != shared.npos);
+            CPPUNIT_ASSERT(shared.find("backend = file") != shared.npos);
+            CPPUNIT_ASSERT(shared.find("databaseFormat = text/x-vcard") != shared.npos);
         }
 
         string syncProperties("syncURL:\n"
@@ -2932,11 +2980,17 @@ protected:
                               "defaultPeer:\n");
         string sourceProperties("sync:\n"
                                 "\n"
-                                "type:\n"
+                                "uri:\n"
+                                "\n"
+                                "backend:\n"
+                                "\n"
+                                "syncFormat:\n"
+                                "\n"
+                                "forceSyncFormat:\n"
                                 "\n"
                                 "database:\n"
                                 "\n"
-                                "uri:\n"
+                                "databaseFormat:\n"
                                 "\n"
                                 "databaseUser:\n"
                                 "databasePassword:\n");
@@ -3000,7 +3054,7 @@ protected:
         {
             TestCmdline cmdline("--configure",
                                 "--source-property", "database = file://tmp/test",
-                                "--source-property", "type = file:text/vcard:3.0",
+                                "--source-property", "type = file:text/x-vcard",
                                 "@foobar",
                                 "addressbook",
                                 NULL);
@@ -3016,8 +3070,9 @@ protected:
                          "config.ini:# logdir = \n"
                          "config.ini:# maxlogdirs = 10\n"
                          "config.ini:deviceId = fixed-devid\n"
-                         "sources/addressbook/config.ini:type = file:text/vcard:3.0\n"
+                         "sources/addressbook/config.ini:backend = file\n"
                          "sources/addressbook/config.ini:database = file://tmp/test\n"
+                         "sources/addressbook/config.ini:databaseFormat = text/x-vcard\n"
                          "sources/addressbook/config.ini:# databaseUser = \n"
                          "sources/addressbook/config.ini:# databasePassword = \n",
                          CONFIG_CONTEXT_MIN_VERSION,
@@ -3028,7 +3083,7 @@ protected:
         {
             TestCmdline cmdline("--configure",
                                 "--source-property", "database@foobar = file://tmp/test2",
-                                "--source-property", "type = calendar",
+                                "--source-property", "backend = calendar",
                                 "@foobar",
                                 "calendar",
                                 NULL);
@@ -3037,13 +3092,14 @@ protected:
         res = scanFiles(root);
         removeRandomUUID(res);
         expected +=
-            "sources/calendar/config.ini:type = calendar\n"
+            "sources/calendar/config.ini:backend = calendar\n"
             "sources/calendar/config.ini:database = file://tmp/test2\n"
+            "sources/calendar/config.ini:# databaseFormat = \n"
             "sources/calendar/config.ini:# databaseUser = \n"
             "sources/calendar/config.ini:# databasePassword = \n";
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
 
-        // add ScheduleWorld peer
+        // add ScheduleWorld peer: must reuse existing backend settings
         {
             TestCmdline cmdline("--configure",
                                 "scheduleworld@foobar",
@@ -3054,23 +3110,18 @@ protected:
         removeRandomUUID(res);
         expected = ScheduleWorldConfig();
         boost::replace_all(expected,
-                           "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard",
-                           "peers/scheduleworld/sources/addressbook/config.ini:type = file:text/vcard:3.0");
+                           "addressbook/config.ini:backend = addressbook",
+                           "addressbook/config.ini:backend = file");
         boost::replace_all(expected,
                            "addressbook/config.ini:# database = ",
                            "addressbook/config.ini:database = file://tmp/test");
         boost::replace_all(expected,
+                           "addressbook/config.ini:# databaseFormat = ",
+                           "addressbook/config.ini:databaseFormat = text/x-vcard");
+        boost::replace_all(expected,
                            "calendar/config.ini:# database = ",
                            "calendar/config.ini:database = file://tmp/test2");
         sortConfig(expected);
-        // Known problem (BMC #1023): type is reset to what is in the template,
-        // should be preserved.
-        //
-        // Temporarily fix the "expected" result so
-        // that we can pass the rest of the test.
-        boost::replace_all(expected,
-                           "peers/scheduleworld/sources/addressbook/config.ini:type = file:text/vcard:3.0",
-                           "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard");
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
 
         // disable all sources except for addressbook
@@ -3100,9 +3151,11 @@ protected:
         }
         string syncevoroot = m_testDir + "/syncevolution/syncevo";
         res = scanFiles(syncevoroot + "/sources/addressbook");
-        CPPUNIT_ASSERT(res.find("type = file:text/vcard:3.0") != res.npos);
+        CPPUNIT_ASSERT(res.find("backend = file\n") != res.npos);
+        CPPUNIT_ASSERT(res.find("databaseFormat = text/vcard\n") != res.npos);
         res = scanFiles(syncevoroot + "/sources/calendar");
-        CPPUNIT_ASSERT(res.find("type = file:text/calendar:2.0") != res.npos);
+        CPPUNIT_ASSERT(res.find("backend = file\n") != res.npos);
+        CPPUNIT_ASSERT(res.find("databaseFormat = text/calendar\n") != res.npos);
     }
 
     void testOldConfigure() {
@@ -3152,6 +3205,10 @@ protected:
         boost::replace_first(expected, "# database = ", "database = xyz");
         boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
         boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+        // migrating "type" sets forceSyncFormat (always)
+        // and databaseFormat (if format was part of type, as for addressbook)
+        boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+        boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
         doConfigure(expected, "sources/addressbook/config.ini:");
     }
 
@@ -3274,6 +3331,10 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+            // migrating "type" sets forceSyncFormat (always)
+            // and databaseFormat (if format was part of type, as for addressbook)
+            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+            boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
@@ -3305,6 +3366,8 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+            boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(newRoot, "scheduleworld.old");
             boost::replace_all(createdConfig, "/scheduleworld/", "/scheduleworld.old/");
@@ -3335,6 +3398,8 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+            boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             boost::replace_first(expected,
                                  "peers/scheduleworld/sources/addressbook/config.ini",
                                  "peers/scheduleworld/sources/addressbook/.other.ini:foo = bar\n"
@@ -3372,6 +3437,8 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+            boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
@@ -3398,6 +3465,8 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+            boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old");
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old/");
@@ -3567,40 +3636,48 @@ private:
                          "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"
                          "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
-                         "sources/addressbook/config.ini:type = addressbook:text/vcard\n"
-                         "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n"
-                         "sources/addressbook/config.ini:# database = \n"
                          "peers/scheduleworld/sources/addressbook/config.ini:uri = card3\n"
+                         "sources/addressbook/config.ini:backend = addressbook\n"
+                         "peers/scheduleworld/sources/addressbook/config.ini:syncFormat = text/vcard\n"
+                         "peers/scheduleworld/sources/addressbook/config.ini:# forceSyncFormat = 0\n"
+                         "sources/addressbook/config.ini:# database = \n"
+                         "sources/addressbook/config.ini:# databaseFormat = \n"
                          "sources/addressbook/config.ini:# databaseUser = \n"
                          "sources/addressbook/config.ini:# databasePassword = \n"
 
                          "peers/scheduleworld/sources/calendar/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0\n"
                          "peers/scheduleworld/sources/calendar/config.ini:sync = two-way\n"
-                         "sources/calendar/config.ini:type = calendar\n"
-                         "peers/scheduleworld/sources/calendar/config.ini:type = calendar\n"
-                         "sources/calendar/config.ini:# database = \n"
                          "peers/scheduleworld/sources/calendar/config.ini:uri = cal2\n"
+                         "sources/calendar/config.ini:backend = calendar\n"
+                         "peers/scheduleworld/sources/calendar/config.ini:# syncFormat = \n"
+                         "peers/scheduleworld/sources/calendar/config.ini:# forceSyncFormat = 0\n"
+                         "sources/calendar/config.ini:# database = \n"
+                         "sources/calendar/config.ini:# databaseFormat = \n"
                          "sources/calendar/config.ini:# databaseUser = \n"
                          "sources/calendar/config.ini:# databasePassword = \n"
 
                          "peers/scheduleworld/sources/memo/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0\n"
                          "peers/scheduleworld/sources/memo/config.ini:sync = two-way\n"
-                         "sources/memo/config.ini:type = memo\n"
-                         "peers/scheduleworld/sources/memo/config.ini:type = memo\n"
-                         "sources/memo/config.ini:# database = \n"
                          "peers/scheduleworld/sources/memo/config.ini:uri = note\n"
+                         "sources/memo/config.ini:backend = memo\n"
+                         "peers/scheduleworld/sources/memo/config.ini:# syncFormat = \n"
+                         "peers/scheduleworld/sources/memo/config.ini:# forceSyncFormat = 0\n"
+                         "sources/memo/config.ini:# database = \n"
+                         "sources/memo/config.ini:# databaseFormat = \n"
                          "sources/memo/config.ini:# databaseUser = \n"
                          "sources/memo/config.ini:# databasePassword = \n"
 
                          "peers/scheduleworld/sources/todo/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0\n"
                          "peers/scheduleworld/sources/todo/config.ini:sync = two-way\n"
-                         "sources/todo/config.ini:type = todo\n"
-                         "peers/scheduleworld/sources/todo/config.ini:type = todo\n"
-                         "sources/todo/config.ini:# database = \n"
                          "peers/scheduleworld/sources/todo/config.ini:uri = task2\n"
+                         "sources/todo/config.ini:backend = todo\n"
+                         "peers/scheduleworld/sources/todo/config.ini:# syncFormat = \n"
+                         "peers/scheduleworld/sources/todo/config.ini:# forceSyncFormat = 0\n"
+                         "sources/todo/config.ini:# database = \n"
+                         "sources/todo/config.ini:# databaseFormat = \n"
                          "sources/todo/config.ini:# databaseUser = \n"
                          "sources/todo/config.ini:# databasePassword = ",
                          peerMinVersion, peerCurVersion,
@@ -3730,22 +3807,28 @@ private:
                              "addressbook/config.ini:uri = card3",
                              "addressbook/config.ini:uri = card");
         boost::replace_all(config,
-                           "addressbook/config.ini:type = addressbook:text/vcard",
-                           "addressbook/config.ini:type = addressbook");
+                           "addressbook/config.ini:syncFormat = text/vcard",
+                           "addressbook/config.ini:# syncFormat = ");
 
         boost::replace_first(config,
                              "calendar/config.ini:uri = cal2",
                              "calendar/config.ini:uri = event");
         boost::replace_all(config,
-                           "calendar/config.ini:type = calendar",
-                           "calendar/config.ini:type = calendar:text/calendar!");
+                           "calendar/config.ini:# syncFormat = ",
+                           "calendar/config.ini:syncFormat = text/calendar");
+        boost::replace_all(config,
+                           "calendar/config.ini:# forceSyncFormat = 0",
+                           "calendar/config.ini:forceSyncFormat = 1");
 
         boost::replace_first(config,
                              "todo/config.ini:uri = task2",
                              "todo/config.ini:uri = task");
         boost::replace_all(config,
-                           "todo/config.ini:type = todo",
-                           "todo/config.ini:type = todo:text/calendar!");
+                           "todo/config.ini:# syncFormat = ",
+                           "todo/config.ini:syncFormat = text/calendar");
+        boost::replace_all(config,
+                           "todo/config.ini:# forceSyncFormat = 0",
+                           "todo/config.ini:forceSyncFormat = 1");
 
         return config;
     }
@@ -3766,8 +3849,8 @@ private:
                              "addressbook/config.ini:uri = card3",
                              "addressbook/config.ini:uri = contacts");
         boost::replace_all(config,
-                           "addressbook/config.ini:type = addressbook:text/vcard",
-                           "addressbook/config.ini:type = addressbook");
+                           "addressbook/config.ini:syncFormat = text/vcard",
+                           "addressbook/config.ini:# syncFormat = ");
 
         boost::replace_first(config,
                              "calendar/config.ini:uri = cal2",

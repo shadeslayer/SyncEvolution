@@ -266,10 +266,11 @@ class ConfigProperty {
     /** primary name */
     string getMainName() const { return m_names.front(); }
 
-    const Aliases &getNames() const { return m_names; }
-    string getComment() const { return m_comment; }
-    string getDefValue() const { return m_defValue; }
-    string getDescr() const { return m_descr; }
+    /* virtual so that derived classes like SourceBackendConfigProperty can generate the result dynamically */
+    virtual const Aliases &getNames() const { return m_names; }
+    virtual string getComment() const { return m_comment; }
+    virtual string getDefValue() const { return m_defValue; }
+    virtual string getDescr() const { return m_descr; }
 
     /**
      * Check whether the given value is okay.
@@ -1799,7 +1800,10 @@ struct SourceType {
 
     /**
      * Parses the SyncEvolution <= 1.1 type specifier:
-     * <backend>[:<format>[!]]
+     * <backend>[:<format>[:<version>][!]]
+     *
+     * The <version> part is not stored anymore (was required by file
+     * backend, but not actually used).
      */
     SourceType(const string &type);
 
@@ -1809,10 +1813,8 @@ struct SourceType {
     string toString() const;
 
     string m_backend; /**< identifies the SyncEvolution backend (either via a generic term like "addressbook" or a specific one like "Evolution Contacts") */
-#if 0 // to be enabled later
     string m_localFormat;  /**< the format to be used inside the backend for storing items; typically
                               hard-coded and not configurable */
-#endif
     string m_format; /**< the format to be used (typically a MIME type) when talking to our peer */
     bool   m_forceFormat; /**< force to use the client's preferred format instead giving the engine and server a choice */
 };
@@ -1907,20 +1909,21 @@ class SyncSourceConfig {
      * configuration; different SyncSources then check whether
      * they support that type. This call has to work before instantiating
      * a source and thus gets passed a node to read from.
-     *
-     * @return the pair of <backend> and the (possibly empty)
-     *         <format> specified in the "type" property; see
-     *         sourcePropSourceType in SyncConfig.cpp
-     *         for details
      */
     static SourceType getSourceType(const SyncSourceNodes &nodes);
     virtual SourceType getSourceType() const;
 
-    /** set the source type */
+    /** set source backend and formats in one step */
     virtual void setSourceType(const SourceType &type, bool temporarily = false);
 
-    /** convenience function which accepts old-style "type" string (see SourceType) */
-    void setSourceType(const string &type, bool temporarily = false) { setSourceType(SourceType(type), temporarily); }
+    virtual void setBackend(const std::string &value, bool temporarily = false);
+    virtual std::string getBackend() const;
+    virtual void setDatabaseFormat(const std::string &value, bool temporarily = false);
+    virtual std::string getDatabaseFormat() const;
+    virtual void setSyncFormat(const std::string &value, bool temporarily = false);
+    virtual std::string getSyncFormat() const;
+    virtual void setForceSyncFormat(bool value, bool temporarily = false);
+    virtual bool getForceSyncFormat() const;
 
     /**
      * Returns the SyncSource URI: used in SyncML to address the data

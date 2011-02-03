@@ -1111,19 +1111,19 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                 "configName" : "dummy-test"
                               },
                          "source/addressbook" : { "sync" : "slow",
-                                                  "type" : "addressbook",
+                                                  "backend" : "addressbook",
                                                   "uri" : "card"
                                                 },
                          "source/calendar"    : { "sync" : "disabled",
-                                                  "type" : "calendar",
+                                                  "backend" : "calendar",
                                                   "uri" : "cal"
                                                 },
                          "source/todo"        : { "sync" : "disabled",
-                                                  "type" : "todo",
+                                                  "backend" : "todo",
                                                   "uri" : "task"
                                                 },
                          "source/memo"        : { "sync" : "disabled",
-                                                  "type" : "memo",
+                                                  "backend" : "memo",
                                                   "uri" : "text"
                                                 }
                        }
@@ -1347,7 +1347,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.setupConfig()
         # we cannot set an invalid type here, so pick one which is likely
         # to be not supported in syncevo-dbus-server
-        config = { "source/memo" : { "type" : "apple-contacts"} }
+        config = { "source/memo" : { "backend" : "apple-contacts"} }
         self.session.SetConfig(True, False, config, utf8_strings=True)
         try:
             self.session.CheckSource("memo", utf8_strings=True)
@@ -1358,9 +1358,11 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceNoType(self):
-        """ test the right error is reported when the type is unset """
+        """ test the right error is reported when the source is unusable"""
         self.setupConfig()
-        config = { "source/memo" : { "type" : "file:text/calendar:2.0", "database" : "file:///no/such/path" } }
+        config = { "source/memo" : { "backend" : "file",
+                                     "databaseFormat" : "text/calendar",
+                                     "database" : "file:///no/such/path" } }
         self.session.SetConfig(True, False, config, utf8_strings=True)
         try:
             self.session.CheckSource("memo", utf8_strings=True)
@@ -1379,7 +1381,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testCheckSourceUpdateConfigTemp(self):
         """ test the config is temporary updated and in effect for GetDatabases in the current session. """
         self.setupConfig()
-        tempConfig = {"source/temp" : { "type" : "calendar"}}
+        tempConfig = {"source/temp" : { "backend" : "calendar"}}
         self.session.SetConfig(True, True, tempConfig, utf8_strings=True)
         databases2 = self.session.CheckSource("temp", utf8_strings=True)
 
@@ -1428,7 +1430,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ test the config is temporary updated and in effect for GetDatabases in the current session. """
         self.setupConfig()
         databases1 = self.session.GetDatabases("calendar", utf8_strings=True)
-        tempConfig = {"source/temp" : { "type" : "calendar"}}
+        tempConfig = {"source/temp" : { "backend" : "calendar"}}
         self.session.SetConfig(True, True, tempConfig, utf8_strings=True)
         databases2 = self.session.GetDatabases("temp", utf8_strings=True)
         self.failUnlessEqual(databases2, databases1)
@@ -1856,19 +1858,19 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                 "RetryDuration" : "10"
                               },
                          "source/addressbook" : { "sync" : "two-way",
-                                                  "type" : "addressbook",
+                                                  "backend" : "addressbook",
                                                   "uri" : "card"
                                                 },
                          "source/calendar"    : { "sync" : "two-way",
-                                                  "type" : "calendar",
+                                                  "backend" : "calendar",
                                                   "uri" : "cal"
                                                 },
                          "source/todo"        : { "sync" : "two-way",
-                                                  "type" : "todo",
+                                                  "backend" : "todo",
                                                   "uri" : "task"
                                                 },
                          "source/memo"        : { "sync" : "two-way",
-                                                  "type" : "memo",
+                                                  "backend" : "memo",
                                                   "uri" : "text"
                                                 }
                        }
@@ -2221,60 +2223,53 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
 
     def testSharedType(self):
-        """'type' must be set per-peer and shared"""
+        """'type' consists of per-peer and shared properties"""
         self.setupConfigs()
 
-        # writing for peer modifies "type" in "foo" and context
+        # writing for peer modifies properties in "foo" and context
         self.setUpSession("Foo@deFAULT")
         config = self.session.GetConfig(False, utf8_strings=True)
-        config["source/addressbook"]["type"] = "file:text/vcard:3.0"
+        config["source/addressbook"]["syncFormat"] = "text/vcard"
+        config["source/addressbook"]["backend"] = "file"
+        config["source/addressbook"]["databaseFormat"] = "text/x-vcard"
         self.session.SetConfig(True, False,
                                config,
                                utf8_strings=True)
         config = self.server.GetConfig("Foo", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.failUnlessEqual(config["source/addressbook"]["syncFormat"], "text/vcard")
         config = self.server.GetConfig("@default", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
+        self.failUnlessEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
         self.session.Detach()
 
-        # writing in context only changes the context
-        self.setUpSession("@deFAULT")
-        config = self.session.GetConfig(False, utf8_strings=True)
-        config["source/addressbook"]["type"] = "file:text/x-vcard:2.1"
-        self.session.SetConfig(True, False,
-                               config,
-                               utf8_strings=True)
-        config = self.server.GetConfig("Foo", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
-        config = self.server.GetConfig("@default", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/x-vcard:2.1")
-
     def testSharedTypeOther(self):
-        """'type' must not be overwritten when set in the context"""
-        # writing for peer modifies "type" in "foo" and context "@other"
+        """shared backend properties must be preserved when adding peers"""
+        # writing peer modifies properties in "foo" and creates context "@other"
         self.setUpSession("Foo@other")
         config = self.server.GetConfig("ScheduleWorld@other", True, utf8_strings=True)
-        config["source/addressbook"]["type"] = "file:text/vcard:3.0"
+        config["source/addressbook"]["backend"] = "file"
+        config["source/addressbook"]["databaseFormat"] = "text/x-vcard"
         self.session.SetConfig(False, False,
                                config,
                                utf8_strings=True)
         config = self.server.GetConfig("Foo", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
         config = self.server.GetConfig("@other", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.failUnlessEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
         self.session.Detach()
 
         # adding second client must preserve type
         self.setUpSession("bar@other")
         config = self.server.GetConfig("Funambol@other", True, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "addressbook")
+        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
         self.session.SetConfig(False, False,
                                config,
                                utf8_strings=True)
         config = self.server.GetConfig("bar", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "addressbook")
+        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
+        self.failUnlessEqual(config["source/addressbook"].get("syncFormat"), None)
         config = self.server.GetConfig("@other", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["type"], "file:text/vcard:3.0")
+        self.failUnlessEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
 
     def testOtherContext(self):
         """write into independent context"""

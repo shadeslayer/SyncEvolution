@@ -40,6 +40,8 @@
 
 #include <syncevo/util.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include <sstream>
 #include <fstream>
 
@@ -50,18 +52,12 @@ SE_BEGIN_CXX
 FileSyncSource::FileSyncSource(const SyncSourceParams &params,
                                const string &dataformat) :
     TrackingSyncSource(params),
+    m_mimeType(dataformat),
     m_entryCounter(0)
 {
     if (dataformat.empty()) {
-        throwError("a data format must be specified");
+        throwError("a database format must be specified");
     }
-    size_t sep = dataformat.find(':');
-    if (sep == dataformat.npos) {
-        throwError(string("data format not specified as <mime type>:<mime version>: " + dataformat));
-    }
-    m_mimeType.assign(dataformat, 0, sep);
-    m_mimeVersion = dataformat.substr(sep + 1);
-    m_supportedTypes = dataformat;
 }
 
 std::string FileSyncSource::getMimeType() const
@@ -71,7 +67,17 @@ std::string FileSyncSource::getMimeType() const
 
 std::string FileSyncSource::getMimeVersion() const
 {
-    return m_mimeVersion.c_str();
+    if (boost::iequals(m_mimeType, "text/vcard")) {
+        return "3.0";
+    } else if (boost::iequals(m_mimeType, "text/x-vcard")) {
+        return "2.1";
+    } else if (boost::iequals(m_mimeType, "text/calendar")) {
+        return "2.0";
+    } else if (boost::iequals(m_mimeType, "text/x-vcalendar")) {
+        return "1.0";
+    } else {
+        return "";
+    }
 }
 
 void FileSyncSource::open()

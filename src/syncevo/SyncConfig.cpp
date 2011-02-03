@@ -48,7 +48,7 @@ SE_BEGIN_CXX
 
 const char *const SourceAdminDataName = "adminData";
 
-static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source);
+static bool SourcePropBackendIsSet(boost::shared_ptr<SyncSourceConfig> source);
 static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source);
 static bool SourcePropSyncIsSet(boost::shared_ptr<SyncSourceConfig> source);
 
@@ -822,8 +822,8 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     config->setSourceDefaults("memo", false);
 
     source = config->getSyncSourceConfig("addressbook");
-    if (!SourcePropSourceTypeIsSet(source)) {
-        source->setSourceType("addressbook");
+    if (!SourcePropBackendIsSet(source)) {
+        source->setBackend("addressbook");
     }
     if (!SourcePropURIIsSet(source)) {
         source->setURI("card");
@@ -833,8 +833,8 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     }
 
     source = config->getSyncSourceConfig("calendar");
-    if (!SourcePropSourceTypeIsSet(source)) {
-        source->setSourceType("calendar");
+    if (!SourcePropBackendIsSet(source)) {
+        source->setBackend("calendar");
     }
     if (!SourcePropURIIsSet(source)) {
         source->setURI("event");
@@ -844,8 +844,8 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     }
 
     source = config->getSyncSourceConfig("todo");
-    if (!SourcePropSourceTypeIsSet(source)) {
-        source->setSourceType("todo");
+    if (!SourcePropBackendIsSet(source)) {
+        source->setBackend("todo");
     }
     if (!SourcePropURIIsSet(source)) {
         source->setURI("task");
@@ -855,8 +855,8 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     }
 
     source = config->getSyncSourceConfig("memo");
-    if (!SourcePropSourceTypeIsSet(source)) {
-        source->setSourceType("memo");
+    if (!SourcePropBackendIsSet(source)) {
+        source->setBackend("memo");
     }
     if (!SourcePropURIIsSet(source)) {
         source->setURI("note");
@@ -904,7 +904,8 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         // config->setConsumerReady(false);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("card3");
-        source->setSourceType("addressbook:text/vcard");
+        source->setBackend("addressbook");
+        source->setSyncFormat("text/vcard");
         source = config->getSyncSourceConfig("calendar");
         source->setURI("cal2");
         source = config->getSyncSourceConfig("todo");
@@ -920,11 +921,13 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         source = config->getSyncSourceConfig("calendar");
         source->setSync("two-way");
         source->setURI("event");
-        source->setSourceType("calendar:text/calendar!");
+        source->setSyncFormat("text/calendar");
+        source->setForceSyncFormat(true);
         source = config->getSyncSourceConfig("todo");
         source->setSync("two-way");
         source->setURI("task");
-        source->setSourceType("todo:text/calendar!");
+        source->setSyncFormat("text/calendar");
+        source->setForceSyncFormat(true);
     } else if (boost::iequals(server, "synthesis")) {
         config->setSyncURL("http://www.synthesis.ch/sync");
         config->setWebURL("http://www.synthesis.ch");
@@ -965,7 +968,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
 #endif
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("contacts");
-        source->setSourceType("addressbook:text/x-vcard");
+        source->setSyncFormat("text/x-vcard");
         /* Google support only addressbook sync via syncml */
         source = config->getSyncSourceConfig("calendar");
         source->setSync("none");
@@ -1011,22 +1014,23 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
 #endif
         //prefer vcard 3.0
         source = config->getSyncSourceConfig("addressbook");
-        source->setSourceType("addressbook:text/vcard");
+        source->setSyncFormat("text/vcard");
         source->setURI("./Contact/Unfiled");
         source = config->getSyncSourceConfig("calendar");
         source->setSync("none");
         source->setURI("");
         //prefer vcalendar 1.0
-        source->setSourceType("calendar:text/x-vcalendar");
+        source->setSyncFormat("text/x-vcalendar");
         source = config->getSyncSourceConfig("todo");
         source->setSync("none");
         source->setURI("");
         //prefer vcalendar 1.0
-        source->setSourceType("todo:text/x-vcalendar");
+        source->setSyncFormat("text/x-vcalendar");
         //A virtual datastore combining calendar and todo
         source = config->getSyncSourceConfig("calendar+todo");
         source->setURI("./EventTask/Tasks");
-        source->setSourceType("virtual:text/x-vcalendar");
+        source->setBackend("virtual");
+        source->setSyncFormat("text/x-vcalendar");
         source->setDatabaseID("calendar,todo");
         source->setSync("two-way");
         //Memo is disabled
@@ -1251,6 +1255,26 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         break;
     }
 
+    // Compatibility mode for reading configs which have "type" instead
+    // of "backend/databaseFormat/syncFormat/forceSyncFormat": determine
+    // the new values based on the old property, then inject the new
+    // values into the SyncSourceNodes by adding an intermediate layer
+    // of FilterConfigNodes. The top FilterConfigNode layer is the one
+    // which might get modified, the one underneath remains hidden and
+    // thus preserves the new values even if the caller does a setFilter().
+    bool compatMode = getConfigVersion(CONFIG_LEVEL_CONTEXT, CONFIG_CUR_VERSION) < 1;
+    SourceType sourceType;
+    if (compatMode) {
+        node = m_tree->open(peerPath.empty() ? sharedPath : peerPath, ConfigTree::visible);
+        string type;
+        if (node->getProperty("type", type)) {
+            sourceType = SourceType(type);
+        } else {
+            // not set: avoid compatibility mode
+            compatMode = false;
+        }
+    }
+
     if (peerPath.empty()) {
         node.reset(new DevNullConfigNode(m_contextPath + " without peer configuration"));
         peerNode.reset(new FilterConfigNode(node));
@@ -1263,6 +1287,16 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         cacheDir = m_tree->getRootPath() + "/" + peerPath + "/.cache";
 
         node = m_tree->open(peerPath, ConfigTree::visible);
+        if (compatMode) {
+            boost::shared_ptr<FilterConfigNode> compat(new FilterConfigNode(node));
+            compat->addFilter("syncFormat", sourceType.m_format);
+            compat->addFilter("forceSyncFormat", sourceType.m_forceFormat ? "1" : "0");
+            if (sharedPath.empty()) {
+                compat->addFilter("databaseFormat", sourceType.m_localFormat);
+                compat->addFilter("backend", sourceType.m_backend);
+            }
+            node = compat;
+        }
         peerNode.reset(new FilterConfigNode(node, m_sourceFilters.createSourceFilter(name)));
         hiddenPeerNode = m_tree->open(peerPath, ConfigTree::hidden);
         trackingNode = m_tree->open(peerPath, ConfigTree::other, changeId);
@@ -1293,6 +1327,12 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         sharedNode = peerNode;
     } else {
         node = m_tree->open(sharedPath, ConfigTree::visible);
+        if (compatMode) {
+            boost::shared_ptr<FilterConfigNode> compat(new FilterConfigNode(node));
+            compat->addFilter("databaseFormat", sourceType.m_localFormat);
+            compat->addFilter("backend", sourceType.m_backend);
+            node = compat;
+        }
         sharedNode.reset(new FilterConfigNode(node, m_sourceFilters.createSourceFilter(name)));
     }
 
@@ -2317,21 +2357,16 @@ static bool SourcePropSyncIsSet(boost::shared_ptr<SyncSourceConfig> source)
 }
 
 
-static class SourceTypeConfigProperty : public StringConfigProperty {
+static class SourceBackendConfigProperty : public StringConfigProperty {
 public:
-    SourceTypeConfigProperty() :
-        StringConfigProperty("type",
+    SourceBackendConfigProperty() :
+        StringConfigProperty("backend",
                              "Specifies the SyncEvolution backend and thus the\n"
-                             "data which is synchronized by this source. Some\n"
-                             "backends can exchange data in multiple formats.\n"
-                             "Some of them have a default format that is used\n"
-                             "automatically unless specified differently.\n"
-                             "Sometimes the format must be specified.\n"
-                             "\n"
-                             "This property can be set for individual peers as\n"
-                             "well as for the context. Different peers in the\n"
-                             "same context can use different formats, but the\n"
-                             "backend must be consistent.\n"
+                             "data which is synchronized by this source. Each\n"
+                             "backend may support multiple databases (see 'database'\n"
+                             "property), different formats inside that database (see\n"
+                             "'databaseFormat'), and different formats when talking to\n"
+                             "the sync peer (see 'syncFormat' and 'forceSyncFormat').\n"
                              "\n"
                              "A special 'virtual' backend combines several other\n"
                              "data sources and presents them as one set of items\n"
@@ -2345,52 +2380,26 @@ public:
                              "'database' property, typically like this:\n"
                              "  calendar,todo\n"
                              "\n"
-                             "In all cases the format of this configuration is\n"
-                             "  <backend>[:format][!]\n"
-                             "\n"
                              "Different sources combined in one virtual source must\n"
-                             "have a common representation. As with other backends,\n"
-                             "the preferred format can be influenced via the 'format'\n"
+                             "have a common format. As with other backends,\n"
+                             "the preferred format can be influenced via the 'syncFormat'\n"
                              "attribute.\n"
                              "\n"
-                             "When there are alternative formats for the same data,\n"
-                             "each side offers all that it supports and marks one as\n"
-                             "preferred. The other side then picks the format that it\n"
-                             "uses for sending data. Some peers get confused by this or\n"
-                             "pick the less suitable format. In this case the trailing\n"
-                             "exclamation mark can be used to configure exactly one format.\n"
-                             "\n"
-                             "Here are some valid examples:\n"
-                             "  contacts - synchronize address book with default vCard 2.1 format\n"
-                             "  contacts:text/vcard - address book with vCard 3.0 format\n"
-                             "  calendar - synchronize events in iCalendar 2.0 format\n"
-                             "  calendar:text/x-vcalendar - prefer legacy vCalendar 1.0 format\n"
-                             "  calendar:text/calendar! - allow only iCalendar 2.0\n"
-                             "  virtual:text/x-vcalendar - a virtual backend using vCalendar 1.0 format\n"
-                             "\n"
-                             "Errors while starting to sync and parsing and/or storing\n"
-                             "items on either client or server can be caused by a mismatch between\n"
-                             "type and uri.\n"
-                             "\n"
                              "Here's the full list of potentially supported backends,\n"
-                             "valid <backend> values for each of them, and possible\n"
+                             "valid 'backend' values for each of them, and possible\n"
                              "formats. Note that SyncEvolution installations usually\n"
                              "support only a subset of the backends; that's why e.g.\n"
                              "\"addressbook\" is unambiguous although there are multiple\n"
-                             "address book backends.\n",
+                             "address book backends.\n"
+                             "\n",
                              "select backend",
                              "",
                              Values() +
                              (Aliases("virtual")) +
                              (Aliases("calendar") + "events") +
-                             (Aliases("calendar:text/calendar") + "text/calendar") +
-                             (Aliases("calendar:text/x-vcalendar") + "text/x-vcalendar") +
                              (Aliases("addressbook") + "contacts") +
-                             (Aliases("addressbook:text/x-vcard") + "text/x-vcard") +
-                             (Aliases("addressbook:text/vcard") + "text/vcard") +
-                             (Aliases("todo") + "tasks" + "text/x-todo") +
-                             (Aliases("memo") + "memos" + "notes" + "text/plain") +
-                             (Aliases("memo:text/calendar") + "text/x-journal"))
+                             (Aliases("todo") + "tasks") +
+                             (Aliases("memo") + "memos" + "notes"))
     {}
 
     virtual string getComment() const {
@@ -2430,22 +2439,35 @@ public:
 
         return res;
     }
-
-    /** relax string checking: only the part before a colon has to match one of the aliases */
-    virtual bool checkValue(const string &value, string &error) const {
-        size_t colon = value.find(':');
-        if (colon != value.npos) {
-            string backend = value.substr(0, colon);
-            return StringConfigProperty::checkValue(backend, error);
-        } else {
-            return StringConfigProperty::checkValue(value, error);
-        }
-    }
-} sourcePropSourceType;
-static bool SourcePropSourceTypeIsSet(boost::shared_ptr<SyncSourceConfig> source)
+} sourcePropBackend;
+static bool SourcePropBackendIsSet(boost::shared_ptr<SyncSourceConfig> source)
 {
-    return source->isSet(sourcePropSourceType);
+    return source->isSet(sourcePropBackend);
 }
+
+StringConfigProperty sourcePropSyncFormat("syncFormat",
+                                          "When there are alternative formats for the same data,\n"
+                                          "each side of a sync offers all that it supports and marks one as\n"
+                                          "preferred. If set, this property overrides the format\n"
+                                          "that would normally be marked as preferred by a backend.\n"
+                                          "\n"
+                                          "Valid values depend on the backend. Here are some examples:\n"
+                                          "  contacts - text/vcard = vCard 3.0 format\n"
+                                          "             text/x-vcard = legacy vCard 2.1 format\n"
+                                          "  calendar - text/calendar = iCalendar 2.0 format\n"
+                                          "             text/x-vcalendar = legacy vCalendar 1.0 format\n"
+                                          "\n"
+                                          "Errors while starting to sync and parsing and/or storing\n"
+                                          "items on either client or server can be caused by a mismatch between\n"
+                                          "the sync format and uri at the peer.\n");
+
+static BoolConfigProperty sourcePropForceSyncFormat("forceSyncFormat",
+                                                    "Some peers get confused when offered multiple choices\n"
+                                                    "for the sync format or pick the less optimal one.\n"
+                                                    "In such a case, setting this property enforces that the\n"
+                                                    "preferred format specified with 'syncFormat' is\n"
+                                                    "really used.",
+                                                    "0");
 
 static ConfigProperty sourcePropDatabaseID(Aliases("database") + "evolutionsource",
                                            "Picks one of backend data sources:\n"
@@ -2469,6 +2491,13 @@ static ConfigProperty sourcePropDatabaseID(Aliases("database") + "evolutionsourc
                                            "used to reference the data source. The default\n"
                                            "data source is marked with <default> after the\n"
                                            "URL, if there is a default.\n");
+
+static StringConfigProperty sourcePropDatabaseFormat("databaseFormat",
+                                                     "Defines the data format to be used by the backend for its\n"
+                                                     "own storage. Typically backends only support one format\n"
+                                                     "and ignore this property, but for example the file backend\n"
+                                                     "uses it. See the 'backend' property for more information.\n");
+
 static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
                                     "server's database");
@@ -2498,9 +2527,12 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
 
     if (!initialized) {
         registry.push_back(&SyncSourceConfig::m_sourcePropSync);
-        registry.push_back(&sourcePropSourceType);
-        registry.push_back(&sourcePropDatabaseID);
         registry.push_back(&sourcePropURI);
+        registry.push_back(&sourcePropBackend);
+        registry.push_back(&sourcePropSyncFormat);
+        registry.push_back(&sourcePropForceSyncFormat);
+        registry.push_back(&sourcePropDatabaseID);
+        registry.push_back(&sourcePropDatabaseFormat);
         registry.push_back(&sourcePropUser);
         registry.push_back(&sourcePropPassword);
         registry.push_back(&sourcePropAdminData);
@@ -2519,13 +2551,11 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         // conceptually.
 
         // peer independent source properties
+        sourcePropBackend.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropDatabaseID.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        sourcePropDatabaseFormat.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropUser.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropPassword.setSharing(ConfigProperty::SOURCE_SET_SHARING);
-
-        // Save "type" also in the shared nodes, so that the backend
-        // can be selected independently from a specific peer.
-        sourcePropSourceType.setFlags(ConfigProperty::SHARED_AND_UNSHARED);
 
         initialized = true;
     }
@@ -2623,19 +2653,24 @@ SourceType::SourceType(const string &type)
     m_forceFormat = false;
     size_t colon = type.find(':');
     if (colon != type.npos) {
-        string backend = type.substr(0, colon);
+        m_backend = type.substr(0, colon);
+        sourcePropBackend.normalizeValue(m_backend);
         string format = type.substr(colon + 1);
-        sourcePropSourceType.normalizeValue(backend);
-        size_t formatLen = format.size();
-        if(format[formatLen - 1] == '!') {
+        if (boost::ends_with(format, "!")) {
             m_forceFormat = true;
-            format = format.substr(0, formatLen - 1);
+            format.resize(format.size() - 1);
         }
-        m_backend = backend;
-        m_format  = format;
+        colon = format.find(':');
+        if (colon != format.npos) {
+            // ignore obsolete Mime version
+            m_format = format.substr(0, colon);
+        } else {
+            m_format = format;
+        }
+        // no difference between remote and local format
+        m_localFormat = m_format;
     } else {
         m_backend = type;
-        m_format  = "";
     }
 }
 
@@ -2652,16 +2687,81 @@ string SourceType::toString() const
     return type;
 }
 
-SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes) {
-    string type = sourcePropSourceType.getProperty(*nodes.getNode(sourcePropSourceType));
-    SourceType sourceType(type);
+SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes)
+{
+    // legacy "type" property is tried if the backend property is not set
+    bool isDefault;
+    string backend = sourcePropBackend.getProperty(*nodes.getNode(sourcePropBackend), &isDefault);
+    if (isDefault) {
+        string type;
+        if (nodes.getNode(sourcePropBackend)->getProperty("type", type)) {
+            return SourceType(type);
+        }
+    }
+
+    SourceType sourceType;
+    sourceType.m_backend = backend;
+    sourceType.m_localFormat = sourcePropDatabaseFormat.getProperty(*nodes.getNode(sourcePropDatabaseFormat));
+    sourceType.m_format = sourcePropSyncFormat.getProperty(*nodes.getNode(sourcePropSyncFormat));
+    sourceType.m_forceFormat = sourcePropForceSyncFormat.getPropertyValue(*nodes.getNode(sourcePropForceSyncFormat));
     return sourceType;
 }
 SourceType SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
 
 void SyncSourceConfig::setSourceType(const SourceType &type, bool temporarily)
 {
-    sourcePropSourceType.setProperty(*getNode(sourcePropSourceType), type.toString(), temporarily);
+    // writing always uses the new properties: the config must have
+    // been converted to the new format before writing is allowed
+    setBackend(type.m_backend, temporarily);
+    setDatabaseFormat(type.m_localFormat, temporarily);
+    setSyncFormat(type.m_format, temporarily);
+    setForceSyncFormat(type.m_forceFormat, temporarily);
+}
+
+void SyncSourceConfig::setBackend(const std::string &value, bool temporarily)
+{
+    sourcePropBackend.setProperty(*getNode(sourcePropBackend),
+                                  value,
+                                  temporarily);    
+}
+std::string SyncSourceConfig::getBackend() const
+{
+    
+
+    return sourcePropBackend.getProperty(*getNode(sourcePropBackend));
+}
+
+void SyncSourceConfig::setDatabaseFormat(const std::string &value, bool temporarily)
+{
+    sourcePropDatabaseFormat.setProperty(*getNode(sourcePropDatabaseFormat),
+                                         value,
+                                         temporarily);
+}
+std::string SyncSourceConfig::getDatabaseFormat() const
+{
+    return sourcePropDatabaseFormat.getProperty(*getNode(sourcePropDatabaseFormat));
+}
+
+void SyncSourceConfig::setSyncFormat(const std::string &value, bool temporarily)
+{
+    sourcePropSyncFormat.setProperty(*getNode(sourcePropSyncFormat),
+                                     value,
+                                     temporarily);
+}
+std::string SyncSourceConfig::getSyncFormat() const
+{
+    return sourcePropSyncFormat.getProperty(*getNode(sourcePropSyncFormat));
+}
+
+void SyncSourceConfig::setForceSyncFormat(bool value, bool temporarily)
+{
+    sourcePropForceSyncFormat.setProperty(*getNode(sourcePropForceSyncFormat),
+                                          value,
+                                          temporarily);
+}
+bool SyncSourceConfig::getForceSyncFormat() const
+{
+    return sourcePropForceSyncFormat.getPropertyValue(*getNode(sourcePropForceSyncFormat));
 }
 
 const int SyncSourceConfig::getSynthesisID() const { return sourcePropSynthesisID.getPropertyValue(*getNode(sourcePropSynthesisID)); }

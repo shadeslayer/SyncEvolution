@@ -29,7 +29,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
     SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     // The string returned by getSourceType() is always the one
     // registered as main Aliases() below.
-    bool isMe = sourceType.m_backend == "Files in one directory";
+    bool isMe = sourceType.m_backend == "file";
 
 #ifndef ENABLE_FILE
     // tell SyncEvolution if the user wanted to use a disabled sync source,
@@ -41,11 +41,9 @@ static SyncSource *createSource(const SyncSourceParams &params)
     bool maybeMe = false /* sourceType.m_backend == "addressbook" */;
     
     if (isMe || maybeMe) {
-        // The FileSyncSource always needs the data format
-        // parameter in sourceType.m_format.
-        if (/* sourceType.m_format == "" || sourceType.m_format == "text/x-vcard" */
-            sourceType.m_format.size()) {
-            return new FileSyncSource(params, sourceType.m_format);
+        // The FileSyncSource always needs the database format.
+        if (!sourceType.m_localFormat.empty()) {
+            return new FileSyncSource(params, sourceType.m_localFormat);
         } else {
             return NULL;
         }
@@ -63,22 +61,22 @@ static RegisterSyncSource registerMe("Files in one directory",
                                      createSource,
                                      "Files in one directory = file\n"
                                      "   Stores items in one directory as one file per item.\n"
-                                     "   The directory is selected via evolutionsource=[file://]<path>.\n"
+                                     "   The directory is selected via database=[file://]<path>.\n"
                                      "   It will only be created if the prefix is given, otherwise\n"
-                                     "   it must exist already. Only items of the same type can\n"
-                                     "   be synchronized and this type must be specified explicitly\n"
-                                     "   with both mime type and version.\n"
-                                     "   Examples for type:\n"
-                                     "      file:text/plain:1.0\n"
-                                     "      file:text/x-vcard:2.1\n"
-                                     "      file:text/vcard:3.0\n"
-                                     "      file:text/x-vcalendar:1.0\n"
-                                     "      file:text/calendar:2.0\n"
+                                     "   it must exist already.\n"
+                                     "   The database format *must* be specified explicitly. It may be\n"
+                                     "   different from the sync format, as long as there are\n"
+                                     "   conversion rules (for example, vCard 2.1 <-> vCard 3.0). If\n"
+                                     "   the sync format is empty, the database format is used.\n"
+                                     "   Examples for databaseFormat + syncFormat:\n"
+                                     "      text/plain + text/plain\n"
+                                     "      text/x-vcard + text/vcard\n"
+                                     "      text/calendar\n"
                                      "   Examples for evolutionsource:\n"
                                      "      /home/joe/datadir - directory must exist\n"
                                      "      file:///tmp/scratch - directory is created\n",
                                      Values() +
-                                     (Aliases("Files in one directory") + "file"));
+                                     (Aliases("file") + "Files in one directory"));
 
 #ifdef ENABLE_FILE
 #ifdef ENABLE_UNIT_TESTS

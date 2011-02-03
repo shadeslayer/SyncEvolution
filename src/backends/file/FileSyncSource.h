@@ -78,15 +78,13 @@ class FileSyncSource : public TrackingSyncSource, private boost::noncopyable
 
  private:
     /**
-     * @name values obtained from the source's type property
+     * @name values obtained from the source's "database format" configuration property
      *
      * Other sync sources only support one hard-coded type and
      * don't need such variables.
      */
     /**@{*/
     string m_mimeType;
-    string m_mimeVersion;
-    string m_supportedTypes;
     /**@}*/
 
     /** directory selected via the database name in open(), reset in close() */

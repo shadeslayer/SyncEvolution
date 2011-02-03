@@ -62,9 +62,7 @@ static RegisterSyncSource registerMe("iPhone/Mac OS X Address Book",
                                      false,
 #endif
                                      createSource,
-                                     "Mac OS X or iPhone Address Book = addressbook = contacts = apple-contacts\n"
-                                     "   vCard 2.1 (default) = text/x-vcard\n"
-                                     "   vCard 3.0 = text/vcard\n",
+                                     "Mac OS X or iPhone Address Book = addressbook = contacts = apple-contacts\n",
                                      Values() +
                                      (Aliases("apple-contacts") + "Mac OS X Address Book" + "iPhone Address Book"));
 

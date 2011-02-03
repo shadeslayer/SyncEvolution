@@ -63,13 +63,7 @@ static RegisterSyncSource registerMe("XMLRPC interface for data exchange",
 #endif
                                      createSource,
                                      "XMLRPC interface = xmlrpc\n"
-                                     "   Data exchange is done via an XMLRPC interface on the datastore.\n"
-                                     "   Examples:\n"
-                                     "      xmlrpc:text/plain:1.0\n"
-                                     "      xmlrpc:text/x-vcard:2.1\n"
-                                     "      xmlrpc:text/vcard:3.0\n"
-                                     "      xmlrpc:text/x-vcalendar:1.0\n"
-                                     "      xmlrpc:text/calendar:2.0\n",
+                                     "   Data exchange is done via an XMLRPC interface on the datastore.\n",
                                      Values() +
                                      (Aliases("XMLRPC interface") + "xmlrpc"));
 

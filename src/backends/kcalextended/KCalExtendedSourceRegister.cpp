@@ -53,12 +53,11 @@ static RegisterSyncSource registerMe("KCalExtended",
 #endif
                                      createSource,
                                      "mkcal = KCalExtended = calendar\n"
-                                     "   iCalendar 2.0 = text/calendar\n"
-                                     "   \"evolutionsource\" normally is the name of a calendar\n"
+                                     "   'database' normally is the name of a calendar\n"
                                      "   inside the default calendar storage. If it starts\n" 
-                                     "   with the \"SyncEvolution_Test_\" prefix, it will be\n"
+                                     "   with the 'SyncEvolution_Test_' prefix, it will be\n"
                                      "   created as needed, otherwise it must exist.\n"
-                                     "   If it starts with the \"file://\" prefix, the default\n"
+                                     "   If it starts with the 'file://' prefix, the default\n"
                                      "   calendar in the specified SQLite storage file will\n"
                                      "   created (if needed) and used.\n",
                                      Values() +
