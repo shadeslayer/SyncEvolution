@@ -20,10 +20,10 @@ Show information about configuration(s):
   syncevolution --print-servers|--print-configs|--print-peers
 
 Show information about a specific configuration:
-  syncevolution --print-config [--quiet] <config> [main|<source> ...]
+  syncevolution --print-config [--quiet] [--] <config> [main|<source> ...]
 
 List sessions:
-  syncevolution --print-sessions [--quiet] <config>
+  syncevolution --print-sessions [--quiet] [--] <config>
 
 Show information about SyncEvolution:
   syncevolution --help|-h|--version
@@ -32,30 +32,30 @@ Run a synchronization as configured:
   syncevolution <config> [<source> ...]
 
 Run a synchronization with properties changed just for this run:
-  syncevolution --run <options for run> <config> [<source> ...]
+  syncevolution --run <options for run> [--] <config> [<source> ...]
 
 Restore data from the automatic backups:
-  syncevolution --restore <session directory> --before|--after [--dry-run] <config> <source> ...
+  syncevolution --restore <session directory> --before|--after [--dry-run] [--] <config> <source> ...
 
 Modify a configuration:
-  syncevolution --configure <options> <config> [<source> ...]
-  syncevolution --remove|--migrate <options> <config>
+  syncevolution --configure <options> [--] <config> [<source> ...]
+  syncevolution --remove|--migrate <options> [--] <config>
 
 List items:
-  syncevolution --print-items <config> <source>
+  syncevolution --print-items [--] <config> <source>
 
 Export item(s):
-  syncevolution [--delimiter <string>] --export <dir>|<file>|- <config> <source> [<luid> ...]
+  syncevolution [--delimiter <string>] --export <dir>|<file>|- [--] <config> <source> [<luid> ...]
 
 Add item(s):
-  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- <config> <source>
+  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- [--] <config> <source>
 
 Update item(s)
-  syncevolution --update <dir> <config> <source>
-  syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
+  syncevolution --update <dir> [--] <config> <source>
+  syncevolution [--delimiter <string>|none] --update <file>|- [--] <config> <source> <luid> ...
 
 Remove item(s):
-  syncevolution --delete-items <config> <source> (<luid> ... | \*)
+  syncevolution --delete-items [--] <config> <source> (<luid> ... | \*)
 
 DESCRIPTION
 ===========
