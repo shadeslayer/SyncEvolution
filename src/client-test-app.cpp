@@ -260,7 +260,6 @@ public:
                     boost::shared_ptr<SyncSourceConfig> scServerTemplate = from->getSyncSourceConfig(testconfig.sourceNameServerTemplate);
                     sc->setURI(scServerTemplate->getURI());
                 }
-                sc->setSourceType(SourceType(testconfig.type));
             }
 
             // always set these properties: they might have changed since the last run
@@ -268,6 +267,7 @@ public:
             sc->setDatabaseID(database);
             sc->setUser(m_evoUser);
             sc->setPassword(m_evoPassword);
+            sc->setSourceType(SourceType(testconfig.type));
         }
         config->flush();
     }
