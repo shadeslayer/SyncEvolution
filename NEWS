@@ -1,3 +1,30 @@
+SyncEvolution 1.1.1 -> 1.1.99.2, 04.02.2010
+===========================================
+
+Major internal changes. Supports synchronization between two
+SyncEvolution backends ("local sync").
+
+The configuration format was updated to solve a conceptual problem
+inherited with the legacy property names: the "type" property had
+multiple, sometimes conflicting roles. For example, setting the
+preferred data format for sync with one peer might have changed the
+backend selection for some other peer (BMC #1023). Now
+"backend/databaseFormat/syncFormat/forceSyncFormat" replace
+"type". "type" is still accepted by the command line as alias.
+
+Old configurations can still be read. But writing, as it happens
+during a sync, must migrate the configuration first. 1.1.99.2 is an
+experimental version and does not migrate configurations
+automatically, as the final 1.2 release will do. The error 22005
+indicates that the user has to accept the backward-incompatible config
+change. The command line prints instructions; basically do
+"syncevolution --migrate @default".
+
+The old configurations will still be available (see "syncevolution
+--print-configs") but must be renamed manually to use them again under
+their original names.
+
+
 SyncEvolution 1.1 -> 1.1.1, 26.12.2010
 ======================================
 
