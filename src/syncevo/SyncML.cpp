@@ -188,6 +188,14 @@ std::string Status2String(SyncMLStatus status)
         error = "password request timed out";
         break;
 
+    case STATUS_RELEASE_TOO_OLD:
+        error = "SyncEvolution binary V" VERSION " too old to use configuration";
+        break;
+
+    case STATUS_MIGRATION_NEEDED:
+        error = "proceeding would make backward incompatible changes, aborted";
+        break;
+
     case sysync::LOCERR_BADPROTO:
         error = "bad or unknown protocol";
         break;
