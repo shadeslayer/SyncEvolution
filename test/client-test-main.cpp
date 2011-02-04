@@ -127,7 +127,7 @@ public:
 
     void startTest (CppUnit::Test *test) {
         m_currentTest = test->getName();
-        std::cout << m_currentTest;
+        std::cout << m_currentTest << std::flush;
         if (!getenv("SYNCEVOLUTION_DEBUG")) {
             string logfile = m_currentTest + ".log";
             simplifyFilename(logfile);
@@ -200,6 +200,7 @@ public:
         if (!failure.empty()) {
             std::cout << failure << "\n";
         }
+        std::cout << std::flush;
     }
 
     bool hasFailed() { return m_failed; }

@@ -664,6 +664,9 @@ public:
 #ifdef HAVE_GLIB
     void glib()
     {
+        fflush(stdout);
+        fflush(stderr);
+
         static const char *filename = "LogRedirectTest_glib.out";
         int new_stdout = open(filename, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU);
 
