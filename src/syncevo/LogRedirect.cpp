@@ -96,6 +96,7 @@ void LogRedirect::init()
 LogRedirect::LogRedirect(bool both, const char *filename) throw()
 {
     init();
+    m_processing = true;
     if (!getenv("SYNCEVOLUTION_DEBUG")) {
         redirect(STDERR_FILENO, m_stderr);
         if (both) {
@@ -134,6 +135,7 @@ LogRedirect::LogRedirect(bool both, const char *filename) throw()
         sigaction(SIGSEGV, &new_action, &old_action);
         sigaction(SIGBUS, &new_action, &old_action);
     }
+    m_processing = false;
 }
 
 LogRedirect::LogRedirect(ExecuteFlags flags)
@@ -158,6 +160,7 @@ LogRedirect::~LogRedirect() throw()
     }
     process();
     restore();
+    m_processing = true;
     if (m_out) {
         fclose(m_out);
     }
@@ -171,8 +174,15 @@ LogRedirect::~LogRedirect() throw()
 
 void LogRedirect::restore() throw()
 {
+    if (m_processing) {
+        return;
+    }
+    m_processing = true;
+
     restore(m_stdout);
     restore(m_stderr);
+
+    m_processing = false;
 }
 
 void LogRedirect::messagev(Level level,
