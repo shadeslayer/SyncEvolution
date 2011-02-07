@@ -412,14 +412,14 @@ msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes
 msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:51
-msgid "Google Sync can backup and synchronize your Address Book with your Gmail contacts."
+msgid "Google Sync can back up and synchronize your Address Book with your Gmail contacts."
 msgstr ""
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:57
-msgid "Backup your contacts and calendar. Sync with a singleclick, anytime, anywhere (DEMO)."
+msgid "Back up your contacts and calendar. Sync with a singleclick, anytime, anywhere (DEMO)."
 msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:227
@@ -480,7 +480,7 @@ msgstr ""
 
 #. TRANSLATORS: button label
 #: ../src/gtk-ui/sync-config-widget.c:1198
-msgid "Setup now"
+msgid "Set up now"
 msgstr ""
 
 #. TRANSLATORS: labels of entries

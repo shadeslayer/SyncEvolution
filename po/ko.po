@@ -647,18 +647,18 @@ msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes
 msgstr "scheduleworld에서 귀사의 연락처, 이벤트, 작업 및 동기화 노트를 보존할 수 있습니다.  "
 
 #: ../src/gtk-ui/sync-config-widget.c:81
-msgid "Google Sync can backup and synchronize your contacts with your Gmail contacts."
+msgid "Google Sync can back up and synchronize your contacts with your Gmail contacts."
 msgstr "Google Sync에서 귀하의 연락처 기록을  Gmail 연락처로 백업하거나 동기화할 수 있습니다. "
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:87
-msgid "Backup your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
+msgid "Back up your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
 msgstr "귀하의 연락처 및 일정을 백업합니다. 한 번의 클릭으로 언제 어디서나 동기화가 가능합니다(DEMO).  "
 
 #: ../src/gtk-ui/sync-config-widget.c:90
-msgid "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
+msgid "Mobical Backup and Restore service allows you to securely back up your personal mobile data for free."
 msgstr "Moblin식 백업과 복원 서비스를 사용하면 개인용 모바일 데이터를 무료로 안전하게 백업할 수 있습니다."
 
 #: ../src/gtk-ui/sync-config-widget.c:93
@@ -790,7 +790,7 @@ msgstr "웹사이트 시작"
 
 #. TRANSLATORS: button in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1816
-msgid "Setup now"
+msgid "Set up now"
 msgstr "지금 설정"
 
 #. TRANSLATORS: labels of entries in service configuration form

@@ -647,18 +647,18 @@ msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes
 msgstr "Med ScheduleWorld kan du hålla kontakter, aktiviteter, uppgifter och meddelanden uppdaterade."
 
 #: ../src/gtk-ui/sync-config-widget.c:77
-msgid "Google Sync can backup and synchronize your contacts with your Gmail contacts."
+msgid "Google Sync can back up and synchronize your contacts with your Gmail contacts."
 msgstr "Google Sync kan säkerhetskopiera och synka dina kontakter med dina Gmail-kontakter."
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:83
-msgid "Backup your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
+msgid "Back up your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
 msgstr "Säkerhetskopiera kontakter och kalender. Synka med ett enkelklick, när som helst, var som helst (DEMO)."
 
 #: ../src/gtk-ui/sync-config-widget.c:86
-msgid "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
+msgid "Mobical Backup and Restore service allows you to securely back up your personal mobile data for free."
 msgstr "Med Mobical-tjänsten för säkerhetskopiering och återställning kan du säkert säkerhetskopia dina personliga mobila data gratis."
 
 #: ../src/gtk-ui/sync-config-widget.c:89
@@ -790,7 +790,7 @@ msgstr "Öppna webbplatsen "
 
 #. TRANSLATORS: button in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1812
-msgid "Setup now"
+msgid "Set up now"
 msgstr "Konfigurera nu"
 
 #. TRANSLATORS: labels of entries in service configuration form

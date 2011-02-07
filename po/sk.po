@@ -680,7 +680,7 @@ msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:81
 msgid ""
-"Google Sync can backup and synchronize your contacts with your Gmail "
+"Google Sync can back up and synchronize your contacts with your Gmail "
 "contacts."
 msgstr ""
 
@@ -689,13 +689,13 @@ msgstr ""
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:87
 msgid ""
-"Backup your contacts and calendar. Sync with a single click, anytime, "
+"Back up your contacts and calendar. Sync with a single click, anytime, "
 "anywhere (DEMO)."
 msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:90
 msgid ""
-"Mobical Backup and Restore service allows you to securely backup your "
+"Mobical Backup and Restore service allows you to securely back up your "
 "personal mobile data for free."
 msgstr ""
 
@@ -837,7 +837,7 @@ msgstr ""
 
 #. TRANSLATORS: button in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1816
-msgid "Setup now"
+msgid "Set up now"
 msgstr ""
 
 #. TRANSLATORS: labels of entries in service configuration form

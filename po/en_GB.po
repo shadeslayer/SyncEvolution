@@ -653,19 +653,19 @@ msgid "ScheduleWorld enables you to keep your contacts, events, tasks, and notes
 msgstr "ScheduleWorld enables you to keep your contacts, events, tasks, and notes in sync."
 
 #: ../src/gtk-ui/sync-config-widget.c:81
-msgid "Google Sync can backup and synchronize your contacts with your Gmail contacts."
-msgstr "Google Sync can backup and synchronise your contacts with your Gmail contacts."
+msgid "Google Sync can back up and synchronize your contacts with your Gmail contacts."
+msgstr "Google Sync can back up and synchronise your contacts with your Gmail contacts."
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:87
-msgid "Backup your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
-msgstr "Backup your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
+msgid "Back up your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
+msgstr "Back up your contacts and calendar. Sync with a single click, anytime, anywhere (DEMO)."
 
 #: ../src/gtk-ui/sync-config-widget.c:90
-msgid "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
-msgstr "Mobical Backup and Restore service allows you to securely backup your personal mobile data for free."
+msgid "Mobical Backup and Restore service allows you to securely back up your personal mobile data for free."
+msgstr "Mobical Backup and Restore service allows you to securely back up your personal mobile data for free."
 
 #: ../src/gtk-ui/sync-config-widget.c:93
 msgid "ZYB is a simple way for people to store and share mobile information online."
@@ -796,8 +796,8 @@ msgstr "Launch website"
 
 #. TRANSLATORS: button in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1816
-msgid "Setup now"
-msgstr "Setup now"
+msgid "Set up now"
+msgstr "Set up now"
 
 #. TRANSLATORS: labels of entries in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1912

@@ -758,7 +758,7 @@ msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:81
 msgid ""
-"Google Sync can backup and synchronize your contacts with your Gmail "
+"Google Sync can back up and synchronize your contacts with your Gmail "
 "contacts."
 msgstr ""
 "Google Sync może zapisywać i synchronizować kopię twojej książki adresowej z "
@@ -769,7 +769,7 @@ msgstr ""
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:87
 msgid ""
-"Backup your contacts and calendar. Sync with a single click, anytime, "
+"Back up your contacts and calendar. Sync with a single click, anytime, "
 "anywhere (DEMO)."
 msgstr ""
 "Zrób kopię zapasową swoich kontaktów i kalendarza. Synchronizuj jednym "
@@ -777,7 +777,7 @@ msgstr ""
 
 #: ../src/gtk-ui/sync-config-widget.c:90
 msgid ""
-"Mobical Backup and Restore service allows you to securely backup your "
+"Mobical Backup and Restore service allows you to securely back up your "
 "personal mobile data for free."
 msgstr ""
 "Usługa kopii zapasowej i przywracania Mobical umożliwia za darmo wykonanie "
@@ -939,7 +939,7 @@ msgstr "Otworzyć stronę www"
 
 #. TRANSLATORS: button in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1816
-msgid "Setup now"
+msgid "Set up now"
 msgstr "Skonfiguruj teraz"
 
 #. TRANSLATORS: labels of entries in service configuration form

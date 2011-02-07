@@ -677,7 +677,7 @@ msgstr "ScheduleWorld 可以讓您的連絡人、行事曆事項、工作、以�
 
 #: ../src/gtk-ui/sync-config-widget.c:81
 msgid ""
-"Google Sync can backup and synchronize your contacts with your Gmail "
+"Google Sync can back up and synchronize your contacts with your Gmail "
 "contacts."
 msgstr "Google Sync 可以將您的聯絡人和 Gmail 連絡人進行備份以及同步。"
 
@@ -686,13 +686,13 @@ msgstr "Google Sync 可以將您的聯絡人和 Gmail 連絡人進行備份以�
 #. in the future
 #: ../src/gtk-ui/sync-config-widget.c:87
 msgid ""
-"Backup your contacts and calendar. Sync with a single click, anytime, "
+"Back up your contacts and calendar. Sync with a single click, anytime, "
 "anywhere (DEMO)."
 msgstr "備份您的連絡人與行事曆。一個按鍵就同步，任何時間、任何地點(樣本)。"
 
 #: ../src/gtk-ui/sync-config-widget.c:90
 msgid ""
-"Mobical Backup and Restore service allows you to securely backup your "
+"Mobical Backup and Restore service allows you to securely back up your "
 "personal mobile data for free."
 msgstr "Mobical 備份與還原服務讓您可以安全地備份個人行動資料，而且免費。"
 
@@ -842,7 +842,7 @@ msgstr "開啟網站"
 
 #. TRANSLATORS: button in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1816
-msgid "Setup now"
+msgid "Set up now"
 msgstr "立刻設置"
 
 #. TRANSLATORS: labels of entries in service configuration form

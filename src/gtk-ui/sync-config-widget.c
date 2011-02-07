@@ -88,17 +88,17 @@ get_service_description (const char *service)
         return _("ScheduleWorld enables you to keep your contacts, events, "
                  "tasks, and notes in sync.");
     }else if (strcmp (service, "Google") == 0) {
-        return _("Google Sync can backup and synchronize your contacts "
+        return _("Google Sync can back up and synchronize your contacts "
                  "with your Gmail contacts.");
     }else if (strcmp (service, "Funambol") == 0) {
         /* TRANSLATORS: Please include the word "demo" (or the equivalent in
            your language): Funambol is going to be a 90 day demo service
            in the future */
-        return _("Backup your contacts and calendar. Sync with a single "
+        return _("Back up your contacts and calendar. Sync with a single "
                  "click, anytime, anywhere (DEMO).");
     }else if (strcmp (service, "Mobical") == 0) {
         return _("Mobical Backup and Restore service allows you to securely "
-                 "backup your personal mobile data for free.");
+                 "back up your personal mobile data for free.");
     }else if (strcmp (service, "ZYB") == 0) {
         return _("ZYB is a simple way for people to store and share mobile "
                  "information online.");
@@ -1886,7 +1886,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_box_pack_end (GTK_BOX (hbox), vbox, FALSE, FALSE, 32);
 
     /* TRANSLATORS: button in service configuration form */
-    self->button = gtk_button_new_with_label (_("Setup now"));
+    self->button = gtk_button_new_with_label (_("Set up now"));
     gtk_widget_set_size_request (self->button, SYNC_UI_LIST_BTN_WIDTH, -1);
     g_signal_connect (self->button, "clicked",
                       G_CALLBACK (setup_service_clicked), self);

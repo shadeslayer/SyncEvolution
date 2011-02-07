@@ -233,7 +233,7 @@ msgstr ""
 
 #: ../src/gtk-ui/sync-ui.c:1476
 msgid ""
-"Google Sync can backup and synchronize your Address Book with your Gmail "
+"Google Sync can back up and synchronize your Address Book with your Gmail "
 "contacts."
 msgstr ""
 "El Google Sync pot fer còpies de seguretat i sincronitzar la llibreta "
@@ -244,7 +244,7 @@ msgstr ""
 #. in the future
 #: ../src/gtk-ui/sync-ui.c:1482
 msgid ""
-"Backup your contacts and calendar. Sync with a singleclick, anytime, "
+"Back up your contacts and calendar. Sync with a singleclick, anytime, "
 "anywhere (DEMO)."
 msgstr ""
 "Feu una còpia de seguretat dels vostres contactes i calendaris. "
