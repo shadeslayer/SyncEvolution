@@ -146,16 +146,12 @@ update $out
 TEMPLATE_FILES=`cd src && find templates -type f \( -name README -o -name '*.png' -o -name '*.svg' -o -name '*.ini' \) | sort`
 TEMPLATE_FILES=`echo $TEMPLATE_FILES`
 
-# create Makefile.am files
+# create src/Makefile.am file
 sed -e "s;@BACKEND_REGISTRIES@;`echo src/backends/*/*Register.cpp | sed -e s%src/%%g`;" \
     -e "s;@BACKENDS@;$BACKENDS;" \
     -e "s;@TEMPLATE_FILES@;$TEMPLATE_FILES;" \
      src/Makefile-gen.am >src/Makefile.am.new
 update src/Makefile.am
-
-sed -e "s;@CONFIG_SUBS@;$SUBS;" \
-    Makefile-gen.am >Makefile.am.new
-update Makefile.am
 
 # create LINGUAS file: every .po is included
 (cd po && ls -1 *.po | sort -u | sed -e 's/.po$//' > LINGUAS.new && update LINGUAS)

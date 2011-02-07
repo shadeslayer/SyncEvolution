@@ -27,7 +27,6 @@ EXTRA_DIST = \
 	configure-post.in \
 	gen-autotools.sh \
 	autogen.sh \
-	Makefile-gen.am \
 	Doxyfile
 
 MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs 
@@ -176,16 +175,14 @@ clean-local: clean-html
 clean-html:
 	rm -rf html
 
-# configure.in and Makefile.am are updated
+# configure.in is updated
 # by gen-autotools.sh. This scripts is run
 # each time "make all" (which depends on "Makefile")
 # runs; this is easier than trying to anticipated
 # when the script would produce different output.
 # The no-op "true" seem to be necessary for make to
-# re-check the configure.in and Makefile.am time stamps.
+# re-check the configure.in time stamps.
 $(srcdir)/configure.in: check-autotools
-	@ true
-$(srcdir)/Makefile.am: check-autotools
 	@ true
 
 # Rebuilding the autotools files should never be necessary
