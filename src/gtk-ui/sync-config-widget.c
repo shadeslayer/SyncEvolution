@@ -1906,10 +1906,10 @@ sync_config_widget_init (SyncConfigWidget *self)
     gtk_widget_show (hbox);
     gtk_box_pack_start (GTK_BOX (self->device_selector_box), hbox,
                         FALSE, TRUE, 8);
-    self->device_text = gtk_label_new (("We don't know what this device is exactly. "
-                                        "Please take a look at the list of "
-                                        "supported devices and pick yours if it "
-                                        "is listed"));
+    self->device_text = gtk_label_new (_("We don't know what this device is exactly. "
+                                         "Please take a look at the list of "
+                                         "supported devices and pick yours if it "
+                                         "is listed"));
     gtk_widget_show (self->device_text);
     gtk_label_set_line_wrap (GTK_LABEL (self->device_text), TRUE);
     gtk_widget_set_size_request (self->device_text, 600, -1);
@@ -1944,7 +1944,7 @@ sync_config_widget_init (SyncConfigWidget *self)
                       G_CALLBACK (device_combo_changed), self);
 
 
-    self->device_select_btn = gtk_button_new_with_label ("Use these settings");
+    self->device_select_btn = gtk_button_new_with_label (_("Use these settings"));
     gtk_widget_set_sensitive (self->device_select_btn, FALSE);
     gtk_widget_show (self->device_select_btn);
     gtk_box_pack_start (GTK_BOX (hbox), self->device_select_btn,
