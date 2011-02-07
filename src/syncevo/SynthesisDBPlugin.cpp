@@ -732,8 +732,19 @@ sysync::TSyError SyncEvolution_ReadBlob(CContext aContext, cItemID  aID,  cAppCh
   TSyError res;
   if (source->getOperations().m_readBlob) {
       try {
-          res = source->getOperations().m_readBlob(aID, aBlobID, (void **)aBlkPtr, aBlkSize,
-                                                   aTotSize, aFirst, aLast);
+	    size_t blksize, totsize;
+	    /* Another conversion between memSize and size_t to make s390 happy */
+            res = source->getOperations().m_readBlob(aID, aBlobID, (void **)aBlkPtr,
+						     aBlkSize ? &blksize : NULL,
+						     aTotSize ? &totsize : NULL,
+						     aFirst, aLast);
+	    if (aBlkSize) {
+	        *aBlkSize = blksize;
+	    }
+            if (aTotSize) {
+                *aTotSize = totsize;
+            }
+
       } catch (...) {
           res = source->handleException();
       }
