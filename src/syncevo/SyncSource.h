@@ -1713,7 +1713,20 @@ class SyncSourceBlob : public virtual SyncSourceBase
                               void **aBlkPtr, size_t *aBlkSize,
                               size_t *aTotSize,
                               bool aFirst, bool *aLast) {
-        return m_blob.ReadBlob(aID, aBlobID, aBlkPtr, aBlkSize, aTotSize, aFirst, aLast);
+        // Translate between sysync::memSize and size_t, which
+        // is different on s390 (or at least the compiler complains...).
+        sysync::memSize blksize, totsize;
+        sysync::TSyError err = m_blob.ReadBlob(aID, aBlobID, aBlkPtr,
+                                               aBlkSize ? &blksize : NULL,
+                                               aTotSize ? &totsize : NULL,
+                                               aFirst, aLast);
+        if (aBlkSize) {
+            *aBlkSize = blksize;
+        }
+        if (aTotSize) {
+            *aTotSize = totsize;
+        }
+        return err;
     }
     sysync::TSyError writeBlob(sysync::cItemID aID, const char *aBlobID,
                                void *aBlkPtr, size_t aBlkSize,
