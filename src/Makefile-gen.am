@@ -338,15 +338,13 @@ abort_redirect_DEPENDENCIES = all
 valgrind : test
 	valgrind --leak-check=yes --suppressions=valgrind.supp ./test
 
-# Because backend-related variables need to be substituted in
-# Makefile-gen.am we need an explicit rule to redo that work
-# so that "make" rebuilds derived files correctly.
+# Same solution for rebuilding as in top-level Makefile, see there
+# for further comments.
 $(srcdir)/Makefile.am: check-autotools
 	@ true
-
 .PHONY: check-autotools
 check-autotools:
-	@ cd $(top_srcdir) && ./gen-autotools.sh
+	@ cd $(top_srcdir) && ( [ ! -e .git ] || ./gen-autotools.sh )
 
 # old-style name for test program(s)
 .PHONY: test

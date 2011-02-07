@@ -188,9 +188,12 @@ $(srcdir)/configure.in: check-autotools
 $(srcdir)/Makefile.am: check-autotools
 	@ true
 
+# Rebuilding the autotools files should never be necessary
+# with source tar balls. Some parts of it depend on "git describe".
+# So avoid it when there is no .git repo.
 .PHONY: check-autotools
 check-autotools:
-	@ cd $(srcdir) && ./gen-autotools.sh
+	@ cd $(srcdir) && ( [ ! -e .git ] || ./gen-autotools.sh )
 
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \
