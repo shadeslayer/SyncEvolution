@@ -184,7 +184,7 @@ extern "C" void EDSAbiWrapperInit()
 #ifdef EVOLUTION_COMPATIBILITY
 # ifdef HAVE_EDS
     edshandle =
-    findSymbols("libedataserver-1.2.so", 7, 11,
+    findSymbols("libedataserver-1.2.so", 7, 13,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_source_get_type, "e_source_get_type",
                 &EDSAbiWrapperSingleton.e_source_get_uri, "e_source_get_uri",
