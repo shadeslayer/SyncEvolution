@@ -2950,7 +2950,6 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
         // When a source or the overall sync was successful,
         // but some items failed, we report a "partial failure"
         // status.
-        sourceList.updateSyncReport(*report);
         BOOST_FOREACH(SyncSource *source, sourceList) {
             if (source->getStatus() == STATUS_OK &&
                 (source->getItemStat(SyncSource::ITEM_LOCAL,
@@ -2968,20 +2967,39 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             }
         }
 
-        // also take into account result of client side in local sync,
-        // if any existed
+        // Also take into account result of client side in local sync,
+        // if any existed. A non-success status code in the client's report
+        // was already propagated to the parent via a TransportStatusException
+        // in LocalTransportAgent::checkChildReport(). What we can do here
+        // is updating the individual's sources status.
         if (m_localSync && m_agent) {
             boost::shared_ptr<LocalTransportAgent> agent = boost::static_pointer_cast<LocalTransportAgent>(m_agent);
-
-            // TODO: check results from client and override
-            // inconclusive resuls on server side
+            SyncReport childReport;
+            agent->getClientSyncReport(childReport);
+            BOOST_FOREACH(SyncSource *source, sourceList) {
+                const SyncSourceReport *childSourceReport = childReport.findSyncSourceReport(source->getURI());
+                if (childSourceReport) {
+                    SyncMLStatus parentSourceStatus = source->getStatus();
+                    SyncMLStatus childSourceStatus = childSourceReport->getStatus();
+                    // child source had an error *and*
+                    // parent error is either unspecific (USERABORT) or
+                    // is a remote error (HTTP error range)
+                    if (childSourceStatus != STATUS_OK && childSourceStatus != STATUS_HTTP_OK &&
+                        (parentSourceStatus == SyncMLStatus(sysync::LOCERR_USERABORT) ||
+                         parentSourceStatus < SyncMLStatus(sysync::LOCAL_STATUS_CODE))) {
+                        source->recordStatus(childSourceStatus);
+                    }
+                }
+            }
         }
 
+        sourceList.updateSyncReport(*report);
         sourceList.syncDone(status, report);
     } catch(...) {
         Exception::handle(&status);
     }
 
+    m_agent.reset();
     m_sourceListPtr = NULL;
     return status;
 }
@@ -3716,7 +3734,6 @@ SyncMLStatus SyncContext::doSync()
         }
     }
 
-    m_agent.reset();
     if (catchSignals) {
         sigaction (SIGINT, &old_action, NULL);
         sigaction (SIGTERM, &old_term_action, NULL);
