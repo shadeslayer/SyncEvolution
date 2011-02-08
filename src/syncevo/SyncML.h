@@ -331,6 +331,10 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
     SyncSourceReport &getSyncSourceReport(const std::string &name) {
         return (*this)[name];
     }
+    const SyncSourceReport *findSyncSourceReport(const std::string &name) const {
+        const_iterator it = find(name);
+        return it == end() ? NULL : &it->second;
+    }
 
     /** start time of sync, 0 if unknown */
     time_t getStart() const { return m_start; }
