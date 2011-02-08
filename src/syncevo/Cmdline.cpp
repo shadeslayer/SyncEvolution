@@ -634,7 +634,9 @@ bool Cmdline::run() {
         BOOST_FOREACH(const RegisterSyncSource *source, registry) {
             BOOST_FOREACH(const Values::value_type &alias, source->m_typeValues) {
                 if (!alias.empty() && source->m_enabled) {
-                    configNode->setProperty("type", *alias.begin());
+                    SourceType type(*alias.begin());
+                    sharedNode->setProperty("backend", type.m_backend);
+                    sharedNode->setProperty("databaseFormat", type.m_localFormat);
                     auto_ptr<SyncSource> source(SyncSource::createSource(params, false));
                     if (source.get() != NULL) {
                         listSources(*source, boost::join(alias, " = "));
