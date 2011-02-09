@@ -392,6 +392,10 @@ public:
                     setPreventSlowSync(false);
                 }
                 SyncContext::prepare();
+                if (m_options.m_prepareCallback &&
+                    m_options.m_prepareCallback(*this, m_options)) {
+                    m_options.m_isAborted = true;
+                }
             }
 
             virtual void displaySyncProgress(sysync::TProgressEventEnum type,

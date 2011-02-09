@@ -140,6 +140,12 @@ struct SyncOptions {
      */
     Callback_t m_startCallback;
 
+    /**
+     * called while configuration is prepared for sync, see
+     * SyncContext::prepare()
+     */
+    Callback_t m_prepareCallback;
+
     boost::shared_ptr<TransportAgent> m_transport;
 
     SyncOptions(SyncMode syncMode = SYNC_NONE,
@@ -174,6 +180,7 @@ struct SyncOptions {
     SyncOptions &setRetryDuration(int retryDuration) { m_retryDuration = retryDuration; return *this; }
     SyncOptions &setRetryInterval(int retryInterval) { m_retryInterval = retryInterval; return *this; }
     SyncOptions &setStartCallback(const Callback_t &callback) { m_startCallback = callback; return *this; }
+    SyncOptions &setPrepareCallback(const Callback_t &callback) { m_prepareCallback = callback; return *this; }
     SyncOptions &setTransportAgent(const boost::shared_ptr<TransportAgent> transport)
                                   {m_transport = transport; return *this;}
 
