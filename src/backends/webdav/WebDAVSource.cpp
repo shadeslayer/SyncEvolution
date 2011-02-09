@@ -109,6 +109,12 @@ public:
     virtual bool googleChildHack() const { return m_googleChildHack; }
     virtual bool googleAlarmHack() const { return m_googleChildHack; }
 
+    /**
+     * Communication is aborted after the configured retry duration.
+     * TODO: resend after retryInterval() seconds.
+     */
+    virtual int timeoutSeconds() const { return m_context->getRetryDuration(); }
+
     virtual void getCredentials(const std::string &realm,
                                 std::string &username,
                                 std::string &password)

@@ -91,6 +91,12 @@ class Settings {
     virtual bool googleAlarmHack() const = 0;
 
     /**
+     * duration in seconds after which communication with a server
+     * fails with a timeout error; <= 0 picks a large default value
+     */
+    virtual int timeoutSeconds() const = 0;
+
+    /**
      * use this to create a boost_shared pointer for a
      * Settings instance which needs to be freed differently
      */

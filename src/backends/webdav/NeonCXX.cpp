@@ -201,6 +201,13 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
         URI proxyuri = URI::parse(m_proxyURL);
         ne_session_proxy(m_session, proxyuri.m_host.c_str(), proxyuri.m_port);
     }
+
+    int seconds = settings->timeoutSeconds();
+    if (seconds < 0) {
+        seconds = 5 * 60;
+    }
+    ne_set_read_timeout(m_session, seconds);
+    ne_set_connect_timeout(m_session, seconds);
 }
 
 Session::~Session()
