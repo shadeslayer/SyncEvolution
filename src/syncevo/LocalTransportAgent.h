@@ -118,6 +118,8 @@ class LocalTransportAgent : public TransportAgent
     SyncContext *m_server;
     string m_clientContext;
     GMainLoop *m_loop;
+    int m_timeoutSeconds;
+    time_t m_sendStartTime;
 
     Status m_status;
 
@@ -167,22 +169,29 @@ class LocalTransportAgent : public TransportAgent
     /**
      * Write Message with given type into file descriptor.
      * Retries until error or all data written.
+     *
+     * @return true for success, false if deadline is reached, exception for fatal error
      */
-    void writeMessage(int fd, Message::Type type, const char *data, size_t len);
+    bool writeMessage(int fd, Message::Type type, const char *data, size_t len, time_t deadline);
 
     /**
      * Read bytes into buffer until complete Message
      * is assembled. Will read additional bytes beyond
      * end of that Message if available. An existing
      * complete message is not overwritten.
+     *
+     * @return true for success, false if deadline is reached, exception for fatal error
      */
-    void readMessage(int fd, Buffer &buffer);
+    bool readMessage(int fd, Buffer &buffer, time_t deadline);
 
     /** utility function for parent: copy child's report into m_clientReport */
     void receiveChildReport();
 
     /** utility function for parent: check m_clientReport and log/throw errors */
     void checkChildReport();
+
+    /** utility function: calculate deadline for operation starting now */
+    time_t deadline() { return m_timeoutSeconds ? (time(NULL) + m_timeoutSeconds) : 0; }
 };
 
 SE_END_CXX
