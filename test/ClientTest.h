@@ -597,8 +597,13 @@ public:
     SyncTests(const std::string &name, ClientTest &cl, std::vector<int> sourceIndices, bool isClientA = true);
     ~SyncTests();
 
-    /** adds the supported tests to the instance itself */
-    virtual void addTests();
+    /**
+     * adds the supported tests to the instance itself
+     * @param isFirstSource     the tests are getting generated for a single source,
+     *                          the one which was listed first; some tests are the
+     *                          same for all sources and should only be run once
+     */
+    virtual void addTests(bool isFirstSource = false);
 
     /** set up before running a test */
     virtual void setUp() { client.setup(); }
@@ -795,6 +800,8 @@ protected:
     virtual void testResendProxyServerRemove();
     virtual void testResendProxyServerUpdate();
     virtual void testResendProxyFull();
+
+    virtual void testTimeout();
 
     /**
      * implements testMaxMsg(), testLargeObject(), testLargeObjectEncoded()

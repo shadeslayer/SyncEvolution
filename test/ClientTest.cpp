@@ -51,6 +51,8 @@
 #include <algorithm>
 
 #include <fcntl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include <boost/bind.hpp>
 
@@ -1592,7 +1594,7 @@ SyncTests::~SyncTests() {
 }
 
 /** adds the supported tests to the instance itself */
-void SyncTests::addTests() {
+void SyncTests::addTests(bool isFirstSource) {
     if (sources.size()) {
         const ClientTest::Config &config(sources[0].second->config);
 
@@ -1609,6 +1611,9 @@ void SyncTests::addTests() {
         ADD_TEST(SyncTests, testSlowSync);
         ADD_TEST(SyncTests, testRefreshFromServerSync);
         ADD_TEST(SyncTests, testRefreshFromClientSync);
+        if (isFirstSource) {
+            ADD_TEST(SyncTests, testTimeout);
+        }
 
         if (config.compare &&
             config.testcases &&
@@ -1732,7 +1737,6 @@ void SyncTests::addTests() {
             ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyFull);
             addTest(FilterTest(resendTests));
         }
-
     }
 }
 
@@ -3505,6 +3509,78 @@ void SyncTests::testResendProxyFull()
                       boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
 }
 
+static bool setDeadSyncURL(SyncContext &context,
+                           SyncOptions &options,
+                           int port,
+                           bool *skipped)
+{
+    vector<string> urls = context.getSyncURL();
+    string url;
+    if (urls.size() == 1) {
+        url = urls.front();
+    }
+
+    // use IPv4 localhost address, that's what we listen on
+    string fakeURL = StringPrintf("http://127.0.0.1:%d/foobar", port);
+
+    if (boost::starts_with(url, "http")) {
+        context.setSyncURL(fakeURL, true);
+        context.setUsername("foo", true);
+        context.setPassword("bar", true);
+        return false;
+    } else if (boost::starts_with(url, "local://")) {
+        FullProps props = context.getConfigProps();
+        string target = url.substr(strlen("local://"));
+        props[target].m_syncProps["syncURL"] = fakeURL;
+        props[target].m_syncProps["retryDuration"] = "10";
+        props[target].m_syncProps["retryInterval"] = "10";
+        context.setConfigProps(props);
+        return false;
+    } else {
+        // cannot run test, tell parent
+        *skipped = true;
+        return true;
+    }
+}
+
+void SyncTests::testTimeout()
+{
+    // Create a dead listening socket, then run a sync with a sync URL
+    // which points towards localhost at that port. Do this with no
+    // message resending and a very short overall timeout. The
+    // expectation is that the transmission timeout strikes.
+    time_t start = time(NULL);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    CPPUNIT_ASSERT(fd != -1);
+    struct sockaddr_in servaddr;
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    int res = bind(fd, (sockaddr *)&servaddr, sizeof(servaddr));
+    CPPUNIT_ASSERT(res == 0);
+    socklen_t len = sizeof(servaddr);
+    res = getsockname(fd, (sockaddr *)&servaddr, &len);
+    CPPUNIT_ASSERT(res == 0);
+    res = listen(fd, 10);
+    CPPUNIT_ASSERT(res == 0);
+    bool skipped = false;
+    SyncReport report;
+    doSync("timeout",
+           SyncOptions(SYNC_SLOW,
+                       CheckSyncReport(-1, -1, -1, -1, -1, -1,
+                                       false).setReport(&report))
+           .setPrepareCallback(boost::bind(setDeadSyncURL, _1, _2, ntohs(servaddr.sin_port), &skipped))
+           .setRetryDuration(10)
+           .setRetryInterval(10));
+    time_t end = time(NULL);
+    close(fd);
+    if (!skipped) {
+        CPPUNIT_ASSERT_EQUAL(STATUS_TRANSPORT_FAILURE, report.getStatus());
+        CPPUNIT_ASSERT(end - start >= 9);
+        CPPUNIT_ASSERT(end - start < 15);
+    }
+}
+
 void SyncTests::doSync(const SyncOptions &options)
 {
     int res = 0;
@@ -3614,7 +3690,7 @@ public:
                 sources.push_back(source);
                 SyncTests *synctests =
                     client.createSyncTests(tests->getName() + "::" + config.sourceName, sources);
-                synctests->addTests();
+                synctests->addTests(source == 0);
                 tests->addTest(FilterTest(synctests));
             }
         }
