@@ -58,9 +58,7 @@ static RegisterSyncSource registerMe("DAV",
 #endif
                                      createSource,
                                      "CalDAV\n"
-                                     "   iCalendar 2.0 = text/calendar\n"
                                      "CardDAV\n"
-                                     "   vCard 3.0 = text/vcard\n"
                                      ,
                                      Values() +
                                      Aliases("CalDAV")
