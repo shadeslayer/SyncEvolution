@@ -60,6 +60,15 @@ bool ButeoBridge::startSync()
             }
         }
 
+        // The Yahoo CardDAV and CalDAV config only works with full
+        // domain (needed for DNS SRV lookup).  Add it if not present.
+        // If the resulting username is invalid, we'll get a
+        // credentials error, as desired.
+        if (m_config == "yahoo" &&
+            username.find('@') == username.npos) {
+            username += "@yahoo.com";
+        }
+
         // run sync with just the enabled sources
         Cmdline sync(std::cout, std::cerr,
                      "buteo-sync",
