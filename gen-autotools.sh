@@ -108,7 +108,7 @@ fi
 # don't touch final output file unless new
 # content is different
 update () {
-    if [ -f $1 ] && cmp $1 $1.new >/dev/null; then
+    if [ -f $1 ] && diff $1 $1.new; then
         rm $1.new
     else
         echo gen-autotools.sh: $1 updated
