@@ -1492,6 +1492,7 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainl
     if (m_localSync) {
         string peer = url.substr(strlen("local://"));
         boost::shared_ptr<LocalTransportAgent> agent(new LocalTransportAgent(this, peer, gmainloop));
+        agent->setTimeout(timeout);
         agent->start();
         return agent;
     } else if (boost::starts_with(url, "http://") ||
@@ -1500,22 +1501,13 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainl
         
         boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent(static_cast<GMainLoop *>(gmainloop)));
         agent->setConfig(*this);
-
-        if (timeout) {
-            agent->setCallback(transport_cb,
-                        reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
-                        timeout);
-        }
+        agent->setTimeout(timeout);
         return agent;
 #elif defined(ENABLE_LIBCURL)
         if (!gmainloop) {
             boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
             agent->setConfig(*this);
-            if (timeout) {
-                agent->setCallback(transport_cb,
-                        reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
-                        timeout);
-            }
+            agent->setTimeout(timeout);
             return agent;
         }
 #endif
@@ -1525,11 +1517,7 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainl
         boost::shared_ptr<ObexTransportAgent> agent(new ObexTransportAgent(ObexTransportAgent::OBEX_BLUETOOTH,
                                                                            static_cast<GMainLoop *>(gmainloop)));
         agent->setURL (btUrl);
-        if (timeout) {
-            agent->setCallback(transport_cb,
-                    reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
-                    timeout);
-        }
+        agent->setTimeout(timeout);
         agent->connect();
         return agent;
 #endif
@@ -2036,17 +2024,6 @@ void SyncContext::startSourceAccess(SyncSource *source)
     }
     // database dumping is delayed in both client and server
     m_sourceListPtr->syncPrepare(source->getName());
-}
-
-bool SyncContext::transport_cb (void *udata)
-{
-    unsigned int interval = reinterpret_cast<uintptr_t>(udata);
-    SE_LOG_INFO(NULL, NULL, "Transport timeout after %u:%02umin",
-                interval / 60,
-                interval % 60);
-    // never cancel the transport, the higher levels will deal
-    // with the timeout
-    return true;
 }
 
 // XML configuration converted to C string constants

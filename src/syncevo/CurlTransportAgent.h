@@ -56,7 +56,7 @@ class CurlTransportAgent : public HTTPTransportAgent
     virtual void cancel();
     virtual Status wait(bool noReply = false);
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
-    virtual void setCallback (TransportCallback cb, void * udata, int interval);
+    virtual void setTimeout(int seconds);
     int processCallback();
     void setAborting(bool aborting) {m_aborting = aborting;}
 
@@ -67,10 +67,8 @@ class CurlTransportAgent : public HTTPTransportAgent
     Status m_status;
     bool m_aborting;
 
-    TransportCallback m_cb;
-    void *m_cbData;
     time_t m_sendStartTime;
-    int m_cbInterval;
+    int m_timeoutSeconds;
 
     /**
      * libcurl < 7.17.0 does not copy strings passed into curl_easy_setopt().

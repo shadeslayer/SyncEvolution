@@ -106,7 +106,7 @@ class ObexTransportAgent : public TransportAgent
         virtual void cancel();
         virtual Status wait(bool noReply);
         virtual void getReply(const char *&data, size_t &len, std::string &contentType);
-        virtual void setCallback (TransportCallback cb, void *udata, int interval);
+        virtual void setTimeout(int seconds);
         /* Obex specific api: connecting the underlying transport */
         void connect();
 
@@ -174,10 +174,7 @@ class ObexTransportAgent : public TransportAgent
 
         sdp_session_t *m_sdp;
 
-        /* callback supplied by the user of the transport */
-        TransportCallback m_cb;
-        void *m_cbData;
-        time_t m_cbInterval;
+        int m_timeoutSeconds;
         time_t m_requestStart;
         /** OBEX poll interval */
         static const int OBEX_POLL_INTERVAL = 1;

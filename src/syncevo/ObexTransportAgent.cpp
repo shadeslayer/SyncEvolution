@@ -49,7 +49,7 @@ ObexTransportAgent::ObexTransportAgent (OBEX_TRANS_TYPE type, GMainLoop *loop) :
     m_port(-1),
     m_buffer(NULL),
     m_bufferSize(0),
-    m_cb(NULL),
+    m_timeoutSeconds(0),
     m_disconnecting(false),
     m_connectStatus(START)
 {
@@ -92,11 +92,9 @@ void ObexTransportAgent::setContentType(const std::string &type) {
 }
 
 
-void ObexTransportAgent::setCallback (TransportCallback cb, void *data, int interval)
+void ObexTransportAgent::setTimeout(int seconds)
 {
-    m_cb = cb;
-    m_cbData = data;
-    m_cbInterval = interval;
+    m_timeoutSeconds = seconds;
 }
 
 void ObexTransportAgent::connect() {
@@ -627,22 +625,17 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
         }
 
         time_t now = time(NULL);
-        if (m_cb && (m_requestStart != 0) 
-                && (now - m_requestStart > m_cbInterval)) {
+        if (m_timeoutSeconds &&
+            (m_requestStart != 0) &&
+            (now >= m_timeoutSeconds +m_requestStart)) {
             m_sock = sockObj;
             m_channel = channel;
-            if (m_cb (m_cbData)){
-                //timeout
-                m_status = TIME_OUT;
-                //currently we will not support transport resend for 
-                //OBEX transport ??
-                m_disconnecting = true;
-                cancel();
-            } else {
-                //abort
-                m_disconnecting = true;
-                cancel();
-            }
+            //timeout
+            m_status = TIME_OUT;
+            //currently we will not support transport resend for 
+            //OBEX transport ??
+            m_disconnecting = true;
+            cancel();
             return TRUE;
         }
 

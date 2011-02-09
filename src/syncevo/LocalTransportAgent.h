@@ -112,7 +112,7 @@ class LocalTransportAgent : public TransportAgent
     virtual void cancel();
     virtual Status wait(bool noReply = false);
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
-    virtual void setCallback (TransportCallback cb, void * udata, int interval);
+    virtual void setTimeout(int seconds);
 
  private:
     SyncContext *m_server;

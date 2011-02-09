@@ -46,8 +46,6 @@ class SyncConfig;
 class TransportAgent
 {
  public:
-    typedef bool (*TransportCallback) (void *udata);
-
     /**
      * set transport specific URL of next message
      */
@@ -134,14 +132,14 @@ class TransportAgent
     virtual Status wait(bool noReply = false) = 0;
 
     /**
-     * The callback is called at most once while a transmission is
-     * pending, "interval" seconds after calling send(), with udata as
-     * the last parameter.  When the callback returns true, the
-     * transport will stop waiting for a reply to the message and flag
-     * a timeout.  When the callback returns false, the transport will
-     * cancel the transmission.
+     * Tells the transport agent to stop the transmission the given
+     * amount of seconds after send() was called. The transport agent
+     * will then stop the message transmission and return a TIME_OUT
+     * status in wait().
+     *
+     * @param seconds      number of seconds to wait before timing out, zero for no timeout
      */
-    virtual void setCallback (TransportCallback cb, void * udata, int interval) = 0;
+    virtual void setTimeout(int seconds) = 0;
 
     /**
      * provides access to reply data

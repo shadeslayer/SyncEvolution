@@ -661,9 +661,8 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      *
      * The agent must be ready for use:
      * - HTTP specific settings must have been applied
-     * - the current SyncContect's transport_cb() must have been
-     *   installed via TransportAgent::setCallback(), with a suitable
-     *   timeout for the agent
+     * - the current SyncContext's timeout must have been
+     *   installed via TransportAgent::setTimeout()
      *
      * The default implementation instantiates one of the builtin
      * transport agents, depending on how it was compiled.
@@ -818,8 +817,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     ostream *m_out;
 
 public:
-    static bool transport_cb (void *data);
-
     /**
      * Returns the URL in the getSyncURL() list which is to be used
      * for sync.  The long term goal is to pick the first URL which

@@ -71,7 +71,7 @@ class SoupTransportAgent : public HTTPTransportAgent
     virtual void cancel();
     virtual Status wait(bool noReply = false);
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
-    virtual void setCallback (TransportCallback cb, void *udata, int interval);
+    virtual void setTimeout(int seconds);
     gboolean processCallback();
  private:
     std::string m_proxyUser;
@@ -87,10 +87,8 @@ class SoupTransportAgent : public HTTPTransportAgent
     GLibEvent m_abortEventSource;
 
     SoupMessage *m_message;
-    GLibEvent m_cbEventSource;
-    TransportCallback m_cb;
-    int m_cbInterval;
-    void *m_cbData;
+    GLibEvent m_timeoutEventSource;
+    int m_timeoutSeconds;
 
     /** User Abort check interval */
     static const gint ABORT_CHECK_INTERVAL = 1;

@@ -585,7 +585,7 @@ void LocalTransportAgent::getReply(const char *&data, size_t &len, std::string &
     }
 }
 
-void LocalTransportAgent::setCallback (TransportCallback cb, void * udata, int interval)
+void LocalTransportAgent::setTimeout(int seconds)
 {
     // TODO: implement timeout mechanism
 }

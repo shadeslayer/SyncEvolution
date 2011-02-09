@@ -858,8 +858,7 @@ public:
         m_wrappedAgent.reset();
     }
     virtual Status wait(bool noReply = false) { return m_status; }
-    virtual void setCallback (TransportCallback cb, void *udata, int interval) 
-    { return m_wrappedAgent->setCallback(cb, udata, interval);}
+    virtual void setTimeout(int seconds) { m_wrappedAgent->setTimeout(seconds); }
 };
 
 /** assert equality, include string in message if unequal */

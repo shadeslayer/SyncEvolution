@@ -2416,16 +2416,14 @@ class DBusTransportAgent : public TransportAgent
     std::string m_type;
 
     /*
-     * When the callback is invoked, we always abort the current
+     * When the timeout occurs, we always abort the current
      * transmission.  If it is invoked while we are not in the wait()
      * of this transport, then we remember that in m_eventTriggered
      * and return from wait() right away. The main loop is only
      * quit when the transport is waiting in it. This is a precaution
      * to not interfere with other parts of the code.
      */
-    TransportCallback m_callback;
-    void *m_callbackData;
-    int m_callbackInterval;
+    int m_timeoutSeconds;
     GLibEvent m_eventSource;
     bool m_eventTriggered;
     bool m_waiting;
@@ -2448,11 +2446,9 @@ class DBusTransportAgent : public TransportAgent
     virtual void cancel() {}
     virtual void shutdown();
     virtual Status wait(bool noReply = false);
-    virtual void setCallback (TransportCallback cb, void * udata, int interval)
+    virtual void setTimeout(int seconds)
     {
-        m_callback = cb;
-        m_callbackData = udata;
-        m_callbackInterval = interval;
+        m_timeoutSeconds = seconds;
         m_eventSource = 0;
     }
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
@@ -3049,11 +3045,7 @@ boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
         // client (API not designed for it), let's use the hard timeout
         // from RetryDuration here.
         int timeout = getRetryDuration();
-        if (timeout) {
-            agent->setCallback(transport_cb,
-                               reinterpret_cast<void *>(static_cast<uintptr_t>(timeout)),
-                               timeout);
-        }
+        agent->setTimeout(timeout);
         return agent;
     } else {
         // no connection, use HTTP via libsoup/GMainLoop
@@ -4627,7 +4619,7 @@ DBusTransportAgent::DBusTransportAgent(GMainLoop *loop,
     m_loop(loop),
     m_session(session),
     m_connection(connection),
-    m_callback(NULL),
+    m_timeoutSeconds(0),
     m_eventTriggered(false),
     m_waiting(false)
 {
@@ -4660,9 +4652,8 @@ void DBusTransportAgent::send(const char *data, size_t len)
     connection->m_state = Connection::WAITING;
     connection->m_incomingMsg = SharedBuffer();
 
-    // setup regular callback
-    if (m_callback) {
-        m_eventSource = g_timeout_add_seconds(m_callbackInterval, timeoutCallback, static_cast<gpointer>(this));
+    if (m_timeoutSeconds) {
+        m_eventSource = g_timeout_add_seconds(m_timeoutSeconds, timeoutCallback, static_cast<gpointer>(this));
     }
     m_eventTriggered = false;
 
@@ -4694,8 +4685,6 @@ void DBusTransportAgent::shutdown()
 gboolean DBusTransportAgent::timeoutCallback(gpointer transport)
 {
     DBusTransportAgent *me = static_cast<DBusTransportAgent *>(transport);
-    me->m_callback(me->m_callbackData);
-    // TODO: check or remove return code from callback?!
     me->m_eventTriggered = true;
     if (me->m_waiting) {
         g_main_loop_quit(me->m_loop);

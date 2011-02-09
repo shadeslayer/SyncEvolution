@@ -34,7 +34,7 @@ CurlTransportAgent::CurlTransportAgent() :
     m_easyHandle(easyInit()),
     m_slist(NULL),
     m_status(INACTIVE),
-    m_cb(NULL),
+    m_timeoutSeconds(0),
     m_reply(NULL),
     m_replyLen(0),
     m_replySize(0)
@@ -143,11 +143,9 @@ void CurlTransportAgent::setSSL(const std::string &cacerts,
     checkCurl(code);
 }
 
-void CurlTransportAgent::setCallback (TransportCallback cb, void *udata, int interval)
+void CurlTransportAgent::setTimeout(int seconds)
 {
-    m_cb = cb;
-    m_cbData = udata;
-    m_cbInterval = interval;
+    m_timeoutSeconds = seconds;
 }
 
 void CurlTransportAgent::shutdown()
@@ -179,7 +177,7 @@ void CurlTransportAgent::send(const char *data, size_t len)
     m_slist = curl_slist_append(m_slist, contentHeader.c_str());
 
     m_status = ACTIVE;
-    if(m_cb){
+    if (m_timeoutSeconds) {
         m_sendStartTime = time(NULL);
     }
     m_aborting = false;
@@ -291,17 +289,10 @@ int CurlTransportAgent::progressCallback(void* transport, double, double, double
 
 int CurlTransportAgent::processCallback()
 {
-    if (m_cb){   
+    if (m_timeoutSeconds) {
         time_t curTime = time(NULL);
-        if (curTime - m_sendStartTime > m_cbInterval){
-            //change here to avoid duplicate call back to the upper layer
-            m_sendStartTime = curTime; 
-            bool cont = m_cb (m_cbData);
-            if (cont) {
-                m_status = TIME_OUT;
-            }else {
-                m_aborting = true;
-            }
+        if (curTime - m_sendStartTime > m_timeoutSeconds) {
+            m_status = TIME_OUT;
             return -1;
         }
     }
