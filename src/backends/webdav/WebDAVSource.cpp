@@ -282,7 +282,8 @@ void WebDAVSource::open()
     if (url.empty() && m_contextSettings) {
         size_t pos = username.find('@');
         if (pos == username.npos) {
-            throwError(StringPrintf("syncURL not configured and username %s does not contain a domain", username.c_str()));
+            // throw authentication error to indicate that the credentials are wrong
+            throwError(STATUS_UNAUTHORIZED, StringPrintf("syncURL not configured and username %s does not contain a domain", username.c_str()));
         }
         std::string domain = username.substr(pos + 1);
 
@@ -293,7 +294,7 @@ void WebDAVSource::open()
                                     domain.c_str()).c_str(),
                        "r");
             if (!in) {
-                throwError(StringPrintf("syncURL not configured and starting syncevo-webdav-lookup for DNS SRV lookup failed: %s", strerror(errno)));
+                throwError("syncURL not configured and starting syncevo-webdav-lookup for DNS SRV lookup failed", errno);
             }
             // ridicuously long URLs are truncated...
             char buffer[1024];
@@ -317,7 +318,8 @@ void WebDAVSource::open()
                 throwError(StringPrintf("syncURL not configured and DNS SRV search for %s in %s did not find the service", serviceType().c_str(), domain.c_str()));
                 break;
             default:
-                throwError(StringPrintf("syncURL not configured and DNS SRV search for %s in %s failed", serviceType().c_str(), domain.c_str()));
+                // probably network problem
+                throwError(STATUS_TRANSPORT_FAILURE, StringPrintf("syncURL not configured and DNS SRV search for %s in %s failed", serviceType().c_str(), domain.c_str()));
                 break;
             }
         } catch (...) {
