@@ -136,7 +136,7 @@ for sub in src/backends/*/configure-sub.in; do
     SUBS="$SUBS $sub"
     echo "# vvvvvvvvvvvvvv $sub vvvvvvvvvvvvvv" >>$out.new
     cat $sub >>$out.new
-    echo "AC_CONFIG_FILES(`echo $sub | sed -e s/configure-sub.in/Makefile/`)" >>out.new
+    echo "AC_CONFIG_FILES(`echo $sub | sed -e s/configure-sub.in/Makefile/`)" >>$out.new
     echo "# ^^^^^^^^^^^^^^ $sub ^^^^^^^^^^^^^^" >>$out.new
     echo >>$out.new
 done
