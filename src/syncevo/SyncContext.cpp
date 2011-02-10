@@ -1814,6 +1814,11 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
 
 void SyncContext::throwError(const string &error)
 {
+    throwError(STATUS_FATAL, error);
+}
+
+void SyncContext::throwError(SyncMLStatus status, const string &error)
+{
 #ifdef IPHONE
     /*
      * Catching the runtime_exception fails due to a toolchain problem,
@@ -1823,7 +1828,7 @@ void SyncContext::throwError(const string &error)
      */
     fatalError(NULL, error.c_str());
 #else
-    throw runtime_error(error);
+    SE_THROW_EXCEPTION_STATUS(StatusException, error, status);
 #endif
 }
 

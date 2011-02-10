@@ -378,6 +378,17 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     static void throwError(const string &error);
 
     /**
+     * throw an exception with a specific status code after an operation failed and
+     * remember that this instance has failed
+     *
+     * output format: <failure>
+     *
+     * @param status     a more specific status code; other throwError() variants use STATUS_FATAL
+     * @param action     a string describing what was attempted *and* how it failed
+     */
+    static void throwError(SyncMLStatus status, const string &failure);
+
+    /**
      * throw an exception after an operation failed and
      * remember that this instance has failed
      *

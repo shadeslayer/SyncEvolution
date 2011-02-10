@@ -57,6 +57,11 @@ void SyncSourceBase::throwError(const string &failure)
     SyncContext::throwError(string(getDisplayName()) + ": " + failure);
 }
 
+void SyncSourceBase::throwError(SyncMLStatus status, const string &failure)
+{
+    SyncContext::throwError(status, getDisplayName() + ": " + failure);
+}
+
 SyncMLStatus SyncSourceBase::handleException()
 {
     SyncMLStatus res = Exception::handle(this);

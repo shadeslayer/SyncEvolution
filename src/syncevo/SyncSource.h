@@ -609,6 +609,17 @@ class SyncSourceBase : public Logger {
     void throwError(const string &failure);
 
     /**
+     * throw an exception with a specific status code after an operation failed and
+     * remember that this instance has failed
+     *
+     * output format: <source name>: <failure>
+     *
+     * @param status     a more specific status code; other throwError() variants use STATUS_FATAL
+     * @param action     a string describing what was attempted *and* how it failed
+     */
+    void throwError(SyncMLStatus status, const string &failure);
+
+    /**
      * The Synthesis engine only counts items which are deleted by the
      * peer. Items deleted locally at the start of a
      * refresh-from-server sync are not counted (and cannot be counted
