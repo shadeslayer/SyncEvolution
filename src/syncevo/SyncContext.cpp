@@ -3562,6 +3562,10 @@ SyncMLStatus SyncContext::doSync()
                 break;
             }
             case sysync::STEPCMD_NEEDDATA:
+                if (!sendStart) {
+                    // no message sent yet, record start of wait for data
+                    sendStart = time(NULL);
+                }
                 switch (m_agent->wait()) {
                 case TransportAgent::ACTIVE:
                     // Still sending the data?! Don't change anything,
