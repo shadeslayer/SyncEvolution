@@ -172,6 +172,21 @@ LogRedirect::~LogRedirect() throw()
     }
 }
 
+void LogRedirect::redoRedirect() throw()
+{
+    bool doStdout = m_stdout.m_copy >= 0;
+    bool doStderr = m_stderr.m_copy >= 0;
+
+    if (doStdout) {
+        restore(m_stdout);
+        redirect(STDOUT_FILENO, m_stdout);
+    }
+    if (doStderr) {
+        restore(m_stderr);
+        redirect(STDERR_FILENO, m_stderr);
+    }
+}
+
 void LogRedirect::restore() throw()
 {
     if (m_processing) {

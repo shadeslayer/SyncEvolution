@@ -144,6 +144,13 @@ class LogRedirect : public LoggerStdout
     ~LogRedirect() throw();
 
     /**
+     * re-initialize redirection after a fork:
+     * - closes inherited file descriptors, except for the original output file descriptor
+     * - sets up new sockets
+     */
+    void redoRedirect() throw();
+
+    /**
      * Meant to be used for redirecting output of a specific command
      * via fork()/exec(). Prepares reliable streams, as determined by
      * ExecuteFlags, without touch file descriptor 1 and 2 and without
