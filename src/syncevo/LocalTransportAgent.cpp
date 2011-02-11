@@ -188,6 +188,11 @@ void LocalTransportAgent::run()
         --index;
     }
 
+    // do not mix our own output into the output of the parent
+    if (redirect) {
+        redirect->redoRedirect();
+    }
+
     // Ignore parent's timeout.
     m_timeoutSeconds = 0;
 
