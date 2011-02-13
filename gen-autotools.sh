@@ -108,25 +108,26 @@ fi
 # don't touch final output file unless new
 # content is different
 update () {
-    if [ -f $1 ] && diff $1 $1.new; then
-        rm $1.new
+    if [ -f $1 ] && diff $1 $2; then
+        rm $2
     else
         echo gen-autotools.sh: $1 updated
-        mv $1.new $1
+        mv $2 $1
     fi
 }
 
 # generate configure.in from main configure-*.in pieces
 # and all backend configure-sub.in pieces
 out=configure.in
-rm -f $out.new
-sed -e "s/^\\(AC_INIT.*\\)\\[\\(.*\\)\\]/\\1[\\2$versionsuffix]/" configure-pre.in >>$out.new
+tmpfile=configure.in.$$
+rm -f $tmpfile
+sed -e "s/^\\(AC_INIT.*\\)\\[\\(.*\\)\\]/\\1[\\2$versionsuffix]/" configure-pre.in >>$tmpfile
 
 # Very simplistic detection of pre-releases:
 # either the code isn't clean or properly tagged (versionsuffix non-empty)
 # or the version contains "99" (part of the rpm-style versioning scheme).
-if [ ! "$versionsuffix" ] && ! grep 'AC_INIT' $out.new | grep -q 99; then
-    perl -pi -e 's/define\(\[STABLE_RELEASE\], \[no\]\)/define([STABLE_RELEASE], [yes])/' $out.new
+if [ ! "$versionsuffix" ] && ! grep 'AC_INIT' $tmpfile | grep -q 99; then
+    perl -pi -e 's/define\(\[STABLE_RELEASE\], \[no\]\)/define([STABLE_RELEASE], [yes])/' $tmpfile
 fi
 
 BACKENDS=
@@ -134,14 +135,14 @@ SUBS=
 for sub in src/backends/*/configure-sub.in; do
     BACKENDS="$BACKENDS `dirname $sub | sed -e 's;^src/;;'`"
     SUBS="$SUBS $sub"
-    echo "# vvvvvvvvvvvvvv $sub vvvvvvvvvvvvvv" >>$out.new
-    cat $sub >>$out.new
-    echo "AC_CONFIG_FILES(`echo $sub | sed -e s/configure-sub.in/Makefile/`)" >>$out.new
-    echo "# ^^^^^^^^^^^^^^ $sub ^^^^^^^^^^^^^^" >>$out.new
-    echo >>$out.new
+    echo "# vvvvvvvvvvvvvv $sub vvvvvvvvvvvvvv" >>$tmpfile
+    cat $sub >>$tmpfile
+    echo "AC_CONFIG_FILES(`echo $sub | sed -e s/configure-sub.in/Makefile/`)" >>$tmpfile
+    echo "# ^^^^^^^^^^^^^^ $sub ^^^^^^^^^^^^^^" >>$tmpfile
+    echo >>$tmpfile
 done
-cat configure-post.in >>$out.new
-update $out
+cat configure-post.in >>$tmpfile
+update $out $tmpfile
 
 TEMPLATE_FILES=`cd src && find templates -type f \( -name README -o -name '*.png' -o -name '*.svg' -o -name '*.ini' \) | sort`
 TEMPLATE_FILES=`echo $TEMPLATE_FILES`
@@ -150,8 +151,8 @@ TEMPLATE_FILES=`echo $TEMPLATE_FILES`
 sed -e "s;@BACKEND_REGISTRIES@;`echo src/backends/*/*Register.cpp | sed -e s%src/%%g`;" \
     -e "s;@BACKENDS@;$BACKENDS;" \
     -e "s;@TEMPLATE_FILES@;$TEMPLATE_FILES;" \
-     src/Makefile-gen.am >src/Makefile.am.new
-update src/Makefile.am
+     src/Makefile-gen.am >src/Makefile.am.new.$$
+update src/Makefile.am src/Makefile.am.new.$$
 
 # create LINGUAS file: every .po is included
-(cd po && ls -1 *.po | sort -u | sed -e 's/.po$//' > LINGUAS.new && update LINGUAS)
+(cd po && ls -1 *.po | sort -u | sed -e 's/.po$//' > LINGUAS.new.$$ && update LINGUAS LINGUAS.new.$$)
