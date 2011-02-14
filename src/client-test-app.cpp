@@ -267,7 +267,7 @@ public:
             sc->setDatabaseID(database);
             sc->setUser(m_evoUser);
             sc->setPassword(m_evoPassword);
-            sc->setSourceType(SourceType(testconfig.type));
+            sc->setBackend(SourceType(testconfig.type).m_backend);
         }
         config->flush();
     }
