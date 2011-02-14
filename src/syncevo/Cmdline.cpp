@@ -899,6 +899,64 @@ bool Cmdline::run() {
             sources = m_sources;
         }
 
+        // Special case for migration away from "type": older
+        // SyncEvolution could cope with "type" only set correctly for
+        // peers. Real-world case: Memotoo config, context had "type =
+        // calendar" set for address book.
+        //
+        // Setting "backend" based on an incorrect "type" from the
+        // context would lead to a broken, unusable config. Solution:
+        // take "backend" and "databaseFormat" from a peer config when
+        // migrating a context.
+        //
+        // Note that peers are assumed to be consistent. Not attempt is
+        // made to detect a config which has inconsistent peer configs.
+        if (m_migrate && configureContext &&
+            from->getConfigVersion(CONFIG_LEVEL_CONTEXT, CONFIG_CUR_VERSION) == 0) {
+            list<string> peers = from->getPeers();
+            peers.sort(); // make code below deterministic
+            boost::shared_ptr<SyncContext> to(createSyncClient());
+
+            BOOST_FOREACH(const std::string source, from->getSyncSources()) {
+                BOOST_FOREACH(const string &peer, peers) {
+                    FileConfigNode node(from->getRootPath() + "/peers/" + peer + "/sources/" + source,
+                                        "config.ini",
+                                        true);
+                    string sync = node.readProperty("sync");
+                    if (sync.empty() ||
+                        boost::iequals(sync, "none") ||
+                        boost::iequals(sync, "disabled")) {
+                        // ignore this peer, it doesn't use the source
+                        continue;
+                    }
+
+                    SourceType type(node.readProperty("type"));
+                    if (!type.m_backend.empty()) {
+                        // found some "type": use "backend" and
+                        // "dataFormat" in filter, unless the user
+                        // already set a value there
+                        ConfigProps syncFilter;
+                        SourceProps sourceFilters;
+                        set<string> set;
+                        set.insert(source);
+                        m_props.createFilters(to->getContextName(), "",
+                                              &set, syncFilter, sourceFilters);
+                        const ConfigProps &sourceFilter = sourceFilters[source];
+                        if (sourceFilter.find("backend") == sourceFilter.end()) {
+                            m_props[to->getContextName()].m_sourceProps[source]["backend"] = type.m_backend;
+                        }
+                        if (!type.m_localFormat.empty() &&
+                            sourceFilter.find("databaseFormat") == sourceFilter.end()) {
+                            m_props[to->getContextName()].m_sourceProps[source]["databaseFormat"] = type.m_localFormat;
+                        }
+                        // use it without bothering to keep looking
+                        // (no consistenty check!)
+                        break;
+                    }
+                }
+            }
+        }
+
         // copy and filter into the target config: createSyncClient()
         // creates a SyncContext for m_server, with propert
         // implementation of the password handling methods in derived
@@ -2048,6 +2106,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testOldConfigure);
     CPPUNIT_TEST(testListSources);
     CPPUNIT_TEST(testMigrate);
+    CPPUNIT_TEST(testMigrateContext);
     CPPUNIT_TEST_SUITE_END();
     
 public:
@@ -3560,6 +3619,83 @@ protected:
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old.2");
             boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.2/");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
+        }
+    }
+
+    void testMigrateContext()
+    {
+        // Migrate context containing a peer. Must also migrate peer.
+        // Covers special case of inconsistent "type".
+
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        string root = m_testDir + "/syncevolution/default";
+
+        string oldConfig =
+            "config.ini:logDir = none\n"
+            "peers/scheduleworld/config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
+            "peers/scheduleworld/config.ini:username = your SyncML server account name\n"
+            "peers/scheduleworld/config.ini:password = your SyncML server password\n"
+
+            "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way\n"
+            "peers/scheduleworld/sources/addressbook/config.ini:uri = card3\n"
+            "peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard\n" // correct!
+            "sources/addressbook/config.ini:type = calendar\n" // wrong!
+
+            "peers/funambol/config.ini:syncURL = http://sync.funambol.com/funambol/ds\n"
+            "peers/funambol/config.ini:username = your SyncML server account name\n"
+            "peers/funambol/config.ini:password = your SyncML server password\n"
+
+            "peers/funambol/sources/calendar/config.ini:sync = refresh-from-server\n"
+            "peers/funambol/sources/calendar/config.ini:uri = cal\n"
+            "peers/funambol/sources/calendar/config.ini:type = calendar\n" // correct!
+            "peers/funambol/sources/addressbook/config.ini:# sync = disabled\n"
+            "peers/funambol/sources/addressbook/config.ini:type = file\n" // not used for context because source disabled
+            "sources/calendar/config.ini:type = memos\n" // wrong!
+
+            "peers/memotoo/config.ini:syncURL = http://sync.memotoo.com/memotoo/ds\n"
+            "peers/memotoo/config.ini:username = your SyncML server account name\n"
+            "peers/memotoo/config.ini:password = your SyncML server password\n"
+
+            "peers/memotoo/sources/memo/config.ini:sync = refresh-from-client\n"
+            "peers/memotoo/sources/memo/config.ini:uri = cal\n"
+            "peers/memotoo/sources/memo/config.ini:type = memo:text/plain\n" // correct!
+            "sources/memo/config.ini:type = todo\n" // wrong!
+            ;
+
+        {
+            createFiles(root, oldConfig);
+            TestCmdline cmdline("--migrate",
+                                "memo/backend=file", // override memo "backend" during migration
+                                "@default",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+
+            string migratedConfig = scanFiles(root);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/scheduleworld/") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("sources/addressbook/config.ini:backend = addressbook") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("sources/addressbook/config.ini:databaseFormat = text/vcard") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/scheduleworld/sources/addressbook/config.ini:syncFormat = text/vcard") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/scheduleworld/sources/addressbook/config.ini:sync = two-way") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/scheduleworld/sources/calendar/config.ini:# sync = disabled") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/scheduleworld/sources/memo/config.ini:# sync = disabled") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("sources/calendar/config.ini:backend = calendar") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("sources/calendar/config.ini:# databaseFormat = ") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/funambol/sources/calendar/config.ini:# syncFormat = ") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/funambol/sources/addressbook/config.ini:# sync = disabled") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/funambol/sources/calendar/config.ini:sync = refresh-from-server") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/funambol/sources/memo/config.ini:# sync = disabled") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("sources/memo/config.ini:backend = file") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("sources/memo/config.ini:databaseFormat = text/plain") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/memotoo/sources/memo/config.ini:syncFormat = text/plain") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/memotoo/sources/addressbook/config.ini:# sync = disabled") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/memotoo/sources/calendar/config.ini:# sync = disabled") != migratedConfig.npos);
+            CPPUNIT_ASSERT(migratedConfig.find("peers/memotoo/sources/memo/config.ini:sync = refresh-from-client") != migratedConfig.npos);
         }
     }
 
