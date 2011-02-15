@@ -52,6 +52,22 @@ monitor = ["dbus-monitor"]
 xdg_root = "test-dbus"
 configName = "dbus_unittest"
 
+def property(key, value):
+    """Function decorator which sets an arbitrary property of a test.
+    Use like this:
+         @property("foo", "bar")
+         def testMyTest:
+             ...
+
+             print self.getTestProperty("foo", "default")
+    """
+    def __setProperty(func):
+        if not "properties" in dir(func):
+            func.properties = {}
+        func.properties[key] = value
+        return func
+    return __setProperty
+
 def timeout(seconds):
     """Function decorator which sets a non-default timeout for a test.
     The default timeout, enforced by DBusTest.runTest(), are 5 seconds.
@@ -60,10 +76,7 @@ def timeout(seconds):
         def testMyTest:
             ...
     """
-    def __setTimeout(func):
-        func.timeout = seconds
-        return func
-    return __setTimeout
+    return property("timeout", seconds)
 
 class Timeout:
     """Implements global time-delayed callbacks."""
@@ -225,6 +238,14 @@ class DBusUtil(Timeout):
     quit_events = []
     reply = None
 
+    def getTestProperty(self, key, default):
+        """retrieve values set with @property()"""
+        test = eval(self.id().replace("__main__.", ""))
+        if "properties" in dir(test):
+            return test.properties.get(key, default)
+        else:
+            return default
+
     def runTest(self, result, own_xdg=True, serverArgs=[] ):
         """Starts the D-Bus server and dbus-monitor before the test
         itself. After the test run, the output of these two commands
@@ -257,11 +278,18 @@ class DBusUtil(Timeout):
             env["XDG_CONFIG_HOME"] = xdg_root + "/config"
             env["XDG_CACHE_HOME"] = xdg_root + "/cache"
 
+        # set additional environment variables for the test run,
+        # as defined by @property("ENV", "foo=bar x=y")
+        for assignment in self.getTestProperty("ENV", "").split():
+            var, value = assignment.split("=")
+            env[var] = value
+
         dbuslog = "dbus.log"
         syncevolog = "syncevo.log"
         pmonitor = subprocess.Popen(monitor,
                                     stdout=open(dbuslog, "w"),
                                     stderr=subprocess.STDOUT)
+        
         if debugger:
             print "\n%s: %s\n" % (self.id(), self.shortDescription())
             pserver = subprocess.Popen([debugger] + server,
@@ -296,11 +324,7 @@ class DBusUtil(Timeout):
         # the function definition to see whether it comes
         # with a non-default timeout, otherwise use a 5 second
         # timeout.
-        test = eval(self.id().replace("__main__.", ""))
-        if "timeout" in dir(test):
-            timeout = test.timeout
-        else:
-            timeout = 5
+        timeout = self.getTestProperty("timeout", 5)
         timeout_handle = None
         if timeout and not debugger:
             def timedout():
@@ -540,6 +564,62 @@ class DBusUtil(Timeout):
                     tmpdict["database"] = self.getDatabaseName(name)
                 updateProps[key] = tmpdict
         return updateProps
+
+    def checkSync(self, expectedError=0):
+        # check recorded events in DBusUtil.events, first filter them
+        statuses = []
+        progresses = []
+        # Dict is used to check status order.  
+        statusPairs = {"": 0, "idle": 1, "running" : 2, "aborting" : 3, "done" : 4}
+        for item in DBusUtil.events:
+            if item[0] == "status":
+                statuses.append(item[1])
+            elif item[0] == "progress":
+                progresses.append(item[1])
+
+        # check statuses
+        lastStatus = ""
+        lastSources = {}
+        lastError = 0
+        for status, error, sources in statuses:
+            # consecutive entries should not be equal
+            self.failIfEqual((lastStatus, lastError, lastSources), (status, error, sources))
+            # no error, unless expected
+            if expectedError:
+                if error:
+                    self.failUnlessEqual(expectedError, error)
+            else:
+                self.failUnlessEqual(error, 0)
+            # keep order: session status must be unchanged or the next status 
+            seps = status.split(';')
+            lastSeps = lastStatus.split(';')
+            self.failUnless(statusPairs.has_key(seps[0]))
+            self.failUnless(statusPairs[seps[0]] >= statusPairs[lastSeps[0]])
+            # check specifiers
+            if len(seps) > 1:
+                self.failUnlessEqual(seps[1], "waiting")
+            for sourcename, value in sources.items():
+                # no error
+                self.failUnlessEqual(value[2], 0)
+                # keep order: source status must also be unchanged or the next status
+                if lastSources.has_key(sourcename):
+                    lastValue = lastSources[sourcename]
+                    self.failUnless(statusPairs[value[1]] >= statusPairs[lastValue[1]])
+
+            lastStatus = status
+            lastSources = sources
+            lastError = error
+
+        # check increasing progress percentage
+        lastPercent = 0
+        for percent, sources in progresses:
+            self.failIf(percent < lastPercent)
+            lastPercent = percent
+
+        status, error, sources = self.session.GetStatus(utf8_strings=True)
+        self.failUnlessEqual(status, "done")
+        self.failUnlessEqual(error, expectedError)
+
 
 class TestDBusServer(unittest.TestCase, DBusUtil):
     """Tests for the read-only Server API."""
@@ -1734,53 +1814,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         ''' check events list is correct for StatusChanged and ProgressChanged '''
         # do sync
         self.doSync()
-
-        # check recorded events in DBusUtil.events, first filter them
-        statuses = []
-        progresses = []
-        # dict is used to maintain status order.  
-        statusPairs = {"": 0, "idle": 1, "running" : 2, "done" : 3}
-        for item in DBusUtil.events:
-            if item[0] == "status":
-                statuses.append(item[1])
-            elif item[0] == "progress":
-                progresses.append(item[1])
-
-        # check statuses
-        lastStatus = ""
-        lastSources = {}
-        for status, error, sources in statuses:
-            self.failIf(status == lastStatus and lastSources == sources)
-            # no error
-            self.failUnlessEqual(error, 0)
-            # keep order: session status must be unchanged or the next status 
-            seps = status.split(';')
-            lastSeps = lastStatus.split(';')
-            self.failUnless(statusPairs.has_key(seps[0]))
-            self.failUnless(statusPairs[seps[0]] >= statusPairs[lastSeps[0]])
-            # check specifiers
-            if len(seps) > 1:
-                self.failUnlessEqual(seps[1], "waiting")
-            for sourcename, value in sources.items():
-                # no error
-                self.failUnlessEqual(value[2], 0)
-                # keep order: source status must also be unchanged or the next status
-                if lastSources.has_key(sourcename):
-                    lastValue = lastSources[sourcename]
-                    self.failUnless(statusPairs[value[1]] >= statusPairs[lastValue[1]])
-
-            lastStatus = status
-            lastSources = sources
-
-        # check increasing progress percentage
-        lastPercent = 0
-        for percent, sources in progresses:
-            self.failIf(percent < lastPercent)
-            lastPercent = percent
-
-        status, error, sources = self.session.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "done")
-        self.failUnlessEqual(error, 0)
+        self.checkSync()
     
     @timeout(300)
     def testSyncStatusAbort(self):
@@ -2394,6 +2428,82 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config = self.server.GetConfig("scheduleworld@other_context", True, utf8_strings=True)
         self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
         self.failIfEqual(config[""]["deviceId"], "shared-device-identifier")
+
+class TestLocalSync(unittest.TestCase, DBusUtil):
+    """Tests involving local sync."""
+
+    def setUp(self):
+        self.setUpServer()
+        # create file<->file configs
+        self.setUpSession("source-config@client")
+        self.session.SetConfig(False, False,
+                               {"" : { "loglevel": "4" },
+                                "source/addressbook": { "sync": "two-way",
+                                                        "backend": "file",
+                                                        "databaseFormat": "text/vcard",
+                                                        "database": "file://" + xdg_root + "/client" } })
+        self.session.Detach()
+        self.setUpSession("server")
+        self.session.SetConfig(False, False,
+                               {"" : { "loglevel": "4",
+                                       "syncURL": "local://@client",
+                                       "RetryDuration": self.getTestProperty("resendDuration", "60"),
+                                       "peerIsClient": "1" },
+                                "source/addressbook": { "sync": "two-way",
+                                                        "uri": "addressbook",
+                                                        "backend": "file",
+                                                        "databaseFormat": "text/vcard",
+                                                        "database": "file://" + xdg_root + "/server" } })
+
+    def testSync(self):
+        '''run a simple slow sync between local dirs'''
+        os.makedirs(xdg_root + "/server")
+        output = open(xdg_root + "/server/0", "w")
+        output.write('''BEGIN:VCARD
+VERSION:3.0
+FN:John Doe
+N:Doe;John
+END:VCARD''')
+        output.close()
+        self.setUpListeners(self.sessionpath)
+        self.session.Sync("slow", {})
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.checkSync()
+        input = open(xdg_root + "/server/0", "r")
+        self.failUnless("FN:John Doe" in input.read())
+
+    @timeout(10)
+    @property("resendDuration", "3")
+    @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
+    def testTimeout(self):
+        '''master must detect a hanging child'''
+        self.setUpListeners(self.sessionpath)
+        self.session.Sync("slow", {})
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.checkSync(20017) # transport error
+
+    @timeout(10)
+    @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
+    def testConcurrency(self):
+        '''D-Bus server must remain responsive while sync runs'''
+        self.setUpListeners(self.sessionpath)
+        self.session.Sync("slow", {})
+        time.sleep(2)
+        status, error, sources = self.session.GetStatus(utf8_strings=True)
+        self.failUnlessEqual(status, "running")
+        self.failUnlessEqual(error, 0)
+        self.session.Abort()
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.checkSync(20017) # aborted
+    
+
+    def run(self, result):
+        self.runTest(result)
+
+    
 
 if __name__ == '__main__':
     unittest.main()

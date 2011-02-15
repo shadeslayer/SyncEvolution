@@ -23,6 +23,7 @@
 #include <syncevo/LogRedirect.h>
 #include <syncevo/StringDataBlob.h>
 #include <syncevo/IniConfigNode.h>
+#include <syncevo/GLibSupport.h>
 
 #include <stddef.h>
 #include <sys/socket.h>
@@ -154,6 +155,12 @@ void LocalTransportAgent::start()
 
 void LocalTransportAgent::run()
 {
+    // delay the client for debugging purposes
+    const char *delay = getenv("SYNCEVOLUTION_LOCAL_CHILD_DELAY");
+    if (delay) {
+        sleep(atoi(delay));
+    }
+
     // If we did an exec here, we could start with a clean slate.
     // But that forces us to pass all relevant parameters to some
     // specific executable, which is more complicated than simply
@@ -193,8 +200,9 @@ void LocalTransportAgent::run()
         redirect->redoRedirect();
     }
 
-    // Ignore parent's timeout.
+    // Ignore parent's timeout and event loop.
     m_timeoutSeconds = 0;
+    m_loop = 0;
 
     // Now run. Under no circumstances must we leave this function,
     // because our caller is not prepared for running inside a forked
@@ -419,23 +427,19 @@ bool LocalTransportAgent::Buffer::haveMessage()
 void LocalTransportAgent::send(const char *data, size_t len)
 {
     m_status = ACTIVE;
-    if (m_loop) {
-        SE_THROW("glib support not implemented");
-    } else {
-        // first throw away old received message
-        if (m_receiveBuffer.haveMessage()) {
-            size_t len = m_receiveBuffer.m_message->m_length;
-            // memmove() probably never necessary because receiving
-            // ends directly after complete message, but doesn't hurt
-            // either...
-            memmove(m_receiveBuffer.m_message.get(),
-                    (char *)m_receiveBuffer.m_message.get() + len,
-                    m_receiveBuffer.m_used - len);
-            m_receiveBuffer.m_used -= len;
-        }
-        m_sendStartTime = time(NULL);
-        writeMessage(m_messageFD, m_sendType, data, len, deadline());
+    // first throw away old received message
+    if (m_receiveBuffer.haveMessage()) {
+        size_t len = m_receiveBuffer.m_message->m_length;
+        // memmove() probably never necessary because receiving
+        // ends directly after complete message, but doesn't hurt
+        // either...
+        memmove(m_receiveBuffer.m_message.get(),
+                (char *)m_receiveBuffer.m_message.get() + len,
+                m_receiveBuffer.m_used - len);
+        m_receiveBuffer.m_used -= len;
     }
+    m_sendStartTime = time(NULL);
+    writeMessage(m_messageFD, m_sendType, data, len, deadline());
 }
 
 bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *data, size_t len, time_t deadline)
@@ -448,16 +452,13 @@ bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *d
     vec[0].iov_len = offsetof(Message, m_data);
     vec[1].iov_base = (void *)data;
     vec[1].iov_len = len;
-    // TODO: handle timeouts and aborts while writing
     SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes via %s",
                  m_pid ? "parent" : "child",
                  (long)len,
                  fd == m_messageFD ? "message channel" : "other channel");
     do {
         // sleep, possibly with a deadline
-        fd_set writefds;
-        FD_ZERO(&writefds);
-        FD_SET(fd, &writefds);
+        int res = 0;
         timeval timeout;
         timeout.tv_sec = 0;
         timeout.tv_usec = 0;
@@ -474,8 +475,25 @@ bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *d
                      fd == m_messageFD ? "message channel" : "other channel",
                      (long)timeout.tv_sec,
                      (long)timeout.tv_usec);
-        int res = select(fd + 1, NULL, &writefds, NULL,
+        if (m_loop) {
+            switch (GLibSelect(m_loop, fd, GLIB_SELECT_WRITE, timeout.tv_sec ? timeout.tv_sec : -1)) {
+            case GLIB_SELECT_TIMEOUT:
+                res = 0;
+                break;
+            case GLIB_SELECT_READY:
+                res = 1;
+                break;
+            case GLIB_SELECT_QUIT:
+                SE_THROW("quit transport as requested as part of GLib event loop");
+                break;
+            }
+        } else {
+            fd_set writefds;
+            FD_ZERO(&writefds);
+            FD_SET(fd, &writefds);
+            res = select(fd + 1, NULL, &writefds, NULL,
                          (timeout.tv_sec || timeout.tv_usec) ? &timeout : NULL);
+        }
         switch (res) {
         case 0:
             SE_LOG_DEBUG(NULL, NULL, "%s: select timeout",
@@ -528,8 +546,6 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
         // need next message; for noReply == true we are done
         if (noReply) {
             m_status = INACTIVE;
-        } else if (m_loop) {
-            SE_THROW("glib support not implemented");
         } else {
             if (!m_receiveBuffer.haveMessage()) {
                 if (readMessage(m_messageFD, m_receiveBuffer, deadline())) {
@@ -556,10 +572,7 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
 bool LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
 {
     while (!buffer.haveMessage()) {
-        // use select to implement timeout
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(fd, &readfds);
+        int res = 0;
         timeval timeout;
         timeout.tv_sec = 0;
         timeout.tv_usec = 0;
@@ -577,8 +590,26 @@ bool LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
                      fd == m_messageFD ? "message channel" : "other channel",
                      (long)timeout.tv_sec,
                      (long)timeout.tv_usec);
-        int res = select(fd + 1, &readfds, NULL, NULL,
+        if (m_loop) {
+            switch (GLibSelect(m_loop, fd, GLIB_SELECT_READ, timeout.tv_sec ? timeout.tv_sec : -1)) {
+            case GLIB_SELECT_TIMEOUT:
+                res = 0;
+                break;
+            case GLIB_SELECT_READY:
+                res = 1;
+                break;
+            case GLIB_SELECT_QUIT:
+                SE_THROW("quit transport as requested as part of GLib event loop");
+                break;
+            }
+        } else {
+            // use select to implement timeout
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(fd, &readfds);
+            res = select(fd + 1, &readfds, NULL, NULL,
                          (timeout.tv_sec || timeout.tv_usec) ? &timeout : NULL);
+        }
         switch (res) {
         case 0:
             SE_LOG_DEBUG(NULL, NULL, "%s: select timeout",

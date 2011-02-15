@@ -24,13 +24,8 @@
 #include <syncevo/TransportAgent.h>
 #include <syncevo/SyncML.h>
 #include <syncevo/SmartPtr.h>
+#include <syncevo/GLibSupport.h>
 #include <string>
-
-#ifdef HAVE_GLIB
-#include <glib/gmain.h>
-#else
-typedef void *GMainLoop;
-#endif
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
