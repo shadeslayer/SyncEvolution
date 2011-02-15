@@ -29,6 +29,8 @@ SYNCEVOLUTION_SOURCES  = \
         SmartPtr.h \
 	eds_abi_wrapper.h \
 	eds_abi_wrapper.cpp \
+	GLibSupport.h \
+	GLibSupport.cpp \
 	\
 	SyncML.h \
 	SyncML.cpp \
