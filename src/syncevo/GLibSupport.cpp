@@ -31,7 +31,7 @@ class Select {
     GMainContext *m_context;
     struct FDSource;
     FDSource *m_source;
-    time_t m_deadline;
+    Timespec m_deadline;
     GPollFD m_pollfd;
     GLibSelectResult m_result;
 
@@ -44,9 +44,15 @@ class Select {
                                 gint *timeout)
         {
             FDSource *fdsource = (FDSource *)source;
-            time_t now = time(NULL);
+            if (!fdsource->m_select->m_deadline) {
+                *timeout = -1;
+                return FALSE;
+            }
+
+            Timespec now = Timespec::monotonic();
             if (now < fdsource->m_select->m_deadline) {
-                *timeout = (fdsource->m_select->m_deadline - now) * 1000;
+                Timespec delta = fdsource->m_select->m_deadline - now;
+                *timeout = delta.tv_sec * 1000 + delta.tv_nsec / 1000000;
                 return FALSE;
             } else {
                 fdsource->m_select->m_result = GLIB_SELECT_TIMEOUT;
@@ -79,13 +85,15 @@ class Select {
     };
 
 public:
-    Select(GMainLoop *loop, int fd, int direction, int seconds) :
+    Select(GMainLoop *loop, int fd, int direction, Timespec *timeout) :
         m_loop(loop),
         m_context(g_main_loop_get_context(loop)),
-        // TODO: do not depend on non-linear system time for timeouts (also applies to transports)
-        m_deadline(seconds >= 0 ? time(NULL) + seconds : 0),
         m_result(GLIB_SELECT_QUIT)
     {
+        if (timeout) {
+            m_deadline = Timespec::monotonic() + *timeout;
+        }
+
         memset(&m_pollfd, 0, sizeof(m_pollfd));
         m_source = (FDSource *)g_source_new(&FDSource::m_funcs, sizeof(FDSource));
         if (!m_source) {
@@ -126,15 +134,15 @@ GSourceFuncs Select::FDSource::m_funcs = {
     Select::FDSource::dispatch
 };
 
-GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, int seconds)
+GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *timeout)
 {
-    Select instance(loop, fd, direction, seconds);
+    Select instance(loop, fd, direction, timeout);
     return instance.run();
 }
 
 #else // HAVE_GLIB
 
-GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, int seconds)
+GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *timeout)
 {
     SE_THROW("GLibSelect() not implemented without glib support");
     return GLIB_SELECT_QUIT;

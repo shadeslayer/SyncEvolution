@@ -24,6 +24,8 @@
 # include "config.h"
 #endif
 
+#include <syncevo/util.h>
+
 #ifdef HAVE_GLIB
 # include <glib-object.h>
 #else
@@ -52,10 +54,10 @@ enum GLibSelectResult {
  * @param  loop       loop to keep running; must not be NULL
  * @param  fd         file descriptor to watch, -1 for none
  * @param  direction  read, write, both, or none (then fd is ignored)
- * @param  seconds    timeout in seconds, -1 for no timeout, 0 for immediate return
+ * @param  timeout    timeout in seconds + nanoseconds from now, NULL for no timeout, empty value for immediate return
  * @return see GLibSelectResult
  */
-GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, int seconds);
+GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *timeout);
 
 SE_END_CXX
 

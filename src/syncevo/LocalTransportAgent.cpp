@@ -310,7 +310,7 @@ void LocalTransportAgent::run()
                      m_clientReport.getError().c_str(),
                      data->c_str());
         node.flush();
-        writeMessage(m_statusFD, Message::MSG_SYNC_REPORT, data->c_str(), data->size(), 0);
+        writeMessage(m_statusFD, Message::MSG_SYNC_REPORT, data->c_str(), data->size(), Timespec());
     } catch (...) {
         SyncMLStatus status = m_clientReport.getStatus();
         Exception::handle(&status, redirect);
@@ -438,11 +438,10 @@ void LocalTransportAgent::send(const char *data, size_t len)
                 m_receiveBuffer.m_used - len);
         m_receiveBuffer.m_used -= len;
     }
-    m_sendStartTime = time(NULL);
     m_status = writeMessage(m_messageFD, m_sendType, data, len, deadline());
 }
 
-TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *data, size_t len, time_t deadline)
+TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *data, size_t len, Timespec deadline)
 {
     Message header;
     header.m_type = type;
@@ -459,24 +458,22 @@ TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type t
     do {
         // sleep, possibly with a deadline
         int res = 0;
-        timeval timeout;
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 0;
+        Timespec timeout;
         if (deadline) {
-            time_t now = time(NULL);
+            Timespec now = Timespec::monotonic();
             if (now >= deadline) {
                 return TIME_OUT;
             } else {
-                timeout.tv_sec = deadline - now;
+                timeout = deadline - now;
             }
         }
-        SE_LOG_DEBUG(NULL, NULL, "%s: write select on %s %ld.%lds",
+        SE_LOG_DEBUG(NULL, NULL, "%s: write select on %s %ld.%09lds",
                      m_pid ? "parent" : "child",
                      fd == m_messageFD ? "message channel" : "other channel",
                      (long)timeout.tv_sec,
-                     (long)timeout.tv_usec);
+                     (long)timeout.tv_nsec);
         if (m_loop) {
-            switch (GLibSelect(m_loop, fd, GLIB_SELECT_WRITE, timeout.tv_sec ? timeout.tv_sec : -1)) {
+            switch (GLibSelect(m_loop, fd, GLIB_SELECT_WRITE, timeout ? &timeout : NULL)) {
             case GLIB_SELECT_TIMEOUT:
                 res = 0;
                 break;
@@ -492,8 +489,9 @@ TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type t
             fd_set writefds;
             FD_ZERO(&writefds);
             FD_SET(fd, &writefds);
+            timeval tv = timeout;
             res = select(fd + 1, NULL, &writefds, NULL,
-                         (timeout.tv_sec || timeout.tv_usec) ? &timeout : NULL);
+                         timeout ? &tv : NULL);
         }
         switch (res) {
         case 0:
@@ -569,29 +567,27 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
     return m_status;
 }
 
-TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
+TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, Timespec deadline)
 {
     while (!buffer.haveMessage()) {
         int res = 0;
-        timeval timeout;
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 0;
+        Timespec timeout;
         if (deadline) {
-            time_t now = time(NULL);
+            Timespec now = Timespec::monotonic();
             if (now >= deadline) {
                 // already too late
                 return TIME_OUT;
             } else {
-                timeout.tv_sec = deadline - now;
+                timeout = deadline - now;
             }
         }
-        SE_LOG_DEBUG(NULL, NULL, "%s: read select on %s %ld.%lds",
+        SE_LOG_DEBUG(NULL, NULL, "%s: read select on %s %ld.%09lds",
                      m_pid ? "parent" : "child",
                      fd == m_messageFD ? "message channel" : "other channel",
                      (long)timeout.tv_sec,
-                     (long)timeout.tv_usec);
+                     (long)timeout.tv_nsec);
         if (m_loop) {
-            switch (GLibSelect(m_loop, fd, GLIB_SELECT_READ, timeout.tv_sec ? timeout.tv_sec : -1)) {
+            switch (GLibSelect(m_loop, fd, GLIB_SELECT_READ, timeout ? &timeout : NULL)) {
             case GLIB_SELECT_TIMEOUT:
                 res = 0;
                 break;
@@ -608,8 +604,9 @@ TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, 
             fd_set readfds;
             FD_ZERO(&readfds);
             FD_SET(fd, &readfds);
+            timeval tv = timeout;
             res = select(fd + 1, &readfds, NULL, NULL,
-                         (timeout.tv_sec || timeout.tv_usec) ? &timeout : NULL);
+                         timeout ? &tv : NULL);
         }
         switch (res) {
         case 0:
