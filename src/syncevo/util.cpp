@@ -615,6 +615,59 @@ SYNCEVOLUTION_TEST_SUITE_REGISTRATION(StringEscapeTest);
 
 #endif // ENABLE_UNIT_TESTS
 
+Timespec Timespec::operator + (const Timespec &other) const
+{
+    Timespec res(tv_sec + other.tv_sec,
+                 tv_nsec + other.tv_nsec);
+    if (res.tv_nsec > 1000000000) {
+        res.tv_sec++;
+        res.tv_nsec -= 1000000000;
+    }
+    return res;
+}
+
+Timespec Timespec::operator - (const Timespec &other) const
+{
+    Timespec res(tv_sec - other.tv_sec, 0);
+    if (other.tv_nsec > tv_nsec) {
+        res.tv_sec--;
+        res.tv_nsec = tv_nsec + 1000000000 - other.tv_nsec;
+    } else {
+        res.tv_nsec = tv_nsec - other.tv_nsec;
+    }
+    return res;
+}
+
+#ifdef ENABLE_UNIT_TESTS
+
+class TimespecTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(TimespecTest);
+    CPPUNIT_TEST(add);
+    CPPUNIT_TEST(substract);
+    CPPUNIT_TEST_SUITE_END();
+
+    void add()
+    {
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(0, 0) + 1);
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(0, 0) + Timespec(1, 0));
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(0, 500000000) + Timespec(0, 500000000));
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 999999998), Timespec(0, 999999999) + Timespec(0, 999999999));
+    }
+
+    void substract()
+    {
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(2, 0) - 1);
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(2, 0) - Timespec(1, 0));
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(1, 5000000000) - Timespec(0, 500000000));
+        CPPUNIT_ASSERT_EQUAL(Timespec(0, 999999999), Timespec(1, 999999998) - Timespec(0, 999999999));
+    }
+};
+
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(TimespecTest);
+
+#endif // ENABLE_UNIT_TESTS
+
+
 
 std::string StringPrintf(const char *format, ...)
 {
