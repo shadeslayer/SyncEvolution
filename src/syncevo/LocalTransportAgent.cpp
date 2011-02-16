@@ -375,7 +375,7 @@ void LocalTransportAgent::receiveChildReport()
         try {
             SE_LOG_DEBUG(NULL, NULL, "parent: receiving report");
             m_receiveBuffer.m_used = 0;
-            if (readMessage(statusFD, m_receiveBuffer, deadline())) {
+            if (readMessage(statusFD, m_receiveBuffer, deadline()) == ACTIVE) {
                 boost::shared_ptr<std::string> data(new std::string);
                 data->assign(m_receiveBuffer.m_message->m_data, m_receiveBuffer.m_message->getDataLength());
                 boost::shared_ptr<StringDataBlob> dump(new StringDataBlob("buffer", data, false));
@@ -439,10 +439,10 @@ void LocalTransportAgent::send(const char *data, size_t len)
         m_receiveBuffer.m_used -= len;
     }
     m_sendStartTime = time(NULL);
-    writeMessage(m_messageFD, m_sendType, data, len, deadline());
+    m_status = writeMessage(m_messageFD, m_sendType, data, len, deadline());
 }
 
-bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *data, size_t len, time_t deadline)
+TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *data, size_t len, time_t deadline)
 {
     Message header;
     header.m_type = type;
@@ -465,7 +465,7 @@ bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *d
         if (deadline) {
             time_t now = time(NULL);
             if (now >= deadline) {
-                return false;
+                return TIME_OUT;
             } else {
                 timeout.tv_sec = deadline - now;
             }
@@ -484,7 +484,8 @@ bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *d
                 res = 1;
                 break;
             case GLIB_SELECT_QUIT:
-                SE_THROW("quit transport as requested as part of GLib event loop");
+                SE_LOG_DEBUG(NULL, NULL, "quit transport as requested as part of GLib event loop");
+                return FAILED;
                 break;
             }
         } else {
@@ -498,7 +499,7 @@ bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *d
         case 0:
             SE_LOG_DEBUG(NULL, NULL, "%s: select timeout",
                          m_pid ? "parent" : "child");
-            return false;
+            return TIME_OUT;
             break;
         case 1: {
             ssize_t sent = writev(fd, vec, 2);
@@ -533,7 +534,7 @@ bool LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *d
     SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes done",
                  m_pid ? "parent" : "child",
                  (long)len);
-    return true;
+    return ACTIVE;
 }
 
 void LocalTransportAgent::cancel()
@@ -548,7 +549,8 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
             m_status = INACTIVE;
         } else {
             if (!m_receiveBuffer.haveMessage()) {
-                if (readMessage(m_messageFD, m_receiveBuffer, deadline())) {
+                m_status = readMessage(m_messageFD, m_receiveBuffer, deadline());
+                if (m_status == ACTIVE) {
                     // complete message received, check if it is SyncML
                     switch (m_receiveBuffer.m_message->m_type) {
                     case Message::MSG_SYNCML_XML:
@@ -560,8 +562,6 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
                         SE_THROW("unsupported message type");
                         break;
                     }
-                } else {
-                    m_status = TIME_OUT;
                 }
             }
         }
@@ -569,7 +569,7 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
     return m_status;
 }
 
-bool LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
+TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
 {
     while (!buffer.haveMessage()) {
         int res = 0;
@@ -580,7 +580,7 @@ bool LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
             time_t now = time(NULL);
             if (now >= deadline) {
                 // already too late
-                return false;
+                return TIME_OUT;
             } else {
                 timeout.tv_sec = deadline - now;
             }
@@ -599,7 +599,8 @@ bool LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
                 res = 1;
                 break;
             case GLIB_SELECT_QUIT:
-                SE_THROW("quit transport as requested as part of GLib event loop");
+                SE_LOG_DEBUG(NULL, NULL, "quit transport as requested as part of GLib event loop");
+                return FAILED;
                 break;
             }
         } else {
@@ -614,7 +615,7 @@ bool LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
         case 0:
             SE_LOG_DEBUG(NULL, NULL, "%s: select timeout",
                          m_pid ? "parent" : "child");
-            return false;
+            return TIME_OUT;
             break;
         case 1: {
             // data ready, ensure that buffer is available
@@ -671,7 +672,7 @@ bool LocalTransportAgent::readMessage(int fd, Buffer &buffer, time_t deadline)
         }
     }
 
-    return true;
+    return ACTIVE;
 }
 
 void LocalTransportAgent::getReply(const char *&data, size_t &len, std::string &contentType)

@@ -165,9 +165,9 @@ class LocalTransportAgent : public TransportAgent
      * Write Message with given type into file descriptor.
      * Retries until error or all data written.
      *
-     * @return true for success, false if deadline is reached, exception for fatal error
+     * @return ACTIVE for success, TIME_OUT or FAILED for failure, exception for really bad error
      */
-    bool writeMessage(int fd, Message::Type type, const char *data, size_t len, time_t deadline);
+    Status writeMessage(int fd, Message::Type type, const char *data, size_t len, time_t deadline);
 
     /**
      * Read bytes into buffer until complete Message
@@ -175,9 +175,9 @@ class LocalTransportAgent : public TransportAgent
      * end of that Message if available. An existing
      * complete message is not overwritten.
      *
-     * @return true for success, false if deadline is reached, exception for fatal error
+     * @return ACTIVE for success, TIME_OUT or FAILED for failure, exception for really bad error
      */
-    bool readMessage(int fd, Buffer &buffer, time_t deadline);
+    Status readMessage(int fd, Buffer &buffer, time_t deadline);
 
     /** utility function for parent: copy child's report into m_clientReport */
     void receiveChildReport();

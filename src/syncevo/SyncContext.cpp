@@ -3634,6 +3634,18 @@ SyncMLStatus SyncContext::doSync()
                  * message sending interval equals m_retryInterval.
                  */
                 case TransportAgent::FAILED: {
+                    // Send might have failed because of abort or
+                    // suspend request.
+                    if (checkForSuspend()) {
+                        SE_LOG_DEBUG(NULL, NULL, "suspending after TransportAgent::FAILED as requested by user");
+                        stepCmd = sysync::STEPCMD_SUSPEND;
+                        break;
+                    } else if (checkForAbort()) {
+                        SE_LOG_DEBUG(NULL, NULL, "aborting after TransportAgent::FAILED as requested by user");
+                        stepCmd = sysync::STEPCMD_ABORT;
+                        break;
+                    }
+
                     time_t curTime = time(NULL);
                     time_t duration = curTime - sendStart;
                     // same if() as above for TIME_OUT
@@ -3646,18 +3658,6 @@ SyncMLStatus SyncContext::doSync()
                                     (long)(duration % 60));
                         SE_THROW_EXCEPTION(TransportException, "transport failed, retry period exceeded");
                     } else {
-                        // Send might have failed because of abort or
-                        // suspend request.
-                        if (checkForSuspend()) {
-                            SE_LOG_DEBUG(NULL, NULL, "suspending after TransportAgent::FAILED as requested by user");
-                            stepCmd = sysync::STEPCMD_SUSPEND;
-                            break;
-                        } else if (checkForAbort()) {
-                            SE_LOG_DEBUG(NULL, NULL, "aborting after TransportAgent::FAILED as requested by user");
-                            stepCmd = sysync::STEPCMD_ABORT;
-                            break;
-                        }
-
                         // retry send
                         int leftTime = m_retryInterval - (curTime - resendStart);
                         if (leftTime >0 ) {

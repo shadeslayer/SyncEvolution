@@ -565,7 +565,7 @@ class DBusUtil(Timeout):
                 updateProps[key] = tmpdict
         return updateProps
 
-    def checkSync(self, expectedError=0):
+    def checkSync(self, expectedError=0, expectedResult=0):
         # check recorded events in DBusUtil.events, first filter them
         statuses = []
         progresses = []
@@ -620,6 +620,15 @@ class DBusUtil(Timeout):
         self.failUnlessEqual(status, "done")
         self.failUnlessEqual(error, expectedError)
 
+        # now check that report is sane
+        reports = self.session.GetReports(0, 100, utf8_strings=True)
+        self.failUnlessEqual(len(reports), 1)
+        if expectedResult:
+            self.failUnlessEqual(int(reports[0]["status"]), expectedResult)
+        else:
+            self.failUnlessEqual(int(reports[0]["status"]), 200)
+            self.failIf("error" in reports[0])
+        return reports[0]
 
 class TestDBusServer(unittest.TestCase, DBusUtil):
     """Tests for the read-only Server API."""
@@ -2482,7 +2491,8 @@ END:VCARD''')
         self.session.Sync("slow", {})
         loop.run()
         self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
-        self.checkSync(20017) # transport error
+        report = self.checkSync(20017, 20043) # sources aborted, transport failure
+        self.failUnlessEqual(report["error"], "timeout, retry period exceeded")
 
     @timeout(10)
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
@@ -2497,8 +2507,9 @@ END:VCARD''')
         self.session.Abort()
         loop.run()
         self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
-        self.checkSync(20017) # aborted
-    
+        report = self.checkSync(20017, 20017) # aborted
+        self.failIf("error" in report) # ... but without error message
+        self.failUnlessEqual(report["source-addressbook-status"], "0") # unknown status for source (aborted early)
 
     def run(self, result):
         self.runTest(result)
