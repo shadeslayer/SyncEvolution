@@ -67,7 +67,7 @@ class CurlTransportAgent : public HTTPTransportAgent
     Status m_status;
     bool m_aborting;
 
-    time_t m_sendStartTime;
+    Timespec m_sendStartTime;
     int m_timeoutSeconds;
 
     /**

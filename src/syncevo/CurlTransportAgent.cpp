@@ -290,8 +290,8 @@ int CurlTransportAgent::progressCallback(void* transport, double, double, double
 int CurlTransportAgent::processCallback()
 {
     if (m_timeoutSeconds) {
-        time_t curTime = time(NULL);
-        if (curTime - m_sendStartTime > m_timeoutSeconds) {
+        Timespec curTime = Timespec::monotonic();
+        if (curTime > m_sendStartTime + m_timeoutSeconds) {
             m_status = TIME_OUT;
             return -1;
         }
