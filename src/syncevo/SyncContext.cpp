@@ -3492,6 +3492,11 @@ SyncMLStatus SyncContext::doSync()
                                             progressInfo.extra1,
                                             progressInfo.extra2,
                                             progressInfo.extra3);
+                        if (progressInfo.eventtype == sysync::PEV_SESSIONEND &&
+                            !status) {
+                            // remember sync result
+                            status = SyncMLStatus(progressInfo.extra1);
+                        }
                         break;
                     default: {
                         // specific for a certain sync source:
