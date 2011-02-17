@@ -183,194 +183,138 @@ struct dbus_traits_base
 
 /**
  * Append a varying number of parameters as result to the
- * message. Types can be anything that has a dbus_traits, including
+ * message, using AppendRetvals(msg) << res1 << res2 << ...;
+ *
+ * Types can be anything that has a dbus_traits, including
  * types which are normally recognized as input parameters in D-Bus
  * method calls.
  */
-template <class A1, class A2, class A3, class A4, class A5,
-    class A6, class A7, class A8, class A9, class A10>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3,
-                    A4 a4,
-                    A5 a5,
-                    A6 a6,
-                    A7 a7,
-                    A8 a8,
-                    A9 a9,
-                    A10 a10)
-{
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-    dbus_traits<A4>::append_retval(iter, a4);
-    dbus_traits<A5>::append_retval(iter, a5);
-    dbus_traits<A6>::append_retval(iter, a6);
-    dbus_traits<A7>::append_retval(iter, a7);
-    dbus_traits<A8>::append_retval(iter, a8);
-    dbus_traits<A9>::append_retval(iter, a9);
-    dbus_traits<A10>::append_retval(iter, a10);
-}
+class AppendRetvals {
+    DBusMessageIter m_iter;
 
-template <class A1, class A2, class A3, class A4, class A5,
-    class A6, class A7, class A8, class A9>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3,
-                    A4 a4,
-                    A5 a5,
-                    A6 a6,
-                    A7 a7,
-                    A8 a8,
-                    A9 a9)
-{
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-    dbus_traits<A4>::append_retval(iter, a4);
-    dbus_traits<A5>::append_retval(iter, a5);
-    dbus_traits<A6>::append_retval(iter, a6);
-    dbus_traits<A7>::append_retval(iter, a7);
-    dbus_traits<A8>::append_retval(iter, a8);
-    dbus_traits<A9>::append_retval(iter, a9);
-}
+ public:
+    AppendRetvals(DBusMessagePtr &msg) {
+        dbus_message_iter_init_append(msg.get(), &m_iter);
+    }
 
-template <class A1, class A2, class A3, class A4, class A5,
-    class A6, class A7, class A8>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3,
-                    A4 a4,
-                    A5 a5,
-                    A6 a6,
-                    A7 a7,
-                    A8 a8)
-{
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-    dbus_traits<A4>::append_retval(iter, a4);
-    dbus_traits<A5>::append_retval(iter, a5);
-    dbus_traits<A6>::append_retval(iter, a6);
-    dbus_traits<A7>::append_retval(iter, a7);
-    dbus_traits<A8>::append_retval(iter, a8);
-}
+    template<class A> AppendRetvals & operator << (const A &a) {
+        dbus_traits<A>::append(m_iter, a);
+        return *this;
+    }
+};
 
-template <class A1, class A2, class A3, class A4, class A5,
-    class A6, class A7>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3,
-                    A4 a4,
-                    A5 a5,
-                    A6 a6,
-                    A7 a7)
-{
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-    dbus_traits<A4>::append_retval(iter, a4);
-    dbus_traits<A5>::append_retval(iter, a5);
-    dbus_traits<A6>::append_retval(iter, a6);
-    dbus_traits<A7>::append_retval(iter, a7);
-}
+/**
+ * Append a varying number of method parameters as result to the reply
+ * message, using AppendArgs(msg) << Set<A1>(res1) << Set<A2>(res2) << ...;
+ */
+struct AppendArgs {
+    DBusMessageIter m_iter;
 
-template <class A1, class A2, class A3, class A4, class A5,
-    class A6>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3,
-                    A4 a4,
-                    A5 a5,
-                    A6 a6)
-{
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-    dbus_traits<A4>::append_retval(iter, a4);
-    dbus_traits<A5>::append_retval(iter, a5);
-    dbus_traits<A6>::append_retval(iter, a6);
-}
+    AppendArgs(DBusMessage *msg) {
+        dbus_message_iter_init_append(msg, &m_iter);
+    }
 
-template <class A1, class A2, class A3, class A4, class A5>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3,
-                    A4 a4,
-                    A5 a5)
-{
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-    dbus_traits<A4>::append_retval(iter, a4);
-    dbus_traits<A5>::append_retval(iter, a5);
-}
+    /** syntactic sugar: redirect << into Set instance */
+    template<class A> AppendArgs & operator << (const A &a) {
+        return a.set(*this);
+    }
 
-template <class A1, class A2, class A3, class A4>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3,
-                    A4 a4)
-{
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-    dbus_traits<A4>::append_retval(iter, a4);
-}
+    /**
+     * Always append argument, including those types which
+     * would be recognized by << as parameters and thus get
+     * skipped.
+     */
+    template<class A> AppendArgs & operator + (const A &a) {
+        dbus_traits<A>::append(m_iter, a);
+        return *this;
+    }
+};
 
-template <class A1, class A2, class A3>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2,
-                    A3 a3)
+/** default: skip it, not a result of the method */
+template<class A> struct Set
 {
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-    dbus_traits<A3>::append_retval(iter, a3);
-}
+    Set(A &a) {}
+    AppendArgs &set(AppendArgs &context) const {
+        return context;
+    }
+};
 
-template <class A1, class A2>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1,
-                    A2 a2)
+/** same for const reference */
+template<class A> struct Set <const A &>
 {
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-    dbus_traits<A2>::append_retval(iter, a2);
-}
+    Set(A &a) {}
+    AppendArgs &set(AppendArgs &context) const {
+        return context;
+    }
+};
 
-template <class A1>
-void append_retvals(DBusMessagePtr &msg,
-                    A1 a1)
+/** specialization for reference: marshal result */
+template<class A> struct Set <A &>
 {
-    DBusMessageIter iter;
-    dbus_message_iter_init_append(msg.get(), &iter);
-    dbus_traits<A1>::append_retval(iter, a1);
-}
+    A &m_a;
+    Set(A &a) : m_a(a) {}
+    AppendArgs &set(AppendArgs &context) const {
+        dbus_traits<A>::append(context.m_iter, m_a);
+        return context;
+    }
+};
+
+/**
+ * Extract values from a message, using ExtractArgs(conn, msg) >> Get<A1>(val1) >> Get<A2>(val2) >> ...;
+ *
+ * This complements AppendArgs: it skips over those method arguments
+ * which are results of the method. Which values are skipped and
+ * which are marshalled depends on the specialization of Get and thus
+ * ultimately on the prototype of the method.
+ */
+struct ExtractArgs {
+    DBusConnection *m_conn;
+    DBusMessage *m_msg;
+    DBusMessageIter m_iter;
+
+ public:
+    ExtractArgs(DBusConnection *conn, DBusMessage *msg) {
+        m_conn = conn;
+        m_msg = msg;
+        dbus_message_iter_init(msg, &m_iter);
+    }
+
+    /** syntactic sugar: redirect >> into Get instance */
+    template<class A> ExtractArgs & operator >> (const A &a) {
+        return a.get(*this);
+    }
+};
+
+/** default: extract data from message */
+template<class A> struct Get
+{
+    A &m_a;
+    Get(A &a) : m_a(a) {}
+    ExtractArgs &get(ExtractArgs &context) const {
+        dbus_traits<A>::get(context.m_conn, context.m_msg, context.m_iter, m_a);
+        return context;
+    }
+};
+
+/** same for const reference */
+template<class A> struct Get <const A &>
+{
+    A &m_a;
+    Get(A &a) : m_a(a) {}
+    ExtractArgs &get(ExtractArgs &context) const {
+        dbus_traits<A>::get(context.m_conn, context.m_msg, context.m_iter, m_a);
+        return context;
+    }
+};
+
+/** specialization for reference: skip it, not an input parameter */
+template<class A> struct Get <A &>
+{
+    Get(A &a) {}
+    ExtractArgs &get(ExtractArgs &context) const {
+        return context;
+    }
+};
 
 /**
  * interface expected by EmitSignal
@@ -443,7 +387,7 @@ class EmitSignal1
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        append_retvals(msg, a1);
+        AppendRetvals(msg) << a1;
 
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
@@ -483,7 +427,7 @@ class EmitSignal2
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        append_retvals(msg, a1, a2);
+        AppendRetvals(msg) << a1 << a2;
 
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
@@ -524,7 +468,7 @@ class EmitSignal3
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        append_retvals(msg, a1, a2, a3);
+        AppendRetvals(msg) << a1 << a2 << a3;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -565,7 +509,7 @@ class EmitSignal4
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        append_retvals(msg, a1, a2, a3, a4);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -607,7 +551,7 @@ class EmitSignal5
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        append_retvals(msg, a1, a2, a3, a4, a5);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -650,7 +594,7 @@ class EmitSignal6
         if (!msg) {
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
-        append_retvals(msg, a1, a2, a3, a4, a5, a6);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -865,19 +809,9 @@ template<class host, int dbus> struct basic_marshal : public dbus_traits_base
     }
 
     /**
-     * copy value from return value into D-Bus iterator,
-     * empty here because plain types are no return values
+     * copy value into D-Bus iterator
      */
     static void append(DBusMessageIter &iter, arg_type value)
-    {
-        // nothing to do
-    }
-
-    /**
-     * utility function to be used by derived classes which
-     * need to copy a variable of this underlying type
-     */
-    static void append_retval(DBusMessageIter &iter, arg_type value)
     {
         if (!dbus_message_iter_append_basic(&iter, dbus, &value)) {
             throw std::runtime_error("out of memory");
@@ -967,9 +901,7 @@ template<> struct dbus_traits<bool> : public dbus_traits_base
         value = dbus_value;
     }    
 
-    static void append(DBusMessageIter &iter, bool value) {}
-
-    static void append_retval(DBusMessageIter &iter, bool value)
+    static void append(DBusMessageIter &iter, bool value)
     {
         dbus_bool_t dbus_value = value;
         if (!dbus_message_iter_append_basic(&iter, dbus, &dbus_value)) {
@@ -1000,9 +932,7 @@ template<> struct dbus_traits<std::string> : public dbus_traits_base
         value = str;
     }
 
-    static void append(DBusMessageIter &iter, const std::string &value) {}
-
-    static void append_retval(DBusMessageIter &iter, const std::string &value)
+    static void append(DBusMessageIter &iter, const std::string &value)
     {
         const char *str = value.c_str();
         if (!dbus_message_iter_append_basic(&iter, dbus, &str)) {
@@ -1033,9 +963,7 @@ template <> struct dbus_traits<DBusObject_t> : public dbus_traits_base
         value = str;
     }
 
-    static void append(DBusMessageIter &iter, const DBusObject_t &value) {}
-
-    static void append_retval(DBusMessageIter &iter, const DBusObject_t &value)
+    static void append(DBusMessageIter &iter, const DBusObject_t &value)
     {
         const char *str = value.c_str();
         if (!dbus_message_iter_append_basic(&iter, dbus, &str)) {
@@ -1066,8 +994,6 @@ template <> struct dbus_traits<Caller_t> : public dbus_traits_base
         }
         value = peer;
     }
-
-    static void append(DBusMessageIter &iter, const DBusObject_t &value) {}
 
     typedef Caller_t host_type;
     typedef const Caller_t &arg_type;
@@ -1116,9 +1042,7 @@ template<class V> struct dbus_traits< std::pair<size_t, const V *> > : public db
         dbus_message_iter_next(&iter);
     }
 
-    static void append(DBusMessageIter &iter, arg_type array) {}
-
-    static void append_retval(DBusMessageIter &iter, arg_type array)
+    static void append(DBusMessageIter &iter, arg_type array)
     {
         DBusMessageIter sub;
         if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, getContainedType().c_str(), &sub) ||
@@ -1176,9 +1100,7 @@ template<class K, class V> struct dbus_traits< std::map<K, V> > : public dbus_tr
         dbus_message_iter_next(&iter);
     }
 
-    static void append(DBusMessageIter &iter, arg_type dict) {}
-
-    static void append_retval(DBusMessageIter &iter, arg_type dict)
+    static void append(DBusMessageIter &iter, arg_type dict)
     {
         DBusMessageIter sub;
         if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, getContainedType().c_str(), &sub)) {
@@ -1192,8 +1114,8 @@ template<class K, class V> struct dbus_traits< std::map<K, V> > : public dbus_tr
             if (!dbus_message_iter_open_container(&sub, DBUS_TYPE_DICT_ENTRY, NULL, &entry)) {
                 throw std::runtime_error("out of memory");
             }
-            dbus_traits<K>::append_retval(entry, it->first);
-            dbus_traits<V>::append_retval(entry, it->second);
+            dbus_traits<K>::append(entry, it->first);
+            dbus_traits<V>::append(entry, it->second);
             if (!dbus_message_iter_close_container(&sub, &entry)) {
                 throw std::runtime_error("out of memory");
             }
@@ -1240,9 +1162,7 @@ template<class V> struct dbus_traits< std::vector<V> > : public dbus_traits_base
         dbus_message_iter_next(&iter);
     }
 
-    static void append(DBusMessageIter &iter, arg_type array) {}
-
-    static void append_retval(DBusMessageIter &iter, arg_type array)
+    static void append(DBusMessageIter &iter, arg_type array)
     {
         DBusMessageIter sub;
         if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, getContainedType().c_str(), &sub)) {
@@ -1252,7 +1172,7 @@ template<class V> struct dbus_traits< std::vector<V> > : public dbus_traits_base
         for(typename host_type::const_iterator it = array.begin();
             it != array.end();
             ++it) {
-            dbus_traits<V>::append_retval(sub, *it);
+            dbus_traits<V>::append(sub, *it);
         }
         if (!dbus_message_iter_close_container(&iter, &sub)) {
             throw std::runtime_error("out of memory");
@@ -1290,14 +1210,6 @@ template <class V> struct dbus_traits <boost::variant <V> > : public dbus_traits
         dbus_traits<V>::get (conn, msg, sub, val);
         value = val;
     }
-
-    static void append(DBusMessageIter &iter, const boost::variant <V>  &value) {
-    }
-
-    //append_retval not implemented
-    //static void append_retval(DBusMessageIter &iter, arg_type array)
-    //{
-    //}
 
     typedef boost::variant<V> host_type;
     typedef const boost::variant<V> &arg_type;
@@ -1340,9 +1252,6 @@ template <class V1, class V2> struct dbus_traits <boost::variant <V1, V2> > : pu
         }
     }
 
-    static void append(DBusMessageIter &iter, const boost::variant <V1, V2>  &value) {
-    }
-
     typedef boost::variant<V1, V2> host_type;
     typedef const boost::variant<V1, V2> &arg_type;
 };
@@ -1364,9 +1273,9 @@ template<class K, class V, V K::*m> struct dbus_member_single
         dbus_traits<V>::get(conn, msg, iter, val.*m);
     }
 
-    static void append_retval(DBusMessageIter &iter, const K &val)
+    static void append(DBusMessageIter &iter, const K &val)
     {
-        dbus_traits<V>::append_retval(iter, val.*m);
+        dbus_traits<V>::append(iter, val.*m);
     }
 };
 
@@ -1389,10 +1298,10 @@ template<class K, class V, V K::*m, class M> struct dbus_member
         M::get(conn, msg, iter, val);
     }
 
-    static void append_retval(DBusMessageIter &iter, const K &val)
+    static void append(DBusMessageIter &iter, const K &val)
     {
-        dbus_traits<V>::append_retval(iter, val.*m);
-        M::append_retval(iter, val);
+        dbus_traits<V>::append(iter, val.*m);
+        M::append(iter, val);
     }
 };
 
@@ -1434,15 +1343,13 @@ template<class K, class M> struct dbus_struct_traits : public dbus_traits_base
         dbus_message_iter_next(&iter);
     }
 
-    static void append(DBusMessageIter &iter, arg_type val) {}
-
-    static void append_retval(DBusMessageIter &iter, arg_type val)
+    static void append(DBusMessageIter &iter, arg_type val)
     {
         DBusMessageIter sub;
         if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_STRUCT, NULL, &sub)) {
             throw std::runtime_error("out of memory");
         }
-        M::append_retval(sub, val);
+        M::append(sub, val);
         if (!dbus_message_iter_close_container(&iter, &sub)) {
             throw std::runtime_error("out of memory");
         }
@@ -1459,28 +1366,13 @@ template<class C> struct dbus_traits<const C &> : public dbus_traits<C> {};
 
 /**
  * special case writeable reference parameter:
- * must be a return value, so provide our own
- * get() and pack() where get() doesn't do
- * anything and pack() really encodes the value
+ * must be a return value
  *
  * Example: std::string &retval
  */
 template<class C> struct dbus_traits<C &> : public dbus_traits<C>
 {
-    /**
-     * skip when extracting input arguments
-     */
-    static void get(DBusConnection *conn, DBusMessage *msg,
-                    DBusMessageIter &iter, C &value) {}
     static std::string getSignature() { return ""; }
-
-    /**
-     * use utility function provided by underlying trait
-     */
-    static void append(DBusMessageIter &iter, const C &value)
-    {
-        dbus_traits<C>::append_retval(iter, value);
-    }
     static std::string getReply() { return dbus_traits<C>::getType(); }
 };
 
@@ -1688,7 +1580,6 @@ class DBusResult0 :
     }
 
     static std::string getSignature() { return ""; }
-    static void append(DBusMessageIter &iter) {}
 };
 
 template <typename A1>
@@ -1708,7 +1599,7 @@ class DBusResult1 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1);
+        AppendRetvals(reply) << a1;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1737,7 +1628,7 @@ class DBusResult2 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2);
+        AppendRetvals(reply) << a1 << a2;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1770,7 +1661,7 @@ class DBusResult3 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3);
+        AppendRetvals(reply) << a1 << a2 << a3;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1803,7 +1694,7 @@ class DBusResult4 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3, a4);
+        AppendRetvals(reply) << a1 << a2 << a3 << a4;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1836,7 +1727,7 @@ class DBusResult5 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3, a4, a5);
+        AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1870,7 +1761,7 @@ class DBusResult6 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3, a4, a5, a6);
+        AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1904,7 +1795,7 @@ class DBusResult7 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7);
+        AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1938,7 +1829,7 @@ class DBusResult8 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7, a8);
+        AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -1972,7 +1863,7 @@ class DBusResult9 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+        AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -2006,7 +1897,7 @@ class DBusResult10 :
         if (!reply) {
             throw std::runtime_error("no DBusMessage");
         }
-        append_retvals(reply, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
+        AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9 << a10;
         if (!dbus_connection_send(m_conn.get(), reply.get(), NULL)) {
             throw std::runtime_error("dbus_connection_send failed");
         }
@@ -2045,9 +1936,6 @@ template <class R, class DBusR> struct dbus_traits_result
     {
         value.reset(new DBusR(conn, msg));
     }
-
-    static void append(DBusMessageIter &iter, const host_type &value) {}
-    static void append_retval(DBusMessageIter &iter, const host_type &value) {}
 };
 
 template <>
@@ -2161,7 +2049,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2)> >
             // even though the trait would not normally do that
             // because it is a plain type => call utility function
             // directly.
-            dbus_traits<R>::append_retval(iter, r);
+            dbus_traits<R>::append(iter, r);
             dbus_traits<A1>::append(iter, a1);
             dbus_traits<A2>::append(iter, a2);
             return reply;
@@ -2248,18 +2136,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
             typename dbus_traits<A9>::host_type a9;
             typename dbus_traits<A10>::host_type a10;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
-            dbus_traits<A7>::get(conn, msg, iter, a7);
-            dbus_traits<A8>::get(conn, msg, iter, a8);
-            dbus_traits<A9>::get(conn, msg, iter, a9);
-            dbus_traits<A10>::get(conn, msg, iter, a10);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6) >> Get<A7>(a7) >> Get<A8>(a8) >> Get<A9>(a9) >> Get<A10>(a10);
 
             (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
 
@@ -2270,17 +2147,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
-            dbus_traits<A7>::append(iter, a7);
-            dbus_traits<A8>::append(iter, a8);
-            dbus_traits<A9>::append(iter, a9);
-            dbus_traits<A10>::append(iter, a10);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6) << Set<A7>(a7) << Set<A8>(a8) << Set<A9>(a9) << Set<A10>(a10);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -2362,17 +2231,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8, A9)> 
             typename dbus_traits<A8>::host_type a8;
             typename dbus_traits<A9>::host_type a9;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
-            dbus_traits<A7>::get(conn, msg, iter, a7);
-            dbus_traits<A8>::get(conn, msg, iter, a8);
-            dbus_traits<A9>::get(conn, msg, iter, a9);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6) >> Get<A7>(a7) >> Get<A8>(a8) >> Get<A9>(a9);
 
             r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8, a9);
 
@@ -2383,17 +2242,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8, A9)> 
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
-            dbus_traits<A7>::append(iter, a7);
-            dbus_traits<A8>::append(iter, a8);
-            dbus_traits<A9>::append(iter, a9);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6) << Set<A7>(a7) << Set<A8>(a8) << Set<A9>(a9);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -2470,17 +2321,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
             typename dbus_traits<A8>::host_type a8;
             typename dbus_traits<A9>::host_type a9;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
-            dbus_traits<A7>::get(conn, msg, iter, a7);
-            dbus_traits<A8>::get(conn, msg, iter, a8);
-            dbus_traits<A9>::get(conn, msg, iter, a9);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6) >> Get<A7>(a7) >> Get<A8>(a8) >> Get<A9>(a9);
 
             (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8, a9);
 
@@ -2491,16 +2332,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8, A9
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
-            dbus_traits<A7>::append(iter, a7);
-            dbus_traits<A8>::append(iter, a8);
-            dbus_traits<A9>::append(iter, a9);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6) << Set<A7>(a7) << Set<A8>(a8) << Set<A9>(a9);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -2577,16 +2411,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8)> >
             typename dbus_traits<A7>::host_type a7;
             typename dbus_traits<A8>::host_type a8;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
-            dbus_traits<A7>::get(conn, msg, iter, a7);
-            dbus_traits<A8>::get(conn, msg, iter, a8);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6) >> Get<A7>(a7) >> Get<A8>(a8);
 
             r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8);
 
@@ -2597,16 +2422,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7, A8)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
-            dbus_traits<A7>::append(iter, a7);
-            dbus_traits<A8>::append(iter, a8);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6) << Set<A7>(a7) << Set<A8>(a8);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -2680,16 +2498,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8)> >
             typename dbus_traits<A7>::host_type a7;
             typename dbus_traits<A8>::host_type a8;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
-            dbus_traits<A7>::get(conn, msg, iter, a7);
-            dbus_traits<A8>::get(conn, msg, iter, a8);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6) >> Get<A7>(a7) >> Get<A8>(a8);
 
             (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7, a8);
 
@@ -2700,15 +2509,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7, A8)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
-            dbus_traits<A7>::append(iter, a7);
-            dbus_traits<A8>::append(iter, a8);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6) << Set<A7>(a7) << Set<A8>(a8);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -2782,15 +2585,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7)> >
             typename dbus_traits<A6>::host_type a6;
             typename dbus_traits<A7>::host_type a7;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
-            dbus_traits<A7>::get(conn, msg, iter, a7);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6) >> Get<A7>(a7);
 
             r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7);
 
@@ -2801,15 +2596,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6, A7)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
-            dbus_traits<A7>::append(iter, a7);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6) << Set<A7>(a7);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -2880,15 +2669,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7)> >
             typename dbus_traits<A6>::host_type a6;
             typename dbus_traits<A7>::host_type a7;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
-            dbus_traits<A7>::get(conn, msg, iter, a7);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6) >> Get<A7>(a7);
 
             (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6, a7);
 
@@ -2899,14 +2680,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6, A7)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
-            dbus_traits<A7>::append(iter, a7);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6) << Set<A7>(a7);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -2977,14 +2753,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6)> >
             typename dbus_traits<A5>::host_type a5;
             typename dbus_traits<A6>::host_type a6;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6);
 
             r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6);
 
@@ -2995,14 +2764,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5, A6)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3070,14 +2834,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6)> >
             typename dbus_traits<A5>::host_type a5;
             typename dbus_traits<A6>::host_type a6;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
-            dbus_traits<A6>::get(conn, msg, iter, a6);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5) >> Get<A6>(a6);
 
             (*static_cast<M *>(data))(a1, a2, a3, a4, a5, a6);
 
@@ -3088,13 +2845,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5, A6)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
-            dbus_traits<A6>::append(iter, a6);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5) << Set<A6>(a6);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3160,13 +2913,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5)> >
             typename dbus_traits<A4>::host_type a4;
             typename dbus_traits<A5>::host_type a5;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5);
 
             r = (*static_cast<M *>(data))(a1, a2, a3, a4, a5);
 
@@ -3177,13 +2924,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4, A5)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3247,13 +2990,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5)> >
             typename dbus_traits<A4>::host_type a4;
             typename dbus_traits<A5>::host_type a5;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
-            dbus_traits<A5>::get(conn, msg, iter, a5);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4) >> Get<A5>(a5);
 
             (*static_cast<M *>(data))(a1, a2, a3, a4, a5);
 
@@ -3264,12 +3001,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4, A5)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
-            dbus_traits<A5>::append(iter, a5);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4) << Set<A5>(a5);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3333,12 +3067,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4)> >
             typename dbus_traits<A3>::host_type a3;
             typename dbus_traits<A4>::host_type a4;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4);
 
             r = (*static_cast<M *>(data))(a1, a2, a3, a4);
 
@@ -3349,12 +3078,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3, A4)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3415,12 +3141,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4)> >
             typename dbus_traits<A3>::host_type a3;
             typename dbus_traits<A4>::host_type a4;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
-            dbus_traits<A4>::get(conn, msg, iter, a4);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3) >> Get<A4>(a4);
 
             (*static_cast<M *>(data))(a1, a2, a3, a4);
 
@@ -3431,11 +3152,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3, A4)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
-            dbus_traits<A4>::append(iter, a4);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3) << Set<A4>(a4);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3496,11 +3215,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3)> >
             typename dbus_traits<A2>::host_type a2;
             typename dbus_traits<A3>::host_type a3;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3);
 
             r = (*static_cast<M *>(data))(a1, a2, a3);
 
@@ -3511,11 +3226,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2, A3)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3573,11 +3286,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3)> >
             typename dbus_traits<A2>::host_type a2;
             typename dbus_traits<A3>::host_type a3;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
-            dbus_traits<A3>::get(conn, msg, iter, a3);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2) >> Get<A3>(a3);
 
             (*static_cast<M *>(data))(a1, a2, a3);
 
@@ -3588,10 +3297,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2, A3)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
-            dbus_traits<A3>::append(iter, a3);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2) << Set<A3>(a3);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3649,10 +3357,7 @@ struct MakeMethodEntry< boost::function<R (A1, A2)> >
             typename dbus_traits<A1>::host_type a1;
             typename dbus_traits<A2>::host_type a2;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2);
 
             r = (*static_cast<M *>(data))(a1, a2);
 
@@ -3663,10 +3368,9 @@ struct MakeMethodEntry< boost::function<R (A1, A2)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
+
+            AppendArgs(reply) + r << Set<A1>(a1) << Set<A2>(a2);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3721,10 +3425,7 @@ struct MakeMethodEntry< boost::function<void (A1, A2)> >
             typename dbus_traits<A1>::host_type a1;
             typename dbus_traits<A2>::host_type a2;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
-            dbus_traits<A2>::get(conn, msg, iter, a2);
+            ExtractArgs(conn, msg) >> Get<A1>(a1) >> Get<A2>(a2);
 
             (*static_cast<M *>(data))(a1, a2);
 
@@ -3735,9 +3436,9 @@ struct MakeMethodEntry< boost::function<void (A1, A2)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
-            dbus_traits<A2>::append(iter, a2);
+
+            AppendArgs(reply) << Set<A1>(a1) << Set<A2>(a2);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3792,9 +3493,7 @@ struct MakeMethodEntry< boost::function<R (A1)> >
             typename dbus_traits<R>::host_type r;
             typename dbus_traits<A1>::host_type a1;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
+            ExtractArgs(conn, msg) >> Get<A1>(a1);
 
             r = (*static_cast<M *>(data))(a1);
 
@@ -3805,9 +3504,9 @@ struct MakeMethodEntry< boost::function<R (A1)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
-            dbus_traits<A1>::append(iter, a1);
+
+            AppendArgs(reply) + r << Set<A1>(a1);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3859,9 +3558,7 @@ struct MakeMethodEntry< boost::function<void (A1)> >
         try {
             typename dbus_traits<A1>::host_type a1;
 
-            DBusMessageIter iter;
-            dbus_message_iter_init(msg, &iter);
-            dbus_traits<A1>::get(conn, msg, iter, a1);
+            ExtractArgs(conn, msg) >> Get<A1>(a1);
 
             (*static_cast<M *>(data))(a1);
 
@@ -3872,8 +3569,9 @@ struct MakeMethodEntry< boost::function<void (A1)> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<A1>::append(iter, a1);
+
+            AppendArgs(reply) << Set<A1>(a1);
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -3927,9 +3625,9 @@ struct MakeMethodEntry< boost::function<R ()> >
             DBusMessage *reply = dbus_message_new_method_return(msg);
             if (!reply)
                 return NULL;
-            DBusMessageIter iter;
-            dbus_message_iter_init_append(reply, &iter);
-            dbus_traits<R>::append_retval(iter, r);
+
+            AppendArgs(reply) + r;
+
             return reply;
         } catch (...) {
             return handleException(msg);
@@ -4120,7 +3818,7 @@ public:
         if (!msg) {
             throw std::runtime_error("dbus_message_new_method_call() failed");
         }
-        append_retvals(msg, a1);
+        AppendRetvals(msg) << a1;
 
         //parameter marshaling (none)
         if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
@@ -4147,8 +3845,7 @@ public:
         if (!msg) {
             throw std::runtime_error("dbus_message_new_method_call() failed");
         }
-        append_retvals(msg, a1);
-        append_retvals(msg, a2);
+        AppendRetvals(msg) << a1 << a2;
 
         //parameter marshaling (none)
         if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
@@ -4175,9 +3872,7 @@ public:
         if (!msg) {
             throw std::runtime_error("dbus_message_new_method_call() failed");
         }
-        append_retvals(msg, a1);
-        append_retvals(msg, a2);
-        append_retvals(msg, a3);
+        AppendRetvals(msg) << a1 << a2 << a3;
 
         //parameter marshaling (none)
         if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
@@ -4249,9 +3944,7 @@ class DBusClientCall1 : public DBusClientCall<boost::function<void (const R1 &, 
         std::string error;
         typename dbus_traits<R1>::host_type r;
         if (!errname) {
-            DBusMessageIter iter;
-            dbus_message_iter_init(reply.get(), &iter);
-            dbus_traits<R1>::get(data->m_conn.get(), reply.get(), iter, r);
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
         } else {
             error = errname;
         }
@@ -4294,10 +3987,7 @@ class DBusClientCall2 : public DBusClientCall<boost::function<
         typename dbus_traits<R1>::host_type r1;
         typename dbus_traits<R2>::host_type r2;
         if (!errname) {
-            DBusMessageIter iter;
-            dbus_message_iter_init(reply.get(), &iter);
-            dbus_traits<R1>::get(data->m_conn.get(), reply.get(), iter, r1);
-            dbus_traits<R2>::get(data->m_conn.get(), reply.get(), iter, r2);
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
         } else {
             error = errname;
         }
@@ -4340,11 +4030,7 @@ class DBusClientCall3 : public DBusClientCall<boost::function<
         typename dbus_traits<R2>::host_type r2;
         typename dbus_traits<R3>::host_type r3;
         if (!errname) {
-            DBusMessageIter iter;
-            dbus_message_iter_init(reply.get(), &iter);
-            dbus_traits<R1>::get(data->m_conn.get(), reply.get(), iter, r1);
-            dbus_traits<R2>::get(data->m_conn.get(), reply.get(), iter, r2);
-            dbus_traits<R3>::get(data->m_conn.get(), reply.get(), iter, r3);
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
         } else {
             error = errname;
         }
