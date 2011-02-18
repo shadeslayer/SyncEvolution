@@ -310,6 +310,12 @@ class ClientTest {
      */
     static bool compare(ClientTest &client, const char *fileA, const char *fileB);
 
+    /**
+     * utility function: update a vCard or iCalendar item by inserting "MOD-" into
+     * FN, N, resp. SUMMARY; used for ClientTestConfig::update
+     */
+    static void update(std::string &item);
+
     struct ClientTestConfig config;
 
     /**
@@ -538,6 +544,11 @@ public:
     virtual std::list<std::string> insertManyItems(CreateSource createSource, int startIndex = 1, int numItems = 0, int size = -1);
 
     /**
+     * update every single item, using config.update
+     */
+    virtual void updateData(CreateSource createSource);
+
+    /**
      * create an artificial item for the current database
      *
      * @param item      item number: items with different number should be
@@ -723,6 +734,7 @@ protected:
     virtual void testConversion();
     virtual void testItems();
     virtual void testItemsXML();
+    virtual void testExtensions();
     virtual void testAddUpdate();
 
     // test copying with maxMsg and no large object support

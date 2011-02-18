@@ -627,6 +627,23 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
     return luids;
 }
 
+// update every single item in the database
+void LocalTests::updateData(CreateSource createSource) {
+    // check additional requirements
+    CPPUNIT_ASSERT(config.update);
+
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
+    BOOST_FOREACH(const string &luid, source->getAllItems()) {
+        string item;
+        source->readItemRaw(luid, item);
+        config.update(item);
+        source->insertItemRaw(luid, item);
+    }
+    CPPUNIT_ASSERT_NO_THROW(source.reset());
+}
+
+
 // creating sync source
 void LocalTests::testOpen() {
     // check requirements
@@ -1651,6 +1668,9 @@ void SyncTests::addTests(bool isFirstSource) {
                         ADD_TEST(SyncTests, testTwinning);
                         ADD_TEST(SyncTests, testItems);
                         ADD_TEST(SyncTests, testItemsXML);
+                        if (config.update) {
+                            ADD_TEST(SyncTests, testExtensions);
+                        }
                     }
                     if (config.templateItem) {
                         ADD_TEST(SyncTests, testMaxMsg);
@@ -2498,8 +2518,8 @@ bool SyncTests::doConversionCallback(bool *success,
     return true;
 }
 
-// creates several items, transmits them back and forth and
-// then compares which of them have been preserved
+// imports test data, transmits it from client A to the server to
+// client B and then compares which of the data has been transmitted
 void SyncTests::testItems() {
     // clean server and first test database
     deleteAll();
@@ -2534,6 +2554,67 @@ void SyncTests::testItemsXML() {
     accessClientB->refreshClient(SyncOptions().setWBXML(false));
 
     compareDatabases();
+}
+
+// imports test data, transmits it from client A to the server to
+// client B, update on B and transfers back to the server,
+// then compares against reference data that has the same changes
+// applied on A
+void SyncTests::testExtensions() {
+    // clean server and first test database
+    deleteAll();
+
+    // import data and create reference data
+    source_it it;
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        it->second->testImport();
+
+        string refDir = getCurrentTest() + "." + it->second->config.sourceName + ".ref.dat";
+        simplifyFilename(refDir);
+        rm_r(refDir);
+        mkdir_p(refDir);
+
+        TestingSyncSourcePtr source;
+        int counter = 0;
+        SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
+        BOOST_FOREACH(const string &luid, source->getAllItems()) {
+            string item;
+            source->readItemRaw(luid, item);
+            it->second->config.update(item);
+            ofstream out(StringPrintf("%s/%d", refDir.c_str(), counter).c_str());
+            out.write(item.c_str(), item.size());
+            counter++;
+        }
+        CPPUNIT_ASSERT_NO_THROW(source.reset());
+    }
+
+    // transfer from client A to server to client B
+    doSync("send", SyncOptions(SYNC_TWO_WAY));
+    accessClientB->refreshClient(SyncOptions());
+
+    // update on client B
+    for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
+        it->second->updateData(it->second->createSourceB);
+    }
+
+    // send back
+    accessClientB->doSync("update", SyncOptions(SYNC_TWO_WAY));
+    doSync("patch", SyncOptions(SYNC_TWO_WAY));
+
+    // compare data in source A against reference data *without* telling synccompare
+    // to ignore known data loss for the server
+    ScopedEnvChange env("CLIENT_TEST_SERVER", "");
+    bool equal = true;
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        string refDir = getCurrentTest() + "." + it->second->config.sourceName + ".ref.dat";
+        simplifyFilename(refDir);
+        TestingSyncSourcePtr source;
+        SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
+        if (!it->second->compareDatabases(refDir.c_str(), *source, false)) {
+            equal = false;
+        }
+    }
+    CPPUNIT_ASSERT(equal);
 }
 
 // tests the following sequence of events:
@@ -3880,6 +3961,24 @@ bool ClientTest::compare(ClientTest &client, const char *fileA, const char *file
     return success;
 }
 
+void ClientTest::update(std::string &item)
+{
+    const static char *props[] = {
+        "\nFN:",
+        "\nN:",
+        "\nSUMMARY:",
+        NULL
+    };
+
+    for (const char **prop = props; *prop; prop++) {
+        size_t pos;
+        pos = item.find(*prop);
+        if (pos != item.npos) {
+            item.insert(pos + strlen(*prop), "MOD-");
+        }
+    }
+}
+
 void ClientTest::postSync(int res, const std::string &logname)
 {
 #ifdef WIN32
@@ -3984,6 +4083,8 @@ void ClientTest::getTestData(const char *type, Config &config)
     config.import = import;
     config.dump = dump;
     config.compare = compare;
+    // Sync::*::testExtensions not enabled by default.
+    // config.update = update;
 
     // redirect requests for "ical20" towards "ical20_noutc"?
     bool noutc = false;

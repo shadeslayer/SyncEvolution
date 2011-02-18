@@ -386,7 +386,21 @@ struct ClientTestConfig{
     bool (*compare)(ClientTest &client, const char *fileA, const char *fileB);
 
     /**
-     * a file with test cases in the format expected by import and compare
+     * A file with test cases in the format expected by import and compare.
+     * The file should contain data as supported by the local storage.
+     *
+     * It is used in "Source::*::testImport" test, which verifies that
+     * the backend can import and export that data.
+     *
+     * It is also used in "Sync::*::testItems", which verifies that
+     * the peer can store and export it. Often local extensions are
+     * not supported by peers. This can be handled in different ways:
+     * - Patch synccompare to ignore such changes on a per-peer basis.
+     * - Create a <testcases>.<peer>.tem file in the src/testcases
+     *   build directory where <testcases> is the string here ("ical20.ics"),
+     *   and <peer> the value of CLIENT_TEST_SERVER ("funambol").
+     *   That file then will be used in testItems instead of the base
+     *   version. See the src/Makefile.am for rules that maintain such files.
      */
     const char *testcases;
 
@@ -409,6 +423,16 @@ struct ClientTestConfig{
     bool retrySync;
     bool suspendSync;
     bool resendSync;
+
+    /**
+     * Set this to test if the source supports preserving local data extensions.
+     * Uses the "testcases" data. See Sync::*::testExtensions.
+     *
+     * The function must modify a single item such that re-importing
+     * it locally will be seen as updating it. ClientTest::update()
+     * works for vCard and iCalendar by updating FN, N, resp. SUMMARY.
+     */
+    void (*update)(std::string &item);
 };
 
 /**
