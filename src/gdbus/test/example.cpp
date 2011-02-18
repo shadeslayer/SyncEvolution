@@ -33,6 +33,8 @@
 #include <memory>
 #include <iostream>
 
+namespace GDBusCXX {
+
 struct args {
     int a;
     std::string b;
@@ -235,6 +237,10 @@ static void sig_term(int sig)
 {
     g_main_loop_quit(main_loop);
 }
+
+} // namespace GDBusCXX
+
+using namespace GDBusCXX;
 
 int main(int argc, char *argv[])
 {

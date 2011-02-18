@@ -25,6 +25,8 @@
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 
+namespace GDBusCXX {
+
 /**
  * An exception class which can be thrown to create
  * specific D-Bus exception on the bus.
@@ -176,6 +178,6 @@ struct Result10 : virtual public Result
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8, A9 a9, A10 a10) = 0;
 };
 
-
+} // namespace GDBusCXX
 
 #endif // INCL_BDBUS_CXX

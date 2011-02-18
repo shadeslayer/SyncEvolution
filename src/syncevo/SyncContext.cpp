@@ -2761,7 +2761,8 @@ void SyncContext::initMain(const char *appname)
         // because we don't call it directly and might not even be linked against
         // it. Therefore check for the relevant symbols via dlsym().
         void (*set_log_level)(int);
-        void (*set_log_function)(void (*func)(int level, const char *str));
+        typedef void (*LogFunc_t)(int level, const char *str);
+        void (*set_log_function)(LogFunc_t func);
         
         set_log_level = (typeof(set_log_level))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_level");
         set_log_function = (typeof(set_log_function))dlsym(RTLD_DEFAULT, "gnutls_global_set_log_function");

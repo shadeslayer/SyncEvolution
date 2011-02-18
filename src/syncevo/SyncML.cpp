@@ -456,6 +456,7 @@ namespace {
             return res;
         }
     }
+#if 0
     string left(char sep, const string &str, size_t width) {
         if (str.size() + 1 >= width) {
             return str;
@@ -466,6 +467,7 @@ namespace {
             return res;
         }
     }
+#endif
 
     // insert string at column if it fits, otherwise flush right
     string align(char sep, const string &str, size_t width, size_t column) {

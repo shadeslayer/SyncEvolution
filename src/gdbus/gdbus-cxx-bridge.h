@@ -63,12 +63,6 @@
 #include <map>
 #include <vector>
 
-#include <boost/bind.hpp>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/variant.hpp>
-#include <boost/variant/get.hpp>
-
 namespace boost {
     void intrusive_ptr_add_ref(DBusConnection *con) { dbus_connection_ref(con); }
     void intrusive_ptr_release(DBusConnection *con) { dbus_connection_unref(con); }
@@ -77,6 +71,14 @@ namespace boost {
     void intrusive_ptr_add_ref(DBusPendingCall *call) {dbus_pending_call_ref (call); }
     void intrusive_ptr_release(DBusPendingCall *call) {dbus_pending_call_unref (call); }
 }
+
+#include <boost/bind.hpp>
+#include <boost/intrusive_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/variant.hpp>
+#include <boost/variant/get.hpp>
+
+namespace GDBusCXX {
 
 class DBusConnectionPtr : public boost::intrusive_ptr<DBusConnection>
 {
@@ -4132,7 +4134,7 @@ class SignalWatch0 : public SignalWatch< boost::function<void (void)> >
         return TRUE;
     }
 
-    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+    void activate(const Callback_t &callback) { SignalWatch< boost::function<void (void)> >::activateInternal(callback, internalCallback); }
 };
 
 template <typename A1>
@@ -4164,7 +4166,7 @@ class SignalWatch1 : public SignalWatch< boost::function<void (const A1 &)> >
         return TRUE;
     }
 
-    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+    void activate(const Callback_t &callback) { SignalWatch< boost::function<void (const A1 &)> >::activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2>
@@ -4198,7 +4200,7 @@ class SignalWatch2 : public SignalWatch< boost::function<void (const A1 &, const
         return TRUE;
     }
 
-    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+    void activate(const Callback_t &callback) { SignalWatch< boost::function<void (const A1 &, const A2 &)> >::activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3>
@@ -4234,7 +4236,7 @@ class SignalWatch3 : public SignalWatch< boost::function<void (const A1 &, const
         return TRUE;
     }
 
-    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+    void activate(const Callback_t &callback) { SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &)> >::activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3, typename A4>
@@ -4272,7 +4274,7 @@ class SignalWatch4 : public SignalWatch< boost::function<void (const A1 &, const
         return TRUE;
     }
 
-    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+    void activate(const Callback_t &callback) { SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &)> >::activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5>
@@ -4312,7 +4314,7 @@ class SignalWatch5 : public SignalWatch< boost::function<void (const A1 &, const
         return TRUE;
     }
 
-    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+    void activate(const Callback_t &callback) { SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &)> >::activateInternal(callback, internalCallback); }
 };
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6>
@@ -4355,7 +4357,9 @@ class SignalWatch6 : public SignalWatch< boost::function<void (const A1 &, const
         return TRUE;
     }
 
-    void activate(const Callback_t &callback) { activateInternal(callback, internalCallback); }
+    void activate(const Callback_t &callback) { SignalWatch< boost::function<void (const A1 &, const A2 &, const A3 &, const A4 &, const A5 &, const A6 &)> >::activateInternal(callback, internalCallback); }
 };
+
+} // namespace GDBusCXX
 
 #endif // INCL_BDBUS_CXX_BRIDGE

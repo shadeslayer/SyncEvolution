@@ -139,14 +139,14 @@ template<class T> class InitList : public list<T> {
  public:
     InitList() {}
     InitList(const T &initialValue) {
-        push_back(initialValue);
+        list<T>::push_back(initialValue);
     }
     InitList &operator + (const T &rhs) {
-        push_back(rhs);
+        list<T>::push_back(rhs);
         return *this;
     }
     InitList &operator += (const T &rhs) {
-        push_back(rhs);
+        list<T>::push_back(rhs);
         return *this;
     }
 };

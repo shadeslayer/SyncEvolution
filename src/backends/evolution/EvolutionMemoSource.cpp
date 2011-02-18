@@ -129,7 +129,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     eptr<char> text;
     text.set((char *)malloc(item.size() + 1), "copy of item");
     memcpy(text, item.c_str(), item.size());
-    text[item.size()] = 0;
+    text.get()[item.size()] = 0;
 
     // replace all \r\n with \n
     char *from = text, *to = text;

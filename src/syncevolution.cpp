@@ -29,6 +29,31 @@ using namespace std;
 #include <glib-object.h>
 #endif
 
+#ifdef DBUS_SERVICE
+
+// must come before other header files which pull in boost/intrusive_ptr.hpp
+// because it defines some intrusive_ptr_release implementations
+#include <gdbus-cxx-bridge.h>
+
+struct SourceStatus {
+    string m_mode;
+    string m_status;
+    uint32_t m_error;
+};
+
+namespace GDBusCXX {
+template<> struct dbus_traits<SourceStatus> :
+public dbus_struct_traits<SourceStatus,
+       dbus_member<SourceStatus, string, &SourceStatus::m_mode,
+       dbus_member<SourceStatus, string, &SourceStatus::m_status,
+       dbus_member_single<SourceStatus, uint32_t, &SourceStatus::m_error> > > >
+{};
+}
+
+using namespace GDBusCXX;
+
+#endif
+
 #include <syncevo/Cmdline.h>
 #include "EvolutionSyncSource.h"
 #include <syncevo/SyncContext.h>
@@ -39,23 +64,6 @@ using namespace std;
 #include <signal.h>
 
 #include <syncevo/declarations.h>
-
-#ifdef DBUS_SERVICE
-
-#include <gdbus-cxx-bridge.h>
-
-struct SourceStatus {
-    string m_mode;
-    string m_status;
-    uint32_t m_error;
-};
-template<> struct dbus_traits<SourceStatus> :
-public dbus_struct_traits<SourceStatus,
-       dbus_member<SourceStatus, string, &SourceStatus::m_mode,
-       dbus_member<SourceStatus, string, &SourceStatus::m_status,
-       dbus_member_single<SourceStatus, uint32_t, &SourceStatus::m_error> > > >
-{};
-#endif
 
 SE_BEGIN_CXX
 

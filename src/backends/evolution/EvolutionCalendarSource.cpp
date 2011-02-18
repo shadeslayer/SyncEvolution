@@ -812,7 +812,7 @@ string EvolutionCalendarSource::getItemModTime(ECalComponent *ecomp)
     if (!modTimePtr) {
         return "";
     } else {
-        return icalTime2Str(*modTimePtr);
+        return icalTime2Str(*modTimePtr.get());
     }
 }
 

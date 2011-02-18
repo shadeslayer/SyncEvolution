@@ -23,6 +23,13 @@
 #include "config.h"
 #endif
 
+struct DBusMessage;
+namespace SyncEvo {
+static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
+}
+#define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
+#include "gdbus-cxx-bridge.h"
+
 #include <syncevo/Logging.h>
 #include <syncevo/LogStdout.h>
 #include <syncevo/LogRedirect.h>
@@ -67,12 +74,10 @@ extern "C" {
 #include <libnotify/notify.h>
 #endif
 
-class DBusMessage;
-static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
-#define DBUS_CXX_EXCEPTION_HANDLER SyncEvoHandleException
-#include "gdbus-cxx-bridge.h"
-
+using namespace GDBusCXX;
 using namespace SyncEvo;
+
+SE_BEGIN_CXX
 
 static GMainLoop *loop = NULL;
 static bool shutdownRequested = false;
@@ -304,6 +309,9 @@ private:
     boost::shared_ptr<DBusUserInterface> getLocalConfig(const std::string &configName, bool mustExist = true);
 };
 
+SE_END_CXX
+namespace GDBusCXX {
+
 /**
  * dbus_traits for SourceDatabase. Put it here for 
  * avoiding polluting gxx-dbus-bridge.h
@@ -313,6 +321,9 @@ template<> struct dbus_traits<ReadOperations::SourceDatabase> :
                               dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_name,
                               dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_uri,
                               dbus_member_single<ReadOperations::SourceDatabase, bool, &ReadOperations::SourceDatabase::m_isDefault> > > >{}; 
+
+}
+SE_BEGIN_CXX
 
 /**
  * Automatic termination and track clients
@@ -1586,12 +1597,16 @@ struct SourceStatus
     uint32_t m_error;
 };
 
+SE_END_CXX
+namespace GDBusCXX {
 template<> struct dbus_traits<SourceStatus> :
     public dbus_struct_traits<SourceStatus,
                               dbus_member<SourceStatus, std::string, &SourceStatus::m_mode,
                               dbus_member<SourceStatus, std::string, &SourceStatus::m_status,
                               dbus_member_single<SourceStatus, uint32_t, &SourceStatus::m_error> > > >
 {};
+}
+SE_BEGIN_CXX
 
 struct SourceProgress
 {
@@ -1608,6 +1623,8 @@ struct SourceProgress
     int32_t m_receiveCount, m_receiveTotal;
 };
 
+SE_END_CXX
+namespace GDBusCXX {
 template<> struct dbus_traits<SourceProgress> :
     public dbus_struct_traits<SourceProgress,
                               dbus_member<SourceProgress, std::string, &SourceProgress::m_phase,
@@ -1618,6 +1635,8 @@ template<> struct dbus_traits<SourceProgress> :
                               dbus_member<SourceProgress, int32_t, &SourceProgress::m_receiveCount,
                               dbus_member_single<SourceProgress, int32_t, &SourceProgress::m_receiveTotal> > > > > > > >
 {};
+}
+SE_BEGIN_CXX
 
 /**
  * This class is mainly to implement two virtual functions 'askPassword'
@@ -1758,15 +1777,15 @@ public:
      * These ratios might be dynamicall changed in the future.
      */
     /** PRO_SYNC_PREPARE step ratio to standard unit */
-    static const float PRO_SYNC_PREPARE_RATIO = 0.2;
+    static const float PRO_SYNC_PREPARE_RATIO;
     /** data prepare for data items to standard unit. All are combined by profiling data */
-    static const float DATA_PREPARE_RATIO = 0.10;
+    static const float DATA_PREPARE_RATIO;
     /** one data item send's ratio to standard unit */
-    static const float ONEITEM_SEND_RATIO = 0.05;
+    static const float ONEITEM_SEND_RATIO;
     /** one data item receive&parse's ratio to standard unit */
-    static const float ONEITEM_RECEIVE_RATIO = 0.05;
+    static const float ONEITEM_RECEIVE_RATIO;
     /** connection setup to standard unit */
-    static const float CONN_SETUP_RATIO = 0.5;
+    static const float CONN_SETUP_RATIO;
     /** assume the number of data items */
     static const int DEFAULT_ITEMS = 5;
     /** default times of message send/receive in each step */
@@ -1841,6 +1860,12 @@ private:
     /** current sync source */
     string m_source;
 };
+
+const float ProgressData::PRO_SYNC_PREPARE_RATIO = 0.2;
+const float ProgressData::DATA_PREPARE_RATIO = 0.10;
+const float ProgressData::ONEITEM_SEND_RATIO = 0.05;
+const float ProgressData::ONEITEM_RECEIVE_RATIO = 0.05;
+const float ProgressData::CONN_SETUP_RATIO = 0.5;
 
 class CmdlineWrapper;
 
@@ -6371,6 +6396,8 @@ static bool parseDuration(int &duration, const char* value)
     }
 }
 
+SE_END_CXX
+
 int main(int argc, char **argv)
 {
     int duration = 600;
@@ -6418,7 +6445,7 @@ int main(int argc, char **argv)
             err.throwFailure("b_dbus_setup_bus()", " failed - server already running?");
         }
 
-        DBusServer server(loop, conn, duration);
+        SyncEvo::DBusServer server(loop, conn, duration);
         server.activate();
 
         SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);

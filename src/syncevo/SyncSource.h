@@ -35,7 +35,7 @@
 SE_BEGIN_CXX
 
 class SyncSource;
-class SDKInterface;
+struct SDKInterface;
 
 /**
  * This set of parameters always has to be passed when constructing
