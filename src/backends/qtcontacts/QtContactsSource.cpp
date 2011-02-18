@@ -38,6 +38,7 @@
 
 #include <QVersitContactExporter>
 #include <QVersitContactImporter>
+#include <QVersitContactHandler>
 #include <QVersitDocument>
 #include <QVersitWriter>
 #include <QVersitReader>
@@ -224,7 +225,13 @@ void QtContactsSource::readItem(const string &uid, std::string &item, bool raw)
         }
     }
 
-    QVersitContactExporter exporter;
+    QStringList profiles;
+#ifdef USE_PROFILE_BACKUP_RAW_FORMAT
+    if (raw) {
+        profiles << QVersitContactHandlerFactory::ProfileBackup;
+    }
+#endif
+    QVersitContactExporter exporter(profiles);
     if (!exporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
         throwError(uid + ": encoding as vCard 3.0 failed");
     }
@@ -247,7 +254,13 @@ TrackingSyncSource::InsertItemResult QtContactsSource::insertItem(const string &
     reader.waitForFinished();
     m_data->checkError("decoding vCard", reader);
 
-    QVersitContactImporter importer;
+    QStringList profiles;
+#ifdef USE_PROFILE_BACKUP_RAW_FORMAT
+    if (raw) {
+        profiles << QVersitContactHandlerFactory::ProfileBackup;
+    }
+#endif
+    QVersitContactImporter importer(profiles);
     if (!importer.importDocuments(reader.results())) {
         throwError("importing vCard failed");
     }
