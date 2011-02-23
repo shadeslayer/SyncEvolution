@@ -658,7 +658,7 @@ class TimespecTest : public CppUnit::TestFixture {
     {
         CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(2, 0) - 1);
         CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(2, 0) - Timespec(1, 0));
-        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(1, 5000000000) - Timespec(0, 500000000));
+        CPPUNIT_ASSERT_EQUAL(Timespec(1, 0), Timespec(1, 500000000) - Timespec(0, 500000000));
         CPPUNIT_ASSERT_EQUAL(Timespec(0, 999999999), Timespec(1, 999999998) - Timespec(0, 999999999));
     }
 };
