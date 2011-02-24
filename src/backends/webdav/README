@@ -1,0 +1,283 @@
+Usage
+=====
+
+The "webdav" backend provides sync sources for CalDAV and
+CardDAV. They can be selected with backend=CalDAV
+resp. backend=CardDAV.
+
+In contrast to other backends, these sources need additional
+information about a peer:
+
+* syncURL:
+  Specifies URL of calendar or contacts collection. %u gets
+  replaced with the username.
+
+  A ?SyncEvolution=<keyword>,<keyword>,... parameter provides
+  further control. Currently implemented keywords:
+  UpdateHack = work around Google's REV CalDAV quirks
+  ChildHack = avoid storing calendar items which contain
+              VEVENTs with RECURRENCE-ID and no corresponding
+              VEVENT with RRULE; Google Calendar can store such
+              items but reading them fails
+  AlarmHack = when storing a VEVENT without VALARM, store it
+              multiple times, because otherwise Google Calendar
+              adds a default alarm
+  Google = enables all hacks needed for Google
+
+  Specifying a syncURL is optional. If not given, then DNS SRV
+  lookups based on the domain name in the username are used
+  to find the right host. In theory, .well-known URIs are then
+  used to find the right path on that host, but in practice none
+  of the peers that were tested (Google and Yahoo) seemed to
+  support that. Therefore the code contains a fallback for
+  well-known Yahoo paths when .well-known URIs fail.
+
+* username/password:
+  credentials, if available use the email address (needed
+  for auto discovery of CalDAV or CardDAV server)
+
+They also use:
+* loglevel:
+  >= 3: basic logging of HTTP traffic
+  >= 4: also logging of HTTP body
+  >= 5: also SSL and WebDAV lock handling
+  >= 6: detailed information about XML parsing
+  >= 11: plaintext HTTP authentication
+
+The recommended way of using the CalDAV and CardDAV backends is to
+configure a context with the "source-config" peer inside it. Such a
+context then can be used as part of a local sync with other
+sources. See the Google section below for examples.
+
+
+Multiple calendars/address books
+================================
+
+This is not yet implemented. The code always ends up picking the
+default collection. Eventually the goal is to enable:
+- listing of available collections
+- selecting them via the "database" property
+
+
+Concurrency
+===========
+
+The original plan was to lock the server's collection while
+manipulating it during a sync. But Google Calendar does not support
+locks, so that was not pursued further. An alternative would be to run
+a sync without locking and detect concurrent modifications, but that
+is not implemented yet.
+
+Therefore it is possible (although not likely) that changes get lost
+when some other client changes an item after SyncEvolution started a
+sync and before that same item gets modified by SyncEvolution as part
+of that sync.
+
+Change tracking itself copes with changes made while a sync
+runs. They'll be synchronized as part of the next sync.
+
+
+Google
+======
+
+Google supports CalDAV access to its calendars. Several quirks were
+encountered, which SyncEvolution tries to work around as good as
+possible.
+
+Use syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google
+to enable these workarounds.
+
+# create context for accessing Google CalDAV server,
+# not visible in sync UI (consumerReady = 0):
+syncevolution --configure \
+              --template SyncEvolution \
+              backend=CalDAV \
+              syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google \
+              username=<your account> \
+              password=<your password> \
+              consumerReady=0 \
+              source-config@google calendar
+
+# list events in the server
+syncevolution --print-items source-config@google calendar
+
+# show the content of these events on stdout
+syncevolution --export - source-config@google calendar
+
+# set up synchronization, using "google-calendar" as peer name
+# because "google" is typically used for the SyncML-based
+# contact sync, which uses a different syncURL;
+# username/password can be left empty to use the credentials
+# configured above
+syncevolution --configure \
+              --template "SyncEvolution Client" \
+              syncURL=local://@google \
+              consumerReady=1 \
+              username= \
+              password= \
+              google-calendar calendar
+
+# run a sync for the first time (allow slow sync)
+syncevolution --sync slow google-calendar
+
+# normal sync, also possible via sync UI
+syncevolution google-calendar
+
+
+Yahoo
+=====
+
+Yahoo supports both CalDAV and CardDAV. CalDAV is available at this
+time (beginning 2011) if and only if the user has switched to the
+"Yahoo! Calendar Beta". It is stable enough to be useful.
+
+CardDAV works in read/write mode, but has severe limitations:
+* Contacts sent by Yahoo encode special characters with
+  HTML/XML entities, in one case even multiple times
+  (\ -> &#92; -> &amp;#92;). At the moment SyncEvolution unconditionally
+  works around that by replacing these entities, which is wrong for
+  servers working correctly.
+* Contacts are sent with UTF-8 encoding by Yahoo, but uploading such
+  contacts leads to non-ASCII characters being replaced with a question
+  mark on the server.
+
+Both of these issues can be reproduced with iOS 4 when configuring
+Yahoo as generic CardDAV server.
+
+Yahoo uses different hosts for CalDAV and CardDAV. Leave the syncURL
+empty and use the @yahoo email address as username to let the backend
+do the host lookup.
+
+# configure CalDAV and CardDAV with Yahoo,
+# with host lookup via the domain in the username
+syncevolution --configure \
+              --template SyncEvolution \
+              calendar/backend=CalDAV \
+              addressbook/backend=CardDAV \
+              syncURL= \
+              username=<your account@yahoo.com or some other yahoo domain> \
+              password=<your password> \
+              consumerReady=0 \
+              source-config@yahoo addressbook calendar
+
+# list items, use "--export -" to see content
+syncevolution --print-items source-config@yahoo calendar
+syncevolution --print-items source-config@yahoo addressbook
+
+# configure synchronization, with addressbook not enabled
+syncevolution --configure \
+              --template "SyncEvolution Client" \
+              addressbook/sync=disabled \
+              syncURL=local://@yahoo \
+              username= \
+              password= \
+              yahoo addressbook calendar 
+
+
+Debugging/Troubleshooting
+=========================
+
+Run the commands above with "loglevel=4" or higher. Set
+SYNCEVOLUTION_DEBUG=1 to see the full neon output directly (instead of
+having it filtered and, if present, written into a logfile) and run
+the operation locally with --daemon=no (instead of inside the
+syncevo-dbus-server).
+
+Example:
+SYNCEVOLUTION_DEBUG=1 syncevolution --daemon=no loglevel=4 --print-items @google calendar
+
+Each sync produces two log files, one for the main config
+("google-calendar"), one for the target config
+("source-config@google"). It is possible to choose different log levels:
+
+syncevolution --run \
+              loglevel=1 \
+              loglevel@google=11 \
+              google-calendar
+
+Occassionally Google Calendar gets confused and reports VEVENTs in
+response to a REPORT which then are not returned for a
+GET. Symptoms of that are:
+  [ERROR @google] @google/calendar: event not found
+SyncEvolution tries hard to avoid such situations, but some calendars
+already seem to be in such a state to begin with. Deleting offending events
+via the web interface helps in such cases.
+
+When running under debugger, then beware that the WebDAV part runs
+inside a forked process. Use gdb's "set follow-fork-mode child" to
+enter the child. Make sure that you don't accidentally follow
+execution into one of the external shell commands:
+
+$ gdb ./syncevolution
+(gdb) set follow-fork-mode child
+(gdb) b SyncEvo::LocalTransportAgent::run
+Breakpoint 1 at 0x846755: file /home/pohly/syncevolution/syncevolution/src/syncevo/LocalTransportAgent.cpp, line 159.
+(gdb) run --daemon=no --run google-calendar
+Starting program: /home/pohly/work/syncevolution/src/syncevolution --daemon=no --run google-calendar
+[Thread debugging using libthread_db enabled]
+[INFO] @default/addressbook: inactive
+[INFO] @default/calendar+todo: inactive
+[INFO] @default/memo: inactive
+[INFO] @default/todo: inactive
+[New process 4655]
+[Thread debugging using libthread_db enabled]
+[Switching to Thread 0x7ffff7fc27e0 (LWP 4655)]
+
+Breakpoint 1, SyncEvo::LocalTransportAgent::run (this=0xc2a310)
+    at /home/pohly/syncevolution/syncevolution/src/syncevo/LocalTransportAgent.cpp:159
+159	    const char *delay = getenv("SYNCEVOLUTION_LOCAL_CHILD_DELAY");
+(gdb) set follow-fork-mode parent
+(gdb) b SyncEvo::CalDAVSource::readSubItem
+Breakpoint 2 at 0x69d47c: file /home/pohly/syncevolution/syncevolution/src/backends/webdav/CalDAVSource.cpp, line 382.
+(gdb) c
+Continuing.
+[...]
+Breakpoint 2, SyncEvo::CalDAVSource::readSubItem (this=0xec7430, davLUID=..., subid=..., item=...)
+    at /home/pohly/syncevolution/syncevolution/src/backends/webdav/CalDAVSource.cpp:382
+382	    Event &event = loadItem(davLUID);
+(gdb) ...
+
+Alternatively, setting SYNCEVOLUTION_LOCAL_CHILD_DELAY=<seconds> in
+the environment and the attaching to the second "syncevolution"
+process also works.
+
+
+Implementation
+==============
+
+The neon library is used for HTTP/WebDAV. CalDAV and CardDAV queries
+can be done with it, although not supported directly. SyncEvolution's
+NeonCXX provides a C++ API on top of neon, with exceptions thrown for
+errors, Boost function pointers for callbacks and handles that track
+the underlying pointers.
+
+WebDAVSource contains the main WebDAV logic. It is customized via
+virtual methods by derived CalDAVSource and CardDAVSource whenever
+necessary.
+
+These sources use the resource name/ETag pair to detect changes. So
+for CardDAV retrieving the meta information is sufficient to detect
+changes.
+
+With CalDAV the situation is a bit more complex. A CalDAV item
+contains multiple VEVENTs, whereas SyncEvolution works on one VEVENT
+at a time during synchronization. The MapSyncSource uses a
+CalDAVSource and exposes calendar data with one VEVENT per
+item. MapSyncSource is generic enough to be used by sources which
+implement the SubSyncSource interface.
+
+The downside is that the number of VEVENTs inside each CalDAV item and
+their UID/RECURRENCE-ID properties need to be known before a sync. In
+the default mode of SyncEvolution (with automatic data backups before
+and after a sync), this additional information is collected as part of
+creating the backup, so no additional overhead is incurred, but when
+disabling backups, a sync still needs to download the calendar data
+first. In theory, CalDAV can report just the necessary
+UID/RECURRENCE-ID properties and SyncEvolution uses that, but in
+practice, servers return the full data.
+
+DNS SRV lookup is implemented using the syncevo-webdav-lookup utility
+script which calls "host", "adnshost" or "nslookup", depending on what
+is available. This approach avoids a hard dependency on a specfic
+resolver library and (for some of these) writing quite a bit of
+additional code.
