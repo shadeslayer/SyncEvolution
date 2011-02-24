@@ -42,13 +42,257 @@
 #include <QVersitDocument>
 #include <QVersitWriter>
 #include <QVersitReader>
+#include <QVersitProperty>
+#include <QVersitContactImporterPropertyHandlerV2>
+#include <QVersitContactExporterDetailHandlerV2>
 
 #include <syncevo/SmartPtr.h>
+
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 using namespace QtMobility;
+
+/**
+ * This handler represents QContactDetails which have no
+ * mapping to vCard by storing them inside a X-SYNCEVO-QTCONTACTS
+ * property.
+ *
+ * The exact format is:
+ * X-SYNCEVOLUTION-QTCONTACTS:<detail>;(<field>;<encoding>;<serialized value>)*
+ *
+ * <detail> = detail name
+ * <field> = field name
+ * <encoding> = as in backup plugin (BOOL/INT/UINT/DATE/TIME/DATETIME/STRING/VARIANT)
+ *              STRING = QString as UTF-8 string, with special characters escaped
+ *              as in N
+ *              VARIANT = anything else, including byte arrays
+ *
+ * This is similar to the QtMobility 1.1 backup plugin (http://doc.qt.nokia.com/qtmobility-1.1/versitplugins.html).
+ * The main differences are:
+ * - This handler has a 1:1 mapping between QContactDetail and
+ *   vCard property; the backup plugin uses one property per QContactDetail
+ *   field and groups to combine them.
+ * - Details which have a mapping to vCard are left untouched.
+ *   The backup plugin always adds at least the DetailUri.
+ *
+ * The reasons for implementing our own handler is:
+ * - The "restore" part of the backup/restore plugin is completely missing
+ *   in QtMobility 1.1 and therefore it is unusable.
+ * - The single property per detail approach is more readable (IMHO, of course).
+ * - Turning a property back into a detail is likely to be easier when all information
+ *   is in single property.
+ * - Groups in vCard are unusual and thus more likely to confuse peers.
+ *   The extended format used by this handler only relies on the normal X- property
+ *   extension.
+ *
+ * The restore from property part of this handler ignores all details
+ * and fields which are not valid for the contact. In other words, it
+ * does not define details.
+ *
+ * Example backup plugin:
+ * G1.UID:{8c0bc9aa-9379-4aec-b8f1-78ba55992076}
+ * G1.X-NOKIA-QCONTACTFIELD;DETAIL=Guid;FIELD=DetailUri:http://www.semanticdesk
+ *  top.org/ontologies/2007/03/22/nco#default-contact-me#Guid
+ * G2.N:;Me;;;
+ * G2.X-NOKIA-QCONTACTFIELD;DETAIL=Name;FIELD=DetailUri:http://www.semanticdesk
+ *  top.org/ontologies/2007/03/22/nco#default-contact-me#Name
+ * G3.TEL;TYPE=VOICE:
+ * G3.X-NOKIA-QCONTACTFIELD;DETAIL=PhoneNumber;FIELD=DetailUri:urn:uuid:5087e2a
+ *  2-39f4-37a9-757c-ee291294f9e9
+ * G4.X-NOKIA-QCONTACTFIELD;DETAIL=Pet;FIELD=Name:Rex
+ * G4.X-NOKIA-QCONTACTFIELD;DETAIL=Pet;FIELD=Age;DATATYPE=INT:14
+ *
+ * Example this handler:
+ * UID:{8c0bc9aa-9379-4aec-b8f1-78ba55992076}
+ * N:;Me;;;
+ * TEL:
+ * X-SYNCEVO-QTCONTACTS:Pet^Name^STRING^Rex^Age^INT^14
+ *
+ * The somewhat strange ^ separator is necessary because custom properties cannot
+ * be of compound type in QVersit (http://bugreports.qt.nokia.com/browse/QTMOBILITY-1298).
+ */
+class SyncEvoQtContactsHandler : public QVersitContactImporterPropertyHandlerV2,
+                                 public QVersitContactExporterDetailHandlerV2
+{
+    const QMap<QString, QContactDetailDefinition> m_details;
+
+public:
+    /**
+     * @param  details    definition of all details that are valid for a contact (only relevant for parsing vCard)
+     */
+    SyncEvoQtContactsHandler(const QMap<QString, QContactDetailDefinition> &details = QMap<QString, QContactDetailDefinition>()) :
+        m_details(details)
+    {}
+
+    virtual void contactProcessed(const QContact &contact, QVersitDocument *document ) {}
+    virtual void detailProcessed( const QContact &contact,
+                                  const QContactDetail &detail,
+                                  const QVersitDocument &document,
+                                  QSet<QString> *processedFields,
+                                  QList<QVersitProperty> *toBeRemoved,
+                                  QList<QVersitProperty> *toBeAdded)
+    {
+        // ignore details if
+        // - already encoded (assumed to do a good enough job)
+        // - read-only = synthesized (we would not be able to write it back anyway)
+        // - the default "Type = Contact"
+        // - empty detail (empty QContactName otherwise would be encoded)
+        if (!toBeAdded->empty() ||
+            (detail.accessConstraints() & QContactDetail::ReadOnly) ||
+            (detail.definitionName() == "Type" && contact.type() == "Contact") ||
+            detail.isEmpty()) {
+            return;
+        }
+
+        QStringList content;
+        content << detail.definitionName(); // <detail>
+        QVariantMap fields = detail.variantValues();
+        for (QVariantMap::const_iterator entry = fields.begin();
+             entry != fields.end();
+             ++entry) {
+            const QString &fieldName = entry.key();
+            const QVariant &value = entry.value();
+            content << fieldName; // <field>
+            if (value.type() == QVariant::String) {
+                content << "STRING" << value.toString().toUtf8();
+            } else if (value.type() == QVariant::Bool) {
+                content << "BOOL" << (value.toBool() ? "1" : "0");
+            } else if (value.type() == QVariant::Int) {
+                content << "INT" << QString::number(value.toInt());
+            } else if (value.type() == QVariant::UInt) {
+                content << "UINT" << QString::number(value.toUInt());
+            } else if (value.type() == QVariant::Date) {
+                content << "DATE" << value.toDate().toString(Qt::ISODate);
+            } else if (value.type() == QVariant::DateTime) {
+                content << "DATETIME" << value.toDateTime().toString(Qt::ISODate);
+            } else {
+                QByteArray valueBytes;
+                QDataStream stream(&valueBytes, QIODevice::WriteOnly);
+                stream << value;
+                content << "VARIANT" << valueBytes.toHex().constData();
+            }
+            *processedFields << fieldName;
+        }
+
+        // Using QVersitProperty::CompoundType and the string list
+        // as-is would be nice, but isn't supported by QtMobility 1.2.0 beta
+        // because QVersitReader will not know that the property is
+        // of compound type and will replace \; with ; without splitting
+        // into individual strings first. See http://bugreports.qt.nokia.com/browse/QTMOBILITY-1298
+        //
+        // Workaround: replace ^ inside strings with |<hex value of ^> and then use ^ as separator
+        // These characters were chosen because they are not special in vCard and thus
+        // require no further escaping.
+        QVersitProperty prop;
+        prop.setName("X-SYNCEVO-QTCONTACTS");
+#ifdef USE_QVERSIT_COMPOUND
+        prop.setValueType(QVersitProperty::CompoundType);
+        prop.setValue(QVariant(content));
+#else
+        StringEscape escape('|', "^");
+        std::list<std::string> strings;
+        BOOST_FOREACH(const QString &str, content) {
+            strings.push_back(escape.escape(string(str.toUtf8().constData())));
+        }
+        prop.setValue(QVariant(QString::fromUtf8(boost::join(strings, "^").c_str())));
+#endif
+        *toBeAdded << prop;
+    }
+
+    virtual void documentProcessed(const QVersitDocument &document, QContact *contact) {}
+    virtual void propertyProcessed( const QVersitDocument &document,
+                                    const QVersitProperty &property,
+                                    const QContact &contact,
+                                    bool *alreadyProcessed,
+                                    QList<QContactDetail> *updatedDetails)
+    {
+        if (*alreadyProcessed ||
+            property.name() != "X-SYNCEVO-QTCONTACTS") {
+            // not something that we need to parse
+            return;
+        }
+
+        *alreadyProcessed = true;
+#ifdef USE_QVERSIT_COMPOUND
+        QStringList content = property.value<QStringList>();
+#else
+        QStringList content;
+        StringEscape escape('|', "^");
+        typedef boost::split_iterator<string::iterator> string_split_iterator;
+        string valueString = property.value().toUtf8().constData();
+        string_split_iterator it =
+            boost::make_split_iterator(valueString, boost::first_finder("^", boost::is_iequal()));
+        while (it != string_split_iterator()) {
+            content << QString::fromUtf8(escape.unescape(std::string(it->begin(), it->end())).c_str());
+            ++it;
+        }
+#endif
+        // detail name available?
+        if (content.size() > 0) {
+            const QString &detailName = content[0];
+            QMap<QString, QContactDetailDefinition>::const_iterator it = m_details.constFind(detailName);
+            // detail still exists?
+            if (it != m_details.constEnd()) {
+                const QContactDetailDefinition &definition = *it;
+
+                // now decode all fields and copy into new detail
+                QContactDetail detail(content[0]);
+                int i = 1;
+                while (i + 2 < content.size()) {
+                    const QString &fieldName = content[i++];
+                    const QString &type = content[i++];
+                    const QString &valueString = content[i++];
+                    QVariant value;
+
+                    if (type == "STRING") {
+                        value.setValue(valueString);
+                    } else if (type == "BOOL") {
+                        value.setValue(valueString == "1");
+                    } else if (type == "INT") {
+                        value.setValue(valueString.toInt());
+                    } else if (type == "UINT") {
+                        value.setValue(valueString.toUInt());
+                    } else if (type == "DATE") {
+                        value.setValue(QDate::fromString(valueString, Qt::ISODate));
+                    } else if (type == "DATETIME") {
+                        value.setValue(QDateTime::fromString(valueString, Qt::ISODate));
+                    } else if (type == "VARIANT") {
+                        QByteArray valueBytes = QByteArray::fromHex(valueString.toAscii());
+                        QDataStream stream(&valueBytes, QIODevice::ReadOnly);
+                        stream >> value;
+                    } else {
+                        // unknown type, skip it
+                        continue;
+                    }
+
+                    // skip fields which are (no longer) valid, have wrong type or wrong value
+                    QMap<QString, QContactDetailFieldDefinition> fields = definition.fields();
+                    QMap<QString, QContactDetailFieldDefinition>::const_iterator it2 =
+                        fields.constFind(fieldName);
+                    if (it2 != fields.constEnd()) {
+                        if (it2->dataType() == value.type()) {
+                            QVariantList allowed = it2->allowableValues();
+                            if (allowed.empty() ||
+                                allowed.indexOf(value) != -1) {
+                                // add field
+                                detail.setValue(fieldName, value);
+                            }
+                        }
+                    }
+                }
+
+                // update contact with the new detail
+                *updatedDetails << detail;
+            }
+        }
+    }
+};
+
+
 
 class QtContactsData
 {
@@ -231,7 +475,9 @@ void QtContactsSource::readItem(const string &uid, std::string &item, bool raw)
         profiles << QVersitContactHandlerFactory::ProfileBackup;
     }
 #endif
+    SyncEvoQtContactsHandler handler;
     QVersitContactExporter exporter(profiles);
+    exporter.setDetailHandler(&handler);
     if (!exporter.exportContacts(contacts, QVersitDocument::VCard30Type)) {
         throwError(uid + ": encoding as vCard 3.0 failed");
     }
@@ -260,7 +506,9 @@ TrackingSyncSource::InsertItemResult QtContactsSource::insertItem(const string &
         profiles << QVersitContactHandlerFactory::ProfileBackup;
     }
 #endif
+    SyncEvoQtContactsHandler handler(m_data->m_manager->detailDefinitions());
     QVersitContactImporter importer(profiles);
+    importer.setPropertyHandler(&handler);
     if (!importer.importDocuments(reader.results())) {
         throwError("importing vCard failed");
     }
@@ -341,6 +589,8 @@ std::string QtContactsSource::getDescription(const string &luid)
         return "";
     }
 }
+
+
 
 SE_END_CXX
 
