@@ -129,7 +129,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
 
     // parse new event
     boost::shared_ptr<Event> newEvent(new Event);
-    newEvent->m_calendar.set(icalcomponent_new_from_string(item.c_str()),
+    newEvent->m_calendar.set(icalcomponent_new_from_string((char *)item.c_str()), // hack for old libical
                              "parsing iCalendar 2.0");
     struct icaltimetype lastmodtime = icaltime_null_time();
     icalcomponent *firstcomp = NULL;
