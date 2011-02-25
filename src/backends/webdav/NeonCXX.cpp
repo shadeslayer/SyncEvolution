@@ -369,7 +369,7 @@ void Session::propfindProp(const std::string &path, int depth,
 void Session::propsIterate(const URI &uri, const ne_prop_result_set *results,
                            const PropfindPropCallback_t &callback)
 {
-    PropIteratorUserdata_t data(uri, callback);
+    PropIteratorUserdata_t data(&uri, &callback);
     ne_propset_iterate(results,
                        propIterator,
                        &data);
@@ -382,7 +382,7 @@ int Session::propIterator(void *userdata,
 {
     try {
         const PropIteratorUserdata_t *data = static_cast<const PropIteratorUserdata_t *>(userdata);
-        data->second(data->first, pname, value, status);
+        (*data->second)(*data->first, pname, value, status);
         return 0;
     } catch (...) {
         Exception::handle();

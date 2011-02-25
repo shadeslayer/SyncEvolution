@@ -258,7 +258,8 @@ class Session {
                             const char *value,
                             const ne_status *status) throw();
 
-    typedef std::pair<const URI &, const PropfindPropCallback_t &> PropIteratorUserdata_t;
+    // use pointers here, g++ 4.2.3 has issues with references (which was used before)
+    typedef std::pair<const URI *, const PropfindPropCallback_t *> PropIteratorUserdata_t;
 };
 
 /**
