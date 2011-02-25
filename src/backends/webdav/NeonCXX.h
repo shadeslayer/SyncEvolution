@@ -181,8 +181,10 @@ class Session {
     static boost::shared_ptr<Session> create(const boost::shared_ptr<Settings> &settings);
     ~Session();
 
+#ifdef HAVE_LIBNEON_OPTIONS
     /** ne_options2() for a specific path*/
     unsigned int options(const std::string &path);
+#endif
 
     /**
      * called with URI and complete result set; exceptions are logged, but ignored

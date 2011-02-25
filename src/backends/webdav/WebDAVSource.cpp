@@ -540,6 +540,7 @@ void WebDAVSource::open()
     SE_LOG_DEBUG(NULL, NULL, "picked final path %s", m_calendar.m_path.c_str());
 
     // Check some server capabilities. Purely informational at this point.
+#ifdef HAVE_LIBNEON_OPTIONS
     if (LoggerBase::instance().getLevel() >= Logger::DEV) {
         SE_LOG_DEBUG(NULL, NULL, "read capabilities of %s", m_calendar.toURL().c_str());
         int caps = m_session->options(path);
@@ -566,6 +567,7 @@ void WebDAVSource::open()
                      m_session->getURL().c_str(),
                      Flags2String(caps, descr).c_str());
     }
+#endif // HAVE_LIBNEON_OPTIONS
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,

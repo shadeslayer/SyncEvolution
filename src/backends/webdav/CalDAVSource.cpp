@@ -2,9 +2,14 @@
  * Copyright (C) 2010 Intel Corporation
  */
 
-#include "CalDAVSource.h"
+#include "config.h"
 
 #ifdef ENABLE_DAV
+
+// include first, it sets HANDLE_LIBICAL_MEMORY for us
+#include <syncevo/icalstrdup.h>
+
+#include "CalDAVSource.h"
 
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -12,8 +17,6 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-// TODO: use EDS backend icalstrdup.c
-#define ical_strdup(_x) (_x)
 
 CalDAVSource::CalDAVSource(const SyncSourceParams &params,
                            const boost::shared_ptr<Neon::Settings> &settings) :
@@ -83,7 +86,7 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
                              std::string &data)
 {
     Event::unescapeRecurrenceID(data);
-    eptr<icalcomponent> calendar(icalcomponent_new_from_string(data.c_str()),
+    eptr<icalcomponent> calendar(icalcomponent_new_from_string((char *)data.c_str()), // cast is a hack for broken definition in old libical
                                  "iCalendar 2.0");
     std::string davLUID = path2luid(Neon::URI::parse(href).m_path);
     pair<string, set<string> > &rev = revisions[davLUID];
@@ -614,7 +617,7 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
             }
         }
         Event::unescapeRecurrenceID(item);
-        event.m_calendar.set(icalcomponent_new_from_string(item.c_str()),
+        event.m_calendar.set(icalcomponent_new_from_string((char *)item.c_str()), // hack for old libical
                              "parsing iCalendar 2.0");
         // sequence number might have been increased by last save,
         // so check it again

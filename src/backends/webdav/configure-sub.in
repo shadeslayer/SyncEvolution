@@ -10,9 +10,15 @@ AC_ARG_ENABLE_BACKEND(dav,
                       )
 
 if test "$enable_dav" = "yes"; then
-        PKG_CHECK_MODULES(LIBICAL, libical)
-        PKG_CHECK_MODULES(NEON, neon >= 0.29)
+        PKG_CHECK_MODULES(LIBICAL, libical,
+                          [true],
+                          [PKG_CHECK_MODULES(LIBICAL, libecal-1.2)])
+        PKG_CHECK_MODULES(NEON, neon >= 0.29,
+                          [AC_DEFINE(HAVE_LIBNEON_SYSTEM_PROXY, 1, [ne_session_system_proxy() available])
+                           AC_DEFINE(HAVE_LIBNEON_OPTIONS, 1, [ne_options2() and NE_CAP_* defines available])],
+                          [PKG_CHECK_MODULES(NEON, neon >= 0.27)])
         AC_DEFINE(ENABLE_DAV, 1, [DAV available])
         AC_DEFINE(ENABLE_ICAL, 1, [libical in use])
         BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $NEON_CFLAGS"
 fi
+AM_CONDITIONAL([ENABLE_ICAL], [test "$enable_dav" = "yes"])

@@ -21,6 +21,8 @@
 #include <syncevo/LogRedirect.h>
 #include <syncevo/SmartPtr.h>
 
+#include <dlfcn.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -196,7 +198,18 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
 
     m_proxyURL = settings->proxy();
     if (m_proxyURL.empty()) {
+#ifdef HAVE_LIBNEON_SYSTEM_PROXY
+        // hard compile-time dependency
         ne_session_system_proxy(m_session, 0);
+#else
+        // compiled against older libneon, but might run with more recent neon
+        typedef void (*session_system_proxy_t)(ne_session *sess, unsigned int flags);
+        session_system_proxy_t session_system_proxy =
+            (session_system_proxy_t)dlsym(RTLD_DEFAULT, "ne_session_system_proxy");
+        if (session_system_proxy) {
+            session_system_proxy(m_session, 0);
+        }
+#endif
     } else {
         URI proxyuri = URI::parse(m_proxyURL);
         ne_session_proxy(m_session, proxyuri.m_host.c_str(), proxyuri.m_port);
@@ -317,12 +330,14 @@ int Session::sslVerify(void *userdata, int failures, const ne_ssl_certificate *c
     }
 }
 
+#ifdef HAVE_LIBNEON_OPTIONS
 unsigned int Session::options(const std::string &path)
 {
     unsigned int caps;
     check(ne_options2(m_session, path.c_str(), &caps));
     return caps;
 }
+#endif // HAVE_LIBNEON_OPTIONS
 
 void Session::propfindURI(const std::string &path, int depth,
                           const ne_propname *props,
