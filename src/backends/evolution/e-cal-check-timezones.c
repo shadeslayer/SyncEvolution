@@ -29,7 +29,7 @@
 # define ical_strdup(_x) (_x)
 #else
 /* use icalstrdup.h to get runtime detection of memory fix patch */
-# include "libical/icalstrdup.h"
+# include <syncevo/icalstrdup.h>
 #endif
 
 #include "e-cal-check-timezones.h"

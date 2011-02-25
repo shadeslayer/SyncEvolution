@@ -26,7 +26,7 @@ using namespace std;
 #ifdef ENABLE_ECAL
 
 // include first, it sets HANDLE_LIBICAL_MEMORY for us
-#include "libical/icalstrdup.h"
+#include <syncevo/icalstrdup.h>
 
 #include <syncevo/SyncContext.h>
 #include <syncevo/SmartPtr.h>

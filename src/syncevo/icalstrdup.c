@@ -17,7 +17,7 @@
  * 02110-1301  USA
  */
 
-#include "libical/icalstrdup.h"
+#include "icalstrdup.h"
 #include <syncevo/eds_abi_wrapper.h>
 
 #if !defined(LIBICAL_MEMFIXES) || defined(EVOLUTION_COMPATIBILITY)

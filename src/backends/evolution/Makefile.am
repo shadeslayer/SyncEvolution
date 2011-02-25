@@ -22,8 +22,6 @@ SYNCECAL_SOURCES = \
 
 if ENABLE_ECAL
 SYNCECAL_SOURCES += \
-	libical/icalstrdup.c \
-	libical/icalstrdup.h \
 	e-cal-check-timezones.c \
 	e-cal-check-timezones.h
 endif
