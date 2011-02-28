@@ -633,7 +633,7 @@ elif test "$SYNTHESISSRC" != "none" && test -d $srcdir/src/synthesis; then
     esac
 elif test "$enable_shared" = "no"; then
     # link against engine
-    PKG_CHECK_MODULES(SYNTHESIS, "synthesis")
+    PKG_CHECK_MODULES(SYNTHESIS, "synthesis >= 3.4")
     SYNTHESIS_ENGINE="$SYNTHESIS_LIBS -lsynthesis"
 else
     # link against SDK alone, except in client-test
@@ -641,7 +641,7 @@ else
     #SYNTHESIS_ENGINE="`echo $SYNTHESIS_LIBS | sed -e 's/-lsynthesisstubs/-lsynthesis/'`"
 
     # can't use the SDK alone because of sysync::SySyncDebugPuts()
-    PKG_CHECK_MODULES(SYNTHESIS, "synthesis")
+    PKG_CHECK_MODULES(SYNTHESIS, "synthesis >= 3.4")
     SYNTHESIS_ENGINE="$SYNTHESIS_LIBS"
 fi
 
