@@ -515,6 +515,22 @@ std::string getCurrentTime();
 #define SE_THROW_EXCEPTION(_class,  _what) \
     throw _class(__FILE__, __LINE__, _what)
 
+/** throw a class which accepts file, line, what plus 1 additional parameter */
+#define SE_THROW_EXCEPTION_1(_class,  _what, _x1)   \
+    throw _class(__FILE__, __LINE__, (_what), (_x1))
+
+/** throw a class which accepts file, line, what plus 2 additional parameters */
+#define SE_THROW_EXCEPTION_2(_class,  _what, _x1, _x2) \
+    throw _class(__FILE__, __LINE__, (_what), (_x1), (_x2))
+
+/** throw a class which accepts file, line, what plus 2 additional parameters */
+#define SE_THROW_EXCEPTION_3(_class,  _what, _x1, _x2, _x3) \
+    throw _class(__FILE__, __LINE__, (_what), (_x1), (_x2), (_x3))
+
+/** throw a class which accepts file, line, what plus 2 additional parameters */
+#define SE_THROW_EXCEPTION_4(_class,  _what, _x1, _x2, _x3, _x4) \
+    throw _class(__FILE__, __LINE__, (_what), (_x1), (_x2), (_x3), (_x4))
+
 /** throw a class which accepts file, line, what parameters and status parameters*/
 #define SE_THROW_EXCEPTION_STATUS(_class,  _what, _status) \
     throw _class(__FILE__, __LINE__, _what, _status)
