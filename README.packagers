@@ -15,3 +15,10 @@ backends there are more subtle dependencies:
   --disable-notify can be used to avoid that.
 - Localization data is shared between sync-ui and syncevo-dbus-server
   and thus needs to be packaged with the core SyncEvolution.
+- to enable CalDAV/CardDAV:
+  - use --enable-dav
+  - needs libneon[-gnutls].pc (use gnutls version, if available,
+    but make sure that it is >= 0.29.5, which has this patch:
+    http://lists.manyfish.co.uk/pipermail/neon/2010-November/001294.html)
+  - ensure that one of the following commands is available at runtime:
+    adnshost, host, nslookup
