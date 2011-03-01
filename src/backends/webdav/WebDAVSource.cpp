@@ -375,20 +375,17 @@ void WebDAVSource::open()
         // So anyway, let's try the well-known URI first, but also add
         // a hard-coded "well-known" fallback that will be tried
         // next. Same for some other servers.
-        if (path == "/.well-known/caldav/") {
+        if (path == "/.well-known/caldav/" ||
+            path == "/.well-known/carddav/") {
             // remove trailing slash added by normalization, to be aligned with draft-daboo-srv-caldav-10
             path.resize(path.size() - 1);
 
-            // Yahoo! Calendar
-            candidates.push_back(StringPrintf("/dav/%s/Calendar/", Neon::URI::escape(username).c_str()));
+            // Yahoo! Calendar returns no redirect. According to rfc4918 appendix-E,
+            // a client may simply try the root path in case of such a failure,
+            // which happens to work for Yahoo.
+            candidates.push_back("/");
             // TODO: Google Calendar, with workarounds
             // candidates.push_back(StringPrintf("/calendar/dav/%s/user/", Neon::URI::escape(username).c_str()));
-        } else if (path == "/.well-known/carddav/") {
-            // remove trailing slash added by normalization, to be aligned with draft-daboo-srv-caldav-10
-            path.resize(path.size() - 1);
-
-            // Yahoo! Contacts
-            candidates.push_back(StringPrintf("/dav/%s/Contacts/", Neon::URI::escape(username).c_str()));
         }
 
         bool success = false;
@@ -495,6 +492,17 @@ void WebDAVSource::open()
         }
 
         if (success) {
+            if (m_davProps.find(path) == m_davProps.end()) {
+                // No reply for requested path? Happens with Yahoo Calendar server,
+                // which returns information about "/dav" when asked about "/".
+                // Move to that path.
+                if (!m_davProps.empty()) {
+                    string newpath = m_davProps.begin()->first;
+                    SE_LOG_DEBUG(NULL, NULL, "use properties for '%s' instead of '%s'",
+                                 newpath.c_str(), path.c_str());
+                    path = newpath;
+                }
+            }
             StringMap &props = m_davProps[path];
             if (typeMatches(props)) {
                 // found it
