@@ -20,6 +20,10 @@
 #ifndef ICALSTRDUP_H
 #define ICALSTRDUP_H
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #ifdef ENABLE_ICAL
 
 #ifndef HANDLE_LIBICAL_MEMORY
