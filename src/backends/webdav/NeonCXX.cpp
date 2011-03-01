@@ -537,11 +537,12 @@ Request::Request(Session &session,
                  const std::string &path,
                  const std::string &body,
                  std::string &result) :
+    m_method(method),
     m_session(session),
     m_result(&result),
     m_parser(NULL)
 {
-    m_req = ne_request_create(session.getSession(), method.c_str(), path.c_str());
+    m_req = ne_request_create(session.getSession(), m_method.c_str(), path.c_str());
     ne_set_request_body_buffer(m_req, body.c_str(), body.size());
 }
 
@@ -550,11 +551,12 @@ Request::Request(Session &session,
                  const std::string &path,
                  const std::string &body,
                  XMLParser &parser) :
+    m_method(method),
     m_session(session),
     m_result(NULL),
     m_parser(&parser)
 {
-    m_req = ne_request_create(session.getSession(), method.c_str(), path.c_str());
+    m_req = ne_request_create(session.getSession(), m_method.c_str(), path.c_str());
     ne_set_request_body_buffer(m_req, body.c_str(), body.size());
 }
 

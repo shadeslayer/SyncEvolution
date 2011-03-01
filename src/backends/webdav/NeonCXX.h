@@ -398,6 +398,11 @@ class Request
     const ne_status *getStatus() { return ne_get_status(m_req); }
 
  private:
+    // buffers for string (copied by ne_request_create(),
+    // but due to a bug in neon, our method string is still used
+    // for credentials)
+    std::string m_method;
+
     Session &m_session;
     ne_request *m_req;
     std::string *m_result;
