@@ -10,6 +10,7 @@
 #include <ne_socket.h>
 #include <ne_auth.h>
 #include <ne_xmlreq.h>
+#include <ne_string.h>
 
 #include <list>
 #include <boost/algorithm/string/join.hpp>
@@ -221,6 +222,7 @@ Session::Session(const boost::shared_ptr<Settings> &settings) :
     }
     ne_set_read_timeout(m_session, seconds);
     ne_set_connect_timeout(m_session, seconds);
+    ne_hook_pre_send(m_session, preSendHook, this);
 }
 
 Session::~Session()
@@ -297,6 +299,39 @@ int Session::getCredentials(void *userdata, const char *realm, int attempt, char
     }
 }
 
+void Session::forceAuthorization(const std::string &username, const std::string &password)
+{
+    m_forceAuthorizationOnce = true;
+    m_forceUsername = username;
+    m_forcePassword = password;
+}
+
+void Session::preSendHook(ne_request *req, void *userdata, ne_buffer *header) throw()
+{
+    try {
+        static_cast<Session *>(userdata)->preSend(req, header);
+    } catch (...) {
+        Exception::handle();
+    }
+}
+
+void Session::preSend(ne_request *req, ne_buffer *header)
+{
+    if (m_forceAuthorizationOnce) {
+        // only do this once
+        m_forceAuthorizationOnce = false;
+
+        // append "Authorization: Basic" header if not present already
+        if (!boost::starts_with(header->data, "Authorization:") &&
+            !strstr(header->data, "\nAuthorization:")) {
+            std::string credentials = m_forceUsername + ":" + m_forcePassword;
+            SmartPtr<char *> blob(ne_base64((const unsigned char *)credentials.c_str(), credentials.size()));
+            ne_buffer_concat(header, "Authorization: Basic ", blob.get(), "\r\n", NULL);
+        }
+    }
+}
+
+
 int Session::sslVerify(void *userdata, int failures, const ne_ssl_certificate *cert) throw()
 {
     try {
@@ -343,8 +378,35 @@ void Session::propfindURI(const std::string &path, int depth,
                           const ne_propname *props,
                           const PropfindURICallback_t &callback)
 {
-    check(ne_simple_propfind(m_session, path.c_str(), depth,
-                             props, propsResult, const_cast<void *>(static_cast<const void *>(&callback))));
+    ne_propfind_handler *handler;
+    int error;
+
+    handler = ne_propfind_create(m_session, path.c_str(), depth);
+    if (props != NULL) {
+	error = ne_propfind_named(handler, props,
+                                  propsResult, const_cast<void *>(static_cast<const void *>(&callback)));
+    } else {
+	error = ne_propfind_allprop(handler,
+                                    propsResult, const_cast<void *>(static_cast<const void *>(&callback)));
+    }
+
+    // remember details before destroying request, needed for 301
+    ne_request *req = ne_propfind_get_request(handler);
+    const ne_status *status = ne_get_status(req);
+    int code = status->code;
+    int klass = status->klass;
+    const char *tmp = ne_get_response_header(req, "Location");
+    std::string location(tmp ? tmp : "");
+
+    ne_propfind_destroy(handler);
+    
+    if (error == NE_ERROR && klass == 3) {
+        SE_THROW_EXCEPTION_2(RedirectException,
+                             StringPrintf("%d status: redirected to %s", code, location.c_str()),
+                             code, location);
+    } else {
+        check(error);
+    }
 }
 
 void Session::propsResult(void *userdata, const ne_uri *uri,
@@ -621,6 +683,14 @@ int Request::addResultData(void *userdata, const char *buf, size_t len)
 
 void Request::check(int error)
 {
+    if (error == NE_ERROR &&
+        getStatus()->klass == 3) {
+        std::string location = getResponseHeader("Location");
+        SE_THROW_EXCEPTION_2(RedirectException,
+                             StringPrintf("%d status: redirected to %s", getStatus()->klass, location.c_str()),
+                             getStatus()->klass,
+                             location);
+    }
     m_session.check(error);
     if (getStatus()->klass != 2) {
         SE_THROW_EXCEPTION_STATUS(TransportStatusException,

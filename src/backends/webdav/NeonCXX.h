@@ -22,6 +22,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
+#include <syncevo/util.h>
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -170,6 +171,9 @@ class Session {
     Session(const boost::shared_ptr<Settings> &settings);
     static boost::shared_ptr<Session> m_cachedSession;
 
+    bool m_forceAuthorizationOnce;
+    std::string m_forceUsername, m_forcePassword;
+
  public:
     /**
      * Create or reuse Session instance.
@@ -230,6 +234,13 @@ class Session {
     time_t getLastRequestEnd() const { return m_lastRequestEnd; }
     void setLastRequestEnd(time_t end) { m_lastRequestEnd = end; }
 
+    /**
+     * force next request in this session to have Basic authorization
+     * with the given username/password (which may be invalid to
+     * trigger real authorization)
+     */
+    void forceAuthorization(const std::string &username, const std::string &password);
+
  private:
     boost::shared_ptr<Settings> m_settings;
     bool m_debugging;
@@ -260,6 +271,11 @@ class Session {
 
     // use pointers here, g++ 4.2.3 has issues with references (which was used before)
     typedef std::pair<const URI *, const PropfindPropCallback_t *> PropIteratorUserdata_t;
+
+    /** Neon callback for preSend() */
+    static void preSendHook(ne_request *req, void *userdata, ne_buffer *header) throw();
+    /** implements forced Basic authentication, if requested */
+    void preSend(ne_request *req, ne_buffer *header);
 };
 
 /**
@@ -413,6 +429,31 @@ class Request
 
     /** throw error if error code *or* current status indicates failure */
     void check(int error);
+};
+
+/** thrown for 301 HTTP status */
+class RedirectException : public TransportException
+{
+    const int m_code;
+    const std::string m_url;
+
+ public:
+    RedirectException(const std::string &file,
+                      int line,
+                      const std::string &what,
+                      int code,
+                      const std::string &url) :
+    TransportException(file, line, what),
+    m_code(code),
+    m_url(url)
+    {}
+    ~RedirectException() throw() {}
+
+    /** returns exact HTTP status code (301, 302, ...) */
+    int getCode() const { return m_code; }
+
+    /** returns URL to where the request was redirected */
+    std::string getLocation() const { return m_url; }
 };
 
 }

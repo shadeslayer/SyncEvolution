@@ -343,9 +343,11 @@ void WebDAVSource::open()
     // - nothing else to try out
     // - tried 10 times
     // Follows:
-    // - CalDAV calendar-home-set (assumed to be on same server)
+    // - current-user-principal
+    // - CalDAV calendar-home-set
     // - collections
     //
+    // TODO: hrefs and redirects are assumed to be on the same host - support switching host
     // TODO: support more than one calendar. Instead of stopping at the first one,
     // scan more throroughly, then decide deterministically.
     int counter = 0;
@@ -389,16 +391,13 @@ void WebDAVSource::open()
             candidates.push_back(StringPrintf("/dav/%s/Contacts/", Neon::URI::escape(username).c_str()));
         }
 
-        // Property queries also checks credentials because typically
-        // the properties are protected.
-        // 
-        // First dump WebDAV "allprops" properties (does not contain
-        // properties which must be asked for explicitly!). Only
-        // relevant for debugging.
         bool success = false;
         try {
             if (LoggerBase::instance().getLevel() >= Logger::DEV) {
-                SE_LOG_DEBUG(NULL, NULL, "read all WebDAV properties of %s", path.c_str());
+                // First dump WebDAV "allprops" properties (does not contain
+                // properties which must be asked for explicitly!). Only
+                // relevant for debugging.
+                SE_LOG_DEBUG(NULL, NULL, "debugging: read all WebDAV properties of %s", path.c_str());
                 Neon::Session::PropfindPropCallback_t callback =
                     boost::bind(&WebDAVSource::openPropCallback,
                                 this, _1, _2, _3, _4);
@@ -408,11 +407,38 @@ void WebDAVSource::open()
             // Now ask for some specific properties of interest for us.
             // Using CALDAV:allprop would be nice, but doesn't seem to
             // be possible with Neon.
+            //
+            // The "current-user-principal" is particularly relevant,
+            // because it leads us from
+            // "/.well-known/[carddav/caldav]" (or whatever that
+            // redirected to) to the current user and its
+            // "[calendar/addressbook]-home-set".
+            //
+            // Apple Calendar Server only returns that information if
+            // we force authorization to be used. Otherwise it returns
+            // <current-user-principal>
+            //    <unauthenticated/>
+            // </current-user-principal>
+            //
+            // We send valid credentials here, using Basic authorization.
+            // The rationale is that this cuts down on the number of
+            // requests for https while still being secure. For
+            // http the setup already is insecure if the transport
+            // isn't trusted (sends PIM data as plain text).
+            //
+            // See also:
+            // http://tools.ietf.org/html/rfc4918#appendix-E
+            // http://lists.w3.org/Archives/Public/w3c-dist-auth/2005OctDec/0243.html
+            // http://thread.gmane.org/gmane.comp.web.webdav.neon.general/717/focus=719
+            std::string user, pw;
+            m_settings->getCredentials("", user, pw);
+            m_session->forceAuthorization(user, pw);
             m_davProps.clear();
             static const ne_propname caldav[] = {
                 // WebDAV ACL
                 { "DAV:", "alternate-URI-set" },
                 { "DAV:", "principal-URL" },
+                { "DAV:", "current-user-principal" },
                 { "DAV:", "group-member-set" },
                 { "DAV:", "group-membership" },
                 { "DAV:", "displayname" },
@@ -436,8 +462,25 @@ void WebDAVSource::open()
                 { "urn:ietf:params:xml:ns:carddav", "max-resource-size" },
                 { NULL, NULL }
             };
+            SE_LOG_DEBUG(NULL, NULL, "read relevant properties of %s", path.c_str());
             m_session->propfindProp(path, 0, caldav, callback);
             success = true;
+        } catch (const Neon::RedirectException &ex) {
+            // follow to new location
+            Neon::URI next = Neon::URI::parse(ex.getLocation());
+            Neon::URI old = m_session->getURI();
+            if (next.m_scheme != old.m_scheme ||
+                next.m_host != old.m_host ||
+                next.m_port != old.m_port) {
+                SE_LOG_DEBUG(NULL, NULL, "ignore redirection to different server (not implemented): %s",
+                             ex.getLocation().c_str());
+                if (candidates.empty()) {
+                    // nothing left to try, bail out with this error
+                    throw;
+                }
+            } else {
+                candidates.push_front(next.m_path);
+            }
         } catch (const Exception &ex) {
             if (candidates.empty()) {
                 // nothing left to try, bail out with this error
@@ -458,21 +501,24 @@ void WebDAVSource::open()
                 break;
             }
 
-            // find next path
-            static const std::string hrefStart = "<DAV:href>";
-            static const std::string hrefEnd = "</DAV:href";
-            const std::string &home = props[homeSetProp()];
-            if (!home.empty()) {
-                size_t start = home.find(hrefStart);
-                if (start != home.npos) {
-                    size_t end = home.find(hrefEnd, start);
-                    if (end != home.npos) {
-                        start += hrefStart.size();
-                        next = home.substr(start, end - start);
-                        SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", next.c_str());
-                    }
+            // find next path:
+            // prefer CardDAV:calendar-home-set or CalDAV:addressbook-home-set
+            std::string home = extractHREF(props[homeSetProp()]);
+            if (!home.empty() &&
+                tried.find(home) == tried.end()) {
+                next = home;
+                SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", next.c_str());
+            }
+            // alternatively, follow principal URL
+            if (next.empty()) {
+                std::string principal = extractHREF(props["DAV::current-user-principal"]);
+                if (!principal.empty() &&
+                    tried.find(principal) == tried.end()) {
+                    next = principal;
+                    SE_LOG_DEBUG(NULL, NULL, "follow current-user-prinicipal to %s", next.c_str());
                 }
             }
+            // finally, recursively descend into collections
             if (next.empty()) {
                 const std::string &type = props["DAV::resourcetype"];
                 if (type.find("<DAV:collection></DAV:collection>") != type.npos) {
@@ -501,9 +547,18 @@ void WebDAVSource::open()
                         // - untested
                         // - not already a candidate
                         // - a resource
+                        // - not shared ("global-addressbook" in Apple Calendar Server),
+                        //   because these are unlikely to be the right "default" collection
+                        //
+                        // Trying to prune away collections here which are not of the
+                        // right type *and* cannot contain collections of the right
+                        // type (example: Apple Calendar Server "inbox" under
+                        // calendar-home-set URL with type "CALDAV:schedule-inbox") requires
+                        // knowledge not current provided by derived classes. TODO (?).
                         if (tried.find(sub) == tried.end() &&
                             std::find(candidates.begin(), candidates.end(), sub) == candidates.end() &&
-                            subType.find("<DAV:collection></DAV:collection>") != subType.npos) {
+                            subType.find("<DAV:collection></DAV:collection>") != subType.npos &&
+                            subType.find("<http://calendarserver.org/ns/shared") == subType.npos) {
                             // insert before other candidates (depth-first search)
                             candidates.push_front(sub);
                             if (next.empty() && typeMatches(entry.second)) {
@@ -568,6 +623,23 @@ void WebDAVSource::open()
                      Flags2String(caps, descr).c_str());
     }
 #endif // HAVE_LIBNEON_OPTIONS
+}
+
+std::string WebDAVSource::extractHREF(const std::string &propval)
+{
+    // all additional parameters after opening resp. closing tag
+    static const std::string hrefStart = "<DAV:href";
+    static const std::string hrefEnd = "</DAV:href";
+    size_t start = propval.find(hrefStart);
+    start = propval.find('>', start);
+    if (start != propval.npos) {
+        start++;
+        size_t end = propval.find(hrefEnd, start);
+        if (end != propval.npos) {
+            return propval.substr(start, end - start);
+        }
+    }
+    return "";
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,
