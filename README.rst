@@ -37,7 +37,7 @@ Run a synchronization with properties changed just for this run:
 Restore data from the automatic backups:
   syncevolution --restore <session directory> --before|--after [--dry-run] [--] <config> <source> ...
 
-Modify a configuration:
+Create, update or remove a configuration:
   syncevolution --configure <options> [--] <config> [<source> ...]
   syncevolution --remove|--migrate <options> [--] <config>
 
@@ -495,6 +495,11 @@ a list of valid values.
   synchronization without the --keyring argument, the password has to be
   entered interactively. The --print-config output always shows "-" instead
   of retrieving the password from the keyring.
+
+  The SyncEvolution daemon always uses the GNOME keyring, regardless of
+  the --keyring command line parameter. Therefore --keyring only has an
+  effect in combination with --daemon=no, or when SyncEvolution was compiled
+  without daemon support (not the default).
 
 --daemon[=yes/no]
   By default, the SyncEvolution command line is executed inside the
