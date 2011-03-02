@@ -547,6 +547,20 @@ void Cmdline::migratePeer(const std::string &fromPeer, const std::string &toPeer
     // hack: move to different target config for createSyncClient()
     m_server = toPeer;
     boost::shared_ptr<SyncContext> to(createSyncClient());
+
+    // Special case for Memotoo: explicitly set preferred sync format
+    // to vCard 3.0 as part of the SyncEvolution 1.1.x -> 1.2 migration,
+    // because it works better. Template was also updated in 1.2, but
+    // that alone wouldn't improve existing configs.
+    if (from->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0) {
+        vector<string> urls = from->getSyncURL();
+        if (urls.size() == 1 &&
+            urls[0] == "http://sync.memotoo.com/syncML") {
+            boost::shared_ptr<SyncContext> to(createSyncClient());
+            m_props[to->getContextName()].m_sourceProps["addressbook"].insert(make_pair("syncFormat", "text/vcard"));
+        }
+    }
+
     copyConfig(from, to, set<string>());
     finishCopy(from, to);
 }

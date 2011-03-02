@@ -947,6 +947,7 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         config->setConsumerReady(true);
         source = config->getSyncSourceConfig("addressbook");
         source->setURI("con");
+        source->setSyncFormat("text/vcard"); // vCard 3.0 works better than vCard 2.1 (NICKNAME!)
         source = config->getSyncSourceConfig("calendar");
         source->setURI("cal");
         source = config->getSyncSourceConfig("todo");
