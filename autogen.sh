@@ -9,7 +9,7 @@ rm -rf aclocal.m4 m4 autom4te.cache config.guess config.sub config.h.in configur
 # intltoolize fails to copy its macros unless m4 exits
 mkdir m4
 
-sh ./gen-autotools.sh
+env GEN_AUTOTOOLS_SET_VERSION=1 sh ./gen-autotools.sh
 
 libtoolize -c
 glib-gettextize --force --copy

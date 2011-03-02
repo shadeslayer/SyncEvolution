@@ -108,7 +108,18 @@ fi
 # don't touch final output file unless new
 # content is different
 update () {
-    if [ -f $1 ] && diff $1 $2; then
+    if [ ! "$GEN_AUTOTOOLS_SET_VERSION" ]; then
+        # ignore AC_INIT because it
+        # contains a version number including git hashes,
+        # thus changes on each commit and forces a recompile
+        diffargs=--ignore-matching-lines=^AC_INIT
+    else
+        # a version change due to that must be set up
+        # with autogen.sh, which disables this check
+        diffargs=
+    fi
+
+    if [ -f $1 ] && diff $diffargs $1 $2; then
         rm $2
     else
         echo gen-autotools.sh: $1 updated
