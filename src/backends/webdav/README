@@ -281,3 +281,33 @@ script which calls "host", "adnshost" or "nslookup", depending on what
 is available. This approach avoids a hard dependency on a specfic
 resolver library and (for some of these) writing quite a bit of
 additional code.
+
+
+Testing
+=======
+
+Testing via client-test is possible for the Client::Source tests. They
+cover importing/exporting of items and change tracking.
+
+client-test needs to be told in the CLIENT_TEST_WEBDAV env variable
+which CalDAV or CardDAV servers are available and the sync properties
+for them. It then creates a suitable
+"source-config@client-test-<server>" config with "caldav" and/or
+"carddav" sources. Sync properties can be specified; if not given, the
+relevant ones must be set inside that config already.
+
+The format of CLIENT_TEST_WEBDAV is:
+  <server> [caldav] [carddav] <prop>=<val> ...; ...
+
+Example:
+
+env PATH=backends/webdav/:$PATH \
+    "CLIENT_TEST_WEBDAV=yahoo caldav carddav username=<my @yahoo.com email> password=<password>; google caldav username=<email> password=<password> syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google" \
+    ./client-test \
+    Client::Source::yahoo_caldav::testOpen \
+    Client::Source::yahoo_carddav::testOpen \
+    Client::Source::google_caldav::testOpen
+
+Note that this assumes that the test is run inside the "src" directory
+without installing it, so the PATH must include the backend dir which
+contains syncevo-webdav-lookup.
