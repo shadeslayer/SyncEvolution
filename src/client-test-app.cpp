@@ -40,6 +40,8 @@
 #include <syncevo/util.h>
 #include <syncevo/VolatileConfigNode.h>
 
+#include <boost/bind.hpp>
+
 #include <syncevo/declarations.h>
 
 #ifdef ENABLE_BUTEO_TESTS
@@ -309,7 +311,7 @@ public:
     static void getSourceConfig(const RegisterSyncSourceTest *test, Config &config) {
         memset(&config, 0, sizeof(config));
         ClientTest::getTestData(test->m_testCaseName.c_str(), config);
-        config.createSourceA = createSource;
+        config.createSourceA = boost::bind(createSource, _1, _2, _3);
         config.createSourceB = createSource;
         config.sourceName = test->m_configName.c_str();
 
@@ -482,11 +484,11 @@ private:
         // implement Evolution shutdown workaround (see lockEvolution above)
         evClient.checkEvolutionSource(name);
 
-        return evClient.createSource(name, isSourceA);
+        return evClient.createNamedSource(name, isSourceA);
     }
 
     /** called internally in this class */
-    TestingSyncSource *createSource(const string &name, bool isSourceA) {
+    TestingSyncSource *createNamedSource(const string &name, bool isSourceA) {
         string database = getDatabaseName(name);
         boost::shared_ptr<SyncConfig> context(new SyncConfig("source-config@client-test"));
         SyncSourceNodes nodes = context->getSyncSourceNodes(name,
@@ -545,7 +547,7 @@ private:
 
         if (!basename.empty() &&
             lockEvolution.find(basename) == lockEvolution.end()) {
-            lockEvolution[basename].reset(createSource(name, true));
+            lockEvolution[basename].reset(createNamedSource(name, true));
             lockEvolution[basename]->open();
             ClientTest::registerCleanup(CleanupSources);
         }

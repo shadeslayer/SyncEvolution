@@ -203,7 +203,7 @@ struct ClientTestConfig{
      * @param isSourceA true if the requested SyncSource is the first one accessing that
      *                  data, otherwise the second
      */
-    typedef TestingSyncSource *(*createsource_t)(ClientTest &client, int source, bool isSourceA);
+    typedef boost::function<TestingSyncSource *(ClientTest &, int, bool)> createsource_t;
 
     /**
      * Creates a sync source which references the primary database;
