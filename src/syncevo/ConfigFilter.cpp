@@ -62,7 +62,7 @@ ConfigProps FullProps::createSyncFilter(const std::string &config) const
     }
 
     if (!config.empty()) {
-        std::string normal = SyncConfig::normalizeConfigString(config, false);
+        std::string normal = SyncConfig::normalizeConfigString(config, SyncConfig::NORMALIZE_LONG_FORMAT);
         std::string peer, context;
         SyncConfig::splitConfigString(normal, peer, context);
         // then overwrite with context config
@@ -92,7 +92,7 @@ ConfigProps FullProps::createSourceFilter(const std::string &config,
     }
 
     if (!config.empty()) {
-        std::string normal = SyncConfig::normalizeConfigString(config, false);
+        std::string normal = SyncConfig::normalizeConfigString(config, SyncConfig::NORMALIZE_LONG_FORMAT);
         std::string peer, context;
         SyncConfig::splitConfigString(normal, peer, context);
         // then overwrite with context config

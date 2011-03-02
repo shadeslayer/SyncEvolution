@@ -683,7 +683,9 @@ bool Cmdline::run() {
             m_props.createFilters("", m_server, NULL, syncFilter, sourceFilters);
         } else {
             string peer, context;
-            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_template), peer, context);
+            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_template,
+                                                                            SyncConfig::NormalizeFlags(SyncConfig::NORMALIZE_SHORTHAND|SyncConfig::NORMALIZE_IS_NEW)),
+                                          peer, context);
 
             config = SyncConfig::createPeerTemplate(peer);
             if (!config.get()) {
@@ -853,7 +855,9 @@ bool Cmdline::run() {
                     // Template is specified explicitly. It must not contain a context,
                     // because the context comes from the config name.
                     configTemplate = m_template;
-                    if (SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate), peer, context)) {
+                    if (SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configTemplate,
+                                                                                        SyncConfig::NormalizeFlags(SyncConfig::NORMALIZE_SHORTHAND|SyncConfig::NORMALIZE_IS_NEW)),
+                                                      peer, context)) {
                         m_err << "ERROR: template " << configTemplate << " must not specify a context." << endl;
                         return false;
                     }

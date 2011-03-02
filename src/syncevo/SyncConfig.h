@@ -1206,19 +1206,28 @@ class SyncConfig {
      */
     static ConfigPropertyRegistry &getRegistry();
 
+    enum NormalizeFlags {
+        NORMALIZE_LONG_FORMAT = 0,  /**< include context in normal form */
+        NORMALIZE_SHORTHAND = 1,    /**< keep normal form shorter by not specifying @default */
+        NORMALIZE_IS_NEW = 2,       /**< does not refer to an existing config, do not search
+                                       for it among existing configs */
+        NORMALIZE_MAX = 0xFFFF
+    };
+
     /**
      * Normalize a config string:
      * - lower case
      * - non-printable and unsafe characters (colon, slash, backslash)
      *   replaced by underscore
-     * - when no context specified: search for peer config first in @default,
-     *   then also in other contexts in alphabetical order
-     * - @default stripped if requested (dangerous: result "foo" may incorrectly
-     *   be mapped to "foo@bar" if the "foo@default" config gets removed),
+     * - when no context specified and NORMALIZE_IS_NEW not set:
+     *   search for peer config first in @default, then also in other contexts
+     *   in alphabetical order
+     * - NORMALIZE_SHORTHAND set: @default stripped  (dangerous: result "foo"
+     *   may incorrectly be mapped to "foo@bar" if the "foo@default" config gets removed),
      *   otherwise added if missing
      * - empty string replaced with "@default"
      */
-    static string normalizeConfigString(const string &config, bool noDefaultContext = true);
+    static string normalizeConfigString(const string &config, NormalizeFlags flags = NORMALIZE_SHORTHAND);
 
     /**
      * Split a config string (normalized or not) into the peer part

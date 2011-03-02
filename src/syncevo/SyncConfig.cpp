@@ -100,7 +100,7 @@ PropertySpecifier PropertySpecifier::StringToPropSpec(const std::string &spec, i
             res.m_config = spec.substr(at);
         }
         if (flags & NORMALIZE_CONFIG) {
-            res.m_config = SyncConfig::normalizeConfigString(res.m_config, false);
+            res.m_config = SyncConfig::normalizeConfigString(res.m_config, SyncConfig::NORMALIZE_LONG_FORMAT);
         }
     } else {
         at = spec.size();
@@ -172,7 +172,7 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
-string SyncConfig::normalizeConfigString(const string &config, bool noDefaultContext)
+string SyncConfig::normalizeConfigString(const string &config, NormalizeFlags flags)
 {
     string normal = config;
     boost::to_lower(normal);
@@ -185,14 +185,15 @@ string SyncConfig::normalizeConfigString(const string &config, bool noDefaultCon
         }
     }
     if (boost::ends_with(normal, "@default")) {
-        if (noDefaultContext) {
+        if (flags & NORMALIZE_SHORTHAND) {
             normal.resize(normal.size() - strlen("@default"));
         }
     } else if (boost::ends_with(normal, "@")) {
         normal.resize(normal.size() - 1);
     } else {
         size_t at = normal.rfind('@');
-        if (at == normal.npos) {
+        if (at == normal.npos &&
+            !(flags & NORMALIZE_IS_NEW)) {
             // No explicit context. Pick the first server which matches
             // when ignoring their context. Peer list is sorted by name,
             // therefore shorter config names (= without context) are
@@ -207,7 +208,7 @@ string SyncConfig::normalizeConfigString(const string &config, bool noDefaultCon
                 }
             }
         }
-        if (!noDefaultContext && normal.find('@') == normal.npos) {
+        if (!(flags & NORMALIZE_SHORTHAND) && normal.find('@') == normal.npos) {
             // explicitly include @default context specifier
             normal += "@default";
         }
@@ -3026,7 +3027,7 @@ private:
 
         // keep @default if explicitly requested
         CPPUNIT_ASSERT_EQUAL(std::string("foobar@default"),
-                             SyncConfig::normalizeConfigString("FooBar", false));
+                             SyncConfig::normalizeConfigString("FooBar", SyncConfig::NORMALIZE_LONG_FORMAT));
 
         // test config lookup
         SyncConfig foo_default("foo"), foo_other("foo@other"), bar("bar@other");
@@ -3038,16 +3039,16 @@ private:
         CPPUNIT_ASSERT_EQUAL(std::string("foo"),
                              SyncConfig::normalizeConfigString("foo@default"));
         CPPUNIT_ASSERT_EQUAL(std::string("foo@default"),
-                             SyncConfig::normalizeConfigString("foo", false));
+                             SyncConfig::normalizeConfigString("foo", SyncConfig::NORMALIZE_LONG_FORMAT));
         CPPUNIT_ASSERT_EQUAL(std::string("foo@default"),
-                             SyncConfig::normalizeConfigString("foo@default", false));
+                             SyncConfig::normalizeConfigString("foo@default", SyncConfig::NORMALIZE_LONG_FORMAT));
         CPPUNIT_ASSERT_EQUAL(std::string("foo@other"),
                              SyncConfig::normalizeConfigString("foo@other"));
         foo_default.remove();
         CPPUNIT_ASSERT_EQUAL(std::string("foo@other"),
                              SyncConfig::normalizeConfigString("foo"));
         CPPUNIT_ASSERT_EQUAL(std::string("foo@other"),
-                             SyncConfig::normalizeConfigString("foo", false));
+                             SyncConfig::normalizeConfigString("foo", SyncConfig::NORMALIZE_LONG_FORMAT));
     }
 
     void parseDuration()
