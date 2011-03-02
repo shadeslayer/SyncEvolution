@@ -1276,6 +1276,16 @@ class SyncConfig {
     }
 
     /**
+     * Returns the right config node for a certain registered property,
+     * looked up by name. NULL if not found.
+     */
+    boost::shared_ptr<FilterConfigNode> getNode(const std::string &propName);
+    boost::shared_ptr<const FilterConfigNode> getNode(const std::string &propName) const
+    {
+        return const_cast<SyncConfig *>(this)->getNode(propName);
+    }
+
+    /**
      * Returns a wrapper around all properties of the given source
      * which are saved in the config tree. Note that this is different
      * from the set of sync source configs used by the SyncManager:

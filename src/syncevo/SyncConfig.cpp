@@ -2164,6 +2164,18 @@ SyncConfig::getNode(const ConfigProperty &prop)
     return boost::shared_ptr<FilterConfigNode>(new FilterConfigNode(boost::shared_ptr<ConfigNode>(new DevNullConfigNode("unknown sharing state of property"))));
 }
 
+boost::shared_ptr<FilterConfigNode>
+SyncConfig::getNode(const std::string &propName)
+{
+    ConfigPropertyRegistry &registry = getRegistry();
+    const ConfigProperty *prop = registry.find(propName);
+    if (prop) {
+        return getNode(*prop);
+    } else {
+        return boost::shared_ptr<FilterConfigNode>();
+    }
+}
+
 static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             boost::shared_ptr<FilterConfigNode> node,
                             bool force,
