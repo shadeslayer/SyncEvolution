@@ -25,6 +25,7 @@
 #include "QtContactsSource.h"
 
 #include <QCoreApplication>
+#include <QDebug>
 
 #include <QContact>
 #include <QContactManager>
@@ -386,7 +387,12 @@ QtContactsSource::~QtContactsSource()
 
 void QtContactsSource::open()
 {
-    m_data = new QtContactsData(this, NULL);
+    QString buffer;
+    QDebug(&buffer) << "available managers (default one first): " << QContactManager::availableManagers();
+    SE_LOG_DEBUG(NULL, NULL, buffer.toUtf8().data());
+
+    string id = getDatabaseID();
+    m_data = new QtContactsData(this, id.c_str());
     cxxptr<QContactManager> manager(QContactManager::fromUri(m_data->m_managerURI),
                                     "QTContactManager");
     if (manager->error()) {
@@ -394,6 +400,11 @@ void QtContactsSource::open()
                                 m_data->m_managerURI.toLocal8Bit().constData(),
                                 manager->error()));
     }
+    buffer = "";
+    QDebug(&buffer) << manager->managerUri() << " manager supports contact types: " << manager->supportedContactTypes() <<
+        " and data types: " << manager->supportedDataTypes();
+    SE_LOG_DEBUG(NULL, NULL, buffer.toUtf8().data());
+
     m_data->m_manager = manager;
 }
 

@@ -58,7 +58,10 @@ static RegisterSyncSource registerMe("QtContacts",
 #endif
                                      createSource,
                                      "QtContacts = addressbook = contacts = qt-contacts\n"
-                                     "   vCard 3.0 = text/vcard\n",
+                                     "   vCard 3.0 = text/vcard\n"
+                                     "   'database' is specified via a QtContacts URI, which\n"
+                                     "   consists of qtcontacts:<backend>:<URL encoded parameters>.\n"
+                                     "   Examples: 'qtcontacts:tracker:' or 'qtcontacts:eds:source=local:/system'\n",
                                      Values() +
                                      (Aliases("QtContacts") + "qt-contacts"));
 
