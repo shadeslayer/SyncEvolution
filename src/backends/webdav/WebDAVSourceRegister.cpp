@@ -188,7 +188,7 @@ public:
         config.createSourceA = boost::bind(&WebDAVTest::createSource, this, _3);
     }
 
-    TestingSyncSource *createSource(bool isSourceA)
+    TestingSyncSource *createSource(bool isSourceA) const
     {
         boost::shared_ptr<SyncConfig> context(new SyncConfig(string("source-config@client-test-") + m_server));
         SyncSourceNodes nodes = context->getSyncSourceNodes(m_type,
