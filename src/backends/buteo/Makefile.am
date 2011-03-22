@@ -1,7 +1,7 @@
 include $(top_srcdir)/m4-repo/autotroll.mk
 
 # "test" only works when compiling as part of SyncEvolution
-AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(srcdir)/../../../test
+AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(srcdir)/../../../test $(BACKEND_CPPFLAGS)
 EXTRA_DIST = configure-sub.in
 MAINTAINERCLEANFILES = Makefile.in
 
