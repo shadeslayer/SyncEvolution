@@ -136,7 +136,7 @@ endif
 # either way this does not lead to a dependency on those libs - done explicitly
 syncevolution_LDADD = $(CORE_LDADD) $(KEYRING_LIBS)
 if COND_DBUS
-syncevolution_LDADD += gdbus/libgdbus.la
+syncevolution_LDADD += gdbus/libgdbussyncevo.la
 endif
 syncevolution_LDFLAGS = $(CORE_LD_FLAGS) $(DBUS_LIBS)
 syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) -I$(srcdir)/gdbus $(DBUS_CFLAGS)
@@ -191,11 +191,11 @@ if ENABLE_UNIT_TESTS
 nodist_syncevo_dbus_server_SOURCES = ../test/test.cpp
 endif
 
-syncevo_dbus_server_LDADD = gdbus/libgdbus.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS)
+syncevo_dbus_server_LDADD = gdbus/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS)
 syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(srcdir)/gdbus $(AM_CPPFLAGS) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
 syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(KEYRING_CFLAGS) $(LIBNOTIFY_CFLAGS)
 syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS) $(LIBSOUP_LIBS)
-syncevo_dbus_server_DEPENDENCIES = gdbus/libgdbus.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+syncevo_dbus_server_DEPENDENCIES = gdbus/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
 endif
 
 # With --disable-shared autotools links against libfunambol.a which does not
