@@ -1132,6 +1132,7 @@ class SyncConfig {
      *
      * @param peer   a configuration name, *without* a context (scheduleworld, not scheduleworld@default),
      * or a configuration path in the system directory which can avoid another fuzzy match process.
+     * "none" returns an empty template (default sync properties and dev ID set).
      * @return NULL if no such template
      */
     static boost::shared_ptr<SyncConfig> createPeerTemplate(const string &peer);

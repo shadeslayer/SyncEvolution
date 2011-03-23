@@ -300,15 +300,30 @@ a list of valid values.
 
 --configure|-c
   Modify the configuration files for the selected peer and/or sources.
+
   If no such configuration exists, then a new one is created using one
-  of the template configurations (see --template option). When
-  creating a new configuration and listing sources explicitly on the
+  of the template configurations (see --template option). Choosing a
+  template sets most of the relevant properties for the peer and the
+  default set of sources (see above for a list of those). Anything
+  specific to the user (like username/password) still has to be set
+  manually.
+
+  When creating a new configuration and listing sources explicitly on the
   command line, only those sources will be set to active in the new
   configuration, i.e. `syncevolution -c memotoo addressbook`
   followed by `syncevolution memotoo` will only synchronize the
   address book. The other sources are created in a disabled state.
   When modifying an existing configuration and sources are specified,
   then the source properties of only those sources are modified.
+
+  By default, creating a config requires a template. Source names on the
+  command line must match those in the template. This allows catching
+  typos in the peer and source names. But it also prevents some advanced
+  use cases. Therefore it is possible to disable these checks in two ways::
+
+    - use `--template none` or
+    - specify all required sync and source properties that are normally
+      in the templates on the command line (syncURL, backend, ...)
 
 --run|-r
   To prevent accidental sync runs when a configuration change was

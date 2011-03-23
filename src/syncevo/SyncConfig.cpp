@@ -816,6 +816,11 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
     config->setDefaults(false);
     config->setDevID(string("syncevolution-") + UUID());
 
+    // leave the rest empty for special "none" template
+    if (server == "none") {
+        return config;
+    }
+
     // create sync source configs and set non-default values
     config->setSourceDefaults("addressbook", false);
     config->setSourceDefaults("calendar", false);
@@ -1770,9 +1775,15 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
 #endif
 
         // obligatory sync properties
-        syncPropUsername.setObligatory(true);
-        syncPropPassword.setObligatory(true);
-        syncPropDevID.setObligatory(true);
+        //
+        // username/password used to be
+        // considered obligatory, but are not anymore because there are
+        // cases where they are not needed (local sync, Bluetooth)
+        // syncPropUsername.setObligatory(true);
+        // syncPropPassword.setObligatory(true);
+        //
+        // created if not given:
+        // syncPropDevID.setObligatory(true);
         syncPropSyncURL.setObligatory(true);
 
         // hidden sync properties
