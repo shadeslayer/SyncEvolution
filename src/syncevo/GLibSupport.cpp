@@ -183,7 +183,8 @@ GLibNotify::GLibNotify(const char *file,
 {
     GFileCXX filecxx(g_file_new_for_path(file));
     GError *error = NULL;
-    m_monitor.reset(g_file_monitor_file(filecxx.get(), G_FILE_MONITOR_SEND_MOVED, NULL, &error));
+    GFileMonitorCXX monitor(g_file_monitor_file(filecxx.get(), G_FILE_MONITOR_NONE, NULL, &error));
+    m_monitor.swap(monitor);
     if (!m_monitor) {
         GLibErrorException(std::string("monitoring ") + file, error);
     }

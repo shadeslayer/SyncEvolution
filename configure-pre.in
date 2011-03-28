@@ -36,6 +36,7 @@ if test "$enable_release_mode" = "yes"; then
 fi
 
 AM_INIT_AUTOMAKE([tar-ustar])
+AM_MAINTAINER_MODE([enable]) # needed for nightly builds where reconfiguration fails under certain chroots
 AC_CONFIG_MACRO_DIR([m4])
 define([SYNTHESISSRC_REPO], [])
 dnl Specify git revisions/branches without prefix, i.e., without 'origin'.
