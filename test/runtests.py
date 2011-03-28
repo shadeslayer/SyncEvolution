@@ -176,10 +176,10 @@ class Context:
     def runCommand(self, cmd):
         """Log and run the given command, throwing an exception if it fails."""
         if "valgrindcheck.sh" in cmd:
-            print "*** ( cd %s; env VALGRIND_LOG='%s' VALGRIND_ARGS='%s' %s )" % \
-                (os.getcwd(), os.getenv("VALGRIND_LOG", ""), os.getenv("VALGRIND_ARGS", ""), cmd)
+            print "*** ( cd %s; env VALGRIND_LOG='%s' VALGRIND_ARGS='%s' CLIENT_TEST_WEBDAV='%s' %s )" % \
+                (os.getcwd(), os.getenv("VALGRIND_LOG", ""), os.getenv("VALGRIND_ARGS", ""), os.getenv("CLIENT_TEST_WEBDAV", ""), cmd)
         else:
-            print "*** ( cd %s; %s )" % (os.getcwd(), cmd)
+            print "*** ( cd %s; env CLIENT_TEST_WEBDAV='%s' %s )" % (os.getcwd(), os.getenv("CLIENT_TEST_WEBDAV", ""), cmd)
         sys.stdout.flush()
         result = os.system(cmd)
         if result != 0:
