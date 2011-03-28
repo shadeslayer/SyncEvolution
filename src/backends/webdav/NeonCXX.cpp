@@ -405,7 +405,7 @@ void Session::propfindURI(const std::string &path, int depth,
                              StringPrintf("%d status: redirected to %s", code, location.c_str()),
                              code, location);
     } else {
-        check(error);
+        check(error, code);
     }
 }
 
@@ -463,7 +463,7 @@ void Session::flush()
     }
 }
 
-void Session::check(int error)
+void Session::check(int error, int code)
 {
     flush();
 
@@ -477,6 +477,16 @@ void Session::check(int error)
         break;
     case NE_OK:
         break;
+    case NE_ERROR:
+        if (code) {
+            // copy error code into exception
+            SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+                                      StringPrintf("Neon error code %d: %s",
+                                                   error,
+                                                   ne_get_error(m_session)),
+                                      SyncMLStatus(code));
+        }
+        // no break
     default:
         SE_THROW_EXCEPTION(TransportException,
                            StringPrintf("Neon error code %d: %s",
@@ -691,7 +701,7 @@ void Request::check(int error)
                              getStatus()->klass,
                              location);
     }
-    m_session.check(error);
+    m_session.check(error, getStatus()->code);
     if (getStatus()->klass != 2) {
         SE_THROW_EXCEPTION_STATUS(TransportStatusException,
                                   std::string("bad status: ") + Status2String(getStatus()),

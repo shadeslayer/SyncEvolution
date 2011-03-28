@@ -223,8 +223,11 @@ class Session {
      */
     void flush();
 
-    /** throw error if error code indicates failure */
-    void check(int error);
+    /**
+     * throw error if error code indicates failure;
+     * pass additional status code from a request whenever possible
+     */ 
+    void check(int error, int code = 0);
 
     ne_session *getSession() const { return m_session; }
 
