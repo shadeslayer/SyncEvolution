@@ -19,8 +19,19 @@
 
 #include <syncevo/GLibSupport.h>
 #include <syncevo/util.h>
+#include <syncevo/SmartPtr.h>
+#ifdef ENABLE_UNIT_TESTS
+#include "test.h"
+#endif
+
+#include <boost/bind.hpp>
 
 #include <string.h>
+
+#ifdef HAVE_GLIB
+#include <glib-object.h>
+#include <glib.h>
+#endif
 
 SE_BEGIN_CXX
 
@@ -139,6 +150,119 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
     Select instance(loop, fd, direction, timeout);
     return instance.run();
 }
+
+void GLibErrorException(const string &action, GError *gerror)
+{
+    string gerrorstr;
+    if (gerror) {
+        gerrorstr += ": ";
+        gerrorstr += gerror->message;
+        g_clear_error(&gerror);
+    } else {
+        gerrorstr = ": failure";
+    }
+
+    SE_THROW(gerrorstr);
+}
+
+static void changed(GFileMonitor *monitor,
+                    GFile *file1,
+                    GFile *file2,
+                    GFileMonitorEvent event,
+                    gpointer userdata)
+{
+    GLibNotify::callback_t *callback = static_cast<GLibNotify::callback_t *>(userdata);
+    if (!callback->empty()) {
+        (*callback)(file1, file2, event);
+    }
+}
+
+GLibNotify::GLibNotify(const char *file, 
+                       const callback_t &callback) :
+    m_callback(callback)
+{
+    GFileCXX filecxx(g_file_new_for_path(file));
+    GError *error = NULL;
+    m_monitor.reset(g_file_monitor_file(filecxx.get(), G_FILE_MONITOR_SEND_MOVED, NULL, &error));
+    if (!m_monitor) {
+        GLibErrorException(std::string("monitoring ") + file, error);
+    }
+    g_signal_connect_after(m_monitor.get(),
+                           "changed",
+                           G_CALLBACK(changed),
+                           (void *)&m_callback);
+}
+
+#ifdef ENABLE_UNIT_TESTS
+
+class GLibTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(GLibTest);
+    CPPUNIT_TEST(notify);
+    CPPUNIT_TEST_SUITE_END();
+
+    struct Event {
+        GFileCXX m_file1;
+        GFileCXX m_file2;
+        GFileMonitorEvent m_event;
+    };
+
+    static void notifyCallback(list<Event> &events,
+                               GFile *file1,
+                               GFile *file2,
+                               GFileMonitorEvent event)
+    {
+        Event tmp;
+        tmp.m_file1.reset(file1);
+        tmp.m_file2.reset(file2);
+        tmp.m_event = event;
+        events.push_back(tmp);
+    }
+
+    static gboolean timeout(gpointer data)
+    {
+        g_main_loop_quit(static_cast<GMainLoop *>(data));
+        return false;
+    }
+
+    void notify()
+    {
+        list<Event> events;
+        static const char *name = "GLibTest.out";
+        unlink(name);
+        GMainLoopPtr loop(g_main_loop_new(NULL, FALSE), "main loop");
+        GLibNotify notify(name, boost::bind(notifyCallback, boost::ref(events), _1, _2, _3));
+        {
+            events.clear();
+            GLibEvent id(g_timeout_add_seconds(5, timeout, loop.get()), "timeout");
+            ofstream out(name);
+            out << "hello";
+            out.close();
+            g_main_loop_run(loop.get());
+            CPPUNIT_ASSERT(events.size() > 0);
+        }
+
+        {
+            events.clear();
+            ofstream out(name);
+            out.close();
+            GLibEvent id(g_timeout_add_seconds(5, timeout, loop.get()), "timeout");
+            g_main_loop_run(loop.get());
+            CPPUNIT_ASSERT(events.size() > 0);
+        }
+
+        {
+            events.clear();
+            unlink(name);
+            GLibEvent id(g_timeout_add_seconds(5, timeout, loop.get()), "timeout");
+            g_main_loop_run(loop.get());
+            CPPUNIT_ASSERT(events.size() > 0);
+        }
+    }
+};
+
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(GLibTest);
+
+#endif // ENABLE_UNIT_TESTS
 
 #else // HAVE_GLIB
 

@@ -28,9 +28,13 @@
 
 #ifdef HAVE_GLIB
 # include <glib-object.h>
+# include <gio/gio.h>
 #else
 typedef void *GMainLoop;
 #endif
+
+#include <boost/intrusive_ptr.hpp>
+#include <boost/utility.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -58,6 +62,81 @@ enum GLibSelectResult {
  * @return see GLibSelectResult
  */
 GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *timeout);
+
+#ifdef HAVE_GLIB
+
+/**
+ * Defines a shared pointer for a GObject-based type, with intrusive
+ * reference counting. Use *outside* of SyncEvolution namespace
+ * (i.e. outside of SE_BEGIN/END_CXX. This is necessary because some
+ * functions must be put into the boost namespace. The type itself is
+ * *inside* the SyncEvolution namespace.
+ *
+ * Example:
+ * SE_GOBJECT_TYPE(GFile);
+ * SE_BEGIN_CXX
+ * {
+ *   // reference normally increased during construction,
+ *   // steal() avoids that
+ *   GFileCXX filecxx = GFileCXX::steal(g_file_new_for_path("foo"));
+ *   GFile *filec = filecxx.get(); // does not increase reference count
+ *   // file freed here as filecxx gets destroyed
+ * }
+ * SE_END_CXX
+ *
+ * Note that the add_ref/release functions are defined twice, because
+ * the Boost docs say that they need to be in boost but clang++ did not
+ * find them there.
+ */
+#define SE_GOBJECT_TYPE(_x) \
+    namespace boost { \
+        void inline intrusive_ptr_add_ref(_x *ptr) { g_object_ref(ptr); } \
+        void inline intrusive_ptr_release(_x *ptr) { g_object_unref(ptr); } \
+    } \
+    void inline intrusive_ptr_add_ref(_x *ptr) { g_object_ref(ptr); } \
+    void inline intrusive_ptr_release(_x *ptr) { g_object_unref(ptr); } \
+    SE_BEGIN_CXX \
+    class _x ## CXX : public boost::intrusive_ptr<_x> { \
+    public: \
+         _x ## CXX(_x *ptr, bool add_ref = true) : boost::intrusive_ptr<_x>(ptr, add_ref) {} \
+         _x ## CXX() {} \
+         _x ## CXX(const _x ## CXX &other) : boost::intrusive_ptr<_x>(other) {} \
+\
+         static  _x ## CXX steal(_x *ptr) { return _x ## CXX(ptr, false); } \
+    }; \
+    SE_END_CXX \
+
+SE_END_CXX
+
+SE_GOBJECT_TYPE(GFile)
+SE_GOBJECT_TYPE(GFileMonitor)
+
+SE_BEGIN_CXX
+
+/**
+ * Wrapper around g_file_monitor_file().
+ * Not copyable because monitor is tied to specific callback
+ * via memory address.
+ */
+class GLibNotify : public boost::noncopyable
+{
+ public:
+    typedef boost::function<void (GFile *, GFile *, GFileMonitorEvent)> callback_t;
+
+    GLibNotify(const char *file, 
+               const callback_t &callback);
+ private:
+    GFileMonitorCXX m_monitor;
+    callback_t m_callback;
+};
+
+/**
+ * always throws an exception, including information from GError if available:
+ * <action>: <error message>|failure
+ */
+void GLibErrorException(const std::string &action, GError *error);
+
+#endif
 
 SE_END_CXX
 
