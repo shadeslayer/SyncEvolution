@@ -83,16 +83,8 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
  *   // file freed here as filecxx gets destroyed
  * }
  * SE_END_CXX
- *
- * Note that the add_ref/release functions are defined twice, because
- * the Boost docs say that they need to be in boost but clang++ did not
- * find them there.
  */
 #define SE_GOBJECT_TYPE(_x) \
-    namespace boost { \
-        void inline intrusive_ptr_add_ref(_x *ptr) { g_object_ref(ptr); } \
-        void inline intrusive_ptr_release(_x *ptr) { g_object_unref(ptr); } \
-    } \
     void inline intrusive_ptr_add_ref(_x *ptr) { g_object_ref(ptr); } \
     void inline intrusive_ptr_release(_x *ptr) { g_object_unref(ptr); } \
     SE_BEGIN_CXX \
