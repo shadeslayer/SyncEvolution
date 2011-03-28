@@ -74,7 +74,7 @@ enum
 
 static UniqueResponse
 message_received_cb (UniqueApp         *app,
-                     UniqueCommand      command,
+                     gint               command,
                      UniqueMessageData *message,
                      guint              time_,
                      app_data          *data)
