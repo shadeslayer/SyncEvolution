@@ -444,7 +444,7 @@ class SyncEvolutionTest(Action):
         resdir = os.getcwd()
         os.chdir(self.srcdir)
         # clear previous test results
-        context.runCommand("%s testclean" % context.make)
+        context.runCommand("%s %s testclean" % (self.runner, context.make))
         try:
             if context.setupcmd:
                 cmd = "%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name)
