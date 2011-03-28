@@ -32,6 +32,7 @@ from dbus.mainloop.glib import DBusGMainLoop
 import dbus.service
 import gobject
 import sys
+import re
 
 # introduced in python-gobject 2.16, not available
 # on all Linux distros => make it optional
@@ -237,6 +238,7 @@ class DBusUtil(Timeout):
     events = []
     quit_events = []
     reply = None
+    pserver = None
 
     def getTestProperty(self, key, default):
         """retrieve values set with @property()"""
@@ -292,8 +294,8 @@ class DBusUtil(Timeout):
         
         if debugger:
             print "\n%s: %s\n" % (self.id(), self.shortDescription())
-            pserver = subprocess.Popen([debugger] + server,
-                                       env=env)
+            DBusUtil.pserver = subprocess.Popen([debugger] + server,
+                                                env=env)
 
             while True:
                 check = subprocess.Popen("ps x | grep %s | grep -w -v -e %s -e grep -e ps" % \
@@ -308,10 +310,10 @@ class DBusUtil(Timeout):
                     time.sleep(2)
                     break
         else:
-            pserver = subprocess.Popen(server + serverArgs,
-                                       env=env,
-                                       stdout=open(syncevolog, "w"),
-                                       stderr=subprocess.STDOUT)
+            DBusUtil.pserver = subprocess.Popen(server + serverArgs,
+                                                env=env,
+                                                stdout=open(syncevolog, "w"),
+                                                stderr=subprocess.STDOUT)
             while os.path.getsize(syncevolog) == 0:
                 time.sleep(1)
 
@@ -347,11 +349,11 @@ class DBusUtil(Timeout):
             print "\ndone, quit gdb now\n"
         hasfailed = numerrors + numfailures != len(result.errors) + len(result.failures)
 
-        if not debugger:
-            os.kill(pserver.pid, signal.SIGTERM)
-        pserver.communicate()
+        if not debugger and DBusUtil.pserver.poll() == None:
+            os.kill(DBusUtil.pserver.pid, signal.SIGTERM)
+        DBusUtil.pserver.communicate()
         serverout = open(syncevolog).read()
-        if pserver.returncode and pserver.returncode != -15:
+        if DBusUtil.pserver.returncode and pserver.returncode != -15:
             hasfailed = True
         if hasfailed:
             # give D-Bus time to settle down
@@ -361,16 +363,31 @@ class DBusUtil(Timeout):
         monitorout = open(dbuslog).read()
         report = "\n\nD-Bus traffic:\n%s\n\nserver output:\n%s\n" % \
             (monitorout, serverout)
-        if pserver.returncode and pserver.returncode != -15:
+        if DBusUtil.pserver.returncode and DBusUtil.pserver.returncode != -15:
             # create a new failure specifically for the server
             result.errors.append((self,
-                                  "server terminated with error code %d%s" % (pserver.returncode, report)))
+                                  "server terminated with error code %d%s" % (DBusUtil.pserver.returncode, report)))
         elif numerrors != len(result.errors):
             # append report to last error
             result.errors[-1] = (result.errors[-1][0], result.errors[-1][1] + report)
         elif numfailures != len(result.failures):
             # same for failure
             result.failures[-1] = (result.failures[-1][0], result.failures[-1][1] + report)
+
+    def isServerRunning(self):
+        """True while the syncevo-dbus-server executable is still running"""
+        return DBusUtil.pserver and DBusUtil.pserver.poll() == None
+
+    def serverExecutable(self):
+        """returns full path of currently running syncevo-dbus-server binary"""
+        self.failUnless(self.isServerRunning())
+        maps = open("/proc/%d/maps" % DBusUtil.pserver.pid, "r")
+        regex = re.compile(r'[0-9a-f]*-[0-9a-f]* r-xp [0-9a-f]* [^ ]* \d* *(.*)\n')
+        for line in maps:
+            match = regex.match(line)
+            if match:
+                return match.group(1)
+        self.fail("no executable found")
 
     def setUpServer(self):
         self.server = dbus.Interface(bus.get_object('org.syncevolution',
@@ -2514,7 +2531,69 @@ END:VCARD''')
     def run(self, result):
         self.runTest(result)
 
-    
+class TestFileNotify(unittest.TestCase, DBusUtil):
+    """syncevo-dbus-server must stop if one of its files mapped into
+    memory (executable, libraries) change. Furthermore it must restart
+    if automatic syncs are enabled. This class simulates such file changes
+    by starting the server, identifying the location of the main executable,
+    and renaming it back and forth."""
+
+    def setUp(self):
+        self.setUpServer()
+        self.serverexe = self.serverExecutable()
+
+    def tearDown(self):
+        if os.path.isfile(self.serverexe + ".bak"):
+            os.rename(self.serverexe + ".bak", self.serverexe)
+
+    def run(self, result):
+        self.runTest(result)
+
+    def modifyServerFile(self):
+        """rename server executable to trigger shutdown"""
+        os.rename(self.serverexe, self.serverexe + ".bak")
+        os.rename(self.serverexe + ".bak", self.serverexe)        
+
+    @timeout(100)
+    def testShutdown(self):
+        """update server binary for 30 seconds, check that it shuts down at most 15 seconds after last mod"""
+        self.failUnless(self.isServerRunning())
+        i = 0
+        # Server must not shut down immediately, more changes might follow.
+        # Simulate that.
+        while i < 6:
+            self.modifyServerFile()
+            time.sleep(5)
+            i = i + 1
+        self.failUnless(self.isServerRunning())
+        time.sleep(10)
+        self.failIf(self.isServerRunning())
+
+    @timeout(30)
+    def testSession(self):
+        """create session, shut down directly after closing it"""
+        self.failUnless(self.isServerRunning())
+        self.setUpSession("")
+        self.modifyServerFile()
+        time.sleep(15)
+        self.failUnless(self.isServerRunning())
+        self.session.Detach()
+        # should shut down almost immediately
+        time.sleep(1)
+        self.failIf(self.isServerRunning())
+
+    @timeout(30)
+    def testSession2(self):
+        """create session, shut down after quiesence period after closing it"""
+        self.failUnless(self.isServerRunning())
+        self.setUpSession("")
+        self.modifyServerFile()
+        self.failUnless(self.isServerRunning())
+        self.session.Detach()
+        time.sleep(8)
+        self.failUnless(self.isServerRunning())
+        time.sleep(4)
+        self.failIf(self.isServerRunning())
 
 if __name__ == '__main__':
     unittest.main()

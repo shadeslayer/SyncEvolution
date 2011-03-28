@@ -41,6 +41,7 @@ static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 #include <syncevo/SyncML.h>
 #include <syncevo/FileConfigNode.h>
 #include <syncevo/Cmdline.h>
+#include <syncevo/GLibSupport.h>
 
 #include <synthesis/san.h>
 
@@ -58,6 +59,7 @@ static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 #include <iostream>
 #include <limits>
 #include <cmath>
+#include <fstream>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -222,6 +224,8 @@ public:
     void activate(int seconds,
                   const boost::function<bool ()> &callback)
     {
+        deactivate();
+
         m_callback = callback;
         m_tag = g_timeout_add_seconds(seconds, triggered, static_cast<gpointer>(this));
         if (!m_tag) {
@@ -1091,6 +1095,25 @@ class DBusServer : public DBusObjectHelper,
     typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
     Clients_t m_clients;
 
+    /**
+     * Watch all files mapped into our address space. When
+     * modifications are seen (as during a package upgrade), queue a
+     * high priority session. This prevents running other sessions,
+     * which might not be able to execute correctly. For example, a
+     * sync with libsynthesis from 1.1 does not work with
+     * SyncEvolution XML files from 1.2. The dummy session then waits
+     * for the changes to settle (see SHUTDOWN_QUIESENCE_SECONDS) and
+     * either shuts down or restarts.  The latter is necessary if the
+     * daemon has automatic syncing enabled in a config.
+     */
+    list< boost::shared_ptr<GLibNotify> > m_files;
+    void fileModified();
+
+    /**
+     * session handling the shutdown in response to file modifications
+     */
+    boost::shared_ptr<Session> m_shutdownSession;
+
     /* Event source that regurally pool network manager
      * */
     GLibEvent m_pollConnman;
@@ -1453,6 +1476,19 @@ public:
      * sessions.
      */
     std::string getNextSession();
+
+    /**
+     * Number of seconds to wait after file modifications are observed
+     * before shutting down or restarting. Shutting down could be done
+     * immediately, but restarting might not work right away. 10
+     * seconds was chosen because every single package is expected to
+     * be upgraded on disk in that interval. If a long-running system
+     * upgrade replaces additional packages later, then the server
+     * might restart multiple times during a system upgrade. Because it
+     * never runs operations directly after starting, that shouldn't
+     * be a problem.
+     */
+    static const int SHUTDOWN_QUIESENCE_SECONDS = 10;
 
     AutoSyncManager &getAutoSyncManager() { return m_autoSync; }
 
@@ -1979,11 +2015,15 @@ class Session : public DBusObjectHelper,
     /** the number of sources that have been restored */
     int m_restoreSrcEnd;
 
+    /**
+     * status of the session
+     */
     enum RunOperation {
-        OP_SYNC = 0,
-        OP_RESTORE = 1,
-        OP_CMDLINE = 2,
-        OP_NULL
+        OP_SYNC,            /**< running a sync */
+        OP_RESTORE,         /**< restoring data */
+        OP_CMDLINE,         /**< executing command line */
+        OP_SHUTDOWN,        /**< will shutdown server as soon as possible */
+        OP_NULL             /**< idle, accepting commands via D-Bus */
     };
 
     static string runOpToString(RunOperation op);
@@ -1995,6 +2035,26 @@ class Session : public DBusObjectHelper,
 
     /** Cmdline to execute command line args */
     boost::shared_ptr<CmdlineWrapper> m_cmdline;
+
+    /**
+     * time of latest file modification relevant for shutdown
+     */
+    Timespec m_shutdownLastMod;
+
+    /**
+     * timer which counts seconds until server is meant to shut down:
+     * set only while the session is active and thus shutdown is allowed
+     */
+    Timeout m_shutdownTimer;
+
+    /**
+     * Called Server::SHUTDOWN_QUIESENCE_SECONDS after last file modification,
+     * while shutdown session is active and thus ready to shut down the server.
+     * Then either triggers the shutdown or restarts.
+     *
+     * @return always false to disable timer
+     */
+    bool shutdownServer();
 
     /** Session.Attach() */
     void attach(const Caller_t &caller);
@@ -2080,7 +2140,8 @@ public:
         PRI_CMDLINE = -10,
         PRI_DEFAULT = 0,
         PRI_CONNECTION = 10,
-        PRI_AUTOSYNC = 20
+        PRI_AUTOSYNC = 20,
+        PRI_SHUTDOWN = 256  // always higher than anything else
     };
 
     /**
@@ -2088,6 +2149,20 @@ public:
      */
     void setPriority(int priority) { m_priority = priority; }
     int getPriority() const { return m_priority; }
+
+    /**
+     * Turns session into one which will shut down the server, must
+     * be called before enqueing it. Will wait for a certain idle period
+     * after file modifications before claiming to be ready for running
+     * (see Server::SHUTDOWN_QUIESENCE_SECONDS).
+     */
+    void startShutdown();
+
+    /**
+     * Called by server to tell shutdown session that a file was modified.
+     * Session uses that to determine when the quiesence period is over.
+     */
+    void shutdownFileModified();
 
     void initServer(SharedBuffer data, const std::string &messageType);
     void setConnection(const boost::shared_ptr<Connection> c) { m_connection = c; m_useConnection = c; }
@@ -3597,8 +3672,48 @@ Session::~Session()
     done();
 }
 
+void Session::startShutdown()
+{
+    m_runOperation = OP_SHUTDOWN;
+}
+
+void Session::shutdownFileModified()
+{
+    m_shutdownLastMod = Timespec::monotonic();
+    SE_LOG_DEBUG(NULL, NULL, "file modified at %lu.%09lus, %s",
+                 (unsigned long)m_shutdownLastMod.tv_sec,
+                 (unsigned long)m_shutdownLastMod.tv_nsec,
+                 m_active ? "active" : "not active");
+
+    if (m_active) {
+        // (re)set shutdown timer: once it fires, we are ready to shut down;
+        // brute-force approach, will reset timer many times
+        m_shutdownTimer.activate(DBusServer::SHUTDOWN_QUIESENCE_SECONDS,
+                                 boost::bind(&Session::shutdownServer, this));
+    }
+}
+
+bool Session::shutdownServer()
+{
+    Timespec now = Timespec::monotonic();
+    SE_LOG_DEBUG(NULL, NULL, "shut down server at %lu.%09lu because of file modifications",
+                 now.tv_sec, now.tv_nsec);
+    if (false /* restart? */) {
+        // TODO: suitable exec() call which restarts the server using the same environment it was in
+        // when it was started
+    } else {
+        // leave server now
+        shutdownRequested = true;
+        g_main_loop_quit(loop);
+        SE_LOG_INFO(NULL, NULL, "server shutting down because files loaded into memory were modified on disk");
+    }
+
+    return false;
+}
+
 void Session::setActive(bool active)
 {
+    bool oldActive = m_active;
     m_active = active;
     if (active) {
         if (m_syncStatus == SYNC_QUEUEING) {
@@ -3609,6 +3724,29 @@ void Session::setActive(bool active)
         boost::shared_ptr<Connection> c = m_connection.lock();
         if (c) {
             c->ready();
+        }
+
+        if (!oldActive &&
+            m_runOperation == OP_SHUTDOWN) {
+            // shutdown session activated: check if or when we can shut down
+            if (m_shutdownLastMod) {
+                Timespec now = Timespec::monotonic();
+                SE_LOG_DEBUG(NULL, NULL, "latest file modified at %lu.%09lus, now is %lu.%09lus",
+                             (unsigned long)m_shutdownLastMod.tv_sec,
+                             (unsigned long)m_shutdownLastMod.tv_nsec,
+                             (unsigned long)now.tv_sec,
+                             (unsigned long)now.tv_nsec);
+                if (m_shutdownLastMod + DBusServer::SHUTDOWN_QUIESENCE_SECONDS <= now) {
+                    // ready to shutdown immediately
+                    shutdownServer();
+                } else {
+                    // need to wait
+                    int secs = DBusServer::SHUTDOWN_QUIESENCE_SECONDS -
+                        (now - m_shutdownLastMod).tv_sec;
+                    SE_LOG_DEBUG(NULL, NULL, "shut down in %ds", secs);
+                    m_shutdownTimer.activate(secs, boost::bind(&Session::shutdownServer, this));
+                }
+            }
         }
     }
 }
@@ -3791,6 +3929,13 @@ void Session::run()
                     }
                 }
                 m_setConfig = m_cmdline->configWasModified();
+                break;
+            case OP_SHUTDOWN:
+                // block until time for shutdown or restart if no
+                // shutdown requested already
+                if (!shutdownRequested) {
+                    g_main_loop_run(loop);
+                }
                 break;
             default:
                 break;
@@ -5319,8 +5464,59 @@ DBusServer::~DBusServer()
     LoggerBase::popLogger();
 }
 
+void DBusServer::fileModified()
+{
+    if (!m_shutdownSession) {
+        string newSession = getNextSession();
+        vector<string> flags;
+        flags.push_back("no-sync");
+        m_shutdownSession = Session::createSession(*this,
+                                                   "",  "",
+                                                   newSession,
+                                                   flags);
+        m_shutdownSession->setPriority(Session::PRI_AUTOSYNC);
+        m_shutdownSession->startShutdown();
+        enqueue(m_shutdownSession);
+    }
+
+    m_shutdownSession->shutdownFileModified();
+}
+
 void DBusServer::run()
 {
+    // This has the intended side effect that it loads everything into
+    // memory which might be dynamically loadable, like backend
+    // plugins.
+    StringMap map = getVersions();
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus server ready to run, versions:");
+    BOOST_FOREACH(const StringPair &entry, map) {
+        SE_LOG_DEBUG(NULL, NULL, "%s: %s", entry.first.c_str(), entry.second.c_str());
+    }
+
+    // Now that everything is loaded, check memory map for files which we have to monitor.
+    set<string> files;
+    ifstream in("/proc/self/maps");
+    while (!in.eof()) {
+        string line;
+        getline(in, line);
+        size_t off = line.find('/');
+        if (off != line.npos &&
+            line.find(" r-xp ") != line.npos) {
+            files.insert(line.substr(off));
+        }
+    }
+    in.close();
+    BOOST_FOREACH(const string &file, files) {
+        try {
+            SE_LOG_DEBUG(NULL, NULL, "watching: %s", file.c_str());
+            boost::shared_ptr<GLibNotify> notify(new GLibNotify(file.c_str(), boost::bind(&DBusServer::fileModified, this)));
+            m_files.push_back(notify);
+        } catch (...) {
+            // ignore errors for indidividual files
+            Exception::handle();
+        }
+    }
+
     while (!shutdownRequested) {
         if (!m_activeSession ||
             !m_activeSession->readyToRun()) {
@@ -5345,9 +5541,9 @@ void DBusServer::run()
             }
             session.swap(m_syncSession);
             dequeue(session.get());
-        } 
+        }
 
-        if (m_autoSync.hasTask()) {
+        if (!shutdownRequested && m_autoSync.hasTask()) {
             // if there is at least one pending task and no session is created for auto sync,
             // pick one task and create a session
             m_autoSync.startTask();
@@ -5356,7 +5552,7 @@ void DBusServer::run()
         // Otherwise activeSession is owned by AutoSyncManager but it never
         // be ready to run. Because methods of Session, like 'sync', are able to be
         // called when it is active.  
-        if (m_autoSync.hasActiveSession())
+        if (!shutdownRequested && m_autoSync.hasActiveSession())
         {
             // if the autosync is the active session, then invoke 'sync'
             // to make it ready to run
@@ -6434,7 +6630,9 @@ int main(int argc, char **argv)
         redirectPtr = &redirect;
 
         // make daemon less chatty - long term this should be a command line option
-        LoggerBase::instance().setLevel(LoggerBase::INFO);
+        LoggerBase::instance().setLevel(getenv("SYNCEVOLUTION_DEBUG") ?
+                                        LoggerBase::DEBUG :
+                                        LoggerBase::INFO);
 
         DBusErrorCXX err;
         DBusConnectionPtr conn = b_dbus_setup_bus(DBUS_BUS_SESSION,
