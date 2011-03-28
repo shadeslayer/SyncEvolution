@@ -2595,5 +2595,25 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
         time.sleep(4)
         self.failIf(self.isServerRunning())
 
+    @timeout(60)
+    def testRestart(self):
+        """set up auto sync, then check that server restarts"""
+        self.failUnless(self.isServerRunning())
+        self.setUpSession("memotoo")
+        config = self.session.GetConfig(True, utf8_strings=True)
+        config[""]["autoSync"] = "1"
+        self.session.SetConfig(False, False, config)
+        self.failUnless(self.isServerRunning())
+        self.session.Detach()
+        self.modifyServerFile()
+        bus_name = self.server.bus_name
+        # give server time to restart
+        time.sleep(15)
+        self.setUpServer()
+        self.failIfEqual(bus_name, self.server.bus_name)
+        # serverExecutable() will fail if the service wasn't properly
+        # with execve() because then the old process is dead.
+        self.failUnlessEqual(self.serverexe, self.serverExecutable())
+
 if __name__ == '__main__':
     unittest.main()

@@ -86,6 +86,55 @@ static bool shutdownRequested = false;
 static LogRedirect *redirectPtr;
 
 /**
+ * Encapsulates startup environment from main() and can do execve()
+ * with it later on. Assumes that argv[0] is the executable to run.
+ */
+class Restart
+{
+    vector<string> m_argv;
+    vector<string> m_env;
+
+    void saveArray(vector<string> &array, char **p)
+    {
+        while(*p) {
+            array.push_back(*p);
+            p++;
+        }
+    }
+
+    const char **createArray(const vector<string> &array)
+    {
+        const char **res = new const char *[(array.size() + 1)];
+        size_t i;
+        for (i = 0; i < array.size(); i++) {
+            res[i] = array[i].c_str();
+        }
+        res[i] = NULL;
+        return res;
+    }
+
+public:
+    Restart(char **argv, char **env)
+    {
+        saveArray(m_argv, argv);
+        saveArray(m_env, env);
+    }
+
+    void restart()
+    {
+        const char **argv = createArray(m_argv);
+        const char **env = createArray(m_env);
+        LogRedirect::reset();
+        if (execve(argv[0], (char *const *)argv, (char *const *)env)) {
+            SE_THROW(StringPrintf("restarting syncevo-dbus-server failed: %s", strerror(errno)));
+        }
+    }
+};
+
+/** initialized in main() */
+static boost::shared_ptr<Restart> restart;
+
+/**
  * Anything that can be owned by a client, like a connection
  * or session.
  */
@@ -827,8 +876,11 @@ class AutoSyncManager : public SessionListener
      */
     void update(const string &configName);
 
-    /* Is there any auto sync task in the queue? */
+    /* Is there anything ready to run? */
     bool hasTask() { return !m_workQueue.empty(); }
+
+    /* Is there anything with automatic syncing waiting for its time to run? */
+    bool hasAutoConfigs() { return !m_peerMap.empty(); }
 
     /** 
      * pick the front task from the working queue and create a session for it.
@@ -3696,11 +3748,15 @@ void Session::shutdownFileModified()
 bool Session::shutdownServer()
 {
     Timespec now = Timespec::monotonic();
-    SE_LOG_DEBUG(NULL, NULL, "shut down server at %lu.%09lu because of file modifications",
-                 now.tv_sec, now.tv_nsec);
-    if (false /* restart? */) {
-        // TODO: suitable exec() call which restarts the server using the same environment it was in
+    bool autosync = m_server.getAutoSyncManager().hasTask() ||
+        m_server.getAutoSyncManager().hasAutoConfigs();
+    SE_LOG_DEBUG(NULL, NULL, "shut down server at %lu.%09lu because of file modifications, auto sync %s",
+                 now.tv_sec, now.tv_nsec,
+                 autosync ? "on" : "off");
+    if (autosync) {
+        // suitable exec() call which restarts the server using the same environment it was in
         // when it was started
+        restart->restart();
     } else {
         // leave server now
         shutdownRequested = true;
@@ -6594,8 +6650,11 @@ static bool parseDuration(int &duration, const char* value)
 
 SE_END_CXX
 
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **envp)
 {
+    // remember environment for restart
+    restart.reset(new Restart(argv, envp));
+
     int duration = 600;
     int opt = 1;
     while(opt < argc) {

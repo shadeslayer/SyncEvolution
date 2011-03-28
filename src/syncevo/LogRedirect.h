@@ -165,6 +165,14 @@ class LogRedirect : public LoggerStdout
     /** true if stderr is redirected */
     static bool redirectingStderr() { return m_redirect && m_redirect->m_stderr.m_read > 0; }
 
+    /** reset any redirection, if active */
+    static void reset() {
+        if (m_redirect) {
+            m_redirect->flush();
+            m_redirect->restore();
+        }
+    }
+
     const FDs &getStdout() { return m_stdout; }
     const FDs &getStderr() { return m_stderr; }
 
