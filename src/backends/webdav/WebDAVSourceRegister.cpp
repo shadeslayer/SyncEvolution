@@ -223,7 +223,7 @@ public:
  * CLIENT_TEST_WEBDAV=<server> [caldav] [carddav] <prop>=<val> ...; ...
  */
 static class WebDAVTestSingleton {
-    list<WebDAVTest *> m_sources;
+    list< boost::shared_ptr<WebDAVTest> > m_sources;
 
 public:
     WebDAVTestSingleton()
@@ -258,10 +258,12 @@ public:
                 }
             }
             if (caldav) {
-                m_sources.push_back(new WebDAVTest(server, "caldav", props));
+                boost::shared_ptr<WebDAVTest> ptr(new WebDAVTest(server, "caldav", props));
+                m_sources.push_back(ptr);
             }
             if (carddav) {
-                m_sources.push_back(new WebDAVTest(server, "carddav", props));
+                boost::shared_ptr<WebDAVTest> ptr(new WebDAVTest(server, "carddav", props));
+                m_sources.push_back(ptr);
             }
         }
     }

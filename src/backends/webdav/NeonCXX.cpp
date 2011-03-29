@@ -151,6 +151,7 @@ std::string Status2String(const ne_status *status)
 }
 
 Session::Session(const boost::shared_ptr<Settings> &settings) :
+    m_forceAuthorizationOnce(false),
     m_settings(settings),
     m_debugging(false),
     m_session(NULL),
