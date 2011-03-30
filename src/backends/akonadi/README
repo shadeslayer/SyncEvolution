@@ -26,11 +26,11 @@ Query databases:
 syncevolution
 
 Configuring syncevolution for contacts with Akonadi as backend:
-syncevolution --source-property sync=none \
+syncevolution --configure --source-property sync=none \
               --sync-property username=... \
               --sync-property password=... \
               scheduleworld
-syncevolution --source-property sync=two-way \
+syncevolution --configure --source-property sync=two-way \
               --source-property type=kde-contacts \
               --source-property evolutionsource=akonadi:?... \
               scheduleworld addressbook

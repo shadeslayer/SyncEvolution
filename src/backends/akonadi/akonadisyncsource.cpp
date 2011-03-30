@@ -42,6 +42,7 @@
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QStringList>
+#include <QtDBus/QDBusConnection>
 
 #include <QtCore/QDebug>
 
@@ -99,10 +100,12 @@ void AkonadiSyncSource::start()
                          "http://www.syncevolution.org/",
                          // The bug report email address
                          "syncevolution@syncevolution.org");
- 
-    KCmdLineArgs::init( argc, argv, &aboutData );
-    if(!qApp){
-      new KApplication;
+
+    KCmdLineArgs::init(argc, argv, &aboutData);
+    if (!kapp) {
+        new KApplication;
+        //To stop KApplication from spawning it's own DBus Service ... Will have to patch KApplication about this
+        QDBusConnection::sessionBus().unregisterService("org.syncevolution.syncevolution-"+QString::number(getpid()));
     }
     // Start The Akonadi Server if not already Running.
     if (!Akonadi::ServerManager::isRunning()) {

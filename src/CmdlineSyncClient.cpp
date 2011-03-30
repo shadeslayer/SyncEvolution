@@ -29,6 +29,7 @@ extern "C" {
 #include <QtCore/QString>
 #include <QtCore/QLatin1String>
 #include <QtCore/QDebug>
+#include <QtDBus/QDBusConnection>
 
 #include <KApplication>
 #include <KAboutData>
@@ -82,6 +83,9 @@ CmdlineSyncClient::CmdlineSyncClient(const string &server,
     KCmdLineArgs::init(argc, argv, &aboutData);
     if (!kapp) {
         new KApplication;
+        //To stop KApplication from spawning it's own DBus Service ... Will have to patch KApplication about this
+        QDBusConnection::sessionBus().unregisterService("org.syncevolution.syncevolution-"+QString::number(getpid()));
+
     }
 #endif
 }
@@ -111,8 +115,7 @@ string CmdlineSyncClient::askPassword(const string &passwordName,
 #ifdef USE_GNOME_KEYRING
     //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session
     //and Call KWallet if it is. else pick Gnome Keyring by default
-    const QByteArray isKdeRunning = getenv("KDE_FULL_SESSION");
-    if (isKdeRunning != "true") {
+    if (getenv("KDE_FULL_SESSION")) {
         isKde = false;
     }
 #endif
@@ -184,8 +187,7 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
 #ifdef USE_GNOME_KEYRING
     // When both GNOME KEYRING and KWALLET are available, check if
     // this is a KDE Session and call
-    const QByteArray isKdeRunning = getenv("KDE_FULL_SESSION");
-    if (isKdeRunning != "true") {
+    if (getenv("KDE_FULL_SESSION")) {
         isKde = false;
     }
 #endif
