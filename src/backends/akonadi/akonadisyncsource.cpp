@@ -33,7 +33,11 @@
 #include <Akonadi/CollectionStatistics>
 #include <Akonadi/CollectionStatisticsJob>
 
+#include <Akonadi/ServerManager>
 #include <Akonadi/Control>
+#include <KApplication>
+#include <KAboutData>
+#include <KCmdLineArgs>
 #include <kurl.h>
 
 #include <QtCore/QCoreApplication>
@@ -70,6 +74,9 @@ void AkonadiSyncSource::start()
     int argc = 1;
     static const char *prog = "syncevolution";
     static char *argv[] = { (char *)&prog, NULL };
+    //if (!qApp) {
+        //new QCoreApplication(argc, argv);
+    //}
     KAboutData aboutData(// The program name used internally.
                          "syncevolution",
                          // The message catalog name
@@ -92,10 +99,10 @@ void AkonadiSyncSource::start()
                          "http://www.syncevolution.org/",
                          // The bug report email address
                          "syncevolution@syncevolution.org");
-
-    KCmdLineArgs::init(argc, argv, &aboutData);
-    if (!kapp) {
-        new KApplication;
+ 
+    KCmdLineArgs::init( argc, argv, &aboutData );
+    if(!qApp){
+      new KApplication;
     }
     // Start The Akonadi Server if not already Running.
     if (!Akonadi::ServerManager::isRunning()) {
