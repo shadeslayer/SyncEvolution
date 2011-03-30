@@ -255,5 +255,56 @@ void AkonadiSyncSource::readItem(const std::string &luid, std::string &data, boo
     }
 }
 
+QString AkonadiMemoSource::toKJots(QString data){
+  // KJots stores it's resource in the format
+  //Subject: Hello World
+  //Content-Type: text/plain <------- always plain text for the akonadi resource
+  //Date: Wed, 30 Mar 2011 01:02:48 +0530 <----date created
+  //MIME-Version: 1.0 <----- always the same
+  // <---- This line break seperates the content from the information
+  //<Content>
+
+  QString subject = "Subject: ";
+  QString contentType = "Content-Type: text/plain";
+  QString dateTime = QDateTime::currentDateTime().toString(Qt::ISODate);
+  QString mimeVersion = "MIME-Version: 1.0";
+  QString content;
+  
+  QStringList lines = data.split('\n');
+  subject += lines.first();
+  content = data.remove(0,data.indexOf('\n')+1);
+  
+  QString result = subject + '\n' +
+                   contentType + '\n' +
+                   dateTime + '\n'+
+                   mimeVersion + "\n\n"+
+                   content;
+  return result;
+}
+
+QString AkonadiMemoSource::toSynthesis(QString data){
+    //Synthesis expects Plain Text in the form Subject + "\n" + Content
+    QString subject;
+    QString content;
+  
+    subject = data.split('\n').first();
+    subject.remove("Subject: ");
+    
+    content = data.remove(0,data.indexOf("\n\n")+2);
+    return subject+'\n'+content;
+}
+
+void AkonadiMemoSource::readItem(const std::string &luid, std::string &data, bool raw)
+{
+    AkonadiSyncSource::readItem(luid, data, raw);
+    data = toSynthesis(QString::fromStdString(data)).toStdString();
+}
+
+TrackingSyncSource::InsertItemResult AkonadiMemoSource::insertItem(const std::string &luid, const std::string &data, bool raw)
+{
+    std::string formattedData = toKJots(QString::fromStdString(data)).toStdString();
+    return AkonadiSyncSource::insertItem(luid, formattedData , raw);
+}
+
 SE_END_CXX
 #endif // ENABLE_AKONADI

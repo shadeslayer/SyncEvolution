@@ -70,7 +70,7 @@ public:
     virtual bool isEmpty();
 private:
     void start();
-
+protected:
     Akonadi::Collection m_collection;
     const std::string m_subMime;
 };
@@ -138,9 +138,13 @@ public:
 
 class AkonadiMemoSource : public AkonadiSyncSource
 {
+private:
+    QString toKJots(QString data);
+    QString toSynthesis(QString data);
+
 public:
     AkonadiMemoSource(const SyncSourceParams &params)
-        : AkonadiSyncSource("text/x-vnd.akonadi.calendar.journal", params)
+        : AkonadiSyncSource("text/x-vnd.akonadi.note", params)
     {
     }
 
@@ -151,6 +155,8 @@ public:
     // to display notes: probably work for knote??
     virtual std::string getMimeType() const { return "text/plain"; }
     virtual std::string getMimeVersion() const { return "1.0"; }
+    virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw);
+    virtual void readItem(const std::string &luid, std::string &item, bool raw);
 };
 
 SE_END_CXX
