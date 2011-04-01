@@ -742,6 +742,27 @@ evolutiontest = SyncEvolutionTest("evolution", compile,
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
+test = SyncEvolutionTest("googlecalendar", compile,
+                         "", options.shell,
+                         [ "Client::Source::google_caldav" ],
+                         [ "google_caldav" ],
+                         "CLIENT_TEST_WEBDAV='google caldav' "
+                         "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
+                         "CLIENT_TEST_UNIQUE_UID=1 " # server keeps backups and restores old data unless UID is unieque
+                         ,
+                         testPrefix=options.testprefix)
+context.add(test)
+
+test = SyncEvolutionTest("yahoo", compile,
+                         "", options.shell,
+                         [ "Client::Source::yahoo_caldav Client::Source::yahoo_carddav" ],
+                         [ "yahoo_caldav", "yahoo_carddav" ],
+                         "CLIENT_TEST_WEBDAV='yahoo caldav carddav' "
+                         "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
+                         ,
+                         testPrefix=options.testprefix)
+context.add(test)
+
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],

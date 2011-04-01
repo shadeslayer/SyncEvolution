@@ -157,7 +157,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
     runservers = os.listdir(resultdir)
     #list source test servers statically, we have no idea how to differenciate
     #automatically whether the server is a source test or sync test.
-    sourceServers = ['evolution', 'evolution-prebuilt-build']
+    sourceServers = ['evolution', 'evolution-prebuilt-build', 'yahoo', 'googlecalendar']
     sourceServersRun = 0
     haveSource = False
     #Only process servers listed in the input parameter and in the sourceServer
