@@ -186,6 +186,7 @@ public:
     {
         config.type = m_type.c_str();
         config.createSourceA = boost::bind(&WebDAVTest::createSource, this, _3);
+        config.createSourceB = boost::bind(&WebDAVTest::createSource, this, _3);
     }
 
     TestingSyncSource *createSource(bool isSourceA) const
