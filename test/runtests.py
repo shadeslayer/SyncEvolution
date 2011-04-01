@@ -103,6 +103,9 @@ class Action:
         """
         raise Exception("not implemented")
 
+    def nop(self):
+         pass
+
     def tryexecution(self, step, logs):
         """wrapper around execute which handles exceptions, directories and stdout"""
         if logs:
@@ -561,8 +564,8 @@ parser.add_option("", "--evosvn",
                   action="append", type="string", dest="evosvn", default=[],
                   help="<name>=<path>: compiles Evolution from source under a short name, using Paul Smith's Makefile and config as found in <path>")
 parser.add_option("", "--prebuilt",
-                  action="append", type="string", dest="prebuilt", default=[],
-                  help="a directory where SyncEvolution was build before: enables testing using those binaries (can be used multiple times)")
+                  action="store", type="string", dest="prebuilt", default=None,
+                  help="a directory where SyncEvolution was build before: enables testing using those binaries (can be used once, instead of compiling)")
 parser.add_option("", "--setup-command",
                   type="string", dest="setupcmd",
                   help="invoked with <test name> <args to start syncevolution>, should setup local account for the test")
@@ -586,7 +589,6 @@ for option in options.enabled:
         enabled[l[0]] = l[1]
     else:
         enabled[option] = None
-localtests = enabled.get("evolution", "Client::Source SyncEvolution").split(" ")
 
 context = Context(options.tmpdir, options.resultdir, options.uri, options.workdir,
                   options.subject, options.sender, options.recipients, options.mailhost,
@@ -629,18 +631,6 @@ for evosvn in options.evosvn:
                     "SUDO=true")
     context.add(evosvn)
 
-for prebuilt in options.prebuilt:
-    pre = Action("")
-    pre.builddir = prebuilt
-    if prebuilt:
-        context.add(SyncEvolutionTest("evolution-prebuilt-" + os.path.basename(prebuilt), pre,
-                                      "", options.shell,
-                                      localtests,
-                                      [],
-                                      testPrefix=options.testprefix))
-        if "evolution" in enabled:
-            del enabled["evolution"]
-
 class SyncEvolutionCheckout(GitCheckout):
     def __init__(self, name, revision):
         """checkout SyncEvolution"""
@@ -674,11 +664,20 @@ if options.synthesistag:
     synthesis_source = "--with-synthesis-src=%s" % libsynthesis.basedir
 else:
     synthesis_source = ""
-compile = SyncEvolutionBuild("compile",
-                             sync.basedir,
-                             "%s %s" % (options.configure, synthesis_source),
-                             options.shell,
-                             [ libsynthesis.name, sync.name ])
+
+# determine where binaries come from:
+# either compile anew or prebuilt
+if options.prebuilt:
+    compile = Action("compile")
+    compile.builddir = options.prebuilt
+    compile.status = compile.DONE
+    compile.execute = compile.nop
+else:
+    compile = SyncEvolutionBuild("compile",
+                                 sync.basedir,
+                                 "%s %s" % (options.configure, synthesis_source),
+                                 options.shell,
+                                 [ libsynthesis.name, sync.name ])
 context.add(compile)
 
 class SyncEvolutionCross(AutotoolsBuild):
@@ -737,7 +736,7 @@ context.add(dist)
 
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
-                                  localtests,
+                                  enabled.get("evolution", "Client::Source SyncEvolution").split(" "),
                                   [],
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
