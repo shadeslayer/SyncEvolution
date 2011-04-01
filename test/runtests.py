@@ -482,7 +482,7 @@ class SyncEvolutionTest(Action):
 
 parser = optparse.OptionParser()
 parser.add_option("-e", "--enable",
-                  action="append", type="string", dest="enabled",
+                  action="append", type="string", dest="enabled", default=[],
                   help="use this to enable specific actions instead of executing all of them (can be used multiple times)")
 parser.add_option("-n", "--no-logs",
                   action="store_true", dest="nologs",
