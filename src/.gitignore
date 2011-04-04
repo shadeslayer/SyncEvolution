@@ -1,0 +1,12 @@
+/Makefile.am
+/syncevolution
+/synccompare
+/client-test
+/build-synthesis
+/org.syncevolution.service
+/syncevo-dbus-server
+/syncevo-dbus-server-startup.sh
+/syncevo-dbus-server.desktop
+/syncevo-http-server
+/syncevo-phone-config
+/testcases
