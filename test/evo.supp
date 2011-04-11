@@ -3785,21 +3785,9 @@
    e_book_get_addressbooks
    Memcheck:Leak
    fun:calloc
-   fun:g_malloc0
-   fun:ORBit_alloc_tcval
+   ...
    obj:*libORBit*
-   fun:IOP_generate_profiles
-   fun:ORBit_marshal_object
-   fun:ORBit_marshal_value
-   obj:*libORBit*
-   fun:ORBit_small_invoke_stub
-   fun:ConfigServer_add_client
-   obj:*libgconf*
-   obj:*libgconf*
-   obj:*libgconf*
-   fun:gconf_engine_notify_add
-   fun:gconf_client_add_dir
-   fun:e_source_list_new_for_gconf
+   ...
    fun:e_book_get_addressbooks
 }
 
@@ -4772,4 +4760,129 @@
    fun:icalcomponent_as_ical_string_r
    fun:icalcomponent_as_ical_string_r
    fun:_ZN6sysync29finalizeSystemZoneDefinitionsEPNS_6GZonesE
+}
+
+# ==12472== 13,800 bytes in 5 blocks are possibly lost in loss record 890 of 925
+# ==12472==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==12472==    by 0x74A36E8: icalvalue_set_recur (in /usr/lib/libical.so.0.44.0)
+# ==12472==    by 0x74A375F: icalvalue_new_recur (in /usr/lib/libical.so.0.44.0)
+# ==12472==    by 0x749DC17: icalproperty_set_rrule (in /usr/lib/libical.so.0.44.0)
+# ==12472==    by 0x749DC7F: icalproperty_new_rrule (in /usr/lib/libical.so.0.44.0)
+# ==12472==    by 0x74B3900: icaltzutil_fetch_timezone (in /usr/lib/libical.so.0.44.0)
+# ==12472==    by 0x74B46F4: ??? (in /usr/lib/libical.so.0.44.0)
+# ==12472==    by 0x74B4744: icaltimezone_get_component (in /usr/lib/libical.so.0.44.0)
+# ==12472==    by 0xAA9C3C: sysync::finalizeSystemZoneDefinitions(sysync::GZones*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0xA78EA8: sysync::GZones::loggingStarted() (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0xA37ECD: sysync::TSyncAppBase::finishConfig() (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0xA386E0: sysync::TSyncAppBase::readXMLConfigStream(int (*)(char*, unsigned long, unsigned long*, void*), void*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0xA38A25: sysync::TSyncAppBase::readXMLConfigConstant(char const*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x9DEB2E: sysync::TEngineInterface::InitEngineXML(char const*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x9DA630: sysync::InitEngineXML(void*, char const*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x9CF250: sysync::TEngineModuleBridge::InitEngineXML(char const*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x9C1264: SyncEvo::SharedEngine::InitEngineXML(std::string const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x9046AD: SyncEvo::SyncContext::initEngine(bool) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x9051F1: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x65E8D8: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x75F090: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x76BCD1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x75D7AB: SyncEvo::SyncTests::testTimeout() (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x7737F9: CppUnit::TestCaller<SyncEvo::SyncTests>::runTest() (in /home/pohly/work/syncevolution/src/client-test)
+# ==12472==    by 0x5C22406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12472==    by 0x5C147D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12472==    by 0x5C1E278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12472==    by 0x5C1DFBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12472==    by 0x5C29D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12472==    by 0x5C2209C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==12472== 
+{
+   potential leaks in time zone allocation
+   Memcheck:Leak
+   ...
+   fun:icaltimezone_get_component
+   fun:*finalizeSystemZoneDefinitions*
+}
+
+# ==16317== 1 bytes in 1 blocks are possibly lost in loss record 1 of 1,445
+# ==16317==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==16317==    by 0x6901534: g_malloc (in /lib/libglib-2.0.so.0.2400.2)
+# ==16317==    by 0x6918DDD: g_strdup (in /lib/libglib-2.0.so.0.2400.2)
+# ==16317==    by 0x571CB3C: ??? (in /usr/lib/libsoup-2.4.so.1.3.0)
+# ==16317==    by 0x571CBC6: ??? (in /usr/lib/libsoup-2.4.so.1.3.0)
+# ==16317==    by 0x571DE45: soup_message_headers_clear (in /usr/lib/libsoup-2.4.so.1.3.0)
+# ==16317==    by 0x571A42D: soup_message_cleanup_response (in /usr/lib/libsoup-2.4.so.1.3.0)
+# ==16317==    by 0x571C4A8: soup_message_send_request (in /usr/lib/libsoup-2.4.so.1.3.0)
+# ==16317==    by 0x57281FD: ??? (in /usr/lib/libsoup-2.4.so.1.3.0)
+# ==16317==    by 0x57282C2: ??? (in /usr/lib/libsoup-2.4.so.1.3.0)
+# ==16317==    by 0x68F86F1: g_main_context_dispatch (in /lib/libglib-2.0.so.0.2400.2)
+# ==16317==    by 0x68FC567: ??? (in /lib/libglib-2.0.so.0.2400.2)
+# ==16317==    by 0x68FCA74: g_main_loop_run (in /lib/libglib-2.0.so.0.2400.2)
+# ==16317==    by 0x9C5E26: SyncEvo::SoupTransportAgent::wait(bool) (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x90B40C: SyncEvo::SyncContext::doSync() (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x9064C7: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x65E8D8: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x75F090: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x76BCD1: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x75D7AB: SyncEvo::SyncTests::testTimeout() (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x7737F9: CppUnit::TestCaller<SyncEvo::SyncTests>::runTest() (in /home/pohly/work/syncevolution/src/client-test)
+# ==16317==    by 0x5C22406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C147D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C1E278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C1DFBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C29D9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C2209C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C29B29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C2C121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317==    by 0x5C2F13A: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==16317== 
+{
+   leak in libsoup
+   Memcheck:Leak
+   ...
+   fun:soup_*
+   ...
+   fun:g_main_loop_run
+}
+{
+   leak in libsoup II
+   Memcheck:Leak
+   ...
+   fun:soup_message_set_request
+}
+
+# ==19190== 128 bytes in 1 blocks are possibly lost in loss record 1,181 of 1,448
+# ==19190==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==19190==    by 0x4C24562: realloc (vg_replace_malloc.c:525)
+# ==19190==    by 0x906736E: g_realloc (in /lib/libglib-2.0.so.0.2400.2)
+# ==19190==    by 0x9038140: ??? (in /lib/libglib-2.0.so.0.2400.2)
+# ==19190==    by 0x90381C2: g_ptr_array_add (in /lib/libglib-2.0.so.0.2400.2)
+# ==19190==    by 0x90617EC: g_main_context_check (in /lib/libglib-2.0.so.0.2400.2)
+# ==19190==    by 0x90622E2: ??? (in /lib/libglib-2.0.so.0.2400.2)
+# ==19190==    by 0x9062A74: g_main_loop_run (in /lib/libglib-2.0.so.0.2400.2)
+# ==19190==    by 0x99E3C4: SyncEvo::SoupTransportAgent::wait(bool) (SoupTransportAgent.cpp:177)
+# ==19190==    by 0x8E384C: SyncEvo::SyncContext::doSync() (in /home/pohly/work/syncevolution/src/client-test)
+# ==19190==    by 0x8DE907: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (in /home/pohly/work/syncevolution/src/client-test)
+# ==19190==    by 0x663AB8: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (in /home/pohly/work/syncevolution/src/client-test)
+# ==19190==    by 0x73A550: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3705)
+# ==19190==    by 0x741AF8: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:833)
+# ==19190==    by 0x73993F: SyncEvo::SyncTests::testTimeout() (ClientTest.cpp:3655)
+# ==19190==    by 0x75E23D: CppUnit::TestCaller<SyncEvo::SyncTests>::runTest() (TestCaller.h:166)
+# ==19190==    by 0x8388406: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x837A7D3: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x8384278: CppUnit::ProtectorChain::ProtectFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x8383FBB: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x838FD9F: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x838809C: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x838FB29: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x8392121: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x839513A: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19190==    by 0x75EA14: main (in /home/pohly/work/syncevolution/src/client-test)
+# ==19190== 
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   ...
+   fun:g_ptr_array_add
+   fun:g_main_context_check
+   obj:*libglib*
+   fun:g_main_loop_run
 }
