@@ -3651,14 +3651,15 @@ void SyncTests::testTimeout()
                        CheckSyncReport(-1, -1, -1, -1, -1, -1,
                                        false).setReport(&report))
            .setPrepareCallback(boost::bind(setDeadSyncURL, _1, _2, ntohs(servaddr.sin_port), &skipped))
-           .setRetryDuration(10)
-           .setRetryInterval(10));
+           .setRetryDuration(20)
+           .setRetryInterval(20));
     time_t end = time(NULL);
     close(fd);
     if (!skipped) {
         CPPUNIT_ASSERT_EQUAL(STATUS_TRANSPORT_FAILURE, report.getStatus());
-        CPPUNIT_ASSERT(end - start >= 9);
-        CPPUNIT_ASSERT(end - start < 15);
+        CPPUNIT_ASSERT(end - start >= 19);
+        CPPUNIT_ASSERT(end - start < 30); // needs to be sufficiently larger than 20s timeout
+                                          // because under valgrind the startup time is considerable
     }
 }
 
