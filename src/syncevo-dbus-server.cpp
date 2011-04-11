@@ -2217,9 +2217,9 @@ public:
     void shutdownFileModified();
 
     void initServer(SharedBuffer data, const std::string &messageType);
-    void setConnection(const boost::shared_ptr<Connection> c) { m_connection = c; m_useConnection = c; }
-    boost::weak_ptr<Connection> getConnection() { return m_connection; }
-    bool useConnection() { return m_useConnection; }
+    void setStubConnection(const boost::shared_ptr<Connection> c) { m_connection = c; m_useConnection = c; }
+    boost::weak_ptr<Connection> getStubConnection() { return m_connection; }
+    bool useStubConnection() { return m_useConnection; }
 
     /**
      * After the connection closes, the Connection instance is
@@ -2233,8 +2233,8 @@ public:
      * the sync starts and overwriting it when the connection
      * closes.
      */
-    void setConnectionError(const std::string error) { m_connectionError = error; }
-    std::string getConnectionError() { return m_connectionError; }
+    void setStubConnectionError(const std::string error) { m_connectionError = error; }
+    std::string getStubConnectionError() { return m_connectionError; }
 
 
     DBusServer &getServer() { return m_server; }
@@ -3187,11 +3187,11 @@ DBusSync::DBusSync(const std::string &config,
 
 boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
 {
-    if (m_session.useConnection()) {
+    if (m_session.useStubConnection()) {
         // use the D-Bus Connection to send and receive messages
         boost::shared_ptr<TransportAgent> agent(new DBusTransportAgent(m_session.getServer().getLoop(),
                                                                        m_session,
-                                                                       m_session.getConnection()));
+                                                                       m_session.getStubConnection()));
         // We don't know whether we'll run as client or server.
         // But we as we cannot resend messages via D-Bus even if running as
         // client (API not designed for it), let's use the hard timeout
@@ -4369,7 +4369,7 @@ void Connection::failed(const std::string &reason)
     if (m_failure.empty()) {
         m_failure = reason;
         if (m_session) {
-            m_session->setConnectionError(reason);
+            m_session->setStubConnectionError(reason);
         }
     }
     if (m_state != FAILED) {
@@ -4629,11 +4629,11 @@ void Connection::process(const Caller_t &caller,
                                       message_type);
             }
             m_session->setPriority(Session::PRI_CONNECTION);
-            m_session->setConnection(myself);
+            m_session->setStubConnection(myself);
             // this will be reset only when the connection shuts down okay
             // or overwritten with the error given to us in
             // Connection::close()
-            m_session->setConnectionError("closed prematurely");
+            m_session->setStubConnectionError("closed prematurely");
             m_server.enqueue(m_session);
             break;
         }
@@ -4692,13 +4692,13 @@ void Connection::close(const Caller_t &caller,
             "connection closed unexpectedly" :
             error;
         if (m_session) {
-            m_session->setConnectionError(err);
+            m_session->setStubConnectionError(err);
         }
         failed(err);
     } else {
         m_state = DONE;
         if (m_session) {
-            m_session->setConnectionError("");
+            m_session->setStubConnectionError("");
         }
     }
 
@@ -4959,10 +4959,10 @@ DBusTransportAgent::Status DBusTransportAgent::wait(bool noReply)
         connection = m_connection.lock();
         if (connection) {
             return ACTIVE;
-        } else if (m_session.getConnectionError().empty()) {
+        } else if (m_session.getStubConnectionError().empty()) {
             return INACTIVE;
         } else {
-            SE_THROW_EXCEPTION(TransportException, m_session.getConnectionError());
+            SE_THROW_EXCEPTION(TransportException, m_session.getStubConnectionError());
             return FAILED;
         }
         break;
@@ -5685,7 +5685,7 @@ int DBusServer::killSessions(const std::string &peerDeviceID)
                          session->getSessionID().c_str(),
                          peerDeviceID.c_str());
             // remove session and its corresponding connection
-            boost::shared_ptr<Connection> c = session->getConnection().lock();
+            boost::shared_ptr<Connection> c = session->getStubConnection().lock();
             if (c) {
                 c->shutdown();
             }
