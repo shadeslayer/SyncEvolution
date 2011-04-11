@@ -4080,7 +4080,7 @@ public:
 private:
 
     string getLogData() { return "LogDirTest/data"; }
-    virtual const char *getLogDir() { return "LogDirTest/cache/syncevolution"; }
+    virtual std::string getLogDir() const { return "LogDirTest/cache/syncevolution"; }
     int m_maxLogDirs;
 
     ostringstream m_out;
