@@ -40,7 +40,7 @@ public:
             vector<string> urls = m_context->getSyncURL();
             if (!urls.empty()) {
                 m_url = urls.front();
-                std::string username = m_context->getUsername();
+                std::string username = m_context->getSyncUsername();
                 boost::replace_all(m_url, "%u", Neon::URI::escape(username));
             }
             Neon::URI uri = Neon::URI::parse(m_url);
@@ -120,8 +120,8 @@ public:
                                 std::string &password)
     {
         if (m_context) {
-            username = m_context->getUsername();
-            password = m_context->getPassword();
+            username = m_context->getSyncUsername();
+            password = m_context->getSyncPassword();
         }
     }
 

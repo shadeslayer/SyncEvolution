@@ -1816,15 +1816,15 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
     return registry;
 }
 
-std::string SyncConfig::getUsername() const { return syncPropUsername.getProperty(*getNode(syncPropUsername)); }
-void SyncConfig::setUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*getNode(syncPropUsername), value, temporarily); }
-std::string SyncConfig::getPassword() const {
+std::string SyncConfig::getSyncUsername() const { return syncPropUsername.getProperty(*getNode(syncPropUsername)); }
+void SyncConfig::setSyncUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*getNode(syncPropUsername), value, temporarily); }
+std::string SyncConfig::getSyncPassword() const {
     return syncPropPassword.getCachedProperty(*getNode(syncPropPassword), m_cachedPassword);
 }
-void SyncConfig::checkPassword(ConfigUserInterface &ui) {
+void SyncConfig::checkSyncPassword(ConfigUserInterface &ui) {
     syncPropPassword.checkPassword(ui, m_peer, *getProperties());
 }
-void SyncConfig::savePassword(ConfigUserInterface &ui) {
+void SyncConfig::saveSyncPassword(ConfigUserInterface &ui) {
     syncPropPassword.savePassword(ui, m_peer, *getProperties());
 }
 
@@ -1968,7 +1968,7 @@ ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &desc
     return key;
 }
 
-void SyncConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*getNode(syncPropPassword), value, temporarily); }
+void SyncConfig::setSyncPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*getNode(syncPropPassword), value, temporarily); }
 
 bool SyncConfig::getPreventSlowSync() const { return syncPropPreventSlowSync.getPropertyValue(*getNode(syncPropPreventSlowSync)); }
 void SyncConfig::setPreventSlowSync(bool value, bool temporarily) { syncPropPreventSlowSync.setProperty(*getNode(syncPropPreventSlowSync), value, temporarily); }

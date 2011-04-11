@@ -36,8 +36,6 @@ class CmdlineSyncClient : public SyncContext {
                       bool doLogging = false,
                       bool useKeyring = false);
 
-    using SyncConfig::savePassword;
-
     /**
      * These 2 functions are from ConfigUserInterface and implement it
      * to use keyring to retrieve and save password in the keyring.

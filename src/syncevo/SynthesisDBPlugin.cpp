@@ -310,8 +310,8 @@ TSyError SyncEvolution_Session_Login( CContext sContext, cAppCharP sUsername, ap
         return LOCERR_WRONGUSAGE;
     }
     TSyError res = DB_Forbidden;
-    string user = sc->getUsername();
-    string password = sc->getPassword();
+    string user = sc->getSyncUsername();
+    string password = sc->getSyncPassword();
 
     if (user.empty() && password.empty()) {
         // nothing to check, accept peer

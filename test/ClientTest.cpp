@@ -3606,8 +3606,8 @@ static bool setDeadSyncURL(SyncContext &context,
 
     if (boost::starts_with(url, "http")) {
         context.setSyncURL(fakeURL, true);
-        context.setUsername("foo", true);
-        context.setPassword("bar", true);
+        context.setSyncUsername("foo", true);
+        context.setSyncPassword("bar", true);
         return false;
     } else if (boost::starts_with(url, "local://")) {
         FullProps props = context.getConfigProps();

@@ -231,13 +231,13 @@ void LocalTransportAgent::run()
         // that is where the GUI knows how to store them. A better
         // solution would be to require that credentials are in the
         // "source-config" config.
-        string tmp = m_server->getUsername();
+        string tmp = m_server->getSyncUsername();
         if (!tmp.empty()) {
-            client.setUsername(tmp, true);
+            client.setSyncUsername(tmp, true);
         }
-        tmp = m_server->getPassword();
+        tmp = m_server->getSyncPassword();
         if (!tmp.empty()) {
-            client.setPassword(tmp, true);
+            client.setSyncPassword(tmp, true);
         }
 
         // debugging mode: write logs inside sub-directory of parent,

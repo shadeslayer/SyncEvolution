@@ -1458,18 +1458,18 @@ class SyncConfig {
      */
     /**@{*/
 
-    virtual std::string getUsername() const;
-    virtual void setUsername(const string &value, bool temporarily = false);
-    virtual std::string getPassword() const;
-    virtual void setPassword(const string &value, bool temporarily = false);
+    virtual std::string getSyncUsername() const;
+    virtual void setSyncUsername(const string &value, bool temporarily = false);
+    virtual std::string getSyncPassword() const;
+    virtual void setSyncPassword(const string &value, bool temporarily = false);
 
     /**
      * Look at the password setting and if it requires user interaction,
-     * get it from the user. Then store it for later usage in getPassword().
-     * Without this call, getPassword() returns the original, unmodified
+     * get it from the user. Then store it for later usage in getSyncPassword().
+     * Without this call, getSyncPassword() returns the original, unmodified
      * config string.
      */
-    virtual void checkPassword(ConfigUserInterface &ui);
+    virtual void checkSyncPassword(ConfigUserInterface &ui);
 
     /**
      * Look at the password setting and if it needs special mechanism to
@@ -1477,7 +1477,7 @@ class SyncConfig {
      * in the config tree.
      * @param ui the ui pointer
      */
-    virtual void savePassword(ConfigUserInterface &ui); 
+    virtual void saveSyncPassword(ConfigUserInterface &ui); 
 
     virtual bool getPreventSlowSync() const;
     virtual void setPreventSlowSync(bool value, bool temporarily = false);

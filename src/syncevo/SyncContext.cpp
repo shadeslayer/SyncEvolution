@@ -1689,7 +1689,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
         switch (extra1) {
         case 401:
             // TODO: reset cached password
-            SE_LOG_INFO(NULL, NULL, "authorization failed, check username '%s' and password", getUsername().c_str());
+            SE_LOG_INFO(NULL, NULL, "authorization failed, check username '%s' and password", getSyncUsername().c_str());
             break;
         case 403:
             SE_LOG_INFO(&source, NULL, "log in succeeded, but server refuses access - contact server operator");
@@ -2580,8 +2580,8 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     substTag(xml, "maxmsgsize", std::max(getMaxMsgSize(), 10000ul));
     substTag(xml, "maxobjsize", std::max(getMaxObjSize(), 1024u));
     if (m_serverMode) {
-        const string user = getUsername();
-        const string password = getPassword();
+        const string user = getSyncUsername();
+        const string password = getSyncPassword();
 
         /*
          * Do not check username/pwd if this local sync or over
@@ -2853,7 +2853,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
 
         try {
             // dump some summary information at the beginning of the log
-            SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getUsername().c_str());
+            SE_LOG_DEV(NULL, NULL, "SyncML server account: %s", getSyncUsername().c_str());
             SE_LOG_DEV(NULL, NULL, "client: SyncEvolution %s for %s", getSwv().c_str(), getDevType().c_str());
             SE_LOG_DEV(NULL, NULL, "device ID: %s", getDevID().c_str());
             SE_LOG_DEV(NULL, NULL, "%s", EDSAbiWrapperDebug());
@@ -2993,7 +2993,7 @@ bool SyncContext::sendSAN(uint16_t version)
     bool legacy = version < 12;
     /* Should be nonce sent by the server in the preceeding sync session */
     string nonce = "SyncEvolution";
-    string uauthb64 = san.B64_H (getUsername(), getPassword());
+    string uauthb64 = san.B64_H (getSyncUsername(), getSyncPassword());
     /* Client is expected to conduct the sync in the backgroud */
     sysync::UI_Mode mode = sysync::UI_not_specified;
 
@@ -3245,8 +3245,8 @@ SyncMLStatus SyncContext::doSync()
         }
          
         m_engine.SetStrValue(profile, "serverURI", getUsedSyncURL());
-        m_engine.SetStrValue(profile, "serverUser", getUsername());
-        m_engine.SetStrValue(profile, "serverPassword", getPassword());
+        m_engine.SetStrValue(profile, "serverUser", getSyncUsername());
+        m_engine.SetStrValue(profile, "serverPassword", getSyncPassword());
         m_engine.SetInt32Value(profile, "encoding",
                                getWBXML() ? 1 /* WBXML */ : 2 /* XML */);
 
