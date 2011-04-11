@@ -622,10 +622,14 @@ class ScalarConfigProperty : public TypedConfigProperty<T>
             error += endptr;
             return false;
         }
+        // comparison might be always true for some types
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
         if (val > Tmax || val < Tmin) {
             error = "range error";
             return false;
         }
+#pragma clang diagnostic pop
         if (Tmin == 0) {
             // check that we didn't accidentally accept a negative value,
             // strtoul() does that
