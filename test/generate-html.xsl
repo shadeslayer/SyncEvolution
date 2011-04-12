@@ -261,10 +261,15 @@
                 <xsl:variable name="retcode" select="$item/@result"/>
                 <xsl:variable name="retcode-cmp" select="$cmp-result/*[name(.)=name($item)]/@retcode"/>
                 <xsl:variable name="path" select="concat($log-path,'/', $item/@path)"/>
+                <xsl:variable name="servername">
+                  <xsl:call-template name="stringescape">
+                    <xsl:with-param name="string" select="name($item)"/>
+                  </xsl:call-template>
+                </xsl:variable>
                 <tr>
                     <td> <!-- server name -->
-                        <a href="#{name($item)}">
-                            <xsl:value-of select="name($item)"/>
+                        <a href="#{$servername}">
+                            <xsl:value-of select="$servername"/>
                         </a>
                     </td>
                     <td>
@@ -461,10 +466,15 @@
                 <xsl:variable name="retcode" select="$item/@result"/>
                 <xsl:variable name="retcode-cmp" select="$cmp-result/*[name(.)=name($item)]/@retcode"/>
                 <xsl:variable name="path" select="concat($log-path, '/', $item/@path)"/>
+                <xsl:variable name="servername">
+                  <xsl:call-template name="stringescape">
+                    <xsl:with-param name="string" select="name($item)"/>
+                  </xsl:call-template>
+                </xsl:variable>
                 <tr>
                     <td> <!-- server name -->
-                        <a href="#{name($item)}">
-                            <xsl:value-of select="name($item)"/>
+                        <a href="#{$servername}">
+                          <xsl:value-of select="$servername"/>
                         </a>
                     </td>
                     <td>
@@ -683,11 +693,16 @@
                             <xsl:text disable-output-escaping="yes">&lt;tr&gt;</xsl:text>
                         </xsl:if>
                         <td>
+                            <xsl:variable name="itemname">
+                              <xsl:call-template name="stringescape">
+                                <xsl:with-param name="string" select="name($item)"/>
+                              </xsl:call-template>
+                            </xsl:variable>
                             <xsl:call-template name="generate-table-info">
                                 <xsl:with-param name="source" select="$item"/>
                                 <xsl:with-param name="cmp-result" select="$cmp-item"/>
-                                <xsl:with-param name="log-path" select="concat($log-path,$item/@prefix,name($item))"/>
-                                <xsl:with-param name="description" select="name($item)"/>
+                                <xsl:with-param name="log-path" select="concat($log-path,$item/@prefix,$itemname)"/>
+                                <xsl:with-param name="description" select="$itemname"/>
                             </xsl:call-template>
                         </td>
                         <xsl:if test="(position() mod 3)=0">
@@ -718,15 +733,26 @@
         <xsl:choose>
             <xsl:when test="count($list)">
                 <table border="2">
+                    <xsl:variable name="sourcename">
+                      <xsl:call-template name="stringescape">
+                        <xsl:with-param name="string" select="name($source)"/>
+                      </xsl:call-template>
+                    </xsl:variable>
+
                     <tr>
-                        <th><xsl:value-of select="name($source)"/></th>
+                        <th><xsl:value-of select="$sourcename"/></th>
                         <th>Value</th>
                     </tr>
                     <xsl:for-each select="$source/*">
                         <!-- do not sort here: unit tests are run in a certain order which may matter -->
                         <!-- xsl:sort select="name(.)" data-type="text"/ -->
+                        <xsl:variable name="testname">
+                          <xsl:call-template name="stringescape">
+                            <xsl:with-param name="string" select="name(.)"/>
+                          </xsl:call-template>
+                        </xsl:variable>
                         <tr>
-                            <td width="300"><xsl:value-of select="name(.)"/></td>
+                            <td width="300"><xsl:value-of select="$testname"/></td>
                             <td width="20">
                                 <xsl:variable name="color">
                                     <xsl:call-template name="generate-color-with-list">
@@ -749,12 +775,12 @@
                                         </a>
                                     </xsl:when>
                                     <xsl:when test="@path">
-                                        <a href="{concat($log-path,string(@path),'/',name(.),$log-file-suffix)}">
+                                        <a href="{concat($log-path,string(@path),'/',$testname,$log-file-suffix)}">
                                             <xsl:value-of select="."/>
                                         </a>
                                     </xsl:when>
                                     <xsl:otherwise>
-                                        <a href="{$log-path}_{concat(name(.),$log-file-suffix)}">
+                                        <a href="{$log-path}_{concat($testname,$log-file-suffix)}">
                                             <xsl:value-of select="."/>
                                         </a>
                                     </xsl:otherwise>

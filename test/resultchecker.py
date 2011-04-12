@@ -252,6 +252,8 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 indents.append(indent)
                 prefix = logprefix[format]
                 qformat = format;
+                # avoid + sign in element name (not allowed by XML);
+                # code reading XML must replace _- with + and __ with _
                 qformat = qformat.replace("_", "__");
                 qformat = qformat.replace("+", "_-");
                 result.write(indent+'<'+qformat+' prefix="'+prefix+'">\n')
