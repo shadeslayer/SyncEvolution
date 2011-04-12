@@ -723,7 +723,8 @@
                         <th>Value</th>
                     </tr>
                     <xsl:for-each select="$source/*">
-                        <xsl:sort select="name(.)" data-type="text"/>
+                        <!-- do not sort here: unit tests are run in a certain order which may matter -->
+                        <!-- xsl:sort select="name(.)" data-type="text"/ -->
                         <tr>
                             <td width="300"><xsl:value-of select="name(.)"/></td>
                             <td width="20">

@@ -25,6 +25,9 @@ resultcheck.py: tranverse the test result directory, generate an XML
 based test report.
 """
 
+# sort more accurately on sub-second modification times
+os.stat_float_times(True)
+
 space="  "
 def check (resultdir, serverlist,resulturi, srcdir, shellprefix, backenddir):
     '''Entrypoint, resutldir is the test result directory to be generated,
@@ -221,7 +224,11 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             if(params[server].find('return code ') !=-1):
                 result.write('result="'+params[server].partition('return code ')[2].partition(')')[0]+'" ')
             result.write('>\n')
-            logs = glob.glob(resultdir+'/'+rserver+'/*.log')
+            # sort files by creation time, to preserve run order
+            logs = map(lambda file: (os.stat(file).st_mtime, file),
+                       glob.glob(resultdir+'/'+rserver+'/*.log'))
+            logs.sort()
+            logs = map(lambda entry: entry[1], logs)
             logdic ={}
             logprefix ={}
             for log in logs:
