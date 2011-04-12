@@ -762,6 +762,16 @@ test = SyncEvolutionTest("yahoo", compile,
                          testPrefix=options.testprefix)
 context.add(test)
 
+test = SyncEvolutionTest("apple", compile,
+                         "", options.shell,
+                         [ "Client::Source::apple_caldav Client::Source::apple_carddav" ],
+                         [ "apple_caldav", "apple_carddav" ],
+                         "CLIENT_TEST_WEBDAV='apple caldav carddav' "
+                        "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
+                         ,
+                         testPrefix=options.testprefix)
+context.add(test)
+
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       [ "Client::Sync" ],
