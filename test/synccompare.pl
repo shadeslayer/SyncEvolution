@@ -73,6 +73,7 @@ my $funambol = $server =~ /funambol/;
 my $google = $server =~ /google/;
 my $google_valarm = $ENV{CLIENT_TEST_GOOGLE_VALARM};
 my $yahoo = $server =~ /yahoo/;
+my $apple = $server =~ /apple/;
 my $evolution = $client =~ /evolution/;
 my $addressbook = $client =~ /addressbook/;
 
@@ -204,7 +205,7 @@ sub NormalizeItem {
     s/^((ATTENDEE|ORGANIZER).*):[Mm][Aa][Ii][Ll][Tt][Oo]:/$1:mailto:/mg;
 
     # remove fields which may differ
-    s/^(PRODID|CREATED|DTSTAMP|LAST-MODIFIED|REV):.*\r?\n?//gm;
+    s/^(PRODID|CREATED|DTSTAMP|LAST-MODIFIED|REV)(;X-VOBJ-FLOATINGTIME-ALLOWED=(TRUE|FALSE))?:.*\r?\n?//gm;
     # remove optional fields
     s/^(METHOD|X-WSS-[A-Z]*|X-WR-[A-Z]*|CALSCALE):.*\r?\n?//gm;
 
@@ -252,6 +253,8 @@ sub NormalizeItem {
         s/^CLASS:PUBLIC\r?\n//m;
         # RELATED=START is the default behavior
         s/^TRIGGER([^\n:]*);RELATED=START/TRIGGER$1/mg;
+        # VALUE=DURATION is the default behavior
+        s/^TRIGGER([^\n:]*);VALUE=DURATION/TRIGGER$1/mg;
     }
 
     if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo) {
@@ -298,6 +301,14 @@ sub NormalizeItem {
 
       #several properties are not preserved by Google in icalendar2.0 format
       s/^(SEQUENCE|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
+
+    if ($apple) {
+        # remove some parameters added by Apple Calendar server in CalDAV
+        s/^(ORGANIZER[^:]*);SCHEDULE-AGENT=NONE/$1/gm;
+        s/^(ORGANIZER[^:]*);SCHEDULE-STATUS=5.3/$1/gm;
+        # seems to require a fixed number of recurrences; hmm, okay...
+        s/^RRULE:COUNT=400;FREQ=DAILY/RRULE:FREQ=DAILY/gm;
     }
 
     if ($google || $yahoo) {
