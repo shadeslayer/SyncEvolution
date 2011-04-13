@@ -10,10 +10,10 @@
           <value conversion="prodid"/>
         </property>
 
-        <property name="REV" rule="EXTENDED-DATE-FORMAT">
+        <property name="REV" rule="EXTENDED-DATE-FORMAT" mandatory="yes">
           <value field="REV" conversion="DATE+EXTFMT"/>
         </property>
-        <property name="REV" rule="other">
+        <property name="REV" rule="other" mandatory="yes">
           <value field="REV"/>
         </property>
 

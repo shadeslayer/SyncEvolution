@@ -7,6 +7,9 @@
      <incomingscript><![CDATA[
         $VCARD_INCOMING_NAMECHANGE_SCRIPT
       ]]></incomingscript>
+      <outgoingscript><![CDATA[
+        $VCARD_OUTGOING_ADDREV_SCRIPT
+      ]]></outgoingscript>
     </datatype>
 
     <!-- vCard 3.0 datatype, using vCard profile defined above -->
@@ -16,4 +19,7 @@
       <incomingscript><![CDATA[
         $VCARD_INCOMING_NAMECHANGE_SCRIPT
       ]]></incomingscript>
+      <outgoingscript><![CDATA[
+        $VCARD_OUTGOING_ADDREV_SCRIPT
+      ]]></outgoingscript>
     </datatype>

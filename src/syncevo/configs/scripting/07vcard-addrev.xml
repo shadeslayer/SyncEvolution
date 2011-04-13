@@ -1,0 +1,8 @@
+    <macro name="VCARD_OUTGOING_ADDREV_SCRIPT"><![CDATA[
+      STRING tmp;
+      tmp=NORMALIZED(REV);
+      if (tmp==EMPTY){
+        tmp="2010-03-28T10:34:10Z";
+        }
+      REV=tmp;
+    ]]></macro>
