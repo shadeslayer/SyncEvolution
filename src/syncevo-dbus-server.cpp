@@ -73,6 +73,10 @@ extern "C" {
 }
 #endif
 
+// redefining "signals" clashes with the use of that word in gtkbindings.h,
+// included via notify.h
+#define QT_NO_KEYWORDS
+
 #ifdef USE_KDE_KWALLET
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
