@@ -441,18 +441,21 @@ CPPFLAGS="$old_CPPFLAGS"
 AC_LANG_POP(C++)
 
 # In contrast to the GNOME KEYRING, the KWallet is
-# currently considered optional. "configure" will enable it if
-# possible, but won't complain if the necessary development files
-# are missing.
+# currently considered optional. "configure" will never enable
+# by default, because that is a change that might not be
+# expected by traditional users.
 AC_ARG_ENABLE(kwallet,
               AS_HELP_STRING([--enable-kwallet], [enable access to KWallet]),
               [use_kde_kwallet="$enableval"
               test $KDEKWALLETFOUND = "yes" || $use_kde_kwallet = "no" || AC_MSG_ERROR([kwallet.pc not found. Install it to compile with the KWallet enabled.])],
-              [use_kde_kwallet=$KDEKWALLETFOUND])
+              [use_kde_kwallet="no"])
 
 if test "$use_kde_kwallet" = "yes"; then
     # conditional compilation in preprocessor
     AC_DEFINE(USE_KDE_KWALLET, 1, [KWallet available])
+    # TODO: KWallet needs Qt. Enable the Qt check in
+    # configure-post.in, otherwise it fails to compiler
+    # when none of the backends ask for Qt.
 else
     # avoid unneeded dependencies on KWallet
     KDE_KWALLET_CFLAGS=
