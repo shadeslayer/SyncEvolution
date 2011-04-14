@@ -64,19 +64,26 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
         "</C:comp-filter>\n"
         "</C:filter>\n"
         "</C:calendar-query>\n";
-    string result;
-    string href, etag, data;
-    Neon::XMLParser parser;
-    parser.initReportParser(href, etag);
-    parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
-                       boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
-                       boost::bind(&CalDAVSource::appendItem, this,
-                                   boost::ref(revisions),
-                                   boost::ref(href), boost::ref(etag), boost::ref(data)));
-    Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
-    report.addHeader("Depth", "1");
-    report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
-    report.run();
+    Timespec deadline = createDeadline();
+    while (true) {
+        string result;
+        string href, etag, data;
+        Neon::XMLParser parser;
+        parser.initReportParser(href, etag);
+        m_cache.clear();
+        parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                           boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
+                           boost::bind(&CalDAVSource::appendItem, this,
+                                       boost::ref(revisions),
+                                       boost::ref(href), boost::ref(etag), boost::ref(data)));
+        Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+        report.addHeader("Depth", "1");
+        report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+        if (report.run(deadline)) {
+            break;
+        }
+    }
+
     m_cache.m_initialized = true;
 }
 
@@ -600,17 +607,22 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                                  "</C:filter>\n"
                                  "</C:calendar-query>\n",
                                  event.m_UID.c_str());
-                string result;
-                string href, etag;
-                Neon::XMLParser parser;
-                parser.initReportParser(href, etag);
-                item = "";
-                parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
-                                   boost::bind(Neon::XMLParser::append, boost::ref(item), _2, _3));
-                Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
-                report.addHeader("Depth", "1");
-                report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
-                report.run();
+                Timespec deadline = createDeadline();
+                while (true) {
+                    string result;
+                    string href, etag;
+                    Neon::XMLParser parser;
+                    parser.initReportParser(href, etag);
+                    item = "";
+                    parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                                       boost::bind(Neon::XMLParser::append, boost::ref(item), _2, _3));
+                    Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+                    report.addHeader("Depth", "1");
+                    report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+                    if (report.run(deadline)) {
+                        break;
+                    }
+                }
 #endif
             } else {
                 throw;
@@ -762,7 +774,9 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
     Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
     report.addHeader("Depth", "1");
     report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
-    report.run();
+    // TODO: try multiple times to create data dump (must change ItemCache.init() such that
+    // it wipes out incomplete previous dump)
+    report.run(Timespec());
     cache.finalize(backupReport);
 }
 

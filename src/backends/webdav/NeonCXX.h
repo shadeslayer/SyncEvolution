@@ -98,6 +98,12 @@ class Settings {
     virtual int timeoutSeconds() const = 0;
 
     /**
+     * for network operations which fail before reaching timeoutSeconds()
+     * and can/should be retried: try again if > 0
+     */
+    virtual int retrySeconds() const = 0;
+
+    /**
      * use this to create a boost_shared pointer for a
      * Settings instance which needs to be freed differently
      */
@@ -203,13 +209,21 @@ class Session {
 
     /** ne_simple_propfind(): invoke callback for each URI */
     void propfindURI(const std::string &path, int depth,
-                  const ne_propname *props,
-                  const PropfindURICallback_t &callback);
+                     const ne_propname *props,
+                     const PropfindURICallback_t &callback,
+                     const Timespec &deadline);
 
-    /** ne_simple_propfind(): invoke callback for each property of each URI */
+    /**
+     * ne_simple_propfind(): invoke callback for each property of each URI
+     * @param deadline      stop resending after that point in time,
+     *                      zero disables resending
+     * @param retrySeconds  number of seconds to wait between resending,
+     *                      must not be negative
+     */
     void propfindProp(const std::string &path, int depth,
                       const ne_propname *props,
-                      const PropfindPropCallback_t &callback);
+                      const PropfindPropCallback_t &callback,
+                      const Timespec &deadline);
 
     /** URL which is in use */
     std::string getURL() const { return m_uri.toURL(); }
@@ -226,8 +240,18 @@ class Session {
     /**
      * throw error if error code indicates failure;
      * pass additional status code from a request whenever possible
+     *
+     * @param error      return code from Neon API call
+     * @param code       HTTP status code
+     * @param deadline   if set, then check whether error code and/or status indicated
+     *                   a temporary error and return true if also still before
+     *                   the deadline; otherwise throw error
+     * @param status     optional ne_status pointer
+     *
+     * @return true for success, false if retry needed (only if deadline not empty);
+     *         errors reported via exceptions
      */ 
-    void check(int error, int code = 0);
+    bool check(int error, int code = 0, const Timespec &deadline = Timespec(), const ne_status *status = NULL);
 
     ne_session *getSession() const { return m_session; }
 
@@ -408,7 +432,17 @@ class Request
     void addHeader(const std::string &name, const std::string &value) {
         ne_add_request_header(m_req, name.c_str(), value.c_str());
     }
-    void run();
+
+    /**
+     * Execute the request. May only be called once per request. Uses
+     * Session::check() underneath to detect fatal errors and throw
+     * exceptions. The deadline parameter is passed to check(), see
+     * there.
+     *
+     * @return result of Session::check()
+     */
+    bool run(const Timespec &deadline);
+
     std::string getResponseHeader(const std::string &name) {
         const char *value = ne_get_response_header(m_req, name.c_str());
         return value ? value : "";
@@ -431,7 +465,7 @@ class Request
     static int addResultData(void *userdata, const char *buf, size_t len);
 
     /** throw error if error code *or* current status indicates failure */
-    void check(int error);
+    bool check(int error, const Timespec &deadline);
 };
 
 /** thrown for 301 HTTP status */

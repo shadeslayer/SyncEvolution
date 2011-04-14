@@ -377,8 +377,10 @@ unsigned int Session::options(const std::string &path)
 
 void Session::propfindURI(const std::string &path, int depth,
                           const ne_propname *props,
-                          const PropfindURICallback_t &callback)
+                          const PropfindURICallback_t &callback,
+                          const Timespec &deadline)
 {
+ retry:
     ne_propfind_handler *handler;
     int error;
 
@@ -406,7 +408,9 @@ void Session::propfindURI(const std::string &path, int depth,
                              StringPrintf("%d status: redirected to %s", code, location.c_str()),
                              code, location);
     } else {
-        check(error, code);
+        if (!check(error, code, deadline)) {
+            goto retry;
+        }
     }
 }
 
@@ -423,10 +427,12 @@ void Session::propsResult(void *userdata, const ne_uri *uri,
 
 void Session::propfindProp(const std::string &path, int depth,
                            const ne_propname *props,
-                           const PropfindPropCallback_t &callback)
+                           const PropfindPropCallback_t &callback,
+                           const Timespec &deadline)
 {
     propfindURI(path, depth, props,
-                boost::bind(&Session::propsIterate, _1, _2, boost::cref(callback)));
+                boost::bind(&Session::propsIterate, _1, _2, boost::cref(callback)),
+                deadline);
 }
 
 void Session::propsIterate(const URI &uri, const ne_prop_result_set *results,
@@ -464,36 +470,92 @@ void Session::flush()
     }
 }
 
-void Session::check(int error, int code)
+bool Session::check(int error, int code, const Timespec &deadline, const ne_status *status)
 {
     flush();
 
+    // determine error description, may be made more specific below
+    string descr = StringPrintf("Neon error code %d: %s",
+                                error,
+                                ne_get_error(m_session));
+    // true for specific errors which might go away after a retry
+    bool retry = false;
+
     switch (error) {
-    case NE_AUTH:
-        SE_THROW_EXCEPTION_STATUS(TransportStatusException,
-                                  StringPrintf("Neon error code %d: %s",
-                                               error,
-                                               ne_get_error(m_session)),
-                                  STATUS_UNAUTHORIZED);
-        break;
     case NE_OK:
+        // request itself completed, but might still have resulted in bad status
+        if (code &&
+            (code < 200 || code >= 300)) {
+            if (status) {
+                descr = std::string("bad HTTP status: ") + Status2String(status);
+            } else {
+                descr = StringPrintf("bad HTTP status: %d", code);
+            }
+            if (code >= 500 && code <= 599) {
+                // potentially temporary server failure, may try again
+                retry = true;
+            }
+        } else {
+            // all fine, no retry necessary
+            return true;
+        }
+        break;
+    case NE_AUTH:
+        // tell caller what kind of transport error occurred
+        code = STATUS_UNAUTHORIZED;
         break;
     case NE_ERROR:
         if (code) {
-            // copy error code into exception
-            SE_THROW_EXCEPTION_STATUS(TransportStatusException,
-                                      StringPrintf("Neon error code %d: %s",
-                                                   error,
-                                                   ne_get_error(m_session)),
-                                      SyncMLStatus(code));
+            descr = StringPrintf("Neon error code %d: %s",
+                                 error,
+                                 ne_get_error(m_session));
+            if (code >= 500 && code <= 599) {
+                // potentially temporary server failure, may try again
+                retry = true;
+            }
+        } else if (descr.find("Secure connection truncated") != descr.npos) {
+            // occasionally seen with Google server; let's retry
+            retry = true;
         }
-        // no break
-    default:
-        SE_THROW_EXCEPTION(TransportException,
-                           StringPrintf("Neon error code %d: %s",
-                                        error,
-                                        ne_get_error(m_session)));
         break;
+    case NE_LOOKUP:
+    case NE_TIMEOUT:
+    case NE_CONNECT:
+        retry = true;
+        break;
+    }
+
+    SE_LOG_DEBUG(NULL, NULL, "%s, %s",
+                 descr.c_str(),
+                 retry ? "might retry" : "must not retry");
+    if (retry) {
+        if (!deadline) {
+            SE_LOG_DEBUG(NULL, NULL, "retrying not allowed for operation");
+        } else {
+            Timespec now = Timespec::monotonic();
+            if (now < deadline) {
+                int retrySeconds = m_settings->retrySeconds();
+                if (retrySeconds >= 0) {
+                    SE_LOG_DEBUG(NULL, NULL, "retry operation in %ds", retrySeconds);
+                    Sleep(retrySeconds);
+                } else {
+                    SE_LOG_DEBUG(NULL, NULL, "retry operation immediately");
+                }
+                return false;
+            } else {
+                SE_LOG_DEBUG(NULL, NULL, "retrying would exceed deadline, bailing out");
+            }
+        }
+    }
+
+    if (code) {
+        // copy error code into exception
+        SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+                                  descr,
+                                  SyncMLStatus(code));
+    } else {
+        SE_THROW_EXCEPTION(TransportException,
+                           descr);
     }
 }
 
@@ -638,12 +700,10 @@ Request::~Request()
     ne_request_destroy(m_req);
 }
 
-void Request::run()
+bool Request::run(const Timespec &deadline)
 {
     int error;
-    int attempt = 0;
 
- retry:
     if (m_result) {
         m_result->clear();
         ne_add_response_body_reader(m_req, ne_accept_2xx,
@@ -655,34 +715,11 @@ void Request::run()
 
     m_session.flush();
 
-    if (false && error == NE_OK && getStatus()->code == 500) {
-        // Internal server error: seems to be Yahoo! Contacts way of
-        // throttling requests. Try again later. A similar loop
-        // exists *inside* neon for the credentials error seen
-        // with Google Calendar, see Session::getCredentials().
-        time_t last = m_session.getLastRequestEnd();
-        if (last) {
-            // repeat request after exponentially increasing
-            // delays since the last successful request (5
-            // seconds, 10 seconds, 20 seconds, ...) until it
-            // succeeds, but not for more than 1 minute
-            time_t delay = 5 * (1<<attempt);
-            if (delay <= 60) {
-                time_t now = time(NULL);
-                if (now < last + delay) {
-                    SE_LOG_DEBUG(NULL, NULL, "500 internal server error due to throttling (?), retry #%d in %ld seconds",
-                                 attempt,
-                                 (long)(last + delay - now));
-                    sleep(last + delay - now);
-                }
-                attempt++;
-                goto retry;
-            }
-        }
+    bool success = check(error, deadline);
+    if (success) {
+        m_session.setLastRequestEnd(time(NULL));
     }
-
-    check(error);
-    m_session.setLastRequestEnd(time(NULL));
+    return success;
 }
 
 int Request::addResultData(void *userdata, const char *buf, size_t len)
@@ -692,7 +729,7 @@ int Request::addResultData(void *userdata, const char *buf, size_t len)
     return 0;
 }
 
-void Request::check(int error)
+bool Request::check(int error, const Timespec &deadline)
 {
     if (error == NE_ERROR &&
         getStatus()->klass == 3) {
@@ -702,12 +739,7 @@ void Request::check(int error)
                              getStatus()->klass,
                              location);
     }
-    m_session.check(error, getStatus()->code);
-    if (getStatus()->klass != 2) {
-        SE_THROW_EXCEPTION_STATUS(TransportStatusException,
-                                  std::string("bad status: ") + Status2String(getStatus()),
-                                  SyncMLStatus(getStatus()->code));
-    }
+    return m_session.check(error, getStatus()->code, deadline, getStatus());
 }
 
 }

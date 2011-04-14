@@ -76,7 +76,14 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
      */
     std::string ETag2Rev(const std::string &etag);
 
- protected:
+    /**
+     * Calculates the time after which the next operation is
+     * expected to complete before giving up, based on
+     * current time and retry settings.
+     * @return absolute time, empty if no retrying allowed
+     */
+    Timespec createDeadline() const;
+
     // access to neon session and calendar, valid between open() and close()
     boost::shared_ptr<Neon::Session> getSession() { return m_session; }
     Neon::URI &getCalendar() { return m_calendar; }

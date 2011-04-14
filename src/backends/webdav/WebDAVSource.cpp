@@ -10,6 +10,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <syncevo/LogRedirect.h>
 
@@ -109,11 +110,8 @@ public:
     virtual bool googleChildHack() const { return m_googleChildHack; }
     virtual bool googleAlarmHack() const { return m_googleChildHack; }
 
-    /**
-     * Communication is aborted after the configured retry duration.
-     * TODO: resend after retryInterval() seconds.
-     */
     virtual int timeoutSeconds() const { return m_context->getRetryDuration(); }
+    virtual int retrySeconds() const { return m_context->getRetryInterval(); }
 
     virtual void getCredentials(const std::string &realm,
                                 std::string &username,
@@ -260,6 +258,13 @@ void WebDAVSource::replaceHTMLEntities(std::string &item)
 
 void WebDAVSource::open()
 {
+    int timeoutSeconds = m_settings->timeoutSeconds();
+    int retrySeconds = m_settings->retrySeconds();
+    SE_LOG_DEBUG(this, NULL, "timout %ds, retry %ds => %s",
+                 timeoutSeconds, retrySeconds,
+                 (timeoutSeconds <= 0 ||
+                  retrySeconds <= 0) ? "resending disabled" : "resending allowed");
+
     // ignore the "Request ends, status 207 class 2xx, error line:" printed by neon
     LogRedirect::addIgnoreError(", error line:");
     // ignore error messages in returned data
@@ -289,6 +294,9 @@ void WebDAVSource::open()
 
         FILE *in = NULL;
         try {
+            Timespec startTime = Timespec::monotonic();
+
+        retry:
             in = popen(StringPrintf("syncevo-webdav-lookup '%s' '%s'",
                                     serviceType().c_str(),
                                     domain.c_str()).c_str(),
@@ -317,10 +325,24 @@ void WebDAVSource::open()
             case 3:
                 throwError(StringPrintf("syncURL not configured and DNS SRV search for %s in %s did not find the service", serviceType().c_str(), domain.c_str()));
                 break;
-            default:
+            default: {
+                Timespec now = Timespec::monotonic();
+                if (retrySeconds > 0 &&
+                    timeoutSeconds > 0) {
+                    if (now < startTime + timeoutSeconds) {
+                        SE_LOG_DEBUG(this, NULL, "DNS SRV search failed due to network issues, retry in %d seconds",
+                                     retrySeconds);
+                        Sleep(retrySeconds);
+                        goto retry;
+                    } else {
+                        SE_LOG_INFO(this, NULL, "DNS SRV search timed out after %d seconds", timeoutSeconds);
+                    }
+                }
+
                 // probably network problem
                 throwError(STATUS_TRANSPORT_FAILURE, StringPrintf("syncURL not configured and DNS SRV search for %s in %s failed", serviceType().c_str(), domain.c_str()));
                 break;
+            }
             }
         } catch (...) {
             if (in) {
@@ -359,6 +381,18 @@ void WebDAVSource::open()
         boost::bind(&WebDAVSource::openPropCallback,
                     this, _1, _2, _3, _4);
 
+    // With Yahoo! the initial connection often failed with 50x
+    // errors.  Retrying individual requests is error prone because at
+    // least one (asking for .well-known/[caldav|carddav]) always
+    // results in 502. Let the PROPFIND requests be resent, but in
+    // such a way that the overall discovery will never take longer
+    // than the total configured timeout period.
+    //
+    // The PROPFIND with openPropCallback is idempotent, because it
+    // will just overwrite previously found information in m_davProps.
+    // Therefore resending is okay.
+    Timespec finalDeadline = createDeadline(); // no resending if left empty
+
     while (true) {
         std::string next;
 
@@ -373,8 +407,7 @@ void WebDAVSource::open()
         // a Principal resource - perhaps reading that would lead further.
         //
         // So anyway, let's try the well-known URI first, but also add
-        // a hard-coded "well-known" fallback that will be tried
-        // next. Same for some other servers.
+        // the root path as fallback.
         if (path == "/.well-known/caldav/" ||
             path == "/.well-known/carddav/") {
             // remove trailing slash added by normalization, to be aligned with draft-daboo-srv-caldav-10
@@ -390,6 +423,13 @@ void WebDAVSource::open()
 
         bool success = false;
         try {
+            // disable resending for some known cases where it never succeeds
+            Timespec deadline = finalDeadline;
+            if (boost::starts_with(path, "/.well-known") &&
+                m_settings->getURL().find("yahoo.com") != string::npos) {
+                deadline = Timespec();
+            }
+
             if (LoggerBase::instance().getLevel() >= Logger::DEV) {
                 // First dump WebDAV "allprops" properties (does not contain
                 // properties which must be asked for explicitly!). Only
@@ -398,7 +438,7 @@ void WebDAVSource::open()
                 Neon::Session::PropfindPropCallback_t callback =
                     boost::bind(&WebDAVSource::openPropCallback,
                                 this, _1, _2, _3, _4);
-                m_session->propfindProp(path, 0, NULL, callback);
+                m_session->propfindProp(path, 0, NULL, callback, deadline);
             }
         
             // Now ask for some specific properties of interest for us.
@@ -460,7 +500,7 @@ void WebDAVSource::open()
                 { NULL, NULL }
             };
             SE_LOG_DEBUG(NULL, NULL, "read relevant properties of %s", path.c_str());
-            m_session->propfindProp(path, 0, caldav, callback);
+            m_session->propfindProp(path, 0, caldav, callback, deadline);
             success = true;
         } catch (const Neon::RedirectException &ex) {
             // follow to new location
@@ -547,7 +587,7 @@ void WebDAVSource::open()
                         { NULL, NULL }
                     };
                     m_davProps.clear();
-                    m_session->propfindProp(path, 1, props, callback);
+                    m_session->propfindProp(path, 1, props, callback, finalDeadline);
                     BOOST_FOREACH(Props_t::value_type &entry, m_davProps) {
                         const std::string &sub = entry.first;
                         const std::string &subType = entry.second["DAV::resourcetype"];
@@ -737,10 +777,12 @@ static const ne_propname getetag[] = {
 void WebDAVSource::listAllItems(RevisionMap_t &revisions)
 {
     bool failed = false;
+    Timespec deadline = createDeadline();
     m_session->propfindURI(m_calendar.m_path, 1, getetag,
                            boost::bind(&WebDAVSource::listAllItemsCallback,
                                        this, _1, _2, boost::ref(revisions),
-                                       boost::ref(failed)));
+                                       boost::ref(failed)),
+                           deadline);
     if (failed) {
         SE_THROW("incomplete listing of all items");
     }
@@ -805,12 +847,17 @@ std::string WebDAVSource::luid2path(const std::string &luid)
 
 void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
 {
-    item.clear();
-    Neon::Request req(*m_session, "GET", luid2path(uid),
-                      "", item);
-    // useful with CardDAV: server might support more than vCard 3.0, but we don't
-    req.addHeader("Accept", contentType());
-    req.run();
+    Timespec deadline = createDeadline();
+    while (true) {
+        item.clear();
+        Neon::Request req(*m_session, "GET", luid2path(uid),
+                          "", item);
+        // useful with CardDAV: server might support more than vCard 3.0, but we don't
+        req.addHeader("Accept", contentType());
+        if (req.run(deadline)) {
+            break;
+        }
+    }
 }
 
 TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid, const std::string &item, bool raw)
@@ -819,7 +866,12 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
     std::string rev;
     bool update = false;  /* true if adding item was turned into update */
 
+    Timespec deadline = createDeadline(); // no resending if left empty
     std::string result;
+    int counter = 0;
+ retry:
+    counter++;
+    result = "";
     if (uid.empty()) {
         // Pick a resource name (done by derived classes, by default random),
         // catch unexpected conflicts via If-None-Match: *.
@@ -827,10 +879,30 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         const std::string *data = createResourceName(item, buffer, new_uid);
         Neon::Request req(*m_session, "PUT", luid2path(new_uid),
                           *data, result);
-        req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
-        req.addHeader("If-None-Match", "*");
+        // Clearing the idempotent flag would allow us to clearly
+        // distinguish between a connection error (no changes made
+        // on server) and a server failure (may or may not have
+        // changed something) because it'll close the connection
+        // first.
+        //
+        // But because we are going to try resending
+        // the PUT anyway in case of 5xx errors we might as well 
+        // treat it like an idempotent request (which it is,
+        // in a way, because we'll try to get our data onto
+        // the server no matter what) and keep reusing an
+        // existing connection.
+        // req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
+
+        // For this to work we must allow the server to overwrite
+        // an item that we might have created before. Don't allow
+        // that in the first attempt.
+        if (counter == 1) {
+            req.addHeader("If-None-Match", "*");
+        }
         req.addHeader("Content-Type", contentType().c_str());
-        req.run();
+        if (!req.run(deadline)) {
+            goto retry;
+        }
         SE_LOG_DEBUG(NULL, NULL, "add item status: %s",
                      Neon::Status2String(req.getStatus()).c_str());
         switch (req.getStatusCode()) {
@@ -873,7 +945,8 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
             m_session->propfindURI(luid2path(new_uid), 0, getetag,
                                    boost::bind(&WebDAVSource::listAllItemsCallback,
                                                this, _1, _2, boost::ref(revisions),
-                                               boost::ref(failed)));
+                                               boost::ref(failed)),
+                                   deadline);
             // Turns out we get a result for our original path even in
             // the case of a merge, although the original path is not
             // listed when looking at the collection.  Let's use that
@@ -893,7 +966,8 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         const std::string *data = setResourceName(item, buffer, new_uid);
         Neon::Request req(*m_session, "PUT", luid2path(new_uid),
                           *data, result);
-        req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
+        // See above for discussion of idempotent and PUT.
+        // req.setFlag(NE_REQFLAG_IDEMPOTENT, 0);
         req.addHeader("Content-Type", contentType());
         // TODO: match exactly the expected revision, aka ETag,
         // or implement locking. Note that the ETag might not be
@@ -904,7 +978,9 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         // - Is retried? Might need slow sync in this case!
         //
         // req.addHeader("If-Match", etag);
-        req.run();
+        if (!req.run(deadline)) {
+            goto retry;
+        }
         SE_LOG_DEBUG(NULL, NULL, "update item status: %s",
                      Neon::Status2String(req.getStatus()).c_str());
         switch (req.getStatusCode()) {
@@ -941,7 +1017,8 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         m_session->propfindURI(luid2path(new_uid), 0, getetag,
                                boost::bind(&WebDAVSource::listAllItemsCallback,
                                            this, _1, _2, boost::ref(revisions),
-                                           boost::ref(failed)));
+                                           boost::ref(failed)),
+                               deadline);
         rev = revisions[new_uid];
         if (failed || rev.empty()) {
             SE_THROW("could not retrieve ETag");
@@ -973,26 +1050,44 @@ std::string WebDAVSource::getLUID(Neon::Request &req)
     }
 }
 
+Timespec WebDAVSource::createDeadline() const
+{
+    int timeoutSeconds = m_settings->timeoutSeconds();
+    int retrySeconds = m_settings->retrySeconds();
+    if (timeoutSeconds > 0 &&
+        retrySeconds > 0) {
+        return Timespec::monotonic() + timeoutSeconds;
+    } else {
+        return Timespec();
+    }
+}
+
 void WebDAVSource::removeItem(const string &uid)
 {
+    Timespec deadline = createDeadline();
     std::string item, result;
-    Neon::Request req(*m_session, "DELETE", luid2path(uid),
-                      item, result);
-    // TODO: match exactly the expected revision, aka ETag,
-    // or implement locking.
-    // req.addHeader("If-Match", etag);
-    req.run();
+    boost::scoped_ptr<Neon::Request> req;
+    while (true) {
+        req.reset(new Neon::Request(*m_session, "DELETE", luid2path(uid),
+                                    item, result));
+        // TODO: match exactly the expected revision, aka ETag,
+        // or implement locking.
+        // req.addHeader("If-Match", etag);
+        if (req->run(deadline)) {
+            break;
+        }
+    }
     SE_LOG_DEBUG(NULL, NULL, "remove item status: %s",
-                 Neon::Status2String(req.getStatus()).c_str());
-    switch (req.getStatusCode()) {
+                 Neon::Status2String(req->getStatus()).c_str());
+    switch (req->getStatusCode()) {
     case 204:
         // the expected outcome
         break;
     default:
         SE_THROW_EXCEPTION_STATUS(TransportStatusException,
                                   std::string("unexpected status for removal: ") +
-                                  Neon::Status2String(req.getStatus()),
-                                  SyncMLStatus(req.getStatus()->code));
+                                  Neon::Status2String(req->getStatus()),
+                                  SyncMLStatus(req->getStatus()->code));
         break;
     }
 }
