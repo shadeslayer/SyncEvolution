@@ -459,6 +459,13 @@ bool LogRedirect::process(FDs &fds) throw()
                 }
             }
 
+            // avoid explicit newline at end of output,
+            // logging will add it for each message()
+            // invocation
+            size_t len = strlen(text);
+            if (len > 0 && text[len - 1] == '\n') {
+                text[len - 1] = 0;
+            }
             LoggerBase::instance().message(level, prefix,
                                            NULL, 0, NULL,
                                            "%s", text);
