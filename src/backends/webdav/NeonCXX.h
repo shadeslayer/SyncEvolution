@@ -247,11 +247,13 @@ class Session {
      *                   a temporary error and return true if also still before
      *                   the deadline; otherwise throw error
      * @param status     optional ne_status pointer
+     * @param location   optional "Location" header value
      *
      * @return true for success, false if retry needed (only if deadline not empty);
      *         errors reported via exceptions
      */ 
-    bool check(int error, int code = 0, const Timespec &deadline = Timespec(), const ne_status *status = NULL);
+    bool check(int error, int code = 0, const Timespec &deadline = Timespec(), const ne_status *status = NULL,
+               const string &location = "");
 
     ne_session *getSession() const { return m_session; }
 

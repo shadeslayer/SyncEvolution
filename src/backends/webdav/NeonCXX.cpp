@@ -470,7 +470,7 @@ void Session::flush()
     }
 }
 
-bool Session::check(int error, int code, const Timespec &deadline, const ne_status *status)
+bool Session::check(int error, int code, const Timespec &deadline, const ne_status *status, const string &location)
 {
     flush();
 
@@ -480,6 +480,21 @@ bool Session::check(int error, int code, const Timespec &deadline, const ne_stat
                                 ne_get_error(m_session));
     // true for specific errors which might go away after a retry
     bool retry = false;
+
+    // detect redirect
+    if ((error == NE_ERROR || error == NE_OK) &&
+        (code >= 300 && code <= 399)) {
+        // special case Google: detect redirect to temporary error page
+        // and retry
+        if (location == "http://www.google.com/googlecalendar/unavailable.html") {
+            retry = true;
+        } else {
+            SE_THROW_EXCEPTION_2(RedirectException,
+                                 StringPrintf("%d status: redirected to %s", code, location.c_str()),
+                                 code,
+                                 location);
+        }
+    }
 
     switch (error) {
     case NE_OK:
@@ -731,15 +746,7 @@ int Request::addResultData(void *userdata, const char *buf, size_t len)
 
 bool Request::check(int error, const Timespec &deadline)
 {
-    if (error == NE_ERROR &&
-        getStatus()->klass == 3) {
-        std::string location = getResponseHeader("Location");
-        SE_THROW_EXCEPTION_2(RedirectException,
-                             StringPrintf("%d status: redirected to %s", getStatus()->klass, location.c_str()),
-                             getStatus()->klass,
-                             location);
-    }
-    return m_session.check(error, getStatus()->code, deadline, getStatus());
+    return m_session.check(error, getStatus()->code, deadline, getStatus(), getResponseHeader("Location"));
 }
 
 }
