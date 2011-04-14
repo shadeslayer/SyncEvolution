@@ -18,6 +18,7 @@
  */
 
 #include "akonadisyncsource.h"
+#include <syncevo/SyncSource.h>
 #include "test.h"
 
 #include <boost/algorithm/string.hpp>
