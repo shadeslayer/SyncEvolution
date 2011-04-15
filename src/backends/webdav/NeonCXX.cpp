@@ -256,63 +256,19 @@ boost::shared_ptr<Session> Session::create(const boost::shared_ptr<Settings> &se
 int Session::getCredentials(void *userdata, const char *realm, int attempt, char *username, char *password) throw()
 {
     try {
-        Session *session = static_cast<Session *>(userdata);
-        std::string user, pw;
-        session->m_settings->getCredentials(realm, user, pw);
-        SyncEvo::Strncpy(username, user.c_str(), NE_ABUFSIZ);
-        SyncEvo::Strncpy(password, pw.c_str(), NE_ABUFSIZ);
-
-        // count total attempts per request, not just those
-        // that Neon knows about
-        session->m_attempt++;
-        if (session->m_attempt > 1) {
-            // Already sent credentials once, still rejected:
-            // observed with Google Calendar (to throttle request rate?).
-            //
-            // This code is not called when forceAuthorization()
-            // is used. Apparently Neon needs to know about challenges
-            // before it asks this callback for credentials.
-            // Therefore a similar retry loop is also implemented
-            // above Neon.
-            if (!session->m_settings->getCredentialsOkay()) {
-                // we have never seen these credentials being accepted by the
-                // server, so better give up right away instead of
-                // delaying a "credential error" report
-                SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error, abort request");
-                return 1;
-            } else {
-                // repeat request after exponentially increasing
-                // delays since the last successful request (5
-                // seconds, 10 seconds, 20 seconds, ...) until it
-                // succeeds, but not for more than 1 minute
-                Timespec last = session->m_lastRequestEnd;
-                if (!last) {
-                    last = Timespec::monotonic();
-                }
-                int delay = session->m_settings->retrySeconds() * (1 << (session->m_attempt - 1));
-                if (delay > session->m_settings->timeoutSeconds()) {
-                    SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error, abort request after %.1lfs",
-                                 (Timespec::monotonic() - last).duration());
-                    return 1;
-                } else {
-                    Timespec now = Timespec::monotonic();
-                    if (now < last + delay) {
-                        double duration = (last + delay - now).duration();
-                        SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error due to throttling (?), retry #%d in %.1lfs",
-                                     session->m_attempt,
-                                     duration);
-                        Sleep(duration);
-                    } else {
-                        SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error due to throttling (?), retry #%d immediately",
-                                     session->m_attempt);
-                    }
-                }
-            }
+        if (!attempt) {
+            // try again with credentials
+            Session *session = static_cast<Session *>(userdata);
+            std::string user, pw;
+            session->m_settings->getCredentials(realm, user, pw);
+            SyncEvo::Strncpy(username, user.c_str(), NE_ABUFSIZ);
+            SyncEvo::Strncpy(password, pw.c_str(), NE_ABUFSIZ);
+            session->m_credentialsSent = true;
+            return 0;
+        } else {
+            // give up
+            return 1;
         }
-
-        // try again with credentials
-        session->m_credentialsSent = true;
-        return 0;
     } catch (...) {
         Exception::handle();
         SE_LOG_ERROR(NULL, NULL, "no credentials for %s", realm);
