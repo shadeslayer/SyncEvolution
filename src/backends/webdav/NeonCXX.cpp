@@ -607,6 +607,11 @@ bool Session::check(int error, int code, const ne_status *status, const string &
                     }
                     int delay = retrySeconds * (1 << (m_attempt - 1));
                     Timespec next = last + delay;
+                    if (next > m_deadline) {
+                        // no point in waiting (potentially much) until after our 
+                        // deadline, do final attempt at that time
+                        next = m_deadline;
+                    }
                     if (next > now) {
                         double duration = (next - now).duration();
                         SE_LOG_DEBUG(NULL, NULL, "retry %s in %.1lfs, attempt #%d",
