@@ -19,11 +19,6 @@ if test "$enable_any" = "no"; then
         AC_MSG_ERROR([no backend enabled - refusing to continue: $anymissing])
 fi
 
-dnl check for programs.
-AC_PROG_CXX
-AC_PROG_LIBTOOL
-AC_PROG_MAKE_SET
-
 dnl glib initialization is done only if requested by some configure-sub.in,
 dnl for not needed otherwise even if found
 if test "$need_glib" = "yes"; then

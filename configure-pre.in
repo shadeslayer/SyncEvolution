@@ -45,6 +45,11 @@ define([SYNTHESISSRC_REVISION], [syncevolution-0.9])
 AM_CONFIG_HEADER(config.h)
 AC_LIBTOOL_DLOPEN
 
+dnl check for programs.
+AC_PROG_CXX
+AC_PROG_LIBTOOL
+AC_PROG_MAKE_SET
+
 dnl default device type (see AC_DEFINE below)
 DEVICE_TYPE=workstation
 
