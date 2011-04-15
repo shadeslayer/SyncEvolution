@@ -115,7 +115,7 @@ string CmdlineSyncClient::askPassword(const string &passwordName,
 #ifdef USE_GNOME_KEYRING
     //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session
     //and Call KWallet if it is. else pick Gnome Keyring by default
-    if (getenv("KDE_FULL_SESSION")) {
+    if (!getenv("KDE_FULL_SESSION")) {
         isKde = false;
     }
 #endif
