@@ -666,34 +666,40 @@ void WebDAVSource::open()
     m_calendar.m_path = path;
     SE_LOG_DEBUG(NULL, NULL, "picked final path %s", m_calendar.m_path.c_str());
 
-    // Check some server capabilities. Purely informational at this point.
+    // Check some server capabilities. Purely informational at this
+    // point, doesn't have to succeed either (Google 401 throttling
+    // workaround not active here, so it may really fail!).
 #ifdef HAVE_LIBNEON_OPTIONS
     if (LoggerBase::instance().getLevel() >= Logger::DEV) {
-        SE_LOG_DEBUG(NULL, NULL, "read capabilities of %s", m_calendar.toURL().c_str());
-        m_session->startOperation("OPTIONS", Timespec());
-        int caps = m_session->options(path);
-        static const Flag descr[] = {
-            { NE_CAP_DAV_CLASS1, "Class 1 WebDAV (RFC 2518)" },
-            { NE_CAP_DAV_CLASS2, "Class 2 WebDAV (RFC 2518)" },
-            { NE_CAP_DAV_CLASS3, "Class 3 WebDAV (RFC 4918)" },
-            { NE_CAP_MODDAV_EXEC, "mod_dav 'executable' property" },
-            { NE_CAP_DAV_ACL, "WebDAV ACL (RFC 3744)" },
-            { NE_CAP_VER_CONTROL, "DeltaV version-control" },
-            { NE_CAP_CO_IN_PLACE, "DeltaV checkout-in-place" },
-            { NE_CAP_VER_HISTORY, "DeltaV version-history" },
-            { NE_CAP_WORKSPACE, "DeltaV workspace" },
-            { NE_CAP_UPDATE, "DeltaV update" },
-            { NE_CAP_LABEL, "DeltaV label" },
-            { NE_CAP_WORK_RESOURCE, "DeltaV working-resouce" },
-            { NE_CAP_MERGE, "DeltaV merge" },
-            { NE_CAP_BASELINE, "DeltaV baseline" },
-            { NE_CAP_ACTIVITY, "DeltaV activity" },
-            { NE_CAP_VC_COLLECTION, "DeltaV version-controlled-collection" },
-            { 0, NULL }
-        };
-        SE_LOG_DEBUG(NULL, NULL, "%s WebDAV capabilities: %s",
-                     m_session->getURL().c_str(),
-                     Flags2String(caps, descr).c_str());
+        try {
+            SE_LOG_DEBUG(NULL, NULL, "read capabilities of %s", m_calendar.toURL().c_str());
+            m_session->startOperation("OPTIONS", Timespec());
+            int caps = m_session->options(path);
+            static const Flag descr[] = {
+                { NE_CAP_DAV_CLASS1, "Class 1 WebDAV (RFC 2518)" },
+                { NE_CAP_DAV_CLASS2, "Class 2 WebDAV (RFC 2518)" },
+                { NE_CAP_DAV_CLASS3, "Class 3 WebDAV (RFC 4918)" },
+                { NE_CAP_MODDAV_EXEC, "mod_dav 'executable' property" },
+                { NE_CAP_DAV_ACL, "WebDAV ACL (RFC 3744)" },
+                { NE_CAP_VER_CONTROL, "DeltaV version-control" },
+                { NE_CAP_CO_IN_PLACE, "DeltaV checkout-in-place" },
+                { NE_CAP_VER_HISTORY, "DeltaV version-history" },
+                { NE_CAP_WORKSPACE, "DeltaV workspace" },
+                { NE_CAP_UPDATE, "DeltaV update" },
+                { NE_CAP_LABEL, "DeltaV label" },
+                { NE_CAP_WORK_RESOURCE, "DeltaV working-resouce" },
+                { NE_CAP_MERGE, "DeltaV merge" },
+                { NE_CAP_BASELINE, "DeltaV baseline" },
+                { NE_CAP_ACTIVITY, "DeltaV activity" },
+                { NE_CAP_VC_COLLECTION, "DeltaV version-controlled-collection" },
+                { 0, NULL }
+            };
+            SE_LOG_DEBUG(NULL, NULL, "%s WebDAV capabilities: %s",
+                         m_session->getURL().c_str(),
+                         Flags2String(caps, descr).c_str());
+        } catch (...) {
+            Exception::handle();
+        }
     }
 #endif // HAVE_LIBNEON_OPTIONS
 }
