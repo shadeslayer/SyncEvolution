@@ -59,7 +59,7 @@ struct SyncSourceParams {
      */
     SyncSourceParams(const string &name,
                      const SyncSourceNodes &nodes,
-                     const boost::shared_ptr<const SyncConfig> &context,
+                     const boost::shared_ptr<SyncConfig> &context,
                      const string &contextName = "") :
         m_name(name),
         m_nodes(nodes),
@@ -71,7 +71,7 @@ struct SyncSourceParams {
 
     string m_name;
     SyncSourceNodes m_nodes;
-    boost::shared_ptr<const SyncConfig> m_context;
+    boost::shared_ptr<SyncConfig> m_context;
     string m_contextName;
 };
 
@@ -1223,7 +1223,7 @@ class DummySyncSource : public SyncSource
        SyncSource(params) {}
 
      DummySyncSource(const std::string &name, const std::string &contextName) :
-       SyncSource(SyncSourceParams(name, SyncSourceNodes(), boost::shared_ptr<const SyncConfig>(), contextName)) {}
+       SyncSource(SyncSourceParams(name, SyncSourceNodes(), boost::shared_ptr<SyncConfig>(), contextName)) {}
 
     virtual Databases getDatabases() { return Databases(); }
     virtual void open() {}
