@@ -59,14 +59,8 @@
           <value index="2" field="ORG_OFFICE"/>
           <value index="3" field="ORG_TEAM"/>
         </property>
-        <property name="X-KADDRESSBOOK-X-Office" delayedparsing="1">
-          <value field="ORG_OFFICE"/>
-        </property>
 
         <property name="ROLE">
-          <value field="ROLE"/>
-        </property>
-        <property name="X-KADDRESSBOOK-X-Profession" delayedparsing="1">
           <value field="ROLE"/>
         </property>
 
@@ -139,15 +133,11 @@
         <property name="FBURL" suppressempty="yes">
           <value field="FBURL" show="yes"/>
         </property>
-        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes" rule="KDE"/>
-        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes" rule="other">
+        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes">
           <value field="BLOGURL" show="yes"/>
         </property>
         <property name="X-EVOLUTION-VIDEO-URL" suppressempty="yes">
           <value field="VIDEOURL" show="yes"/>
-        </property>
-        <property name="X-KADDRESSBOOK-BlogFeed" suppressempty="yes" delayedparsing="1">
-          <value field="BLOGURL" show="yes"/>
         </property>
 
         <!-- item for SyncML server: EVOLUTION rule not active,
@@ -163,54 +153,34 @@
 
              item to/from Evolution: EVOLUTION rule is active,
              only X-EVOLUTION-MANAGER is used. -->
-        <property name="X-KADDRESSBOOK-X-ManagersName" suppressempty="yes" delayedparsing="1">
-          <value field="MANAGER" show="yes"/>
-        </property>
-        <property name="X-EVOLUTION-MANAGER" suppressempty="yes" delayedparsing="1" rule="KDE"/>
-        <property name="X-EVOLUTION-MANAGER" suppressempty="yes" delayedparsing="1" rule="other">
+        <property name="X-EVOLUTION-MANAGER" suppressempty="yes" delayedparsing="1">
           <value field="MANAGER" show="yes"/>
         </property>
         <property name="X-MANAGER" suppressempty="yes" rule="EVOLUTION"/> <!-- disables the X-MANAGER for EVOLUTION -->
-        <property name="X-MANAGER" suppressempty="yes" rule="KDE"/> <!-- disables the X-MANAGER for Akonadi -->
         <property name="X-MANAGER" suppressempty="yes" rule="other">
           <value field="MANAGER" show="yes"/>
         </property>
 
-        <property name="X-KADDRESSBOOK-X-AssistantsName" suppressempty="yes" delayedparsing="1">
-          <value field="ASSISTANT" show="yes"/>
-        </property>
-        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes" delayedparsing="1" rule="KDE"/>
-        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes" delayedparsing="1" rule="other">
+        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes" delayedparsing="1">
           <value field="ASSISTANT" show="yes"/>
         </property>
         <property name="X-ASSISTANT" suppressempty="yes" rule="EVOLUTION"/>
-        <property name="X-ASSISTANT" suppressempty="yes" rule="KDE"/>
         <property name="X-ASSISTANT" suppressempty="yes" rule="other">
           <value field="ASSISTANT" show="yes"/>
         </property>
 
-        <property name="X-KADDRESSBOOK-X-SpousesName" suppressempty="yes" delayedparsing="1">
-          <value field="SPOUSE" show="yes"/>
-        </property>
-        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes" delayedparsing="1" rule ="KDE"/>
-        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes" delayedparsing="1" rule ="other">
+        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes" delayedparsing="1">
           <value field="SPOUSE" show="yes"/>
         </property>
         <property name="X-SPOUSE" suppressempty="yes" rule="EVOLUTION"/>
-        <property name="X-SPOUSE" suppressempty="yes" rule="KDE"/>
         <property name="X-SPOUSE" suppressempty="yes" rule="other">
           <value field="SPOUSE" show="yes"/>
         </property>
 
-        <property name="X-KADDRESSBOOK-X-Anniversary" suppressempty="yes" delayedparsing="1">
-          <value field="ANNIVERSARY" show="yes"/>
-        </property>
-        <property name="X-EVOLUTION-ANNIVERSARY" suppressempty="yes" delayedparsing="1" rule="KDE"/>
-        <property name="X-EVOLUTION-ANNIVERSARY" suppressempty="yes" delayedparsing="1" rule="other">
+        <property name="X-EVOLUTION-ANNIVERSARY" suppressempty="yes" delayedparsing="1">
           <value field="ANNIVERSARY" show="yes"/>
         </property>
         <property name="X-ANNIVERSARY" suppressempty="yes" rule="EVOLUTION"/>
-        <property name="X-ANNIVERSARY" suppressempty="yes" rule="KDE"/>
         <property name="X-ANNIVERSARY" suppressempty="yes" rule="other">
           <value field="ANNIVERSARY" show="yes"/>
         </property>
@@ -219,85 +189,50 @@
           <value field="WANTS_HTML" show="yes"/>
         </property>
 
-        <property name="X-KADDRESSBOOK-X-IMAddress" suppressempty="yes">
-          <value field="IM_ADDRESS" show="yes"/>
-        </property>
-        <property name="X-messaging/aim-All" suppressempty="yes" delayedparsing="1">
-          <value field="AIM_HANDLE"/>
-        </property>
-        <property name="X-AIM" suppressempty="yes" rule="KDE"/>
-        <property name="X-AIM" suppressempty="yes" rule="other">
+        <property name="X-AIM" suppressempty="yes">
           <value field="AIM_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="AIM_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/gadu-All" suppressempty="yes" delayedparsing="1">
-          <value field="GADUGADU_HANDLE"/>
-        </property>
-        <property name="X-GADUGADU" suppressempty="yes" rule="KDE"/>
-        <property name="X-GADUGADU" suppressempty="yes" rule="other">
+        <property name="X-GADUGADU" suppressempty="yes">
           <value field="GADUGADU_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="GADUGADU_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/groupwise-All" suppressempty="yes" delayedparsing="1">
-          <value field="GROUPWISE_HANDLE"/>
-        </property>
-        <property name="X-GROUPWISE" suppressempty="yes" rule="KDE"/>
-        <property name="X-GROUPWISE" suppressempty="yes" rule="other">
+        <property name="X-GROUPWISE" suppressempty="yes">
           <value field="GROUPWISE_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="GROUPWISE_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/icq-All" suppressempty="yes" delayedparsing="1">
-          <value field="ICQ_HANDLE"/>
-        </property>
-        <property name="X-ICQ" suppressempty="yes" rule="KDE"/>
-        <property name="X-ICQ" suppressempty="yes" rule="other">
+        <property name="X-ICQ" suppressempty="yes">
           <value field="ICQ_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="ICQ_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/xmpp-All" suppressempty="yes" delayedparsing="1">
-          <value field="JABBER_HANDLE"/>
-        </property>
-        <property name="X-JABBER" suppressempty="yes" rule="KDE"/>
-        <property name="X-JABBER" suppressempty="yes" rule="other">
+        <property name="X-JABBER" suppressempty="yes">
           <value field="JABBER_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no">
             <value field="JABBER_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/msn-All" suppressempty="yes" delayedparsing="1">
-          <value field="MSN_HANDLE"/>
-        </property>
-        <property name="X-MSN" suppressempty="yes" rule="KDE"/>
-        <property name="X-MSN" suppressempty="yes" rule="other">
+        <property name="X-MSN" suppressempty="yes">
           <value field="MSN_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="MSN_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/yahoo-All" suppressempty="yes" delayedparsing="1">
-          <value field="YAHOO_HANDLE"/>
-        </property>
-        <property name="X-YAHOO" suppressempty="yes" rule="KDE"/>
-        <property name="X-YAHOO" suppressempty="yes" rule="other">
+        <property name="X-YAHOO" suppressempty="yes">
           <value field="YAHOO_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="YAHOO_SLOT"/>
           </parameter>
         </property>
 
-        <property name="X-messaging/skype-All" suppressempty="yes" delayedparsing="1">
-          <value field="SKYPE_HANDLE"/>
-        </property>
-        <property name="X-SKYPE" suppressempty="yes" rule="KDE"/>
-        <property name="X-SKYPE" suppressempty="yes" rule="other"> 
+        <property name="X-SKYPE" suppressempty="yes"> 
           <value field="SKYPE_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="SKYPE_SLOT"/>
@@ -310,17 +245,6 @@
             <value field="SIP_SLOT"/>
           </parameter>
         </property>
-
-        <property name="X-messaging/irc-All" suppressempty="yes">
-          <value field="IRC_HANDLE"/>
-        </property>
-        <property name="X-messaging/meanwhile-All" suppressempty="yes">
-          <value field="MEANWHILE_HANDLE"/>
-        </property>
-        <property name="X-messaging/sms-All" suppressempty="yes">
-          <value field="SMS_HANDLE"/>
-        </property>
-
 
         <property name="ADR" values="7">
           <value index="0" field="ADR_POBOX"/>
@@ -362,20 +286,6 @@
               <enum name="JPEG" value="0"/>
             </value>
           </parameter>
-        </property>
-
-
-        <property name="X-KADDRESSBOOK-CRYPTOENCRYPTPREF" suppressempty="yes">
-          <value field="CRYPTOENCRYPTPREF" show="yes"/>
-        </property>
-        <property name="X-KADDRESSBOOK-CRYPTOPROTOPREF" suppressempty="yes">
-          <value field="CRYPTOPROTOPREF" show="yes"/>
-        </property>
-        <property name="X-KADDRESSBOOK-CRYPTOSIGNPREF" suppressempty="yes">
-          <value field="CRYPTOSIGNPREF" show="yes"/>
-        </property>
-        <property name="X-KADDRESSBOOK-OPENPGPFP" suppressempty="yes">
-          <value field="OPENPGPFP" show="yes"/>
         </property>
 
       </profile>
