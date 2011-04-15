@@ -1523,8 +1523,8 @@ static BoolConfigProperty syncPropDumpData("dumpData",
                                            "before and after a sync session (always enabled if printChanges is enabled)",
                                            "1");
 static SecondsConfigProperty syncPropRetryDuration("RetryDuration",
-                                          "The total amount of time in seconds in which the client\n"
-                                          "tries to get a response from the server.\n"
+                                          "The total amount of time in seconds in which the SyncML\n"
+                                          "client tries to get a response from the server.\n"
                                           "During this time, the client will resend messages\n"
                                           "in regular intervals (RetryInterval) if no response\n"
                                           "is received or the message could not be delivered due\n"
@@ -1537,7 +1537,7 @@ static SecondsConfigProperty syncPropRetryDuration("RetryDuration",
                                           "synchronization is aborted."
                                           ,"5M");
 static SecondsConfigProperty syncPropRetryInterval("RetryInterval",
-                                          "The number of seconds between the start of message sending\n"
+                                          "The number of seconds between the start of SyncML message sending\n"
                                           "and the start of the retransmission. If the interval has\n"
                                           "already passed when a message send returns, the\n"
                                           "message is resent immediately. Resending without\n"
@@ -1545,7 +1545,13 @@ static SecondsConfigProperty syncPropRetryInterval("RetryInterval",
                                           "disables retries.\n"
                                           "\n"
                                           "Servers cannot resend messages, so this setting has no\n"
-                                          "effect in that case."
+                                          "effect in that case.\n"
+                                          "\n"
+                                          "The WebDAV backend also resends messages after a temporary\n"
+                                          "network error. It uses exponential backoff to determine when\n"
+                                          "the server is available again. This setting is divided by 24\n"
+                                          "to obtain the initial delay (default: 2m => 5s), which is then\n"
+                                          "doubled for each retry."
                                           ,"2M");
 static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
                                           "Indicates whether this configuration is about a\n"

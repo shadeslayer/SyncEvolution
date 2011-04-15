@@ -67,6 +67,17 @@ class Settings {
                                 std::string &password) = 0;
 
     /**
+     * Google returns a 401 error even if the credentials
+     * are valid. It seems to use that to throttle request
+     * rates. This read/write setting remembers whether the
+     * credentials were used successfully in the past,
+     * in which case we try harder to get a failed request
+     * executed. Otherwise we give up immediately.
+     */
+    virtual bool getCredentialsOkay() = 0;
+    virtual void setCredentialsOkay(bool okay) = 0;
+
+    /**
      * standard SyncEvolution log level, see
      * Session::Session() how that is mapped to neon debugging
      */
@@ -180,6 +191,25 @@ class Session {
     bool m_forceAuthorizationOnce;
     std::string m_forceUsername, m_forcePassword;
 
+    /**
+     * Remember whether a request was sent with credentials.
+     * If the request succeeds, we assume that the credentials
+     * were okay. A bit fuzzy because forcing authorization
+     * might succeed despite invalid credentials if the
+     * server doesn't check them.
+     */
+    bool m_credentialsSent;
+
+    /**
+     * current operation; used for debugging output
+     */
+    string m_operation;
+
+    /**
+     * current deadline for operation
+     */
+    Timespec m_deadline;
+
  public:
     /**
      * Create or reuse Session instance.
@@ -232,6 +262,20 @@ class Session {
     const URI &getURI() const { return m_uri; }
 
     /**
+     * to be called *once* before executing a request
+     * or retrying it
+     *
+     * call sequence is this:
+     * - startOperation()
+     * - repeat until success or final failure: create request, run(), check()
+     *
+     * @param operation    internal descriptor for debugging (for example, PROPFIND)
+     * @param deadline     time at which the operation must be completed, otherwise it'll be considered failed;
+     *                     empty if the operation is only meant to be attempted once
+     */
+    void startOperation(const string &operation, const Timespec &deadline);
+
+    /**
      * to be called after each operation which might have produced debugging output by neon;
      * automatically called by check()
      */
@@ -243,25 +287,16 @@ class Session {
      *
      * @param error      return code from Neon API call
      * @param code       HTTP status code
-     * @param deadline   if set, then check whether error code and/or status indicated
-     *                   a temporary error and return true if also still before
-     *                   the deadline; otherwise throw error
-     * @param status     optional ne_status pointer
+     * @param status     optional ne_status pointer, non-NULL for all requests
      * @param location   optional "Location" header value
      *
      * @return true for success, false if retry needed (only if deadline not empty);
      *         errors reported via exceptions
      */ 
-    bool check(int error, int code = 0, const Timespec &deadline = Timespec(), const ne_status *status = NULL,
+    bool check(int error, int code = 0, const ne_status *status = NULL,
                const string &location = "");
 
     ne_session *getSession() const { return m_session; }
-
-    /**
-     * time when last successul request completed, must be maintained by Request::run()
-     */
-    time_t getLastRequestEnd() const { return m_lastRequestEnd; }
-    void setLastRequestEnd(time_t end) { m_lastRequestEnd = end; }
 
     /**
      * force next request in this session to have Basic authorization
@@ -276,7 +311,10 @@ class Session {
     ne_session *m_session;
     URI m_uri;
     std::string m_proxyURL;
-    time_t m_lastRequestEnd;
+    /** time when last successul request completed, maintained by check() */
+    Timespec m_lastRequestEnd;
+    /** number of times a request was sent, maintained by startOperation(), the credentials callback, and check() */
+    int m_attempt;
 
     /** ne_set_server_auth() callback */
     static int getCredentials(void *userdata, const char *realm, int attempt, char *username, char *password) throw();
@@ -438,12 +476,11 @@ class Request
     /**
      * Execute the request. May only be called once per request. Uses
      * Session::check() underneath to detect fatal errors and throw
-     * exceptions. The deadline parameter is passed to check(), see
-     * there.
+     * exceptions.
      *
      * @return result of Session::check()
      */
-    bool run(const Timespec &deadline);
+    bool run();
 
     std::string getResponseHeader(const std::string &name) {
         const char *value = ne_get_response_header(m_req, name.c_str());
@@ -467,7 +504,7 @@ class Request
     static int addResultData(void *userdata, const char *buf, size_t len);
 
     /** throw error if error code *or* current status indicates failure */
-    bool check(int error, const Timespec &deadline);
+    bool check(int error);
 };
 
 /** thrown for 301 HTTP status */

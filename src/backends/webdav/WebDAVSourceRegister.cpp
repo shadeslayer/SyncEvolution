@@ -53,20 +53,30 @@ static SyncSource *createSource(const SyncSourceParams &params)
     return NULL;
 }
 
-static RegisterSyncSource registerMe("DAV",
+static class RegisterWebDAVSyncSource : public RegisterSyncSource
+{
+public:
+    RegisterWebDAVSyncSource() :
+        RegisterSyncSource("DAV",
 #ifdef ENABLE_DAV
-                                     true,
+                           true,
 #else
-                                     false,
+                           false,
 #endif
-                                     createSource,
-                                     "CalDAV\n"
-                                     "CardDAV\n"
-                                     ,
-                                     Values() +
-                                     Aliases("CalDAV")
-                                     + Aliases("CardDAV")
-                                     );
+                           createSource,
+                           "CalDAV\n"
+                           "CardDAV\n"
+                           ,
+                           Values() +
+                           Aliases("CalDAV")
+                           + Aliases("CardDAV")
+                           )
+    {
+        // configure and register our own property
+        WebDAVCredentialsOkay.setHidden(true);
+        SyncConfig::getRegistry().push_back(&WebDAVCredentialsOkay);
+    }
+} registerMe;
 
 #ifdef ENABLE_DAV
 #ifdef ENABLE_UNIT_TESTS

@@ -19,23 +19,29 @@
 
 SE_BEGIN_CXX
 
+BoolConfigProperty WebDAVCredentialsOkay("webDAVCredentialsOkay", "credentials were accepted before");
+
 /**
  * Retrieve settings from SyncConfig.
  * NULL pointer for config is allowed.
  */
 class ContextSettings : public Neon::Settings {
-    boost::shared_ptr<const SyncConfig> m_context;
+    boost::shared_ptr<SyncConfig> m_context;
     std::string m_url;
     bool m_googleUpdateHack;
     bool m_googleChildHack;
     bool m_googleAlarmHack;
+    // credentials were valid in the past: stored persistently in tracking node
+    bool m_credentialsOkay;
+
 
 public:
-    ContextSettings(const boost::shared_ptr<const SyncConfig> &context) :
+    ContextSettings(const boost::shared_ptr<SyncConfig> &context) :
         m_context(context),
         m_googleUpdateHack(false),
         m_googleChildHack(false),
-        m_googleAlarmHack(false)
+        m_googleAlarmHack(false),
+        m_credentialsOkay(false)
     {
         if (m_context) {
             vector<string> urls = m_context->getSyncURL();
@@ -81,6 +87,9 @@ public:
                 }
             }
         }
+
+        boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
+        m_credentialsOkay = WebDAVCredentialsOkay.getPropertyValue(*node);
     }
 
     void setURL(const std::string url) { m_url = url; }
@@ -111,7 +120,13 @@ public:
     virtual bool googleAlarmHack() const { return m_googleChildHack; }
 
     virtual int timeoutSeconds() const { return m_context->getRetryDuration(); }
-    virtual int retrySeconds() const { return m_context->getRetryInterval(); }
+    virtual int retrySeconds() const {
+        int seconds = m_context->getRetryInterval();
+        if (seconds >= 0) {
+            seconds /= (120 / 5); // default: 2min => 5s
+        }
+        return seconds;
+    }
 
     virtual void getCredentials(const std::string &realm,
                                 std::string &username,
@@ -120,6 +135,15 @@ public:
         if (m_context) {
             username = m_context->getSyncUsername();
             password = m_context->getSyncPassword();
+        }
+    }
+
+    virtual bool getCredentialsOkay() { return m_credentialsOkay; }
+    virtual void setCredentialsOkay(bool okay) {
+        if (m_credentialsOkay != okay) {
+            boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
+            WebDAVCredentialsOkay.setProperty(*node, okay);
+            node->flush();
         }
     }
 
@@ -646,6 +670,7 @@ void WebDAVSource::open()
 #ifdef HAVE_LIBNEON_OPTIONS
     if (LoggerBase::instance().getLevel() >= Logger::DEV) {
         SE_LOG_DEBUG(NULL, NULL, "read capabilities of %s", m_calendar.toURL().c_str());
+        m_session->startOperation("OPTIONS", Timespec());
         int caps = m_session->options(path);
         static const Flag descr[] = {
             { NE_CAP_DAV_CLASS1, "Class 1 WebDAV (RFC 2518)" },
@@ -848,13 +873,14 @@ std::string WebDAVSource::luid2path(const std::string &luid)
 void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
 {
     Timespec deadline = createDeadline();
+    m_session->startOperation("GET", deadline);
     while (true) {
         item.clear();
         Neon::Request req(*m_session, "GET", luid2path(uid),
                           "", item);
         // useful with CardDAV: server might support more than vCard 3.0, but we don't
         req.addHeader("Accept", contentType());
-        if (req.run(deadline)) {
+        if (req.run()) {
             break;
         }
     }
@@ -867,6 +893,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
     bool update = false;  /* true if adding item was turned into update */
 
     Timespec deadline = createDeadline(); // no resending if left empty
+    m_session->startOperation("PUT", deadline);
     std::string result;
     int counter = 0;
  retry:
@@ -900,7 +927,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
             req.addHeader("If-None-Match", "*");
         }
         req.addHeader("Content-Type", contentType().c_str());
-        if (!req.run(deadline)) {
+        if (!req.run()) {
             goto retry;
         }
         SE_LOG_DEBUG(NULL, NULL, "add item status: %s",
@@ -978,7 +1005,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         // - Is retried? Might need slow sync in this case!
         //
         // req.addHeader("If-Match", etag);
-        if (!req.run(deadline)) {
+        if (!req.run()) {
             goto retry;
         }
         SE_LOG_DEBUG(NULL, NULL, "update item status: %s",
@@ -1065,6 +1092,7 @@ Timespec WebDAVSource::createDeadline() const
 void WebDAVSource::removeItem(const string &uid)
 {
     Timespec deadline = createDeadline();
+    m_session->startOperation("DELETE", deadline);
     std::string item, result;
     boost::scoped_ptr<Neon::Request> req;
     while (true) {
@@ -1073,7 +1101,7 @@ void WebDAVSource::removeItem(const string &uid)
         // TODO: match exactly the expected revision, aka ETag,
         // or implement locking.
         // req.addHeader("If-Match", etag);
-        if (req->run(deadline)) {
+        if (req->run()) {
             break;
         }
     }

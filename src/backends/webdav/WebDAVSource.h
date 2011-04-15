@@ -18,6 +18,8 @@ SE_BEGIN_CXX
 
 class ContextSettings;
 
+extern BoolConfigProperty WebDAVCredentialsOkay;
+
 /**
  * Implements generic access to a WebDAV collection.
  *

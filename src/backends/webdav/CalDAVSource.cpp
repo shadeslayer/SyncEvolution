@@ -65,6 +65,7 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
         "</C:filter>\n"
         "</C:calendar-query>\n";
     Timespec deadline = createDeadline();
+    getSession()->startOperation("REPORT 'meta data'", deadline);
     while (true) {
         string result;
         string href, etag, data;
@@ -79,7 +80,7 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
         Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
         report.addHeader("Depth", "1");
         report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
-        if (report.run(deadline)) {
+        if (report.run()) {
             break;
         }
     }
@@ -608,6 +609,7 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                                  "</C:calendar-query>\n",
                                  event.m_UID.c_str());
                 Timespec deadline = createDeadline();
+                getSession()->startOperation("REPORT 'single item'", deadline);
                 while (true) {
                     string result;
                     string href, etag;
@@ -619,7 +621,7 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                     Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
                     report.addHeader("Depth", "1");
                     report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
-                    if (report.run(deadline)) {
+                    if (report.run()) {
                         break;
                     }
                 }
@@ -776,7 +778,8 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
     report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
     // TODO: try multiple times to create data dump (must change ItemCache.init() such that
     // it wipes out incomplete previous dump)
-    report.run(Timespec());
+    getSession()->startOperation("REPORT 'full calendar'", Timespec());
+    report.run();
     cache.finalize(backupReport);
 }
 

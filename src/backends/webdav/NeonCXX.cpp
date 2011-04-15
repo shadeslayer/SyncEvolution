@@ -152,10 +152,11 @@ std::string Status2String(const ne_status *status)
 
 Session::Session(const boost::shared_ptr<Settings> &settings) :
     m_forceAuthorizationOnce(false),
+    m_credentialsSent(false),
     m_settings(settings),
     m_debugging(false),
     m_session(NULL),
-    m_lastRequestEnd(0)
+    m_attempt(0)
 {
     int logLevel = m_settings->logLevel();
     if (logLevel >= 3) {
@@ -261,37 +262,56 @@ int Session::getCredentials(void *userdata, const char *realm, int attempt, char
         SyncEvo::Strncpy(username, user.c_str(), NE_ABUFSIZ);
         SyncEvo::Strncpy(password, pw.c_str(), NE_ABUFSIZ);
 
-        if (attempt) {
+        // count total attempts per request, not just those
+        // that Neon knows about
+        session->m_attempt++;
+        if (session->m_attempt > 1) {
             // Already sent credentials once, still rejected:
             // observed with Google Calendar (to throttle request rate?).
-            time_t last = session->getLastRequestEnd();
-            if (!last) {
-                // first request immediately failed, prevent further retries
-                SE_LOG_DEBUG(NULL, NULL, "credential error, abort request");
+            //
+            // This code is not called when forceAuthorization()
+            // is used. Apparently Neon needs to know about challenges
+            // before it asks this callback for credentials.
+            // Therefore a similar retry loop is also implemented
+            // above Neon.
+            if (!session->m_settings->getCredentialsOkay()) {
+                // we have never seen these credentials being accepted by the
+                // server, so better give up right away instead of
+                // delaying a "credential error" report
+                SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error, abort request");
                 return 1;
             } else {
                 // repeat request after exponentially increasing
                 // delays since the last successful request (5
                 // seconds, 10 seconds, 20 seconds, ...) until it
                 // succeeds, but not for more than 1 minute
-                time_t delay = 5 * (1<<attempt);
-                if (delay > 60) {
-                    SE_LOG_DEBUG(NULL, NULL, "credential error, abort request after %ld seconds",
-                                 (long)(time(NULL) - last));
+                Timespec last = session->m_lastRequestEnd;
+                if (!last) {
+                    last = Timespec::monotonic();
+                }
+                int delay = session->m_settings->retrySeconds() * (1 << (session->m_attempt - 1));
+                if (delay > session->m_settings->timeoutSeconds()) {
+                    SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error, abort request after %.1lfs",
+                                 (Timespec::monotonic() - last).duration());
                     return 1;
                 } else {
-                    time_t now = time(NULL);
+                    Timespec now = Timespec::monotonic();
                     if (now < last + delay) {
-                        SE_LOG_DEBUG(NULL, NULL, "credential error due to throttling (?), retry #%d in %ld seconds",
-                                     attempt,
-                                     (long)(last + delay - now));
-                        sleep(last + delay - now);
+                        double duration = (last + delay - now).duration();
+                        SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error due to throttling (?), retry #%d in %.1lfs",
+                                     session->m_attempt,
+                                     duration);
+                        Sleep(duration);
+                    } else {
+                        SE_LOG_DEBUG(NULL, NULL, "Neon callback: credential error due to throttling (?), retry #%d immediately",
+                                     session->m_attempt);
                     }
                 }
             }
         }
 
         // try again with credentials
+        session->m_credentialsSent = true;
         return 0;
     } catch (...) {
         Exception::handle();
@@ -318,6 +338,11 @@ void Session::preSendHook(ne_request *req, void *userdata, ne_buffer *header) th
 
 void Session::preSend(ne_request *req, ne_buffer *header)
 {
+    // sanity check: startOperation must have been called
+    if (m_operation.empty()) {
+        SE_THROW("internal error: startOperation() not called");
+    }
+
     if (m_forceAuthorizationOnce) {
         // only do this once
         m_forceAuthorizationOnce = false;
@@ -329,6 +354,9 @@ void Session::preSend(ne_request *req, ne_buffer *header)
             SmartPtr<char *> blob(ne_base64((const unsigned char *)credentials.c_str(), credentials.size()));
             ne_buffer_concat(header, "Authorization: Basic ", blob.get(), "\r\n", NULL);
         }
+
+        // check for acceptance of credentials later
+        m_credentialsSent = true;
     }
 }
 
@@ -380,6 +408,8 @@ void Session::propfindURI(const std::string &path, int depth,
                           const PropfindURICallback_t &callback,
                           const Timespec &deadline)
 {
+    startOperation("PROPFIND", deadline);
+
  retry:
     ne_propfind_handler *handler;
     int error;
@@ -408,7 +438,7 @@ void Session::propfindURI(const std::string &path, int depth,
                              StringPrintf("%d status: redirected to %s", code, location.c_str()),
                              code, location);
     } else {
-        if (!check(error, code, deadline)) {
+        if (!check(error, code)) {
             goto retry;
         }
     }
@@ -459,6 +489,20 @@ int Session::propIterator(void *userdata,
     }
 }
 
+void Session::startOperation(const string &operation, const Timespec &deadline)
+{
+    SE_LOG_DEBUG(NULL, NULL, "starting %s", operation.c_str());
+
+    // remember current operation attributes
+    m_operation = operation;
+    m_deadline = deadline;
+
+    // no credentials set yet for next request
+    m_credentialsSent = false;
+    // first attempt at request
+    m_attempt = 0;
+}
+
 void Session::flush()
 {
     if (m_debugging &&
@@ -470,19 +514,25 @@ void Session::flush()
     }
 }
 
-bool Session::check(int error, int code, const Timespec &deadline, const ne_status *status, const string &location)
+bool Session::check(int error, int code, const ne_status *status, const string &location)
 {
     flush();
+
+    // unset operation, set it again only if the same operation is going to be retried
+    string operation = m_operation;
+    m_operation = "";
 
     // determine error description, may be made more specific below
     string descr;
     if (code) {
-        descr = StringPrintf("Neon error code %d, HTTP status %d: %s",
+        descr = StringPrintf("%s: Neon error code %d, HTTP status %d: %s",
+                             operation.c_str(),
                              error, code,
                              ne_get_error(m_session));
         
     } else {
-        descr = StringPrintf("Neon error code %d, no HTTP status: %s",
+        descr = StringPrintf("%s: Neon error code %d, no HTTP status: %s",
+                             operation.c_str(),
                              error,
                              ne_get_error(m_session));
     }
@@ -498,7 +548,10 @@ bool Session::check(int error, int code, const Timespec &deadline, const ne_stat
             retry = true;
         } else {
             SE_THROW_EXCEPTION_2(RedirectException,
-                                 StringPrintf("%d status: redirected to %s", code, location.c_str()),
+                                 StringPrintf("%s: %d status: redirected to %s",
+                                              operation.c_str(),
+                                              code,
+                                              location.c_str()),
                                  code,
                                  location);
         }
@@ -510,29 +563,44 @@ bool Session::check(int error, int code, const Timespec &deadline, const ne_stat
         if (code &&
             (code < 200 || code >= 300)) {
             if (status) {
-                descr = std::string("bad HTTP status: ") + Status2String(status);
+                descr = StringPrintf("%s: bad HTTP status: %s",
+                                     operation.c_str(),
+                                     Status2String(status).c_str());
             } else {
-                descr = StringPrintf("bad HTTP status: %d", code);
+                descr = StringPrintf("%s: bad HTTP status: %d",
+                                     operation.c_str(),
+                                     code);
             }
             if (code >= 500 && code <= 599) {
                 // potentially temporary server failure, may try again
                 retry = true;
             }
         } else {
-            // all fine, no retry necessary
+            // all fine, no retry necessary: clean up
+
+            // remember completion time of request
+            m_lastRequestEnd = Timespec::monotonic();
+
+            // assume that credentials were valid, if sent
+            if (m_credentialsSent) {
+                m_settings->setCredentialsOkay(true);
+            }
+
             return true;
         }
         break;
     case NE_AUTH:
         // tell caller what kind of transport error occurred
         code = STATUS_UNAUTHORIZED;
-        descr = StringPrintf("Neon error code %d = NE_AUTH, HTTP status %d: %s",
+        descr = StringPrintf("%s: Neon error code %d = NE_AUTH, HTTP status %d: %s",
+                             operation.c_str(),
                              error, code,
                              ne_get_error(m_session));
         break;
     case NE_ERROR:
         if (code) {
-            descr = StringPrintf("Neon error code %d: %s",
+            descr = StringPrintf("%s: Neon error code %d: %s",
+                                 operation.c_str(),
                                  error,
                                  ne_get_error(m_session));
             if (code >= 500 && code <= 599) {
@@ -551,27 +619,69 @@ bool Session::check(int error, int code, const Timespec &deadline, const ne_stat
         break;
     }
 
+    if (code == 401) {
+        if (m_settings->getCredentialsOkay()) {
+            SE_LOG_DEBUG(NULL, NULL, "credential error due to throttling (?), retry");
+            retry = true;
+        } else {
+            // give up without retrying
+            SE_LOG_DEBUG(NULL, NULL, "credential error, no success with them before => report it");
+        }
+    }
+
+
     SE_LOG_DEBUG(NULL, NULL, "%s, %s",
                  descr.c_str(),
                  retry ? "might retry" : "must not retry");
     if (retry) {
-        if (!deadline) {
-            SE_LOG_DEBUG(NULL, NULL, "retrying not allowed for operation");
+        m_attempt++;
+
+        if (!m_deadline) {
+            SE_LOG_DEBUG(NULL, NULL, "retrying not allowed for %s (no deadline)",
+                         operation.c_str());
         } else {
             Timespec now = Timespec::monotonic();
-            if (now < deadline) {
+            if (now < m_deadline) {
                 int retrySeconds = m_settings->retrySeconds();
                 if (retrySeconds >= 0) {
-                    SE_LOG_DEBUG(NULL, NULL, "retry operation in %ds", retrySeconds);
-                    Sleep(retrySeconds);
+                    Timespec last = m_lastRequestEnd;
+                    Timespec now = Timespec::monotonic();
+                    if (!last) {
+                        last = now;
+                    }
+                    int delay = retrySeconds * (1 << (m_attempt - 1));
+                    Timespec next = last + delay;
+                    if (next > now) {
+                        double duration = (next - now).duration();
+                        SE_LOG_DEBUG(NULL, NULL, "retry %s in %.1lfs, attempt #%d",
+                                     operation.c_str(),
+                                     duration,
+                                     m_attempt);
+                        Sleep(duration);
+                    } else {
+                        SE_LOG_DEBUG(NULL, NULL, "retry %s immediately (due already), attempt #%d",
+                                     operation.c_str(),
+                                     m_attempt);
+                    }
                 } else {
-                    SE_LOG_DEBUG(NULL, NULL, "retry operation immediately");
+                    SE_LOG_DEBUG(NULL, NULL, "retry %s immediately (retry interval <= 0), attempt #%d",
+                                 operation.c_str(),
+                                 m_attempt);
                 }
+
+                // try same operation again
+                m_operation = operation;
                 return false;
             } else {
-                SE_LOG_DEBUG(NULL, NULL, "retrying would exceed deadline, bailing out");
+                SE_LOG_DEBUG(NULL, NULL, "retry %s would exceed deadline, bailing out",
+                             m_operation.c_str());
             }
         }
+    }
+
+    if (code == 401) {
+        // fatal credential error, remember that
+        m_settings->setCredentialsOkay(false);
     }
 
     if (code) {
@@ -726,7 +836,7 @@ Request::~Request()
     ne_request_destroy(m_req);
 }
 
-bool Request::run(const Timespec &deadline)
+bool Request::run()
 {
     int error;
 
@@ -739,13 +849,7 @@ bool Request::run(const Timespec &deadline)
         error = ne_xml_dispatch_request(m_req, m_parser->get());
     }
 
-    m_session.flush();
-
-    bool success = check(error, deadline);
-    if (success) {
-        m_session.setLastRequestEnd(time(NULL));
-    }
-    return success;
+    return check(error);
 }
 
 int Request::addResultData(void *userdata, const char *buf, size_t len)
@@ -755,9 +859,9 @@ int Request::addResultData(void *userdata, const char *buf, size_t len)
     return 0;
 }
 
-bool Request::check(int error, const Timespec &deadline)
+bool Request::check(int error)
 {
-    return m_session.check(error, getStatus()->code, deadline, getStatus(), getResponseHeader("Location"));
+    return m_session.check(error, getStatus()->code, getStatus(), getResponseHeader("Location"));
 }
 
 }
