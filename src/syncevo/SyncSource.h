@@ -1594,6 +1594,9 @@ public:
     /** to be called after init() and all backupItem() calls */
     void finalize(BackupReport &report);
 
+    /** can be used to restart creating the backup after an intermediate failure */
+    void reset();
+
 private:
     typedef std::map<Hash_t, Counter_t> Map_t;
     Map_t m_hash2counter;

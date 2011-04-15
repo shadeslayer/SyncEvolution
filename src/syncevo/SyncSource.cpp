@@ -672,6 +672,15 @@ void ItemCache::init(const SyncSource::Operations::ConstBackupInfo &oldBackup,
     }
 }
 
+void ItemCache::reset()
+{
+    // clean directory and start counting at 1 again
+    m_counter = 1;
+    rm_r(m_backup.m_dirname);
+    mkdir_p(m_backup.m_dirname);
+    m_backup.m_node->clear();
+}
+
 string ItemCache::getFilename(Hash_t hash)
 {
     Map_t::const_iterator it = m_hash2counter.find(hash);
