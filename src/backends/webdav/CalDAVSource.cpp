@@ -773,13 +773,17 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
                        boost::bind(&CalDAVSource::backupItem, this,
                                    boost::ref(cache),
                                    boost::ref(href), boost::ref(etag), boost::ref(data)));
-    Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
-    report.addHeader("Depth", "1");
-    report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
-    // TODO: try multiple times to create data dump (must change ItemCache.init() such that
-    // it wipes out incomplete previous dump)
-    getSession()->startOperation("REPORT 'full calendar'", Timespec());
-    report.run();
+    Timespec deadline = createDeadline();
+    getSession()->startOperation("REPORT 'full calendar'", deadline);
+    while (true) {
+        Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+        report.addHeader("Depth", "1");
+        report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+        if (report.run()) {
+            break;
+        }
+        cache.reset();
+    }
     cache.finalize(backupReport);
 }
 
