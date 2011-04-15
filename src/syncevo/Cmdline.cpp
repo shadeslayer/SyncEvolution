@@ -2601,6 +2601,7 @@ protected:
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
                                   "   template name = template description\n"
+                                  "   eGroupware = http://www.egroupware.org\n"
                                   "   Funambol = http://my.funambol.com\n"
                                   "   Google = http://m.google.com/sync\n"
                                   "   Goosync = http://www.goosync.com/\n"

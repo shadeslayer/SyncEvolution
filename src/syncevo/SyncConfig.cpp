@@ -692,6 +692,7 @@ SyncConfig::TemplateList SyncConfig::getBuiltInTemplates()
     result.addDefaultTemplate("Goosync", "http://www.goosync.com/");
     result.addDefaultTemplate("SyncEvolution", "http://www.syncevolution.org");
     result.addDefaultTemplate("Ovi", "http://www.ovi.com");
+    result.addDefaultTemplate("eGroupware", "http://www.egroupware.org");
 
     result.sort (TemplateDescription::compare_op);
     return result;
@@ -1067,6 +1068,22 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         source->setURI("todo");
         source = config->getSyncSourceConfig("memo");
         source->setURI("memo");
+    } else if (boost::iequals(server, "egroupware")) {
+        config->setSyncURL("http://set.your.domain.here/rpc.php");
+        config->setWebURL("http://www.egroupware.org");
+        // Not much testing is happening with eGroupware
+        // and users need to be aware of the special URL;
+        // but Ovi is not necessarily better and is visible.
+        // Let's show it.
+        config->setConsumerReady(true);
+        source = config->getSyncSourceConfig("addressbook");
+        source->setURI("./contacts");
+        source = config->getSyncSourceConfig("calendar");
+        source->setURI("calendar");
+        source = config->getSyncSourceConfig("todo");
+        source->setURI("./tasks");
+        source = config->getSyncSourceConfig("memo");
+        source->setURI("./notes");
     } else {
         config.reset();
     }
@@ -2822,8 +2839,8 @@ bool SyncConfig::TemplateDescription::compare_op (boost::shared_ptr<SyncConfig::
     if (right->m_rank != left->m_rank) {
         return (right->m_rank < left->m_rank);
     }
-    // sort against the template id
-    return (left->m_templateId < right->m_templateId);
+    // sort against the template id, case-insensitive (for eGroupware < Funambol)
+    return boost::ilexicographical_compare(left->m_templateId, right->m_templateId);
 }
 
 TemplateConfig::TemplateConfig(const string &path) :
