@@ -72,9 +72,11 @@ public:
                            + Aliases("CardDAV")
                            )
     {
+#ifdef ENABLE_DAV
         // configure and register our own property
         WebDAVCredentialsOkay.setHidden(true);
         SyncConfig::getRegistry().push_back(&WebDAVCredentialsOkay);
+#endif
     }
 } registerMe;
 
