@@ -475,9 +475,17 @@ bool Session::check(int error, int code, const Timespec &deadline, const ne_stat
     flush();
 
     // determine error description, may be made more specific below
-    string descr = StringPrintf("Neon error code %d: %s",
-                                error,
-                                ne_get_error(m_session));
+    string descr;
+    if (code) {
+        descr = StringPrintf("Neon error code %d, HTTP status %d: %s",
+                             error, code,
+                             ne_get_error(m_session));
+        
+    } else {
+        descr = StringPrintf("Neon error code %d, no HTTP status: %s",
+                             error,
+                             ne_get_error(m_session));
+    }
     // true for specific errors which might go away after a retry
     bool retry = false;
 
@@ -518,6 +526,9 @@ bool Session::check(int error, int code, const Timespec &deadline, const ne_stat
     case NE_AUTH:
         // tell caller what kind of transport error occurred
         code = STATUS_UNAUTHORIZED;
+        descr = StringPrintf("Neon error code %d = NE_AUTH, HTTP status %d: %s",
+                             error, code,
+                             ne_get_error(m_session));
         break;
     case NE_ERROR:
         if (code) {
