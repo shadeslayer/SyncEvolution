@@ -372,6 +372,10 @@ class Timespec : public timespec
 
     operator timeval () const { timeval res; res.tv_sec = tv_sec; res.tv_usec = tv_nsec / 1000; return res; }
 
+    time_t seconds() const { return tv_sec; }
+    long nsecs() const { return tv_nsec; }
+    double duration() const { return (double)tv_sec + ((double)tv_nsec) / 1e9;  }
+
     static Timespec monotonic() { Timespec res; clock_gettime(CLOCK_MONOTONIC, &res); return res; }
     static Timespec system() { Timespec res; clock_gettime(CLOCK_REALTIME, &res); return res; }
 };
