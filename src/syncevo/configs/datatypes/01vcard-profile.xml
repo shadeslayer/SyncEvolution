@@ -29,6 +29,7 @@
           <value field="FN"/>
         </property>
 
+        <!-- FILE-AS not supported by KDE natively, let's use X-EVOLUTION-FILE-AS as extension -->
         <property name="X-EVOLUTION-FILE-AS">
           <value field="FILE-AS"/>
         </property>
@@ -53,14 +54,23 @@
           <position field="CATEGORIES" repeat="array" increment="1" minshow="0"/>
         </property>
 
+        <!-- ORG property for KDE *and* everyone else; KDE *also* uses X-KADDRESSBOOK-X-Office -->
         <property name="ORG" values="4">
           <value index="0" field="ORG_NAME"/>
           <value index="1" field="ORG_DIVISION"/>
           <value index="2" field="ORG_OFFICE"/>
           <value index="3" field="ORG_TEAM"/>
         </property>
+        <property name="X-KADDRESSBOOK-X-Office" suppressempty="yes" rule="KDE">
+          <value field="ORG_OFFICE"/>
+        </property>
 
-        <property name="ROLE">
+        <!-- X-KADDRESSBOOK-X-Profession property for KDE, ROLE for everyone else -->
+        <property name="ROLE" rule="KDE"/>
+        <property name="ROLE" rule="other">
+          <value field="ROLE"/>
+        </property>
+        <property name="X-KADDRESSBOOK-X-Profession" suppressempty="yes" rule="KDE">
           <value field="ROLE"/>
         </property>
 
@@ -133,10 +143,19 @@
         <property name="FBURL" suppressempty="yes">
           <value field="FBURL" show="yes"/>
         </property>
-        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes">
+
+        <!-- X-EVOLUTION-BLOG-URL property for everyone except KDE -->
+        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes" rule="KDE"/>
+        <property name="X-EVOLUTION-BLOG-URL" suppressempty="yes" rule="other">
           <value field="BLOGURL" show="yes"/>
         </property>
-        <property name="X-EVOLUTION-VIDEO-URL" suppressempty="yes">
+        <!-- the KDE way of expressing BLOGURL -->
+        <property name="X-KADDRESSBOOK-BlogFeed" suppressempty="yes" rule="KDE">
+          <value field="BLOGURL" show="yes"/>
+        </property>
+
+        <!-- VIDEOURL not supported by KDE natively, let's use X-EVOLUTION-VIDEO-URL as extension -->
+        <property name="X-EVOLUTION-VIDEO-URL" suppressempty="yes" rule="other">
           <value field="VIDEOURL" show="yes"/>
         </property>
 
@@ -152,98 +171,193 @@
              Memotoo) use the X-EVOLUTION variant.
 
              item to/from Evolution: EVOLUTION rule is active,
-             only X-EVOLUTION-MANAGER is used. -->
-        <property name="X-EVOLUTION-MANAGER" suppressempty="yes" delayedparsing="1">
+             only X-EVOLUTION-MANAGER is used.
+
+             item to/from KDE: the X-EVOLUTION extensions are disabled,
+             only exchanged via KDE-only extensions
+        -->
+        <property name="X-EVOLUTION-MANAGER" suppressempty="yes" delayedparsing="1" rule="KDE"/> <!-- disable X-EVOLUTION-MANAGER for KDE -->
+        <property name="X-EVOLUTION-MANAGER" suppressempty="yes" delayedparsing="1" rule="other">
           <value field="MANAGER" show="yes"/>
         </property>
         <property name="X-MANAGER" suppressempty="yes" rule="EVOLUTION"/> <!-- disables the X-MANAGER for EVOLUTION -->
+        <property name="X-MANAGER" suppressempty="yes" rule="KDE"/> <!-- disables the X-MANAGER for KDE -->
         <property name="X-MANAGER" suppressempty="yes" rule="other">
           <value field="MANAGER" show="yes"/>
         </property>
+        <property name="X-KADDRESSBOOK-X-ManagersName" suppressempty="yes" rule="KDE">
+          <value field="MANAGER" show="yes"/>
+        </property>
 
-        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes" delayedparsing="1">
+        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes" delayedparsing="1" rule="KDE"/>
+        <property name="X-EVOLUTION-ASSISTANT" suppressempty="yes" delayedparsing="1" rule="other">
           <value field="ASSISTANT" show="yes"/>
         </property>
         <property name="X-ASSISTANT" suppressempty="yes" rule="EVOLUTION"/>
+        <property name="X-ASSISTANT" suppressempty="yes" rule="KDE"/>
         <property name="X-ASSISTANT" suppressempty="yes" rule="other">
           <value field="ASSISTANT" show="yes"/>
         </property>
+        <property name="X-KADDRESSBOOK-X-AssistantsName" suppressempty="yes" rule="KDE">
+          <value field="ASSISTANT" show="yes"/>
+        </property>
 
-        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes" delayedparsing="1">
+        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes" delayedparsing="1" rule ="KDE"/>
+        <property name="X-EVOLUTION-SPOUSE" suppressempty="yes" delayedparsing="1" rule ="other">
           <value field="SPOUSE" show="yes"/>
         </property>
         <property name="X-SPOUSE" suppressempty="yes" rule="EVOLUTION"/>
+        <property name="X-SPOUSE" suppressempty="yes" rule="KDE"/>
         <property name="X-SPOUSE" suppressempty="yes" rule="other">
           <value field="SPOUSE" show="yes"/>
         </property>
+        <property name="X-KADDRESSBOOK-X-SpousesName" suppressempty="yes" rule="KDE">
+          <value field="SPOUSE" show="yes"/>
+        </property>
 
-        <property name="X-EVOLUTION-ANNIVERSARY" suppressempty="yes" delayedparsing="1">
+        <property name="X-EVOLUTION-ANNIVERSARY" suppressempty="yes" delayedparsing="1" rule="KDE"/>
+        <property name="X-EVOLUTION-ANNIVERSARY" suppressempty="yes" delayedparsing="1" rule="other">
           <value field="ANNIVERSARY" show="yes"/>
         </property>
         <property name="X-ANNIVERSARY" suppressempty="yes" rule="EVOLUTION"/>
+        <property name="X-ANNIVERSARY" suppressempty="yes" rule="KDE"/>
         <property name="X-ANNIVERSARY" suppressempty="yes" rule="other">
           <value field="ANNIVERSARY" show="yes"/>
         </property>
-
-        <property name="X-MOZILLA-HTML">
-          <value field="WANTS_HTML" show="yes"/>
+        <property name="X-KADDRESSBOOK-X-Anniversary" suppressempty="yes" rule="KDE">
+          <value field="ANNIVERSARY" show="yes"/>
         </property>
 
-        <property name="X-AIM" suppressempty="yes">
+
+        <property name="X-AIM" suppressempty="yes" rule="KDE"/>
+        <property name="X-AIM" suppressempty="yes" rule="other">
           <value field="AIM_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="AIM_SLOT"/>
           </parameter>
         </property>
-        <property name="X-GADUGADU" suppressempty="yes">
+        <property name="X-messaging/aim-All" suppressempty="yes" rule="KDE">
+          <value field="AIM_HANDLE"/>
+        </property>
+
+        <property name="X-GADUGADU" suppressempty="yes" rule="KDE"/>
+        <property name="X-GADUGADU" suppressempty="yes" rule="other">
           <value field="GADUGADU_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="GADUGADU_SLOT"/>
           </parameter>
         </property>
-        <property name="X-GROUPWISE" suppressempty="yes">
+        <property name="X-messaging/gadu-All" suppressempty="yes" rule="KDE">
+          <value field="GADUGADU_HANDLE"/>
+        </property>
+
+
+        <property name="X-GROUPWISE" suppressempty="yes" rule="KDE"/>
+        <property name="X-GROUPWISE" suppressempty="yes" rule="other">
           <value field="GROUPWISE_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="GROUPWISE_SLOT"/>
           </parameter>
         </property>
-        <property name="X-ICQ" suppressempty="yes">
+        <property name="X-messaging/groupwise-All" suppressempty="yes" rule="KDE">
+          <value field="GROUPWISE_HANDLE"/>
+        </property>
+
+        <property name="X-ICQ" suppressempty="yes" rule="KDE"/>
+        <property name="X-ICQ" suppressempty="yes" rule="other">
           <value field="ICQ_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="ICQ_SLOT"/>
           </parameter>
         </property>
-        <property name="X-JABBER" suppressempty="yes">
+        <property name="X-messaging/icq-All" suppressempty="yes" rule="KDE">
+          <value field="ICQ_HANDLE"/>
+        </property>
+
+        <property name="X-JABBER" suppressempty="yes" rule="KDE"/>
+        <property name="X-JABBER" suppressempty="yes" rule="other">
           <value field="JABBER_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no">
             <value field="JABBER_SLOT"/>
           </parameter>
         </property>
-        <property name="X-MSN" suppressempty="yes">
+        <property name="X-messaging/xmpp-All" suppressempty="yes" rule="KDE">
+          <value field="JABBER_HANDLE"/>
+        </property>
+
+        <property name="X-MSN" suppressempty="yes" rule="KDE"/>
+        <property name="X-MSN" suppressempty="yes" rule="other">
           <value field="MSN_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="MSN_SLOT"/>
           </parameter>
         </property>
-        <property name="X-YAHOO" suppressempty="yes">
+        <property name="X-messaging/msn-All" suppressempty="yes" rule="KDE">
+          <value field="MSN_HANDLE"/>
+        </property>
+
+        <property name="X-YAHOO" suppressempty="yes" rule="KDE"/>
+        <property name="X-YAHOO" suppressempty="yes" rule="other">
           <value field="YAHOO_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="YAHOO_SLOT"/>
           </parameter>
         </property>
+        <property name="X-messaging/yahoo-All" suppressempty="yes" rule="KDE">
+          <value field="YAHOO_HANDLE"/>
+        </property>
 
-        <property name="X-SKYPE" suppressempty="yes"> 
+        <property name="X-SKYPE" suppressempty="yes" rule="KDE"/>
+        <property name="X-SKYPE" suppressempty="yes" rule="other"> 
           <value field="SKYPE_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="SKYPE_SLOT"/>
           </parameter>
         </property>
+        <property name="X-messaging/skype-All" suppressempty="yes" rule="KDE">
+          <value field="SKYPE_HANDLE"/>
+        </property>
 
+        <!-- No X-messaging/sip-All in KDE?! Then let's use X-SIP for everyone. -->
         <property name="X-SIP" suppressempty="yes">
           <value field="SIP_HANDLE"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="SIP_SLOT"/>
           </parameter>
+        </property>
+
+        <!--
+            KDE way of expressing certain extensions that have no
+            other representations externally. Let's use the same
+            representation as in KDE for everyone else.
+        -->
+        <property name="X-messaging/irc-All" suppressempty="yes">
+          <value field="IRC_HANDLE"/>
+        </property>
+        <property name="X-messaging/meanwhile-All" suppressempty="yes">
+          <value field="MEANWHILE_HANDLE"/>
+        </property>
+        <property name="X-messaging/sms-All" suppressempty="yes">
+          <value field="SMS_HANDLE"/>
+        </property>
+        <property name="X-KADDRESSBOOK-CRYPTOENCRYPTPREF" suppressempty="yes">
+          <value field="CRYPTOENCRYPTPREF" show="yes"/>
+        </property>
+        <property name="X-KADDRESSBOOK-CRYPTOPROTOPREF" suppressempty="yes">
+          <value field="CRYPTOPROTOPREF" show="yes"/>
+        </property>
+        <property name="X-KADDRESSBOOK-CRYPTOSIGNPREF" suppressempty="yes">
+          <value field="CRYPTOSIGNPREF" show="yes"/>
+        </property>
+        <property name="X-KADDRESSBOOK-OPENPGPFP" suppressempty="yes">
+          <value field="OPENPGPFP" show="yes"/>
+        </property>
+        <property name="X-KADDRESSBOOK-X-IMAddress" suppressempty="yes">
+          <value field="IM_ADDRESS" show="yes"/>
+        </property>
+
+        <property name="X-MOZILLA-HTML">
+          <value field="WANTS_HTML" show="yes"/>
         </property>
 
         <property name="ADR" values="7">
@@ -266,7 +380,6 @@
             </value>
           </parameter>
         </property>
-
         
         <property name="BDAY" rule="EXTENDED-DATE-FORMAT">
           <value field="BDAY" conversion="DATE+EXTFMT"/>

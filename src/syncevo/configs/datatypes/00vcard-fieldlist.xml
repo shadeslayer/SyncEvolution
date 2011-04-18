@@ -86,6 +86,10 @@
       <field name="SKYPE_SLOT"        array="yes" type="string" compare="conflict"/>
       <field name="SIP_HANDLE"        array="yes" type="string" compare="conflict"/>
       <field name="SIP_SLOT"          array="yes" type="string" compare="conflict"/>
+      <field name="IM_ADDRESS"        array="yes" type="string" compare="conflict"/>
+      <field name="MEANWHILE_HANDLE"  array="yes" type="string" compare="conflict"/>
+      <field name="IRC_HANDLE"        array="yes" type="string" compare="conflict"/>
+      <field name="SMS_HANDLE"        array="yes" type="string" compare="conflict"/>
 
       <!-- home address -->
       <field name="ADR_STREET"        array="yes" type="multiline" compare="conflict"/>
@@ -105,5 +109,11 @@
       <!-- Photo -->
       <field name="PHOTO" type="blob" compare="never" merge="fillempty"/>
       <field name="PHOTO_TYPE" type="integer" compare="never" merge="fillempty"/>
+      
+      <!-- Crypto fields for KAddressbook -->
+      <field name="CRYPTOENCRYPTPREF" type="string" compare="conflict"/>
+      <field name="CRYPTOPROTOPREF" array="yes" type="string" compare="conflict"/>
+      <field name="CRYPTOSIGNPREF" type="string" compare="conflict"/>
+      <field name="OPENPGPFP" type="string" compare="conflict"/>
 
     </fieldlist>
