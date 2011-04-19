@@ -383,11 +383,20 @@ VirtualSyncSource::VirtualSyncSource(const SyncSourceParams &params, SyncConfig 
     DummySyncSource(params)
 {
     if (config) {
+        std::string evoSyncSource = getDatabaseID();
         BOOST_FOREACH(std::string name, getMappedSources()) {
+            if (name.empty()) {
+                throwError(StringPrintf("configuration of underlying sources contains empty source name: database = '%s'",
+                                        evoSyncSource.c_str()));
+            }
             SyncSourceNodes source = config->getSyncSourceNodes(name);
             SyncSourceParams params(name, source, boost::shared_ptr<SyncConfig>(config, SyncConfigNOP()));
             boost::shared_ptr<SyncSource> syncSource(createSource(params, true, config));
             m_sources.push_back(syncSource);
+        }
+        if (m_sources.size() != 2) {
+            throwError(StringPrintf("configuration of underlying sources must contain exactly one calendar and one todo source (like calendar+todo): database = '%s'",
+                                    evoSyncSource.c_str()));
         }
     }
 }
