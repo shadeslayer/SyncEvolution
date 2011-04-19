@@ -347,12 +347,18 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
     }
 
     if (error) {
-        string problem = params.m_name + ": backend '" + sourceType.m_backend + "' not supported";
+        string backends;
         if (scannedModules.m_available.size()) {
-            problem += " by any of the backend modules (";
-            problem += boost::join(scannedModules.m_available, ", ");
-            problem += ")";
+            backends += "by any of the backend modules (";
+            backends += boost::join(scannedModules.m_available, ", ");
+            backends += ") ";
         }
+        string problem =
+            StringPrintf("%s: backend '%s' not supported %sor not fully configured (format '%s')",
+                         params.m_name.c_str(),
+                         sourceType.m_backend.c_str(),
+                         backends.c_str(),
+                         sourceType.m_localFormat.c_str());
         SyncContext::throwError(problem);
     }
 
