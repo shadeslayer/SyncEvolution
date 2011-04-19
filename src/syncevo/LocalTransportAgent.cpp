@@ -292,8 +292,13 @@ void LocalTransportAgent::run()
         client.sync(&m_clientReport);
     } catch(...) {
         SyncMLStatus status = m_clientReport.getStatus();
-        Exception::handle(&status, redirect);
+        string explanation;
+        Exception::handle(&status, redirect, &explanation);
         m_clientReport.setStatus(status);
+        if (!explanation.empty() &&
+            m_clientReport.getError().empty()) {
+            m_clientReport.setError(explanation);
+        }
     }
 
     // send final report
