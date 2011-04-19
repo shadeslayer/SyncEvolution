@@ -266,9 +266,12 @@ void LocalTransportAgent::run()
                 string fullTargetName = m_clientContext + "/" + targetName;
 
                 if (!targetNodes.dataConfigExists()) {
-                    client.throwError(StringPrintf("%s: source not configured",
-                                                   fullTargetName.c_str()));
-
+                    if (targetName.empty()) {
+                        client.throwError("missing URI for one of the sources");
+                    } else {
+                        client.throwError(StringPrintf("%s: source not configured",
+                                                       fullTargetName.c_str()));
+                    }
                 }
 
                 // All of the config setting is done as volatile,
