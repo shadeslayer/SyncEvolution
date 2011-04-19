@@ -344,7 +344,7 @@ namespace {
 
 static class iCal20Test : public RegisterSyncSourceTest {
 public:
-    iCal20Test() : RegisterSyncSourceTest("ical20", "ical20") {}
+    iCal20Test() : RegisterSyncSourceTest("kde_events", "ical20") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -354,7 +354,7 @@ public:
 
 static class iTodo20Test : public RegisterSyncSourceTest {
 public:
-    iTodo20Test() : RegisterSyncSourceTest("itodo20", "itodo20") {}
+    iTodo20Test() : RegisterSyncSourceTest("kde_tasks", "itodo20") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -364,7 +364,7 @@ public:
 
 static class MemoTest : public RegisterSyncSourceTest {
 public:
-    MemoTest() : RegisterSyncSourceTest("text", "text") {}
+    MemoTest() : RegisterSyncSourceTest("kde_memos", "text") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
