@@ -1993,6 +1993,7 @@ class Session : public DBusObjectHelper,
     std::string m_peerDeviceID;
 
     bool m_serverMode;
+    bool m_serverAlerted;
     SharedBuffer m_initialMessage;
     string m_initialMessageType;
 
@@ -2235,6 +2236,9 @@ public:
      * Session uses that to determine when the quiesence period is over.
      */
     void shutdownFileModified();
+
+    bool isServerAlerted() const { return m_serverAlerted; }
+    void setServerAlerted(bool serverAlerted) { m_serverAlerted = serverAlerted; }
 
     void initServer(SharedBuffer data, const std::string &messageType);
     void setStubConnection(const boost::shared_ptr<Connection> c) { m_connection = c; m_useConnection = c; }
@@ -3637,6 +3641,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
     }
 
     m_sync.reset(new DBusSync(getConfigName(), *this));
+    m_sync->setServerAlerted(m_serverAlerted);
     if (m_serverMode) {
         m_sync->initServer(m_sessionID,
                            m_initialMessage,
@@ -4604,6 +4609,7 @@ void Connection::process(const Caller_t &caller,
             std::string config;
             std::string peerDeviceID;
             bool serverMode = false;
+            bool serverAlerted = false;
             // check message type, determine whether we act
             // as client or server, choose config
             if (message_type == "HTTP Config") {
@@ -4611,6 +4617,7 @@ void Connection::process(const Caller_t &caller,
                 config.assign(reinterpret_cast<const char *>(message.second),
                               message.first);
             } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
+                serverAlerted = true;
             	sysync::SanPackage san;
             	if (san.PassSan(const_cast<uint8_t *>(message.second), message.first, 2) || san.GetHeader()) {
                     // We are very tolerant regarding the content of the message.
@@ -4783,6 +4790,7 @@ void Connection::process(const Caller_t &caller,
                                                    message.first),
                                       message_type);
             }
+            m_session->setServerAlerted(serverAlerted);
             m_session->setPriority(Session::PRI_CONNECTION);
             m_session->setStubConnection(myself);
             // this will be reset only when the connection shuts down okay

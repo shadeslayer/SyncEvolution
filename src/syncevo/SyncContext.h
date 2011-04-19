@@ -93,6 +93,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     string m_localPeerContext; /**< context name (including @) if doing local sync */
     string m_localClientRootPath;
     bool m_serverMode;
+    bool m_serverAlerted;      /**< sync was initiated by server (applies to client and server mode) */
     std::string m_sessionID;
     SharedBuffer m_initialMessage;
     string m_initialMessageType;
@@ -237,6 +238,9 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void setDryRun(bool dryrun) { m_dryrun = dryrun; }
 
     bool isLocalSync() const { return m_localSync; }
+
+    bool isServerAlerted() const { return m_serverAlerted; }
+    void setServerAlerted(bool serverAlerted) { m_serverAlerted = serverAlerted; }
 
     /**
      * Sets configuration filters. Currently only used in local sync

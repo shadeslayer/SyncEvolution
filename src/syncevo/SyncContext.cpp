@@ -186,6 +186,7 @@ void SyncContext::init()
     m_dryrun = false;
     m_localSync = false;
     m_serverMode = false;
+    m_serverAlerted = false;
     m_firstSourceAccess = true;
     m_remoteInitiated = false;
     m_sourceListPtr = NULL;
@@ -1608,6 +1609,16 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                 switch (extra3) {
                 case 0:
                     mode = SYNC_SLOW;
+                    if (m_serverMode &&
+                        m_serverAlerted &&
+                        source.getSync() == "refresh-from-server") {
+                        // We run as server and told the client to refresh
+                        // its data. A slow sync is how some clients (the
+                        // Synthesis engine included) execute that sync mode;
+                        // let's be optimistic and assume that the client
+                        // did as it was told and deleted its data.
+                        mode = SYNC_REFRESH_FROM_SERVER;
+                    }
                     break;
                 case 1:
                     mode = SYNC_REFRESH_FROM_SERVER;
@@ -3093,6 +3104,7 @@ bool SyncContext::sendSAN(uint16_t version)
 
     m_agent = createTransportAgent();
     SE_LOG_INFO (NULL, NULL, "Server sending SAN");
+    m_serverAlerted = true;
     m_agent->setContentType(!legacy ? 
                            TransportAgent::m_contentTypeServerAlertedNotificationDS
                            : (getWBXML() ? TransportAgent::m_contentTypeSyncWBXML :
@@ -3320,6 +3332,11 @@ SyncMLStatus SyncContext::doSync()
     //Create the transport agent if not already created
     if(!m_agent) {
         m_agent = createTransportAgent();
+    }
+
+    // server in local sync initiates sync by passing data to forked process
+    if (m_serverMode && m_localSync) {
+        m_serverAlerted = true;
     }
 
     sysync::TEngineProgressInfo progressInfo;
