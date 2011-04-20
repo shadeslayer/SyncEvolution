@@ -1744,10 +1744,10 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                            SyncSource::ITEM_TOTAL,
                            // Synthesis engine doesn't count locally
                            // deleted items during
-                           // refresh-from-server. That's a matter of
+                           // refresh-from-server/client. That's a matter of
                            // taste. In SyncEvolution we'd like these
                            // items to show up, so add it here.
-                           source.getFinalSyncMode() == SYNC_REFRESH_FROM_SERVER ? 
+                           source.getFinalSyncMode() == (m_serverMode ? SYNC_REFRESH_FROM_CLIENT : SYNC_REFRESH_FROM_SERVER) ? 
                            source.getNumDeleted() :
                            extra3);
         break;
