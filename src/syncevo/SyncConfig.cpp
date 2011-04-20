@@ -2948,7 +2948,8 @@ string TemplateConfig::getTemplateName() {
 
 /*
  * A unique identifier for this template, it must be unique and retrieveable.
- * We use the first entry in the "fingerprint" property for cmdline.
+ * We use the first entry in the "fingerprint" property for cmdline and
+ * replace spaces with underscores, to make it more command line friendly.
  **/
 string TemplateConfig::getTemplateId(){
     if (m_id.empty()){
@@ -2957,6 +2958,7 @@ string TemplateConfig::getTemplateId(){
             std::vector<std::string> subfingerprints = unescapeJoinedString (fingerprintProp, ',');
             m_id = subfingerprints[0];
         }
+        boost::replace_all(m_id, " ", "_");
     }
     return m_id;
 }
