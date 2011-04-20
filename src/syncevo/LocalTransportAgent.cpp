@@ -109,11 +109,11 @@ void LocalTransportAgent::start()
         // Also set them to non-blocking, needed for the
         // timeout handling.
         for (int *fd = &sockets[0][0];
-             fd < &sockets[2][2];
+             fd <= &sockets[1][1];
              ++fd) {
-            long flags = fcntl(*fd, F_GETFD);
+            long flags = fcntl(*fd, F_GETFD, 0l); // extra argument for valgrind
             fcntl(*fd, F_SETFD, flags | FD_CLOEXEC);
-            flags = fcntl(*fd, F_GETFL);
+            flags = fcntl(*fd, F_GETFL, 0l);
             fcntl(*fd, F_SETFL, flags | O_NONBLOCK);
         }
 
@@ -452,13 +452,16 @@ void LocalTransportAgent::send(const char *data, size_t len)
 TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *data, size_t len, Timespec deadline)
 {
     Message header;
+    memset(&header, 0, sizeof(header));
     header.m_type = type;
     header.m_length = sizeof(Message) + len;
     struct iovec vec[2];
+    memset(vec, 0, sizeof(vec));
     vec[0].iov_base = &header;
     vec[0].iov_len = offsetof(Message, m_data);
     vec[1].iov_base = (void *)data;
     vec[1].iov_len = len;
+
     SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes via %s",
                  m_pid ? "parent" : "child",
                  (long)len,
@@ -520,11 +523,12 @@ TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type t
 
             // potential partial write, reduce byte counters by amount of bytes sent
             ssize_t part1 = std::min((ssize_t)vec[0].iov_len, sent);
+            vec[0].iov_base = (char *)vec[0].iov_base + part1;
             vec[0].iov_len -= part1;
             sent -= part1;
             ssize_t part2 = std::min((ssize_t)vec[1].iov_len, sent);
+            vec[1].iov_base = (char *)vec[1].iov_base + part2;
             vec[1].iov_len -= part2;
-            sent -= part2;
             break;
         }
         default:
