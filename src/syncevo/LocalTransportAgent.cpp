@@ -519,12 +519,13 @@ TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type t
                     errno == EWOULDBLOCK) {
                     sent = 0;
                 } else {
+                    int err = errno;
                     SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes failed: %s",
                                  m_pid ? "parent" : "child",
                                  (long)len,
-                                 strerror(errno));
+                                 strerror(err));
                     SE_THROW_EXCEPTION(TransportException,
-                                       StringPrintf("writev(): %s", strerror(errno)));
+                                       StringPrintf("writev(): %s", strerror(err)));
                 }
             }
 
@@ -538,13 +539,15 @@ TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type t
             vec[1].iov_len -= part2;
             break;
         }
-        default:
+        default: {
+            int err = errno;
             SE_LOG_DEBUG(NULL, NULL, "%s: select errror: %s",
                          m_pid ? "parent" : "child",
-                         strerror(errno));
+                         strerror(err));
             SE_THROW_EXCEPTION(TransportException,
-                               StringPrintf("select(): %s", strerror(errno)));
+                               StringPrintf("select(): %s", strerror(err)));
             break;
+        }
         }
     } while (vec[1].iov_len);
 
@@ -657,18 +660,19 @@ TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, 
                                  (char *)buffer.m_message.get() + buffer.m_used,
                                  buffer.m_size - buffer.m_used,
                                  MSG_DONTWAIT);
+            int err = errno;
             SE_LOG_DEBUG(NULL, NULL, "%s: received %ld: %s",
                          m_pid ? "parent" : "child",
                          (long)recvd,
-                         recvd < 0 ? strerror(errno) : "okay");
+                         recvd < 0 ? strerror(err) : "okay");
             if (recvd < 0) {
-                if (errno == EAGAIN ||
-                    errno == EWOULDBLOCK) {
+                if (err == EAGAIN ||
+                    err == EWOULDBLOCK) {
                     // try again
                     recvd = 0;
                 } else {
                     SE_THROW_EXCEPTION(TransportException,
-                                       StringPrintf("message receive: %s", strerror(errno)));
+                                       StringPrintf("message receive: %s", strerror(err)));
                 }
             } else if (!recvd) {
                 if (m_pid) {
@@ -686,13 +690,15 @@ TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, 
             buffer.m_used += recvd;
             break;
         }
-        default:
+        default: {
+            int err = errno;
             SE_LOG_DEBUG(NULL, NULL, "%s: select errror: %s",
                          m_pid ? "parent" : "child",
-                         strerror(errno));
+                         strerror(err));
             SE_THROW_EXCEPTION(TransportException,
-                               StringPrintf("select(): %s", strerror(errno)));
+                               StringPrintf("select(): %s", strerror(err)));
             break;
+        }
         }
     }
 
