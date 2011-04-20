@@ -778,6 +778,8 @@ void WebDAVSource::getSynthesisInfo(SynthesisInfo &info,
             fragments.m_remoterules["GOOGLE"] =
                 "      <remoterule name='GOOGLE'>\n"
                 "          <deviceid>none</deviceid>\n"
+                // enable extensions, just in case (not relevant yet for calendar)
+                "          <include rule=\"ALL\"/>\n"
                 "      </remoterule>";
         } else if (host.find("yahoo") != host.npos) {
             info.m_backendRule = "YAHOO";
@@ -793,6 +795,19 @@ void WebDAVSource::getSynthesisInfo(SynthesisInfo &info,
                 // BDAY is ignored if it has the compact 19991231 instead of
                 // 1999-12-31, although both are valid.
                 "          <include rule='EXTENDED-DATE-FORMAT'/>\n"
+                // Yahoo accepts extensions, so send them. However, it
+                // doesn't seem to store the X-EVOLUTION-UI-SLOT parameter
+                // extensions.
+                "          <include rule=\"ALL\"/>\n"
+                "      </remoterule>";
+        } else {
+            // fallback: generic CalDAV/CardDAV, with all properties
+            // enabled (for example, X-EVOLUTION-UI-SLOT)
+            info.m_backendRule = "WEBDAV";
+            fragments.m_remoterules["WEBDAV"] =
+                "      <remoterule name='WEBDAV'>\n"
+                "          <deviceid>none</deviceid>\n"
+                "          <include rule=\"ALL\"/>\n"
                 "      </remoterule>";
         }
         SE_LOG_DEBUG(this, NULL, "using data conversion rules for '%s'", info.m_backendRule.c_str());
