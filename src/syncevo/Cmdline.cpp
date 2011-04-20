@@ -624,12 +624,12 @@ bool Cmdline::run() {
     } else if (m_printTemplates) {
         SyncConfig::DeviceList devices;
         if (m_template.empty()){
-            dumpConfigTemplates("Available configuration templates:",
+            dumpConfigTemplates("Available configuration templates (servers):",
                     SyncConfig::getPeerTemplates(devices), false);
         } else {
             //limiting at templates for syncml clients only.
             devices.push_back (SyncConfig::DeviceDescription("", m_template, SyncConfig::MATCH_FOR_SERVER_MODE));
-            dumpConfigTemplates("Available configuration templates:",
+            dumpConfigTemplates("Available configuration templates (clients):",
                     SyncConfig::matchPeerTemplates(devices), true);
         }
     } else if (m_dontrun) {
@@ -686,7 +686,6 @@ bool Cmdline::run() {
             SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_template,
                                                                             SyncConfig::NormalizeFlags(SyncConfig::NORMALIZE_SHORTHAND|SyncConfig::NORMALIZE_IS_NEW)),
                                           peer, context);
-
             config = SyncConfig::createPeerTemplate(peer);
             if (!config.get()) {
                 m_err << "ERROR: no configuration template for '" << m_template << "' available." << endl;
@@ -881,9 +880,11 @@ bool Cmdline::run() {
                 }
                 from = SyncConfig::createPeerTemplate(peer);
                 list<string> missing;
-                if (!from.get()) {
+                if (!from.get() &&
+                    m_template.empty()) {
                     // check if all obligatory sync properties are specified, if so, allow user
-                    // to proceed with "none" template
+                    // to proceed with "none" template; if a template was specified, we skip
+                    // this and go directly to the code below which prints an error message
                     ConfigProps syncProps = m_props.createSyncFilter(to->getContextName());
                     bool complete = true;
                     BOOST_FOREACH(const ConfigProperty *prop, SyncConfig::getRegistry()) {
@@ -898,12 +899,18 @@ bool Cmdline::run() {
                     }
                 }
                 if (!from.get()) {
-                    m_err << "ERROR: no configuration template for '" << configTemplate << "' available."
-                        " Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template." <<
-                        " Need values for: " << boost::join(missing, ", ") <<
-                        endl;
-                    dumpConfigTemplates("Available configuration templates:",
-                                SyncConfig::getPeerTemplates(SyncConfig::DeviceList()));
+                    m_err << "ERROR: no configuration template for '" << configTemplate << "' available.";
+                    if (m_template.empty()) {
+                        m_err <<
+                            " Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: " << boost::join(missing, ", ");
+                    } else if (missing.empty()) {
+                        m_err << " All relevant properties seem to be set, omit the --template parameter to proceed.";
+                    }
+                    m_err << endl;
+                    SyncConfig::DeviceList devices;
+                    devices.push_back(SyncConfig::DeviceDescription("", "", SyncConfig::MATCH_ALL));
+                    dumpConfigTemplates("Available configuration templates (clients and servers):",
+                                        SyncConfig::getPeerTemplates(devices));
                     return false;
                 }
             }
@@ -2599,7 +2606,7 @@ protected:
 
         TestCmdline help("--template", "? ", NULL);
         help.doit();
-        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates (servers):\n"
                                   "   template name = template description\n"
                                   "   eGroupware = http://www.egroupware.org\n"
                                   "   Funambol = http://my.funambol.com\n"
@@ -2622,7 +2629,7 @@ protected:
 
         TestCmdline help1("--template", "?nokia 7210c", NULL);
         help1.doit();
-        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates (clients):\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   Nokia_7210c = Template for Nokia S40 series Phone    100%\n"
                 "   SyncEvolution_Client = SyncEvolution server side template    40%\n",
@@ -2630,7 +2637,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("", help1.m_err.str());
         TestCmdline help2("--template", "?nokia", NULL);
         help2.doit();
-        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates (clients):\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   Nokia_7210c = Template for Nokia S40 series Phone    100%\n"
                 "   SyncEvolution_Client = SyncEvolution server side template    40%\n",
@@ -2638,7 +2645,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("", help2.m_err.str());
         TestCmdline help3("--template", "?7210c", NULL);
         help3.doit();
-        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates (clients):\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   Nokia_7210c = Template for Nokia S40 series Phone    60%\n"
                 "   SyncEvolution_Client = SyncEvolution server side template    20%\n",
@@ -2646,7 +2653,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("", help3.m_err.str());
         TestCmdline help4("--template", "?syncevolution client", NULL);
         help4.doit();
-        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates:\n"
+        CPPUNIT_ASSERT_EQUAL_DIFF("Available configuration templates (clients):\n"
                 "   template name = template description    matching score in percent (100% = exact match)\n"
                 "   SyncEvolution_Client = SyncEvolution server side template    100%\n"
                 "   Nokia_7210c = Template for Nokia S40 series Phone    40%\n",
@@ -3231,8 +3238,21 @@ protected:
             TestCmdline failure("--configure", "foo", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             CPPUNIT_ASSERT(!failure.m_cmdline->run());
-            CPPUNIT_ASSERT(boost::starts_with(failure.m_out.str(), "Available configuration templates:\n"));
+            CPPUNIT_ASSERT(boost::starts_with(failure.m_out.str(), "Available configuration templates (clients and servers):\n"));
             CPPUNIT_ASSERT_EQUAL(string("ERROR: no configuration template for 'foo@default' available. Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL\n"),
+                                 lastLine(failure.m_err.str()));
+        }
+
+        rm_r(m_testDir);
+        {
+            // catch possible typos like "sheduleworld" when
+            // enough properties are specified to continue without
+            // a template
+            TestCmdline failure("--configure", "syncURL=http://foo.com", "--template", "foo", "bar", NULL);
+            CPPUNIT_ASSERT(failure.m_cmdline->parse());
+            CPPUNIT_ASSERT(!failure.m_cmdline->run());
+            CPPUNIT_ASSERT(boost::starts_with(failure.m_out.str(), "Available configuration templates (clients and servers):\n"));
+            CPPUNIT_ASSERT_EQUAL(string("ERROR: no configuration template for 'foo' available. All relevant properties seem to be set, omit the --template parameter to proceed.\n"),
                                  lastLine(failure.m_err.str()));
         }
 
