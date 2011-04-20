@@ -627,6 +627,26 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
     return luids;
 }
 
+std::list<std::string> LocalTests::insertManyItems(TestingSyncSource *source, int startIndex, int numItems, int size) {
+    std::list<std::string> luids;
+
+    CPPUNIT_ASSERT(config.templateItem);
+    CPPUNIT_ASSERT(config.uniqueProperties);
+
+    CPPUNIT_ASSERT(startIndex > 1 || !countItems(source));
+    int firstIndex = startIndex;
+    if (firstIndex < 0) {
+        firstIndex = 1;
+    }
+    int lastIndex = firstIndex + (numItems >= 1 ? numItems : config.numItems) - 1;
+    for (int item = firstIndex; item <= lastIndex; item++) {
+        std::string data = createItem(item, "", size);
+        luids.push_back(importItem(source, config, data));
+    }
+
+    return luids;
+}
+
 // update every single item in the database
 void LocalTests::updateData(CreateSource createSource) {
     // check additional requirements
@@ -2875,14 +2895,18 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
         int item = 1;
+        restoreStorage(it->second->config, client);
+        TestingSyncSourcePtr source;
+        SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceA()));
         for (int i = 0; i < 2; i++ ) {
             int size = 1;
             while (size < 2 * maxMsgSize) {
-                it->second->insertManyItems(it->second->createSourceA, item, 1, (int)strlen(it->second->config.templateItem) + 10 + size);
+                it->second->insertManyItems(source.get(), item, 1, (int)strlen(it->second->config.templateItem) + 10 + size);
                 size *= 2;
                 item++;
             }
         }
+        backupStorage(it->second->config, client);
     }
 
     // transfer to server

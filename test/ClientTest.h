@@ -542,6 +542,7 @@ public:
      * @return number of items inserted
      */
     virtual std::list<std::string> insertManyItems(CreateSource createSource, int startIndex = 1, int numItems = 0, int size = -1);
+    virtual std::list<std::string> insertManyItems(TestingSyncSource *source, int startIndex = 1, int numItems = 0, int size = -1);
 
     /**
      * update every single item, using config.update
