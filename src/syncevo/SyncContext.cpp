@@ -1595,6 +1595,17 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                 switch (extra3) {
                 case 0:
                     mode = SYNC_TWO_WAY;
+                    if (m_serverMode &&
+                        m_serverAlerted &&
+                        source.getSync() == "one-way-from-server") {
+                        // As in the slow/refresh-from-server case below,
+                        // pretending to do a two-way incremental sync
+                        // is a correct way of executing the requested
+                        // one-way sync, as long as the client doesn't
+                        // send any of its own changes. The Synthesis
+                        // engine does that.
+                        mode = SYNC_ONE_WAY_FROM_SERVER;
+                    }
                     break;
                 case 1:
                     mode = SYNC_ONE_WAY_FROM_SERVER;
