@@ -4,8 +4,6 @@
 
 #include "WebDAVSource.h"
 
-#ifdef ENABLE_DAV
-
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -20,6 +18,8 @@
 SE_BEGIN_CXX
 
 BoolConfigProperty WebDAVCredentialsOkay("webDAVCredentialsOkay", "credentials were accepted before");
+
+#ifdef ENABLE_DAV
 
 /**
  * Retrieve settings from SyncConfig.
@@ -1141,9 +1141,10 @@ void WebDAVSource::removeItem(const string &uid)
     }
 }
 
+#endif /* ENABLE_DAV */
+
 SE_END_CXX
 
-#endif /* ENABLE_DAV */
 
 #ifdef ENABLE_MODULES
 # include "WebDAVSourceRegister.cpp"

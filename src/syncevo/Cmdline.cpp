@@ -4036,6 +4036,7 @@ private:
                          "peers/scheduleworld/.internal.ini:# ConfigDate = \n"
                          "peers/scheduleworld/.internal.ini:# lastNonce = \n"
                          "peers/scheduleworld/.internal.ini:# deviceData = \n"
+                         "peers/scheduleworld/.internal.ini:# webDAVCredentialsOkay = 0\n"
                          "peers/scheduleworld/config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds\n"
                          "peers/scheduleworld/config.ini:# username = \n"
                          "peers/scheduleworld/config.ini:# password = \n"

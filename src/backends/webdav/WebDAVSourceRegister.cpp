@@ -72,11 +72,11 @@ public:
                            + Aliases("CardDAV")
                            )
     {
-#ifdef ENABLE_DAV
-        // configure and register our own property
+        // configure and register our own property;
+        // do this regardless whether the backend is enabled,
+        // so that config migration always includes this property
         WebDAVCredentialsOkay.setHidden(true);
         SyncConfig::getRegistry().push_back(&WebDAVCredentialsOkay);
-#endif
     }
 } registerMe;
 
