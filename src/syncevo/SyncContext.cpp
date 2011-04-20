@@ -3013,6 +3013,12 @@ bool SyncContext::sendSAN(uint16_t version)
     if(serverId.empty()) {
         serverId = getDevID();
     }
+    SE_LOG_DEBUG(NULL, NULL, "starting SAN %u auth %s nonce %s session %u server %s",
+                 version,
+                 uauthb64.c_str(),
+                 nonce.c_str(),
+                 sessionId,
+                 serverId.c_str());
     san.PreparePackage( uauthb64, nonce, version, mode, 
             sysync::Initiator_Server, sessionId, serverId);
 
@@ -3073,11 +3079,21 @@ bool SyncContext::sendSAN(uint16_t version)
                 contentTypeB = 0;
                 SE_LOG_DEBUG (NULL, NULL, "Unknown datasource mimetype, use 0 as default");
             }
+            SE_LOG_DEBUG(NULL, NULL, "SAN source %s uri %s type %u mode %d",
+                         name.c_str(),
+                         uri.c_str(),
+                         contentTypeB,
+                         mode);
             if ( san.AddSync(mode, (uInt32) contentTypeB, uri.c_str())) {
                 SE_LOG_ERROR(NULL, NULL, "SAN: adding server alerted sync element failed");
             };
         } else {
-            alertedSources.push_back (std::make_pair (GetLegacyMIMEType (sourceType.m_format, sourceType.m_forceFormat), uri));
+            string mimetype = GetLegacyMIMEType(sourceType.m_format, sourceType.m_forceFormat);
+            SE_LOG_DEBUG(NULL, NULL, "SAN source %s uri %s type %s",
+                         name.c_str(),
+                         uri.c_str(),
+                         mimetype.c_str());
+            alertedSources.push_back(std::make_pair(mimetype, uri));
         }
     }
 
@@ -3095,6 +3111,7 @@ bool SyncContext::sendSAN(uint16_t version)
         }
         //TODO log the binary SAN content
     } else {
+        SE_LOG_DEBUG(NULL, NULL, "SAN with overall sync mode %d", syncMode);
         if (san.GetPackageLegacy(buffer, sanSize, alertedSources, syncMode, getWBXML())){
             SE_LOG_ERROR (NULL, NULL, "SAN package generating failed");
             return false;
