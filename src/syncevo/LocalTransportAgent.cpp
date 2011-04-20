@@ -637,9 +637,11 @@ TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, 
                                      "Message Buffer");
             } else if (buffer.m_used >= sizeof(Message) &&
                        buffer.m_message->m_length > buffer.m_size) {
-                buffer.m_message.set(static_cast<Message *>(realloc(buffer.m_message.release(), buffer.m_message->m_length)),
+                // copy before (temporarily) freeing memory
+                size_t newsize = buffer.m_message->m_length;
+                buffer.m_message.set(static_cast<Message *>(realloc(buffer.m_message.release(), newsize)),
                                      "Message Buffer");
-                buffer.m_size = buffer.m_message->m_length;
+                buffer.m_size = newsize;
             }
             SE_LOG_DEBUG(NULL, NULL, "%s: recv %ld bytes",
                          m_pid ? "parent" : "child",
