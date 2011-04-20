@@ -513,12 +513,19 @@ TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type t
         case 1: {
             ssize_t sent = writev(fd, vec, 2);
             if (sent == -1) {
-                SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes failed: %s",
-                             m_pid ? "parent" : "child",
-                             (long)len,
-                             strerror(errno));
-                SE_THROW_EXCEPTION(TransportException,
-                                   StringPrintf("writev(): %s", strerror(errno)));
+                // man page doesn't say anything about these, but let's catch
+                // them anyway and retry
+                if (errno == EAGAIN ||
+                    errno == EWOULDBLOCK) {
+                    sent = 0;
+                } else {
+                    SE_LOG_DEBUG(NULL, NULL, "%s: sending %ld bytes failed: %s",
+                                 m_pid ? "parent" : "child",
+                                 (long)len,
+                                 strerror(errno));
+                    SE_THROW_EXCEPTION(TransportException,
+                                       StringPrintf("writev(): %s", strerror(errno)));
+                }
             }
 
             // potential partial write, reduce byte counters by amount of bytes sent
@@ -655,8 +662,14 @@ TransportAgent::Status LocalTransportAgent::readMessage(int fd, Buffer &buffer, 
                          (long)recvd,
                          recvd < 0 ? strerror(errno) : "okay");
             if (recvd < 0) {
-                SE_THROW_EXCEPTION(TransportException,
-                                   StringPrintf("message receive: %s", strerror(errno)));
+                if (errno == EAGAIN ||
+                    errno == EWOULDBLOCK) {
+                    // try again
+                    recvd = 0;
+                } else {
+                    SE_THROW_EXCEPTION(TransportException,
+                                       StringPrintf("message receive: %s", strerror(errno)));
+                }
             } else if (!recvd) {
                 if (m_pid) {
                     // Child died. Try to get its sync report to find out why.
