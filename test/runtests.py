@@ -457,9 +457,13 @@ class SyncEvolutionTest(Action):
                 # try relative to client-test inside the current directory
                 backenddir = "backends"
             basecmd = "http_proxy= CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %s ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, backenddir, self.serverlogs, context.workdir, self.runner, self.testPrefix);
-            if self.tests:
+            enabled = context.enabled.get(self.name)
+            if not enabled:
+                enabled = self.tests
+            enabled = enabled.strip().split(" ,") 
+            if enabled:
                 tests = []
-                for test in self.tests:
+                for test in enabled:
                     if test == "Client::Sync" and context.sanitychecks:
                         # Replace with one simpler, faster testItems test, but be careful to
                         # pick an enabled source and the right mode (XML vs. WBXML).
@@ -486,7 +490,7 @@ class SyncEvolutionTest(Action):
 parser = optparse.OptionParser()
 parser.add_option("-e", "--enable",
                   action="append", type="string", dest="enabled", default=[],
-                  help="use this to enable specific actions instead of executing all of them (can be used multiple times)")
+                  help="use this to enable specific actions instead of executing all of them (can be used multiple times and accepts enable=test1,test2 test3,... test lists)")
 parser.add_option("-n", "--no-logs",
                   action="store_true", dest="nologs",
                   help="print to stdout/stderr directly instead of redirecting into log files")
@@ -736,16 +740,17 @@ context.add(dist)
 
 evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
-                                  enabled.get("evolution", "Client::Source SyncEvolution").split(" "),
+                                  "Client::Source SyncEvolution",
                                   [],
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
 test = SyncEvolutionTest("googlecalendar", compile,
                          "", options.shell,
-                         [ "Client::Source::google_caldav" ],
+                         "Client::Source::google_caldav",
                          [ "google_caldav" ],
                          "CLIENT_TEST_WEBDAV='google caldav' "
+                         "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_UNIQUE_UID=1 " # server keeps backups and restores old data unless UID is unieque
                          ,
@@ -754,9 +759,10 @@ context.add(test)
 
 test = SyncEvolutionTest("yahoo", compile,
                          "", options.shell,
-                         [ "Client::Source::yahoo_caldav Client::Source::yahoo_carddav" ],
+                         "Client::Source::yahoo_caldav Client::Source::yahoo_carddav",
                          [ "yahoo_caldav", "yahoo_carddav" ],
                          "CLIENT_TEST_WEBDAV='yahoo caldav carddav' "
+                         "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          ,
                          testPrefix=options.testprefix)
@@ -764,17 +770,18 @@ context.add(test)
 
 test = SyncEvolutionTest("apple", compile,
                          "", options.shell,
-                         [ "Client::Source::apple_caldav Client::Source::apple_carddav" ],
+                         "Client::Source::apple_caldav Client::Source::apple_carddav",
                          [ "apple_caldav", "apple_carddav" ],
                          "CLIENT_TEST_WEBDAV='apple caldav carddav' "
-                        "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
+                         "CLIENT_TEST_NUM_ITEMS=1000 " # test is local, so we can afford a higher number
+                         "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          ,
                          testPrefix=options.testprefix)
 context.add(test)
 
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
-                                      [ "Client::Sync" ],
+                                      "Client::Sync",
                                       [ "vcard30",
                                         "ical20",
                                         "itodo20",
@@ -810,16 +817,16 @@ context.add(scheduleworldtest)
 
 egroupwaretest = SyncEvolutionTest("egroupware", compile,
                                    "", options.shell,
-                                   [ "Client::Sync::vcard21",
-                                     "Client::Sync::ical20::testCopy",
-                                     "Client::Sync::ical20::testUpdate",
-                                     "Client::Sync::ical20::testDelete",
-                                     "Client::Sync::vcard21_ical20::testCopy",
-                                     "Client::Sync::vcard21_ical20::testUpdate",
-                                     "Client::Sync::vcard21_ical20::testDelete",
-                                     "Client::Sync::ical20_vcard21::testCopy",
-                                     "Client::Sync::ical20_vcard21::testUpdate",
-                                     "Client::Sync::ical20_vcard21::testDelete"  ],
+                                   "Client::Sync::vcard21 "
+                                   "Client::Sync::ical20::testCopy "
+                                   "Client::Sync::ical20::testUpdate "
+                                   "Client::Sync::ical20::testDelete "
+                                   "Client::Sync::vcard21_ical20::testCopy "
+                                   "Client::Sync::vcard21_ical20::testUpdate "
+                                   "Client::Sync::vcard21_ical20::testDelete "
+                                   "Client::Sync::ical20_vcard21::testCopy "
+                                   "Client::Sync::ical20_vcard21::testUpdate "
+                                   "Client::Sync::ical20_vcard21::testDelete ",
                                    [ "vcard21",
                                      "ical20" ],
                                    # ContactSync::testRefreshFromServerSync,ContactSync::testRefreshFromClientSync,ContactSync::testDeleteAllRefresh,ContactSync::testRefreshSemantic,ContactSync::testRefreshStatus - refresh-from-client not supported by server
@@ -854,7 +861,7 @@ class SynthesisTest(SyncEvolutionTest):
     def __init__(self, name, build, synthesisdir, runner, testPrefix):
         SyncEvolutionTest.__init__(self, name, build, "", # os.path.join(synthesisdir, "logs")
                                    runner,
-                                   [ "Client::Sync" ],
+                                   "Client::Sync",
                                    [ "vcard21",
                                      "text" ],
                                    "CLIENT_TEST_SKIP="
@@ -906,7 +913,7 @@ class FunambolTest(SyncEvolutionTest):
             serverlogs = ""
         SyncEvolutionTest.__init__(self, name, build, serverlogs,
                                    runner,
-                                   [ "Client::Sync" ],
+                                   "Client::Sync",
                                    [ "vcard21",
                                      "ical20",
                                      "itodo20",
@@ -964,7 +971,7 @@ context.add(funambol)
 
 zybtest = SyncEvolutionTest("zyb", compile,
                             "", options.shell,
-                            [ "Client::Sync" ],
+                            "Client::Sync",
                             [ "vcard21" ],
                             "CLIENT_TEST_NUM_ITEMS=10 "
                             "CLIENT_TEST_SKIP="
@@ -978,7 +985,7 @@ context.add(zybtest)
 
 googletest = SyncEvolutionTest("google", compile,
                                "", options.shell,
-                               [ "Client::Sync" ],
+                               "Client::Sync",
                                [ "vcard21" ],
                                "CLIENT_TEST_NUM_ITEMS=10 "
                                "CLIENT_TEST_XML=0 "
@@ -1000,7 +1007,7 @@ context.add(googletest)
 
 mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "", options.shell,
-                                [ "Client::Sync" ],
+                                "Client::Sync",
                                 [ "vcard21",
                                   "ical20",
                                   "itodo20",
@@ -1077,7 +1084,7 @@ context.add(mobicaltest)
 
 memotootest = SyncEvolutionTest("memotoo", compile,
                                 "", options.shell,
-                                [ "Client::Sync" ],
+                                "Client::Sync",
                                 [ "vcard30",
                                   "ical20",
                                   "itodo20",
@@ -1135,7 +1142,7 @@ context.add(memotootest)
 
 ovitest = SyncEvolutionTest("ovi", compile,
                                 "", options.shell,
-                                [ "Client::Sync" ],
+                                "Client::Sync",
                                 [ "vcard30",
                                   "calendar+todo" ],
                                 "CLIENT_TEST_DELETE_REFRESH=1 "
