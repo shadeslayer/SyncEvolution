@@ -260,7 +260,7 @@ void LocalTransportAgent::run()
             SyncSourceConfig source(sourceName, nodes);
             string sync = source.getSync();
             if (sync != "disabled") {
-                string targetName = source.getURI();
+                string targetName = source.getURINonEmpty();
                 SyncSourceNodes targetNodes = client.getSyncSourceNodes(targetName);
                 SyncSourceConfig targetSource(targetName, targetNodes);
                 string fullTargetName = m_clientContext + "/" + targetName;

@@ -1720,7 +1720,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             SE_LOG_INFO(NULL, NULL, "proxy authorization failed, check proxy username and password");
             break;
         case 404:
-            SE_LOG_INFO(&source, NULL, "server database not found, check URI '%s'", source.getURI().c_str());
+            SE_LOG_INFO(&source, NULL, "server database not found, check URI '%s'", source.getURINonEmpty().c_str());
             break;
         case 0:
             break;
@@ -1980,7 +1980,7 @@ void SyncContext::initSources(SourceList &sourceList)
                     // must set special URI for clients so that
                     // engine knows about superdatastore and its
                     // URI
-                    vFilter["uri"] = string("<") + vSource->getName() + ">" + vSource->getURI();
+                    vFilter["uri"] = string("<") + vSource->getName() + ">" + vSource->getURINonEmpty();
                 }
                 BOOST_FOREACH (std::string source, mappedSources) {
                     setConfigFilter (false, source, vFilter);
@@ -2982,7 +2982,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
             SyncReport childReport;
             agent->getClientSyncReport(childReport);
             BOOST_FOREACH(SyncSource *source, sourceList) {
-                const SyncSourceReport *childSourceReport = childReport.findSyncSourceReport(source->getURI());
+                const SyncSourceReport *childSourceReport = childReport.findSyncSourceReport(source->getURINonEmpty());
                 if (childSourceReport) {
                     SyncMLStatus parentSourceStatus = source->getStatus();
                     SyncMLStatus childSourceStatus = childSourceReport->getStatus();
@@ -3074,7 +3074,7 @@ bool SyncContext::sendSAN(uint16_t version)
         }
         syncMode = mode;
         hasSource = true;
-        string uri = sc->getURI();
+        string uri = sc->getURINonEmpty();
 
         SourceType sourceType = sc->getSourceType();
         /*If the type is not set by user explictly, let's use backend default
@@ -3330,10 +3330,7 @@ SyncMLStatus SyncContext::doSync()
                 m_engine.SetInt32Value(target, "forceslow", slow);
                 m_engine.SetInt32Value(target, "syncmode", direction);
 
-                string uri = source->getURI();
-                if (uri.empty()) {
-                    source->throwError("uri not configured");
-                }
+                string uri = source->getURINonEmpty();
                 m_engine.SetStrValue(target, "remotepath", uri);
             } else {
                 m_engine.SetInt32Value(target, "enabled", 0);

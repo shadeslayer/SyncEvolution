@@ -4971,7 +4971,7 @@ void Connection::ready()
                 // configuration might contain
                 // additional parameters (like date
                 // range selection for events)
-                if (boost::starts_with(sourceConfig->getURI(), serverURI)) {
+                if (boost::starts_with(sourceConfig->getURINonEmpty(), serverURI)) {
                     SE_LOG_DEBUG(NULL, NULL,
                                  "SAN entry #%d = source %s with mode %s",
                                  (int)sync, source.c_str(), syncMode.c_str());

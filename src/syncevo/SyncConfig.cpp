@@ -2547,7 +2547,8 @@ static StringConfigProperty sourcePropDatabaseFormat("databaseFormat",
 
 static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
-                                    "server's database");
+                                    "server's database; if unset, the source name is used as\n"
+                                    "fallback");
 static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source)
 {
     return source->isSet(sourcePropURI);
@@ -2684,6 +2685,13 @@ void SyncSourceConfig::savePassword(ConfigUserInterface &ui,
 }
 void SyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*getNode(sourcePropPassword), value, temporarily); }
 std::string SyncSourceConfig::getURI() const { return sourcePropURI.getProperty(*getNode(sourcePropURI)); }
+std::string SyncSourceConfig::getURINonEmpty() const {
+    string uri = sourcePropURI.getProperty(*getNode(sourcePropURI));
+    if (uri.empty()) {
+        uri = m_name;
+    }
+    return uri;
+}
 void SyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*getNode(sourcePropURI), value, temporarily); }
 std::string SyncSourceConfig::getSync() const { return m_sourcePropSync.getProperty(*getNode(m_sourcePropSync)); }
 void SyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*getNode(m_sourcePropSync), value, temporarily); }

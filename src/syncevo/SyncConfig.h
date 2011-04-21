@@ -1952,6 +1952,13 @@ class SyncSourceConfig {
     virtual void setURI(const string &value, bool temporarily = false);
 
     /**
+     * like getURI(), but instead of returning an empty string when
+     * not configured, return the source name
+     */
+    virtual std::string getURINonEmpty() const;
+
+
+    /**
      * Gets the default syncMode.
      *
      * Sync modes can be one of:
