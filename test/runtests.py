@@ -453,10 +453,12 @@ class SyncEvolutionTest(Action):
                 cmd = "%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name)
                 context.runCommand("%s || ( sleep 5 && %s )" % (cmd, cmd))
             backenddir = os.path.join(context.tmpdir, "install/usr/lib/syncevolution/backends")
+            confdir = os.path.join(context.workdir, "syncevolution/src/syncevo/configs")
+            templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
             if not os.access(backenddir, os.F_OK):
                 # try relative to client-test inside the current directory
                 backenddir = "backends"
-            basecmd = "http_proxy= CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %s ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, backenddir, self.serverlogs, context.workdir, self.runner, self.testPrefix);
+            basecmd = "http_proxy= CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_TEMPLATE_DIR=%s SYNCEVOLUTION_XML_CONFIG_DIR=%s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %s ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, templatedir, confdir, backenddir, self.serverlogs, context.workdir, self.runner, self.testPrefix);
             enabled = context.enabled.get(self.name)
             if not enabled:
                 enabled = self.tests
@@ -747,34 +749,37 @@ context.add(evolutiontest)
 
 test = SyncEvolutionTest("googlecalendar", compile,
                          "", options.shell,
-                         "Client::Source::google_caldav",
-                         [ "google_caldav" ],
+                         "Client::Source::google_caldav Client::Sync::ical20::testItems",
+                         [ "google_caldav", "vcard30" ],
                          "CLIENT_TEST_WEBDAV='google caldav' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_UNIQUE_UID=1 " # server keeps backups and restores old data unless UID is unieque
+                         "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
                          testPrefix=options.testprefix)
 context.add(test)
 
 test = SyncEvolutionTest("yahoo", compile,
                          "", options.shell,
-                         "Client::Source::yahoo_caldav Client::Source::yahoo_carddav",
-                         [ "yahoo_caldav", "yahoo_carddav" ],
+                         "Client::Source::yahoo_caldav Client::Source::yahoo_carddav Client::Sync::vcard30::testItems Client::Sync::ical20::testItems",
+                         [ "yahoo_caldav", "yahoo_carddav", "ical20", "vcard30" ],
                          "CLIENT_TEST_WEBDAV='yahoo caldav carddav' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
+                         "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
                          testPrefix=options.testprefix)
 context.add(test)
 
 test = SyncEvolutionTest("apple", compile,
                          "", options.shell,
-                         "Client::Source::apple_caldav Client::Source::apple_carddav",
-                         [ "apple_caldav", "apple_carddav" ],
+                         "Client::Source::apple_caldav Client::Source::apple_carddav Client::Sync::ical20 Client::Sync::vcard30",
+                         [ "apple_caldav", "apple_carddav", "ical20", "vcard30" ],
                          "CLIENT_TEST_WEBDAV='apple caldav carddav' "
                          "CLIENT_TEST_NUM_ITEMS=1000 " # test is local, so we can afford a higher number
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
+                         "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
                          testPrefix=options.testprefix)
 context.add(test)
