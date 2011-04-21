@@ -94,6 +94,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     string m_localClientRootPath;
     bool m_serverMode;
     bool m_serverAlerted;      /**< sync was initiated by server (applies to client and server mode) */
+    bool m_configNeeded;
     std::string m_sessionID;
     SharedBuffer m_initialMessage;
     string m_initialMessageType;
@@ -241,6 +242,18 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 
     bool isServerAlerted() const { return m_serverAlerted; }
     void setServerAlerted(bool serverAlerted) { m_serverAlerted = serverAlerted; }
+
+    /**
+     * Running operations typically checks that a config really exists
+     * on disk. Setting false disables the check.
+     */
+    bool isConfigNeeded() const { return m_configNeeded; }
+    void setConfigNeeded(bool configNeeded) { m_configNeeded = configNeeded; }
+
+    /**
+     * throws error if config is needed and not available
+     */
+    void checkConfig() const;
 
     /**
      * Sets configuration filters. Currently only used in local sync

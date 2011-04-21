@@ -187,6 +187,7 @@ void SyncContext::init()
     m_localSync = false;
     m_serverMode = false;
     m_serverAlerted = false;
+    m_configNeeded = true;
     m_firstSourceAccess = true;
     m_remoteInitiated = false;
     m_sourceListPtr = NULL;
@@ -2814,14 +2815,20 @@ void SyncContext::setStableRelease(bool isStableRelease)
     IsStableRelease = isStableRelease;
 }
 
+void SyncContext::checkConfig() const
+{
+    if (isConfigNeeded() &&
+        !exists()) {
+        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
+        throwError("cannot proceed without configuration");
+    }
+}
+
 SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
 
-    if (!exists()) {
-        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
-        throwError("cannot proceed without configuration");
-    }
+    checkConfig();
 
     // redirect logging as soon as possible
     SourceList sourceList(*this, m_doLogging);
@@ -3792,10 +3799,7 @@ SyncMLStatus SyncContext::handleException()
 
 void SyncContext::status()
 {
-    if (!exists()) {
-        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
-        throwError("cannot proceed without configuration");
-    }
+    checkConfig();
 
     SourceList sourceList(*this, false);
     initSources(sourceList);
@@ -3848,10 +3852,7 @@ void SyncContext::status()
 
 void SyncContext::checkStatus(SyncReport &report)
 {
-    if (!exists()) {
-        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
-        throwError("cannot proceed without configuration");
-    }
+    checkConfig();
 
     SourceList sourceList(*this, false);
     initSources(sourceList);
@@ -3941,10 +3942,7 @@ bool SyncContext::checkForScriptAbort(SharedSession session)
 
 void SyncContext::restore(const string &dirname, RestoreDatabase database)
 {
-    if (!exists()) {
-        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
-        throwError("cannot proceed without configuration");
-    }
+    checkConfig();
 
     SourceList sourceList(*this, false);
     sourceList.accessSession(dirname.c_str());

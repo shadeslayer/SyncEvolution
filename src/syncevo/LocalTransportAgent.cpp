@@ -219,6 +219,11 @@ void LocalTransportAgent::run()
                            boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
                            doLogging);
 
+        // allow proceeding with sync even if no "source-config" was created,
+        // because information about username/password (for WebDAV) or the
+        // sources (for file backends) might be enough
+        client.setConfigNeeded(false);
+
         // Apply temporary config filters, stored for us in m_server by the
         // command line.
         const FullProps &props = m_server->getConfigProps();
