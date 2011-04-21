@@ -462,7 +462,7 @@ class SyncEvolutionTest(Action):
             enabled = context.enabled.get(self.name)
             if not enabled:
                 enabled = self.tests
-            enabled = enabled.strip().split(" ,") 
+            enabled = re.split("[ ,]", enabled.strip()) 
             if enabled:
                 tests = []
                 for test in enabled:
