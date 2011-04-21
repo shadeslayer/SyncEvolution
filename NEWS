@@ -1,11 +1,21 @@
-SyncEvolution 1.1.99.2 -> 1.1.99.3, 26.02.2010
+SyncEvolution 1.1.99.3 -> 1.1.99.4, 21.04.2011
+==============================================
+
+Akonadi backend and KWallet support merged. Not included
+yet in syncevolution.org binaries. To use it, compile
+from source.
+
+Various bug fixes and improvements... see Changelog for details.
+
+
+SyncEvolution 1.1.99.2 -> 1.1.99.3, 26.02.2011
 ==============================================
 
 Adds CalDAV and CardDAV support. See src/backends/webdav/README
 or mailing list for usage instructions.
 
 
-SyncEvolution 1.1.1 -> 1.1.99.2, 04.02.2010
+SyncEvolution 1.1.1 -> 1.1.99.2, 04.02.2011
 ===========================================
 
 Major internal changes. Supports synchronization between two
