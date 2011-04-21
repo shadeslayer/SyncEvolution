@@ -2,6 +2,7 @@
  * Copyright (C) 2010 Intel Corporation
  */
 
+#include "WebDAVSource.h"
 #include "CalDAVSource.h"
 #include "CardDAVSource.h"
 #include <syncevo/SyncSource.h>

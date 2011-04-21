@@ -7,18 +7,22 @@
 
 #include <config.h>
 
+#include <syncevo/SyncConfig.h>
+
+#include <syncevo/declarations.h>
+SE_BEGIN_CXX
+extern BoolConfigProperty WebDAVCredentialsOkay;
+SE_END_CXX
+
 #ifdef ENABLE_DAV
 
 #include <syncevo/TrackingSyncSource.h>
 #include <boost/noncopyable.hpp>
 #include "NeonCXX.h"
 
-#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class ContextSettings;
-
-extern BoolConfigProperty WebDAVCredentialsOkay;
 
 /**
  * Implements generic access to a WebDAV collection.
