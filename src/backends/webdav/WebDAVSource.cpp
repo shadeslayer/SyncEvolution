@@ -86,10 +86,9 @@ public:
                                           m_url.c_str()));
                 }
             }
+            boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
+            m_credentialsOkay = WebDAVCredentialsOkay.getPropertyValue(*node);
         }
-
-        boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
-        m_credentialsOkay = WebDAVCredentialsOkay.getPropertyValue(*node);
     }
 
     void setURL(const std::string url) { m_url = url; }
@@ -140,7 +139,7 @@ public:
 
     virtual bool getCredentialsOkay() { return m_credentialsOkay; }
     virtual void setCredentialsOkay(bool okay) {
-        if (m_credentialsOkay != okay) {
+        if (m_credentialsOkay != okay && m_context) {
             boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
             WebDAVCredentialsOkay.setProperty(*node, okay);
             node->flush();
