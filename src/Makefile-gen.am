@@ -253,15 +253,29 @@ client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE) $(BUTEOSYNCPROFILE_LIBS) $
 # rule to generate patched files from patches:
 # make cannot compute the dependencies completely, so run the commands
 # on each make invocation and do the time stamp test ourselves
+#
+# If we create the patched file anew, then set its time to the more
+# recent of the two input files. That way it won't be re-generated
+# (because it is not older), and it won't be used to refresh the patch
+# either in testcase2patch (because it is not newer either).
+# That is useful on platforms where diff produces different results
+# than the one in the source (possible because the "find shortest
+# patch" problem may have multiple solutions).
 .PHONY: $(TEST_FILES_GENERATED)
 $(TEST_FILES_GENERATED):
 	@ mkdir -p testcases
-	@ echo "checking whether server specific test cases $@ are up-to-date"
-	set -e; \
+	@ echo "checking whether server specific test case $@ is up-to-date"
+	@ set -e; \
 	patchfile=$(srcdir)/../test/$@.patch; \
 	basefile=$(srcdir)/../test/$(basename $(basename $@)); \
-	[ ! $@ -ot $$patchfile ] && [ ! $@ -ot $$basefile ] || \
-	(echo '*** foo'; echo '--- bar'; cat $$patchfile) | patch -o $@ $$basefile
+	( [ ! $@ -ot $$patchfile ] && [ ! $@ -ot $$basefile ] && echo "   $@ up-to-date" ) || \
+	( echo "   generating $@ by applying $$patchfile to $$basefile" && \
+	  (echo '*** foo'; echo '--- bar'; cat $$patchfile) | patch -s -o $@ $$basefile && \
+          ( if [ $$basefile -ot $$patchfile ]; then \
+              touch -r $$patchfile $@; else \
+              touch -r $$basefile $@; fi ) \
+        )
+
 
 # rule to regenerate patches:
 # like generating the patched files, this is run every time.
@@ -275,14 +289,16 @@ $(TEST_FILES_GENERATED):
 .PHONY: testcase2patch
 testcase2patch: $(TEST_FILES_GENERATED)
 	@ echo "checking whether test case patch files are up-to-date"
-	set -e; \
+	@ set -e; \
 	for i in testcases/*.tem; do \
 		patchfile=$(srcdir)/../test/$$i.patch; \
 		basefile=$(srcdir)/../test/`echo $$i | cut -d . -f  -2`; \
 		if [ $$patchfile -ot $$i ] || [ $$patchfile -ot $$basefile ]; then \
 			diff -u $$basefile $$i | tail -n +3 > $$patchfile || true; \
 			touch -r $$i $$patchfile; \
-			echo "updated $$patchfile"; \
+			echo "   updated $$patchfile"; \
+                else \
+                        echo "   $$patchfile up-to-date"; \
 		fi; \
 	done
 
