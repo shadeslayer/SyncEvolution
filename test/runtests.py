@@ -458,7 +458,7 @@ class SyncEvolutionTest(Action):
             if not os.access(backenddir, os.F_OK):
                 # try relative to client-test inside the current directory
                 backenddir = "backends"
-            basecmd = "http_proxy= CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_TEMPLATE_DIR=%s SYNCEVOLUTION_XML_CONFIG_DIR=%s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=file://%s/databases %s env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %s ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, templatedir, confdir, backenddir, self.serverlogs, context.workdir, self.runner, self.testPrefix);
+            basecmd = "http_proxy= CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_TEMPLATE_DIR=%s SYNCEVOLUTION_XML_CONFIG_DIR=%s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=%s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %s ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, templatedir, confdir, backenddir, self.serverlogs, context.databasePrefix, self.runner, self.testPrefix);
             enabled = context.enabled.get(self.name)
             if not enabled:
                 enabled = self.tests
@@ -508,6 +508,9 @@ parser.add_option("", "--tmp",
 parser.add_option("", "--workdir",
                   type="string", dest="workdir", default="",
                   help="directory for files which might be reused between runs")
+parser.add_option("", "--database-prefix",
+                  type="string", dest="databasePrefix", default="Test_",
+                  help="defines database names (<prefix>_<type>_1/2), must exist")
 parser.add_option("", "--resultdir",
                   type="string", dest="resultdir", default="",
                   help="directory for log files and results")
@@ -600,6 +603,7 @@ context = Context(options.tmpdir, options.resultdir, options.uri, options.workdi
                   options.subject, options.sender, options.recipients, options.mailhost,
                   enabled, options.skip, options.nologs, options.setupcmd,
                   options.makecmd, options.sanitychecks, options.lastresultdir, options.datadir)
+context.databasePrefix = options.databasePrefix
 
 class EvoSvn(Action):
     """Builds Evolution from SVN using Paul Smith's Evolution Makefile."""
