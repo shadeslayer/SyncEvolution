@@ -55,10 +55,6 @@ def step1(input, result, indents, dir, resulturi, shellprefix, srcdir):
     '''Step1 of the result checking, collect system information and 
     check the preparation steps (fetch, compile)'''
     cont = True
-    # get the chroot envoriment
-    root = ''
-    if(shellprefix.split()[0] == 'schroot'):
-        root = shellprefix.split()[3]
     indent =indents[-1]+space
     indents.append(indent)
     result.write(indent+'''<platform-info>\n''')
@@ -79,11 +75,13 @@ def step1(input, result, indents, dir, resulturi, shellprefix, srcdir):
     s = fout.read()
     result.write(indent+s)
     result.write(indent+'''</osinfo>\n''')
-    if(len(root) > 0):
+    if 'schroot' in shellprefix:
         result.write(indent+'''<chrootinfo>\n''')
-        fout,fin=popen2.popen2('schroot -i -c'+root+" |grep 'Description'")
-        s = fout.read()
-        s = s + ' name: '+root;
+        fout,fin=popen2.popen2(shellprefix.replace('schroot', 'schroot -i'))
+        s = ""
+        for line in fout:
+            if line.startswith("  Name ") or line.startswith("  Description "):
+                 s = s + line
         result.write(indent+s)
         result.write(indent+'''</chrootinfo>\n''')
     result.write(indent+'''<libraryinfo>\n''')
