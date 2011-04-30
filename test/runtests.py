@@ -754,7 +754,7 @@ context.add(evolutiontest)
 test = SyncEvolutionTest("googlecalendar", compile,
                          "", options.shell,
                          "Client::Source::google_caldav Client::Sync::ical20::testItems",
-                         [ "google_caldav", "vcard30" ],
+                         [ "google_caldav", "ical20" ],
                          "CLIENT_TEST_WEBDAV='google caldav' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
