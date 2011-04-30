@@ -44,6 +44,10 @@ def check (resultdir, serverlist,resulturi, srcdir, shellprefix, backenddir):
         indents,cont = step1(resultdir+"/output.txt",result,indents,resultdir,resulturi, shellprefix, srcdir)
         if (cont):
             step2(resultdir,result,servers,indents,srcdir,shellprefix,backenddir)
+        else:
+            # compare.xsl fails if there is no <client-test> element:
+            # add an empty one
+            result.write('''<client-test/>\n''')
     result.write('''</nightly-test>\n''')
     result.close()
 
