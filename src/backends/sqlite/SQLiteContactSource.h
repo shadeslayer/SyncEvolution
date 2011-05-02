@@ -83,11 +83,9 @@ class SQLiteContactSource : public SyncSource,
     virtual void open();
     virtual void close();
     virtual Databases getDatabases();
-    virtual const char *getMimeType() const { return "text/x-vcard"; }
-    virtual const char *getMimeVersion() const { return "2.1"; }
     virtual void enableServerMode();
     virtual bool serverModeEnabled() const;
-    virtual const char *getPeerMimeType() const {return getMimeType(); }
+    virtual std::string getPeerMimeType() const { return "text/x-vcard"; }
 
     /* Methods in SyncSource */
     virtual void getSynthesisInfo (SynthesisInfo &info, XMLConfigFragments &fragment);
