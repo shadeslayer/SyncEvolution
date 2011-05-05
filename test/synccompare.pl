@@ -73,6 +73,7 @@ my $memotoo = $server =~ /memotoo/;
 my $nokia_7210c = $server =~ /nokia_7210c/;
 my $ovi = $server =~ /Ovi/;
 my $unique_uid = $ENV{CLIENT_TEST_UNIQUE_UID};
+my $full_timezones = $ENV{CLIENT_TEST_FULL_TIMEZONES}; # do not simplify VTIMEZONE definitions
 
 # TODO: this hack ensures that any synchronization is limited to
 # properties supported by Synthesis. Remove this again.
@@ -239,23 +240,25 @@ sub NormalizeItem {
         s/^SUMMARY:(.*)$/SUMMARY:$1\nDESCRIPTION:$1/m;
     }
 
-    # Strip trailing digits from TZID. They are appended by
-    # Evolution and SyncEvolution to distinguish VTIMEZONE
-    # definitions which have the same TZID, but different rules.
-    s/(^TZID:|;TZID=)([^;:]*?) \d+/$1$2/gm;
+    if (!$full_timezones) {
+        # Strip trailing digits from TZID. They are appended by
+        # Evolution and SyncEvolution to distinguish VTIMEZONE
+        # definitions which have the same TZID, but different rules.
+        s/(^TZID:|;TZID=)([^;:]*?) \d+/$1$2/gm;
 
-    # Strip trailing -(Standard) from TZID. Evolution 2.24.5 adds
-    # that (not sure exactly where that comes from).
-    s/(^TZID:|;TZID=)([^;:]*?)-\(Standard\)/$1$2/gm;
+        # Strip trailing -(Standard) from TZID. Evolution 2.24.5 adds
+        # that (not sure exactly where that comes from).
+        s/(^TZID:|;TZID=)([^;:]*?)-\(Standard\)/$1$2/gm;
 
-    # VTIMEZONE and TZID do not have to be preserved verbatim as long
-    # as the replacement is still representing the same timezone.
-    # Reduce TZIDs which specify a proper location
-    # to their location part and strip the VTIMEZONE - makes the
-    # diff shorter, too.
-    my $location = "[^\n]*((?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Brazil|Canada|Chile|Egypt|Eire|Europe|Hongkong|Iceland|India|Iran|Israel|Jamaica|Japan|Kwajalein|Libya|Mexico|Mideast|Navajo|Pacific|Poland|Portugal|Singapore|Turkey|Zulu)[-a-zA-Z0-9_/]*)";
-    s;^BEGIN:VTIMEZONE.*?^TZID:$location.*^END:VTIMEZONE;BEGIN:VTIMEZONE\n  TZID:$1 [...]\nEND:VTIMEZONE;gms;
-    s;TZID="?$location"?;TZID=$1;gm;
+        # VTIMEZONE and TZID do not have to be preserved verbatim as long
+        # as the replacement is still representing the same timezone.
+        # Reduce TZIDs which specify a proper location
+        # to their location part and strip the VTIMEZONE - makes the
+        # diff shorter, too.
+        my $location = "[^\n]*((?:Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Brazil|Canada|Chile|Egypt|Eire|Europe|Hongkong|Iceland|India|Iran|Israel|Jamaica|Japan|Kwajalein|Libya|Mexico|Mideast|Navajo|Pacific|Poland|Portugal|Singapore|Turkey|Zulu)[-a-zA-Z0-9_/]*)";
+        s;^BEGIN:VTIMEZONE.*?^TZID:$location.*^END:VTIMEZONE;BEGIN:VTIMEZONE\n  TZID:$1 [...]\nEND:VTIMEZONE;gms;
+        s;TZID="?$location"?;TZID=$1;gm;
+    }
 
     # normalize iCalendar 2.0
     if (/^BEGIN:(VEVENT|VTODO|VJOURNAL)$/m) {
