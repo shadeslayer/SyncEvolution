@@ -266,7 +266,9 @@ class Context:
         #calculate the src dir where client-test can be located
         srcdir = os.path.join(self.tmpdir,"build/src")
         backenddir = os.path.join(self.tmpdir, "install/usr/lib/syncevolution/backends")
-        self.runCommand("resultchecker.py " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+self.uri +" "+srcdir + " '" + options.shell + " " + options.testprefix +" '"+" '" +backenddir +"'");
+        # resultchecker doesn't need valgrind, remove it
+        shell = re.sub(r'\S*valgrind\S*', '', options.shell)
+        self.runCommand("resultchecker.py " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+self.uri +" "+srcdir + " '" + shell + " " + options.testprefix +" '"+" '" +backenddir +"'");
         # transform to html
         self.runCommand("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + self.lastresultdir +"/nightly.xml "+self.datadir +"/compare.xsl "+ self.resultdir+"/nightly.xml")
         self.runCommand("xsltproc -o " + self.resultdir + "/nightly.html --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + self.datadir +"/generate-html.xsl "+ self.resultdir+"/nightly.xml")
