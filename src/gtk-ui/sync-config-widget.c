@@ -653,7 +653,7 @@ virtual_source_exists (SyncevoConfig *config, const char *name)
 
         if (g_str_has_prefix (source_string, "source/")) {
             const char *uri, *type;
-            type = g_hash_table_lookup (source_config, "type");
+            type = g_hash_table_lookup (source_config, "backend");
             uri = g_hash_table_lookup (source_config, "uri");
 
             if (!uri || !type || !g_str_has_prefix (type, "virtual:")) {
@@ -693,7 +693,7 @@ init_source (char *name,
     SyncevoSyncMode mode;
     save_config_data *data;
 
-    type = g_hash_table_lookup (source_configuration, "type");
+    type = g_hash_table_lookup (source_configuration, "backend");
     uri = g_hash_table_lookup (source_configuration, "uri");
     if (!type || strlen (type) == 0) {
         return;
@@ -791,7 +791,7 @@ get_common_mode (char *name,
     SyncevoSyncMode mode;
     char *mode_str, *type;
 
-    type = g_hash_table_lookup (source_configuration, "type");
+    type = g_hash_table_lookup (source_configuration, "backend");
     if (!type || strlen (type) == 0) {
         return;
     }
