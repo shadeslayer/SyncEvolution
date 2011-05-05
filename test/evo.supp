@@ -1266,6 +1266,42 @@
     fun:e_book_*
 }
 
+# ==31627== 39 bytes in 1 blocks are definitely lost in loss record 4,002 of 15,340
+# ==31627==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
+# ==31627==    by 0x6BDB392: g_malloc (in /lib/libglib-2.0.so.0.2800.6)
+# ==31627==    by 0x6BF39CD: g_strdup (in /lib/libglib-2.0.so.0.2800.6)
+# ==31627==    by 0x6C0EBCC: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==31627==    by 0x6C0EA59: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==31627==    by 0x6C0F8A8: g_variant_get_va (in /lib/libglib-2.0.so.0.2800.6)
+# ==31627==    by 0x6C0F9F5: g_variant_get (in /lib/libglib-2.0.so.0.2800.6)
+# ==31627==    by 0x52C6AD6: e_gdbus_cal_call_create_object_sync (in /usr/lib/libecal-1.2.so.8.2.2)
+# ==31627==    by 0x52A84E8: e_cal_create_object (in /usr/lib/libecal-1.2.so.8.2.2)
+# ==31627==    by 0x5DCA3B: SyncEvo::EvolutionCalendarSource::insertItem(std::string const&, std::string const&, bool) (EvolutionCalendarSource.cpp:416)
+# ==31627==    by 0x70BECA: SyncEvo::TrackingSyncSource::insertItemRaw(std::string const&, std::string const&) (TrackingSyncSource.cpp:86)
+# ==31627==    by 0x586756: SyncEvo::LocalTests::insert(SyncEvo::CreateSource, char const*, bool, std::string*) (ClientTest.cpp:308)
+# ==31627==    by 0x56C12A: SyncEvo::LocalTests::testLinkedItemsChildChangesParent() (ClientTest.cpp:1109)
+# ==31627==    by 0x5EED749: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EE0C83: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EE9CC6: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EF4423: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EED4E7: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EEDC22: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EEDB45: CppUnit::TestComposite::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EF4049: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EF6472: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5EF8FDA: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==31627==    by 0x5B048B: main (client-test-main.cpp:283)
+# ==31627== 
+{
+   e_cal_create_object
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:g_variant_get
+   ...
+   fun:e_cal_create_object
+}
+
 # ==28758== 3 bytes in 1 blocks are possibly lost in loss record 31 of 10,032
 # ==28758==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
 # ==28758==    by 0x6432504: g_malloc (in /lib/libglib-2.0.so.0.2400.1)
