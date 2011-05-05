@@ -3825,13 +3825,17 @@ public:
             tests->addTest(FilterTest(synctests));
             synctests = 0;
 
-            // now also in reversed order - who knows, it might make a difference
-            std::reverse(sources.begin(), sources.end());
-            synctests =
-                client.createSyncTests(tests->getName() + "::" + name_reversed, sources);
-            synctests->addTests();
-            tests->addTest(FilterTest(synctests));
-            synctests = 0;
+            if (getenv("CLIENT_TEST_REVERSE_SOURCES")) {
+                // now also in reversed order - who knows, it might make a difference;
+                // typically it just makes the whole run slower, so not enabled
+                // by default
+                std::reverse(sources.begin(), sources.end());
+                synctests =
+                    client.createSyncTests(tests->getName() + "::" + name_reversed, sources);
+                synctests->addTests();
+                tests->addTest(FilterTest(synctests));
+                synctests = 0;
+            }
         }
 
         alltests->addTest(FilterTest(tests));
