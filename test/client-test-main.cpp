@@ -131,7 +131,7 @@ public:
         if (!getenv("SYNCEVOLUTION_DEBUG")) {
             string logfile = m_currentTest + ".log";
             simplifyFilename(logfile);
-            m_logger.reset(new LogRedirect(false, logfile.c_str()));
+            m_logger.reset(new LogRedirect(true, logfile.c_str()));
             m_logger->setLevel(Logger::DEBUG);
             LoggerBase::pushLogger(m_logger.get());
         }
