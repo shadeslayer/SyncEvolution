@@ -33,7 +33,10 @@ def check (resultdir, serverlist,resulturi, srcdir, shellprefix, backenddir):
     '''Entrypoint, resutldir is the test result directory to be generated,
     resulturi is the http uri, it will only process corresponding server's
     test results list in severlist'''
-    servers = serverlist.split(",")
+    if serverlist:
+        servers = serverlist.split(",")
+    else:
+        servers = []
     result = open("nightly.xml","w")
     result.write('''<?xml version="1.0" encoding="utf-8" ?>\n''')
     result.write('''<nightly-test>\n''')
@@ -142,18 +145,20 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
     servers, tranverse the corresponding result folder, process
     each log file to decide the status of the testcase'''
     '''Read the runtime parameter for each server '''
-    cmd='sed -n '
-    for server in servers:
-        cmd+= '-e /^'+server+'/p '
-    fout,fin=popen2.popen2(cmd +resultdir+'/output.txt')
-    params={}
-    for line in fout:
+    params = {}
+    if servers:
+        cmd='sed -n '
         for server in servers:
-            if(line.startswith(server) and server not in params):
-                t = line.partition(server)[2].rpartition('\n')[0]
-                if(t.startswith(':')):
-                    t=t.partition(':')[2]
-                params[server]=t
+            cmd+= '-e /^'+server+'/p '
+        fout,fin=popen2.popen2(cmd +resultdir+'/output.txt')
+        for line in fout:
+            for server in servers:
+                # find first line with "foobar successful" or "foobar: <command failure>"
+                if (line.startswith(server + ":") or line.startswith(server + " ")) and server not in params:
+                    t = line.partition(server)[2].rpartition('\n')[0]
+                    if(t.startswith(':')):
+                        t=t.partition(':')[2]
+                    params[server]=t
     
     indent =indents[-1]+space
     indents.append(indent)
