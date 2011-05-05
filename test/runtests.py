@@ -460,7 +460,32 @@ class SyncEvolutionTest(Action):
             if not os.access(backenddir, os.F_OK):
                 # try relative to client-test inside the current directory
                 backenddir = "backends"
-            basecmd = "http_proxy= CLIENT_TEST_SERVER=%s CLIENT_TEST_SOURCES=%s %s SYNCEVOLUTION_TEMPLATE_DIR=%s SYNCEVOLUTION_XML_CONFIG_DIR=%s SYNCEVOLUTION_BACKEND_DIR=%s SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 CLIENT_TEST_ALARM=1200 CLIENT_TEST_LOG=%s CLIENT_TEST_EVOLUTION_PREFIX=%s %s env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %s ./client-test" % (self.serverName, ",".join(self.sources), self.testenv, templatedir, confdir, backenddir, self.serverlogs, context.databasePrefix, self.runner, self.testPrefix);
+
+            # proxy must be set in test config! Necessary because not all tests work with the env proxy (local CalDAV, for example).
+            basecmd = "http_proxy= " \
+                      "CLIENT_TEST_SERVER=%(server)s " \
+                      "CLIENT_TEST_SOURCES=%(sources)s " \
+                      "SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 " \
+                      "CLIENT_TEST_ALARM=1200 " \
+                      "%(env)s " \
+                      "SYNCEVOLUTION_TEMPLATE_DIR=%(templates)s " \
+                      "SYNCEVOLUTION_XML_CONFIG_DIR=%(configs)s " \
+                      "SYNCEVOLUTION_BACKEND_DIR=%(backends)s " \
+                      "CLIENT_TEST_LOG=%(log)s " \
+                      "CLIENT_TEST_EVOLUTION_PREFIX=%(evoprefix)s " \
+                      "%(runner)s " \
+                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %(testprefix)s " \
+                      "./client-test" % \
+                      { "server": self.serverName,
+                        "sources": ",".join(self.sources),
+                        "env": self.testenv,
+                        "templates": templatedir,
+                        "configs": confdir,
+                        "backends": backenddir,
+                        "log": self.serverlogs,
+                        "evoprefix": context.databasePrefix,
+                        "runner": self.runner,
+                        "testprefix": self.testPrefix }
             enabled = context.enabled.get(self.name)
             if not enabled:
                 enabled = self.tests
@@ -783,7 +808,8 @@ test = SyncEvolutionTest("apple", compile,
                          "Client::Source::apple_caldav Client::Source::apple_carddav Client::Sync::eds_event Client::Sync::eds_contact",
                          [ "apple_caldav", "apple_carddav", "eds_event", "eds_contact" ],
                          "CLIENT_TEST_WEBDAV='apple caldav carddav' "
-                         "CLIENT_TEST_NUM_ITEMS=1000 " # test is local, so we can afford a higher number
+                         "CLIENT_TEST_NUM_ITEMS=250 " # test is local, so we can afford a higher number
+                         "CLIENT_TEST_ALARM=2400 " # but even with a local server does the test run a long time
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
