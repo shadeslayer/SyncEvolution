@@ -80,7 +80,7 @@ public:
                                                   m_url.c_str()));
                         }
                     }
-                } else {
+                } else if (arg->end() != arg->begin()) {
                     SE_THROW(StringPrintf("unknown parameter %s in URL %s",
                                           std::string(arg->begin(), arg->end()).c_str(),
                                           m_url.c_str()));
