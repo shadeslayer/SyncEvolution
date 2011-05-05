@@ -108,7 +108,7 @@ namespace {
 
 static class VCard21Test : public RegisterSyncSourceTest {
 public:
-    VCard21Test() : RegisterSyncSourceTest("xmlrpc_vcard21", "vcard21") {}
+    VCard21Test() : RegisterSyncSourceTest("xmlrpc_contact", "eds_contact") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -120,7 +120,7 @@ public:
 
 static class VCard30Test : public RegisterSyncSourceTest {
 public:
-    VCard30Test() : RegisterSyncSourceTest("xmlrpc_vcard30", "vcard30") {}
+    VCard30Test() : RegisterSyncSourceTest("xmlrpc_contact", "eds_contact") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -130,7 +130,7 @@ public:
 
 static class ICal20Test : public RegisterSyncSourceTest {
 public:
-    ICal20Test() : RegisterSyncSourceTest("xmlrpc_ical20", "ical20") {}
+    ICal20Test() : RegisterSyncSourceTest("xmlrpc_event", "eds_event") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -142,8 +142,8 @@ public:
         // second operation into an update. The file backend is
         // to dumb for that and therefore fails these tests:
         //
-        // Client::Source::file_ical20::testLinkedItemsInsertParentTwice
-        // Client::Source::file_ical20::testLinkedItemsInsertChildTwice
+        // Client::Source::xmlrpc_event::testLinkedItemsInsertParentTwice
+        // Client::Source::xmlrpc_event::testLinkedItemsInsertChildTwice
         //
         // Disable linked item testing to avoid this.
         config.sourceKnowsItemSemantic = false;
@@ -152,7 +152,7 @@ public:
 
 static class ITodo20Test : public RegisterSyncSourceTest {
 public:
-    ITodo20Test() : RegisterSyncSourceTest("xmlrpc_itodo20", "itodo20") {}
+    ITodo20Test() : RegisterSyncSourceTest("xmlrpc_task", "eds_task") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

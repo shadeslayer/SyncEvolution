@@ -146,31 +146,9 @@ namespace {
 }
 #endif
 
-/**
- * We are using the vcard30 tests because they are 
- * a bit more complete than the vcard21 ones.
- * This also tests the vCard 3.0 <-> vCard 2.1
- * conversion.
- *
- * The local tests become identical with the
- * vCard 3.0 ones because they import/export the
- * same data. 
- */
-static class VCard21Test : public RegisterSyncSourceTest {
-public:
-    VCard21Test() : RegisterSyncSourceTest("vcard21", "vcard30") {}
-
-    virtual void updateConfig(ClientTestConfig &config) const
-    {
-        config.uri = "card"; // Funambol
-        config.type = "evolution-contacts:text/x-vcard";
-        config.testcases = "testcases/vcard30.vcf";
-    }
-} vCard21Test;
-
 static class VCard30Test : public RegisterSyncSourceTest {
 public:
-    VCard30Test() : RegisterSyncSourceTest("vcard30", "vcard30") {}
+    VCard30Test() : RegisterSyncSourceTest("eds_contact", "eds_contact") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

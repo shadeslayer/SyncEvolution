@@ -198,12 +198,12 @@ namespace {
 
 static class VCard30Test : public RegisterSyncSourceTest {
 public:
-    VCard30Test() : RegisterSyncSourceTest("qt_vcard30", "vcard30") {}
+    VCard30Test() : RegisterSyncSourceTest("qt_contact", "eds_contact") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "qt-contacts:text/vcard";
-        config.testcases = "testcases/qt_vcard30.vcf";
+        config.testcases = "testcases/qt_contact.vcf";
     }
 } vCard30Test;
 

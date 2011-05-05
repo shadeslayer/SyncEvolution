@@ -116,7 +116,7 @@ private:
  * not delivered, see e-cal.c), which then leads to D-Bus errors.
  *
  * The workaround consists of keeping one open SyncEvolution backend
- * around for each of ical20 and vcard21/30, if they ever were used
+ * around for each of eds_event and eds_contact/30, if they ever were used
  * during testing.
  */
 static map<string, boost::shared_ptr<TestingSyncSource> > lockEvolution;
@@ -389,7 +389,7 @@ public:
                     // mode is perhaps too conservative, but in
                     // practice the only test where slow sync
                     // prevention caused a test failure was
-                    // Client::Sync::vcard30::testTwoWaySync after
+                    // Client::Sync::eds_contact::testTwoWaySync after
                     // some other failed test, so let's be conservative...
                     setPreventSlowSync(false);
                 }
@@ -469,9 +469,9 @@ private:
     /** returns the name of the Evolution database */
     string getDatabaseName(const string &configName) {
         if (configName == "calendar+todo") {
-            return "ical20,itodo20";
+            return "eds_event,eds_task";
         } else if (configName == "file_calendar+todo") {
-            return "file_ical20,file_itodo20";
+            return "file_event,file_task";
         }
         return m_evoPrefix + configName + "_" + m_clientID;
     }
@@ -537,10 +537,10 @@ private:
         // hard-coded names as used by src/backends/evolution;
         // if some other backend reuses them, it gets the
         // same treatment, which shouldn't cause any harm
-        if (name == "vcard21" ||
-            name == "vcard30") {
+        if (name == "eds_contact" ||
+            name == "eds_contact") {
             basename = "ebook";
-        } else if (name == "ical20" ||
+        } else if (name == "eds_event" ||
                    name == "text") {
             basename = "ecal";
         }

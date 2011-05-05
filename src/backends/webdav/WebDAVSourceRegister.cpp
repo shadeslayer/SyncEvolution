@@ -187,8 +187,8 @@ public:
                const std::string &type,
                const ConfigProps &syncProps) :
         RegisterSyncSourceTest(server + "_" + type, // for example, google_caldav
-                               type == "caldav" ? "ical20" :
-                               type == "carddav" ? "vcard30" :
+                               type == "caldav" ? "eds_event" :
+                               type == "carddav" ? "eds_contact" :
                                type),
         m_server(server),
         m_type(type),

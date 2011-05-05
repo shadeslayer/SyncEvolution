@@ -10,13 +10,13 @@ EXTRA_DIST = \
         Algorithm/COPYING \
         Algorithm/Diff.pm \
         Algorithm/README \
-        testcases/ical20.ics \
-	testcases/ical20.ics.local \
-        testcases/itodo20.ics \
+        testcases/eds_event.ics \
+	testcases/eds_event.ics.local \
+        testcases/eds_task.ics \
         testcases/vcal10.ics \
-        testcases/vcard21.vcf \
-        testcases/vcard30.vcf \
-        testcases/imemo20.ics \
+        testcases/eds_contact.vcf \
+        testcases/eds_contact.vcf \
+        testcases/eds_memo.ics \
 	testcases/lcs/file1.txt \
 	testcases/lcs/file2.txt \
 	testcases/templates/clients/phone/nokia/S40/7210c.ini \

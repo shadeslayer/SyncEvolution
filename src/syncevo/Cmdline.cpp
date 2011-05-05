@@ -3272,8 +3272,8 @@ protected:
             "syncevolution/default/peers/foo/config.ini:syncURL = local://@bar\n";
 
         string configsource =
-            "syncevolution/default/peers/foo/sources/ical20/config.ini:sync = two-way\n"
-            "syncevolution/default/sources/ical20/config.ini:backend = calendar\n";
+            "syncevolution/default/peers/foo/sources/eds_event/config.ini:sync = two-way\n"
+            "syncevolution/default/sources/eds_event/config.ini:backend = calendar\n";
 
         rm_r(m_testDir);
         {
@@ -3306,7 +3306,7 @@ protected:
         {
             // allow user to proceed if they wish: should result in no sources configured,
             // even if specific source properties are specified
-            TestCmdline failure("--configure", "--template", "none", "ical20/backend=calendar", "foo", NULL);
+            TestCmdline failure("--configure", "--template", "none", "eds_event/backend=calendar", "foo", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             CPPUNIT_ASSERT(failure.m_cmdline->run());
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
@@ -3318,14 +3318,14 @@ protected:
 
         rm_r(m_testDir);
         {
-            // allow user to proceed if they wish and possible: here ical20 is not usable
-            TestCmdline failure("--configure", "--template", "none", "foo", "ical20", NULL);
+            // allow user to proceed if they wish and possible: here eds_event is not usable
+            TestCmdline failure("--configure", "--template", "none", "foo", "eds_event", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             bool caught = false;
             try {
                 CPPUNIT_ASSERT(failure.m_cmdline->run());
             } catch (const StatusException &ex) {
-                if (!strcmp(ex.what(), "ical20: no backend available")) {
+                if (!strcmp(ex.what(), "eds_event: no backend available")) {
                     caught = true;
                 } else {
                     throw;
@@ -3336,14 +3336,14 @@ protected:
 
         rm_r(m_testDir);
         {
-            // allow user to proceed if they wish and possible: here ical20 is not configurable
-            TestCmdline failure("--configure", "syncURL=local://@bar", "foo", "ical20", NULL);
+            // allow user to proceed if they wish and possible: here eds_event is not configurable
+            TestCmdline failure("--configure", "syncURL=local://@bar", "foo", "eds_event", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             bool caught = false;
             try {
                 CPPUNIT_ASSERT(failure.m_cmdline->run());
             } catch (const StatusException &ex) {
-                if (!strcmp(ex.what(), "no such source(s): ical20")) {
+                if (!strcmp(ex.what(), "no such source(s): eds_event")) {
                     caught = true;
                 } else {
                     throw;
@@ -3354,14 +3354,14 @@ protected:
 
         rm_r(m_testDir);
         {
-            // allow user to proceed if they wish and possible: here ical20 is not configurable (wrong context)
-            TestCmdline failure("--configure", "syncURL=local://@bar", "ical20/backend@xyz=calendar", "foo", "ical20", NULL);
+            // allow user to proceed if they wish and possible: here eds_event is not configurable (wrong context)
+            TestCmdline failure("--configure", "syncURL=local://@bar", "eds_event/backend@xyz=calendar", "foo", "eds_event", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             bool caught = false;
             try {
                 CPPUNIT_ASSERT(failure.m_cmdline->run());
             } catch (const StatusException &ex) {
-                if (!strcmp(ex.what(), "no such source(s): ical20")) {
+                if (!strcmp(ex.what(), "no such source(s): eds_event")) {
                     caught = true;
                 } else {
                     throw;
@@ -3373,7 +3373,7 @@ protected:
         rm_r(m_testDir);
         {
             // allow user to proceed if they wish: configure exactly the specified sources
-            TestCmdline failure("--configure", "--template", "none", "backend=calendar", "foo", "ical20", NULL);
+            TestCmdline failure("--configure", "--template", "none", "backend=calendar", "foo", "eds_event", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             CPPUNIT_ASSERT(failure.m_cmdline->run());
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
@@ -3401,7 +3401,7 @@ protected:
         {
             // allow user to proceed if they provide enough information;
             // source created because listed and usable
-            TestCmdline failure("--configure", "syncURL=local://@bar", "backend=calendar", "foo", "ical20", NULL);
+            TestCmdline failure("--configure", "syncURL=local://@bar", "backend=calendar", "foo", "eds_event", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             CPPUNIT_ASSERT(failure.m_cmdline->run());
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
@@ -3415,7 +3415,7 @@ protected:
         {
             // allow user to proceed if they provide enough information;
             // source created because listed and usable
-            TestCmdline failure("--configure", "syncURL=local://@bar", "ical20/backend@default=calendar", "foo", "ical20", NULL);
+            TestCmdline failure("--configure", "syncURL=local://@bar", "eds_event/backend@default=calendar", "foo", "eds_event", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             CPPUNIT_ASSERT(failure.m_cmdline->run());
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());

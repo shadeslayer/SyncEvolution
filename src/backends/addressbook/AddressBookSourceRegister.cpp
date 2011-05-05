@@ -97,7 +97,7 @@ namespace {
 
 static class VCard21Test : public RegisterSyncSourceTest {
 public:
-    VCard21Test() : RegisterSyncSourceTest("addressbook_vcard21", "vcard21") {}
+    VCard21Test() : RegisterSyncSourceTest("addressbook_eds_contact", "eds_contact") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -107,7 +107,7 @@ public:
 
 static class VCard30Test : public RegisterSyncSourceTest {
 public:
-    VCard30Test() : RegisterSyncSourceTest("addressbook_vcard30", "vcard30") {}
+    VCard30Test() : RegisterSyncSourceTest("addressbook_eds_contact", "eds_contact") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

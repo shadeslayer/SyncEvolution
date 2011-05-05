@@ -219,20 +219,19 @@ endif
 
 # list of test file base files
 #
-# Generated files (testcases/ical20.ics.funambol.tem) are derived from
-# the original base file ($(srcdir)/test/testcases/ical20.ics) by
-# applying a patch ($(srcdir)/test/testcases/ical20.ics.funambol.tem.patch).
+# Generated files (testcases/eds_event.ics.funambol.tem) are derived from
+# the original base file ($(srcdir)/test/testcases/eds_event.ics) by
+# applying a patch ($(srcdir)/test/testcases/eds_event.ics.funambol.tem.patch).
 CLIENT_LIB_TEST_FILES = \
 	testcases/lcs/file1.txt \
 	testcases/lcs/file2.txt \
 	testcases/templates/clients/SyncEvolution.ini \
 	testcases/templates/clients/phone/nokia/S40/7210c.ini \
-	testcases/vcard21.vcf \
-	testcases/vcard30.vcf \
-	testcases/ical20.ics \
-	testcases/ical20.ics.local \
-	testcases/imemo20.ics \
-	testcases/itodo20.ics
+	testcases/eds_contact.vcf \
+	testcases/eds_event.ics \
+	testcases/eds_event.ics.local \
+	testcases/eds_memo.ics \
+	testcases/eds_task.ics
 
 # all patch files
 TEST_FILES_PATCHES = $(wildcard $(srcdir)/../test/testcases/*.patch)

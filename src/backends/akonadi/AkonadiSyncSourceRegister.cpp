@@ -202,7 +202,7 @@ protected:
         }
 
         boost::shared_ptr<TestingSyncSource> source;
-        source.reset((TestingSyncSource *)SyncSource::createTestingSource("ical20", "kde-calendar", true, prefix));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("eds_event", "kde-calendar", true, prefix));
         CPPUNIT_ASSERT_NO_THROW(source->open());
 
         string newyork = 
@@ -344,7 +344,7 @@ namespace {
 
 static class iCal20Test : public RegisterSyncSourceTest {
 public:
-    iCal20Test() : RegisterSyncSourceTest("kde_events", "ical20") {}
+    iCal20Test() : RegisterSyncSourceTest("kde_event", "eds_event") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -354,7 +354,7 @@ public:
 
 static class iTodo20Test : public RegisterSyncSourceTest {
 public:
-    iTodo20Test() : RegisterSyncSourceTest("kde_tasks", "itodo20") {}
+    iTodo20Test() : RegisterSyncSourceTest("kde_task", "eds_task") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -364,7 +364,7 @@ public:
 
 static class MemoTest : public RegisterSyncSourceTest {
 public:
-    MemoTest() : RegisterSyncSourceTest("kde_memos", "text") {}
+    MemoTest() : RegisterSyncSourceTest("kde_memo", "eds_memo") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

@@ -89,7 +89,7 @@ namespace {
 
 static class ICal20Test : public RegisterSyncSourceTest {
 public:
-    ICal20Test() : RegisterSyncSourceTest("kcal_ical20", "ical20") {}
+    ICal20Test() : RegisterSyncSourceTest("kcal_event", "eds_event") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

@@ -397,7 +397,7 @@ struct ClientTestConfig{
      * not supported by peers. This can be handled in different ways:
      * - Patch synccompare to ignore such changes on a per-peer basis.
      * - Create a <testcases>.<peer>.tem file in the src/testcases
-     *   build directory where <testcases> is the string here ("ical20.ics"),
+     *   build directory where <testcases> is the string here ("eds_event.ics"),
      *   and <peer> the value of CLIENT_TEST_SERVER ("funambol").
      *   That file then will be used in testItems instead of the base
      *   version. See the src/Makefile.am for rules that maintain such files.
@@ -480,7 +480,7 @@ class RegisterSyncSourceTest
     /**
      * This call is invoked after setting up the config with default
      * values for the test cases selected via the constructor's
-     * testCaseName parameter (one of vcard21, vcard30, ical20, itodo20;
+     * testCaseName parameter (one of eds_contact, eds_contact, eds_event, eds_task;
      * see ClientTest in the Funambol client library for the current
      * list).
      *
@@ -499,7 +499,7 @@ class RegisterSyncSourceTest
      *                       ClientTest::getTestData() are already used for the initial
      *                       set of Evolution sync sources, for new sync sources
      *                       build a string by combining them with the sync source name
-     *                       (e.g., "sqlite_vcard30")
+     *                       (e.g., "sqlite_eds_contact")
      * @param testCaseName   a string recognized by ClientTest::getTestData() or an
      *                       empty string if there are no predefined test cases
      */

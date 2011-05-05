@@ -133,7 +133,7 @@ namespace {
 
 static class iCal20Test : public RegisterSyncSourceTest {
 public:
-    iCal20Test() : RegisterSyncSourceTest("ical20_maemo", "ical20") {}
+    iCal20Test() : RegisterSyncSourceTest("maemo_event", "eds_event") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -143,7 +143,7 @@ public:
 
 static class iTodo20Test : public RegisterSyncSourceTest {
 public:
-    iTodo20Test() : RegisterSyncSourceTest("itodo20_maemo", "itodo20") {}
+    iTodo20Test() : RegisterSyncSourceTest("maemo_task", "eds_task") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -153,7 +153,7 @@ public:
 
 static class MemoTest : public RegisterSyncSourceTest {
 public:
-    MemoTest() : RegisterSyncSourceTest("text_maemo", "text") {}
+    MemoTest() : RegisterSyncSourceTest("maemo_memo", "eds_memo") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

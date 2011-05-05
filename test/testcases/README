@@ -1,6 +1,6 @@
-The test case files are as follows (take itodo20.ics as example):
-    itodo20.ics                      (common case for all servers)
-    itodo20.ics.funambol.tem         (server specific case)
+The test case files are as follows (take eds_task.ics as example):
+    eds_task.ics                      (common case for all servers syncing with Evolution Data Server)
+    eds_task.ics.funambol.tem         (server specific case)
 During test, it will first try the server specific case(*.$server.tem), if not 
 found fall back to the common case. 
 
@@ -12,13 +12,13 @@ there every time the client-test program is built. Here's how this is used.
 
 To create new server specific test cases (using same example as above):
 - cd src
-- cp testcases/itodo20.ics testcases/itodo20.ics.funambol.tem
+- cp testcases/eds_task.ics testcases/eds_task.ics.funambol.tem
 - run client-test, edit, repeat...
 - commit modified patch files to git repo
 
 To update server specific test cases:
 - cd src
 - make client-test
-- edit testcases/itodo20.ics.funambol.tem
+- edit testcases/eds_task.ics.funambol.tem
 - run client-test, edit, repeat...
 - commit modified patch files to git repo

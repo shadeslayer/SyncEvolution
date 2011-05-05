@@ -173,7 +173,7 @@ protected:
         }
 
         boost::shared_ptr<TestingSyncSource> source;
-        source.reset((TestingSyncSource *)SyncSource::createTestingSource("ical20", "evolution-calendar", true, prefix));
+        source.reset((TestingSyncSource *)SyncSource::createTestingSource("eds_event", "evolution-calendar", true, prefix));
         CPPUNIT_ASSERT_NO_THROW(source->open());
 
         string newyork = 
@@ -313,7 +313,7 @@ namespace {
 
 static class iCal20Test : public RegisterSyncSourceTest {
 public:
-    iCal20Test() : RegisterSyncSourceTest("ical20", "ical20") {}
+    iCal20Test() : RegisterSyncSourceTest("eds_event", "eds_event") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -323,7 +323,7 @@ public:
 
 static class iTodo20Test : public RegisterSyncSourceTest {
 public:
-    iTodo20Test() : RegisterSyncSourceTest("itodo20", "itodo20") {}
+    iTodo20Test() : RegisterSyncSourceTest("eds_task", "eds_task") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -338,14 +338,14 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "virtual:text/x-vcalendar";
-        config.subConfigs = "ical20,itodo20";
+        config.subConfigs = "eds_event,eds_task";
     }
 
 } superTest;
 
 static class MemoTest : public RegisterSyncSourceTest {
 public:
-    MemoTest() : RegisterSyncSourceTest("text", "text") {}
+    MemoTest() : RegisterSyncSourceTest("eds_memo", "eds_memo") {}
 
     virtual void updateConfig(ClientTestConfig &config) const
     {

@@ -326,11 +326,10 @@ class ClientTest {
      * Some of the test cases are compiled into the library, other
      * depend on the auxiliary files from the "test" directory.
      * Currently supported types:
-     * - vcard30 = vCard 3.0 contacts
-     * - vcard21 = vCard 2.1 contacts
-     * - ical20 = iCal 2.0 events
-     * - vcal10 = vCal 1.0 events
-     * - itodo20 = iCal 2.0 tasks
+     * - eds_contact = vCard 3.0 contacts, with Evolution extensions
+     * - eds_event = iCalendar 2.0 events, as used by Evolution
+     * - eds_task = iCalendar 2.0 tasks, as used by Evolution
+     * - eds_memo = iCalendar 2.0 journals, as used by Evolution
      */
     static void getTestData(const char *type, Config &config);
 
