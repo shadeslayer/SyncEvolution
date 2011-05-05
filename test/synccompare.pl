@@ -49,7 +49,17 @@
 
 
 use strict;
-use encoding 'utf8';
+
+# Various crashes have been encountered in the Perl interpreter
+# executable when enabling UTF-8. It is only needed for nicer
+# side-by-side comparison of changes (correct column width),
+# so not much functionality is lost by disabling this.
+# use encoding 'utf8';
+
+# Instead enable writing the result as UTF-8. Input
+# files are read as UTF-8 via PerlIO parameters in open().
+binmode(STDOUT, ":utf8");
+
 use Algorithm::Diff;
 
 # ignore differences caused by specific servers or local backends?
@@ -256,6 +266,15 @@ sub NormalizeItem {
         # VALUE=DURATION is the default behavior
         s/^TRIGGER([^\n:]*);VALUE=DURATION/TRIGGER$1/mg;
     }
+
+    # Added by EDS >= 2.32, presumably to cache some internal computation.
+    # Because it can be recreated, it doesn't have to be preserved during
+    # sync and such changes can be ignored:
+    #
+    # RRULE:BYDAY=SU;COUNT=10;FREQ=WEEKLY  |   RRULE;X-EVOLUTION-ENDDATE=20080608T 
+    #                                      >    070000Z:BYDAY=SU;COUNT=10;FREQ=WEEK
+    #                                      >    LY                                 
+    s/^(\w+)([^:\n]*);X-EVOLUTION-ENDDATE=[0-9TZ]*/$1$2/mg;
 
     if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo) {
       # does not preserve X-EVOLUTION-UI-SLOT=
