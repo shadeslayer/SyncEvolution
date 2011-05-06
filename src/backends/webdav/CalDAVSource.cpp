@@ -459,6 +459,30 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                     // item was already removed while the sync ran.
                     // Let's log the problem and ignore it.
                     Exception::log();
+                } else if (ex.syncMLStatus() == 409 &&
+                           strstr(ex.what(), "Can't delete a recurring event")) {
+                    // Google CalDAV:
+                    // HTTP/1.1 409 Can't delete a recurring event except on its organizer's calendar
+                    //
+                    // Workaround: remove RRULE before deleting
+                    bool updated = false;
+                    icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
+                    if (comp) {
+                        icalproperty *prop;
+                        while ((prop = icalcomponent_get_first_property(comp, ICAL_RRULE_PROPERTY)) != NULL) {
+                            icalcomponent_remove_property(comp, prop);
+                            updated = true;
+                        }
+                    }
+                    if (updated) {
+                        SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: remove RRULE before deleting");
+                        eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
+                        insertSubItem(davLUID, subid, icalstr.get());
+                        removeSubItem(davLUID, subid);
+                    } else {
+                        SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack not applicable, giving up");
+                        throw;
+                    }
                 } else {
                     throw;
                 }
