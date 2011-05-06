@@ -166,6 +166,8 @@ namespace {
 }
 #endif
 
+
+
 /**
  * implements one specific source for local testing;
  * creates "source-config@client-test-<server>" peer config
@@ -175,24 +177,27 @@ namespace {
 class WebDAVTest : public RegisterSyncSourceTest {
     std::string m_server;
     std::string m_type;
-    ConfigProps m_syncProps;
+    ConfigProps m_props;
 
 public:
     /**
      * @param server      for example, "yahoo", "google"
      * @param type        "caldav" or "carddav"
-     * @param syncProps   sync properties (username, password, syncURL, ...)
+     * @param props       sync properties (username, password, syncURL, ...)
+     *                    or key/value parameters for the testing (testcases)
      */
     WebDAVTest(const std::string &server,
                const std::string &type,
-               const ConfigProps &syncProps) :
+               const ConfigProps &props) :
         RegisterSyncSourceTest(server + "_" + type, // for example, google_caldav
-                               type == "caldav" ? "eds_event" :
-                               type == "carddav" ? "eds_contact" :
-                               type),
+                               props.get(type + "/testconfig",
+                                         props.get("testconfig",
+                                                   type == "caldav" ? "eds_event" :
+                                                   type == "carddav" ? "eds_contact" :
+                                                   type))),
         m_server(server),
         m_type(type),
-        m_syncProps(syncProps)
+        m_props(props)
     {}
 
     virtual void updateConfig(ClientTestConfig &config) const
@@ -200,6 +205,11 @@ public:
         config.type = m_type.c_str();
         config.createSourceA = boost::bind(&WebDAVTest::createSource, this, _3);
         config.createSourceB = boost::bind(&WebDAVTest::createSource, this, _3);
+        ConfigProps::const_iterator it = m_props.find(m_type + "/testcases");
+        if (it != m_props.end() ||
+            (it = m_props.find("testcases")) != m_props.end()) {
+            config.testcases = it->second.c_str();
+        }
     }
 
     TestingSyncSource *createSource(bool isSourceA) const
@@ -212,14 +222,16 @@ public:
         // always set properties taken from the environment;
         // TODO: "database" property (currently always uses the default)
         nodes.getProperties()->setProperty("backend", m_type);
-        BOOST_FOREACH(const StringPair &propval, m_syncProps) {
+        BOOST_FOREACH(const StringPair &propval, m_props) {
             boost::shared_ptr<FilterConfigNode> node = context->getNode(propval.first);
-            if (!node) {
+            if (node) {
+                node->setProperty(propval.first, propval.second);
+            } else if (!boost::ends_with(propval.first, "testconfig") &&
+                       !boost::ends_with(propval.first, "testcases")) {
                 SE_THROW(StringPrintf("invalid property %s=%s set in CLIENT_TEST_WEBDAV for %s %s",
                                       propval.first.c_str(), propval.second.c_str(),
                                       m_server.c_str(), m_type.c_str()));
             }
-            node->setProperty(propval.first, propval.second);
         }
         context->flush();
 

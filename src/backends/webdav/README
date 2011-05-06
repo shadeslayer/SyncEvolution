@@ -296,13 +296,26 @@ for them. It then creates a suitable
 "carddav" sources. Sync properties can be specified; if not given, the
 relevant ones must be set inside that config already.
 
+In addition to sync properties, the following properties can be used
+to influence the test setup itself:
+  testconfig = name of a test config known to ClientTest::getTestData(),
+               default is "eds_contact" (for CardDAV) and "eds_event" (for CalDAV)
+  testcases  = name of file holding data for testImport (eds_contact.vcf and eds_event.ics)
+
 The format of CLIENT_TEST_WEBDAV is:
-  <server> [caldav] [carddav] <prop>=<val> ...; ...
+  <server> [caldav] [carddav] [<testconfig>] <prop>=<val> ...; ...
+  <prop> = sync property or [caldav/carddav/<testconfig>]/testcases
 
 Example:
 
 env PATH=backends/webdav/:$PATH \
-    "CLIENT_TEST_WEBDAV=yahoo caldav carddav username=<my @yahoo.com email> password=<password>; google caldav username=<email> password=<password> syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google" \
+    "CLIENT_TEST_WEBDAV=
+     yahoo caldav carddav username=<my @yahoo.com email> password=<password>
+           caldav/testcases=testcases/yahoo_event.ics
+           carddav/testcases=testcases/yahoo_contact.vcf
+     google caldav username=<email> password=<password>
+            testcases=testcases/google_event.ics
+            syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google" \
     ./client-test \
     Client::Source::yahoo_caldav::testOpen \
     Client::Source::yahoo_carddav::testOpen \
