@@ -41,6 +41,11 @@ class ConfigProps : public map<string, string, Nocase<string> > {
      * which does not overwrite).
      */
     void add(const ConfigProps &other);
+
+    /**
+     * Return value in map or the given default.
+     */
+    string get(const string &key, const string &def = "") const;
 };
 
 /**

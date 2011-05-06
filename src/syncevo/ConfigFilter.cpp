@@ -35,6 +35,15 @@ void ConfigProps::add(const ConfigProps &other)
     }
 }
 
+string ConfigProps::get(const string &key, const string &def) const
+{
+    const_iterator it = find(key);
+    if (it == end()) {
+        return def;
+    } else {
+        return it->second;
+    }
+}
 
 ConfigProps SourceProps::createSourceFilter(const std::string &source) const
 {
