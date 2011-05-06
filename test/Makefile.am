@@ -18,6 +18,7 @@ EXTRA_DIST = \
         testcases/eds_contact.vcf \
         testcases/eds_memo.ics \
 	testcases/google_event.ics \
+	testcases/yahoo_contact.vcf \
 	testcases/lcs/file1.txt \
 	testcases/lcs/file2.txt \
 	testcases/templates/clients/phone/nokia/S40/7210c.ini \

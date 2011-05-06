@@ -228,6 +228,7 @@ CLIENT_LIB_TEST_FILES = \
 	testcases/templates/clients/SyncEvolution.ini \
 	testcases/templates/clients/phone/nokia/S40/7210c.ini \
 	testcases/google_event.ics \
+	testcases/yahoo_contact.vcf \
 	testcases/eds_contact.vcf \
 	testcases/eds_event.ics \
 	testcases/eds_event.ics.local \
