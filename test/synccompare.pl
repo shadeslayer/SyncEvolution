@@ -119,6 +119,17 @@ sub splitvalue {
   return join("", @res);
 }
 
+# normalize the DATE-TIME duration unless the VALUE isn't a duration
+sub NormalizeTrigger {
+    my $value = shift;
+    $value =~ s/([+-]?)P(?:(\d*)D)?T(?:(\d*)H)?(?:(\d*)M)?(?:(\d*)S)?/$1 .
+      "P" . (int($2) ? ($2 . "D") : "") . "T" .
+      (int($3) ? ($3 . "H") : "") .
+      (int($4) ? ($4 . "M") : "") .
+      (int($5) ? ($5 . "S") : "")/e;
+    return $value;
+}
+
 # called for one VCALENDAR (with single VEVENT/VTODO/VJOURNAL) or VCARD,
 # returns normalized one
 sub NormalizeItem {
@@ -268,6 +279,7 @@ sub NormalizeItem {
         s/^TRIGGER([^\n:]*);RELATED=START/TRIGGER$1/mg;
         # VALUE=DURATION is the default behavior
         s/^TRIGGER([^\n:]*);VALUE=DURATION/TRIGGER$1/mg;
+        s/^(TRIGGER.*):(\S*)/$1 . ":" . NormalizeTrigger($2)/mge;
     }
 
     # Added by EDS >= 2.32, presumably to cache some internal computation.
@@ -323,6 +335,12 @@ sub NormalizeItem {
 
       #several properties are not preserved by Google in icalendar2.0 format
       s/^(SEQUENCE|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
+
+      # Google adds calendar owner as attendee of meetings, regardless
+      # whether it was on the original attendee list. Ignore this
+      # during testing by removing all attendees with @googlemail.com
+      # email address.
+      s/^ATTENDEE.*googlemail.com\r?\n//gm;
     }
 
     if ($apple) {

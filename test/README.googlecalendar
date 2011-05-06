@@ -1,0 +1,32 @@
+Done via CalDAV. Running backend tests (no syncing):
+
+CLIENT_TEST_SIMPLE_UID=1 \
+CLIENT_TEST_UNIQUE_UID=1 \
+CLIENT_TEST_SERVER=google \
+"CLIENT_TEST_WEBDAV=google caldav testcases=testcases/google_event.ics" \
+./client-test Client::Source
+
+"simple UID" needed because special characters like % confuse the server.
+"unique ID" works around issues with unintentionally restoring older
+revisions of the test cases (?).
+
+google_event.ics is derived from eds_event.ics and was modified to
+avoid test breakage because of the following changes seen in
+testImport (all caused by the server):
+
+* EST/DST timezone mapped to America/New_York, despite not having quite
+  the same transition rules
+* all recurring events must have a time zone, UTC is not supported
+  (but correctly converted into time zone of calendar)
+* BYMONTHDAY=6 is added in a sitatution were it is redundant
+  (can be inferred from day of recurring event)
+* UNTIL clause turned into UTC
+* "DESCRIPTION:This is an event reminder" added to VALARM
+* CN property is replaced with lower case email
+* email address all lower case
+* ATTENDEE RSVP not supported
+* X-NUM-GUESTS added to ATTENDEE
+
+Changes dealt with in synccompare:
+* calendar owner is added as ATTENDEE to meetings, regardless whether it
+  was meant to attend
