@@ -291,7 +291,7 @@ sub NormalizeItem {
     #                                      >    LY                                 
     s/^(\w+)([^:\n]*);X-EVOLUTION-ENDDATE=[0-9TZ]*/$1$2/mg;
 
-    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo) {
+    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo || $yahoo) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
     }
@@ -363,6 +363,8 @@ sub NormalizeItem {
 
     if ($yahoo) {
         s/^(X-MICROSOFT-[-A-Z0-9]*)(;[^:;\n]*)*:.*\r?\n?//gm;
+        # some properties cannot be stored
+        s/^(FN)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     if ($addressbook) {

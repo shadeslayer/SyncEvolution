@@ -2,8 +2,8 @@ CardDAV
 =======
 
 Not usable at the moment. Several valid test cases cause the server to
-fail with a 500 error. Other test cases with special characters have
-these characters replaced. Same with non-ASCII characters.
+fail with a 500 error (Source::testImport) Other test cases with
+special characters have these characters replaced.
 
 Tests pass only because all the problematic test cases were removed.
 See git log for testcases/yahoo_contact.vcf.
@@ -17,3 +17,12 @@ Other data changes seen in server:
   both become TYPE=FAX
 * no TYPE at all for EMAIL
 * only one level in ORG
+
+It works a bit better with vCards encoded by Synthesis
+(Sync::testItems): there's no 500 error. Apparently line folding
+(enabled in Source::testImport test cases, disabled during sync) is
+something that the server has problems with. But photos still get
+lost.
+
+Results for non-ASCII characters is inconclusive; testing is currently
+disabled.
