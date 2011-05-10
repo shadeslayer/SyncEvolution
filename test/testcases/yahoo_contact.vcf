@@ -31,15 +31,6 @@ END:VCARD
 
 BEGIN:VCARD
 VERSION:3.0
-NICKNAME:user12
-NOTE:ampersand entity &amp\; less-than entity &lt\;
-FN:xml entities
-N:xml;entities;;;
-X-EVOLUTION-FILE-AS:xml\, entities
-END:VCARD
-
-BEGIN:VCARD
-VERSION:3.0
 NICKNAME:user13
 NOTE:a colon is not a special character so here it comes : and not quoting necessary
 FN:colon
@@ -78,7 +69,7 @@ BEGIN:VCARD
 VERSION:3.0
 URL:http://john.doe.com
 TITLE:Senior Tester
-ORG:Test Inc.;Testing;test#1
+ORG:Test Inc.
 ROLE:professional test case
 X-EVOLUTION-MANAGER:John Doe Senior
 X-EVOLUTION-ASSISTANT:John Doe Junior
@@ -96,30 +87,29 @@ CALURI:calender
 FBURL:free/busy
 X-EVOLUTION-VIDEO-URL:chat
 X-MOZILLA-HTML:TRUE
-ADR;TYPE=WORK:Test Box #2;;Test Drive 2;Test Town;Upper Test County;12346;O
+ADR;TYPE=PARCEL;TYPE=POSTAL;TYPE=WORK:;;Test Drive 2;Test Town;Upper Test County;12346;O
  ld Testovia
-LABEL;TYPE=WORK:Test Drive 2\nTest Town\, Upper Test County\n12346\nTest Bo
+LABEL;TYPE=PARCEL;TYPE=POSTAL;TYPE=WORK:Test Drive 2\nTest Town\, Upper Test County\n12346\nTest Bo
  x #2\nOld Testovia
-ADR;TYPE=HOME:Test Box #1;;Test Drive 1;Test Village;Lower Test County;1234
+ADR;TYPE=PARCEL;TYPE=POSTAL;TYPE=HOME:;;Test Drive 1;Test Village;Lower Test County;1234
  5;Testovia
 LABEL;TYPE=HOME:Test Drive 1\nTest Village\, Lower Test County\n12345\nTest
   Box #1\nTestovia
-ADR:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
+ADR;TYPE=PARCEL;TYPE=POSTAL:;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
 LABEL;TYPE=OTHER:Test Drive 3\nTest Megacity\, Test County\n12347\nTest Box
   #3\nNew Testonia
 UID:pas-id-43C0ED3900000001
-EMAIL;TYPE=WORK;X-EVOLUTION-UI-SLOT=1:john.doe@work.com
-EMAIL;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:john.doe@home.priv
-EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=3:john.doe@other.world
-EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=4:john.doe@yet.another.world
+EMAIL:john.doe@work.com
+EMAIL:john.doe@home.priv
+EMAIL:john.doe@other.world
+EMAIL:john.doe@yet.another.world
 TEL;TYPE=work;TYPE=Voice;X-EVOLUTION-UI-SLOT=1:business 1
 TEL;TYPE=homE;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:home 2
 TEL;TYPE=CELL;X-EVOLUTION-UI-SLOT=3:mobile 3
-TEL;TYPE=WORK;TYPE=FAX;X-EVOLUTION-UI-SLOT=4:businessfax 4
-TEL;TYPE=HOME;TYPE=FAX;X-EVOLUTION-UI-SLOT=5:homefax 5
+TEL;TYPE=FAX;X-EVOLUTION-UI-SLOT=4:businessfax 4
+TEL;TYPE=FAX;X-EVOLUTION-UI-SLOT=5:homefax 5
 TEL;TYPE=PAGER;X-EVOLUTION-UI-SLOT=6:pager 6
-TEL;TYPE=CAR;X-EVOLUTION-UI-SLOT=7:car 7
-TEL;TYPE=PREF;X-EVOLUTION-UI-SLOT=8:primary 8
+TEL;X-EVOLUTION-UI-SLOT=8:primary 8
 X-AIM;TYPE=HOME;X-EVOLUTION-UI-SLOT=1:AIM JOHN
 X-YAHOO;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:YAHOO JDOE
 X-ICQ;TYPE=HOME;X-EVOLUTION-UI-SLOT=3:ICQ JD

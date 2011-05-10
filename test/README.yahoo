@@ -1,0 +1,19 @@
+CardDAV
+=======
+
+Not usable at the moment. Several valid test cases cause the server to
+fail with a 500 error. Other test cases with special characters have
+these characters replaced. Same with non-ASCII characters.
+
+Tests pass only because all the problematic test cases were removed.
+See git log for testcases/yahoo_contact.vcf.
+
+Other data changes seen in server:
+* first component in ADR removed
+* TYPE=CAR not supported in TEL, complete entry removed
+* TYPE=PREF stripped from TEL
+* TYPE=PARCEL;TYPE=POSTAL added to all ADRs
+* no distinction between TYPE=HOME,FAX and TYPE=WORK,FAX,
+  both become TYPE=FAX
+* no TYPE at all for EMAIL
+* only one level in ORG
