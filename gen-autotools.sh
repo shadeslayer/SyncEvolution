@@ -143,8 +143,10 @@ fi
 
 BACKENDS=
 SUBS=
-for sub in src/backends/*/configure-sub.in; do
-    BACKENDS="$BACKENDS `dirname $sub | sed -e 's;^src/;;'`"
+find src -name configure-sub.in | sed 's@^\./@@' | while read sub; do
+    if echo $sub | grep -q '^src/backends/'; then
+        BACKENDS="$BACKENDS `dirname $sub | sed -e 's;^src/;;'`"
+    fi
     SUBS="$SUBS $sub"
     echo "# vvvvvvvvvvvvvv $sub vvvvvvvvvvvvvv" >>$tmpfile
     cat $sub >>$tmpfile
