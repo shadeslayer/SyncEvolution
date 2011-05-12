@@ -44,6 +44,11 @@ CLEANFILES = $(BUILT_SOURCES) \
 	stamp-session \
 	stamp-connection
 
+DISTCLEANFILES = syncevolution-qt-dbus.pc
+EXTRA_DIST = syncevolution-qt-dbus.pc.in
+pkgconfig_DATA = syncevolution-qt-dbus.pc
+pkgconfigdir = $(libdir)/pkgconfig
+
 libsyncevolution_qt_dbus_la_LIBADD = $(QT_DBUS_LIBS) $(QT_LIBS)
 libsyncevolution_qt_dbus_la_CPPFLAGS = $(AM_CPPFLAGS) $(QT_CPPFLAGS)
 # Allow Qt to set some compile flags, but not the ones normally set via configure.

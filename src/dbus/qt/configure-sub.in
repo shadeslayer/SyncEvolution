@@ -14,3 +14,4 @@ fi
 AM_CONDITIONAL([ENABLE_QT_DBUS], [test "$enable_qt_dbus" = "yes"])
 
 AC_SUBST(QT_DBUS_LIBS)
+AC_CONFIG_FILES(src/dbus/qt/syncevolution-qt-dbus.pc)
