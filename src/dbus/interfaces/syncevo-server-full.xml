@@ -100,7 +100,7 @@
           </doc:para>
         </doc:description>
       </doc:doc>
-      <arg type="a(s)" name="capabilities" direction="out">
+      <arg type="as" name="capabilities" direction="out">
         <doc:doc><doc:summary>
           set of supported capabilities
         </doc:summary></doc:doc>
@@ -122,6 +122,7 @@ sometimes also a beta or alpha suffix),
             "system" - some plain text information about system libraries,
             "backends" - available backend libraries
         </doc:summary></doc:doc>
+        <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMap"/>
       </arg>
     </method>  
 
@@ -556,8 +557,8 @@ sometimes also a beta or alpha suffix),
             version of the transport entity.
           </doc:summary>
         </doc:doc>
+        <annotation name="com.trolltech.QtDBus.QtTypeName.In0" value="QStringMap"/>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In0" value="StringMap"/>
       <arg type="b" name="must_authenticate" direction="in">
         <doc:doc>
           <doc:summary>
@@ -795,7 +796,7 @@ sometimes also a beta or alpha suffix),
           </doc:summary>
         </doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In5" value="StringMap"/>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In5" value="QStringMap"/>
     </signal>
 
     <method name="InfoResponse">
@@ -824,7 +825,7 @@ sometimes also a beta or alpha suffix),
           </doc:summary>
         </doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="StringMap"/>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="QStringMap"/>
     </method>
 
     <signal name="LogOutput">
