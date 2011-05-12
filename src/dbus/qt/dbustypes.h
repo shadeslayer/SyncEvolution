@@ -20,8 +20,6 @@
 #ifndef DBUSTYPES_H
 #define DBUSTYPES_H
 
-#include "commondbustypes.h"
-
 #include <QtCore/QList>
 #include <QtCore/QMap>
 #include <QtCore/QString>
@@ -71,12 +69,14 @@ Q_DECLARE_METATYPE ( SyncStatus )
  // Retrieve the SyncStatus data from the D-BUS argument
  const QDBusArgument &operator>>(const QDBusArgument &argument, SyncStatus &mystruct);
 
-typedef QMap<QString, StringMap > QStringMultiMap;
-typedef QList< StringMap > QArrayOfStringMap;
+typedef QMap<QString, QString> QStringMap;
+typedef QMap<QString, QStringMap > QStringMultiMap;
+typedef QList< QStringMap > QArrayOfStringMap;
 typedef QList< SyncDatabase > QArrayOfDatabases;
 typedef QMap<QString, SyncProgress >  QSyncProgressMap;
 typedef QMap<QString, SyncStatus >  QSyncStatusMap;
 
+Q_DECLARE_METATYPE ( QStringMap )
 Q_DECLARE_METATYPE ( QStringMultiMap )
 Q_DECLARE_METATYPE ( QArrayOfStringMap )
 Q_DECLARE_METATYPE ( QArrayOfDatabases )
@@ -85,6 +85,7 @@ Q_DECLARE_METATYPE ( QSyncStatusMap )
 
 inline void registerMyDataTypes() {
     qDBusRegisterMetaType< SyncDatabase >();
+    qDBusRegisterMetaType< QStringMap >();
     qDBusRegisterMetaType< QStringMultiMap >();
     qDBusRegisterMetaType< QArrayOfStringMap >();
     qDBusRegisterMetaType< QArrayOfDatabases >();

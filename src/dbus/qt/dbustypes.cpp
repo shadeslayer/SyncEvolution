@@ -75,4 +75,3 @@
      argument.endStructure();
      return argument;
  }
-
