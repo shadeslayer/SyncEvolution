@@ -312,7 +312,7 @@ env PATH=backends/webdav/:$PATH \
     "CLIENT_TEST_WEBDAV=
      yahoo caldav carddav username=<my @yahoo.com email> password=<password>
            caldav/testcases=testcases/yahoo_event.ics
-           carddav/testcases=testcases/yahoo_contact.vcf
+           carddav/testcases=testcases/yahoo_contact.vcf ;
      google caldav username=<email> password=<password>
             testcases=testcases/google_event.ics
             syncURL=https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google" \
