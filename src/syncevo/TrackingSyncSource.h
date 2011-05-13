@@ -216,7 +216,9 @@ class TrackingSyncSource : public TestingSyncSource,
 
   private:
     void checkStatus(SyncSourceReport &changes);
+    boost::shared_ptr<ConfigNode> m_trackingNode;
 
+ protected:
     /* implementations of SyncSource callbacks */
     virtual void beginSync(const std::string &lastToken, const std::string &resumeToken);
     virtual std::string endSync(bool success);
@@ -228,8 +230,6 @@ class TrackingSyncSource : public TestingSyncSource,
     virtual void enableServerMode();
     virtual bool serverModeEnabled() const;
     virtual std::string getPeerMimeType() const;
-
-    boost::shared_ptr<ConfigNode> m_trackingNode;
 };
 
 
