@@ -36,7 +36,7 @@
 #endif
 
 #include "CmdlineSyncClient.h"
-#include "EvolutionSyncSource.h"
+#include <syncevo/SyncSource.h>
 #include <syncevo/util.h>
 #include <syncevo/VolatileConfigNode.h>
 
@@ -170,7 +170,7 @@ public:
         ClientTest(getenv("CLIENT_TEST_DELAY") ? atoi(getenv("CLIENT_TEST_DELAY")) : 0,
                    getenv("CLIENT_TEST_LOG") ? getenv("CLIENT_TEST_LOG") : ""),
         m_clientID(id),
-        m_configs(EvolutionSyncSource::getTestRegistry())
+        m_configs(SyncSource::getTestRegistry())
     {
         const char *server = getenv("CLIENT_TEST_SERVER");
 
