@@ -26,6 +26,7 @@
 #include "XMLRPCSyncSource.h"
 
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -46,7 +47,7 @@ XMLRPCSyncSource::XMLRPCSyncSource(const SyncSourceParams &params,
     m_supportedTypes = dataformat;
 
     string const dbid = getDatabaseID();
-    boost::split(m_splitDatabase, dbid, boost::is_any_of("|"));
+    boost::split(m_splitDatabase, dbid, boost::is_from_range('|', '|'));
     m_serverUrl = m_splitDatabase[0];
 }
 
