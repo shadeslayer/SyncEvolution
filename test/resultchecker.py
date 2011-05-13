@@ -19,6 +19,7 @@
  02110-1301  USA
 '''
 import sys,os,glob,datetime,popen2
+import re
 
 """ 
 resultcheck.py: tranverse the test result directory, generate an XML
@@ -241,15 +242,14 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             for log in logs:
                 if(log.endswith('____compare.log')):
                     continue
-                if(len(log.split('_')) > 3):
-                    format = log.rpartition('_')[0].partition('_')[2].partition('_')[2]
-                    prefix = log.rpartition(format)[0].rpartition('/')[-1]
-                elif (len(log.split('_')) == 3):
-                    format = log.rpartition('_')[0].partition('_')[2]
-                    prefix = log.rpartition(format)[0].rpartition('/')[-1]
-                else:
-                    format = log.partition('_')[0].rpartition('/')[-1]
-                    prefix = ''
+                # <path>/Client_Sync_eds_contact_testItems.log
+                # <path>/SyncEvo_CmdlineTest_testConfigure.log
+                # <path>/N7SyncEvo11CmdlineTestE_testConfigure.log - C++ name mangling?
+                m = re.match(r'.*/(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)', log)
+                # Client_Sync_, Client_Source_, SyncEvo_, ...
+                prefix = m.group(1)
+                # eds_contact, CmdlineTest, ...
+                format = m.group(2)
                 if(format not in logdic):
                     logdic[format]=[]
                 logdic[format].append(log)
