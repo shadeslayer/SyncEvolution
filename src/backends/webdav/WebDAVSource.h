@@ -47,6 +47,13 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     static void replaceHTMLEntities(std::string &item);
 
  protected:
+    /**
+     * Initialize HTTP session and locate the right collection.
+     * To be called after open() to do the heavy initializtion
+     * work.
+     */
+    void contactServer();
+
     /* implementation of SyncSource interface */
     virtual void open();
     virtual bool isEmpty();
@@ -54,6 +61,12 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     virtual Databases getDatabases();
     void getSynthesisInfo(SynthesisInfo &info,
                           XMLConfigFragments &fragments);
+
+    /** intercept TrackingSyncSource::beginSync() to do the expensive initialization */
+    virtual void beginSync(const std::string &lastToken, const std::string &resumeToken) {
+        contactServer();
+        TrackingSyncSource::beginSync(lastToken, resumeToken);
+    }
 
     /* implementation of TrackingSyncSource interface */
     virtual void listAllItems(RevisionMap_t &revisions);

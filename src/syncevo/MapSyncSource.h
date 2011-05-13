@@ -94,6 +94,9 @@ class SubSyncSource : virtual public SyncSourceBase
      */
     typedef map<string, pair<string, set<string> > > SubRevisionMap_t;
 
+    /** called after open() and before any of the following methods */
+    virtual void begin() = 0;
+
     virtual void listAllSubItems(SubRevisionMap_t &revisions) = 0;
     virtual SubItemResult insertSubItem(const std::string &uid, const std::string &subid,
                                         const std::string &item) = 0;
@@ -177,6 +180,7 @@ class MapSyncSource : public TrackingSyncSource,
 
     virtual Databases getDatabases() { return dynamic_cast<SyncSource &>(*m_sub).getDatabases(); }
     virtual void open() { dynamic_cast<SyncSource &>(*m_sub).open(); }
+    virtual void beginSync(const std::string &lastToken, const std::string &resumeToken) { m_sub->begin(); TrackingSyncSource::beginSync(lastToken, resumeToken); }
     virtual bool isEmpty() { return dynamic_cast<SyncSource &>(*m_sub).getOperations().m_isEmpty(); }
     virtual void listAllItems(SyncSourceRevisions::RevisionMap_t &revisions);
     virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw);

@@ -32,6 +32,7 @@ class CalDAVSource : public WebDAVSource,
     virtual std::string getMimeVersion() const { return "2.0"; }
 
     /* implementation of SubSyncSource interface */
+    virtual void begin() { contactServer(); }
     virtual void listAllSubItems(SubRevisionMap_t &revisions);
     virtual SubItemResult insertSubItem(const std::string &uid, const std::string &subid,
                                         const std::string &item);

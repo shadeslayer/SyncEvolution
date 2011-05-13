@@ -281,6 +281,11 @@ void WebDAVSource::replaceHTMLEntities(std::string &item)
 
 void WebDAVSource::open()
 {
+    // Nothing to do here, expensive initialization is in contactServer().
+}
+
+void WebDAVSource::contactServer()
+{
     int timeoutSeconds = m_settings->timeoutSeconds();
     int retrySeconds = m_settings->retrySeconds();
     SE_LOG_DEBUG(this, NULL, "timout %ds, retry %ds => %s",
