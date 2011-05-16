@@ -763,6 +763,7 @@ class SyncEvolutionDist(AutotoolsBuild):
             context.runCommand("%s %s BINSUFFIX=%s distbin" % (self.runner, context.make, self.binsuffix))
         context.runCommand("%s %s distcheck" % (self.runner, context.make))
         context.runCommand("%s %s DISTCHECK_CONFIGURE_FLAGS=--enable-gui distcheck" % (self.runner, context.make))
+        context.runCommand("%s %s 'DISTCHECK_CONFIGURE_FLAGS=--disable-ecal --disable-ebook' distcheck" % (self.runner, context.make))
 
 dist = SyncEvolutionDist("dist",
                          options.binsuffix,
