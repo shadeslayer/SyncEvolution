@@ -300,7 +300,8 @@ if test "$enable_bluetooth" = "yes"; then
    #
    # The source code checks the signature both by via pointer assignment and calling
    # it (better safe than sorry). One these should fail if the signature is not right.
-   AC_COMPILE_IFELSE([#include <bluetooth/sdp.h>
+   AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+                      #include <bluetooth/sdp.h>
                       #include <bluetooth/sdp_lib.h>
                       sdp_record_t *(*extract_pdu)(const uint8_t *pdata, int bufsize, int *scanned) =
                            sdp_extract_pdu;
@@ -309,9 +310,10 @@ if test "$enable_bluetooth" = "yes"; then
                           int scanned;
                           sdp_extract_pdu(pdata, 100, &scanned);
                       }
-                     ],
+                     ])],
                      AC_DEFINE(HAVE_BLUEZ_BUFSIZE, 1, [base libbluetooth functions accept bufsize parameter]),
-                     AC_COMPILE_IFELSE([#include <bluetooth/sdp.h>
+                     AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+                                        #include <bluetooth/sdp.h>
                                         #include <bluetooth/sdp_lib.h>
                                         sdp_record_t *(*extract_pdu)(const uint8_t *pdata, int bufsize, int *scanned) =
                                                sdp_extract_pdu_safe;
@@ -320,7 +322,7 @@ if test "$enable_bluetooth" = "yes"; then
                                             int scanned;        
                                             sdp_extract_pdu_safe(pdata, 100, &scanned);
                                         }
-                                       ],
+                                       ])],
                                        AC_DEFINE(HAVE_BLUEZ_SAFE, 1, [libbluetooth has _safe variants])))
    CFLAGS="$CFLAGS_old"
 
