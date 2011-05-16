@@ -54,14 +54,14 @@ sync_ui_SOURCES = \
 	sync-config-widget.c sync-config-widget.h \
 	gtkinfobar.c gtkinfobar.h
 
-sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) $(top_builddir)/src/dbus/libsyncevo-dbus.la
+sync_ui_LDADD = $(GUI_LIBS) $(DBUS_GLIB_LIBS) $(top_builddir)/src/dbus/glib/libsyncevo-dbus.la
 sync_ui_CFLAGS = $(GUI_CFLAGS) \
 	$(DBUS_GLIB_CFLAGS) \
 	-DGLADEDIR=\""$(gladedir)"\" \
 	-DTHEMEDIR=\""$(themercdir)"\" \
 	-DLIBEXECDIR=\"@libexecdir@\" \
 	-DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
-sync_ui_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) -I$(top_builddir)/src/dbus -I$(top_srcdir)/src/dbus $(SYNTHESIS_CFLAGS) 
+sync_ui_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) -I$(top_builddir)/src/dbus/glib -I$(top_srcdir)/src/dbus/glib $(SYNTHESIS_CFLAGS) 
 
 sync_ui_gtk_SOURCES = $(sync_ui_SOURCES)
 nodist_sync_ui_gtk_SOURCES = $(nodist_sync_ui_SOURCES)

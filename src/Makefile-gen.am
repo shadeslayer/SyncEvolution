@@ -35,12 +35,10 @@ nobase_dist_template_DATA += $(TEMPLATE_FILES)
 else
 SUBDIRS += $(SYNTHESIS_SUBDIR_INCLUDES)
 endif
-if COND_GUI
-SUBDIRS += dbus gtk-ui
-else
-if COND_DOC
 SUBDIRS += dbus
-endif
+if COND_GUI
+SUBDIRS += gtk-ui
+else
 endif
 
 DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui gnome-bluetooth synthesis-includes
