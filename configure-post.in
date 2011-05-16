@@ -9,7 +9,7 @@ backend_is_enabled () {
     eval echo \${enable_${1}}
 }
 for backend in $BACKENDS; do
-    if test `backend_is_enabled $backend` == "yes"; then
+    if test `backend_is_enabled $backend` = "yes"; then
        enable_any="yes"
        SYNCEVOLUTION_MODULES="$SYNCEVOLUTION_MODULES src/backends/sync${backend}.la"
     fi
@@ -72,8 +72,8 @@ if test "$have_sha" = "no"; then
 fi
 
 dnl figure out whether we link all code statically or as modules
-AM_CONDITIONAL([ENABLE_MODULES], [test "$enable_shared" == "yes"])
-if test "$enable_shared" == "yes"; then
+AM_CONDITIONAL([ENABLE_MODULES], [test "$enable_shared" = "yes"])
+if test "$enable_shared" = "yes"; then
         AC_DEFINE(ENABLE_MODULES, 1, [enable dynamically opening sync source backends])
 fi
 AC_SUBST(SYNCEVOLUTION_LDADD)
@@ -85,23 +85,23 @@ dnl to the sources in the SyncEvolution repository.
 AC_SUBST(SYNCEVOLUTION_CXXFLAGS)
 
 dnl a quick-and-dirty way to detect compilation for the iPhone
-if test "$host" == "arm-apple-darwin"; then
+if test "$host" = "arm-apple-darwin"; then
    AC_DEFINE(IPHONE, 1, [compiling for iPhone])
    DEVICE_TYPE=iPhone
 fi
 
 dnl --enable-evolution-compatibility
-if test "$enable_evolution_compatibility" == "yes"; then
+if test "$enable_evolution_compatibility" = "yes"; then
    AC_DEFINE(EVOLUTION_COMPATIBILITY, 1, [avoid hard dependency on Evolution shared objects])
 fi
-AM_CONDITIONAL([ENABLE_EVOLUTION_COMPATIBILITY], [test "$enable_evolution_compatibility" == "yes"])
+AM_CONDITIONAL([ENABLE_EVOLUTION_COMPATIBILITY], [test "$enable_evolution_compatibility" = "yes"])
 PKG_CHECK_MODULES(LIBICAL_AVAILABLE,
                   libical >= 0.43,
                   AC_DEFINE(HAVE_LIBICAL_R, 1, [have recent enough libical with _r variants]),
                   pass)
 
 dnl --enable-developer-mode
-if test "$enable_developer_mode" == "yes"; then
+if test "$enable_developer_mode" = "yes"; then
 backendsearchdir="`pwd`/src/backends/"
 else
 backendsearchdir='$(libdir)'/syncevolution/backends/

@@ -42,7 +42,7 @@ if COND_DBUS
 # in order to be found
 distbin : $(dist_doc_DATA) INSTALL-tar-gz all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 )
-	@ [ "$(prefix)" == "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
+	@ [ "$(prefix)" = "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
 	rm -rf $(distdir)
 	$(MAKE) DESTDIR=`pwd`/$(distdir) install
 	$(MAKE) DESTDIR=`pwd`/$(distdir) installcheck
@@ -138,7 +138,7 @@ deb rpm : dist/$(distdir) dist/debian/control description-pak
 		--pkgaltsource='http://www.estamos.de/projects/SyncML/' \
 		--pkggroup='gnome' \
 		cp -r `pwd`/$</usr/* /usr
-	if [ $@ == "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm .; fi
+	if [ $@ = "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm .; fi
 
 .PHONY: dist/$(distdir) clean_dist
 dist/$(distdir): all

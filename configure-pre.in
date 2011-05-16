@@ -149,7 +149,7 @@ AC_SUBST(MODIFY_SYNCCOMPARE)
 AC_CHECK_HEADERS(signal.h dlfcn.h)
 
 # cppunit needed?
-if test $enable_unit_tests == "yes" || test $enable_integration_tests == yes; then
+if test $enable_unit_tests = "yes" || test $enable_integration_tests = yes; then
         CPPUNIT_CXXFLAGS=`cppunit-config --cflags` || AC_MSG_ERROR("cppunit-config --cflags failed - is it installed?")
         CPPUNIT_LDFLAGS=`cppunit-config --libs` || AC_MSG_ERROR("cppunit-config --libs failed - is it installed?")
 fi
@@ -174,7 +174,7 @@ AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$enable_unit_tests" = "yes"])
 AM_CONDITIONAL([ENABLE_TESTING], [test "$enable_unit_tests" = "yes" || test "$enable_integration_tests" = "yes" ])
 AM_CONDITIONAL([ENABLE_BUTEO_TESTS], [test "$enable_buteo_tests" = "yes"])
 
-if test $enable_static_cxx == "yes"; then
+if test $enable_static_cxx = "yes"; then
         LIBS="$LIBS -L."
         CORE_LDADD_DEP=libstdc++.a
 fi
@@ -405,7 +405,7 @@ AC_ARG_ENABLE(dbus-service,
                              [enables building the dbus service executable and all related features
                              (the DBus wrapper library, command line usage of server, etc).]),
               enable_dbus_service="$enableval",
-              [if test $enable_gui == "no"; then
+              [if test $enable_gui = "no"; then
                   enable_dbus_service="no"
                else
                   enable_dbus_service="yes"
@@ -420,10 +420,10 @@ AC_ARG_ENABLE(gnome-keyring,
                test "$enable_gnome_keyring" = "yes" || test "$enable_gnome_keyring" = "no" || AC_ERROR([invalid value for --enable-gnome-keyring: $enable_gnome_keyring])
                test "$enable_gnome_keyring" = "no" || test "$HAVE_KEYRING" = "yes" || AC_ERROR([gnome-keyring-1 pkg not found, needed for --enable-gnome-keyring])],
               enable_gnome_keyring="$HAVE_KEYRING")
-if test $enable_gnome_keyring == "yes"; then
+if test $enable_gnome_keyring = "yes"; then
     AC_DEFINE(USE_GNOME_KEYRING, 1, [define if gnome keyring should be used in dbus service])
     PKG_CHECK_MODULES([KEYRING_2_20], [gnome-keyring-1 >= 2.20 ], KEYRING220=yes, KEYRING220=no)
-    if test $KEYRING220 == "yes"; then
+    if test $KEYRING220 = "yes"; then
         AC_DEFINE(GNOME_KEYRING_220, 1, [define if gnome keyring version is above 2.20])
     fi
 fi
@@ -475,7 +475,7 @@ AM_CONDITIONAL([USE_KDE_KWALLET], [test "$use_kde_kwallet" = "yes"])
 ## End KWallet ################################
 
 
-if test $enable_dbus_service == "yes"; then
+if test $enable_dbus_service = "yes"; then
     if test -z "$XSLT"; then
        AC_ERROR([xsltproc not found, is required for D-Bus service])
     fi
@@ -495,7 +495,7 @@ if test $enable_dbus_service == "yes"; then
                                  [send notifications for automatic sync events]),
                   [ test "$enableval" = "no" || test $HAVE_LIBNOTIFY = "yes" || AC_ERROR([required libnotify package not found]) ],
                   [ test $HAVE_LIBNOTIFY = "yes" || AC_ERROR([required libnotify package not found, use --disable-notify to compile without notifications]) ])
-    if test $HAVE_LIBNOTIFY == "yes"; then
+    if test $HAVE_LIBNOTIFY = "yes"; then
         AC_DEFINE(HAS_NOTIFY, 1, [define if libnotify could be used in dbus service])
     fi
     AC_DEFINE(DBUS_SERVICE, 1, [define if dbus service is enabled])
@@ -518,7 +518,7 @@ DBUS_SERVICES_DIR="${datadir}/dbus-1/services"
 AC_SUBST(DBUS_SERVICES_DIR)
 AC_DEFINE_UNQUOTED(DBUS_SERVICES_DIR, "$DBUS_SERVICES_DIR", [Location of D-Bus services directory])
 
-if test $enable_gui != "no" || test $enable_dbus_service == "yes"; then
+if test $enable_gui != "no" || test $enable_dbus_service = "yes"; then
     IT_PROG_INTLTOOL([0.37.1])
     GETTEXT_PACKAGE=syncevolution
     AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [The gettext package name])
@@ -541,16 +541,16 @@ if test $enable_gui != "no"; then
     AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 
     gui_modules="glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gio-2.0"
-    if test $enable_gui == "moblin"; then
+    if test $enable_gui = "moblin"; then
         AC_DEFINE(USE_MOBLIN_UX, 1, [Use Moblin UI widgets])
     fi
-    if test $enable_gui == "moblin" -o $enable_gui == "all"; then
+    if test $enable_gui = "moblin" -o $enable_gui = "all"; then
         gui_modules="$guimodules mx-gtk-1.0"
 
         PKG_CHECK_MODULES(MX_GTK_0_99_1, mx-gtk-1.0 >= 0.99.1,
                           have_mx_gtk_0_99_1="yes",
                           have_mx_gtk_0_99_1="no")
-        if test $have_mx_gtk_0_99_1 == "yes"; then
+        if test $have_mx_gtk_0_99_1 = "yes"; then
             AC_DEFINE(MX_GTK_0_99_1, 1, [we have Mx-Gtk 0.99.1 or better])
         fi
     fi
@@ -558,7 +558,7 @@ if test $enable_gui != "no"; then
     PKG_CHECK_MODULES(UNIQUE, unique-1.0,
                       have_unique="yes",
                       have_unique="no")
-    if test $have_unique == "yes"; then
+    if test $have_unique = "yes"; then
         gui_modules="$gui_modules unique-1.0" 
         AC_DEFINE(ENABLE_UNIQUE, 1, [enable single-app-instance functionality])
     fi
@@ -566,7 +566,7 @@ if test $enable_gui != "no"; then
     PKG_CHECK_MODULES(GTK_2_18, gtk+-2.0 >= 2.18,
                       have_gtk_2_18="yes",
                       have_gtk_2_18="no")
-    if test $have_gtk_2_18 == "yes"; then
+    if test $have_gtk_2_18 = "yes"; then
         AC_DEFINE(GTK_2_18, 1, [we have GTK+ 2.18 or better])
     fi
 
@@ -600,10 +600,10 @@ AC_ARG_WITH(rst2man,
                             An explicit --without-rst2man or not having it installed turn off
                             building of man pages.]),
             [RST2MAN=$withval
-             if test "$RST2MAN" == "yes"; then
+             if test "$RST2MAN" = "yes"; then
                  AC_PATH_PROG(RST2MAN, rst2man, "no")
              fi
-             test "$RST2MAN" == "no" || test -x "$RST2MAN" || AC_ERROR([--with-rst2man=$RST2MAN: tool not found])],
+             test "$RST2MAN" = "no" || test -x "$RST2MAN" || AC_ERROR([--with-rst2man=$RST2MAN: tool not found])],
             [AC_PATH_PROG(RST2MAN, rst2man, "no")])
 AM_CONDITIONAL([COND_MAN_PAGES], [test "$RST2MAN" != "no"])
 
@@ -614,10 +614,10 @@ AC_ARG_WITH(rst2html,
                             An explicit --without-rst2html or not having it installed turn off
                             building of README in HTML format.]),
             [RST2HTML=$withval
-             if test "$RST2HTML" == "yes"; then
+             if test "$RST2HTML" = "yes"; then
                  AC_PATH_PROG(RST2HTML, rst2html, "no")
              fi
-             test "$RST2HTML" == "no" || test -x "$RST2HTML" || AC_ERROR([--with-rst2html=$RST2HTML: tool not found])],
+             test "$RST2HTML" = "no" || test -x "$RST2HTML" || AC_ERROR([--with-rst2html=$RST2HTML: tool not found])],
             [AC_PATH_PROG(RST2HTML, rst2html, "no")])
 AM_CONDITIONAL([COND_HTML_README], [test "$RST2HTML" != "no"])
 

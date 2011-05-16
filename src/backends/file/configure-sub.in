@@ -32,6 +32,6 @@ AC_ARG_ENABLE_BACKEND(file,
 
 if test "$enable_file" = "yes"; then
         dnl It's good to check the prerequisites here, in case --enable-file was used.
-        dnl test "x${SQLITEFOUND}" == "xyes" || AC_MSG_ERROR([--enable-sqlite requires pkg-config information for sqlite3, which was not found])
+        dnl test "x${SQLITEFOUND}" = "xyes" || AC_MSG_ERROR([--enable-sqlite requires pkg-config information for sqlite3, which was not found])
         AC_DEFINE(ENABLE_FILE, 1, [file available])
 fi

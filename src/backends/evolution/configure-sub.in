@@ -63,7 +63,7 @@ AC_ARG_ENABLE_BACKEND(ecal, evolution,
 
 enable_evo="no"
 if test "$enable_ebook" = "yes"; then
-        test "x${EBOOKFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ebook requires pkg-config information for libebook, which was not found])
+        test "x${EBOOKFOUND}" = "xyes" || AC_MSG_ERROR([--enable-ebook requires pkg-config information for libebook, which was not found])
         AC_DEFINE(ENABLE_EBOOK, 1, [libebook available])
         enable_evo="yes"
 else
@@ -71,10 +71,10 @@ else
         EBOOK_LIBS=
 fi
 
-AM_CONDITIONAL([ENABLE_ECAL], [test "$enable_ecal" == "yes"])
+AM_CONDITIONAL([ENABLE_ECAL], [test "$enable_ecal" = "yes"])
 AM_CONDITIONAL([ENABLE_ICAL], [test "$enable_ecal" = "yes"])
 if test "$enable_ecal" = "yes"; then
-        test "x${ECALFOUND}" == "xyes" || AC_MSG_ERROR([--enable-ecal requires pkg-config information for libecal, which was not found"])
+        test "x${ECALFOUND}" = "xyes" || AC_MSG_ERROR([--enable-ecal requires pkg-config information for libecal, which was not found"])
         AC_DEFINE(ENABLE_ECAL, 1, [libecal available])
         AC_DEFINE(ENABLE_ICAL, 1, [libical in use])
         enable_evo="yes"
