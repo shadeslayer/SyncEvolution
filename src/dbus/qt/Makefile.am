@@ -8,15 +8,17 @@ lib_LTLIBRARIES = libsyncevolution-qt-dbus.la
 
 libsyncevolution_qt_dbus_headers = dbustypes.h
 
-libsyncevolution_qt_dbus_include_HEADERS = \
+nodist_libsyncevolution_qt_dbus_include_HEADERS = \
   $(libsyncevolution_qt_dbus_headers) \
   $(built_headers) \
   $(NULL)
 
-libsyncevolution_qt_dbus_la_SOURCES = \
-	$(BUILT_SOURCES) \
+dist_libsyncevolution_qt_dbus_la_SOURCES = \
         $(libsyncevolution_qt_dbus_headers) \
 	dbustypes.cpp
+
+nodist_libsyncevolution_qt_dbus_la_SOURCES = \
+	$(BUILT_SOURCES)
 
 AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 
