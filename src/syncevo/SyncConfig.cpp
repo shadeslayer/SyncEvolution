@@ -2885,6 +2885,13 @@ bool TemplateConfig::isTemplateConfig() const
 
 int TemplateConfig::serverModeMatch (SyncConfig::MatchMode mode)
 {
+    if (mode != SyncConfig::MATCH_FOR_SERVER_MODE &&
+        mode != SyncConfig::MATCH_FOR_CLIENT_MODE) {
+        // no need to read config, peerIsClient doesn't matter
+        // => fall back to BEST_MATCH directly
+        return BEST_MATCH;
+    }
+
     boost::shared_ptr<ConfigNode> configNode = m_template->open("config.ini");
     std::string peerIsClient = configNode->readProperty ("peerIsClient");
     
