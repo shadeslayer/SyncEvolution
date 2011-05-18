@@ -1988,6 +1988,25 @@ static string filterConfig(const string &buffer)
     return res.str();
 }
 
+static string removeComments(const string &buffer)
+{
+    ostringstream res;
+
+    typedef boost::split_iterator<string::const_iterator> string_split_iterator;
+    for (string_split_iterator it =
+             boost::make_split_iterator(buffer, boost::first_finder("\n", boost::is_iequal()));
+         it != string_split_iterator();
+         ++it) {
+        string line = boost::copy_range<string>(*it);
+        if (!line.empty() &&
+            !boost::starts_with(line, "#")) {
+            res << line << endl;
+        }
+    }
+
+    return res.str();
+}
+
 // remove comment lines from scanFiles() output
 static string filterFiles(const string &buffer)
 {
@@ -2235,6 +2254,12 @@ protected:
         size_t end = buffer.find("\n", uuid + uuidstr.size());
         CPPUNIT_ASSERT(end != buffer.npos);
         buffer.replace(uuid, end - uuid, "deviceId = fixed-devid");
+    }
+
+    string filterRandomUUID(const string &buffer) {
+        string copy = buffer;
+        removeRandomUUID(copy);
+        return copy;
     }
 
     /** create new configurations */
@@ -2617,6 +2642,7 @@ protected:
                                   "   template name = template description\n"
                                   "   eGroupware = http://www.egroupware.org\n"
                                   "   Funambol = http://my.funambol.com\n"
+                                  "   Google_Calendar = event sync via CalDAV, use for the 'source-config@google-calendar' config\n"
                                   "   Google_Contacts = contact sync via SyncML, see http://www.google.com/support/mobile/bin/topic.py?topic=22181\n"
                                   "   Goosync = http://www.goosync.com/\n"
                                   "   Memotoo = http://www.memotoo.com\n"
@@ -2625,7 +2651,8 @@ protected:
                                   "   Ovi = http://www.ovi.com\n"
                                   "   ScheduleWorld = server no longer in operation\n"
                                   "   SyncEvolution = http://www.syncevolution.org\n"
-                                  "   Synthesis = http://www.synthesis.ch\n",
+                                  "   Synthesis = http://www.synthesis.ch\n"
+                                  "   Yahoo = contact and event sync using WebDAV, use for the 'source-config@yahoo' config\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }
@@ -2896,8 +2923,9 @@ protected:
     }
 
     void testPrintFileTemplatesConfig() {
+        // simulate reading templates from user's XDG HOME
         symlink("../templates", (m_testDir + "/syncevolution-templates").c_str());
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2905,6 +2933,42 @@ protected:
     }
 
     void doPrintFileTemplates() {
+        // Compare only the properties which are really set.
+        //
+        // note that "backend" will be take from the @default context if one
+        // exists, so run this before setting up Funambol below
+        std::string googlecaldav =
+            "syncURL = https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google\n"
+            "deviceId = fixed-devid\n"
+            "ConsumerReady = 1\n"
+            "peerType = WebDAV\n"
+            "[calendar]\n"
+            "sync = two-way\n"
+            "backend = CalDAV\n";
+        {
+            TestCmdline cmdline("--print-config", "--template", "google calendar", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF(googlecaldav,
+                                      removeComments(filterRandomUUID(filterConfig(cmdline.m_out.str()))));
+        }
+
+        std::string yahoo =
+            "deviceId = fixed-devid\n"
+            "ConsumerReady = 1\n"
+            "peerType = WebDAV\n"
+            "[addressbook]\n"
+            "sync = disabled\n"
+            "backend = CardDAV\n"
+            "[calendar]\n"
+            "sync = two-way\n"
+            "backend = CalDAV\n";
+        {
+            TestCmdline cmdline("--print-config", "--template", "yahoo", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF(yahoo,
+                                      removeComments(filterRandomUUID(filterConfig(cmdline.m_out.str()))));
+        }
+
         testSetupFunambol();
 
         {
@@ -3139,6 +3203,8 @@ protected:
                               "IconURI:\n"
                               "\n"
                               "ConsumerReady:\n"
+                              "\n"
+                              "peerType:\n"
                               "\n"
                               "defaultPeer:\n");
         string sourceProperties("sync:\n"
@@ -4092,6 +4158,7 @@ private:
                          "peers/scheduleworld/config.ini:WebURL = http://www.scheduleworld.com\n"
                          "peers/scheduleworld/config.ini:# IconURI = \n"
                          "peers/scheduleworld/config.ini:# ConsumerReady = 0\n"
+                         "peers/scheduleworld/config.ini:# peerType = \n"
 
                          "peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = \n"
                          "peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0\n"

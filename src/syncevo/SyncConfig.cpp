@@ -1327,6 +1327,25 @@ static BoolConfigProperty syncPropConsumerReady("ConsumerReady",
                                                 "Has no effect in a user's server configuration.\n",
                                                 "0");
 
+/**
+ * Some guidelines for peerType = WebDAV:
+ * - Such templates may only be used to create the 'source-config@<target>.
+ *   configurations. Typically <target> can be the same as the template's
+ *   name.
+ * - Because determining the default database in WebDAV can be difficult,
+ *   the GUI should allow the user to choose and set the "uri"
+ *   properties accordingly.
+ * - A GUI should also create a <target> configuration for synchronizing
+ *   against the WebDAV backends.
+ */
+static ConfigProperty syncPropPeerType("peerType",
+                                       "Defines what a configuration is meant to be used for.\n"
+                                       "Used in templates and the resulting configs to tell a GUI\n"
+                                       "that special handling may be necessary. GUIs should ignore\n"
+                                       "unknown types.\n"
+                                       "The traditional SyncML configs use an empty value.\n"
+                                       "\"WebDAV\" is used for the WebDAV side in a local synchronization.\n");
+
 static ULongConfigProperty syncPropHashCode("HashCode", "used by the SyncML library internally; do not modify");
 
 static ConfigProperty syncPropConfigDate("ConfigDate", "used by the SyncML library internally; do not modify");
@@ -1486,6 +1505,7 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         registry.push_back(&syncPropWebURL);
         registry.push_back(&syncPropIconURI);
         registry.push_back(&syncPropConsumerReady);
+        registry.push_back(&syncPropPeerType);
         registry.push_back(&syncPropHashCode);
         registry.push_back(&syncPropConfigDate);
         registry.push_back(&syncPropNonce);
