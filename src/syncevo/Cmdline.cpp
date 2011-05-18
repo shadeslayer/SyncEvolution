@@ -2195,6 +2195,12 @@ public:
     {
     }
 
+    void setUp()
+    {
+        rm_r(m_testDir);
+        mkdir_p(m_testDir);
+    }
+
 protected:
 
     /** verify that createFiles/scanFiles themselves work */
@@ -2306,7 +2312,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         doSetupScheduleWorld(false);
         // bump min/cur version to something not supported, then
         // try to read => should fail
@@ -2366,7 +2371,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         doSetupScheduleWorld(false);
         // decrease min/cur version to something no longer supported,
         // then try to write => should migrate in release mode and fail otherwise
@@ -2426,7 +2430,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         doSetupScheduleWorld(false);
         // decrease min/cur version to something no longer supported,
         // then try to write => should migrate in release mode and fail otherwise
@@ -2493,7 +2496,6 @@ protected:
 
         root = m_testDir;
         root += "/syncevolution/default";
-        rm_r(root);
         TestCmdline cmdline("--configure",
                             "--template", "default",
                             "--sync-property", "deviceID = fixed-devid",
@@ -2514,7 +2516,6 @@ protected:
         ScopedEnvChange home("HOME", m_testDir);
 
         root = m_testDir;
-        rm_r(root);
         root += "/syncevolution/default";
         TestCmdline cmdline("--configure",
                             "--template", "scheduleworld",
@@ -2667,7 +2668,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         doSetupScheduleWorld(false);
         doSetupSynthesis(true);
         doSetupFunambol(true);
@@ -2687,7 +2687,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         testSetupFunambol();
 
         {
@@ -2883,7 +2882,6 @@ protected:
     }
 
     void testPrintFileTemplates() {
-        rm_r(m_testDir);
         // use local copy of templates in build dir (no need to install)
         ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "./templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
@@ -2893,8 +2891,6 @@ protected:
     }
 
     void testPrintFileTemplatesConfig() {
-        rm_r(m_testDir);
-        mkdir_p(m_testDir);
         symlink("../templates", (m_testDir + "/syncevolution-templates").c_str());
         ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
@@ -3022,7 +3018,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         testSetupScheduleWorld();
         string expected = doConfigure(ScheduleWorldConfig(), "sources/addressbook/config.ini:");
 
@@ -3433,8 +3428,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
-
         // create from scratch with only addressbook configured
         {
             TestCmdline cmdline("--configure",
@@ -3689,7 +3682,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         string oldRoot = m_testDir + "/.sync4j/evolution/scheduleworld";
         string newRoot = m_testDir + "/syncevolution/default";
 
@@ -3916,7 +3908,6 @@ protected:
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
-        rm_r(m_testDir);
         string root = m_testDir + "/syncevolution/default";
 
         string oldConfig =
