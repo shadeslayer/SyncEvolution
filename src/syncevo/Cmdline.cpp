@@ -3276,9 +3276,10 @@ protected:
             // allow user to proceed if they wish: should result in no sources configured
             TestCmdline failure("--configure", "--template", "none", "foo", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
-            CPPUNIT_ASSERT(failure.m_cmdline->run());
+            bool success  = failure.m_cmdline->run();
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_err.str());
+            CPPUNIT_ASSERT(success);
             string res = scanFiles(m_testDir);
             removeRandomUUID(res);
             CPPUNIT_ASSERT_EQUAL_DIFF(fooconfig, filterFiles(res));
@@ -3289,10 +3290,10 @@ protected:
             // allow user to proceed if they wish: should result in no sources configured,
             // even if general source properties are specified
             TestCmdline failure("--configure", "--template", "none", "backend=calendar", "foo", NULL);
-            CPPUNIT_ASSERT(failure.m_cmdline->parse());
-            CPPUNIT_ASSERT(failure.m_cmdline->run());
+            bool success = failure.m_cmdline->parse() && failure.m_cmdline->run();
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_err.str());
+            CPPUNIT_ASSERT(success);
             string res = scanFiles(m_testDir);
             removeRandomUUID(res);
             CPPUNIT_ASSERT_EQUAL_DIFF(fooconfig, filterFiles(res));
@@ -3303,10 +3304,10 @@ protected:
             // allow user to proceed if they wish: should result in no sources configured,
             // even if specific source properties are specified
             TestCmdline failure("--configure", "--template", "none", "eds_event/backend=calendar", "foo", NULL);
-            CPPUNIT_ASSERT(failure.m_cmdline->parse());
-            CPPUNIT_ASSERT(failure.m_cmdline->run());
+            bool success = failure.m_cmdline->parse() && failure.m_cmdline->run();
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
             CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_err.str());
+            CPPUNIT_ASSERT(success);
             string res = scanFiles(m_testDir);
             removeRandomUUID(res);
             CPPUNIT_ASSERT_EQUAL_DIFF(fooconfig, filterFiles(res));
