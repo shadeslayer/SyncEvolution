@@ -2819,9 +2819,13 @@ ReadOperations::ReadOperations(const std::string &config_name, DBusServer &serve
 void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &configNames)
 {
     if (getTemplates) {
-        // get device list from dbus server, currently only bluetooth devices
         SyncConfig::DeviceList devices;
+
+        // get device list from dbus server, currently only bluetooth devices
         m_server.getDeviceList(devices);
+
+        // also include server templates in search
+        devices.push_back(SyncConfig::DeviceDescription("", "", SyncConfig::MATCH_FOR_CLIENT_MODE));
 
         //clear existing templates in dbus server
         m_server.clearPeerTempls();
