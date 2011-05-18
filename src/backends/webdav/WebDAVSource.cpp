@@ -286,6 +286,11 @@ void WebDAVSource::open()
 
 void WebDAVSource::contactServer()
 {
+    if (!m_calendar.empty() &&
+        m_session) {
+        // we have done this work before, no need to repeat it
+    }
+
     int timeoutSeconds = m_settings->timeoutSeconds();
     int retrySeconds = m_settings->retrySeconds();
     SE_LOG_DEBUG(this, NULL, "timout %ds, retry %ds => %s",
@@ -746,6 +751,8 @@ void WebDAVSource::openPropCallback(const Neon::URI &uri,
 
 bool WebDAVSource::isEmpty()
 {
+    contactServer();
+
     // listing all items is relatively efficient, let's use that
     // TODO: use truncated result search
     RevisionMap_t revisions;

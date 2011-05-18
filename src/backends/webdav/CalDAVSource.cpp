@@ -768,6 +768,8 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
                               const SyncSource::Operations::BackupInfo &newBackup,
                               BackupReport &backupReport)
 {
+    contactServer();
+
     ItemCache cache;
     cache.init(oldBackup, newBackup, false);
 
