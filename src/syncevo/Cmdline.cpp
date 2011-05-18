@@ -624,6 +624,7 @@ bool Cmdline::run() {
     } else if (m_printTemplates) {
         SyncConfig::DeviceList devices;
         if (m_template.empty()){
+            devices.push_back (SyncConfig::DeviceDescription("", "", SyncConfig::MATCH_FOR_CLIENT_MODE));
             dumpConfigTemplates("Available configuration templates (servers):",
                     SyncConfig::getPeerTemplates(devices), false);
         } else {
