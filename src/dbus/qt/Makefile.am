@@ -34,6 +34,9 @@ BUILT_SOURCES = \
   syncevo-server-full.cpp \
   syncevo-session-full.cpp \
   syncevo-connection-full.cpp \
+  syncevo-server-full.moc.cpp \
+  syncevo-session-full.moc.cpp \
+  syncevo-connection-full.moc.cpp \
   $(built_headers) \
   $(NULL)
 
