@@ -2241,7 +2241,7 @@ protected:
     void testSetupScheduleWorld() { doSetupScheduleWorld(false); }
     void doSetupScheduleWorld(bool shared) {
         string root;
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2490,7 +2490,7 @@ protected:
 
     void testSetupDefault() {
         string root;
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2511,7 +2511,7 @@ protected:
 
     void testSetupRenamed() {
         string root;
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2533,7 +2533,7 @@ protected:
     void testSetupFunambol() { doSetupFunambol(false); }
     void doSetupFunambol(bool shared) {
         string root;
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2569,7 +2569,7 @@ protected:
     void testSetupSynthesis() { doSetupSynthesis(false); }
     void doSetupSynthesis(bool shared) {
         string root;
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2601,7 +2601,12 @@ protected:
     }
 
     void testTemplate() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
         TestCmdline failure("--template", NULL);
+
         CPPUNIT_ASSERT(!failure.m_cmdline->parse());
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure.m_out.str());
         CPPUNIT_ASSERT_EQUAL(string("ERROR: missing parameter for '--template'\n"), lastLine(failure.m_err.str()));
@@ -2612,13 +2617,13 @@ protected:
                                   "   template name = template description\n"
                                   "   eGroupware = http://www.egroupware.org\n"
                                   "   Funambol = http://my.funambol.com\n"
-                                  "   Google = http://m.google.com/sync\n"
+                                  "   Google_Contacts = contact sync via SyncML, see http://www.google.com/support/mobile/bin/topic.py?topic=22181\n"
                                   "   Goosync = http://www.goosync.com/\n"
                                   "   Memotoo = http://www.memotoo.com\n"
-                                  "   Mobical = http://www.mobical.net\n"
+                                  "   Mobical = https://www.everdroid.com\n"
                                   "   Oracle = http://www.oracle.com/technology/products/beehive/index.html\n"
                                   "   Ovi = http://www.ovi.com\n"
-                                  "   ScheduleWorld = http://www.scheduleworld.com\n"
+                                  "   ScheduleWorld = server no longer in operation\n"
                                   "   SyncEvolution = http://www.syncevolution.org\n"
                                   "   Synthesis = http://www.synthesis.ch\n",
                                   help.m_out.str());
@@ -2664,7 +2669,7 @@ protected:
     }
 
     void testPrintServers() {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2683,7 +2688,7 @@ protected:
     }
 
     void testPrintConfig() {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2892,7 +2897,7 @@ protected:
 
     void testPrintFileTemplatesConfig() {
         symlink("../templates", (m_testDir + "/syncevolution-templates").c_str());
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -2927,7 +2932,7 @@ protected:
 
     void testAddSource() {
         string root;
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -3014,7 +3019,7 @@ protected:
     }
 
     void testConfigure() {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -3224,7 +3229,7 @@ protected:
      * templates. See BMC #14805.
      */
     void testConfigureTemplates() {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -3425,7 +3430,7 @@ protected:
 
 
     void testConfigureSources() {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -3538,7 +3543,7 @@ protected:
     }
 
     void testOldConfigure() {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -3679,7 +3684,7 @@ protected:
     }
 
     void testMigrate() {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -3905,7 +3910,7 @@ protected:
         // Migrate context containing a peer. Must also migrate peer.
         // Covers special case of inconsistent "type".
 
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 
@@ -4420,7 +4425,7 @@ private:
     }
 
     string printConfig(const string &server) {
-        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "/dev/null");
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
         ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
         ScopedEnvChange home("HOME", m_testDir);
 

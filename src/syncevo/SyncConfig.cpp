@@ -48,10 +48,6 @@ SE_BEGIN_CXX
 
 const char *const SourceAdminDataName = "adminData";
 
-static bool SourcePropBackendIsSet(boost::shared_ptr<SyncSourceConfig> source);
-static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source);
-static bool SourcePropSyncIsSet(boost::shared_ptr<SyncSourceConfig> source);
-
 int ConfigVersions[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX] =
 {
     { CONFIG_ROOT_MIN_VERSION, CONFIG_ROOT_CUR_VERSION },
@@ -654,50 +650,6 @@ SyncConfig::ConfigList SyncConfig::getConfigs()
     return res;
 }
 
-/* Get a list of all templates, both for any phones listed in @peers*/
-SyncConfig::TemplateList SyncConfig::getPeerTemplates(const DeviceList &peers)
-{
-    TemplateList result1, result2;
-    result1 = matchPeerTemplates (peers);
-    result2 = getBuiltInTemplates();
-
-    result1.insert (result1.end(), result2.begin(), result2.end());
-    return result1;
-}
-
-
-SyncConfig::TemplateList SyncConfig::getBuiltInTemplates()
-{
-    class TmpList : public TemplateList {
-        public:
-            void addDefaultTemplate(const string &server, const string &url) {
-                BOOST_FOREACH(const boost::shared_ptr<TemplateDescription> entry, static_cast<TemplateList &>(*this)) {
-                    if (boost::iequals(entry->m_templateId, server)) {
-                        //already present 
-                        return;
-                    }
-                }
-                push_back (boost::shared_ptr<TemplateDescription> (new TemplateDescription(server, url)));
-            }
-    } result;
-
-    // builtin templates if not present
-    result.addDefaultTemplate("Funambol", "http://my.funambol.com");
-    result.addDefaultTemplate("ScheduleWorld", "http://www.scheduleworld.com");
-    result.addDefaultTemplate("Synthesis", "http://www.synthesis.ch");
-    result.addDefaultTemplate("Memotoo", "http://www.memotoo.com");
-    result.addDefaultTemplate("Google", "http://m.google.com/sync");
-    result.addDefaultTemplate("Mobical", "http://www.mobical.net");
-    result.addDefaultTemplate("Oracle", "http://www.oracle.com/technology/products/beehive/index.html");
-    result.addDefaultTemplate("Goosync", "http://www.goosync.com/");
-    result.addDefaultTemplate("SyncEvolution", "http://www.syncevolution.org");
-    result.addDefaultTemplate("Ovi", "http://www.ovi.com");
-    result.addDefaultTemplate("eGroupware", "http://www.egroupware.org");
-
-    result.sort (TemplateDescription::compare_op);
-    return result;
-}
-
 static string SyncEvolutionTemplateDir()
 {
     string templateDir(TEMPLATE_DIR);
@@ -792,10 +744,10 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
 
     // before starting another fuzzy match process, first try to load the
     // template directly taking the parameter as the path
-    bool fromDisk = false;
-    if (TemplateConfig::isTemplateConfig(server)) {
+    if (server == "none") {
+        // nothing to read from, just set some defaults below
+    } else if (TemplateConfig::isTemplateConfig(server)) {
         templateConfig = server;
-        fromDisk = true;
     } else {
         SyncConfig::DeviceList devices;
         devices.push_back (DeviceDescription("", server, MATCH_ALL));
@@ -805,10 +757,8 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
             templateConfig = templates.front()->m_path;
         }
         if (templateConfig.empty()) {
-            // not found, avoid reading current directory by using one which doesn't exist
-            templateConfig = "/dev/null";
-        } else {
-            fromDisk = true;
+            // return "not found"
+            return boost::shared_ptr<SyncConfig>();
         }
     }
     
@@ -824,272 +774,26 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
         return config;
     }
 
-    // create sync source configs and set non-default values
-    config->setSourceDefaults("addressbook", false);
-    config->setSourceDefaults("calendar", false);
-    config->setSourceDefaults("todo", false);
-    config->setSourceDefaults("memo", false);
+    // check for icon
+    if (config->getIconURI().empty()) {
+        string dirname, filename;
+        splitPath(templateConfig, dirname, filename);
+        ReadDir dir(getDirname(dirname));
 
-    source = config->getSyncSourceConfig("addressbook");
-    if (!SourcePropBackendIsSet(source)) {
-        source->setBackend("addressbook");
-    }
-    if (!SourcePropURIIsSet(source)) {
-        source->setURI("card");
-    }
-    if (!SourcePropSyncIsSet(source)) {
-        source->setSync("two-way");
-    }
+        // remove last suffix, regardless what it is
+        size_t pos = filename.rfind('.');
+        if (pos != filename.npos) {
+            filename.resize(pos);
+        }
+        filename += "-icon";
 
-    source = config->getSyncSourceConfig("calendar");
-    if (!SourcePropBackendIsSet(source)) {
-        source->setBackend("calendar");
-    }
-    if (!SourcePropURIIsSet(source)) {
-        source->setURI("event");
-    }
-    if (!SourcePropSyncIsSet(source)) {
-        source->setSync("two-way");
-    }
-
-    source = config->getSyncSourceConfig("todo");
-    if (!SourcePropBackendIsSet(source)) {
-        source->setBackend("todo");
-    }
-    if (!SourcePropURIIsSet(source)) {
-        source->setURI("task");
-    }
-    if (!SourcePropSyncIsSet(source)) {
-        source->setSync("two-way");
-    }
-
-    source = config->getSyncSourceConfig("memo");
-    if (!SourcePropBackendIsSet(source)) {
-        source->setBackend("memo");
-    }
-    if (!SourcePropURIIsSet(source)) {
-        source->setURI("note");
-    }
-    if (!SourcePropSyncIsSet(source)) {
-        source->setSync("two-way");
-    }
-
-    if (fromDisk) {
-        // check for icon
-        if (config->getIconURI().empty()) {
-            string dirname, filename;
-            splitPath(templateConfig, dirname, filename);
-            ReadDir dir(getDirname(dirname));
-
-            // remove last suffix, regardless what it is
-            size_t pos = filename.rfind('.');
-            if (pos != filename.npos) {
-                filename.resize(pos);
-            }
-            filename += "-icon";
-
-            BOOST_FOREACH(const string &entry, dir) {
-                if (boost::istarts_with(entry, filename)) {
-                    config->setIconURI("file://" + dirname + "/" + entry);
-                    break;
-                }
+        BOOST_FOREACH(const string &entry, dir) {
+            if (boost::istarts_with(entry, filename)) {
+                config->setIconURI("file://" + dirname + "/" + entry);
+                break;
             }
         }
-
-        // leave the source configs alone and return the config as it is:
-        // in order to have sources configured as part of the template,
-        // the template must have entries for all sources under "sources"
-        return config;
     }
-
-    if (boost::iequals(server, "scheduleworld") ||
-        boost::iequals(server, "default")) {
-        config->setSyncURL("http://sync.scheduleworld.com/funambol/ds");
-        config->setWebURL("http://www.scheduleworld.com");
-        // ScheduleWorld was shut down end of November 2010.
-        // Completely removing all traces of it from SyncEvolution
-        // source code is too intrusive for the time being, so
-        // just disable it in the UI.
-        // config->setConsumerReady(false);
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("card3");
-        source->setBackend("addressbook");
-        source->setSyncFormat("text/vcard");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("cal2");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("task2");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("note");
-    } else if (boost::iequals(server, "funambol")) {
-        config->setSyncURL("http://my.funambol.com/sync");
-        config->setWebURL("http://my.funambol.com");
-        config->setWBXML(false);
-        config->setRetryInterval(0);
-        config->setConsumerReady(true);
-        source = config->getSyncSourceConfig("calendar");
-        source->setSync("two-way");
-        source->setURI("event");
-        source->setSyncFormat("text/calendar");
-        source->setForceSyncFormat(true);
-        source = config->getSyncSourceConfig("todo");
-        source->setSync("two-way");
-        source->setURI("task");
-        source->setSyncFormat("text/calendar");
-        source->setForceSyncFormat(true);
-    } else if (boost::iequals(server, "synthesis")) {
-        config->setSyncURL("http://www.synthesis.ch/sync");
-        config->setWebURL("http://www.synthesis.ch");
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("contacts");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("events");
-        source->setSync("disabled");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("tasks");
-        source->setSync("disabled");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("notes");
-    } else if (boost::iequals(server, "memotoo")) {
-        config->setSyncURL("http://sync.memotoo.com/syncML");
-        config->setWebURL("http://www.memotoo.com");
-        config->setConsumerReady(true);
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("con");
-        source->setSyncFormat("text/vcard"); // vCard 3.0 works better than vCard 2.1 (NICKNAME!)
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("cal");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("task");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("note");
-    } else if (boost::iequals(server, "google")) {
-        config->setSyncURL("https://m.google.com/syncml");
-        config->setWebURL("http://m.google.com/sync");
-        config->setClientAuthType("syncml:auth-basic");
-        config->setWBXML(true);
-        config->setConsumerReady(true);
-#ifndef ENABLE_SSL_CERTIFICATE_CHECK
-        // temporarily (?) disabled certificate checking because
-        // libsoup/gnutls do not accept the Verisign certificate
-        // (GNOME Bugzilla #589323)
-        config->setSSLVerifyServer(false);
-        config->setSSLVerifyHost(false);
-#endif
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("contacts");
-        source->setSyncFormat("text/x-vcard");
-        /* Google support only addressbook sync via syncml */
-        source = config->getSyncSourceConfig("calendar");
-        source->setSync("none");
-        source->setURI("");
-        source = config->getSyncSourceConfig("todo");
-        source->setSync("none");
-        source->setURI("");
-        source = config->getSyncSourceConfig("memo");
-        source->setSync("none");
-        source->setURI("");
-    } else if (boost::iequals(server, "mobical")) {
-        config->setSyncURL("http://www.mobical.net/sync/server");
-        config->setWebURL("http://www.mobical.net");
-        config->setConsumerReady(true);
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("con");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("cal");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("task");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("pnote");
-    } else if (boost::iequals(server, "oracle")) {
-        config->setSyncURL("https://your.company/mobilesync/server");
-        config->setWebURL("http://www.oracle.com/technology/products/beehive/");
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("./contacts");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("./calendar/events");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("./calendar/tasks");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("./notes");
-    } else if (boost::iequals(server, "Ovi")) {
-        config->setSyncURL("https://sync.ovi.com/services/syncml");
-        config->setWebURL("http://www.ovi.com");
-#ifndef ENABLE_SSL_CERTIFICATE_CHECK
-        // temporarily (?) disabled certificate checking because
-        // libsoup/gnutls do not accept the Verisign certificate
-        // (GNOME Bugzilla #589323)
-        config->setSSLVerifyServer(false);
-        config->setSSLVerifyHost(false);
-#endif
-        //prefer vcard 3.0
-        source = config->getSyncSourceConfig("addressbook");
-        source->setSyncFormat("text/vcard");
-        source->setURI("./Contact/Unfiled");
-        source = config->getSyncSourceConfig("calendar");
-        source->setSync("none");
-        source->setURI("");
-        //prefer vcalendar 1.0
-        source->setSyncFormat("text/x-vcalendar");
-        source = config->getSyncSourceConfig("todo");
-        source->setSync("none");
-        source->setURI("");
-        //prefer vcalendar 1.0
-        source->setSyncFormat("text/x-vcalendar");
-        //A virtual datastore combining calendar and todo
-        source = config->getSyncSourceConfig("calendar+todo");
-        source->setURI("./EventTask/Tasks");
-        source->setBackend("virtual");
-        source->setSyncFormat("text/x-vcalendar");
-        source->setDatabaseID("calendar,todo");
-        source->setSync("two-way");
-        //Memo is disabled
-        source = config->getSyncSourceConfig("memo");
-        source->setSync("none");
-        source->setURI("");
-    } else if (boost::iequals(server, "goosync")) {
-        config->setSyncURL("http://sync2.goosync.com/");
-        config->setWebURL("http://www.goosync.com/");
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("contacts");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("calendar");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("tasks");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("");
-    } else if (boost::iequals(server, "syncevolution")) {
-        config->setSyncURL("http://yourserver:port");
-        config->setWebURL("http://www.syncevolution.org");
-        config->setConsumerReady(false);
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("addressbook");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("calendar");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("todo");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("memo");
-    } else if (boost::iequals(server, "egroupware")) {
-        config->setSyncURL("http://set.your.domain.here/rpc.php");
-        config->setWebURL("http://www.egroupware.org");
-        // Not much testing is happening with eGroupware
-        // and users need to be aware of the special URL;
-        // but Ovi is not necessarily better and is visible.
-        // Let's show it.
-        config->setConsumerReady(true);
-        source = config->getSyncSourceConfig("addressbook");
-        source->setURI("./contacts");
-        source = config->getSyncSourceConfig("calendar");
-        source->setURI("calendar");
-        source = config->getSyncSourceConfig("todo");
-        source->setURI("./tasks");
-        source = config->getSyncSourceConfig("memo");
-        source->setURI("./notes");
-    } else {
-        config.reset();
-    }
-
     return config;
 }
 
@@ -2400,11 +2104,6 @@ StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            (Aliases("one-way-from-client") + "one-way-client") +
                                            (Aliases("one-way-from-server") + "one-way-server" + "one-way") +
                                            (Aliases("disabled") + "none"));
-static bool SourcePropSyncIsSet(boost::shared_ptr<SyncSourceConfig> source)
-{
-    return source->isSet(SyncSourceConfig::m_sourcePropSync);
-}
-
 
 static class SourceBackendConfigProperty : public StringConfigProperty {
 public:
@@ -2489,10 +2188,6 @@ public:
         return res;
     }
 } sourcePropBackend;
-static bool SourcePropBackendIsSet(boost::shared_ptr<SyncSourceConfig> source)
-{
-    return source->isSet(sourcePropBackend);
-}
 
 StringConfigProperty sourcePropSyncFormat("syncFormat",
                                           "When there are alternative formats for the same data,\n"
@@ -2551,10 +2246,6 @@ static ConfigProperty sourcePropURI("uri",
                                     "this is appended to the server's URL to identify the\n"
                                     "server's database; if unset, the source name is used as\n"
                                     "fallback");
-static bool SourcePropURIIsSet(boost::shared_ptr<SyncSourceConfig> source)
-{
-    return source->isSet(sourcePropURI);
-}
 
 static ConfigProperty sourcePropUser(Aliases("databaseUser") + "evolutionuser",
                                      "authentication for backend data source; password can be specified\n"
@@ -2924,13 +2615,6 @@ int TemplateConfig::fingerprintMatch (const string &fingerprint)
     //return the largest match value
     int max = NO_MATCH;
     BOOST_FOREACH (std::string sub, subfingerprints){
-        if (boost::iequals (sub, "default")){
-            if (LEVEL1_MATCH > max) {
-                max = LEVEL1_MATCH;
-            }
-            continue;
-        }
-
         std::vector< LCS::Entry <char> > result;
         std::string match = sub;
         boost::to_lower(match);

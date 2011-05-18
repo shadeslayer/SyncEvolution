@@ -647,15 +647,18 @@ class TestingConfiguration():
                             configini["SyncMLVersion"] = config.version
                         sourceini["sync"] = "two-way"
                         sourceini["uri"] = config.uri
-                        sourceini["type"] = "%s:%s" % (source, strip_version(config.type))
+                        sourceini["backend"] = source
+                        sourceini["syncFormat"] = strip_version(config.type)
                         sourceConfigInis[source] = sourceini
 
                 # create 'calendar+todo' entry, disable separate 'calendar' and 'todo'?
                 if have_combined:
                     sourceini = {}
-                    sourceini["evolutionsource"] = "calendar,todo"
+                    sourceini["sync"] = "two-way"
+                    sourceini["database"] = "calendar,todo"
                     sourceini["uri"] = self.wConfigs['calendar'].uri
-                    sourceini["type"] = "virtual:%s" % strip_version(self.wConfigs['calendar'].type)
+                    sourceini["backend"] = "virtual"
+                    sourceini["syncFormat"] = strip_version(self.wConfigs['calendar'].type)
                     sourceConfigInis['calendar+todo'] = sourceini
                     # disable the sub datasources
                     for source in ('calendar', 'todo'):

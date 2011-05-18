@@ -1110,6 +1110,8 @@ class SyncConfig {
     static ConfigList getConfigs();
 
     /**
+     * TODO: fix description of matchPeerTemplates() and remove getPeerTemplates()
+     *
      * returns list of available config templates:
      * for each peer listed in @peers, matching against the fingerprint information
      * from the peer (deviceName likely), sorted by the matching score,
@@ -1120,18 +1122,13 @@ class SyncConfig {
      * The assumption currently is only work for SyncML client peers.
      * DeviceList is a list of matching tuples <fingerprint, SyncConfig::MatchMode>.
      */
-    static TemplateList getPeerTemplates(const DeviceList &peers);
+    static TemplateList getPeerTemplates(const DeviceList &peers) { return matchPeerTemplates(peers, true); }
 
     /**
      * match the built-in templates against @param fingerprint, return a list of
      * servers sorted by the matching rank.
      * */
     static TemplateList matchPeerTemplates(const DeviceList &peers, bool fuzzyMatch = true);
-
-    /**
-     * get the built-in default templates
-     */
-    static TemplateList getBuiltInTemplates ();
 
     /**
      * Creates a new instance of a configuration template.
