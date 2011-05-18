@@ -172,6 +172,7 @@ dist-hook:
 
 clean-local: testclean
 	rm -rf testcases
+	[ ! -L templates ] || rm templates
 
 # files created during testing
 testclean:
@@ -319,7 +320,7 @@ CLEANFILES += client-test-buteo.moc.cpp
 templates:
 	if test "$(srcdir)/templates" != "./templates"; then \
 		rm -rf ./templates; \
-		cp -r "$(srcdir)/templates" .; \
+		ln -s "$(srcdir)/templates" .; \
 	fi
 
 # distribute test system?
