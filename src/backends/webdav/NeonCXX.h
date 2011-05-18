@@ -172,6 +172,16 @@ struct URI {
         m_query == other.m_query &&
         m_fragment == other.m_fragment;
     }
+
+    bool empty() {
+        return m_scheme.empty() &&
+        m_host.empty() &&
+        m_userinfo.empty() &&
+        m_port == 0 &&
+        m_path.empty() &&
+        m_query.empty() &&
+        m_fragment.empty();
+    }
 };
 
 /** produce debug string for status, which may be NULL */
