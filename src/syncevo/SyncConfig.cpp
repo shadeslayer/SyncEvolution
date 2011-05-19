@@ -2618,7 +2618,7 @@ int TemplateConfig::serverModeMatch (SyncConfig::MatchMode mode)
 
 /**
  * The matching is based on Least common string algorithm,
- * with space and underscore being treated as equal.
+ * with space, hyphen and underscore being treated as equal.
  * */
 int TemplateConfig::fingerprintMatch (const string &fingerprint)
 {
@@ -2632,6 +2632,7 @@ int TemplateConfig::fingerprintMatch (const string &fingerprint)
     std::string input = fingerprint;
     boost::to_lower(input);
     boost::replace_all(input, " ", "_");
+    boost::replace_all(input, "-", "_");
     //return the largest match value
     int max = NO_MATCH;
     BOOST_FOREACH (std::string sub, subfingerprints){
@@ -2639,6 +2640,7 @@ int TemplateConfig::fingerprintMatch (const string &fingerprint)
         std::string match = sub;
         boost::to_lower(match);
         boost::replace_all(match, " ", "_");
+        boost::replace_all(match, "-", "_");
         LCS::lcs(match, input, std::back_inserter(result), LCS::accessor_sequence<std::string>());
         int score = result.size() *2 *BEST_MATCH /(sub.size() + fingerprint.size()) ;
         if (score > max) {

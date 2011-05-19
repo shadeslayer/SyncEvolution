@@ -858,13 +858,21 @@ bool Cmdline::run() {
                 fromScratch = true;
                 string configTemplate;
                 if (m_template.empty()) {
-                    // template is the peer name
-                    configTemplate = m_server;
                     if (configureContext) {
                         // configuring a context, template doesn't matter =>
                         // use default "SyncEvolution" template
                         configTemplate =
                             peer = "SyncEvolution";
+                        from = SyncConfig::createPeerTemplate(peer);
+                    } else if (peer == "source-config") {
+                        // Configuring the source context for local sync
+                        // => determine template based on context name.
+                        configTemplate = context;
+                        from = SyncConfig::createPeerTemplate(context);
+                    } else {
+                        // template is the peer name
+                        configTemplate = m_server;
+                        from = SyncConfig::createPeerTemplate(peer);
                     }
                 } else {
                     // Template is specified explicitly. It must not contain a context,
@@ -878,14 +886,12 @@ bool Cmdline::run() {
                     }
                     string tmp;
                     SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_server), tmp, context);
+                    from = SyncConfig::createPeerTemplate(peer);
                 }
-                from = SyncConfig::createPeerTemplate(peer);
                 list<string> missing;
-                if (!from.get() &&
-                    m_template.empty()) {
-                    // check if all obligatory sync properties are specified, if so, allow user
-                    // to proceed with "none" template; if a template was specified, we skip
-                    // this and go directly to the code below which prints an error message
+                if (!from.get()) {
+                    // check if all obligatory sync properties are specified; needed
+                    // for both the "is complete" check and the error message below
                     ConfigProps syncProps = m_props.createSyncFilter(to->getContextName());
                     bool complete = true;
                     BOOST_FOREACH(const ConfigProperty *prop, SyncConfig::getRegistry()) {
@@ -895,7 +901,12 @@ bool Cmdline::run() {
                             complete = false;
                         }
                     }
-                    if (complete) {
+
+                    // if everything was specified and no invalid template name was given, allow user
+                    // to proceed with "none" template; if a template was specified, we skip
+                    // this and go directly to the code below which prints an error message
+                    if (complete &&
+                        m_template.empty()) {
                         from = SyncConfig::createPeerTemplate("none");
                     }
                 }
@@ -2167,6 +2178,27 @@ static string internalToIni(const string &config)
     return res.str();
 }
 
+/** result of removeComments(filterRandomUUID(filterConfig())) for Google Calendar template/config */
+static const std::string googlecaldav =
+               "syncURL = https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google\n"
+               "deviceId = fixed-devid\n"
+               "ConsumerReady = 1\n"
+               "peerType = WebDAV\n"
+               "[calendar]\n"
+               "sync = two-way\n"
+               "backend = CalDAV\n";
+
+/** result of removeComments(filterRandomUUID(filterConfig())) for Yahoo Calendar + Contacts */
+static const std::string yahoo =
+               "deviceId = fixed-devid\n"
+               "ConsumerReady = 1\n"
+               "peerType = WebDAV\n"
+               "[addressbook]\n"
+               "sync = disabled\n"
+               "backend = CardDAV\n"
+               "[calendar]\n"
+               "sync = two-way\n"
+               "backend = CalDAV\n";
 
 /**
  * Testing is based on a text representation of a directory
@@ -2199,6 +2231,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testMatchTemplate);
     CPPUNIT_TEST(testAddSource);
     CPPUNIT_TEST(testSync);
+    CPPUNIT_TEST(testWebDAV);
     CPPUNIT_TEST(testConfigure);
     CPPUNIT_TEST(testConfigureTemplates);
     CPPUNIT_TEST(testConfigureSources);
@@ -2937,14 +2970,6 @@ protected:
         //
         // note that "backend" will be take from the @default context if one
         // exists, so run this before setting up Funambol below
-        std::string googlecaldav =
-            "syncURL = https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google\n"
-            "deviceId = fixed-devid\n"
-            "ConsumerReady = 1\n"
-            "peerType = WebDAV\n"
-            "[calendar]\n"
-            "sync = two-way\n"
-            "backend = CalDAV\n";
         {
             TestCmdline cmdline("--print-config", "--template", "google calendar", NULL);
             cmdline.doit();
@@ -2952,16 +2977,6 @@ protected:
                                       removeComments(filterRandomUUID(filterConfig(cmdline.m_out.str()))));
         }
 
-        std::string yahoo =
-            "deviceId = fixed-devid\n"
-            "ConsumerReady = 1\n"
-            "peerType = WebDAV\n"
-            "[addressbook]\n"
-            "sync = disabled\n"
-            "backend = CardDAV\n"
-            "[calendar]\n"
-            "sync = two-way\n"
-            "backend = CalDAV\n";
         {
             TestCmdline cmdline("--print-config", "--template", "yahoo", NULL);
             cmdline.doit();
@@ -3080,6 +3095,66 @@ protected:
                                   string(filter2.m_cmdline->m_props[""].m_sourceProps[""]));
         CPPUNIT_ASSERT_EQUAL_DIFF("",
                                   string(filter2.m_cmdline->m_props[""].m_syncProps));
+    }
+
+    void testWebDAV() {
+#ifdef ENABLE_DAV
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        // configure Yahoo under a different name, with explicit template selection
+        {
+            TestCmdline cmdline("--configure",
+                                "--template", "yahoo",
+                                "source-config@my-yahoo",
+                                NULL);
+            cmdline.doit();
+        }
+        {
+            TestCmdline cmdline("--print-config", "source-config@my-yahoo", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF(yahoo,
+                                      removeComments(filterRandomUUID(filterConfig(cmdline.m_out.str()))));
+        }
+
+        // configure Google Calendar with template derived from config name
+        {
+            TestCmdline cmdline("--configure",
+                                "source-config@google-calendar",
+                                NULL);
+            cmdline.doit();
+        }
+        {
+            TestCmdline cmdline("--print-config", "source-config@google-calendar", NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF(googlecaldav,
+                                      removeComments(filterRandomUUID(filterConfig(cmdline.m_out.str()))));
+        }
+
+        // test "template not found" error cases
+        {
+            TestCmdline cmdline("--configure",
+                                "--template", "yahooxyz",
+                                "source-config@my-yahoo-xyz",
+                                NULL);
+            CPPUNIT_ASSERT(cmdline.m_cmdline->parse());
+            CPPUNIT_ASSERT(!cmdline.m_cmdline->run());
+            CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "Available configuration templates (clients and servers):\n"));
+            CPPUNIT_ASSERT_EQUAL(string("ERROR: no configuration template for 'yahooxyz' available.\n"),
+                                 lastLine(cmdline.m_err.str()));
+        }
+        {
+            TestCmdline cmdline("--configure",
+                                "source-config@foobar",
+                                NULL);
+            CPPUNIT_ASSERT(cmdline.m_cmdline->parse());
+            CPPUNIT_ASSERT(!cmdline.m_cmdline->run());
+            CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "Available configuration templates (clients and servers):\n"));
+            CPPUNIT_ASSERT_EQUAL(string("ERROR: no configuration template for 'foobar' available. Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL\n"),
+                                 lastLine(cmdline.m_err.str()));
+        }
+#endif
     }
 
     void testConfigure() {
