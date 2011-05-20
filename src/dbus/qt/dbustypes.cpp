@@ -20,58 +20,58 @@
 #include "dbustypes.h"
 
 
- // Marshall the SyncDatabase data into a D-BUS argument
- QDBusArgument &operator<<(QDBusArgument &argument, const SyncDatabase &d)
- {
-     argument.beginStructure();
-     argument << d.name << d.source << d.flag;
-     argument.endStructure();
-     return argument;
- }
+// Marshall the SyncDatabase data into a D-BUS argument
+QDBusArgument &operator<<(QDBusArgument &argument, const SyncDatabase &d)
+{
+    argument.beginStructure();
+    argument << d.name << d.source << d.flag;
+    argument.endStructure();
+    return argument;
+}
 
- // Retrieve the SyncDatabase data from the D-BUS argument
- const QDBusArgument &operator>>(const QDBusArgument &argument, SyncDatabase &d)
- {
-     argument.beginStructure();
-     argument >> d.name >> d.source >> d.flag;
-     argument.endStructure();
-     return argument;
- }
+// Retrieve the SyncDatabase data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, SyncDatabase &d)
+{
+    argument.beginStructure();
+    argument >> d.name >> d.source >> d.flag;
+    argument.endStructure();
+    return argument;
+}
 
 // Marshall the SyncProgress data into a D-BUS argument
- QDBusArgument &operator<<(QDBusArgument &argument, const SyncProgress &p)
- {
-     argument.beginStructure();
-     argument << p.prepareCount << p.prepareTotal << p.sendCount << p.sendTotal << p.recieveCount \
-              << p.recieveTotal;
-     argument.endStructure();
-     return argument;
- }
+QDBusArgument &operator<<(QDBusArgument &argument, const SyncProgress &p)
+{
+    argument.beginStructure();
+    argument << p.prepareCount << p.prepareTotal << p.sendCount << p.sendTotal << p.recieveCount \
+             << p.recieveTotal;
+    argument.endStructure();
+    return argument;
+}
 
- // Retrieve the SyncProgress data from the D-BUS argument
- const QDBusArgument &operator>>(const QDBusArgument &argument, SyncProgress &p)
- {
-     argument.beginStructure();
-     argument >> p.prepareCount >> p.prepareTotal >> p.sendCount >> p.sendTotal >> p.recieveCount \
-              >> p.recieveTotal;
-     argument.endStructure();
-     return argument;
- }
+// Retrieve the SyncProgress data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, SyncProgress &p)
+{
+    argument.beginStructure();
+    argument >> p.prepareCount >> p.prepareTotal >> p.sendCount >> p.sendTotal >> p.recieveCount \
+             >> p.recieveTotal;
+    argument.endStructure();
+    return argument;
+}
 
 // Marshall the SyncStatus data into a D-BUS argument
- QDBusArgument &operator<<(QDBusArgument &argument, const SyncStatus &s)
- {
-     argument.beginStructure();
-     argument << s.mode << s.status << s.error;
-     argument.endStructure();
-     return argument;
- }
+QDBusArgument &operator<<(QDBusArgument &argument, const SyncStatus &s)
+{
+    argument.beginStructure();
+    argument << s.mode << s.status << s.error;
+    argument.endStructure();
+    return argument;
+}
 
- // Retrieve the SyncStatus data from the D-BUS argument
- const QDBusArgument &operator>>(const QDBusArgument &argument, SyncStatus &s)
- {
-     argument.beginStructure();
-     argument >> s.mode >> s.status >> s.error;
-     argument.endStructure();
-     return argument;
- }
+// Retrieve the SyncStatus data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, SyncStatus &s)
+{
+    argument.beginStructure();
+    argument >> s.mode >> s.status >> s.error;
+    argument.endStructure();
+    return argument;
+}

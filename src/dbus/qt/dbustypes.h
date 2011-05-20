@@ -34,10 +34,10 @@ struct SyncDatabase
 };
 Q_DECLARE_METATYPE ( SyncDatabase )
 
- // Marshall the SyncDatabase data into a D-BUS argument
- QDBusArgument &operator<<(QDBusArgument &argument, const SyncDatabase &mystruct);
- // Retrieve the SyncDatabase data from the D-BUS argument
- const QDBusArgument &operator>>(const QDBusArgument &argument, SyncDatabase &mystruct);
+// Marshall the SyncDatabase data into a D-BUS argument
+QDBusArgument &operator<<(QDBusArgument &argument, const SyncDatabase &mystruct);
+// Retrieve the SyncDatabase data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, SyncDatabase &mystruct);
 
 struct SyncProgress
 {
@@ -51,10 +51,10 @@ struct SyncProgress
 };
 Q_DECLARE_METATYPE ( SyncProgress )
 
- // Marshall the SyncProgress data into a D-BUS argument
- QDBusArgument &operator<<(QDBusArgument &argument, const SyncProgress &mystruct);
- // Retrieve the SyncProgress data from the D-BUS argument
- const QDBusArgument &operator>>(const QDBusArgument &argument, SyncProgress &mystruct);
+// Marshall the SyncProgress data into a D-BUS argument
+QDBusArgument &operator<<(QDBusArgument &argument, const SyncProgress &mystruct);
+// Retrieve the SyncProgress data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, SyncProgress &mystruct);
 
 struct SyncStatus
 {
@@ -64,10 +64,10 @@ struct SyncStatus
 };
 Q_DECLARE_METATYPE ( SyncStatus )
 
- // Marshall the SyncStatus data into a D-BUS argument
- QDBusArgument &operator<<(QDBusArgument &argument, const SyncStatus &mystruct);
- // Retrieve the SyncStatus data from the D-BUS argument
- const QDBusArgument &operator>>(const QDBusArgument &argument, SyncStatus &mystruct);
+// Marshall the SyncStatus data into a D-BUS argument
+QDBusArgument &operator<<(QDBusArgument &argument, const SyncStatus &mystruct);
+// Retrieve the SyncStatus data from the D-BUS argument
+const QDBusArgument &operator>>(const QDBusArgument &argument, SyncStatus &mystruct);
 
 typedef QMap<QString, QString> QStringMap;
 typedef QMap<QString, QStringMap > QStringMultiMap;
