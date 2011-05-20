@@ -83,7 +83,7 @@ Q_DECLARE_METATYPE ( QArrayOfDatabases )
 Q_DECLARE_METATYPE ( QSyncProgressMap )
 Q_DECLARE_METATYPE ( QSyncStatusMap )
 
-inline void registerMyDataTypes() {
+inline void syncevolution_qt_dbus_register_types() {
     qDBusRegisterMetaType< SyncDatabase >();
     qDBusRegisterMetaType< QStringMap >();
     qDBusRegisterMetaType< QStringMultiMap >();
