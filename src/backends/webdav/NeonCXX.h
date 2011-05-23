@@ -304,7 +304,7 @@ class Session {
      *         errors reported via exceptions
      */ 
     bool checkError(int error, int code = 0, const ne_status *status = NULL,
-               const string &location = "");
+                    const string &location = "");
 
     ne_session *getSession() const { return m_session; }
 
