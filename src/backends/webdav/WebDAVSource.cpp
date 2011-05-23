@@ -8,6 +8,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/find.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <syncevo/LogRedirect.h>
@@ -45,12 +46,14 @@ public:
     {
         if (m_context) {
             vector<string> urls = m_context->getSyncURL();
+            string urlWithUsername;
+
             if (!urls.empty()) {
-                m_url = urls.front();
+                m_url = urlWithUsername = urls.front();
                 std::string username = m_context->getSyncUsername();
-                boost::replace_all(m_url, "%u", Neon::URI::escape(username));
+                boost::replace_all(urlWithUsername, "%u", Neon::URI::escape(username));
             }
-            Neon::URI uri = Neon::URI::parse(m_url);
+            Neon::URI uri = Neon::URI::parse(urlWithUsername);
             typedef boost::split_iterator<string::iterator> string_split_iterator;
             for (string_split_iterator arg =
                      boost::make_split_iterator(uri.m_query, boost::first_finder("&", boost::is_iequal()));
@@ -77,13 +80,13 @@ public:
                         } else {
                             SE_THROW(StringPrintf("unknown SyncEvolution flag %s in URL %s",
                                                   std::string(flag->begin(), flag->end()).c_str(),
-                                                  m_url.c_str()));
+                                                  urlWithUsername.c_str()));
                         }
                     }
                 } else if (arg->end() != arg->begin()) {
                     SE_THROW(StringPrintf("unknown parameter %s in URL %s",
                                           std::string(arg->begin(), arg->end()).c_str(),
-                                          m_url.c_str()));
+                                          urlWithUsername.c_str()));
                 }
             }
             boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
@@ -449,7 +452,17 @@ void WebDAVSource::contactServer()
     Timespec finalDeadline = createDeadline(); // no resending if left empty
 
     while (true) {
+        bool usernameInserted = false;
         std::string next;
+
+        // Replace %u with the username, if the %u is found. Also, keep track
+        // of this event happening, because if we later on get a 404 error,
+        // we will convert it to 401 only if the path contains the username
+        // and it was indeed us who put the username there (not the server).
+        if (boost::find_first(path, "%u")) {
+            boost::replace_all(path, "%u", Neon::URI::escape(username));
+            usernameInserted = true;
+        }
 
         // must normalize so that we can compare against results from server
         path = Neon::URI::normalizePath(path, true);
@@ -573,6 +586,17 @@ void WebDAVSource::contactServer()
             } else {
                 candidates.push_front(next.m_path);
             }
+        } catch (const TransportStatusException &ex) {
+            SE_LOG_DEBUG(NULL, NULL, "TransportStatusException: %s", ex.what());
+            if (ex.syncMLStatus() == 404 && boost::find_first(path, username) && usernameInserted) {
+                // We're actually looking at an authentication error: the path to the calendar has
+                // not been found, so the username was wrong. Let's hijack the error message and
+                // code of the exception by throwing a new one.
+                string descr = StringPrintf("Path not found: %s. Is the username '%s' correct?",
+                                            path.c_str(), username.c_str());
+                int code = 401;
+                SE_THROW_EXCEPTION_STATUS(TransportStatusException, descr, SyncMLStatus(code));
+            }
         } catch (const Exception &ex) {
             if (candidates.empty()) {
                 // nothing left to try, bail out with this error
@@ -678,7 +702,7 @@ void WebDAVSource::contactServer()
         if (next.empty()) {
             // use next candidate
             if (candidates.empty()) {
-                throwError(StringPrintf("no collection found in %s", m_settings->getURL().c_str()));
+                throwError(StringPrintf("no collection found in %s", path.c_str()));
             }
             next = candidates.front();
             candidates.pop_front();

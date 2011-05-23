@@ -143,7 +143,17 @@ std::string URI::normalizePath(const std::string &path, bool collection)
     string_split_iterator it =
         boost::make_split_iterator(path, boost::first_finder("/", boost::is_iequal()));
     while (!it.eof()) {
-        res += escape(unescape(std::string(it->begin(), it->end())));
+        std::string split(it->begin(), it->end());
+        // Let's have an exception here for "%u", since we use that to replace the
+        // actual username into the path. It's safe to ignore "%u" because it
+        // couldn't be in a valid URI anyway.
+        // TODO: we should find a neat way to remove the awareness of "%u" from
+        // NeonCXX.
+        std::string normalizedSplit = split;
+        if (split != "%u") {
+            normalizedSplit = escape(unescape(split));
+        }
+        res += normalizedSplit;
         ++it;
         if (!it.eof()) {
             res += '/';
