@@ -28,7 +28,7 @@ namespace SyncEvo {
 static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 }
 #define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
-#include "gdbus-cxx-bridge.h"
+#include "gdbus/gdbus-cxx-bridge.h"
 
 #include <syncevo/Logging.h>
 #include <syncevo/LogStdout.h>
@@ -186,7 +186,7 @@ class DBusSyncException : public DBusCXXException, public Exception
 
 /**
  * exceptions classes deriving from DBusException
- * org.syncevolution.NoSuchConfig 
+ * org.syncevolution.NoSuchConfig
  */
 class NoSuchConfig: public DBusSyncException
 {
@@ -199,7 +199,7 @@ class NoSuchConfig: public DBusSyncException
 };
 
 /**
- * org.syncevolution.NoSuchSource 
+ * org.syncevolution.NoSuchSource
  */
 class NoSuchSource : public DBusSyncException
 {
@@ -212,7 +212,7 @@ class NoSuchSource : public DBusSyncException
 };
 
 /**
- * org.syncevolution.InvalidCall 
+ * org.syncevolution.InvalidCall
  */
 class InvalidCall : public DBusSyncException
 {
@@ -226,7 +226,7 @@ class InvalidCall : public DBusSyncException
 
 /**
  * org.syncevolution.SourceUnusable
- * CheckSource will use this when the source cannot be used for whatever reason 
+ * CheckSource will use this when the source cannot be used for whatever reason
  */
 class SourceUnusable : public DBusSyncException
 {
@@ -312,7 +312,7 @@ public:
         m_callback = 0;
     }
 
-private:       
+private:
     static gboolean triggered(gpointer data)
     {
         Timeout *me = static_cast<Timeout *>(data);
@@ -362,7 +362,7 @@ public:
     void getDatabases(const string &sourceName, SourceDatabases_t &databases);
 
 private:
-    /** 
+    /**
      * This virtual function is used to let subclass set
      * filters to config. Only used internally.
      * Return true if filters exists and have been set.
@@ -384,14 +384,14 @@ SE_END_CXX
 namespace GDBusCXX {
 
 /**
- * dbus_traits for SourceDatabase. Put it here for 
+ * dbus_traits for SourceDatabase. Put it here for
  * avoiding polluting gxx-dbus-bridge.h
  */
 template<> struct dbus_traits<ReadOperations::SourceDatabase> :
     public dbus_struct_traits<ReadOperations::SourceDatabase,
                               dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_name,
                               dbus_member<ReadOperations::SourceDatabase, std::string, &ReadOperations::SourceDatabase::m_uri,
-                              dbus_member_single<ReadOperations::SourceDatabase, bool, &ReadOperations::SourceDatabase::m_isDefault> > > >{}; 
+                              dbus_member_single<ReadOperations::SourceDatabase, bool, &ReadOperations::SourceDatabase::m_isDefault> > > >{};
 
 }
 SE_BEGIN_CXX
@@ -399,7 +399,7 @@ SE_BEGIN_CXX
 /**
  * Automatic termination and track clients
  * The dbus server will automatic terminate once it is idle in a given time.
- * If any attached clients or connections, it never terminate. 
+ * If any attached clients or connections, it never terminate.
  * Once no actives, timer is started to detect the time of idle.
  * Note that there will be less-than TERM_INTERVAL inaccuracy in seconds,
  * that's because we do check every TERM_INTERVAL seconds.
@@ -469,14 +469,14 @@ class AutoTerm {
     }
 
     //increase the actives objects
-    void ref(int refs = 1) {  
-        m_refs += refs; 
+    void ref(int refs = 1) {
+        m_refs += refs;
         reset();
     }
 
     //decrease the actives objects
-    void unref(int refs = 1) { 
-        m_refs -= refs; 
+    void unref(int refs = 1) {
+        m_refs -= refs;
         if(m_refs <= 0) {
            m_refs = 0;
         }
@@ -517,7 +517,7 @@ class InfoReq;
 
 /**
  * Query bluetooth devices from org.bluez
- * The basic workflow is: 
+ * The basic workflow is:
  * 1) get default adapter from bluez by calling 'DefaultAdapter' method of org.bluez.Manager
  * 2) get all devices of the adapter by calling 'ListDevices' method of org.bluez.Adapter
  * 3) iterate all devices and get properties for each one by calling 'GetProperties' method of org.bluez.Device.
@@ -534,7 +534,7 @@ class InfoReq;
  */
 class BluezManager : public DBusRemoteObject {
 public:
-    BluezManager(DBusServer &server); 
+    BluezManager(DBusServer &server);
 
     virtual const char *getDestination() const {return "org.bluez";}
     virtual const char *getPath() const {return "/";}
@@ -546,14 +546,14 @@ private:
     class BluezDevice;
 
     /**
-     * This class acts a proxy to org.bluez.Adapter. 
+     * This class acts a proxy to org.bluez.Adapter.
      * Call methods of org.bluez.Adapter and listen signals from it
      * to get devices list and track its changes
      */
     class BluezAdapter: public DBusRemoteObject
     {
      public:
-        BluezAdapter (BluezManager &manager, const string &path); 
+        BluezAdapter (BluezManager &manager, const string &path);
 
         virtual const char *getDestination() const {return "org.bluez";}
         virtual const char *getPath() const {return m_path.c_str();}
@@ -601,7 +601,7 @@ private:
     };
 
     /**
-     * This class acts a proxy to org.bluez.Device. 
+     * This class acts a proxy to org.bluez.Device.
      * Call methods of org.bluez.Device and listen signals from it
      * to get properties of device and track its changes
      */
@@ -671,7 +671,7 @@ private:
 };
 
 /**
- * a listener to listen changes of session 
+ * a listener to listen changes of session
  * currently only used to track changes of running a sync in a session
  */
 class SessionListener
@@ -696,9 +696,9 @@ public:
 /**
  * Manager to manage automatic sync.
  * Once a configuration is enabled with automatic sync, possibly http or obex-bt or both, one or more
- * tasks for different URLs are added in the task map, grouped by their intervals. 
+ * tasks for different URLs are added in the task map, grouped by their intervals.
  * A task have to be checked whether there is an existing same task in the working queue. Once actived,
- * it is put in the working queue. 
+ * it is put in the working queue.
  *
  * At any time, there is at most one session for the first task. Once it is active by DBusServer,
  * we prepare it and make it ready to run. After completion, a new session is created again for the
@@ -710,7 +710,7 @@ public:
  * Here there are 3 scenarios which have been considered to do automatic sync right now:
  * 1) For a config enables autosync, an interval has passed.
  * 2) Once users log in or resume and an interval has passed. Not implemented yet.
- * 3) Evolution data server notify any changes. Not implemented yet. 
+ * 3) Evolution data server notify any changes. Not implemented yet.
  */
 class AutoSyncManager : public SessionListener
 {
@@ -723,7 +723,7 @@ class AutoSyncManager : public SessionListener
      * more than one sync URLs. The difference from 'syncURL' property here is
      * that different URLs may have different transports with different statuses.
      * Another reason is that SyncContext only use the first URL if it has many sync
-     * URLs when running. So we split, schedule and process them one by one. 
+     * URLs when running. So we split, schedule and process them one by one.
      * Each task contains one peer name, peer duration and peer url.
      * It is created in initialization and may be updated due to config change.
      * It is scheduled by AutoSyncManager to be put in the working queue.
@@ -775,7 +775,7 @@ class AutoSyncManager : public SessionListener
 
      public:
         AutoSyncTaskList(AutoSyncManager &manager, unsigned int interval)
-            : m_manager(manager), m_interval(interval), m_source(0) 
+            : m_manager(manager), m_interval(interval), m_source(0)
         {}
         ~AutoSyncTaskList() {
             if(m_source) {
@@ -801,19 +801,19 @@ class AutoSyncManager : public SessionListener
     typedef std::map<unsigned int, boost::shared_ptr<AutoSyncTaskList> > PeerMap;
     PeerMap m_peerMap;
 
-    /** 
+    /**
      * a working queue that including tasks which are pending for doing sync.
      * Tasks here are picked from m_peerMap and scheduled to do auto sync */
     list<AutoSyncTask> m_workQueue;
 
     /**
-     * the current active task, which may own a session 
+     * the current active task, which may own a session
      */
     boost::shared_ptr<AutoSyncTask> m_activeTask;
 
-    /** 
+    /**
      * the only session created for active task and is put in the session queue.
-     * at most one session at any time no matter how many tasks we actually have 
+     * at most one session at any time no matter how many tasks we actually have
      */
     boost::shared_ptr<Session> m_session;
 
@@ -823,7 +823,7 @@ class AutoSyncManager : public SessionListener
     /** used to send notifications */
     boost::shared_ptr<NotificationManagerBase> m_notificationManager;
 
-    /** 
+    /**
      * It reads all peers which are enabled to do auto sync and store them in
      * the m_peerMap and then add timeout sources in the main loop to schedule
      * auto sync tasks.
@@ -836,7 +836,7 @@ class AutoSyncManager : public SessionListener
     /** check m_peerMap and put all tasks in it to working queue */
     void scheduleAll();
 
-    /** 
+    /**
      * add an auto sync task in the working queue
      * Do check before adding a task in the working queue
      * Return true if the task is added in the list.
@@ -846,7 +846,7 @@ class AutoSyncManager : public SessionListener
     /** find an auto sync task in the working queue or is running */
     bool findTask(const AutoSyncTask &syncTask);
 
-    /** 
+    /**
      * check whether a task is suitable to put in the working queue
      * Manager has the information needed to make the decision
      */
@@ -855,7 +855,7 @@ class AutoSyncManager : public SessionListener
  public:
     AutoSyncManager(DBusServer &server)
         : m_server(server), m_syncSuccessStart(false)
-    { 
+    {
         init();
     }
 
@@ -867,7 +867,7 @@ class AutoSyncManager : public SessionListener
     bool preventTerm() { return !m_peerMap.empty(); }
 
     /**
-     * called when a config is changed. This causes re-loading the config 
+     * called when a config is changed. This causes re-loading the config
      */
     void update(const string &configName);
 
@@ -877,7 +877,7 @@ class AutoSyncManager : public SessionListener
     /* Is there anything with automatic syncing waiting for its time to run? */
     bool hasAutoConfigs() { return !m_peerMap.empty(); }
 
-    /** 
+    /**
      * pick the front task from the working queue and create a session for it.
      * The session won't be used to do sync until it is active so 'prepare' is
      * for calling 'sync' to make the session ready to run
@@ -892,8 +892,8 @@ class AutoSyncManager : public SessionListener
     void prepare();
 
     /**
-     * Acts as a session listener to track sync statuses if the session is 
-     * belonged to auto sync manager to do auto sync. 
+     * Acts as a session listener to track sync statuses if the session is
+     * belonged to auto sync manager to do auto sync.
      * Two methods to listen to session sync changes.
      */
     virtual void syncSuccessStart();
@@ -903,7 +903,7 @@ class AutoSyncManager : public SessionListener
 /**
  * A timer helper to check whether now is timeout according to
  * user's setting. Timeout is calculated in milliseconds
- */ 
+ */
 class Timer {
     timeval m_startTime;  ///< start time
     unsigned long m_timeoutMs; ///< timeout in milliseconds, set by user
@@ -915,7 +915,7 @@ class Timer {
     unsigned long duration(const timeval &minuend, const timeval &subtrahend)
     {
         unsigned long result = 0;
-        if(minuend.tv_sec > subtrahend.tv_sec || 
+        if(minuend.tv_sec > subtrahend.tv_sec ||
                 (minuend.tv_sec == subtrahend.tv_sec && minuend.tv_usec > subtrahend.tv_usec)) {
             result = minuend.tv_sec - subtrahend.tv_sec;
             result *= 1000;
@@ -942,13 +942,13 @@ class Timer {
     /**
      * check whether it is timeout
      */
-    bool timeout() 
+    bool timeout()
     {
         return timeout(m_timeoutMs);
     }
 
-    /** 
-     * check whether the duration timer records is longer than the given duration 
+    /**
+     * check whether the duration timer records is longer than the given duration
      */
     bool timeout(unsigned long timeoutMs)
     {
@@ -1018,11 +1018,11 @@ class PresenceStatus {
     void init();
 
     /* Implement DBusServer::checkPresence*/
-    void checkPresence (const string &peer, string& status, std::vector<std::string> &transport); 
+    void checkPresence (const string &peer, string& status, std::vector<std::string> &transport);
 
     void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config);
 
-    void updatePresenceStatus (bool httpPresence, bool btPresence); 
+    void updatePresenceStatus (bool httpPresence, bool btPresence);
     void updatePresenceStatus (bool newStatus, TransportType type);
 
     bool getHttpPresence() { return m_httpPresence; }
@@ -1090,7 +1090,7 @@ public:
       };
 public:
     NetworkManagerClient(DBusServer& server);
-    
+
     virtual const char *getDestination() const {
         return "org.freedesktop.NetworkManager";
     }
@@ -1134,7 +1134,7 @@ private:
     private:
         NetworkManagerClient &m_manager;
     };
-    
+
     DBusServer &m_server;
     DBusConnectionPtr m_networkManagerConn;
     SignalWatch1<uint32_t> m_stateChanged;
@@ -1351,7 +1351,7 @@ class DBusServer : public DBusObjectHelper,
         ops.getDatabases(sourceName, databases);
     }
 
-    void getConfigs(bool getTemplates, 
+    void getConfigs(bool getTemplates,
                     std::vector<std::string> &configNames)
     {
         ReadOperations ops("", *this);
@@ -1422,14 +1422,14 @@ class DBusServer : public DBusObjectHelper,
     PresenceStatus m_presence;
     ConnmanClient m_connman;
     NetworkManagerClient m_networkManager;
-    
+
     /** manager to automatic sync */
     AutoSyncManager m_autoSync;
 
     //automatic termination
     AutoTerm m_autoTerm;
 
-    //records the parent logger, dbus server acts as logger to 
+    //records the parent logger, dbus server acts as logger to
     //send signals to clients and put logs in the parent logger.
     LoggerBase &m_parentLogger;
 
@@ -1527,7 +1527,7 @@ public:
     void addTimeout(const boost::function<bool ()> &callback,
                     int seconds);
 
-    boost::shared_ptr<InfoReq> createInfoReq(const string &type, 
+    boost::shared_ptr<InfoReq> createInfoReq(const string &type,
                                              const std::map<string, string> &parameters,
                                              const Session *session);
     void autoTermRef(int counts = 1) { m_autoTerm.ref(counts); }
@@ -1566,8 +1566,8 @@ public:
 
     /** emit a presence signal */
     void emitPresence(const string &server, const string &status, const string &transport)
-    { 
-        presence(server, status, transport); 
+    {
+        presence(server, status, transport);
     }
 
     /**
@@ -1785,13 +1785,13 @@ public:
      * Ask password from gnome keyring, if not found, empty string
      * is returned
      */
-    string askPassword(const string &passwordName, 
-                       const string &descr, 
+    string askPassword(const string &passwordName,
+                       const string &descr,
                        const ConfigPasswordKey &key);
 
     //save password to gnome keyring, if not successful, false is returned.
-    bool savePassword(const string &passwordName, 
-                      const string &password, 
+    bool savePassword(const string &passwordName,
+                      const string &password,
                       const ConfigPasswordKey &key);
 
     /**
@@ -1804,7 +1804,7 @@ public:
  * A running sync engine which keeps answering on D-Bus whenever
  * possible and updates the Session while the sync runs.
  */
-class DBusSync : public DBusUserInterface 
+class DBusSync : public DBusUserInterface
 {
     Session &m_session;
 
@@ -1824,7 +1824,7 @@ protected:
     virtual void reportStepCmd(sysync::uInt16 stepCmd);
 
     /** called when a sync is successfully started */
-    virtual void syncSuccessStart(); 
+    virtual void syncSuccessStart();
 
     /**
      * Implement checkForSuspend and checkForAbort.
@@ -1833,16 +1833,16 @@ protected:
      * whether suspend/abort were requested via
      * signals, using SyncContext's signal handling.
      */
-    virtual bool checkForSuspend(); 
+    virtual bool checkForSuspend();
     virtual bool checkForAbort();
     virtual int sleep(int intervals);
 
     /**
      * Implement askPassword to retrieve password in gnome-keyring.
-     * If not found, then ask it from dbus clients. 
+     * If not found, then ask it from dbus clients.
      */
-    string askPassword(const string &passwordName, 
-                       const string &descr, 
+    string askPassword(const string &passwordName,
+                       const string &descr,
                        const ConfigPasswordKey &key);
 };
 
@@ -1860,29 +1860,29 @@ public:
     enum ProgressStep {
         /** an invalid step */
         PRO_SYNC_INVALID = 0,
-        /** 
-         * sync prepare step: do some preparations and checkings, 
+        /**
+         * sync prepare step: do some preparations and checkings,
          * such as source preparation, engine preparation
          */
         PRO_SYNC_PREPARE,
-        /** 
-         * session init step: transport connection set up, 
+        /**
+         * session init step: transport connection set up,
          * start a session, authentication and dev info generation
          * normally it needs one time syncML messages send-receive.
-         * Sometimes it may need messages send/receive many times to 
+         * Sometimes it may need messages send/receive many times to
          * handle authentication
          */
         PRO_SYNC_INIT,
-        /** 
+        /**
          * prepare sync data and send data, also receive data from server.
-         * Also may need send/receive messages more than one time if too 
+         * Also may need send/receive messages more than one time if too
          * much data.
          * assume 5 items to be sent by default
          */
         PRO_SYNC_DATA,
-        /** 
-         * item receive handling, send client's status to server and 
-         * close the session 
+        /**
+         * item receive handling, send client's status to server and
+         * close the session
          * assume 5 items to be received by default
          */
         PRO_SYNC_UNINIT,
@@ -1890,10 +1890,10 @@ public:
         PRO_SYNC_TOTAL
     };
     /**
-     * internal mode to represent whether it is possible that data is sent to 
+     * internal mode to represent whether it is possible that data is sent to
      * server or received from server. This could help remove some incorrect
-     * hypothesis. For example, if only to client, then it is no data item 
-     * sending to server. 
+     * hypothesis. For example, if only to client, then it is no data item
+     * sending to server.
      */
     enum InternalMode {
         INTERNAL_NONE = 0,
@@ -1905,7 +1905,7 @@ public:
     /**
      * treat a one-time send-receive without data items
      * as an internal standard unit.
-     * below are ratios of other operations compared to one 
+     * below are ratios of other operations compared to one
      * standard unit.
      * These ratios might be dynamicall changed in the future.
      */
@@ -1927,9 +1927,9 @@ public:
     ProgressData(int32_t &progress);
 
     /**
-     * change the big step 
+     * change the big step
      */
-    void setStep(ProgressStep step); 
+    void setStep(ProgressStep step);
 
     /**
      * calc progress when a message is sent
@@ -1937,11 +1937,11 @@ public:
     void sendStart();
 
     /**
-     * calc progress when a message is received from server 
+     * calc progress when a message is received from server
      */
     void receiveEnd();
 
-    /** 
+    /**
      * re-calc progress proportions according to syncmode hint
      * typically, if only refresh-from-client, then
      * client won't receive data items.
@@ -1949,7 +1949,7 @@ public:
     void addSyncMode(SyncMode mode);
 
     /**
-     * calc progress when data prepare for sending 
+     * calc progress when data prepare for sending
      */
     void itemPrepare();
 
@@ -1982,7 +1982,7 @@ private:
     ProgressStep m_step;
     /** count of message send/receive in current step. Cleared in the start of a new step */
     int m_sendCounts;
-    /** internal sync mode combinations */ 
+    /** internal sync mode combinations */
     int m_internalMode;
     /** proportions when each step is end */
     float m_syncProp[PRO_SYNC_TOTAL];
@@ -2074,7 +2074,7 @@ class Session : public DBusObjectHelper,
         SYNC_ABORT, ///< sync is aborting
         SYNC_SUSPEND, ///< sync is suspending
         SYNC_DONE, ///< sync is done
-        SYNC_ILLEGAL 
+        SYNC_ILLEGAL
     };
 
     /** current sync status */
@@ -2315,8 +2315,8 @@ public:
     void sourceProgress(sysync::TProgressEventEnum type,
                         SyncSource &source,
                         int32_t extra1, int32_t extra2, int32_t extra3);
-    string askPassword(const string &passwordName, 
-                       const string &descr, 
+    string askPassword(const string &passwordName,
+                       const string &descr,
                        const ConfigPasswordKey &key);
 
     /** Session.GetFlags() */
@@ -2345,7 +2345,7 @@ public:
      * If yes, 'waiting' will be appended as specifiers in the status string.
      * see GetStatus documentation.
      */
-    void setStepInfo(bool isWaiting); 
+    void setStepInfo(bool isWaiting);
 
     /** sync is successfully started */
     void syncSuccessStart();
@@ -2362,7 +2362,7 @@ private:
 };
 
 /**
- * a wrapper to maintain the execution of command line 
+ * a wrapper to maintain the execution of command line
  * arguments from dbus clients. It is in charge of
  * redirecting output of cmd line to logging system.
  */
@@ -2606,7 +2606,7 @@ public:
  * needs and basically becomes unusuable once the connection dies.
  *
  * Reconnecting is not currently supported.
- */ 
+ */
 class DBusTransportAgent : public TransportAgent
 {
     GMainLoop *m_loop;
@@ -2678,7 +2678,7 @@ public:
             const string &type,
             const InfoMap &parameters,
             const Session *session,
-            uint32_t timeout = 120); 
+            uint32_t timeout = 120);
 
     ~InfoReq();
 
@@ -3042,7 +3042,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
             // insert a 'dir' as an ID for the current report
             aReport.insert(pair<string, string>("dir", dir));
             SyncReport report;
-            // peerName is also extracted from the dir 
+            // peerName is also extracted from the dir
             string peerName = client.readSessionInfo(dir,report);
             boost::shared_ptr<SyncConfig> config(new SyncConfig(m_configName));
             string storedPeerName = config->getPeerName();
@@ -3136,12 +3136,12 @@ inline const char *passwdStr(const std::string &str)
     return str.empty() ? NULL : str.c_str();
 }
 
-string DBusUserInterface::askPassword(const string &passwordName, 
-                                      const string &descr, 
-                                      const ConfigPasswordKey &key) 
+string DBusUserInterface::askPassword(const string &passwordName,
+                                      const string &descr,
+                                      const ConfigPasswordKey &key)
 {
     string password;
-    
+
 #ifdef USE_KDE_KWALLET
     /** here we use server sync url without protocol prefix and
      * user account name as the key in the keyring */
@@ -3149,37 +3149,37 @@ string DBusUserInterface::askPassword(const string &passwordName,
      * or Map<QString,QString> , the former is used */
     bool isKde=true;
     #ifdef USE_GNOME_KEYRING
-    //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session 
+    //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session
     //and Call
     if(getenv("KDE_FULL_SESSION"))
       isKde=false;
-    #endif   
+    #endif
     if (isKde){
-	QString walletPassword;
+        QString walletPassword;
         QString walletKey = QString(passwdStr(key.user)) + ',' +
-			    QString(passwdStr(key.domain))+ ','+
-			    QString(passwdStr(key.server))+','+
-			    QString(passwdStr(key.object))+','+
-			    QString(passwdStr(key.protocol))+','+
-			    QString(passwdStr(key.authtype))+','+
-			    QString::number(key.port);
-                                                          
-	    
-	    QString wallet_name = KWallet::Wallet::NetworkWallet();
-	    //QString folder = QString::fromUtf8("Syncevolution");
-	    const QLatin1String folder("Syncevolution");
-    	  	      
-	    if (!KWallet::Wallet::keyDoesNotExist(wallet_name, folder, walletKey)){
-	    KWallet::Wallet *wallet = KWallet::Wallet::openWallet(wallet_name, -1, KWallet::Wallet::Synchronous); 
-	
-	    if (wallet){
-	      if (wallet->setFolder(folder))                
-                if (wallet->readPassword(walletKey, walletPassword) == 0)
-		  return walletPassword.toStdString();
-		 }    
-	  }        
+                            QString(passwdStr(key.domain))+ ','+
+                            QString(passwdStr(key.server))+','+
+                            QString(passwdStr(key.object))+','+
+                            QString(passwdStr(key.protocol))+','+
+                            QString(passwdStr(key.authtype))+','+
+                            QString::number(key.port);
 
-    }    
+
+            QString wallet_name = KWallet::Wallet::NetworkWallet();
+            //QString folder = QString::fromUtf8("Syncevolution");
+            const QLatin1String folder("Syncevolution");
+
+            if (!KWallet::Wallet::keyDoesNotExist(wallet_name, folder, walletKey)){
+            KWallet::Wallet *wallet = KWallet::Wallet::openWallet(wallet_name, -1, KWallet::Wallet::Synchronous);
+
+            if (wallet){
+              if (wallet->setFolder(folder))
+                if (wallet->readPassword(walletKey, walletPassword) == 0)
+                  return walletPassword.toStdString();
+                 }
+          }
+
+    }
 #endif
 
 #ifdef USE_GNOME_KEYRING
@@ -3214,8 +3214,8 @@ string DBusUserInterface::askPassword(const string &passwordName,
     return "";
 }
 
-bool DBusUserInterface::savePassword(const string &passwordName, 
-                                     const string &password, 
+bool DBusUserInterface::savePassword(const string &passwordName,
+                                     const string &password,
                                      const ConfigPasswordKey &key)
 {
 
@@ -3225,43 +3225,43 @@ bool DBusUserInterface::savePassword(const string &passwordName,
          * but currently only use passed key instead */
     bool isKde=true;
     #ifdef USE_GNOME_KEYRING
-    //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session 
+    //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session
     //and Call
     if(getenv("KDE_FULL_SESSION"))
       isKde=false;
     #endif
     if(isKde){
         // write password to keyring
-	QString walletKey = QString(passwdStr(key.user)) + ',' +
-			    QString(passwdStr(key.domain))+ ','+
-			    QString(passwdStr(key.server))+','+
-			    QString(passwdStr(key.object))+','+
-			    QString(passwdStr(key.protocol))+','+
-			    QString(passwdStr(key.authtype))+','+
-			    QString::number(key.port);
-	QString walletPassword = password.c_str();
-	
-	 bool write_success = false;
-	 QString wallet_name = KWallet::Wallet::NetworkWallet();
-	 //QString folder = QString::fromUtf8("Syncevolution");
-	 const QLatin1String folder("Syncevolution");
-	 
-	 KWallet::Wallet *wallet = KWallet::Wallet::openWallet(wallet_name, -1, 
+        QString walletKey = QString(passwdStr(key.user)) + ',' +
+                            QString(passwdStr(key.domain))+ ','+
+                            QString(passwdStr(key.server))+','+
+                            QString(passwdStr(key.object))+','+
+                            QString(passwdStr(key.protocol))+','+
+                            QString(passwdStr(key.authtype))+','+
+                            QString::number(key.port);
+        QString walletPassword = password.c_str();
+
+         bool write_success = false;
+         QString wallet_name = KWallet::Wallet::NetworkWallet();
+         //QString folder = QString::fromUtf8("Syncevolution");
+         const QLatin1String folder("Syncevolution");
+
+         KWallet::Wallet *wallet = KWallet::Wallet::openWallet(wallet_name, -1,
                                             KWallet::Wallet::Synchronous);
-	  if (wallet){
-	    if (!wallet->hasFolder(folder))
-	      wallet->createFolder(folder);
-	    
-	    if (wallet->setFolder(folder))	      
-	      if (wallet->writePassword(walletKey, walletPassword) == 0)
-                write_success = true;            
-	    
-	}
-	
+          if (wallet){
+            if (!wallet->hasFolder(folder))
+              wallet->createFolder(folder);
+
+            if (wallet->setFolder(folder))
+              if (wallet->writePassword(walletKey, walletPassword) == 0)
+                write_success = true;
+
+        }
+
         if(!write_success) {
             SyncContext::throwError("Try to save " + passwordName + " in kde-wallet but got an error. ");
-        } 
-        
+        }
+
     return write_success;
     }
 #endif
@@ -3292,7 +3292,7 @@ bool DBusUserInterface::savePassword(const string &passwordName,
         value << (int)result;
         SyncContext::throwError("Try to save " + passwordName + " in gnome-keyring but get an error. The gnome-keyring error code is " + value.str() + ".");
 #endif
-    } 
+    }
     return true;
 #else
 #endif
@@ -3355,7 +3355,7 @@ DBusSync::DBusSync(const std::string &config,
         QDBusConnection::sessionBus().unregisterService("org.syncevolution.syncevolution-"+QString::number(getpid()));
     }
     #endif
-  
+
 }
 
 boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
@@ -3434,16 +3434,16 @@ int DBusSync::sleep(int intervals)
         time_t now = time(NULL);
         if (checkForSuspend() || checkForAbort()) {
             return  (intervals - now + start);
-        } 
+        }
         if (intervals - now + start <= 0) {
             return intervals - now +start;
         }
     }
 }
 
-string DBusSync::askPassword(const string &passwordName, 
-                             const string &descr, 
-                             const ConfigPasswordKey &key) 
+string DBusSync::askPassword(const string &passwordName,
+                             const string &descr,
+                             const ConfigPasswordKey &key)
 {
     string password = DBusUserInterface::askPassword(passwordName, descr, key);
 
@@ -3497,7 +3497,7 @@ static void copyProperty(const StringPair &keyvalue,
                                                      value.c_str(), name.c_str(), error.c_str()));
     }
     filter.insert(keyvalue);
-}                        
+}
 
 static void setSyncFilters(const ReadOperations::Config_t &config,FilterConfigNode::ConfigFilter &syncFilter,std::map<std::string, FilterConfigNode::ConfigFilter> &sourceFilters)
 {
@@ -3583,7 +3583,7 @@ void Session::setConfig(bool update, bool temporary,
             }
         } else {
             m_syncFilter = syncFilter;
-            m_sourceFilters = sourceFilters;            
+            m_sourceFilters = sourceFilters;
         }
         m_tempConfig = true;
     } else {
@@ -4150,7 +4150,7 @@ void Session::run()
                 break;
             }
             case OP_RESTORE:
-                m_sync->restore(m_restoreDir, 
+                m_sync->restore(m_restoreDir,
                                 m_restoreBefore ? SyncContext::DATABASE_BEFORE_SYNC : SyncContext::DATABASE_AFTER_SYNC);
                 break;
             case OP_CMDLINE:
@@ -4185,7 +4185,7 @@ void Session::run()
         m_syncStatus = SYNC_DONE;
         m_stepIsWaiting = false;
         fireStatus(true);
-    } 
+    }
 }
 
 bool Session::setFilters(SyncConfig &config)
@@ -4217,8 +4217,8 @@ void Session::restore(const string &dir, bool before, const std::vector<std::str
         string msg = StringPrintf("restore started, cannot restore again");
         SE_THROW_EXCEPTION(InvalidCall, msg);
     } else if (m_runOperation != OP_NULL) {
-        // actually this never happen currently, for during the real restore process, 
-        // it never poll the sources in default main context 
+        // actually this never happen currently, for during the real restore process,
+        // it never poll the sources in default main context
         string msg = StringPrintf("%s started, cannot restore", runOpToString(m_runOperation).c_str());
         SE_THROW_EXCEPTION(InvalidCall, msg);
     }
@@ -4289,7 +4289,7 @@ void Session::execute(const vector<string> &args, const map<string, string> &var
 }
 
 inline void insertPair(std::map<string, string> &params,
-                       const string &key, 
+                       const string &key,
                        const string &value)
 {
     if(!value.empty()) {
@@ -4297,9 +4297,9 @@ inline void insertPair(std::map<string, string> &params,
     }
 }
 
-string Session::askPassword(const string &passwordName, 
-                             const string &descr, 
-                             const ConfigPasswordKey &key) 
+string Session::askPassword(const string &passwordName,
+                             const string &descr,
+                             const ConfigPasswordKey &key)
 {
     std::map<string, string> params;
     insertPair(params, "description", descr);
@@ -4319,7 +4319,7 @@ string Session::askPassword(const string &passwordName,
         } else {
             return it->second;
         }
-    } 
+    }
 
     SE_THROW_EXCEPTION_STATUS(StatusException, "can't get the password from clients. The password request is '" + req->getStatusStr() + "'", STATUS_PASSWORD_TIMEOUT);
     return "";
@@ -4348,14 +4348,14 @@ SessionListener* Session::addListener(SessionListener *listener)
 }
 
 /************************ ProgressData implementation *****************/
-ProgressData::ProgressData(int32_t &progress) 
+ProgressData::ProgressData(int32_t &progress)
     : m_progress(progress),
     m_step(PRO_SYNC_INVALID),
     m_sendCounts(0),
     m_internalMode(INTERNAL_NONE)
 {
     /**
-     * init default units of each step 
+     * init default units of each step
      */
     float totalUnits = 0.0;
     for(int i = 0; i < PRO_SYNC_TOTAL; i++) {
@@ -4365,7 +4365,7 @@ ProgressData::ProgressData(int32_t &progress)
     }
     m_propOfUnit = 1.0 / totalUnits;
 
-    /** 
+    /**
      * init default sync step proportions. each step stores proportions of
      * its previous steps and itself.
      */
@@ -4376,13 +4376,13 @@ ProgressData::ProgressData(int32_t &progress)
     m_syncProp[PRO_SYNC_TOTAL - 1] = 1.0;
 }
 
-void ProgressData::setStep(ProgressStep step) 
+void ProgressData::setStep(ProgressStep step)
 {
     if(m_step != step) {
         /** if state is changed, progress is set as the end of current step*/
         m_progress = 100.0 * m_syncProp[(int)m_step];
         m_step = step; ///< change to new state
-        m_sendCounts = 0; ///< clear send/receive counts 
+        m_sendCounts = 0; ///< clear send/receive counts
         m_source = ""; ///< clear source
     }
 }
@@ -4397,9 +4397,9 @@ void ProgressData::sendStart()
         m_syncUnits[(int)m_step] += 1;
         recalc();
     }
-    /** 
+    /**
      * If in the send operation of PRO_SYNC_UNINIT, it often takes extra time
-     * to send message due to items handling 
+     * to send message due to items handling
      */
     if(m_step == PRO_SYNC_UNINIT && m_syncUnits[(int)m_step] != MSG_SEND_RECEIVE_TIMES) {
         updateProg(DATA_PREPARE_RATIO);
@@ -4408,9 +4408,9 @@ void ProgressData::sendStart()
 
 void ProgressData::receiveEnd()
 {
-    /** 
+    /**
      * often receiveEnd is the last operation of each step by default.
-     * If more send/receive, then we need expand proportion of current 
+     * If more send/receive, then we need expand proportion of current
      * step and re-calc them
      */
     updateProg(m_syncUnits[(int)m_step]);
@@ -4452,7 +4452,7 @@ void ProgressData::itemPrepare()
 
 void ProgressData::itemReceive(const string &source, int count, int total)
 {
-    /** 
+    /**
      * source is used to check whether a new source is received
      * If the first source, we compare its total number and default number
      * then re-calc sync units
@@ -4470,7 +4470,7 @@ void ProgressData::itemReceive(const string &source, int count, int total)
             m_syncUnits[PRO_SYNC_UNINIT] += ONEITEM_RECEIVE_RATIO * total;
             recalc();
         }
-    } 
+    }
     updateProg(ONEITEM_RECEIVE_RATIO);
 }
 
@@ -4497,7 +4497,7 @@ void ProgressData::recalc()
     }
 }
 
-void ProgressData::checkInternalMode() 
+void ProgressData::checkInternalMode()
 {
     if(!m_internalMode) {
         return;
@@ -4636,8 +4636,8 @@ void Connection::process(const Caller_t &caller,
                               message.first);
             } else if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
                 serverAlerted = true;
-            	sysync::SanPackage san;
-            	if (san.PassSan(const_cast<uint8_t *>(message.second), message.first, 2) || san.GetHeader()) {
+                sysync::SanPackage san;
+                if (san.PassSan(const_cast<uint8_t *>(message.second), message.first, 2) || san.GetHeader()) {
                     // We are very tolerant regarding the content of the message.
                     // If it doesn't parse, try to do something useful anyway.
                     // only for SAN 1.2, for SAN 1.0/1.1 we can not be sure
@@ -4645,8 +4645,8 @@ void Connection::process(const Caller_t &caller,
                     if (message_type == TransportAgent::m_contentTypeServerAlertedNotificationDS) {
                         config = "default";
                         SE_LOG_DEBUG(NULL, NULL, "SAN parsing failed, falling back to 'default' config");
-                    }  
-            	} else { //Server alerted notification case
+                    }
+                } else { //Server alerted notification case
                     // Extract server ID and match it against a server
                     // configuration.  Multiple different peers might use the
                     // same serverID ("PC Suite"), so check properties of the
@@ -4684,7 +4684,7 @@ void Connection::process(const Caller_t &caller,
                                     if (url.find ("obex-bt://") ==0 && url.substr(strlen("obex-bt://"), url.npos) == m_peerBtAddr) {
                                         config = server.first;
                                         break;
-                                    } 
+                                    }
                                 }
                                 if (!config.empty()){
                                     break;
@@ -4820,7 +4820,7 @@ void Connection::process(const Caller_t &caller,
         }
         case PROCESSING:
             throw std::runtime_error("protocol error: already processing a message");
-            break;        
+            break;
         case WAITING:
             m_incomingMsg = SharedBuffer(reinterpret_cast<const char *>(message.second),
                                          message.first);
@@ -5166,7 +5166,7 @@ DBusTransportAgent::Status DBusTransportAgent::wait(bool noReply)
             SE_THROW_EXCEPTION(TransportException,
                                "internal error: transport has shut down, can no longer receive reply");
         }
-        
+
         return CLOSED;
     default:
         SE_THROW_EXCEPTION(TransportException,
@@ -5357,7 +5357,7 @@ void ConnmanClient::getPropCb (const std::map <std::string,
         if (entry.first == "ConnectedTechnologies") {
             std::vector <std::string> connected = boost::get <std::vector <std::string> > (entry.second);
             BOOST_FOREACH (std::string tech, connected) {
-                if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet") 
+                if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet")
                 || boost::iequals (tech, "wimax")) {
                     httpPresence = true;
                     break;
@@ -5388,7 +5388,7 @@ void ConnmanClient::propertyChanged(const string &name,
         httpChanged=true;
         vector<string> connected = boost::get<vector<string> >(prop);
         BOOST_FOREACH (std::string tech, connected) {
-            if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet") 
+            if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet")
                     || boost::iequals (tech, "wimax")) {
                 httpPresence=true;
                 break;
@@ -5602,7 +5602,7 @@ void DBusServer::connect(const Caller_t &caller,
                  caller.c_str(),
                  c->getPath(),
                  c->m_description.c_str());
-        
+
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
                                                  watch);
@@ -5621,7 +5621,7 @@ void DBusServer::startSessionWithFlags(const Caller_t &caller,
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
                                                  watch);
-    std::string new_session = getNextSession();   
+    std::string new_session = getNextSession();
     boost::shared_ptr<Session> session = Session::createSession(*this,
                                                                 "is this a client or server session?",
                                                                 server,
@@ -5655,9 +5655,9 @@ void DBusServer::getSessions(std::vector<DBusObject_t> &sessions)
 }
 
 DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration) :
-    DBusObjectHelper(conn.get(), 
-                     "/org/syncevolution/Server", 
-                     "org.syncevolution.Server", 
+    DBusObjectHelper(conn.get(),
+                     "/org/syncevolution/Server",
+                     "org.syncevolution.Server",
                      boost::bind(&DBusServer::autoTermCallback, this)),
     m_loop(loop),
     m_lastSession(time(NULL)),
@@ -5808,10 +5808,10 @@ void DBusServer::run()
             // pick one task and create a session
             m_autoSync.startTask();
         }
-        // Make sure check whether m_activeSession is owned by autosync 
+        // Make sure check whether m_activeSession is owned by autosync
         // Otherwise activeSession is owned by AutoSyncManager but it never
         // be ready to run. Because methods of Session, like 'sync', are able to be
-        // called when it is active.  
+        // called when it is active.
         if (!shutdownRequested && m_autoSync.hasActiveSession())
         {
             // if the autosync is the active session, then invoke 'sync'
@@ -6034,7 +6034,7 @@ boost::shared_ptr<InfoReq> DBusServer::createInfoReq(const string &type,
                                                      const std::map<string, string> &parameters,
                                                      const Session *session)
 {
-    boost::shared_ptr<InfoReq> infoReq(new InfoReq(*this, type, parameters, session)); 
+    boost::shared_ptr<InfoReq> infoReq(new InfoReq(*this, type, parameters, session));
     boost::weak_ptr<InfoReq> item(infoReq) ;
     m_infoReqMap.insert(pair<string, boost::weak_ptr<InfoReq> >(infoReq->getId(), item));
     return infoReq;
@@ -6047,11 +6047,11 @@ std::string DBusServer::getNextInfoReq()
 
 void DBusServer::emitInfoReq(const InfoReq &req)
 {
-    infoRequest(req.getId(), 
-                req.getSessionPath(), 
-                req.getInfoStateStr(), 
-                req.getHandler(), 
-                req.getType(), 
+    infoRequest(req.getId(),
+                req.getSessionPath(),
+                req.getInfoStateStr(),
+                req.getHandler(),
+                req.getType(),
                 req.getParam());
 }
 
@@ -6075,7 +6075,7 @@ void DBusServer::getDeviceList(SyncConfig::DeviceList &devices)
     devices = m_syncDevices;
 }
 
-void DBusServer::addPeerTempl(const string &templName, 
+void DBusServer::addPeerTempl(const string &templName,
                               const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl)
 {
     std::string lower = templName;
@@ -6139,7 +6139,7 @@ void DBusServer::updateDevice(const string &deviceId,
     SyncConfig::DeviceList::iterator it;
     for(it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
         if(boost::iequals(it->m_deviceId, deviceId)) {
-            (*it) = device; 
+            (*it) = device;
             templatesChanged();
             break;
         }
@@ -6162,7 +6162,7 @@ void DBusServer::messagev(Level level,
     va_end(argsCopy);
 
     // prefix is used to set session path
-    // for general server output, the object path field is dbus server 
+    // for general server output, the object path field is dbus server
     // the object path can't be empty for object paths prevent using empty string.
     string strLevel = Logger::levelToStr(level);
     if(m_activeSession) {
@@ -6179,7 +6179,7 @@ InfoReq::InfoReq(DBusServer &server,
                  const Session *session,
                  uint32_t timeout) :
     m_server(server), m_session(session), m_infoState(IN_REQ),
-    m_status(ST_RUN), m_type(type), m_param(parameters), 
+    m_status(ST_RUN), m_type(type), m_param(parameters),
     m_timeout(timeout), m_timer(m_timeout * 1000)
 {
     m_id = m_server.getNextInfoReq();
@@ -6218,7 +6218,7 @@ InfoReq::Status InfoReq::wait(InfoMap &response, uint32_t interval)
     // give a chance to check whether it has been timeout
     check();
     if(m_status == ST_RUN) {
-        guint checkSource = g_timeout_add_seconds(interval, 
+        guint checkSource = g_timeout_add_seconds(interval,
                                                   (GSourceFunc) checkCallback,
                                                   static_cast<gpointer>(this));
         while(m_status == ST_RUN) {
@@ -6362,7 +6362,7 @@ void BluezManager::defaultAdapterCb(const DBusObject_t &adapter, const string &e
         m_done = true;
         return;
     }
-    m_adapter.reset(new BluezAdapter(*this, adapter)); 
+    m_adapter.reset(new BluezAdapter(*this, adapter));
 }
 
 BluezManager::BluezAdapter::BluezAdapter(BluezManager &manager, const string &path)
@@ -6531,7 +6531,7 @@ void AutoSyncManager::initConfig(const string &configName)
         any = true;
     } else {
         vector<string> options;
-        boost::split(options, autoSync, boost::is_any_of(",")); 
+        boost::split(options, autoSync, boost::is_any_of(","));
         BOOST_FOREACH(string op, options) {
             if(boost::iequals(op, "http")) {
                 http = true;
@@ -6721,7 +6721,7 @@ void AutoSyncManager::startTask()
     if(hasTask() && !m_session) {
         m_activeTask.reset(new AutoSyncTask(m_workQueue.front()));
         m_workQueue.pop_front();
-        string newSession = m_server.getNextSession();   
+        string newSession = m_server.getNextSession();
         m_session = Session::createSession(m_server,
                                            "",
                                            m_activeTask->m_peer,

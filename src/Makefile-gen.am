@@ -15,14 +15,6 @@ nobase_dist_template_DATA =
 CLEANFILES =
 BUILT_SOURCES =
 
-service_in_files = org.syncevolution.service.in
-if COND_DBUS
-servicedir = $(DBUS_SERVICES_DIR)
-service_DATA = $(service_in_files:.service.in=.service)
-$(service_DATA): $(service_in_files) Makefile
-	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
-SUBDIRS += gdbus
-endif
 if ENABLE_GNOME_BLUETOOTH_PANEL
 SUBDIRS += gnome-bluetooth
 endif
@@ -34,37 +26,24 @@ nobase_dist_template_DATA += $(TEMPLATE_FILES)
 else
 SUBDIRS += $(SYNTHESIS_SUBDIR_INCLUDES)
 endif
+if COND_DBUS
+SUBDIRS += gdbus dbus-server
+endif
 SUBDIRS += dbus
 if COND_GUI
 SUBDIRS += gtk-ui
 else
 endif
 
-DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui gnome-bluetooth synthesis-includes
+DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) dbus-server gtk-ui gnome-bluetooth synthesis-includes
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
 
 DISTCLEANFILES += synccompare
-CLEANFILES += libstdc++.a client-test $(CLIENT_LIB_TEST_FILES) \
-	org.syncevolution.service \
-    $(SYNCEVO_DBUS_SERVER_DESKTOP) $(SYNCEVO_DBUS_SERVER_SCRIPT)
-
-SYNCEVO_DBUS_SERVER_SCRIPT = syncevo-dbus-server-startup.sh
-SYNCEVO_DBUS_SERVER_SCRIPT_IN = $(SYNCEVO_DBUS_SERVER_SCRIPT).in
-
-autostartdir = $(sysconfdir)/xdg/autostart
-SYNCEVO_DBUS_SERVER_DESKTOP = syncevo-dbus-server.desktop
-SYNCEVO_DBUS_SERVER_DESKTOP_IN = $(SYNCEVO_DBUS_SERVER_DESKTOP).in
+CLEANFILES += libstdc++.a client-test $(CLIENT_LIB_TEST_FILES)
 
 if COND_DBUS
-libexec_PROGRAMS += syncevo-dbus-server
 nodist_bin_SCRIPTS += syncevo-http-server
-libexec_SCRIPTS += $(SYNCEVO_DBUS_SERVER_SCRIPT)
-$(libexec_SCRIPTS): $(SYNCEVO_DBUS_SERVER_SCRIPT_IN) Makefile
-	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
-autostart_DATA = $(SYNCEVO_DBUS_SERVER_DESKTOP)
-$(autostart_DATA): $(SYNCEVO_DBUS_SERVER_DESKTOP_IN) Makefile
-	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< > $@
 endif
 syncevo-http-server: $(srcdir)/../test/syncevo-http-server.py
 	cp $< $@
@@ -81,7 +60,7 @@ else
 SYNCEVOLUTION_LDADD += $(SYNCSOURCES)
 SYNCEVOLUTION_DEP += $(SYNCSOURCES)
 endif
-EXTRA_DIST = shlibs.local Makefile-gen.am $(service_in_files) $(SYNCEVO_DBUS_SERVER_SCRIPT_IN) $(SYNCEVO_DBUS_SERVER_DESKTOP_IN)
+EXTRA_DIST = shlibs.local Makefile-gen.am
 
 TEMPLATE_FILES = @TEMPLATE_FILES@
 templatedir = $(datadir)/syncevolution/
@@ -181,7 +160,11 @@ distclean-local:
 	rm -rf $(SYNTHESIS_SUBDIR)
 	rm -rf $(CLEAN_CLIENT_SRC)
 
+# Do the linking here, as with all SyncEvolution executables.
+# Sources are compiled in dbus-server.
 if COND_DBUS
+libexec_PROGRAMS += syncevo-dbus-server
+
 syncevo_dbus_server_SOURCES = \
 	NotificationBackendBase.h \
 	NotificationBackendNoop.h \
@@ -194,17 +177,16 @@ syncevo_dbus_server_SOURCES = \
 	NotificationManagerBase.h \
 	NotificationManagerFactory.h \
 	NotificationManagerFactory.cpp \
-	syncevo-dbus-server.cpp \
 	$(CORE_SOURCES)
 if ENABLE_UNIT_TESTS
 nodist_syncevo_dbus_server_SOURCES = ../test/test.cpp
 endif
 
-syncevo_dbus_server_LDADD = gdbus/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS)
+syncevo_dbus_server_LDADD = dbus-server/libsyncevodbusserver.la gdbus/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS)
 syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(srcdir)/gdbus $(AM_CPPFLAGS) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
 syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(KEYRING_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(KDE_KWALLET_CFLAGS)
 syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS) $(LIBSOUP_LIBS)
-syncevo_dbus_server_DEPENDENCIES = gdbus/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+syncevo_dbus_server_DEPENDENCIES = dbus-server/libsyncevodbusserver.la gdbus/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
 endif
 
 # With --disable-shared autotools links against libfunambol.a which does not

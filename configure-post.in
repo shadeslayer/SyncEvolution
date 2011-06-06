@@ -158,7 +158,23 @@ SYNCEVOLUTION_LIBS=`pwd`/src/syncevo/libsyncevolution.la
 AC_SUBST(SYNCEVOLUTION_CFLAGS)
 AC_SUBST(SYNCEVOLUTION_LIBS)
 
-AC_CONFIG_FILES(Makefile src/dbus/interfaces/Makefile src/gdbus/Makefile src/dbus/Makefile src/dbus/glib/Makefile src/Makefile src/syncevo/Makefile src/syncevo/syncevolution.pc src/syncevo/configs/Makefile src/synthesis-includes/Makefile src/gtk-ui/Makefile po/Makefile.in test/Makefile src/dbus/glib/syncevo-dbus.pc)
+AC_CONFIG_FILES(
+        Makefile
+        src/dbus/interfaces/Makefile
+        src/gdbus/Makefile
+        src/dbus/Makefile
+        src/dbus/glib/Makefile
+        src/dbus-server/Makefile
+        src/Makefile
+        src/syncevo/Makefile
+        src/syncevo/syncevolution.pc
+        src/syncevo/configs/Makefile
+        src/synthesis-includes/Makefile
+        src/gtk-ui/Makefile
+        po/Makefile.in
+        test/Makefile
+        src/dbus/glib/syncevo-dbus.pc)
+
 AC_OUTPUT
 
 echo
