@@ -12,6 +12,8 @@ libsyncevodbusserver_la_SOURCES = \
 	../NotificationManagerBase.h \
 	../NotificationManagerFactory.h \
 	../NotificationManagerFactory.cpp \
+	common.h		\
+	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp
 
 libsyncevodbusserver_la_LIBADD = $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS) $(LIBSOUP_LIBS)
