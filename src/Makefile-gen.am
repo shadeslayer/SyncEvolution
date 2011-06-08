@@ -268,7 +268,7 @@ $(TEST_FILES_GENERATED):
 	@ set -e; \
 	patchfile=$(srcdir)/../test/$@.patch; \
 	basefile=$(srcdir)/../test/$(basename $(basename $@)); \
-	( [ ! $@ -ot $$patchfile ] && [ ! $@ -ot $$basefile ] && echo "   $@ up-to-date" ) || \
+	( [ -e $@ ] && [ ! $@ -ot $$patchfile ] && [ ! $@ -ot $$basefile ] && echo "   $@ up-to-date" ) || \
 	( echo "   generating $@ by applying $$patchfile to $$basefile" && \
 	  (echo '*** foo'; echo '--- bar'; cat $$patchfile) && [ -s $$patchfile ] | patch -s -o $@ $$basefile && \
           ( if [ $$basefile -ot $$patchfile ]; then \
