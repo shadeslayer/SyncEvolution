@@ -157,6 +157,22 @@ bool ButeoBridge::init()
                               // are different!)
             sources[0] = "calendar";
             sources[1] = "addressbook";
+        } else if (profile == "google-contacts") {
+            // configure SyncML
+            m_config = "google";
+            Cmdline sync(std::cout, std::cerr,
+                         "buteo-sync",
+                         "--template", "Google",
+                         "--sync-property", "printChanges=0",
+                         "--sync-property", "dumpData=0",
+                         m_config.c_str(),
+                         NULL);
+            bool res = sync.parse() && sync.run();
+            if (!res) {
+                SE_THROW("client configuration failed");
+            } else {
+                return true;
+            }
         } else {
             return false;
         }

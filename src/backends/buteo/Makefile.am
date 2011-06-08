@@ -13,6 +13,8 @@ if ENABLE_BUTEO
 nobase_dist_profiles_DATA = \
     profiles/sync/google-calendar.xml \
     profiles/service/google-calendar.xml \
+    profiles/sync/google-contacts.xml \
+    profiles/service/google-contacts.xml \
     profiles/sync/yahoo.xml \
     profiles/service/yahoo.xml \
     profiles/client/syncevo-buteo.xml
