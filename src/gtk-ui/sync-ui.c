@@ -2048,7 +2048,7 @@ get_config_for_config_widget_cb (SyncevoServer *server,
                                  GError *error,
                                  config_data *c_data)
 {
-    char *ready, *is_peer, *url;
+    char *ready, *is_peer, *url, *type;
 
     c_data->data->service_list_updates_left--;
 
@@ -2062,10 +2062,17 @@ get_config_for_config_widget_cb (SyncevoServer *server,
     syncevo_config_get_value (config, NULL, "ConsumerReady", &ready);
     syncevo_config_get_value (config, NULL, "PeerIsClient", &is_peer);
     syncevo_config_get_value (config, NULL, "syncURL", &url);
+    syncevo_config_get_value (config, NULL, "peerType", &type);
 
-    if (g_strcmp0 ("1", ready) != 0) {
+    
+    if (g_strcmp0 ("1", ready) != 0 ||
+        (type && g_strcmp0 ("WebDAV", type)) ||
+        g_str_has_prefix (url, "local://@")) {
+
         /* Ignore existing configs and templates unless they are
-           explicitly marked as "ConsumerReady. */
+           explicitly marked as "ConsumerReady. 
+           Also ignore webdav  (and the local syncs used for webdav)
+           for now */
     } else if (is_peer && g_strcmp0 ("1", is_peer) == 0) {
         if (url) {
             SyncConfigWidget *w;
