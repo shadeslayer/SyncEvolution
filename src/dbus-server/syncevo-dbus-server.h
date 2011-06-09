@@ -29,7 +29,6 @@ SE_BEGIN_CXX
 
 /* FIXME: There were static within the cpp file. Need to make these non-global. */
 bool shutdownRequested = false;
-LogRedirect *redirectPtr;
 
 /**
  * Encapsulates startup environment from main() and can do execve()
@@ -1391,7 +1390,7 @@ public:
     GMainLoop *getLoop() { return m_loop; }
 
     /** process D-Bus calls until the server is ready to quit */
-    void run();
+    void run(LogRedirect &redirect);
 
     /**
      * look up client by its ID
@@ -2234,7 +2233,7 @@ public:
      * transfer control to the session for the duration of the sync,
      * returns when the sync is done (successfully or unsuccessfully)
      */
-    void run();
+    void run(LogRedirect &redirect);
 
     /**
      * called when the session is ready to run (true) or
@@ -2386,7 +2385,7 @@ public:
     {}
 
     bool parse() { return m_cmdline.parse(); }
-    void run()
+    void run(LogRedirect &redirect)
     {
         //temporarily set environment variables and restore them after running
         list<boost::shared_ptr<ScopedEnvChange> > changes;
@@ -2401,12 +2400,12 @@ public:
             }
 
         } catch (...) {
-            redirectPtr->flush();
+            redirect.flush();
             throw;
         }
         // always forward all currently pending redirected output
         // before closing the session
-        redirectPtr->flush();
+        redirect.flush();
     }
 
     bool configWasModified() { return m_cmdline.configWasModified(); }

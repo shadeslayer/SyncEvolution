@@ -1369,7 +1369,7 @@ void Session::sourceProgress(sysync::TProgressEventEnum type,
     }
 }
 
-void Session::run()
+void Session::run(LogRedirect &redirect)
 {
     if (m_runOperation != OP_NULL) {
         try {
@@ -1404,7 +1404,7 @@ void Session::run()
                 break;
             case OP_CMDLINE:
                 try {
-                    m_cmdline->run();
+                    m_cmdline->run(redirect);
                 } catch (...) {
                     SyncMLStatus status = Exception::handle();
                     if (!m_error) {
@@ -2991,7 +2991,7 @@ void DBusServer::fileModified()
     m_shutdownSession->shutdownFileModified();
 }
 
-void DBusServer::run()
+void DBusServer::run(LogRedirect &redirect)
 {
     // This has the intended side effect that it loads everything into
     // memory which might be dynamically loadable, like backend
@@ -3042,7 +3042,7 @@ void DBusServer::run()
             try {
                 // ensure that the session doesn't go away
                 m_syncSession.swap(session);
-                m_activeSession->run();
+                m_activeSession->run(redirect);
             } catch (const std::exception &ex) {
                 SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
             } catch (...) {
@@ -4148,7 +4148,6 @@ int main(int argc, char **argv, char **envp)
         signal(SIGINT, niam);
 
         LogRedirect redirect(true);
-        redirectPtr = &redirect;
 
         // make daemon less chatty - long term this should be a command line option
         LoggerBase::instance().setLevel(getenv("SYNCEVOLUTION_DEBUG") ?
@@ -4168,7 +4167,7 @@ int main(int argc, char **argv, char **envp)
         server.activate();
 
         SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);
-        server.run();
+        server.run(redirect);
         SE_LOG_INFO(NULL, NULL, "%s: terminating",  argv[0]);
 	return 0;
     } catch ( const std::exception &ex ) {
