@@ -269,6 +269,7 @@ $(TEST_FILES_GENERATED):
 	patchfile=$(srcdir)/../test/$@.patch; \
 	basefile=$(srcdir)/../test/$(basename $(basename $@)); \
 	( [ -e $@ ] && [ ! $@ -ot $$patchfile ] && [ ! $@ -ot $$basefile ] && echo "   $@ up-to-date" ) || \
+	( [ ! -s $$patchfile ] && echo "   copy $$basefile to $@ because patch file is empty" && cp $$basefile $@ ) || \
 	( echo "   generating $@ by applying $$patchfile to $$basefile" && \
 	  (echo '*** foo'; echo '--- bar'; cat $$patchfile) | patch -s -o $@ $$basefile && \
           ( if [ $$basefile -ot $$patchfile ]; then \
