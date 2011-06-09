@@ -954,7 +954,7 @@ void Session::sync(const std::string &mode, const SourceModes_t &source_modes)
 
     // now that we have a DBusSync object, return from the main loop
     // and once that is done, transfer control to that object
-    g_main_loop_quit(loop);
+    g_main_loop_quit(m_server.getLoop());
 }
 
 void Session::abort()
@@ -1187,7 +1187,7 @@ bool Session::shutdownServer()
     } else {
         // leave server now
         shutdownRequested = true;
-        g_main_loop_quit(loop);
+        g_main_loop_quit(m_server.getLoop());
         SE_LOG_INFO(NULL, NULL, "server shutting down because files loaded into memory were modified on disk");
     }
 
@@ -1417,7 +1417,7 @@ void Session::run()
                 // block until time for shutdown or restart if no
                 // shutdown requested already
                 if (!shutdownRequested) {
-                    g_main_loop_run(loop);
+                    g_main_loop_run(m_server.getLoop());
                 }
                 break;
             default:
@@ -1497,7 +1497,7 @@ void Session::restore(const string &dir, bool before, const std::vector<std::str
     fireProgress(true);
     fireStatus(true);
 
-    g_main_loop_quit(loop);
+    g_main_loop_quit(m_server.getLoop());
 }
 
 string Session::runOpToString(RunOperation op)
@@ -1534,7 +1534,7 @@ void Session::execute(const vector<string> &args, const map<string, string> &var
     }
 
     m_runOperation = OP_CMDLINE;
-    g_main_loop_quit(loop);
+    g_main_loop_quit(m_server.getLoop());
 }
 
 inline void insertPair(std::map<string, string> &params,
@@ -2923,7 +2923,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     m_connman(*this),
     m_networkManager(*this),
     m_autoSync(*this),
-    m_autoTerm(m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
+    m_autoTerm(m_loop, m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
     m_parentLogger(LoggerBase::instance())
 {
     struct timeval tv;
@@ -4087,6 +4087,7 @@ void AutoSyncManager::AutoSyncTaskList::scheduleTaskList()
 }
 
 /**************************** main *************************/
+static GMainLoop *loop = NULL;
 
 void niam(int sig)
 {

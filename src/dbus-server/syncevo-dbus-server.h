@@ -28,7 +28,6 @@ using namespace SyncEvo;
 SE_BEGIN_CXX
 
 /* FIXME: There were static within the cpp file. Need to make these non-global. */
-GMainLoop *loop = NULL;
 bool shutdownRequested = false;
 LogRedirect *redirectPtr;
 
@@ -335,6 +334,7 @@ SE_BEGIN_CXX
  * that's because we do check every TERM_INTERVAL seconds.
  */
 class AutoTerm {
+    GMainLoop *m_loop;
     int m_refs;
     time_t m_interval;
     guint m_checkSource;
@@ -354,7 +354,7 @@ class AutoTerm {
                 // yes, shut down event loop and daemon
                 SE_LOG_DEBUG(NULL, NULL, "terminating because not in use and idle for more than %ld seconds", (long)at->m_interval);
                 shutdownRequested = true;
-                g_main_loop_quit(loop);
+                g_main_loop_quit(at->getLoop());
             } else {
                 // check again later
                 SE_LOG_DEBUG(NULL, NULL, "not terminating because last used %ld seconds ago, check again in %ld seconds",
@@ -376,7 +376,8 @@ class AutoTerm {
      * constructor
      * If interval is less than 0, it means 'unlimited' and never terminate
      */
-    AutoTerm(int interval) :
+    AutoTerm(GMainLoop *loop, int interval) :
+        m_loop(loop),
         m_refs(0),
         m_checkSource(0),
         m_lastUsed(0)
@@ -397,6 +398,9 @@ class AutoTerm {
             g_source_remove(m_checkSource);
         }
     }
+
+    /** access to the GMainLoop. */
+    GMainLoop *getLoop() { return m_loop; }
 
     //increase the actives objects
     void ref(int refs = 1) {
