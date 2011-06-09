@@ -2066,8 +2066,8 @@ get_config_for_config_widget_cb (SyncevoServer *server,
 
     
     if (g_strcmp0 ("1", ready) != 0 ||
-        (type && g_strcmp0 ("WebDAV", type)) ||
-        g_str_has_prefix (url, "local://@")) {
+        (type && g_strcmp0 ("WebDAV", type) == 0) ||
+        (url && g_str_has_prefix (url, "local://@"))) {
 
         /* Ignore existing configs and templates unless they are
            explicitly marked as "ConsumerReady. 
