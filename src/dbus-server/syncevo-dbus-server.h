@@ -27,9 +27,6 @@ using namespace SyncEvo;
 
 SE_BEGIN_CXX
 
-/* FIXME: There were static within the cpp file. Need to make these non-global. */
-bool shutdownRequested = false;
-
 /**
  * Encapsulates startup environment from main() and can do execve()
  * with it later on. Assumes that argv[0] is the executable to run.
@@ -334,6 +331,7 @@ SE_BEGIN_CXX
  */
 class AutoTerm {
     GMainLoop *m_loop;
+    bool &m_shutdownRequested;
     int m_refs;
     time_t m_interval;
     guint m_checkSource;
@@ -352,7 +350,7 @@ class AutoTerm {
             if (at->m_lastUsed + at->m_interval <= now) {
                 // yes, shut down event loop and daemon
                 SE_LOG_DEBUG(NULL, NULL, "terminating because not in use and idle for more than %ld seconds", (long)at->m_interval);
-                shutdownRequested = true;
+                at->m_shutdownRequested = true;
                 g_main_loop_quit(at->getLoop());
             } else {
                 // check again later
@@ -375,8 +373,9 @@ class AutoTerm {
      * constructor
      * If interval is less than 0, it means 'unlimited' and never terminate
      */
-    AutoTerm(GMainLoop *loop, int interval) :
+AutoTerm(GMainLoop *loop, bool &shutdownRequested, int interval) :
         m_loop(loop),
+        m_shutdownRequested(shutdownRequested),
         m_refs(0),
         m_checkSource(0),
         m_lastUsed(0)
@@ -1088,6 +1087,7 @@ class DBusServer : public DBusObjectHelper,
                    public LoggerBase
 {
     GMainLoop *m_loop;
+    bool &m_shutdownRequested;
     uint32_t m_lastSession;
     typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
     Clients_t m_clients;
@@ -1383,7 +1383,10 @@ class DBusServer : public DBusObjectHelper,
     static bool sessionExpired(const boost::shared_ptr<Session> &session);
 
 public:
-    DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration);
+    DBusServer(GMainLoop *loop,
+               bool &shutdownRequested,
+               const DBusConnectionPtr &conn,
+               int duration);
     ~DBusServer();
 
     /** access to the GMainLoop reference used by this DBusServer instance */

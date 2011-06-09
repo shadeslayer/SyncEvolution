@@ -1186,7 +1186,7 @@ bool Session::shutdownServer()
         restart->restart();
     } else {
         // leave server now
-        shutdownRequested = true;
+        m_server.m_shutdownRequested = true;
         g_main_loop_quit(m_server.getLoop());
         SE_LOG_INFO(NULL, NULL, "server shutting down because files loaded into memory were modified on disk");
     }
@@ -1416,7 +1416,7 @@ void Session::run(LogRedirect &redirect)
             case OP_SHUTDOWN:
                 // block until time for shutdown or restart if no
                 // shutdown requested already
-                if (!shutdownRequested) {
+                if (!m_server.m_shutdownRequested) {
                     g_main_loop_run(m_server.getLoop());
                 }
                 break;
@@ -2903,12 +2903,16 @@ void DBusServer::getSessions(std::vector<DBusObject_t> &sessions)
     }
 }
 
-DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration) :
+DBusServer::DBusServer(GMainLoop *loop,
+                       bool &shutdownRequested,
+                       const DBusConnectionPtr &conn,
+                       int duration) :
     DBusObjectHelper(conn.get(),
                      "/org/syncevolution/Server",
                      "org.syncevolution.Server",
                      boost::bind(&DBusServer::autoTermCallback, this)),
     m_loop(loop),
+    m_shutdownRequested(shutdownRequested),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
     m_lastInfoReq(0),
@@ -2923,7 +2927,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     m_connman(*this),
     m_networkManager(*this),
     m_autoSync(*this),
-    m_autoTerm(m_loop, m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
+    m_autoTerm(m_loop, m_shutdownRequested, m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
     m_parentLogger(LoggerBase::instance())
 {
     struct timeval tv;
@@ -3026,7 +3030,7 @@ void DBusServer::run(LogRedirect &redirect)
         }
     }
 
-    while (!shutdownRequested) {
+    while (!m_shutdownRequested) {
         if (!m_activeSession ||
             !m_activeSession->readyToRun()) {
             g_main_loop_run(m_loop);
@@ -3052,7 +3056,7 @@ void DBusServer::run(LogRedirect &redirect)
             dequeue(session.get());
         }
 
-        if (!shutdownRequested && m_autoSync.hasTask()) {
+        if (!m_shutdownRequested && m_autoSync.hasTask()) {
             // if there is at least one pending task and no session is created for auto sync,
             // pick one task and create a session
             m_autoSync.startTask();
@@ -3061,7 +3065,7 @@ void DBusServer::run(LogRedirect &redirect)
         // Otherwise activeSession is owned by AutoSyncManager but it never
         // be ready to run. Because methods of Session, like 'sync', are able to be
         // called when it is active.
-        if (!shutdownRequested && m_autoSync.hasActiveSession())
+        if (!m_shutdownRequested && m_autoSync.hasActiveSession())
         {
             // if the autosync is the active session, then invoke 'sync'
             // to make it ready to run
@@ -4088,6 +4092,7 @@ void AutoSyncManager::AutoSyncTaskList::scheduleTaskList()
 
 /**************************** main *************************/
 static GMainLoop *loop = NULL;
+static bool shutdownRequested = false;
 
 void niam(int sig)
 {
@@ -4163,7 +4168,7 @@ int main(int argc, char **argv, char **envp)
             err.throwFailure("b_dbus_setup_bus()", " failed - server already running?");
         }
 
-        SyncEvo::DBusServer server(loop, conn, duration);
+        SyncEvo::DBusServer server(loop, shutdownRequested, conn, duration);
         server.activate();
 
         SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);
