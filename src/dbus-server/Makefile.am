@@ -13,6 +13,7 @@ libsyncevodbusserver_la_SOURCES = \
 	../NotificationManagerFactory.h \
 	../NotificationManagerFactory.cpp \
 	common.h		\
+	main.cpp		\
 	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp
 

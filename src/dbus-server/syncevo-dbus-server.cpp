@@ -1183,7 +1183,7 @@ bool Session::shutdownServer()
     if (autosync) {
         // suitable exec() call which restarts the server using the same environment it was in
         // when it was started
-        restart->restart();
+        m_server.m_restart->restart();
     } else {
         // leave server now
         m_server.m_shutdownRequested = true;
@@ -1597,6 +1597,12 @@ SessionListener* Session::addListener(SessionListener *listener)
 }
 
 /************************ ProgressData implementation *****************/
+const float ProgressData::PRO_SYNC_PREPARE_RATIO = 0.2;
+const float ProgressData::DATA_PREPARE_RATIO = 0.10;
+const float ProgressData::ONEITEM_SEND_RATIO = 0.05;
+const float ProgressData::ONEITEM_RECEIVE_RATIO = 0.05;
+const float ProgressData::CONN_SETUP_RATIO = 0.5;
+
 ProgressData::ProgressData(int32_t &progress)
     : m_progress(progress),
     m_step(PRO_SYNC_INVALID),
@@ -2905,6 +2911,7 @@ void DBusServer::getSessions(std::vector<DBusObject_t> &sessions)
 
 DBusServer::DBusServer(GMainLoop *loop,
                        bool &shutdownRequested,
+                       boost::shared_ptr<Restart> &restart,
                        const DBusConnectionPtr &conn,
                        int duration) :
     DBusObjectHelper(conn.get(),
@@ -2913,6 +2920,7 @@ DBusServer::DBusServer(GMainLoop *loop,
                      boost::bind(&DBusServer::autoTermCallback, this)),
     m_loop(loop),
     m_shutdownRequested(shutdownRequested),
+    m_restart(restart),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
     m_lastInfoReq(0),
@@ -4090,96 +4098,4 @@ void AutoSyncManager::AutoSyncTaskList::scheduleTaskList()
     g_main_loop_quit(m_manager.m_server.getLoop());
 }
 
-/**************************** main *************************/
-static GMainLoop *loop = NULL;
-static bool shutdownRequested = false;
-
-void niam(int sig)
-{
-    shutdownRequested = true;
-    SyncContext::handleSignal(sig);
-    g_main_loop_quit (loop);
-}
-
-static bool parseDuration(int &duration, const char* value)
-{
-    if(value == NULL) {
-        return false;
-    } else if (boost::iequals(value, "unlimited")) {
-        duration = -1;
-        return true;
-    } else if ((duration = atoi(value)) > 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 SE_END_CXX
-
-int main(int argc, char **argv, char **envp)
-{
-    // remember environment for restart
-    restart.reset(new Restart(argv, envp));
-
-    int duration = 600;
-    int opt = 1;
-    while(opt < argc) {
-        if(argv[opt][0] != '-') {
-            break;
-        }
-        if (boost::iequals(argv[opt], "--duration") ||
-            boost::iequals(argv[opt], "-d")) {
-            opt++;
-            if(!parseDuration(duration, opt== argc ? NULL : argv[opt])) {
-                std::cout << argv[opt-1] << ": unknown parameter value or not set" << std::endl;
-                return false;
-            }
-        } else {
-            std::cout << argv[opt] << ": unknown parameter" << std::endl;
-            return false;
-        }
-        opt++;
-    }
-    try {
-        SyncContext::initMain("syncevo-dbus-server");
-
-        loop = g_main_loop_new (NULL, FALSE);
-
-        setvbuf(stderr, NULL, _IONBF, 0);
-        setvbuf(stdout, NULL, _IONBF, 0);
-
-        signal(SIGTERM, niam);
-        signal(SIGINT, niam);
-
-        LogRedirect redirect(true);
-
-        // make daemon less chatty - long term this should be a command line option
-        LoggerBase::instance().setLevel(getenv("SYNCEVOLUTION_DEBUG") ?
-                                        LoggerBase::DEBUG :
-                                        LoggerBase::INFO);
-
-        DBusErrorCXX err;
-        DBusConnectionPtr conn = b_dbus_setup_bus(DBUS_BUS_SESSION,
-                                                  "org.syncevolution",
-                                                  true,
-                                                  &err);
-        if (!conn) {
-            err.throwFailure("b_dbus_setup_bus()", " failed - server already running?");
-        }
-
-        SyncEvo::DBusServer server(loop, shutdownRequested, conn, duration);
-        server.activate();
-
-        SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);
-        server.run(redirect);
-        SE_LOG_INFO(NULL, NULL, "%s: terminating",  argv[0]);
-	return 0;
-    } catch ( const std::exception &ex ) {
-        SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
-    } catch (...) {
-        SE_LOG_ERROR(NULL, NULL, "unknown error");
-    }
-
-    return 1;
-}

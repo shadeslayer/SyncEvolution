@@ -73,10 +73,6 @@ public:
     }
 };
 
-/** initialized in main() */
-/* FIXME: The was static. Need to make this non-global */
-boost::shared_ptr<Restart> restart;
-
 /**
  * Anything that can be owned by a client, like a connection
  * or session.
@@ -1088,6 +1084,8 @@ class DBusServer : public DBusObjectHelper,
 {
     GMainLoop *m_loop;
     bool &m_shutdownRequested;
+    boost::shared_ptr<Restart> &m_restart;
+
     uint32_t m_lastSession;
     typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
     Clients_t m_clients;
@@ -1385,6 +1383,7 @@ class DBusServer : public DBusObjectHelper,
 public:
     DBusServer(GMainLoop *loop,
                bool &shutdownRequested,
+               boost::shared_ptr<Restart> &restart,
                const DBusConnectionPtr &conn,
                int duration);
     ~DBusServer();
@@ -1929,12 +1928,6 @@ private:
     /** current sync source */
     string m_source;
 };
-
-const float ProgressData::PRO_SYNC_PREPARE_RATIO = 0.2;
-const float ProgressData::DATA_PREPARE_RATIO = 0.10;
-const float ProgressData::ONEITEM_SEND_RATIO = 0.05;
-const float ProgressData::ONEITEM_RECEIVE_RATIO = 0.05;
-const float ProgressData::CONN_SETUP_RATIO = 0.5;
 
 class CmdlineWrapper;
 
