@@ -7,12 +7,13 @@ noinst_LTLIBRARIES = libgdbussyncevo.la
 endif
 
 libgdbussyncevo_la_SOURCES = debug.h debug.c mainloop.c object.c watch.c \
-    gdbus.h gdbus-cxx-bridge.h gdbus-cxx.h
+    gdbus.h gdbus-cxx-bridge.h gdbus-cxx-bridge.cpp gdbus-cxx.h
 libgdbussyncevo_la_LDFLAGS = -version-info 0:0:0 -export-symbols-regex b_dbus_.*
 
 libgdbussyncevo_la_LIBADD = @GLIB_LIBS@ @DBUS_LIBS@
 
-AM_CFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@
+AM_CFLAGS   = @GLIB_CFLAGS@ @DBUS_CFLAGS@
+AM_CXXFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@
 
 MAINTAINERCLEANFILES = Makefile.in
 
