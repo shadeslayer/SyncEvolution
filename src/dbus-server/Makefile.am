@@ -12,6 +12,8 @@ libsyncevodbusserver_la_SOURCES = \
 	../NotificationManagerBase.h \
 	../NotificationManagerFactory.h \
 	../NotificationManagerFactory.cpp \
+	bluez-manager.h		\
+	bluez-manager.cpp	\
 	common.h		\
 	main.cpp		\
 	syncevo-dbus-server.h	\
