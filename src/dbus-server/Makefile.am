@@ -17,7 +17,8 @@ libsyncevodbusserver_la_SOURCES = \
 	common.h		\
 	main.cpp		\
 	syncevo-dbus-server.h	\
-	syncevo-dbus-server.cpp
+	syncevo-dbus-server.cpp \
+	timer.h
 
 libsyncevodbusserver_la_LIBADD = $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS) $(LIBSOUP_LIBS)
 libsyncevodbusserver_la_CPPFLAGS = -DHAVE_CONFIG_H  -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\" -I$(top_srcdir)/src -I$(top_srcdir)/test -I$(top_srcdir) $(BACKEND_CPPFLAGS)

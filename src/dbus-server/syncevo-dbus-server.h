@@ -21,7 +21,9 @@
 #define SYNCEVO_DBUS_SERVER_H
 
 #include "common.h"
+
 #include "bluez-manager.h"
+#include "timer.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -672,64 +674,6 @@ class AutoSyncManager : public SessionListener
      */
     virtual void syncSuccessStart();
     virtual void syncDone(SyncMLStatus status);
-};
-
-/**
- * A timer helper to check whether now is timeout according to
- * user's setting. Timeout is calculated in milliseconds
- */
-class Timer {
-    timeval m_startTime;  ///< start time
-    unsigned long m_timeoutMs; ///< timeout in milliseconds, set by user
-
-    /**
-     * calculate duration between now and start time
-     * return value is in milliseconds
-     */
-    unsigned long duration(const timeval &minuend, const timeval &subtrahend)
-    {
-        unsigned long result = 0;
-        if(minuend.tv_sec > subtrahend.tv_sec ||
-                (minuend.tv_sec == subtrahend.tv_sec && minuend.tv_usec > subtrahend.tv_usec)) {
-            result = minuend.tv_sec - subtrahend.tv_sec;
-            result *= 1000;
-            result += (minuend.tv_usec - subtrahend.tv_usec) / 1000;
-        }
-        return result;
-    }
-
- public:
-    /**
-     * constructor
-     * @param timeoutMs timeout in milliseconds
-     */
-    Timer(unsigned long timeoutMs = 0) : m_timeoutMs(timeoutMs)
-    {
-        reset();
-    }
-
-    /**
-     * reset the timer and mark start time as current time
-     */
-    void reset() { gettimeofday(&m_startTime, NULL); }
-
-    /**
-     * check whether it is timeout
-     */
-    bool timeout()
-    {
-        return timeout(m_timeoutMs);
-    }
-
-    /**
-     * check whether the duration timer records is longer than the given duration
-     */
-    bool timeout(unsigned long timeoutMs)
-    {
-        timeval now;
-        gettimeofday(&now, NULL);
-        return duration(now, m_startTime) >= timeoutMs;
-    }
 };
 
 class PresenceStatus {
