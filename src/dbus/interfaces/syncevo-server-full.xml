@@ -190,6 +190,14 @@ sometimes also a beta or alpha suffix),
       </arg>
     </method>
 
+    <method name="NotificationAction">
+      <doc:doc>
+        <doc:description>
+          Launches sync-ui as a reaction of the user activating a notification.
+        </doc:description>
+      </doc:doc>
+    </method>
+
     <method name ="GetConfigs">
       <doc:doc><doc:description>
         <doc:para>
