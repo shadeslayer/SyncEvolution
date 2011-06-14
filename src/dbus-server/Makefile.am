@@ -21,6 +21,8 @@ libsyncevodbusserver_la_SOURCES = \
 	info-req.h		\
 	info-req.cpp		\
 	main.cpp		\
+	read-operations.h	\
+	read-operations.cpp	\
 	restart.h		\
 	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp \
