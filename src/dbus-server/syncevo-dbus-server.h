@@ -27,57 +27,12 @@
 #include "timer.h"
 #include "auto-term.h"
 #include "timeout.h"
+#include "restart.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
 
 SE_BEGIN_CXX
-
-/**
- * Encapsulates startup environment from main() and can do execve()
- * with it later on. Assumes that argv[0] is the executable to run.
- */
-class Restart
-{
-    vector<string> m_argv;
-    vector<string> m_env;
-
-    void saveArray(vector<string> &array, char **p)
-    {
-        while(*p) {
-            array.push_back(*p);
-            p++;
-        }
-    }
-
-    const char **createArray(const vector<string> &array)
-    {
-        const char **res = new const char *[(array.size() + 1)];
-        size_t i;
-        for (i = 0; i < array.size(); i++) {
-            res[i] = array[i].c_str();
-        }
-        res[i] = NULL;
-        return res;
-    }
-
-public:
-    Restart(char **argv, char **env)
-    {
-        saveArray(m_argv, argv);
-        saveArray(m_env, env);
-    }
-
-    void restart()
-    {
-        const char **argv = createArray(m_argv);
-        const char **env = createArray(m_env);
-        LogRedirect::reset();
-        if (execve(argv[0], (char *const *)argv, (char *const *)env)) {
-            SE_THROW(StringPrintf("restarting syncevo-dbus-server failed: %s", strerror(errno)));
-        }
-    }
-};
 
 /**
  * Anything that can be owned by a client, like a connection

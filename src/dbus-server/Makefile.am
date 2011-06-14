@@ -19,6 +19,7 @@ libsyncevodbusserver_la_SOURCES = \
 	info-req.h		\
 	info-req.cpp		\
 	main.cpp		\
+	restart.h		\
 	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp \
 	syncevo-exceptions.h	\
