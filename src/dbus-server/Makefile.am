@@ -16,6 +16,8 @@ libsyncevodbusserver_la_SOURCES = \
 	bluez-manager.h		\
 	bluez-manager.cpp	\
 	common.h		\
+	info-req.h		\
+	info-req.cpp		\
 	main.cpp		\
 	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp \
