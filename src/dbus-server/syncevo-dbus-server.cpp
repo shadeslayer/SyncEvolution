@@ -26,46 +26,6 @@ using namespace SyncEvo;
 
 SE_BEGIN_CXX
 
-/***************** Client implementation ****************/
-
-Client::~Client()
-{
-    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s is destructing", m_ID.c_str());
-
-    // explicitly detach all resources instead of just freeing the
-    // list, so that the special behavior for sessions in detach() is
-    // triggered
-    while (!m_resources.empty()) {
-        detach(m_resources.front().get());
-    }
-}
-
-void Client::detach(Resource *resource)
-{
-    for (Resources_t::iterator it = m_resources.begin();
-         it != m_resources.end();
-         ++it) {
-        if (it->get() == resource) {
-            if (it->unique()) {
-                boost::shared_ptr<Session> session = boost::dynamic_pointer_cast<Session>(*it);
-                if (session) {
-                    // give clients a chance to query the session
-                    m_server.delaySessionDestruction(session);
-                    // allow other sessions to start
-                    session->done();
-                }
-            }
-            // this will trigger removal of the resource if
-            // the client was the last remaining owner
-            m_resources.erase(it);
-            return;
-        }
-    }
-
-    SE_THROW_EXCEPTION(InvalidCall, "cannot detach from resource that client is not attached to");
-}
-
-
 /***************** ReadOperations implementation ****************/
 
 ReadOperations::ReadOperations(const std::string &config_name, DBusServer &server) :

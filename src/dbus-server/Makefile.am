@@ -15,6 +15,8 @@ libsyncevodbusserver_la_SOURCES = \
 	auto-term.h		\
 	bluez-manager.h		\
 	bluez-manager.cpp	\
+	client.h		\
+	client.cpp		\
 	common.h		\
 	info-req.h		\
 	info-req.cpp		\

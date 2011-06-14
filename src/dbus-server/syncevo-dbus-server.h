@@ -28,6 +28,7 @@
 #include "auto-term.h"
 #include "timeout.h"
 #include "restart.h"
+#include "client.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -45,7 +46,6 @@ public:
 
 class Session;
 class Connection;
-class Client;
 class DBusTransportAgent;
 class DBusUserInterface;
 class DBusServer;
@@ -1019,104 +1019,6 @@ public:
                           va_list args);
 
     virtual bool isProcessSafe() const { return false; }
-};
-
-/**
- * Tracks a single client and all sessions and connections that it is
- * connected to. Referencing them ensures that they stay around as
- * long as needed.
- */
-class Client
-{
-    DBusServer &m_server;
-
-    typedef std::list< boost::shared_ptr<Resource> > Resources_t;
-    Resources_t m_resources;
-
-    /** counts how often a client has called Attach() without Detach() */
-    int m_attachCount;
-
-    /** current client setting for notifications (see HAS_NOTIFY) */
-    bool m_notificationsEnabled;
-
-public:
-    const Caller_t m_ID;
-
-    Client(DBusServer &server,
-           const Caller_t &ID) :
-        m_server(server),
-        m_attachCount(0),
-        m_notificationsEnabled(true),
-        m_ID(ID)
-    {}
-    ~Client();
-
-    void increaseAttachCount() { ++m_attachCount; }
-    void decreaseAttachCount() { --m_attachCount; }
-    int getAttachCount() const { return m_attachCount; }
-
-    void setNotificationsEnabled(bool enabled) { m_notificationsEnabled = enabled; }
-    bool getNotificationsEnabled() const { return m_notificationsEnabled; }
-
-    /**
-     * Attach a specific resource to this client. As long as the
-     * resource is attached, it cannot be freed. Can be called
-     * multiple times, which means that detach() also has to be called
-     * the same number of times to finally detach the resource.
-     */
-    void attach(boost::shared_ptr<Resource> resource)
-    {
-        m_resources.push_back(resource);
-    }
-
-    /**
-     * Detach once from the given resource. Has to be called as
-     * often as attach() to really remove all references to the
-     * session. It's an error to call detach() more often than
-     * attach().
-     */
-    void detach(Resource *resource);
-
-    void detach(boost::shared_ptr<Resource> resource)
-    {
-        detach(resource.get());
-    }
-
-    /**
-     * Remove all references to the given resource, regardless whether
-     * it was referenced not at all or multiple times.
-     */
-    void detachAll(Resource *resource) {
-        Resources_t::iterator it = m_resources.begin();
-        while (it != m_resources.end()) {
-            if (it->get() == resource) {
-                it = m_resources.erase(it);
-            } else {
-                ++it;
-            }
-        }
-    }
-    void detachAll(boost::shared_ptr<Resource> resource)
-    {
-        detachAll(resource.get());
-    }
-
-    /**
-     * return corresponding smart pointer for a certain resource,
-     * empty pointer if not found
-     */
-    boost::shared_ptr<Resource> findResource(Resource *resource)
-    {
-        for (Resources_t::iterator it = m_resources.begin();
-             it != m_resources.end();
-             ++it) {
-            if (it->get() == resource) {
-                // got it
-                return *it;
-            }
-        }
-        return boost::shared_ptr<Resource>();
-    }
 };
 
 struct SourceStatus
