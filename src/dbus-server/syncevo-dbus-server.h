@@ -186,67 +186,6 @@ static DBusMessage* SyncEvoHandleException(DBusMessage *msg)
 }
 
 /**
- * Utility class which makes it easier to work with g_timeout_add_seconds().
- * Instantiate this class with a specific callback. Use boost::bind()
- * to attach specific parameters to that callback. Then activate
- * the timeout. Destructing this class will automatically remove
- * the timeout and thus ensure that it doesn't trigger without
- * valid parameters.
- */
-class Timeout
-{
-    guint m_tag;
-    boost::function<bool ()> m_callback;
-
-public:
-    Timeout() :
-        m_tag(0)
-    {
-    }
-
-    ~Timeout()
-    {
-        if (m_tag) {
-            g_source_remove(m_tag);
-        }
-    }
-
-    /**
-     * call the callback at regular intervals until it returns false
-     */
-    void activate(int seconds,
-                  const boost::function<bool ()> &callback)
-    {
-        deactivate();
-
-        m_callback = callback;
-        m_tag = g_timeout_add_seconds(seconds, triggered, static_cast<gpointer>(this));
-        if (!m_tag) {
-            SE_THROW("g_timeout_add_seconds() failed");
-        }
-    }
-
-    /**
-     * stop calling the callback, drop callback
-     */
-    void deactivate()
-    {
-        if (m_tag) {
-            g_source_remove(m_tag);
-            m_tag = 0;
-        }
-        m_callback = 0;
-    }
-
-private:
-    static gboolean triggered(gpointer data)
-    {
-        Timeout *me = static_cast<Timeout *>(data);
-        return me->m_callback();
-    }
-};
-
-/**
  * Implements the read-only methods in a Session and the Server.
  * Only data is the server configuration name, everything else
  * is created and destroyed inside the methods.

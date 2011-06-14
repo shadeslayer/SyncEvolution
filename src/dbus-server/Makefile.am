@@ -21,6 +21,7 @@ libsyncevodbusserver_la_SOURCES = \
 	main.cpp		\
 	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp \
+	timeout.h		\
 	timer.h
 
 libsyncevodbusserver_la_LIBADD = $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS) $(LIBSOUP_LIBS)
