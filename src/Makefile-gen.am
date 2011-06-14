@@ -12,7 +12,6 @@ nodist_bin_SCRIPTS =
 libexec_PROGRAMS =
 libexec_SCRIPTS =
 nobase_dist_template_DATA =
-DISTCLEANFILES =
 CLEANFILES =
 BUILT_SOURCES =
 

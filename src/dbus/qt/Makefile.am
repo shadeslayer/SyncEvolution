@@ -49,8 +49,8 @@ CLEANFILES = $(BUILT_SOURCES) \
 	stamp-session \
 	stamp-connection
 
-DISTCLEANFILES = syncevolution-qt-dbus.pc
-EXTRA_DIST = syncevolution-qt-dbus.pc.in
+DISTCLEANFILES += syncevolution-qt-dbus.pc
+EXTRA_DIST += syncevolution-qt-dbus.pc.in
 pkgconfig_DATA = syncevolution-qt-dbus.pc
 pkgconfigdir = $(libdir)/pkgconfig
 
