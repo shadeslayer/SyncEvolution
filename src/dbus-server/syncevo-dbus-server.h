@@ -31,6 +31,7 @@
 #include "client.h"
 #include "read-operations.h"
 #include "connman-client.h"
+#include "network-manager-client.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -355,87 +356,6 @@ class PresenceStatus {
     bool getBtPresence() { return m_btPresence; }
     Timer& getHttpTimer() { return m_httpTimer; }
     Timer& getBtTimer() { return m_btTimer; }
-};
-
-/**
- * Client for org.freedesktop.NetworkManager
- * The initial state of NetworkManager is queried via
- * org.freedesktop.DBus.Properties. Dynamic changes are listened via
- * org.freedesktop.NetworkManager - StateChanged signal
- */
-class NetworkManagerClient : public DBusRemoteObject
-{
-public:
-    enum NM_State
-      {
-        NM_STATE_UNKNOWN = 0,
-
-        /* following values for NM < 0.9 */
-        NM_STATE_ASLEEP_DEPRECATED = 1,
-        NM_STATE_CONNECTING_DEPRECATED = 2,
-        NM_STATE_CONNECTED_DEPRECATED = 3,
-        NM_STATE_DISCONNECTED_DEPRECATED = 4,
-
-        /* following values for NM >= 0.9 */
-        NM_STATE_ASLEEP = 10,
-        NM_STATE_DISCONNECTED = 20,
-        NM_STATE_DISCONNECTING = 30,
-        NM_STATE_CONNECTING = 40,
-        NM_STATE_CONNECTED_LOCAL = 50,
-        NM_STATE_CONNECTED_SITE = 60,
-        NM_STATE_CONNECTED_GLOBAL = 70,
-      };
-public:
-    NetworkManagerClient(DBusServer& server);
-
-    virtual const char *getDestination() const {
-        return "org.freedesktop.NetworkManager";
-    }
-    virtual const char *getPath() const {
-        return "/org/freedesktop/NetworkManager";
-    }
-    virtual const char *getInterface() const {
-        return "org.freedesktop.NetworkManager";
-    }
-    virtual DBusConnection *getConnection() const {
-        return m_networkManagerConn.get();
-    }
-
-    void stateChanged(uint32_t uiState);
-
-    /** TRUE if watching Network Manager status */
-    bool isAvailable() { return m_networkManagerConn; }
-
-private:
-
-    class NetworkManagerProperties : public DBusRemoteObject
-    {
-    public:
-        NetworkManagerProperties(NetworkManagerClient& manager);
-
-        virtual const char *getDestination() const {
-            return "org.freedesktop.NetworkManager";
-        }
-        virtual const char *getPath() const {
-            return "/org/freedesktop/NetworkManager";
-        }
-        virtual const char *getInterface() const {
-            return "org.freedesktop.DBus.Properties";
-        }
-        virtual DBusConnection* getConnection() const {
-            return m_manager.getConnection();
-        }
-        void get();
-        void getCallback(const boost::variant<uint32_t, std::string> &prop,
-                         const std::string &error);
-    private:
-        NetworkManagerClient &m_manager;
-    };
-
-    DBusServer &m_server;
-    DBusConnectionPtr m_networkManagerConn;
-    SignalWatch1<uint32_t> m_stateChanged;
-    NetworkManagerProperties m_properties;
 };
 
 class BluezManager;
