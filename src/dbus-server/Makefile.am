@@ -21,6 +21,8 @@ libsyncevodbusserver_la_SOURCES = \
 	main.cpp		\
 	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp \
+	syncevo-exceptions.h	\
+	syncevo-exceptions.cpp	\
 	timeout.h		\
 	timer.h
 

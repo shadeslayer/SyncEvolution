@@ -20,6 +20,7 @@
 #ifndef SYNCEVO_DBUS_SERVER_H
 #define SYNCEVO_DBUS_SERVER_H
 
+#include "syncevo-exceptions.h"
 #include "common.h"
 
 #include "bluez-manager.h"
@@ -93,97 +94,6 @@ class Client;
 class DBusTransportAgent;
 class DBusUserInterface;
 class DBusServer;
-
-class DBusSyncException : public DBusCXXException, public Exception
-{
- public:
-    DBusSyncException(const std::string &file,
-                  int line,
-                  const std::string &what) : Exception(file, line, what)
-    {}
-    /**
-     * get exception name, used to convert to dbus error name
-     * subclasses should override it
-     */
-    virtual std::string getName() const { return "org.syncevolution.Exception"; }
-
-    virtual const char* getMessage() const { return Exception::what(); }
-};
-
-/**
- * exceptions classes deriving from DBusException
- * org.syncevolution.NoSuchConfig
- */
-class NoSuchConfig: public DBusSyncException
-{
- public:
-    NoSuchConfig(const std::string &file,
-                 int line,
-                 const std::string &error): DBusSyncException(file, line, error)
-    {}
-    virtual std::string getName() const { return "org.syncevolution.NoSuchConfig";}
-};
-
-/**
- * org.syncevolution.NoSuchSource
- */
-class NoSuchSource : public DBusSyncException
-{
- public:
-    NoSuchSource(const std::string &file,
-                 int line,
-                 const std::string &error): DBusSyncException(file, line, error)
-    {}
-    virtual std::string getName() const { return "org.syncevolution.NoSuchSource";}
-};
-
-/**
- * org.syncevolution.InvalidCall
- */
-class InvalidCall : public DBusSyncException
-{
- public:
-    InvalidCall(const std::string &file,
-                 int line,
-                 const std::string &error): DBusSyncException(file, line, error)
-    {}
-    virtual std::string getName() const { return "org.syncevolution.InvalidCall";}
-};
-
-/**
- * org.syncevolution.SourceUnusable
- * CheckSource will use this when the source cannot be used for whatever reason
- */
-class SourceUnusable : public DBusSyncException
-{
- public:
-    SourceUnusable(const std::string &file,
-                   int line,
-                   const std::string &error): DBusSyncException(file, line, error)
-    {}
-    virtual std::string getName() const { return "org.syncevolution.SourceUnusable";}
-};
-
-/**
- * implement syncevolution exception handler
- * to cover its default implementation
- */
-static DBusMessage* SyncEvoHandleException(DBusMessage *msg)
-{
-    /** give an opportunity to let syncevolution handle exception */
-    Exception::handle();
-    try {
-        throw;
-    } catch (const dbus_error &ex) {
-        return b_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
-    } catch (const DBusCXXException &ex) {
-        return b_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
-    } catch (const std::runtime_error &ex) {
-        return b_dbus_create_error(msg, "org.syncevolution.Exception", "%s", ex.what());
-    } catch (...) {
-        return b_dbus_create_error(msg, "org.syncevolution.Exception", "unknown");
-    }
-}
 
 /**
  * Implements the read-only methods in a Session and the Server.

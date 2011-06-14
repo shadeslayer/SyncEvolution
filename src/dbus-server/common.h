@@ -24,13 +24,6 @@
 #include "config.h"
 #endif
 
-struct DBusMessage;
-namespace SyncEvo {
-static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
-}
-#define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
-#include "gdbus/gdbus-cxx-bridge.h"
-
 #include <syncevo/Logging.h>
 #include <syncevo/LogStdout.h>
 #include <syncevo/LogRedirect.h>
