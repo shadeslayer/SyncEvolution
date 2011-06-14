@@ -2279,6 +2279,9 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         "      delayedabort = FALSE;\n"
         "      INTEGER alarmTimeToUTC;\n"
         "      alarmTimeToUTC = FALSE;\n"
+        "      // for VCALENDAR_COMPARE_SCRIPT: don't use UID by default\n"
+        "      INTEGER VCALENDAR_COMPARE_UID;\n"
+        "      VCALENDAR_COMPARE_UID = FALSE;\n"
         "    ]]></sessioninitscript>\n";
 
     ostringstream clientorserver;
@@ -2341,47 +2344,6 @@ void SyncContext::getConfigXML(string &xml, string &configname)
              "clientorserver",
              clientorserver.str(),
              true);
-
-    // Poor man's regex match/replace:
-    // turn compare="foo/bar" into compare="foo" or compare="bar",
-    // depending on whether the first or second value is
-    // desired. See 10calendar-fieldlist.xml.
-    ostringstream modified;
-    size_t last = 0;
-    std::string value;
-    value.reserve(20);
-    static std::string sep("compare=\"");
-    // Choosing between the parts is a hack: in local sync mode,
-    // the iCalendar 2.0 semantic is always picked.
-    bool useFirst = !m_localSync;
-    for (size_t next = xml.find(sep, last);
-         next != xml.npos;
-         next = xml.find(sep, last)) {
-        modified.write(xml.c_str() + last, next - last);
-        modified << sep;
-        last = next + sep.size();
-        value.clear();
-        char c;
-        bool collect = true;
-        while (last != xml.size() &&
-               (c = xml[last]) != '"') {
-            if (c == '/') {
-                if (useFirst) {
-                    collect = false;
-                } else {
-                    // forget first value, use second one instead
-                    value.clear();
-                }
-            } else if (collect) {
-                value += c;
-            }
-            last++;
-        }
-        modified << value;
-    }
-    modified.write(xml.c_str() + last, xml.size() - last);
-    xml = modified.str();
-    modified.str("");
 
     tag = "<debug/>";
     index = xml.find(tag);
@@ -3394,6 +3356,17 @@ SyncMLStatus SyncContext::doSync()
         // TODO: set "sendrespuri" session key to control
         // whether the generated messages contain a respURI
         // (not needed for OBEX)
+    }
+
+    // Choosing between comparing UID/RECURRENCE-ID vs. other
+    // iCalendar 2.0 properties is a hack: in local sync mode, the
+    // iCalendar 2.0 semantic is always picked.
+    if (m_serverMode && m_localSync) {
+        SharedKey sessionKey = m_engine.OpenSessionKey(session);
+        SharedKey contextKey = m_engine.OpenKeyByPath(sessionKey, "/sessionvars");
+        m_engine.SetInt32Value(contextKey,
+                               "VCALENDAR_COMPARE_UID",
+                               true);
     }
 
     // Sync main loop: runs until SessionStep() signals end or error.

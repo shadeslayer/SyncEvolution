@@ -187,3 +187,28 @@
         ALARM_TIME = CONVERTTOZONE(ALARM_TIME, "UTC");
       }
     ]]></macro>
+
+    <!-- Uses the UID/RECURRENCE-ID fields as the only criteria for
+         comparing calendar data if the VCALENDAR_COMPARE_UID session
+         variable is true, else does a normal comparison of the
+         fields. That comparison is based on the datatype definition
+         and ignores UID because it is not trusted to be
+         preserved and/or implemented by peers.
+
+         In case of a UID match, the DMODIFIED fields are compared
+         to determine the older item.
+    -->
+    <macro name="VCALENDAR_COMPARE_SCRIPT"><![CDATA[
+    INTEGER RES;
+    if (COMPARISONMODE() != "age" && SESSIONVAR("VCALENDAR_COMPARE_UID") ) {
+        if (TARGET.UID == REFERENCE.UID &&
+            TARGET.ORIGSTART == REFERENCE.ORIGSTART) {
+            RES = 0;
+        } else {
+            RES = -999;
+        }
+    } else {
+        RES = COMPAREFIELDS();
+    }
+    return RES;
+    ]]></macro>

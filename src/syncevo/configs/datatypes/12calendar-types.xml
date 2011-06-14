@@ -11,6 +11,9 @@
         $VCALENDAR_OUTGOING_SCRIPT
       ]]></outgoingscript>
 
+      <comparescript><![CDATA[
+        $VCALENDAR_COMPARE_SCRIPT
+      ]]></comparescript>
     </datatype>
 
 
@@ -27,5 +30,8 @@
         $VCALENDAR_OUTGOING_SCRIPT
       ]]></outgoingscript>
 
+      <comparescript><![CDATA[
+        $VCALENDAR_COMPARE_SCRIPT
+      ]]></comparescript>
     </datatype>
 

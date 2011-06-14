@@ -1,21 +1,4 @@
-     <!--
-        Common field list for events and todos (both represented by vCalendar/iCalendar).
-
-        The compare parameters are replaced while assembling the complete config (SyncContext.cpp),
-        depending whether SyncEvolution operates in normal mode (first value) or
-        iCalendar 2.0 mode (second value)
-        - slowsync/scripted => slowsync (normal) resp. scripted (iCalendar 2.0)
-        - ...
-
-        The key difference is that in iCalendar 2.0 mode, only UID/RECURRENCE-ID
-        are used to find pairs in all cases, while the rest is still relevant for
-        merging ("compare=scripted" instead of "never").
-
-        It would be nice if the final values could be chosen dynamically at runtime
-        for each source and the peer, but that is not currently possible. The
-        "replace beforehand" approach is a stop-gap measure that works well enough
-        for now for local sync which can always use iCalendar 2.0.
-     -->
+    <!-- common field list for events and todos (both represented by vCalendar/iCalendar) -->
     <fieldlist name="calendar">
       <field name="SYNCLVL" type="integer" compare="never"/>
       <field name="ISEVENT" type="integer" compare="always"/>
@@ -25,65 +8,65 @@
 
       <field name="DGENERATED" type="timestamp" compare="never"/>
 
-      <field name="UID" type="string" compare="never/always"/>
+      <field name="UID" type="string" compare="never"/>
 
-      <field name="CATEGORIES" array="yes" type="string" compare="conflict/scripted" merge="fillempty"/>
-      <field name="CLASS" type="integer" compare="conflict/scripted" merge="fillempty"/>
-      <field name="TRANSP" type="integer" compare="conflict/scripted" merge="fillempty"/>
+      <field name="CATEGORIES" array="yes" type="string" compare="conflict" merge="fillempty"/>
+      <field name="CLASS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="TRANSP" type="integer" compare="conflict" merge="fillempty"/>
 
-      <field name="SUMMARY" type="multiline" compare="always/scripted"/>
-      <field name="DESCRIPTION" type="multiline" compare="slowsync/scripted" merge="lines"/>
-      <field name="LOCATION" type="multiline" compare="slowsync/scripted" merge="lines"/>
-      <field name="URL" type="url" compare="conflict/scripted" merge="fillempty"/>
+      <field name="SUMMARY" type="multiline" compare="always"/>
+      <field name="DESCRIPTION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="LOCATION" type="multiline" compare="slowsync" merge="lines"/>
+      <field name="URL" type="url" compare="conflict" merge="fillempty"/>
 
       <!-- recurrence rule block, fields must be in that order, including
            DTSTART as last field !! -->
-      <field name="RR_FREQ" type="string" compare="conflict/scripted"/>
-      <field name="RR_INTERVAL" type="integer" compare="conflict/scripted"/>
-      <field name="RR_FMASK" type="integer" compare="conflict/scripted"/>
-      <field name="RR_LMASK" type="integer" compare="conflict/scripted"/>
-      <field name="RR_END" type="timestamp" compare="conflict/scripted"/>
+      <field name="RR_FREQ" type="string" compare="conflict"/>
+      <field name="RR_INTERVAL" type="integer" compare="conflict"/>
+      <field name="RR_FMASK" type="integer" compare="conflict"/>
+      <field name="RR_LMASK" type="integer" compare="conflict"/>
+      <field name="RR_END" type="timestamp" compare="conflict"/>
 
       <!-- Note: DTSTART/DTEND are compared in the <comparescript>,
                  therefore compare is set no "never" here -->
-      <field name="DTSTART" type="timestamp" compare="never/scripted"/>
-      <field name="DTEND" type="timestamp" compare="never/scripted"/>
-      <field name="DURATION" type="timestamp" compare="never/scripted"/>
-      <field name="COMPLETED" type="timestamp" compare="never/scripted"/>
-      <field name="DUE" type="timestamp" compare="never/scripted"/>
+      <field name="DTSTART" type="timestamp" compare="never"/>
+      <field name="DTEND" type="timestamp" compare="never"/>
+      <field name="DURATION" type="timestamp" compare="never"/>
+      <field name="COMPLETED" type="timestamp" compare="never"/>
+      <field name="DUE" type="timestamp" compare="never"/>
 
-      <field name="GEO_LAT" type="string" compare="never/scripted"/>
-      <field name="GEO_LONG" type="string" compare="never/scripted"/>
+      <field name="GEO_LAT" type="string" compare="never"/>
+      <field name="GEO_LONG" type="string" compare="never"/>
 
-      <field name="PRIORITY" type="integer" compare="conflict/scripted"/>
-      <field name="STATUS" type="integer" compare="conflict/scripted" merge="fillempty"/>
-      <field name="PERCENT_COMPLETE" type="integer" compare="conflict/scripted"/>
+      <field name="PRIORITY" type="integer" compare="conflict"/>
+      <field name="STATUS" type="integer" compare="conflict" merge="fillempty"/>
+      <field name="PERCENT_COMPLETE" type="integer" compare="conflict"/>
 
-      <field name="ALARM_TIME" type="timestamp" compare="conflict/scripted"/>
-      <field name="ALARM_SNOOZE" type="string" compare="conflict/scripted"/>
-      <field name="ALARM_REPEAT" type="string" compare="conflict/scripted"/>
-      <field name="ALARM_MSG" type="string" compare="conflict/scripted"/>
-      <field name="ALARM_ACTION" type="string" compare="conflict/scripted"/>
-      <field name="ALARM_REL" type="integer" compare="never/scripted"/>
+      <field name="ALARM_TIME" type="timestamp" compare="conflict"/>
+      <field name="ALARM_SNOOZE" type="string" compare="conflict"/>
+      <field name="ALARM_REPEAT" type="string" compare="conflict"/>
+      <field name="ALARM_MSG" type="string" compare="conflict"/>
+      <field name="ALARM_ACTION" type="string" compare="conflict"/>
+      <field name="ALARM_REL" type="integer" compare="never"/>
       <field name="ALARM_UID" type="string" compare="never" merge="fillempty"/>
 
       <!-- non-standard -->
-      <field name="PARENT_UID" type="string" compare="never/scripted"/>
+      <field name="PARENT_UID" type="string" compare="never"/>
 
       <!-- for events -->
-      <field name="EXDATES" array="yes" type="timestamp" compare="never/scripted"/>
+      <field name="EXDATES" array="yes" type="timestamp" compare="never"/>
 
-      <field name="ORIGSTART" array="no" type="timestamp" compare="never/always"/>
+      <field name="ORIGSTART" array="no" type="timestamp" compare="never"/>
       <field name="SEQNO" array="no" type="integer" compare="never"/>
 
-      <field name="ATTENDEES" array="yes" type="string" compare="never/scripted"/>
-      <field name="ATTENDEE_CNS" array="yes" type="string" compare="never/scripted"/>
-      <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never/scripted"/>
-      <field name="ATTENDEE_ROLE" array="yes" type="integer" compare="never/scripted"/>
-      <field name="ATTENDEE_RSVP" array="yes" type="integer" compare="never/scripted"/>
-      <field name="ATTENDEE_LANG" array="yes" type="string" compare="never/scripted"/>
-      <field name="ATTENDEE_CUTYPE" array="yes" type="integer" compare="never/scripted"/>
-      <field name="ORGANIZER" array="no" type="string" compare="never/scripted"/>
-      <field name="ORGANIZER_CN" array="no" type="string" compare="never/scripted"/>
+      <field name="ATTENDEES" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CNS" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_PARTSTATS" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_ROLE" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_RSVP" array="yes" type="integer" compare="never"/>
+      <field name="ATTENDEE_LANG" array="yes" type="string" compare="never"/>
+      <field name="ATTENDEE_CUTYPE" array="yes" type="integer" compare="never"/>
+      <field name="ORGANIZER" array="no" type="string" compare="never"/>
+      <field name="ORGANIZER_CN" array="no" type="string" compare="never"/>
 
     </fieldlist>
