@@ -30,6 +30,7 @@
 #include "restart.h"
 #include "client.h"
 #include "read-operations.h"
+#include "connman-client.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -354,35 +355,6 @@ class PresenceStatus {
     bool getBtPresence() { return m_btPresence; }
     Timer& getHttpTimer() { return m_httpTimer; }
     Timer& getBtTimer() { return m_btTimer; }
-};
-
-/*
- * Implements org.connman.Manager
- * GetProperty  : getPropCb
- * PropertyChanged: propertyChanged
- **/
-class ConnmanClient : public DBusRemoteObject
-{
-public:
-    ConnmanClient (DBusServer &server);
-    virtual const char *getDestination() const {return "net.connman";}
-    virtual const char *getPath() const {return "/";}
-    virtual const char *getInterface() const {return "net.connman.Manager";}
-    virtual DBusConnection *getConnection() const {return m_connmanConn.get();}
-
-    void propertyChanged(const string &name,
-                         const boost::variant<vector<string>, string> &prop);
-
-    void getPropCb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
-
-    /** TRUE if watching ConnMan status */
-    bool isAvailable() { return m_connmanConn; }
-
-private:
-    DBusServer &m_server;
-    DBusConnectionPtr m_connmanConn;
-
-    SignalWatch2 <string,boost::variant<vector<string>, string> > m_propertyChanged;
 };
 
 /**

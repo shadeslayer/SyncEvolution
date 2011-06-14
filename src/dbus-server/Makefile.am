@@ -18,6 +18,8 @@ libsyncevodbusserver_la_SOURCES = \
 	client.h		\
 	client.cpp		\
 	common.h		\
+	connman-client.h	\
+	connman-client.cpp	\
 	info-req.h		\
 	info-req.cpp		\
 	main.cpp		\
