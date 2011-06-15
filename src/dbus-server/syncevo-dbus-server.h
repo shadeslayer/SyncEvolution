@@ -38,6 +38,7 @@
 #include "source-status.h"
 #include "source-progress.h"
 #include "dbus-user-interface.h"
+#include "dbus-sync.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -539,52 +540,6 @@ public:
                           va_list args);
 
     virtual bool isProcessSafe() const { return false; }
-};
-
-/**
- * A running sync engine which keeps answering on D-Bus whenever
- * possible and updates the Session while the sync runs.
- */
-class DBusSync : public DBusUserInterface
-{
-    Session &m_session;
-
-public:
-    DBusSync(const std::string &config,
-             Session &session);
-    ~DBusSync() {}
-
-protected:
-    virtual boost::shared_ptr<TransportAgent> createTransportAgent();
-    virtual void displaySyncProgress(sysync::TProgressEventEnum type,
-                                     int32_t extra1, int32_t extra2, int32_t extra3);
-    virtual void displaySourceProgress(sysync::TProgressEventEnum type,
-                                       SyncSource &source,
-                                       int32_t extra1, int32_t extra2, int32_t extra3);
-
-    virtual void reportStepCmd(sysync::uInt16 stepCmd);
-
-    /** called when a sync is successfully started */
-    virtual void syncSuccessStart();
-
-    /**
-     * Implement checkForSuspend and checkForAbort.
-     * They will check whether dbus clients suspend
-     * or abort the session in addition to checking
-     * whether suspend/abort were requested via
-     * signals, using SyncContext's signal handling.
-     */
-    virtual bool checkForSuspend();
-    virtual bool checkForAbort();
-    virtual int sleep(int intervals);
-
-    /**
-     * Implement askPassword to retrieve password in gnome-keyring.
-     * If not found, then ask it from dbus clients.
-     */
-    string askPassword(const string &passwordName,
-                       const string &descr,
-                       const ConfigPasswordKey &key);
 };
 
 /**
