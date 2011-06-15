@@ -1,0 +1,333 @@
+      <remoterule name="Google-Contacts">
+          <manufacturer>Google</manufacturer>
+          <model>sync</model>
+          <overridedevinf><![CDATA[
+          <DevInf xmlns="syncml:devinf">
+          <VerDTD>1.2</VerDTD>
+          <Man>Google</Man>
+          <Mod>Sync</Mod>
+          <OEM>-</OEM>
+          <SwV>0.01</SwV>
+          <HwV>-</HwV>
+          <DevID>Google</DevID>
+          <DevTyp>server</DevTyp>
+          <UTC/>
+          <SupportNumberOfChanges/>
+          <SupportLargeObjs/>
+          <DataStore>
+          <SourceRef>contacts</SourceRef>
+          <DisplayName>contacts</DisplayName>
+          <MaxGUIDSize>32</MaxGUIDSize>
+          <Rx-Pref>
+          <CTType>text/x-vcard</CTType>
+          <VerCT>2.1</VerCT>
+          </Rx-Pref>
+          <Tx-Pref>
+          <CTType>text/x-vcard</CTType>
+          <VerCT>2.1</VerCT>
+          </Tx-Pref>
+          <CTCap>
+            <CTType>text/x-vcard</CTType>
+            <VerCT>2.1</VerCT>
+            <Property>
+              <PropName>BEGIN</PropName>
+              <ValEnum>VCARD</ValEnum>
+            </Property>
+            <Property>
+              <PropName>END</PropName>
+              <ValEnum>VCARD</ValEnum>
+            </Property>
+            <Property>
+              <PropName>VERSION</PropName>
+              <ValEnum>2.1</ValEnum>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>REV</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>N</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>FN</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-EVOLUTION-FILE-AS</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-GENDER</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>NICKNAME</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>TITLE</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>CATEGORIES</PropName>
+            </Property>
+            <Property>
+              <PropName>ORG</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-X-Office</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>ROLE</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-KADDRESSBOOK-X-Profession</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>TEL</PropName>
+              <PropParam>
+                <ParamName>TYPE</ParamName>
+                <ValEnum>HOME</ValEnum>
+                <ValEnum>WORK</ValEnum>
+                <ValEnum>VOICE</ValEnum>
+                <ValEnum>CELL</ValEnum>
+                <ValEnum>FAX</ValEnum>
+                <ValEnum>PAGER</ValEnum>
+                <ValEnum>PREF</ValEnum>
+                <ValEnum>CAR</ValEnum>
+                <ValEnum>X-EVOLUTION-CALLBACK</ValEnum>
+                <ValEnum>X-EVOLUTION-RADIO</ValEnum>
+                <ValEnum>X-EVOLUTION-TELEX</ValEnum>
+                <ValEnum>X-EVOLUTION-TTYTDD</ValEnum>
+              </PropParam>
+            </Property>
+            <Property>
+              <PropName>EMAIL</PropName>
+              <PropParam>
+                <ParamName>TYPE</ParamName>
+                <ValEnum>HOME</ValEnum>
+                <ValEnum>WORK</ValEnum>
+                <ValEnum>INTERNET</ValEnum>
+              </PropParam>
+            </Property>
+            <!-- Property>
+              <PropName>URL</PropName>
+              <PropParam>
+                <ParamName>TYPE</ParamName>
+                <ValEnum>HOME</ValEnum>
+                <ValEnum>WORK</ValEnum>
+                <ValEnum>PREF</ValEnum>
+              </PropParam>
+            </Property -->
+            <!-- Property>
+              <PropName>CALURI</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <!-- Property>
+              <PropName>FBURL</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-EVOLUTION-BLOG-URL</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-BlogFeed</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-EVOLUTION-VIDEO-URL</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-EVOLUTION-MANAGER</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-MANAGER</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-X-ManagersName</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-EVOLUTION-ASSISTANT</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-ASSISTANT</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-X-AssistantsName</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-EVOLUTION-SPOUSE</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-SPOUSE</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-X-SpousesName</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-EVOLUTION-ANNIVERSARY</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-ANNIVERSARY</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-X-Anniversary</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-AIM</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/aim-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-GADUGADU</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/gadu-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-GROUPWISE</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/groupwise-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-ICQ</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/icq-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-JABBER</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/xmpp-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-MSN</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/msn-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-YAHOO</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/yahoo-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-SKYPE</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/skype-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <!-- Property>
+              <PropName>X-SIP</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>X-messaging/irc-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-messaging/meanwhile-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-messaging/sms-All</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-CRYPTOENCRYPTPREF</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-CRYPTOPROTOPREF</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-CRYPTOSIGNPREF</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-OPENPGPFP</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-KADDRESSBOOK-X-IMAddress</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>X-MOZILLA-HTML</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>ADR</PropName>
+              <PropParam>
+                <ParamName>TYPE</ParamName>
+                <ValEnum>HOME</ValEnum>
+                <ValEnum>WORK</ValEnum>
+              </PropParam>
+            </Property>
+            <!-- Property>
+              <PropName>BDAY</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property -->
+            <Property>
+              <PropName>NOTE</PropName>
+              <MaxOccur>1</MaxOccur>
+            </Property>
+            <Property>
+              <PropName>PHOTO</PropName>
+              <MaxOccur>1</MaxOccur>
+              <PropParam>
+                <ParamName>TYPE</ParamName>
+                <ValEnum>JPEG</ValEnum>
+              </PropParam>
+            </Property>
+          </CTCap>
+          <SyncCap>
+          <SyncType>1</SyncType>
+          <SyncType>2</SyncType>
+          </SyncCap>
+          </DataStore>
+          </DevInf>
+          ]]></overridedevinf>
+      </remoterule>
+
