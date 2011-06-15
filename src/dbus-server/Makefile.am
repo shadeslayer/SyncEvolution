@@ -33,6 +33,8 @@ libsyncevodbusserver_la_SOURCES = \
 	network-manager-client.cpp	\
 	presence-status.h	\
 	presence-status.cpp	\
+	progress-data.h		\
+	progress-data.cpp	\
 	read-operations.h	\
 	read-operations.cpp	\
 	restart.h		\
