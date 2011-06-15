@@ -153,6 +153,7 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.type = "evolution-contacts:text/vcard";
+        config.update = config.genericUpdate;
     }
 } vCard30Test;
 
