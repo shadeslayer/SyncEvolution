@@ -244,6 +244,11 @@ sub NormalizeItem {
     }
     s/^X-EVOLUTION-(SPOUSE|MANAGER|ASSISTANT|ANNIVERSARY)/X-$1/gm;
 
+    # some properties are always lost because we don't transmit them
+    if ($ENV{CLIENT_TEST_SERVER}) {
+        s/^(X-FOOBAR-EXTENSION|X-TEST)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
+
     # if there is no DESCRIPTION in a VJOURNAL, then use the
     # summary: that's what is done when exchanging such a
     # VJOURNAL as plain text

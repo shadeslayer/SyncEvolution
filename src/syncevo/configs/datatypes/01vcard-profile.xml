@@ -401,5 +401,10 @@
           </parameter>
         </property>
 
+        <property name="X-*" suppressempty="yes" show="false">
+          <value field="XPROPS"/>
+          <position field="XPROPS" repeat="array" increment="1" minshow="0"/>
+        </property>
+
       </profile>
     </mimeprofile>

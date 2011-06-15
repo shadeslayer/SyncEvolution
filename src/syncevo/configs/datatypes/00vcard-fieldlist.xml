@@ -116,4 +116,6 @@
       <field name="CRYPTOSIGNPREF" type="string" compare="conflict"/>
       <field name="OPENPGPFP" type="string" compare="conflict"/>
 
+      <!-- store extensions that don't match any of the other fields -->
+      <field name="XPROPS" array="yes" type="string" compare="never"/>
     </fieldlist>

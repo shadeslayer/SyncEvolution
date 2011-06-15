@@ -7,7 +7,7 @@
  FN:xml entities
  N:xml;entities;;;
  X-EVOLUTION-FILE-AS:xml\, entities
-@@ -175,11 +175,11 @@
+@@ -177,11 +177,11 @@
  X-EVOLUTION-VIDEO-URL:chat
  X-MOZILLA-HTML:TRUE
  ADR;TYPE=WORK:Test Box #2;;Test Drive 2;Test Town;Upper Test County;12346;O
@@ -21,7 +21,7 @@
  LABEL;TYPE=HOME:Test Drive 1\nTest Village\, Lower Test County\n12345\nTest
    Box #1\nTestovia
  ADR:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
-@@ -288,7 +288,7 @@
+@@ -290,7 +290,7 @@
  X-EVOLUTION-SPOUSE:
  NOTE:The first name is "First \; special \;".
  FN:Mr. First \; special \; middle Last

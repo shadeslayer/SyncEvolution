@@ -162,6 +162,8 @@ X-EVOLUTION-MANAGER:John Doe Senior
 X-EVOLUTION-ASSISTANT:John Doe Junior
 NICKNAME:user1
 BDAY:2006-01-08
+X-FOOBAR-EXTENSION;X-FOOBAR-PARAMETER=foobar:has to be stored internally by engine and preserved in testExtensions test; never sent to a peer
+X-TEST;PARAMETER1=nonquoted;PARAMETER2="quoted because of spaces":Content with\nMultiple\nText lines\nand national chars: äöü
 X-EVOLUTION-ANNIVERSARY:2006-01-09
 X-EVOLUTION-SPOUSE:Joan Doe
 NOTE:This is a test case which uses almost all Evolution fields.
