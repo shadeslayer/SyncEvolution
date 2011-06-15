@@ -12,6 +12,8 @@ libsyncevodbusserver_la_SOURCES = \
 	../NotificationManagerBase.h \
 	../NotificationManagerFactory.h \
 	../NotificationManagerFactory.cpp \
+	auto-sync-manager.h	\
+	auto-sync-manager.cpp	\
 	auto-term.h		\
 	bluez-manager.h		\
 	bluez-manager.cpp	\
