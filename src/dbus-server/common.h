@@ -88,4 +88,17 @@ extern "C" {
 
 #include "NotificationManagerFactory.h"
 
+SE_BEGIN_CXX
+
+/**
+ * Anything that can be owned by a client, like a connection
+ * or session.
+ */
+class Resource {
+public:
+    virtual ~Resource() {}
+};
+
+SE_END_CXX
+
 #endif // COMMON_H

@@ -38,6 +38,8 @@ libsyncevodbusserver_la_SOURCES = \
 	read-operations.h	\
 	read-operations.cpp	\
 	restart.h		\
+	session.h		\
+	session.cpp		\
 	session-listener.h	\
 	source-progress.h	\
 	source-status.h		\
