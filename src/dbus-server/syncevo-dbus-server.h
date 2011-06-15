@@ -36,6 +36,7 @@
 #include "auto-sync-manager.h"
 #include "presence-status.h"
 #include "source-status.h"
+#include "source-progress.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -538,36 +539,6 @@ public:
 
     virtual bool isProcessSafe() const { return false; }
 };
-
-struct SourceProgress
-{
-    SourceProgress() :
-        m_phase(""),
-        m_prepareCount(-1), m_prepareTotal(-1),
-        m_sendCount(-1), m_sendTotal(-1),
-        m_receiveCount(-1), m_receiveTotal(-1)
-    {}
-
-    std::string m_phase;
-    int32_t m_prepareCount, m_prepareTotal;
-    int32_t m_sendCount, m_sendTotal;
-    int32_t m_receiveCount, m_receiveTotal;
-};
-
-SE_END_CXX
-namespace GDBusCXX {
-template<> struct dbus_traits<SourceProgress> :
-    public dbus_struct_traits<SourceProgress,
-                              dbus_member<SourceProgress, std::string, &SourceProgress::m_phase,
-                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_prepareCount,
-                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_prepareTotal,
-                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_sendCount,
-                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_sendTotal,
-                              dbus_member<SourceProgress, int32_t, &SourceProgress::m_receiveCount,
-                              dbus_member_single<SourceProgress, int32_t, &SourceProgress::m_receiveTotal> > > > > > > >
-{};
-}
-SE_BEGIN_CXX
 
 /**
  * This class is mainly to implement two virtual functions 'askPassword'
