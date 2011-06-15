@@ -87,7 +87,7 @@
  LABEL;TYPE=OTHER:Test Drive 3\nTest Megacity\, Test County\n12347\nTest Box
    #3\nNew Testonia
  UID:pas-id-43C0ED3900000001
-@@ -206,7 +214,7 @@
+@@ -212,7 +220,7 @@
  
  BEGIN:VCARD
  VERSION:3.0
@@ -96,7 +96,7 @@
  TITLE:
  ROLE:
  X-EVOLUTION-MANAGER:
-@@ -242,7 +250,7 @@
+@@ -248,7 +256,7 @@
  
  BEGIN:VCARD
  VERSION:3.0
@@ -105,7 +105,7 @@
  TITLE:
  ROLE:
  X-EVOLUTION-MANAGER:
-@@ -273,7 +281,7 @@
+@@ -279,7 +287,7 @@
  
  BEGIN:VCARD
  VERSION:3.0
@@ -114,7 +114,7 @@
  TITLE:
  ROLE:
  X-EVOLUTION-MANAGER:
-@@ -282,7 +290,7 @@
+@@ -288,7 +296,7 @@
  X-EVOLUTION-SPOUSE:
  NOTE:The first name is "First \; special \;".
  FN:Mr. First \; special \; middle Last
@@ -123,7 +123,7 @@
  X-EVOLUTION-FILE-AS:Last\, First \; special \;
  X-EVOLUTION-BLOG-URL:
  CALURI:
-@@ -294,7 +302,7 @@
+@@ -300,7 +308,7 @@
  
  BEGIN:VCARD
  VERSION:3.0
@@ -132,7 +132,7 @@
  TITLE:
  ROLE:
  X-EVOLUTION-MANAGER:
-@@ -376,53 +384,8 @@
+@@ -382,53 +390,8 @@
    & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
    & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
    & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <

@@ -23,7 +23,7 @@
  X-AIM;TYPE=HOME;X-EVOLUTION-UI-SLOT=1:AIM JOHN
  X-YAHOO;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:YAHOO JDOE
  X-ICQ;TYPE=HOME;X-EVOLUTION-UI-SLOT=3:ICQ JD
-@@ -282,7 +280,7 @@
+@@ -288,7 +286,7 @@
  X-EVOLUTION-SPOUSE:
  NOTE:The first name is "First \; special \;".
  FN:Mr. First \; special \; middle Last
