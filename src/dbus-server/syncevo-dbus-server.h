@@ -32,6 +32,7 @@
 #include "read-operations.h"
 #include "connman-client.h"
 #include "network-manager-client.h"
+#include "session-listener.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -54,29 +55,6 @@ class DBusUserInterface;
 class DBusServer;
 
 class InfoReq;
-
-/**
- * a listener to listen changes of session
- * currently only used to track changes of running a sync in a session
- */
-class SessionListener
-{
-public:
-    /**
-     * method is called when a sync is successfully started.
-     * Here 'successfully started' means the synthesis engine starts
-     * to access the sources.
-     */
-    virtual void syncSuccessStart() {}
-
-    /**
-     * method is called when a sync is done. Also
-     * sync status are passed.
-     */
-    virtual void syncDone(SyncMLStatus status) {}
-
-    virtual ~SessionListener() {}
-};
 
 /**
  * Manager to manage automatic sync.

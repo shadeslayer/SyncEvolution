@@ -28,6 +28,7 @@ libsyncevodbusserver_la_SOURCES = \
 	read-operations.h	\
 	read-operations.cpp	\
 	restart.h		\
+	session-listener.h	\
 	syncevo-dbus-server.h	\
 	syncevo-dbus-server.cpp \
 	syncevo-exceptions.h	\
