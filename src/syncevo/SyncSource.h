@@ -429,10 +429,14 @@ struct ClientTestConfig{
      * Uses the "testcases" data. See Sync::*::testExtensions.
      *
      * The function must modify a single item such that re-importing
-     * it locally will be seen as updating it. ClientTest::update()
-     * works for vCard and iCalendar by updating FN, N, resp. SUMMARY.
+     * it locally will be seen as updating it. It is empty by default
+     * because not all backends necessarily pass this test.
+     *
+     * genericUpdate works for vCard and iCalendar by updating FN, N, resp. SUMMARY
+     * and can be used as implementation of update.
      */
     void (*update)(std::string &item);
+    void (*genericUpdate)(std::string &item);
 };
 
 /**

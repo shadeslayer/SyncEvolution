@@ -4000,9 +4000,8 @@ bool ClientTest::compare(ClientTest &client, const char *fileA, const char *file
 void ClientTest::update(std::string &item)
 {
     const static char *props[] = {
-        "\nFN:",
-        "\nN:",
-        "\nSUMMARY:",
+        "\nSUMMARY",
+        "\nNOTE",
         NULL
     };
 
@@ -4010,7 +4009,15 @@ void ClientTest::update(std::string &item)
         size_t pos;
         pos = item.find(*prop);
         if (pos != item.npos) {
-            item.insert(pos + strlen(*prop), "MOD-");
+            // Modify existing property. Fast-forward to : (works as
+            // long as colon is not in parameters).
+            pos = item.find(':', pos);
+        }
+        if (pos != item.npos) {
+            item.insert(pos + 1, "MOD-");
+        } else if (!strcmp(*prop, "\nNOTE") && (pos = item.find("END:VCARD")) != item.npos) {
+            // add property, but only if it is allowed in the item
+            item.insert(pos, "NOTE:MOD\n");
         }
     }
 }
@@ -4120,7 +4127,8 @@ void ClientTest::getTestData(const char *type, Config &config)
     config.dump = dump;
     config.compare = compare;
     // Sync::*::testExtensions not enabled by default.
-    // config.update = update;
+    config.update = 0;
+    config.genericUpdate = update;
 
     // redirect requests for "eds_event" towards "eds_event_noutc"?
     bool noutc = false;
