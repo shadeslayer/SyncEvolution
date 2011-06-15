@@ -35,6 +35,7 @@
 #include "session-listener.h"
 #include "auto-sync-manager.h"
 #include "presence-status.h"
+#include "source-status.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -537,36 +538,6 @@ public:
 
     virtual bool isProcessSafe() const { return false; }
 };
-
-struct SourceStatus
-{
-    SourceStatus() :
-        m_mode("none"),
-        m_status("idle"),
-        m_error(0)
-    {}
-    void set(const std::string &mode, const std::string &status, uint32_t error)
-    {
-        m_mode = mode;
-        m_status = status;
-        m_error = error;
-    }
-
-    std::string m_mode;
-    std::string m_status;
-    uint32_t m_error;
-};
-
-SE_END_CXX
-namespace GDBusCXX {
-template<> struct dbus_traits<SourceStatus> :
-    public dbus_struct_traits<SourceStatus,
-                              dbus_member<SourceStatus, std::string, &SourceStatus::m_mode,
-                              dbus_member<SourceStatus, std::string, &SourceStatus::m_status,
-                              dbus_member_single<SourceStatus, uint32_t, &SourceStatus::m_error> > > >
-{};
-}
-SE_BEGIN_CXX
 
 struct SourceProgress
 {
