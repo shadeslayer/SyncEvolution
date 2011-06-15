@@ -92,9 +92,7 @@ extern "C" {
 #include <kwallet.h>
 #endif
 
-#ifdef HAS_NOTIFY
-#include <libnotify/notify.h>
-#endif
+#include "NotificationManagerFactory.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -710,6 +708,7 @@ class AutoSyncManager : public SessionListener
 {
     DBusServer &m_server;
 
+    public:
     /**
      * A single task for automatic sync.
      * Each task maintain one task for only one sync URL, which never combines
@@ -733,7 +732,8 @@ class AutoSyncManager : public SessionListener
 
         AutoSyncTask(const string &peer, unsigned int delay, const string &url)
             : m_peer(peer), m_delay(delay), m_url(url)
-        {}
+        {
+        }
 
         /** compare whether two tasks are the same. May refine it later with more information */
         bool operator==(const AutoSyncTask &right) const
@@ -779,40 +779,6 @@ class AutoSyncManager : public SessionListener
         void scheduleTaskList();
     };
 
-#ifdef HAS_NOTIFY
-    /**
-     * This class is to send notifications to notification server.
-     * Notifications are sent via 'send'. Once a new noficication is
-     * to be sent, the old notification will be closed and a new one
-     * is created for the new requirement.
-     */
-    class Notification
-    {
-    public:
-        Notification(); 
-        ~Notification();
-
-        /** callback of click button(actions) of notification */
-        static void notifyAction(NotifyNotification *notify, gchar *action, gpointer userData);
-
-        /**
-         * send a notification in the notification server
-         * Action for 'view' may pop up a sync-ui, but needs some
-         * parameters. 'viewParams' is the params used by sync-ui.
-         */
-        void send(const char *summary, const char *body, const char *viewParams = NULL);
-    private:
-        /** flag to indicate whether libnotify is initalized successfully */
-        bool m_init;
-
-        /** flag to indicate whether libnotify accepts actions */
-        bool m_actions;
-
-        /** the current notification */
-        NotifyNotification *m_notification;
-    };
-#endif
-
     /** init a config and set up auto sync task for it */
     void initConfig(const string &configName);
 
@@ -843,10 +809,8 @@ class AutoSyncManager : public SessionListener
     /** the current sync of session is successfully started */
     bool m_syncSuccessStart;
 
-#ifdef HAS_NOTIFY
     /** used to send notifications */
-    Notification m_notify;
-#endif
+    boost::shared_ptr<NotificationManagerBase> m_notificationManager;
 
     /** 
      * It reads all peers which are enabled to do auto sync and store them in
@@ -879,7 +843,7 @@ class AutoSyncManager : public SessionListener
 
  public:
     AutoSyncManager(DBusServer &server)
-        : m_server(server), m_syncSuccessStart(false) 
+        : m_server(server), m_syncSuccessStart(false)
     { 
         init();
     }
@@ -1276,6 +1240,17 @@ class DBusServer : public DBusObjectHelper,
     void enableNotifications(const Caller_t &caller,
                              const string &notifications) {
         setNotifications(true, caller, notifications);
+    }
+
+    /** Server.NotificationAction() */
+    void notificationAction(const Caller_t &caller) {
+        pid_t pid;
+        if((pid = fork()) == 0) {
+            // search sync-ui from $PATH
+            if(execlp("sync-ui", "sync-ui", (const char*)0) < 0) {
+                exit(0);
+            }
+        }
     }
 
     /** actual implementation of enable and disable */
@@ -5656,6 +5631,7 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
     add(this, &DBusServer::detachClient, "Detach");
     add(this, &DBusServer::enableNotifications, "EnableNotifications");
     add(this, &DBusServer::disableNotifications, "DisableNotifications");
+    add(this, &DBusServer::notificationAction, "NotificationAction");
     add(this, &DBusServer::connect, "Connect");
     add(this, &DBusServer::startSession, "StartSession");
     add(this, &DBusServer::startSessionWithFlags, "StartSessionWithFlags");
@@ -6449,6 +6425,9 @@ void AutoSyncManager::init()
     BOOST_FOREACH(const SyncConfig::ConfigList::value_type &server, list) {
         initConfig(server.first);
     }
+
+    m_notificationManager = NotificationManagerFactory::createManager();
+    m_notificationManager->init();
 }
 
 void AutoSyncManager::initConfig(const string &configName)
@@ -6652,20 +6631,17 @@ void AutoSyncManager::syncSuccessStart()
 {
     m_syncSuccessStart = true;
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been successfully started.\n", m_activeTask->m_peer.c_str());
-#ifdef HAS_NOTIFY
     if (m_server.notificationsEnabled()) {
         string summary = StringPrintf(_("%s is syncing"), m_activeTask->m_peer.c_str());
         string body = StringPrintf(_("We have just started to sync your computer with the %s sync service."), m_activeTask->m_peer.c_str());
         //TODO: set config information for 'sync-ui'
-        m_notify.send(summary.c_str(), body.c_str());
+        m_notificationManager->publish(summary, body);
     }
-#endif
 }
 
 void AutoSyncManager::syncDone(SyncMLStatus status)
 {
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been done.\n", m_activeTask->m_peer.c_str());
-#ifdef HAS_NOTIFY
     if (m_server.notificationsEnabled()) {
         // send a notification to notification server
         string summary, body;
@@ -6674,100 +6650,19 @@ void AutoSyncManager::syncDone(SyncMLStatus status)
             summary = StringPrintf(_("%s sync complete"), m_activeTask->m_peer.c_str());
             body = StringPrintf(_("We have just finished syncing your computer with the %s sync service."), m_activeTask->m_peer.c_str());
             //TODO: set config information for 'sync-ui'
-            m_notify.send(summary.c_str(), body.c_str());
+            m_notificationManager->publish(summary, body);
         } else if(m_syncSuccessStart || (!m_syncSuccessStart && status == STATUS_FATAL)) {
             //if sync is successfully started and has errors, or not started successful with a fatal problem
             summary = StringPrintf(_("Sync problem."));
             body = StringPrintf(_("Sorry, there's a problem with your sync that you need to attend to."));
             //TODO: set config information for 'sync-ui'
-            m_notify.send(summary.c_str(), body.c_str());
+            m_notificationManager->publish(summary, body);
         }
     }
-#endif
     m_session.reset();
     m_activeTask.reset();
     m_syncSuccessStart = false;
 }
-
-#ifdef HAS_NOTIFY
-AutoSyncManager::Notification::Notification()
-{
-    bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
-    m_init = notify_init("SyncEvolution");
-    m_actions = false;
-    m_notification = NULL;
-    // check whether 'actions' are supported by notification server 
-    if(m_init) {
-        GList *list = notify_get_server_caps();
-        if(list) {
-            for(; list != NULL; list = list->next) {
-                if(boost::iequals((char *)list->data, "actions")) {
-                    m_actions = true;
-                }
-            }
-        }
-    }
-}
-
-AutoSyncManager::Notification::~Notification()
-{
-    if(m_init) {
-        notify_uninit();
-    }
-}
-
-void AutoSyncManager::Notification::notifyAction(NotifyNotification *notify,
-                                                 gchar *action,
-                                                 gpointer userData)
-{
-    if(boost::iequals("view", action)) {
-        pid_t pid;
-        if((pid = fork()) == 0) {
-            //search sync-ui from $PATH
-            if(execlp("sync-ui", "sync-ui", (const char*)0) < 0) {
-                exit(0);
-            }
-        }
-    } 
-    //if dismiss, ignore
-}
-
-void AutoSyncManager::Notification::send(const char *summary,
-                                         const char *body,
-                                         const char *viewParams)
-{
-    if(!m_init)
-        return;
-
-    if(m_notification) {
-        notify_notification_clear_actions(m_notification);
-        notify_notification_close(m_notification, NULL);
-    }
-#ifndef NOTIFY_CHECK_VERSION
-# define NOTIFY_CHECK_VERSION(_x,_y,_z) 0
-#endif
-#if !NOTIFY_CHECK_VERSION(0,7,0)
-    m_notification = notify_notification_new(summary, body, NULL, NULL);
-#else
-    m_notification = notify_notification_new(summary, body, NULL);
-#endif
-    //if actions are not supported, don't add actions
-    //An example is Ubuntu Notify OSD. It uses an alert box
-    //instead of a bubble when a notification is appended with actions.
-    //the alert box won't be closed until user inputs.
-    //so disable it in case of no support of actions
-    if(m_actions) {
-        notify_notification_add_action(m_notification, "view", _("View"), notifyAction, (gpointer)viewParams, NULL);
-        // Use "default" as ID because that is what mutter-moblin
-        // recognizes: it then skips the action instead of adding it
-        // in addition to its own "Dismiss" button (always added).
-        notify_notification_add_action(m_notification, "default", _("Dismiss"), notifyAction, (gpointer)viewParams, NULL);
-    }
-    notify_notification_show(m_notification, NULL);
-}
-#endif
 
 void AutoSyncManager::AutoSyncTaskList::createTimeoutSource()
 {
