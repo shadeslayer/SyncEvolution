@@ -19,6 +19,7 @@
 
 #include "dbus-sync.h"
 #include "syncevo-dbus-server.h"
+#include "dbus-transport-agent.h"
 
 SE_BEGIN_CXX
 

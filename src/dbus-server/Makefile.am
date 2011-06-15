@@ -27,6 +27,8 @@ libsyncevodbusserver_la_SOURCES = \
 	connman-client.cpp	\
 	dbus-sync.h		\
 	dbus-sync.cpp		\
+	dbus-transport-agent.h		\
+	dbus-transport-agent.cpp	\
 	dbus-user-interface.h	\
 	dbus-user-interface.cpp	\
 	info-req.h		\
