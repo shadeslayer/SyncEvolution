@@ -37,6 +37,7 @@
 #include "presence-status.h"
 #include "source-status.h"
 #include "source-progress.h"
+#include "dbus-user-interface.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -538,35 +539,6 @@ public:
                           va_list args);
 
     virtual bool isProcessSafe() const { return false; }
-};
-
-/**
- * This class is mainly to implement two virtual functions 'askPassword'
- * and 'savePassword' of ConfigUserInterface. The main functionality is
- * to only get and save passwords in the gnome keyring.
- */
-class DBusUserInterface : public SyncContext
-{
-public:
-    DBusUserInterface(const std::string &config);
-
-    /*
-     * Ask password from gnome keyring, if not found, empty string
-     * is returned
-     */
-    string askPassword(const string &passwordName,
-                       const string &descr,
-                       const ConfigPasswordKey &key);
-
-    //save password to gnome keyring, if not successful, false is returned.
-    bool savePassword(const string &passwordName,
-                      const string &password,
-                      const ConfigPasswordKey &key);
-
-    /**
-     * Read stdin via InfoRequest/Response.
-     */
-    void readStdin(string &content);
 };
 
 /**
