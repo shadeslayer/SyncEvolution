@@ -27,6 +27,8 @@ libsyncevodbusserver_la_SOURCES = \
 	main.cpp		\
 	network-manager-client.h	\
 	network-manager-client.cpp	\
+	presence-status.h	\
+	presence-status.cpp	\
 	read-operations.h	\
 	read-operations.cpp	\
 	restart.h		\

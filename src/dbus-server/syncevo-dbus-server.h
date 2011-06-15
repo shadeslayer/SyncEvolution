@@ -34,6 +34,7 @@
 #include "network-manager-client.h"
 #include "session-listener.h"
 #include "auto-sync-manager.h"
+#include "presence-status.h"
 
 using namespace GDBusCXX;
 using namespace SyncEvo;
@@ -56,79 +57,6 @@ class DBusUserInterface;
 class DBusServer;
 
 class InfoReq;
-
-class PresenceStatus {
-    bool m_httpPresence;
-    bool m_btPresence;
-    bool m_initiated;
-    DBusServer &m_server;
-
-    /** two timers to record when the statuses of network and bt are changed */
-    Timer m_httpTimer;
-    Timer m_btTimer;
-
-    enum PeerStatus {
-        /* The transport is not available (local problem) */
-        NOTRANSPORT,
-        /* The peer is not contactable (remote problem) */
-        UNREACHABLE,
-        /* Not for sure whether the peer is presence but likely*/
-        MIGHTWORK,
-
-        INVALID
-    };
-
-    typedef map<string, vector<pair <string, PeerStatus> > > StatusMap;
-    typedef pair<const string, vector<pair <string, PeerStatus> > > StatusPair;
-    typedef pair <string, PeerStatus> PeerStatusPair;
-    StatusMap m_peers;
-
-    static std::string status2string (PeerStatus status) {
-        switch (status) {
-            case NOTRANSPORT:
-                return "no transport";
-                break;
-            case UNREACHABLE:
-                return "not present";
-                break;
-            case MIGHTWORK:
-                return "";
-                break;
-            case INVALID:
-                return "invalid transport status";
-        }
-        // not reached, keep compiler happy
-        return "";
-    }
-
-    public:
-    PresenceStatus (DBusServer &server)
-        :m_httpPresence (false), m_btPresence (false), m_initiated (false), m_server (server),
-        m_httpTimer(), m_btTimer()
-    {
-    }
-
-    enum TransportType{
-        HTTP_TRANSPORT,
-        BT_TRANSPORT,
-        INVALID_TRANSPORT
-    };
-
-    void init();
-
-    /* Implement DBusServer::checkPresence*/
-    void checkPresence (const string &peer, string& status, std::vector<std::string> &transport);
-
-    void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config);
-
-    void updatePresenceStatus (bool httpPresence, bool btPresence);
-    void updatePresenceStatus (bool newStatus, TransportType type);
-
-    bool getHttpPresence() { return m_httpPresence; }
-    bool getBtPresence() { return m_btPresence; }
-    Timer& getHttpTimer() { return m_httpTimer; }
-    Timer& getBtTimer() { return m_btTimer; }
-};
 
 class BluezManager;
 
