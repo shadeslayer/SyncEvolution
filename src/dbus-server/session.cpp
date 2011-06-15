@@ -21,6 +21,7 @@
 #include "syncevo-dbus-server.h"
 #include "info-req.h"
 #include "cmdline-wrapper.h"
+#include "connection.h"
 
 SE_BEGIN_CXX
 
