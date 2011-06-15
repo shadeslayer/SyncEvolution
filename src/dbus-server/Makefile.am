@@ -19,6 +19,7 @@ libsyncevodbusserver_la_SOURCES = \
 	bluez-manager.cpp	\
 	client.h		\
 	client.cpp		\
+	cmdline-wrapper.h	\
 	common.h		\
 	connman-client.h	\
 	connman-client.cpp	\
