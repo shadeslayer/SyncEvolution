@@ -17,6 +17,10 @@
  * 02110-1301  USA
  */
 
+#include <config.h>
+
+#ifdef HAS_MLITE
+
 #include "NotificationBackendMLite.h"
 
 #include <mlite/MNotification>
@@ -63,3 +67,4 @@ void NotificationBackendMLite::publish(
 
 SE_END_CXX
 
+#endif

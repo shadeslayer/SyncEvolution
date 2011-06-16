@@ -506,11 +506,16 @@ if test $enable_dbus_service = "yes"; then
     PKG_CHECK_MODULES(MLITE, [mlite QtGui], HAVE_MLITE=yes, HAVE_MLITE=no)
     AC_ARG_ENABLE(mlite,
                   AS_HELP_STRING([--enable-mlite],
-                                 [send notifications for automatic sync events, using mlite]),
-                  [ test "$enableval" = "no" || test $HAVE_MLITE = "yes" || AC_ERROR([required mlite package not found]) ],
-                  [ test $HAVE_MLITE = "yes" || AC_ERROR([required mlite package not found, use --disable-mlite to compile without mlite based notifications]) ])
-    if test $HAVE_MLITE = "yes"; then
+                                 [send notifications for automatic sync events, using mlite (off by default)]),
+                  [ enable_mlite="$enableval"
+                    test "$enableval" = "no" || test $HAVE_MLITE = "yes" || AC_ERROR([required mlite package not found]) ],
+                  [ enable_mlite="no" ])
+    if test $enable_mlite = "yes"; then
         AC_DEFINE(HAS_MLITE, 1, [define if mlite could be used in dbus service])
+    else
+        # don't use mlite, even if found
+        MLITE_CFLAGS=
+        MLITE_LIBS=
     fi
     AC_DEFINE(DBUS_SERVICE, 1, [define if dbus service is enabled])
 fi
@@ -522,8 +527,6 @@ AC_SUBST(KEYRING_CFLAGS)
 AC_SUBST(KEYRING_LIBS) 
 AC_SUBST(LIBNOTIFY_CFLAGS)
 AC_SUBST(LIBNOTIFY_LIBS)
-AC_SUBST(MLITE_CFLAGS)
-AC_SUBST(MLITE_LIBS)
 AC_SUBST(LIBEXECDIR)
 AC_SUBST(BUTEOSYNCPROFILE_LIBS)
 AC_SUBST(BUTEOSYNCPROFILE_CFLAGS)
