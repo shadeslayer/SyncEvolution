@@ -190,6 +190,7 @@ syncevo_dbus_server_SOURCES = \
 	NotificationBackendLibnotify.cpp \
 	NotificationBackendMLite.h \
 	NotificationBackendMLite.cpp \
+	NotificationManager.h \
 	NotificationManagerBase.h \
 	NotificationManagerFactory.h \
 	NotificationManagerFactory.cpp \
