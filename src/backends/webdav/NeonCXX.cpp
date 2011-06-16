@@ -359,6 +359,12 @@ unsigned int Session::options(const std::string &path)
 }
 #endif // HAVE_LIBNEON_OPTIONS
 
+class PropFindDeleter
+{
+public:
+    void operator () (ne_propfind_handler *handler) { if (handler) { ne_propfind_destroy(handler); } }
+};
+
 void Session::propfindURI(const std::string &path, int depth,
                           const ne_propname *props,
                           const PropfindURICallback_t &callback,
@@ -367,36 +373,27 @@ void Session::propfindURI(const std::string &path, int depth,
     startOperation("PROPFIND", deadline);
 
  retry:
-    ne_propfind_handler *handler;
+    boost::shared_ptr<ne_propfind_handler> handler;
     int error;
 
-    handler = ne_propfind_create(m_session, path.c_str(), depth);
+    handler = boost::shared_ptr<ne_propfind_handler>(ne_propfind_create(m_session, path.c_str(), depth),
+                                                     PropFindDeleter());
     if (props != NULL) {
-	error = ne_propfind_named(handler, props,
+	error = ne_propfind_named(handler.get(), props,
                                   propsResult, const_cast<void *>(static_cast<const void *>(&callback)));
     } else {
-	error = ne_propfind_allprop(handler,
+	error = ne_propfind_allprop(handler.get(),
                                     propsResult, const_cast<void *>(static_cast<const void *>(&callback)));
     }
 
-    // remember details before destroying request, needed for 301
-    ne_request *req = ne_propfind_get_request(handler);
+    // remain valid as long as "handler" is valid
+    ne_request *req = ne_propfind_get_request(handler.get());
     const ne_status *status = ne_get_status(req);
-    int code = status->code;
-    int klass = status->klass;
     const char *tmp = ne_get_response_header(req, "Location");
     std::string location(tmp ? tmp : "");
 
-    ne_propfind_destroy(handler);
-    
-    if (error == NE_ERROR && klass == 3) {
-        SE_THROW_EXCEPTION_2(RedirectException,
-                             StringPrintf("%d status: redirected to %s", code, location.c_str()),
-                             code, location);
-    } else {
-        if (!check(error, code)) {
-            goto retry;
-        }
+    if (!check(error, status->code, status, location)) {
+        goto retry;
     }
 }
 
