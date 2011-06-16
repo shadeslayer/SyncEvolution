@@ -409,7 +409,7 @@ void LocalTransportAgent::receiveChildReport()
         try {
             SE_LOG_DEBUG(NULL, NULL, "parent: receiving report");
             m_receiveBuffer.m_used = 0;
-            if (readMessage(statusFD, m_receiveBuffer, deadline()) == ACTIVE) {
+            if (readMessage(statusFD, m_receiveBuffer, deadline(5 * 60 /* seconds */)) == ACTIVE) {
                 boost::shared_ptr<std::string> data(new std::string);
                 data->assign(m_receiveBuffer.m_message->m_data, m_receiveBuffer.m_message->getDataLength());
                 boost::shared_ptr<StringDataBlob> dump(new StringDataBlob("buffer", data, false));
@@ -472,7 +472,7 @@ void LocalTransportAgent::send(const char *data, size_t len)
                 m_receiveBuffer.m_used - len);
         m_receiveBuffer.m_used -= len;
     }
-    m_status = writeMessage(m_messageFD, m_sendType, data, len, deadline());
+    m_status = writeMessage(m_messageFD, m_sendType, data, len, deadline(5 * 60 /* seconds */));
 }
 
 TransportAgent::Status LocalTransportAgent::writeMessage(int fd, Message::Type type, const char *data, size_t len, Timespec deadline)
@@ -595,7 +595,7 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
             m_status = INACTIVE;
         } else {
             if (!m_receiveBuffer.haveMessage()) {
-                m_status = readMessage(m_messageFD, m_receiveBuffer, deadline());
+                m_status = readMessage(m_messageFD, m_receiveBuffer, deadline(m_timeoutSeconds));
                 if (m_status == ACTIVE) {
                     // complete message received, check if it is SyncML
                     switch (m_receiveBuffer.m_message->m_type) {
@@ -756,7 +756,22 @@ void LocalTransportAgent::getReply(const char *&data, size_t &len, std::string &
 
 void LocalTransportAgent::setTimeout(int seconds)
 {
-    m_timeoutSeconds = seconds;
+    // setTimeout() was meant for unreliable transports like HTTP
+    // which cannot determine whether the peer is still alive. The
+    // LocalTransportAgent uses sockets and will notice when a peer
+    // dies unexpectedly, so timeouts should never be necessary.
+    //
+    // Quite the opposite, because the "client" in a local sync
+    // with WebDAV on the client side can be quite slow, incorrect
+    // timeouts were seen where the client side took longer than
+    // the default timeout of 5 minutes to process a message and
+    // send a reply.
+    //
+    // Therefore we ignore the request to set a timeout here and thus
+    // local send/receive operations are allowed to continue for as
+    // long as they like.
+    //
+    // m_timeoutSeconds = seconds;
 }
 
 SE_END_CXX

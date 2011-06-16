@@ -114,7 +114,7 @@ class LocalTransportAgent : public TransportAgent
     boost::shared_ptr<SyncContext> m_client;
     string m_clientContext;
     GMainLoop *m_loop;
-    int m_timeoutSeconds;
+    unsigned m_timeoutSeconds;
     Status m_status;
 
     /** type of message for next send() */
@@ -184,8 +184,12 @@ class LocalTransportAgent : public TransportAgent
     /** utility function for parent: check m_clientReport and log/throw errors */
     void checkChildReport();
 
-    /** utility function: calculate deadline for operation starting now */
-    Timespec deadline() { return m_timeoutSeconds ? (Timespec::monotonic() + m_timeoutSeconds) : Timespec(); }
+    /**
+     * utility function: calculate deadline for operation starting now
+     *
+     * @param seconds      timeout in seconds, 0 for the default
+     */
+    Timespec deadline(unsigned seconds) { return seconds ? (Timespec::monotonic() + seconds) : Timespec(); }
 };
 
 SE_END_CXX
