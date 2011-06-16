@@ -310,14 +310,14 @@ class ConfigProperty {
 
     /**
      * This is used to generate description dynamically according to the context information
-     * Defalut implmenentation is to return value set in the constructor.
+     * Default implmenentation is to return value set in the constructor, otherwise the server name.
      * Derived classes can override this function. Used by 'checkPassword' and 'savePassword'
      * to generate description for user interface.
      */
     virtual const string getDescr(const string &serverName,
                                   FilterConfigNode &globalConfigNode,
                                   const string &sourceName = string(),
-                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<FilterConfigNode>()) const { return m_descr; }
+                                  const boost::shared_ptr<FilterConfigNode> &sourceConfigNode=boost::shared_ptr<FilterConfigNode>()) const { return m_descr.empty() ? serverName : m_descr; }
 
 
     /** split \n separated comment into lines without \n, appending them to commentLines */

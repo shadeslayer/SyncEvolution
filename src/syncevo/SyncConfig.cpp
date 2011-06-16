@@ -1122,15 +1122,13 @@ static ConfigProperty syncPropUsername("username",
                                        "user name used for authorization with the SyncML server",
                                        "");
 static PasswordConfigProperty syncPropPassword("password",
-                                               "password used for authorization with the SyncML server;\n"
+                                               "password used for authorization with the peer;\n"
                                                "in addition to specifying it directly as plain text, it can\n"
                                                "also be read from the standard input or from an environment\n"
                                                "variable of your choice:\n"
                                                "  plain text: password = <insert your password here>\n"
                                                "         ask: password = -\n"
-                                               "env variable: password = ${<name of environment variable>}\n",
-                                               "",
-                                               "SyncML server");
+                                               "env variable: password = ${<name of environment variable>}\n");
 static BoolConfigProperty syncPropPreventSlowSync("preventSlowSync",
                                                   "During a slow sync, the SyncML server must match all items\n"
                                                   "of the client with its own items and detect which ones it\n"
