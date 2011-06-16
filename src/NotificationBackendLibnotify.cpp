@@ -34,7 +34,7 @@ SE_BEGIN_CXX
 NotificationBackendLibnotify::NotificationBackendLibnotify()
     : m_initialized(false),
       m_acceptsActions(false),
-      m_notification(false)
+      m_notification(NULL)
 {
 }
 
