@@ -111,6 +111,7 @@ class LocalTransportAgent : public TransportAgent
 
  private:
     SyncContext *m_server;
+    boost::shared_ptr<SyncContext> m_client;
     string m_clientContext;
     GMainLoop *m_loop;
     int m_timeoutSeconds;
