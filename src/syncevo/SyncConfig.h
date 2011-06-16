@@ -1464,22 +1464,6 @@ class SyncConfig {
     virtual std::string getSyncPassword() const;
     virtual void setSyncPassword(const string &value, bool temporarily = false);
 
-    /**
-     * Look at the password setting and if it requires user interaction,
-     * get it from the user. Then store it for later usage in getSyncPassword().
-     * Without this call, getSyncPassword() returns the original, unmodified
-     * config string.
-     */
-    virtual void checkSyncPassword(ConfigUserInterface &ui);
-
-    /**
-     * Look at the password setting and if it needs special mechanism to
-     * save password, this function is used to store specified password
-     * in the config tree.
-     * @param ui the ui pointer
-     */
-    virtual void saveSyncPassword(ConfigUserInterface &ui); 
-
     virtual bool getPreventSlowSync() const;
     virtual void setPreventSlowSync(bool value, bool temporarily = false);
     virtual bool getUseProxy() const;
@@ -1490,8 +1474,6 @@ class SyncConfig {
     virtual std::string getProxyUsername() const;
     virtual void setProxyUsername(const string &value, bool temporarily = false);
     virtual std::string getProxyPassword() const;
-    virtual void checkProxyPassword(ConfigUserInterface &ui);
-    virtual void saveProxyPassword(ConfigUserInterface &ui);
     virtual void setProxyPassword(const string &value, bool temporarily = false);
     virtual vector<string>  getSyncURL() const;
     virtual void setSyncURL(const string &value, bool temporarily = false);

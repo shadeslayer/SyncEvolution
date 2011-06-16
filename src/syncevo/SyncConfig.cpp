@@ -1570,13 +1570,6 @@ void SyncConfig::setSyncUsername(const string &value, bool temporarily) { syncPr
 std::string SyncConfig::getSyncPassword() const {
     return syncPropPassword.getCachedProperty(*getNode(syncPropPassword), m_cachedPassword);
 }
-void SyncConfig::checkSyncPassword(ConfigUserInterface &ui) {
-    syncPropPassword.checkPassword(ui, m_peer, *getProperties());
-}
-void SyncConfig::saveSyncPassword(ConfigUserInterface &ui) {
-    syncPropPassword.savePassword(ui, m_peer, *getProperties());
-}
-
 void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
                                            const string &serverName,
                                            FilterConfigNode &globalConfigNode,
@@ -1755,12 +1748,6 @@ void SyncConfig::setProxyUsername(const string &value, bool temporarily) { syncP
 
 std::string SyncConfig::getProxyPassword() const {
     return syncPropProxyPassword.getCachedProperty(*getNode(syncPropProxyPassword), m_cachedProxyPassword);
-}
-void SyncConfig::checkProxyPassword(ConfigUserInterface &ui) {
-    syncPropProxyPassword.checkPassword(ui, m_peer, *getNode(syncPropProxyPassword), "", boost::shared_ptr<FilterConfigNode>());
-}
-void SyncConfig::saveProxyPassword(ConfigUserInterface &ui) {
-    syncPropProxyPassword.savePassword(ui, m_peer, *getNode(syncPropProxyPassword), "", boost::shared_ptr<FilterConfigNode>());
 }
 void SyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*getNode(syncPropProxyPassword), value, temporarily); }
 vector<string> SyncConfig::getSyncURL() const { 
