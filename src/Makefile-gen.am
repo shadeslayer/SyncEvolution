@@ -183,9 +183,15 @@ distclean-local:
 
 if COND_DBUS
 syncevo_dbus_server_SOURCES = \
+	NotificationBackendBase.h \
+	NotificationBackendNoop.h \
 	NotificationBackendNoop.cpp \
+	NotificationBackendLibnotify.h \
 	NotificationBackendLibnotify.cpp \
+	NotificationBackendMLite.h \
 	NotificationBackendMLite.cpp \
+	NotificationManagerBase.h \
+	NotificationManagerFactory.h \
 	NotificationManagerFactory.cpp \
 	syncevo-dbus-server.cpp \
 	$(CORE_SOURCES)
