@@ -367,6 +367,8 @@ class Timespec : public timespec
 
     Timespec operator + (int seconds) const { return Timespec(tv_sec + seconds, tv_nsec); }
     Timespec operator - (int seconds) const { return Timespec(tv_sec - seconds, tv_nsec); }
+    Timespec operator + (unsigned seconds) const { return Timespec(tv_sec + seconds, tv_nsec); }
+    Timespec operator - (unsigned seconds) const { return Timespec(tv_sec - seconds, tv_nsec); }
     Timespec operator + (const Timespec &other) const;
     Timespec operator - (const Timespec &other) const;
 
