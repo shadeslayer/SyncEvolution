@@ -44,6 +44,7 @@
 
 
 #include <syncevo/declarations.h>
+using namespace std;
 SE_BEGIN_CXX
 
 LogRedirect *LogRedirect::m_redirect;

@@ -23,6 +23,8 @@
 #include <syncevo/ConfigFilter.h>
 #include <syncevo/SyncConfig.h>
 
+using namespace std;
+
 SE_BEGIN_CXX
 
 void ConfigProps::add(const ConfigProps &other)
@@ -199,7 +201,5 @@ void FullProps::createFilters(const string &context,
         }
     }
 }
-
-
 
 SE_END_CXX

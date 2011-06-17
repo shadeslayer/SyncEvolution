@@ -24,7 +24,6 @@
 #include <utility>
 #include <string>
 #include <sstream>
-using namespace std;
 
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -49,10 +48,10 @@ class ConfigNode {
     virtual ~ConfigNode() {}
 
     /** creates a file-backed config node which accepts arbitrary key/value pairs */
-    static boost::shared_ptr<ConfigNode> createFileNode(const string &filename);
+    static boost::shared_ptr<ConfigNode> createFileNode(const std::string &filename);
 
     /** a name for the node that the user can understand */
-    virtual string getName() const = 0;
+    virtual std::string getName() const = 0;
 
     /**
      * save all changes persistently
@@ -68,7 +67,7 @@ class ConfigNode {
      * @param property - the property name
      * @return value of the property or empty string if not set
      */
-    virtual string readProperty(const string &property) const = 0;
+    virtual std::string readProperty(const std::string &property) const = 0;
 
     /**
      * Sets a property value.
@@ -83,15 +82,15 @@ class ConfigNode {
      *                   remember that the value hasn't really been changed.
      *                   An implementation can decide to not support this.
      */
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = string(""),
-                             const string *defValue = NULL) = 0;
+    virtual void setProperty(const std::string &property,
+                             const std::string &value,
+                             const std::string &comment = std::string(""),
+                             const std::string *defValue = NULL) = 0;
 
     /**
      * Sets a boolean property, using "true/false".
      */
-    void setProperty(const string &property, bool value) {
+    void setProperty(const std::string &property, bool value) {
         setProperty(property, value ? "true" : "false");
     }
 
@@ -99,20 +98,20 @@ class ConfigNode {
      * Sets a property value with automatic conversion to the underlying string,
      * using stream formatting.
      */
-    template <class T> void setProperty(const string &property,
+    template <class T> void setProperty(const std::string &property,
                                         const T &value) {
         std::stringstream strval;
         strval << value;
         setProperty(property, strval.str());
     }
 
-    bool getProperty(const string &property,
-                     string &value) const {
+    bool getProperty(const std::string &property,
+                     std::string &value) const {
         value = readProperty(property);
         return !value.empty();
     }
 
-    bool getProperty(const string &property,
+    bool getProperty(const std::string &property,
                      bool &value) const {
         std::string str = readProperty(property);
         if (str.empty()) {
@@ -143,7 +142,7 @@ class ConfigNode {
         return false;
     }
 
-    template <class T> bool getProperty(const string &property,
+    template <class T> bool getProperty(const std::string &property,
                                         T &value) const {
         std::string str = readProperty(property);
         if (str.empty()) {
@@ -180,7 +179,7 @@ class ConfigNode {
      *
      * @param property    the name of the property which is to be removed
      */
-    virtual void removeProperty(const string &property) = 0;
+    virtual void removeProperty(const std::string &property) = 0;
 
     /**
      * Remove all properties.

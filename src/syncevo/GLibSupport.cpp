@@ -33,6 +33,8 @@
 #include <glib.h>
 #endif
 
+using namespace std;
+
 SE_BEGIN_CXX
 
 #ifdef HAVE_GLIB

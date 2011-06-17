@@ -28,7 +28,6 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 /**
  * This implementation maps nodes to plain .ini style files below an
@@ -47,40 +46,40 @@ class FileConfigTree : public ConfigTree {
      *                          that SHARED_LAYOUT creates the "peers" directory during
      *                          flushing
      */
-    FileConfigTree(const string &root,
-                   const string &peer,
+    FileConfigTree(const std::string &root,
+                   const std::string &peer,
                    SyncConfig::Layout layout);
 
     void setReadOnly(bool readonly) { m_readonly = readonly; }
     bool getReadOnly() const { return m_readonly; }
 
     /* ConfigTree API */
-    virtual string getRootPath() const;
+    virtual std::string getRootPath() const;
     virtual void flush();
     virtual void reload();
-    virtual void remove(const string &path);
+    virtual void remove(const std::string &path);
     virtual void reset();
-    virtual boost::shared_ptr<ConfigNode> open(const string &path,
+    virtual boost::shared_ptr<ConfigNode> open(const std::string &path,
                                                PropertyType type,
-                                               const string &otherId = string(""));
-    virtual boost::shared_ptr<ConfigNode> add(const string &path,
+                                               const std::string &otherId = std::string(""));
+    virtual boost::shared_ptr<ConfigNode> add(const std::string &path,
                                               const boost::shared_ptr<ConfigNode> &node);
-    list<string> getChildren(const string &path);
+    std::list<std::string> getChildren(const std::string &path);
 
  private:
     /**
      * remove all nodes from the node cache which are located at 'fullpath' 
      * or are contained inside it
      */
-    void clearNodes(const string &fullpath);
+    void clearNodes(const std::string &fullpath);
 
  private:
-    const string m_root;
-    const string m_peer;
+    const std::string m_root;
+    const std::string m_peer;
     SyncConfig::Layout m_layout;
     bool m_readonly;
 
-    typedef map< string, boost::shared_ptr<ConfigNode> > NodeCache_t;
+    typedef std::map< std::string, boost::shared_ptr<ConfigNode> > NodeCache_t;
     /** cache of all nodes ever accessed */
     NodeCache_t m_nodes;
 };

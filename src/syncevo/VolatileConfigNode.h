@@ -37,7 +37,7 @@ class VolatileConfigNode : public FilterConfigNode {
     FilterConfigNode(boost::shared_ptr<ConfigNode>(new FileConfigNode("/dev/null", "dummy.ini", true)))
         {}
 
-    virtual string getName() const { return "intermediate configuration"; }
+    virtual std::string getName() const { return "intermediate configuration"; }
     virtual void flush() {}
 };
 

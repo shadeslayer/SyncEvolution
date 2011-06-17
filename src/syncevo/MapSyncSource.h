@@ -25,7 +25,6 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 class MapSyncSource;
 

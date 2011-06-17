@@ -52,12 +52,12 @@ StringDataBlob::StringDataBlob(const std::string &name,
  
 boost::shared_ptr<std::ostream> StringDataBlob::write()
 {
-    return boost::shared_ptr<std::ostringstream>(new ostringstream, FinalizeWrite(m_data));
+    return boost::shared_ptr<std::ostringstream>(new std::ostringstream, FinalizeWrite(m_data));
 }
 
 boost::shared_ptr<std::istream> StringDataBlob::read()
 {
-    return boost::shared_ptr<std::istream>(new istringstream(m_data ? *m_data : ""));
+    return boost::shared_ptr<std::istream>(new std::istringstream(m_data ? *m_data : ""));
 }
 
 SE_END_CXX

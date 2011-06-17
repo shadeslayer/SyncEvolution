@@ -30,7 +30,6 @@
 #include <set>
 #include <map>
 #include <stdint.h>
-using namespace std;
 
 #include <boost/smart_ptr.hpp>
 

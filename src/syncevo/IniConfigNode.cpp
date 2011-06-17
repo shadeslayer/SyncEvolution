@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 
 #include <syncevo/declarations.h>
+using namespace std;
 SE_BEGIN_CXX
 
 IniBaseConfigNode::IniBaseConfigNode(const boost::shared_ptr<DataBlob> &data) :
@@ -56,7 +57,7 @@ IniFileConfigNode::IniFileConfigNode(const boost::shared_ptr<DataBlob> &data) :
     read();
 }
 
-IniFileConfigNode::IniFileConfigNode(const string &path, const string &fileName, bool readonly) :
+IniFileConfigNode::IniFileConfigNode(const std::string &path, const std::string &fileName, bool readonly) :
     IniBaseConfigNode(boost::shared_ptr<DataBlob>(new FileDataBlob(path, fileName, readonly)))
 {
     read();

@@ -27,15 +27,14 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 /**
  * A base class for file related config
  */
 class FileBaseConfigNode: public ConfigNode {
   protected:
-    string m_path;
-    string m_fileName;
+    std::string m_path;
+    std::string m_fileName;
     bool m_modified;
     const bool m_readonly;
     bool m_exists;
@@ -49,7 +48,7 @@ class FileBaseConfigNode: public ConfigNode {
      * @param readonly  do not create or write file, it must exist;
      *                  flush() will throw an exception when changes would have to be written
      */
-    FileBaseConfigNode(const string &path, const string &fileName, bool readonly);
+    FileBaseConfigNode(const std::string &path, const std::string &fileName, bool readonly);
     /** 
      * a virtual method to serial data structure to the file
      * It is used by flush function to flush memory into disk file
@@ -57,7 +56,7 @@ class FileBaseConfigNode: public ConfigNode {
     virtual void toFile(FILE* file) = 0;
   public:
     virtual void flush();
-    virtual string getName() const { return m_path + "/" + m_fileName; }
+    virtual std::string getName() const { return m_path + "/" + m_fileName; }
     virtual bool exists() const { return m_exists; }
     virtual bool isReadOnly() const { return m_readonly; }
 };
@@ -77,7 +76,7 @@ class FileBaseConfigNode: public ConfigNode {
  * @todo rewrite with standard C++ containers
  */
 class FileConfigNode : public FileBaseConfigNode {
-    list<string> m_lines;
+    std::list<std::string> m_lines;
 
     void read();
 
@@ -95,18 +94,18 @@ class FileConfigNode : public FileBaseConfigNode {
      * @param readonly  do not create or write file, it must exist;
      *                  flush() will throw an exception when changes would have to be written
      */
-    FileConfigNode(const string &path, const string &fileName, bool readonly);
+    FileConfigNode(const std::string &path, const std::string &fileName, bool readonly);
 
     /* keep underlying methods visible; our own setProperty() would hide them */
     using ConfigNode::setProperty;
 
-    virtual string readProperty(const string &property) const;
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = "",
-                             const string *defValue = NULL);
+    virtual std::string readProperty(const std::string &property) const;
+    virtual void setProperty(const std::string &property,
+                             const std::string &value,
+                             const std::string &comment = "",
+                             const std::string *defValue = NULL);
     virtual void readProperties(ConfigProps &props) const;
-    virtual void removeProperty(const string &property);
+    virtual void removeProperty(const std::string &property);
     virtual void clear();
 };
 
@@ -116,7 +115,7 @@ class FileConfigNode : public FileBaseConfigNode {
  * Here comments for property default value are discarded.
  */
 class HashFileConfigNode: public FileBaseConfigNode {
-    map<std::string, std::string> m_props;
+    std::map<std::string, std::string> m_props;
     /**
      * Map used to store pairs
      */
@@ -127,15 +126,15 @@ class HashFileConfigNode: public FileBaseConfigNode {
     virtual void toFile(FILE* file);
 
  public:
-    HashFileConfigNode(const string &path, const string &fileName, bool readonly);
-    virtual string readProperty(const string &property) const;
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = "",
-                             const string *defValue = NULL);
+    HashFileConfigNode(const std::string &path, const std::string &fileName, bool readonly);
+    virtual std::string readProperty(const std::string &property) const;
+    virtual void setProperty(const std::string &property,
+                             const std::string &value,
+                             const std::string &comment = "",
+                             const std::string *defValue = NULL);
     virtual void readProperties(ConfigProps &props) const;
     virtual void writeProperties(const ConfigProps &props);
-    virtual void removeProperty(const string &property);
+    virtual void removeProperty(const std::string &property);
     virtual void clear();
 };
 

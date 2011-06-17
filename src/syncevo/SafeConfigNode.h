@@ -30,7 +30,6 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 /**
  * This class acts as filter between a real config node and its user:
@@ -57,20 +56,20 @@ class SafeConfigNode : public ConfigNode {
     void setMode(bool strict) { m_strictMode = strict; }
     bool getMode() { return m_strictMode; }
 
-    virtual string getName() const { return m_readOnlyNode->getName(); }
+    virtual std::string getName() const { return m_readOnlyNode->getName(); }
 
     /* keep underlying methods visible; our own setProperty() would hide them */
     using ConfigNode::setProperty;
 
     /* ConfigNode API */
     virtual void flush();
-    virtual string readProperty(const string &property) const;
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = "",
-                             const string *defValue = NULL);
+    virtual std::string readProperty(const std::string &property) const;
+    virtual void setProperty(const std::string &property,
+                             const std::string &value,
+                             const std::string &comment = "",
+                             const std::string *defValue = NULL);
     virtual void readProperties(ConfigProps &props) const;
-    virtual void removeProperty(const string &property);
+    virtual void removeProperty(const std::string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }
     virtual bool isReadOnly() const { return !m_node || m_readOnlyNode->isReadOnly(); }
     virtual void clear() { m_node->clear(); }
@@ -83,11 +82,11 @@ class SafeConfigNode : public ConfigNode {
     /**
      * turn str into something which can be used as key or value in ConfigNode
      */
-    string escape(const string &str) const {
+    std::string escape(const std::string &str) const {
         return StringEscape::escape(str, '!', m_strictMode ? StringEscape::STRICT : StringEscape::INI_VALUE);
     }
 
-    static string unescape(const string &str) {
+    static std::string unescape(const std::string &str) {
         return StringEscape::unescape(str, '!');
     }
 };

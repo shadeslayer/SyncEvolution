@@ -35,6 +35,7 @@
 #include <synthesis/syerror.h>
 
 #include <syncevo/declarations.h>
+using namespace std;
 SE_BEGIN_CXX
 
 std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)

@@ -117,7 +117,7 @@ public:
         std::vector< LCS::Entry<std::string> > result;
         LCS::lcs(content1, content2, std::back_inserter(result), LCS::accessor<content>());
 
-        ostringstream out;
+        std::ostringstream out;
         std::copy(result.begin(), result.end(), std::ostream_iterator< LCS::Entry<std::string> >(out));
         CPPUNIT_ASSERT_EQUAL(std::string("1, 4: begin\n"
                                          "2, 5: item1\n"

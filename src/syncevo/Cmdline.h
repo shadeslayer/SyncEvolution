@@ -25,7 +25,6 @@
 #include <syncevo/util.h>
 
 #include <set>
-using namespace std;
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_array.hpp>
@@ -44,24 +43,24 @@ class CmdlineTest;
  */
 class CmdlineLUID
 {
-    string m_encodedLUID;
+    std::string m_encodedLUID;
 
 public:
     /** fill with encoded LUID */
-    void setEncoded(const string &encodedLUID) { m_encodedLUID = encodedLUID; }
+    void setEncoded(const std::string &encodedLUID) { m_encodedLUID = encodedLUID; }
 
     /** return encoded LUID as string */
-    string getEncoded() const { return m_encodedLUID; }
+    std::string getEncoded() const { return m_encodedLUID; }
 
     /** return original LUID */
-    string toLUID() const { return toLUID(m_encodedLUID); }
-    static string toLUID(const string &encoded) { return StringEscape::unescape(encoded, '%'); }
+    std::string toLUID() const { return toLUID(m_encodedLUID); }
+    static std::string toLUID(const std::string &encoded) { return StringEscape::unescape(encoded, '%'); }
 
     /** fill with unencoded LUID */
-    void setLUID(const string &luid) { m_encodedLUID = fromLUID(luid); }
+    void setLUID(const std::string &luid) { m_encodedLUID = fromLUID(luid); }
 
     /** convert from unencoded LUID */
-    static string fromLUID(const string &luid) { return StringEscape::escape(luid, '%', StringEscape::STRICT); }
+    static std::string fromLUID(const std::string &luid) { return StringEscape::escape(luid, '%', StringEscape::STRICT); }
 };
 
 class Cmdline {
@@ -70,9 +69,9 @@ public:
      * @param out      stdout stream for normal messages
      * @param err      stderr stream for error messages
      */
-    Cmdline(int argc, const char * const *argv, ostream &out, ostream &err);
-    Cmdline(const vector<string> &args, ostream &out, ostream &err);
-    Cmdline(ostream &out, ostream &err, const char *arg, ...);
+    Cmdline(int argc, const char * const *argv, std::ostream &out, std::ostream &err);
+    Cmdline(const std::vector<std::string> &args, std::ostream &out, std::ostream &err);
+    Cmdline(std::ostream &out, std::ostream &err, const char *arg, ...);
 
     /**
      * parse the command line options
@@ -88,7 +87,7 @@ public:
      *
      * @retval true if command line was okay
      */
-    bool parse(vector<string> &args);
+    bool parse(std::vector<std::string> &args);
 
     /**
      * @return false if run() still needs to be invoked, true when parse() already did
@@ -131,18 +130,18 @@ public:
     bool status() { return m_status; }
 
     /* server name */
-    string getConfigName() { return m_server; }
+    std::string getConfigName() { return m_server; }
 
     /* check whether command line runs sync. It should be called after parsing. */
     bool isSync();
 
 protected:
     // vector to store strings for arguments 
-    vector<string> m_args;
+    std::vector<std::string> m_args;
 
     int m_argc;
     const char * const * m_argv;
-    ostream &m_out, &m_err;
+    std::ostream &m_out, &m_err;
 
     //array to store pointers of arguments
     boost::scoped_array<const char *> m_argvArray;
@@ -171,24 +170,24 @@ protected:
     const ConfigPropertyRegistry &m_validSyncProps;
     const ConfigPropertyRegistry &m_validSourceProps;
 
-    string m_restore;
+    std::string m_restore;
     Bool m_before, m_after;
 
     Bool m_accessItems;
-    string m_itemPath;
-    string m_delimiter;
-    list<string> m_luids;
+    std::string m_itemPath;
+    std::string m_delimiter;
+    std::list<std::string> m_luids;
     Bool m_printItems, m_update, m_import, m_export, m_deleteItems;
 
-    string m_server;
-    string m_template;
-    set<string> m_sources;
+    std::string m_server;
+    std::string m_template;
+    std::set<std::string> m_sources;
 
     /** running the command line modified configuration settings (add, update, remove) */
     Bool m_configModified;
 
     /** compose description of cmd line option with optional parameter */
-    static string cmdOpt(const char *opt, const char *param = NULL);
+    static std::string cmdOpt(const char *opt, const char *param = NULL);
 
     /**
      * rename file or directory by appending .old or (if that already
@@ -204,7 +203,7 @@ protected:
      */
     void copyConfig(const boost::shared_ptr<SyncConfig> &from,
                     const boost::shared_ptr<SyncConfig> &to,
-                    const set<string> &selectedSources);
+                    const std::set<std::string> &selectedSources);
 
     /**
      * flush, move .synthesis dir, set ConsumerReady, ...
@@ -232,11 +231,11 @@ protected:
                    const char *propname = NULL);
 
     bool listPropValues(const ConfigPropertyRegistry &validProps,
-                        const string &propName,
-                        const string &opt);
+                        const std::string &propName,
+                        const std::string &opt);
 
     bool listProperties(const ConfigPropertyRegistry &validProps,
-                        const string &opt);
+                        const std::string &opt);
 
     /**
      * check that m_props don't contain
@@ -248,12 +247,12 @@ protected:
     /**
      * list all known data sources of a certain type
      */
-    void listSources(SyncSource &syncSource, const string &header);
+    void listSources(SyncSource &syncSource, const std::string &header);
 
-    void dumpConfigs(const string &preamble,
+    void dumpConfigs(const std::string &preamble,
                      const SyncConfig::ConfigList &servers);
 
-    void dumpConfigTemplates(const string &preamble,
+    void dumpConfigTemplates(const std::string &preamble,
                      const SyncConfig::TemplateList &templates,
                      bool printRank = false);
 
@@ -277,14 +276,14 @@ protected:
                         bool hidden,
                         const ConfigPropertyRegistry &allProps);
 
-    void dumpComment(ostream &stream,
-                     const string &prefix,
-                     const string &comment);
+    void dumpComment(std::ostream &stream,
+                     const std::string &prefix,
+                     const std::string &comment);
 
     /** print usage information */
     void usage(bool full,
-               const string &error = string(""),
-               const string &param = string(""));
+               const std::string &error = std::string(""),
+               const std::string &param = std::string(""));
 
     /**
      * This is a factory method used to delay sync client creation to its
@@ -317,7 +316,7 @@ protected:
      * Unsafe characters are escaped with SafeConfigNode::escape(true,true).
      * startDataRead() must have been called.
      */
-    void readLUIDs(SyncSource *source, list<string> &luids);
+    void readLUIDs(SyncSource *source, std::list<std::string> &luids);
 
     /**
      * Add or update one item.
@@ -326,7 +325,7 @@ protected:
      * @param data       the item data to insert
      * @return encoded luid of inserted item
      */
-    CmdlineLUID insertItem(SyncSourceRaw *source, const string &luid, const string &data);
+    CmdlineLUID insertItem(SyncSourceRaw *source, const std::string &luid, const std::string &data);
 };
 
 

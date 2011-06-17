@@ -32,7 +32,6 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 /**
  * This class acts as filter between a real config node and its user:
@@ -56,11 +55,11 @@ class FilterConfigNode : public ConfigNode {
     FilterConfigNode(const boost::shared_ptr<const ConfigNode> &node,
                      const ConfigFilter &filter = ConfigFilter());
 
-    virtual string getName() const { return m_readOnlyNode->getName(); }
+    virtual std::string getName() const { return m_readOnlyNode->getName(); }
 
     /** add another entry to the list of filter properties */
-    virtual void addFilter(const string &property,
-                           const string &value);
+    virtual void addFilter(const std::string &property,
+                           const std::string &value);
 
     /** replace current filter list with new one */
     virtual void setFilter(const ConfigFilter &filter);
@@ -68,13 +67,13 @@ class FilterConfigNode : public ConfigNode {
 
     /* ConfigNode API */
     virtual void flush();
-    virtual string readProperty(const string &property) const;
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = "",
-                             const string *defValue = NULL);
+    virtual std::string readProperty(const std::string &property) const;
+    virtual void setProperty(const std::string &property,
+                             const std::string &value,
+                             const std::string &comment = "",
+                             const std::string *defValue = NULL);
     virtual void readProperties(ConfigProps &props) const;
-    virtual void removeProperty(const string &property);
+    virtual void removeProperty(const std::string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }
     virtual bool isReadOnly() const { return !m_node || m_readOnlyNode->isReadOnly(); }
     virtual void clear();

@@ -30,7 +30,6 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 /**
  * This class acts as filter between a real config node and its user:
@@ -44,30 +43,30 @@ using namespace std;
 class PrefixConfigNode : public ConfigNode {
  public:
     /** read-write access to underlying node */
-    PrefixConfigNode(const string prefix,
+    PrefixConfigNode(const std::string prefix,
                      const boost::shared_ptr<ConfigNode> &node);
 
     /** read-only access to underlying node */
-    PrefixConfigNode(const string prefix,
+    PrefixConfigNode(const std::string prefix,
                      const boost::shared_ptr<const ConfigNode> &node);
 
-    virtual string getName() const { return m_readOnlyNode->getName(); }
+    virtual std::string getName() const { return m_readOnlyNode->getName(); }
 
     /* ConfigNode API */
     virtual void flush();
-    virtual string readProperty(const string &property) const;
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = "",
-                             const string *defValue = NULL);
+    virtual std::string readProperty(const std::string &property) const;
+    virtual void setProperty(const std::string &property,
+                             const std::string &value,
+                             const std::string &comment = "",
+                             const std::string *defValue = NULL);
     virtual void readProperties(ConfigProps &props) const;
-    virtual void removeProperty(const string &property);
+    virtual void removeProperty(const std::string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }
     virtual bool isReadOnly() const { return !m_node || m_readOnlyNode->isReadOnly(); }
     virtual void clear();
 
  private:
-    string m_prefix;
+    std::string m_prefix;
     boost::shared_ptr<ConfigNode> m_node;
     boost::shared_ptr<const ConfigNode> m_readOnlyNode;
 };

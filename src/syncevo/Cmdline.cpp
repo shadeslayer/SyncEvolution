@@ -47,7 +47,9 @@ using namespace std;
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
 #include <fstream>
+
 #include <syncevo/declarations.h>
+using namespace std;
 SE_BEGIN_CXX
 
 // synopsis and options char strings

@@ -41,7 +41,6 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 class Logger;
 
@@ -58,43 +57,43 @@ public:
 };
 
 /** shorthand, primarily useful for BOOST_FOREACH macro */
-typedef pair<string, string> StringPair;
-typedef map<string, string> StringMap;
+typedef std::pair<std::string, std::string> StringPair;
+typedef std::map<std::string, std::string> StringMap;
 
 /**
  * remove multiple slashes in a row and dots directly after a slash if not followed by filename,
  * remove trailing /
  */
-string normalizePath(const string &path);
+std::string normalizePath(const std::string &path);
 
 /**
  * Returns last component of path. Trailing slash is ignored.
  * Empty if path is empty.
  */
-string getBasename(const string &path);
+std::string getBasename(const std::string &path);
 
 /**
  * Returns path without the last component. Empty if nothing left.
  */
-string getDirname(const string &path);
+std::string getDirname(const std::string &path);
 
 /**
  * Splits path into directory and file part. Trailing slashes
  * are stripped first.
  */
-void splitPath(const string &path, string &dir, string &file);
+void splitPath(const std::string &path, std::string &dir, std::string &file);
 
 /**
  * convert relative path to canonicalized absolute path
  * @param path will be turned into absolute path if possible, otherwise left unchanged
  * @return true if conversion is successful, false otherwise(errno will be set)
  */
-bool relToAbs(string &path);
+bool relToAbs(std::string &path);
 
 /** ensure that m_path is writable, otherwise throw error */
-void mkdir_p(const string &path);
+void mkdir_p(const std::string &path);
 
-inline bool rm_r_all(const string &path, bool isDir) { return true; }
+inline bool rm_r_all(const std::string &path, bool isDir) { return true; }
 
 /**
  * remove a complete directory hierarchy; invoking on non-existant directory is okay
@@ -103,7 +102,7 @@ inline bool rm_r_all(const string &path, bool isDir) { return true; }
  *                 to be deleted (return true in that case); called with full path
  *                 to entry and true if known to be a directory
  */
-void rm_r(const string &path, boost::function<bool (const string &,
+void rm_r(const std::string &path, boost::function<bool (const std::string &,
                                                     bool)> filter = rm_r_all);
 
 /**
@@ -120,10 +119,10 @@ void rm_r(const string &path, boost::function<bool (const string &,
  * @param from     source directory or file
  * @param to       target directory or file (must have same type as from)
  */
-void cp_r(const string &from, const string &to);
+void cp_r(const std::string &from, const std::string &to);
 
 /** true if the path refers to a directory */
-bool isDir(const string &path);
+bool isDir(const std::string &path);
 
 /**
  * try to read a file into the given string, throw exception if fails
@@ -132,8 +131,8 @@ bool isDir(const string &path);
  * @retval content     filled with file content
  * @return true if file could be read
  */
-bool ReadFile(const string &filename, string &content);
-bool ReadFile(istream &in, string &content);
+bool ReadFile(const std::string &filename, std::string &content);
+bool ReadFile(std::istream &in, std::string &content);
 
 enum ExecuteFlags {
     EXECUTE_NO_STDERR = 1<<0,       /**< suppress stderr of command */
@@ -224,20 +223,20 @@ class StringEscape
     /**
      * escape string according to current settings
      */
-    string escape(const string &str) const;
+    std::string escape(const std::string &str) const;
 
     /** escape string with the given settings */
-    static string escape(const string &str, char escapeChar, Mode mode);
+    static std::string escape(const std::string &str, char escapeChar, Mode mode);
 
     /**
      * unescape string, with escape character as currently set
      */
-    string unescape(const string &str) const { return unescape(str, m_escapeChar); }
+    std::string unescape(const std::string &str) const { return unescape(str, m_escapeChar); }
 
     /**
      * unescape string, with escape character as given
      */
-    static string unescape(const string &str, char escapeChar);
+    static std::string unescape(const std::string &str, char escapeChar);
 };
 
 /**
@@ -251,7 +250,7 @@ class StringEscape
  * Instantiating this class will generate a new unique UUID, available afterwards
  * in the base string class.
  */
-class UUID : public string {
+class UUID : public std::string {
  public:
     UUID();
 };
@@ -272,10 +271,10 @@ inline const char *NullPtrCheck(const char *ptr, const char *def = "(null)")
  */
 class ReadDir {
  public:
-    ReadDir(const string &path, bool throwError = true);
+    ReadDir(const std::string &path, bool throwError = true);
 
-    typedef vector<string>::const_iterator const_iterator;
-    typedef vector<string>::iterator iterator;
+    typedef std::vector<std::string>::const_iterator const_iterator;
+    typedef std::vector<std::string>::iterator iterator;
     iterator begin() { return m_entries.begin(); }
     iterator end() { return m_entries.end(); }
     const_iterator begin() const { return m_entries.begin(); }
@@ -285,11 +284,11 @@ class ReadDir {
      * check whether directory contains entry, returns full path
      * @param caseInsensitive    ignore case, pick first entry which matches randomly
      */
-    string find(const string &entry, bool caseSensitive);
+    std::string find(const std::string &entry, bool caseSensitive);
 
  private:
-    string m_path;
-    vector<string> m_entries;
+    std::string m_path;
+    std::vector<std::string> m_entries;
 };
 
 /**
@@ -469,7 +468,7 @@ class TransportStatusException : public StatusException
  */
 std::string SubstEnvironment(const std::string &str);
 
-inline string getHome() {
+inline std::string getHome() {
     const char *homestr = getenv("HOME");
     return homestr ? homestr : ".";
 }
@@ -504,10 +503,10 @@ std::string Flags2String(int flags, const Flag *descr, const std::string &sep = 
 class ScopedEnvChange
 {
  public:
-    ScopedEnvChange(const string &var, const string &value);
+    ScopedEnvChange(const std::string &var, const std::string &value);
     ~ScopedEnvChange();
  private:
-    string m_var, m_oldval;
+    std::string m_var, m_oldval;
     bool m_oldvalset;
 };
 

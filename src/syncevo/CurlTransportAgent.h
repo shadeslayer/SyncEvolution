@@ -74,7 +74,7 @@ class CurlTransportAgent : public HTTPTransportAgent
      * libcurl < 7.17.0 does not copy strings passed into curl_easy_setopt().
      * These are local copies that remain valid as long as needed.
      */
-    string m_url, m_proxy, m_auth, m_agent,
+    std::string m_url, m_proxy, m_auth, m_agent,
         m_cacerts;
 
     /** message buffer (owned by caller) */

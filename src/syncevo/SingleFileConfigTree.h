@@ -62,7 +62,7 @@ class SingleFileConfigTree : public ConfigTree {
     boost::shared_ptr<ConfigNode> open(const std::string &filename);
 
     /* ConfigTree API */
-    virtual string getRootPath() const { return m_data->getName(); }
+    virtual std::string getRootPath() const { return m_data->getName(); }
     virtual void flush();
     virtual void reload();
     virtual void remove(const std::string &path);
@@ -70,9 +70,9 @@ class SingleFileConfigTree : public ConfigTree {
     virtual boost::shared_ptr<ConfigNode> open(const std::string &path,
                                                PropertyType type,
                                                const std::string &otherId = std::string(""));
-    virtual boost::shared_ptr<ConfigNode> add(const string &path,
+    virtual boost::shared_ptr<ConfigNode> add(const std::string &path,
                                               const boost::shared_ptr<ConfigNode> &bode);
-    list<string> getChildren(const std::string &path);
+    std::list<std::string> getChildren(const std::string &path);
 
  private:
     boost::shared_ptr<DataBlob> m_data;
@@ -84,7 +84,7 @@ class SingleFileConfigTree : public ConfigTree {
     FileContent_t m_content;
 
     /** cache of all nodes ever accessed */
-    typedef map< string, boost::shared_ptr<ConfigNode> > NodeCache_t;
+    typedef std::map< std::string, boost::shared_ptr<ConfigNode> > NodeCache_t;
     NodeCache_t m_nodes;
 
     /**

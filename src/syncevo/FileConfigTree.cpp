@@ -34,6 +34,7 @@
 #include <dirent.h>
 
 #include <syncevo/declarations.h>
+using namespace std;
 SE_BEGIN_CXX
 
 FileConfigTree::FileConfigTree(const string &root,

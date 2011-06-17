@@ -27,7 +27,6 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-using namespace std;
 
 class ConfigNode;
 
@@ -80,10 +79,10 @@ class ConfigTree {
      *
      * The nodes must not be in use for this to work.
      */
-    virtual void remove(const string &path) = 0;
+    virtual void remove(const std::string &path) = 0;
 
     /** a string identifying the root of the configuration - exact meaning varies */
-    virtual string getRootPath() const = 0;
+    virtual std::string getRootPath() const = 0;
 
     /**
      * Selects which node attached to a path name is to be used.
@@ -108,9 +107,9 @@ class ConfigTree {
      *                  node's name (allows having multiple different such
      *                  nodes); an empty string is allowed
      */
-    virtual boost::shared_ptr<ConfigNode> open(const string &path,
+    virtual boost::shared_ptr<ConfigNode> open(const std::string &path,
                                                PropertyType type,
-                                               const string &otherId = string("")) = 0;
+                                               const std::string &otherId = std::string("")) = 0;
 
     /**
      * Use the specified node, with type determined
@@ -125,13 +124,13 @@ class ConfigTree {
      * @param node       default instance if not opened before, discarded if a
      *                   node was registered or opened under the given path before
      */
-    virtual boost::shared_ptr<ConfigNode> add(const string &path,
+    virtual boost::shared_ptr<ConfigNode> add(const std::string &path,
                                               const boost::shared_ptr<ConfigNode> &node) = 0;
 
     /**
      * returns names of all existing nodes beneath the given path
      */
-    virtual list<string> getChildren(const string &path) = 0;
+    virtual std::list<std::string> getChildren(const std::string &path) = 0;
 };
 
 

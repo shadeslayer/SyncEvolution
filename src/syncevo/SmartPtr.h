@@ -34,7 +34,6 @@
 #include <stdexcept>
 #include <string>
 #include <memory>
-using namespace std;
 
 #include <boost/scoped_array.hpp>
 #include <boost/shared_ptr.hpp>

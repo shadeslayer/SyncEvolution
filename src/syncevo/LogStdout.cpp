@@ -23,6 +23,7 @@
 #include <errno.h>
 
 #include <syncevo/declarations.h>
+using namespace std;
 SE_BEGIN_CXX
 
 

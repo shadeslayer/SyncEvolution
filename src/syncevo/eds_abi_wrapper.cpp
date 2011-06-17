@@ -27,7 +27,7 @@
 #include <stdarg.h>
 
 #include <syncevo/declarations.h>
-
+using namespace std;
 namespace {
 
 std::string lookupDebug, lookupInfo;

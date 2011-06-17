@@ -22,6 +22,9 @@
 #include <syncevo/SafeConfigNode.h>
 
 #include <syncevo/declarations.h>
+
+using namespace std;
+
 SE_BEGIN_CXX
 
 boost::shared_ptr<ConfigNode> ConfigNode::createFileNode(const string &filename)

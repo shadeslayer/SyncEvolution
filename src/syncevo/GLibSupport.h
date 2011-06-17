@@ -245,7 +245,7 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
      */
     operator L * () { return m_list; }
 
-    class iterator : public std::iterator<forward_iterator_tag, T *> {
+    class iterator : public std::iterator<std::forward_iterator_tag, T *> {
         L *m_entry;
     public:
         iterator(L *list) : m_entry(list) {}
@@ -267,7 +267,7 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
     iterator begin() { return iterator(m_list); }
     iterator end() { return iterator(NULL); }
 
-    class const_iterator : public std::iterator<forward_iterator_tag, T *> {
+    class const_iterator : public std::iterator<std::forward_iterator_tag, T *> {
         L *m_entry;
         T *m_value;
 
