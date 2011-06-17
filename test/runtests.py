@@ -783,7 +783,7 @@ test = SyncEvolutionTest("googlecalendar", compile,
                          "", options.shell,
                          "Client::Source::google_caldav Client::Sync::eds_event::testItems",
                          [ "google_caldav", "eds_event" ],
-                         "CLIENT_TEST_WEBDAV='google caldav' "
+                         "CLIENT_TEST_WEBDAV='google caldav testcases=testcases/google_event.ics' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_UNIQUE_UID=1 " # server keeps backups and restores old data unless UID is unieque
@@ -796,7 +796,7 @@ test = SyncEvolutionTest("yahoo", compile,
                          "", options.shell,
                          "Client::Source::yahoo_caldav Client::Source::yahoo_carddav Client::Sync::eds_contact::testItems Client::Sync::eds_event::testItems",
                          [ "yahoo_caldav", "yahoo_carddav", "eds_event", "eds_contact" ],
-                         "CLIENT_TEST_WEBDAV='yahoo caldav carddav' "
+                         "CLIENT_TEST_WEBDAV='yahoo caldav carddav carddav/testcases=testcases/yahoo_contact.vcf' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_MODE=server " # for Client::Sync
