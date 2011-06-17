@@ -81,14 +81,14 @@ void ConnmanClient::getPropCb (const std::map <std::string,
     m_server.getPresenceStatus().updatePresenceStatus (httpPresence, btPresence);
 }
 
-void ConnmanClient::propertyChanged(const string &name,
-                                    const boost::variant<vector<string>, string> &prop)
+void ConnmanClient::propertyChanged(const std::string &name,
+                                    const boost::variant<std::vector<std::string>, std::string> &prop)
 {
     bool httpPresence=false, btPresence=false;
     bool httpChanged=false, btChanged=false;
     if (boost::iequals(name, "ConnectedTechnologies")) {
         httpChanged=true;
-        vector<string> connected = boost::get<vector<string> >(prop);
+        std::vector<std::string> connected = boost::get<vector<std::string> >(prop);
         BOOST_FOREACH (std::string tech, connected) {
             if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet")
                     || boost::iequals (tech, "wimax")) {
@@ -98,7 +98,7 @@ void ConnmanClient::propertyChanged(const string &name,
         }
     } else if (boost::iequals (name, "AvailableTechnologies")){
         btChanged=true;
-        vector<string> enabled = boost::get<vector<string> >(prop);
+        std::vector<std::string> enabled = boost::get<std::vector<std::string> >(prop);
         BOOST_FOREACH (std::string tech, enabled){
             if (boost::iequals (tech, "bluetooth")) {
                 btPresence = true;

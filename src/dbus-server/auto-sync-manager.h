@@ -20,7 +20,13 @@
 #ifndef AUTO_SYNC_MANAGER_H
 #define AUTO_SYNC_MANAGER_H
 
-#include "common.h"
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <syncevo/SyncML.h>
+#include <syncevo/SmartPtr.h>
+
+#include "NotificationManagerFactory.h"
+
 #include "session-listener.h"
 
 SE_BEGIN_CXX
@@ -76,7 +82,7 @@ class AutoSyncManager : public SessionListener
     {
      public:
         /** the peer name of a config */
-        string m_peer;
+        std::string m_peer;
         /** the time that the peer must at least have been around (seconds) */
         unsigned int m_delay;
         /** each task matches with exactly one transport supported for a peer */
@@ -88,7 +94,7 @@ class AutoSyncManager : public SessionListener
         /** individual sync URL for which this task was created, matches m_transport */
         std::string m_url;
 
-        AutoSyncTask(const string &peer, unsigned int delay, Transport transport, const std::string &url)
+      AutoSyncTask(const std::string &peer, unsigned int delay, Transport transport, const std::string &url)
             : m_peer(peer), m_delay(delay), m_transport(transport), m_url(url)
         {
         }
@@ -105,7 +111,7 @@ class AutoSyncManager : public SessionListener
      * AutoSyncTaskList is used to manage sync tasks which are grouped by the
      * interval. Each list has one timeout gsource.
      */
-    class AutoSyncTaskList : public list<AutoSyncTask>
+    class AutoSyncTaskList : public std::list<AutoSyncTask>
     {
         AutoSyncManager &m_manager;
         /** the interval used to create timeout source (seconds) */
@@ -135,10 +141,10 @@ class AutoSyncManager : public SessionListener
     };
 
     /** init a config and set up auto sync task for it */
-    void initConfig(const string &configName);
+    void initConfig(const std::string &configName);
 
     /** remove tasks from m_peerMap and m_workQueue created from the config */
-    void remove(const string &configName);
+    void remove(const std::string &configName);
 
     /** a map to contain all auto sync tasks. All initialized tasks are stored here.
      * Tasks here are grouped by auto sync interval */
@@ -148,7 +154,7 @@ class AutoSyncManager : public SessionListener
     /**
      * a working queue that including tasks which are pending for doing sync.
      * Tasks here are picked from m_peerMap and scheduled to do auto sync */
-    list<AutoSyncTask> m_workQueue;
+    std::list<AutoSyncTask> m_workQueue;
 
     /**
      * the current active task, which may own a session
@@ -213,7 +219,7 @@ class AutoSyncManager : public SessionListener
     /**
      * called when a config is changed. This causes re-loading the config
      */
-    void update(const string &configName);
+    void update(const std::string &configName);
 
     /* Is there anything ready to run? */
     bool hasTask() { return !m_workQueue.empty(); }

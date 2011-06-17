@@ -20,8 +20,14 @@
 #ifndef RESTART_H
 #define RESTART_H
 
-#include "common.h"
+#include <vector>
+#include <string>
 
+#include <errno.h>
+
+#include <syncevo/LogRedirect.h>
+
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**
@@ -30,10 +36,10 @@ SE_BEGIN_CXX
  */
 class Restart
 {
-    vector<string> m_argv;
-    vector<string> m_env;
+    std::vector<std::string> m_argv;
+    std::vector<std::string> m_env;
 
-    void saveArray(vector<string> &array, char **p)
+    void saveArray(std::vector<std::string> &array, char **p)
     {
         while(*p) {
             array.push_back(*p);
@@ -41,7 +47,7 @@ class Restart
         }
     }
 
-    const char **createArray(const vector<string> &array)
+    const char **createArray(const std::vector<std::string> &array)
     {
         const char **res = new const char *[(array.size() + 1)];
         size_t i;

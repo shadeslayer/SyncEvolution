@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2011 Intel Corporation
  *
@@ -20,8 +21,10 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "common.h"
+#include <unistd.h>
+#include <sys/time.h>
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

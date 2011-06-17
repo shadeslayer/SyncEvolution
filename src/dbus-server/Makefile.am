@@ -20,7 +20,6 @@ libsyncevodbusserver_la_SOURCES = \
 	client.h		\
 	client.cpp		\
 	cmdline-wrapper.h	\
-	common.h		\
 	connection.h		\
 	connection.cpp		\
 	connman-client.h	\
@@ -42,6 +41,7 @@ libsyncevodbusserver_la_SOURCES = \
 	progress-data.cpp	\
 	read-operations.h	\
 	read-operations.cpp	\
+	resource.h		\
 	restart.h		\
 	session.h		\
 	session.cpp		\

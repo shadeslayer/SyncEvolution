@@ -20,9 +20,9 @@
 #ifndef DBUS_SYNC_H
 #define DBUS_SYNC_H
 
-#include "common.h"
 #include "dbus-user-interface.h"
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class Session;

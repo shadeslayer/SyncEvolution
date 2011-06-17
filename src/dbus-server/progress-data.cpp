@@ -18,6 +18,8 @@
  */
 
 #include "progress-data.h"
+#include <cmath>
+#include <limits>
 
 SE_BEGIN_CXX
 
@@ -129,7 +131,7 @@ void ProgressData::itemPrepare()
     }
 }
 
-void ProgressData::itemReceive(const string &source, int count, int total)
+void ProgressData::itemReceive(const std::string &source, int count, int total)
 {
     /**
      * source is used to check whether a new source is received

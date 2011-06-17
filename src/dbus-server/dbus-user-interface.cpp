@@ -19,6 +19,31 @@
 
 #include "dbus-user-interface.h"
 
+#ifdef USE_GNOME_KEYRING
+extern "C" {
+#include <gnome-keyring.h>
+}
+#endif
+
+// redefining "signals" clashes with the use of that word in gtkbindings.h,
+// included via notify.h
+#define QT_NO_KEYWORDS
+
+#ifdef USE_KDE_KWALLET
+#include <QtCore/QCoreApplication>
+#include <QtCore/QString>
+#include <QtCore/QLatin1String>
+#include <QtCore/QByteArray>
+#include <QtCore/QDebug>
+#include <QtDBus/QDBusConnection>
+
+#include <KApplication>
+#include <KAboutData>
+#include <KCmdLineArgs>
+
+#include <kwallet.h>
+#endif
+
 namespace {
     inline const char *passwdStr(const std::string &str)
     {

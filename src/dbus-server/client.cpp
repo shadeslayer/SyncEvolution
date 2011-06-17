@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2011 Intel Corporation
  *
@@ -18,7 +19,9 @@
  */
 
 #include "client.h"
+#include "session.h"
 #include "syncevo-dbus-server.h"
+#include "resource.h"
 
 SE_BEGIN_CXX
 

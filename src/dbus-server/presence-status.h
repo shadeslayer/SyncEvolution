@@ -20,7 +20,6 @@
 #ifndef PRESENCE_STATUS_H
 #define PRESENCE_STATUS_H
 
-#include "common.h"
 #include "timer.h"
 #include "read-operations.h"
 

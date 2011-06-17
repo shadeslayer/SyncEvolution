@@ -20,8 +20,9 @@
 #ifndef AUTOTERM_H
 #define AUTOTERM_H
 
-#include "common.h"
+#include <syncevo/SmartPtr.h>
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**

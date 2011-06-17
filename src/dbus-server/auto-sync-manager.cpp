@@ -18,7 +18,10 @@
  */
 
 #include "auto-sync-manager.h"
+#include "session.h"
 #include "syncevo-dbus-server.h"
+
+#include <glib/gi18n.h>
 
 SE_BEGIN_CXX
 
@@ -34,14 +37,14 @@ void AutoSyncManager::init()
     m_notificationManager->init();
 }
 
-void AutoSyncManager::initConfig(const string &configName)
+void AutoSyncManager::initConfig(const std::string &configName)
 {
     SyncConfig config (configName);
     if(!config.exists()) {
         return;
     }
-    vector<string> urls = config.getSyncURL();
-    string autoSync = config.getAutoSync();
+    std::vector<std::string> urls = config.getSyncURL();
+    std::string autoSync = config.getAutoSync();
 
     //enable http and bt?
     bool http = false, bt = false;
@@ -56,9 +59,9 @@ void AutoSyncManager::initConfig(const string &configName)
         bt = true;
         any = true;
     } else {
-        vector<string> options;
+        std::vector<std::string> options;
         boost::split(options, autoSync, boost::is_any_of(","));
-        BOOST_FOREACH(string op, options) {
+        BOOST_FOREACH(std::string op, options) {
             if(boost::iequals(op, "http")) {
                 http = true;
             } else if(boost::iequals(op, "obex-bt")) {
@@ -77,7 +80,7 @@ void AutoSyncManager::initConfig(const string &configName)
                  http ? "HTTP" : "no HTTP",
                  interval, duration);
 
-    BOOST_FOREACH(string url, urls) {
+    BOOST_FOREACH(std::string url, urls) {
         AutoSyncTask::Transport transport = AutoSyncTask::NEEDS_OTHER; // fallback for unknown sync URL
         if (boost::istarts_with(url, "http")) {
             transport = AutoSyncTask::NEEDS_HTTP;
@@ -122,7 +125,7 @@ void AutoSyncManager::initConfig(const string &configName)
     }
 }
 
-void AutoSyncManager::remove(const string &configName)
+void AutoSyncManager::remove(const std::string &configName)
 {
     //wipe out tasks in the m_peerMap
     PeerMap::iterator it = m_peerMap.begin();
@@ -166,7 +169,7 @@ void AutoSyncManager::remove(const string &configName)
     }
 }
 
-void AutoSyncManager::update(const string &configName)
+void AutoSyncManager::update(const std::string &configName)
 {
     SE_LOG_DEBUG(NULL, NULL, "auto sync: refreshing %s", configName.c_str());
 
@@ -247,7 +250,7 @@ void AutoSyncManager::startTask()
     if(hasTask() && !m_session) {
         m_activeTask.reset(new AutoSyncTask(m_workQueue.front()));
         m_workQueue.pop_front();
-        string newSession = m_server.getNextSession();
+        std::string newSession = m_server.getNextSession();
         m_session = Session::createSession(m_server,
                                            "",
                                            m_activeTask->m_peer,
@@ -275,7 +278,7 @@ void AutoSyncManager::prepare()
         config[""] = stringMap;
         m_session->setConfig(true, true, config);
 
-        string mode;
+        std::string mode;
         Session::SourceModes_t sourceModes;
         m_session->sync("", Session::SourceModes_t());
     }
@@ -286,8 +289,8 @@ void AutoSyncManager::syncSuccessStart()
     m_syncSuccessStart = true;
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been successfully started.\n", m_activeTask->m_peer.c_str());
     if (m_server.notificationsEnabled()) {
-        string summary = StringPrintf(_("%s is syncing"), m_activeTask->m_peer.c_str());
-        string body = StringPrintf(_("We have just started to sync your computer with the %s sync service."), m_activeTask->m_peer.c_str());
+        std::string summary = StringPrintf(_("%s is syncing"), m_activeTask->m_peer.c_str());
+        std::string body = StringPrintf(_("We have just started to sync your computer with the %s sync service."), m_activeTask->m_peer.c_str());
         //TODO: set config information for 'sync-ui'
         m_notificationManager->publish(summary, body);
     }
@@ -314,7 +317,7 @@ void AutoSyncManager::syncDone(SyncMLStatus status)
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been done.\n", m_activeTask->m_peer.c_str());
     if (m_server.notificationsEnabled()) {
         // send a notification to notification server
-        string summary, body;
+        std::string summary, body;
         if(m_syncSuccessStart && status == STATUS_OK) {
             // if sync is successfully started and done
             summary = StringPrintf(_("%s sync complete"), m_activeTask->m_peer.c_str());

@@ -20,7 +20,8 @@
 #ifndef PROGRESS_DATA_H
 #define PROGRESS_DATA_H
 
-#include "common.h"
+#include <syncevo/SyncML.h>
+#include <sys/types.h>
 
 SE_BEGIN_CXX
 
@@ -134,7 +135,7 @@ public:
     /**
      * calc progress when a data item is received
      */
-    void itemReceive(const string &source, int count, int total);
+    void itemReceive(const std::string &source, int count, int total);
 
 private:
 
@@ -169,7 +170,7 @@ private:
     /** proportion of a standard unit, may changes dynamically */
     float m_propOfUnit;
     /** current sync source */
-    string m_source;
+    std::string m_source;
 };
 
 SE_END_CXX

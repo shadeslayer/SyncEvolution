@@ -20,7 +20,7 @@
 #ifndef DBUS_USER_INTERFACE_H
 #define DBUS_USER_INTERFACE_H
 
-#include "common.h"
+#include <syncevo/SyncContext.h>
 
 SE_BEGIN_CXX
 

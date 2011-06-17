@@ -20,11 +20,13 @@
 #ifndef NETWORK_MANAGER_CLIENT_H
 #define NETWORK_MANAGER_CLIENT_H
 
-#include "common.h"
+#include <boost/variant.hpp>
+
 #include "gdbus/gdbus-cxx-bridge.h"
 
 using namespace GDBusCXX;
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class DBusServer;

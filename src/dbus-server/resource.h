@@ -17,35 +17,20 @@
  * 02110-1301  USA
  */
 
-#ifndef SESSION_LISTENER_H
-#define SESSION_LISTENER_H
+#ifndef RESOURCE_H
+#define RESOURCE_H
 
-#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**
- * a listener to listen changes of session
- * currently only used to track changes of running a sync in a session
+ * Anything that can be owned by a client, like a connection
+ * or session.
  */
-class SessionListener
-{
+class Resource {
 public:
-    /**
-     * method is called when a sync is successfully started.
-     * Here 'successfully started' means the synthesis engine starts
-     * to access the sources.
-     */
-    virtual void syncSuccessStart() {}
-
-    /**
-     * method is called when a sync is done. Also
-     * sync status are passed.
-     */
-    virtual void syncDone(SyncMLStatus status) {}
-
-    virtual ~SessionListener() {}
+    virtual ~Resource() {}
 };
 
 SE_END_CXX
 
-#endif // SESSION_LISTENER_H
+#endif // RESOURCE_H

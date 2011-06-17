@@ -20,7 +20,9 @@
 #ifndef READ_OPERATIONS_H
 #define READ_OPERATIONS_H
 
-#include "common.h"
+#include <syncevo/SyncSource.h>
+#include <syncevo/SmartPtr.h>
+
 #include "gdbus/gdbus-cxx-bridge.h"
 
 SE_BEGIN_CXX

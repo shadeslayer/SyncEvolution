@@ -20,17 +20,22 @@
 #ifndef INFO_REQ_H
 #define INFO_REQ_H
 
-#include "common.h"
-#include "syncevo-dbus-server.h"
+#include <string>
+
+#include "timer.h"
+#include "gdbus/gdbus-cxx-bridge.h"
 
 SE_BEGIN_CXX
+
+class DBusServer;
+class Session;
 
 /**
  * A wrapper for handling info request and response.
  */
 class InfoReq {
 public:
-    typedef std::map<string, string> InfoMap;
+    typedef std::map<std::string, std::string> InfoMap;
 
     // status of current request
     enum Status {
@@ -45,7 +50,7 @@ public:
      * The default timeout is 120 seconds
      */
     InfoReq(DBusServer &server,
-            const string &type,
+            const std::string &type,
             const InfoMap &parameters,
             const Session *session,
             uint32_t timeout = 120);
@@ -78,10 +83,10 @@ public:
     void cancel();
 
     /** get current status in string format */
-    string getStatusStr() const { return statusToString(m_status); }
+    std::string getStatusStr() const { return statusToString(m_status); }
 
 private:
-    static string statusToString(Status status);
+    static std::string statusToString(Status status);
 
     enum InfoState {
         IN_REQ,  //request
@@ -89,7 +94,7 @@ private:
         IN_DONE  // done
     };
 
-    static string infoStateToString(InfoState state);
+    static std::string infoStateToString(InfoState state);
 
     /** callback for the timemout source */
     static gboolean checkCallback(gpointer data);
@@ -100,16 +105,16 @@ private:
     friend class DBusServer;
 
     /** set response from dbus clients */
-    void setResponse(const Caller_t &caller, const string &state, const InfoMap &response);
+void setResponse(const GDBusCXX::Caller_t &caller, const std::string &state, const InfoMap &response);
 
     /** send 'done' state if needed */
     void done();
 
-    string getId() const { return m_id; }
-    string getSessionPath() const { return m_session ? m_session->getPath() : ""; }
-    string getInfoStateStr() const { return infoStateToString(m_infoState); }
-    string getHandler() const { return m_handler; }
-    string getType() const { return m_type; }
+    std::string getId() const { return m_id; }
+    std::string getSessionPath() const;
+    std::string getInfoStateStr() const { return infoStateToString(m_infoState); }
+    std::string getHandler() const { return m_handler; }
+    std::string getType() const { return m_type; }
     const InfoMap& getParam() const { return m_param; }
 
     DBusServer &m_server;
@@ -118,7 +123,7 @@ private:
     const Session *m_session;
 
     /** unique id of this info request */
-    string m_id;
+    std::string m_id;
 
     /** info req state defined in dbus api */
     InfoState m_infoState;
@@ -127,10 +132,10 @@ private:
     Status m_status;
 
     /** the handler of the responsed dbus client */
-    Caller_t m_handler;
+    GDBusCXX::Caller_t m_handler;
 
     /** the type of the info request */
-    string m_type;
+    std::string m_type;
 
     /** parameters from info request callers */
     InfoMap m_param;

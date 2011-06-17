@@ -18,6 +18,8 @@
  */
 
 #include "info-req.h"
+#include "session.h"
+#include "syncevo-dbus-server.h"
 
 SE_BEGIN_CXX
 
@@ -165,6 +167,12 @@ void InfoReq::setResponse(const Caller_t &caller, const string &state, const Inf
         m_status = ST_OK;
     }
 }
+
+string InfoReq::getSessionPath() const
+{
+    return m_session ? m_session->getPath() : "";
+}
+
 
 void InfoReq::done()
 {

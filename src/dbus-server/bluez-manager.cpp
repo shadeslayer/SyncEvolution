@@ -18,6 +18,7 @@
  */
 
 #include "bluez-manager.h"
+#include "syncevo-dbus-server.h"
 
 SE_BEGIN_CXX
 

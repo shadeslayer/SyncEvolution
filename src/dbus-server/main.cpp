@@ -17,7 +17,14 @@
  * 02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "syncevo-dbus-server.h"
+#include "restart.h"
+
+#include <syncevo/SyncContext.h>
 
 using namespace GDBusCXX;
 using namespace SyncEvo;

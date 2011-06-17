@@ -20,9 +20,9 @@
 #ifndef SOURCE_STATUS_H
 #define SOURCE_STATUS_H
 
-#include "common.h"
 #include "gdbus/gdbus-cxx-bridge.h"
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 struct SourceStatus
 {

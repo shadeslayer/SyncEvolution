@@ -20,7 +20,10 @@
 #ifndef DBUS_TRANSPORT_AGENT_H
 #define DBUS_TRANSPORT_AGENT_H
 
-#include "common.h"
+#include <syncevo/TransportAgent.h>
+#include <syncevo/SmartPtr.h>
+#include <syncevo/SynthesisEngine.h>
+#include <boost/weak_ptr.hpp>
 
 SE_BEGIN_CXX
 

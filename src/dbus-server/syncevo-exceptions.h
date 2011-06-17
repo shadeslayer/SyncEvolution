@@ -20,17 +20,19 @@
 #ifndef SYNCEVO_EXCEPTIONS_H
 #define SYNCEVO_EXCEPTIONS_H
 
-#include "common.h"
+#include <syncevo/util.h>
 
 struct DBusMessage;
 SE_BEGIN_CXX
 DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 SE_END_CXX
+// This needs to be defined before including gdbus-cxx-bridge.h!
 #define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
 #include "gdbus/gdbus-cxx-bridge.h"
 
 using namespace GDBusCXX;
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class DBusSyncException : public DBusCXXException, public Exception

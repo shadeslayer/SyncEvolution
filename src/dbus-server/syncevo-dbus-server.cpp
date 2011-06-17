@@ -18,16 +18,24 @@
  * 02110-1301  USA
  */
 
+#include <fstream>
+
+#include <syncevo/LogRedirect.h>
+#include <syncevo/GLibSupport.h>
+
 #include "syncevo-dbus-server.h"
 #include "info-req.h"
 #include "connection.h"
+#include "bluez-manager.h"
+#include "session.h"
+#include "timeout.h"
+#include "restart.h"
+#include "client.h"
 
 using namespace GDBusCXX;
-using namespace SyncEvo;
 
 SE_BEGIN_CXX
 
-/********************** DBusServer implementation ******************/
 void DBusServer::clientGone(Client *c)
 {
     for(Clients_t::iterator it = m_clients.begin();
@@ -307,7 +315,7 @@ void DBusServer::run(LogRedirect &redirect)
 
     // Now that everything is loaded, check memory map for files which we have to monitor.
     set<string> files;
-    ifstream in("/proc/self/maps");
+    std::ifstream in("/proc/self/maps");
     while (!in.eof()) {
         string line;
         getline(in, line);
@@ -321,7 +329,7 @@ void DBusServer::run(LogRedirect &redirect)
     BOOST_FOREACH(const string &file, files) {
         try {
             SE_LOG_DEBUG(NULL, NULL, "watching: %s", file.c_str());
-            boost::shared_ptr<GLibNotify> notify(new GLibNotify(file.c_str(), boost::bind(&DBusServer::fileModified, this)));
+            boost::shared_ptr<SyncEvo::GLibNotify> notify(new GLibNotify(file.c_str(), boost::bind(&DBusServer::fileModified, this)));
             m_files.push_back(notify);
         } catch (...) {
             // ignore errors for indidividual files

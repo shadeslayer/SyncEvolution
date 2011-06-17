@@ -20,10 +20,12 @@
 #ifndef BLUEZ_MANAGER_H
 #define BLUEZ_MANAGER_H
 
-#include "syncevo-dbus-server.h"
+#include <string>
 
+#include "gdbus/gdbus-cxx-bridge.h"
+
+#include <syncevo/declarations.h>
 using namespace GDBusCXX;
-using namespace SyncEvo;
 
 SE_BEGIN_CXX
 
@@ -67,7 +69,7 @@ private:
     class BluezAdapter: public DBusRemoteObject
     {
      public:
-        BluezAdapter (BluezManager &manager, const string &path);
+        BluezAdapter (BluezManager &manager, const std::string &path);
 
         virtual const char *getDestination() const {return "org.bluez";}
         virtual const char *getPath() const {return m_path.c_str();}
@@ -87,7 +89,7 @@ private:
 
      private:
         /** callback of 'ListDevices' signal. Used to get all available devices of the adapter */
-        void listDevicesCb(const std::vector<DBusObject_t> &devices, const string &error);
+        void listDevicesCb(const std::vector<DBusObject_t> &devices, const std::string &error);
 
         /** callback of 'DeviceRemoved' signal. Used to track a device is removed */
         void deviceRemoved(const DBusObject_t &object);
@@ -122,40 +124,40 @@ private:
     class BluezDevice: public DBusRemoteObject
     {
      public:
-        typedef map<string, boost::variant<vector<string>, string > > PropDict;
+        typedef std::map<std::string, boost::variant<std::vector<std::string>, std::string > > PropDict;
 
-        BluezDevice (BluezAdapter &adapter, const string &path);
+        BluezDevice (BluezAdapter &adapter, const std::string &path);
 
         virtual const char *getDestination() const {return "org.bluez";}
         virtual const char *getPath() const {return m_path.c_str();}
         virtual const char *getInterface() const {return "org.bluez.Device";}
         virtual DBusConnection *getConnection() const {return m_adapter.m_manager.getConnection();}
-        string getMac() { return m_mac; }
+        std::string getMac() { return m_mac; }
 
         /**
          * check whether the current device has sync service
-         * if yes, put it in the adapter's sync devices list
+         * if yes, put it in the adapter's sync devices listn
          */
         void checkSyncService(const std::vector<std::string> &uuids);
 
      private:
         /** callback of 'GetProperties' method. The properties of the device is gotten */
-        void getPropertiesCb(const PropDict &props, const string &error);
+        void getPropertiesCb(const PropDict &props, const std::string &error);
 
         /** callback of 'PropertyChanged' signal. Changed property is tracked */
-        void propertyChanged(const string &name, const boost::variant<vector<string>, string> &prop);
+        void propertyChanged(const std::string &name, const boost::variant<std::vector<std::string>, std::string> &prop);
 
         BluezAdapter &m_adapter;
         /** the object path of the device */
-        string m_path;
+        std::string m_path;
         /** name of the device */
-        string m_name;
+        std::string m_name;
         /** mac address of the device */
-        string m_mac;
+        std::string m_mac;
         /** whether the calling of 'GetProperties' is returned */
         bool m_reply;
 
-        typedef SignalWatch2<string, boost::variant<vector<string>, string> > PropertySignal;
+        typedef SignalWatch2<std::string, boost::variant<std::vector<std::string>, std::string> > PropertySignal;
         /** represents 'PropertyChanged' signal of org.bluez.Device */
         PropertySignal m_propertyChanged;
 
@@ -168,7 +170,7 @@ private:
     void setDone(bool done) { m_done = done; }
 
     /** callback of 'DefaultAdapter' method to get the default bluetooth adapter  */
-    void defaultAdapterCb(const DBusObject_t &adapter, const string &error);
+    void defaultAdapterCb(const DBusObject_t &adapter, const std::string &error);
 
     /** callback of 'DefaultAdapterChanged' signal to track changes of the default adapter */
     void defaultAdapterChanged(const DBusObject_t &adapter);

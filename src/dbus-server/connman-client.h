@@ -20,11 +20,13 @@
 #ifndef CONNMAN_CLIENT_H
 #define CONNMAN_CLIENT_H
 
-#include "common.h"
+#include <boost/variant.hpp>
+
 #include "gdbus/gdbus-cxx-bridge.h"
 
 using namespace GDBusCXX;
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class DBusServer;
@@ -43,10 +45,10 @@ public:
     virtual const char *getInterface() const {return "net.connman.Manager";}
     virtual DBusConnection *getConnection() const {return m_connmanConn.get();}
 
-    void propertyChanged(const string &name,
-                         const boost::variant<vector<string>, string> &prop);
+    void propertyChanged(const std::string &name,
+                         const boost::variant<std::vector<std::string>, std::string> &prop);
 
-    void getPropCb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
+    void getPropCb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const std::string &error);
 
     /** TRUE if watching ConnMan status */
     bool isAvailable() { return m_connmanConn; }
@@ -55,7 +57,7 @@ private:
     DBusServer &m_server;
     DBusConnectionPtr m_connmanConn;
 
-    SignalWatch2 <string,boost::variant<vector<string>, string> > m_propertyChanged;
+    SignalWatch2 <std::string, boost::variant<std::vector<std::string>, std::string> > m_propertyChanged;
 };
 
 SE_END_CXX

@@ -19,6 +19,11 @@
 
 #include "syncevo-dbus-server.h"
 #include "connection.h"
+#include "client.h"
+
+#include <synthesis/san.h>
+#include <syncevo/TransportAgent.h>
+#include <syncevo/SyncContext.h>
 
 SE_BEGIN_CXX
 

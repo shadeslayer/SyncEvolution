@@ -20,12 +20,16 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#include <syncevo/SynthesisEngine.h>
+#include <boost/weak_ptr.hpp>
+
 #include "read-operations.h"
 #include "progress-data.h"
 #include "source-progress.h"
 #include "source-status.h"
 #include "timer.h"
 #include "timeout.h"
+#include "resource.h"
 
 using namespace GDBusCXX;
 
@@ -36,6 +40,7 @@ class Connection;
 class CmdlineWrapper;
 class DBusSync;
 class SessionListener;
+class LogRedirect;
 
 /**
  * Represents and implements the Session interface.  Use

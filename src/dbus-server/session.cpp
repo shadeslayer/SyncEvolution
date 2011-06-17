@@ -17,11 +17,16 @@
  * 02110-1301  USA
  */
 
+#include <syncevo/LogRedirect.h>
+
 #include "session.h"
 #include "syncevo-dbus-server.h"
+#include "restart.h"
 #include "info-req.h"
 #include "cmdline-wrapper.h"
 #include "connection.h"
+#include "client.h"
+#include "dbus-sync.h"
 
 SE_BEGIN_CXX
 

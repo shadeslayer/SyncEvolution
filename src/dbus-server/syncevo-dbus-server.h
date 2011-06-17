@@ -20,42 +20,33 @@
 #ifndef SYNCEVO_DBUS_SERVER_H
 #define SYNCEVO_DBUS_SERVER_H
 
-#include "syncevo-exceptions.h"
-#include "common.h"
+#include <boost/weak_ptr.hpp>
 
-#include "bluez-manager.h"
-#include "timer.h"
+#include "auto-sync-manager.h"
+#include "syncevo-exceptions.h"
 #include "auto-term.h"
-#include "timeout.h"
-#include "restart.h"
-#include "client.h"
 #include "read-operations.h"
 #include "connman-client.h"
 #include "network-manager-client.h"
-#include "session-listener.h"
-#include "auto-sync-manager.h"
 #include "presence-status.h"
-#include "source-status.h"
-#include "source-progress.h"
-#include "dbus-user-interface.h"
-#include "dbus-sync.h"
-#include "progress-data.h"
-#include "session.h"
 
 using namespace GDBusCXX;
-using namespace SyncEvo;
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class Session;
 class Connection;
 class DBusTransportAgent;
-class DBusUserInterface;
 class DBusServer;
-
 class InfoReq;
-
 class BluezManager;
+class Timeout;
+class Restart;
+class Client;
+class Resource;
+class LogRedirect;
+class GLibNotify;
 
 /**
  * Implements the main org.syncevolution.Server interface.

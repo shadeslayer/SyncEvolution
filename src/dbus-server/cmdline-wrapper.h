@@ -20,8 +20,9 @@
 #ifndef CMD_LINE_WRAPPER_H
 #define CMD_LINE_WRAPPER_H
 
-#include "common.h"
-#include "syncevo-dbus-server.h"
+#include <syncevo/Cmdline.h>
+
+#include "dbus-sync.h"
 
 SE_BEGIN_CXX
 

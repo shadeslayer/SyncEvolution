@@ -20,9 +20,11 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include "common.h"
+#include <list>
+
 #include "gdbus/gdbus-cxx-bridge.h"
 
+#include <syncevo/declarations.h>
 using namespace GDBusCXX;
 
 SE_BEGIN_CXX
