@@ -22,6 +22,8 @@
 #include <syncevo/LogRedirect.h>
 #include <syncevo/SmartPtr.h>
 
+#include <strstream>
+
 #include <dlfcn.h>
 
 #include <syncevo/declarations.h>
@@ -95,13 +97,24 @@ URI URI::resolve(const std::string &path) const
 
 std::string URI::toURL() const
 {
-    return StringPrintf("%s://%s@%s:%u/%s#%s",
-                        m_scheme.c_str(),
-                        m_userinfo.c_str(),
-                        m_host.c_str(),
-                        m_port,
-                        m_path.c_str(),
-                        m_fragment.c_str());
+    std::ostringstream buffer;
+
+    buffer << m_scheme << "://";
+    if (!m_userinfo.empty()) {
+        buffer << m_userinfo << "@";
+    }
+    buffer << m_host;
+    if (m_port) {
+        buffer << ":" << m_port;
+    }
+    buffer << m_path;
+    if (!m_query.empty()) {
+        buffer << "?" << m_query;
+    }
+    if (!m_fragment.empty()) {
+        buffer << "#" << m_fragment;
+    }
+    return buffer.str();
 }
 
 std::string URI::escape(const std::string &text)
