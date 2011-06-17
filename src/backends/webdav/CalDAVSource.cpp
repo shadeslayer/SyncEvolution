@@ -524,6 +524,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         return "";
     } else {
         bool found = false;
+        bool parentRemoved = false;
         for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
              comp;
              comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
@@ -531,6 +532,9 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                 icalcomponent_remove_component(event.m_calendar, comp);
                 icalcomponent_free(comp);
                 found = true;
+                if (subid.empty()) {
+                    parentRemoved = true;
+                }
             }
         }
         if (!found) {
@@ -539,7 +543,20 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         event.m_subids.erase(subid);
         // TODO: avoid updating the item immediately
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
-        InsertItemResult res = insertItem(davLUID, icalstr.get(), true);
+        InsertItemResult res;
+        if (parentRemoved && settings().googleChildHack()) {
+            // Must avoid VEVENTs with RECURRENCE-ID in
+            // event.m_calendar and the PUT request.  Brute-force
+            // approach here is to encode as string, escape, and parse
+            // again.
+            string item = icalstr.get();
+            Event::escapeRecurrenceID(item);
+            event.m_calendar.set(icalcomponent_new_from_string((char *)item.c_str()), // hack for old libical
+                                 "parsing iCalendar 2.0");
+            res = insertItem(davLUID, item, true);
+        } else {
+            res = insertItem(davLUID, icalstr.get(), true);
+        }
         if (res.m_merged ||
             res.m_luid != davLUID) {
             SE_THROW("unexpected result of removing sub event");
