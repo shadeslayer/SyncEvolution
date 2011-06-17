@@ -312,9 +312,16 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         // Google hack: increase sequence number if smaller or equal to
         // sequence on server. Server rejects update otherwise.
         // See http://code.google.com/p/google-caldav-issues/issues/detail?id=26
-        if (settings().googleUpdateHack() && newEvent->m_sequence <= event.m_sequence) {
+        if (settings().googleUpdateHack()) {
+            // always bump SEQ by one before PUT
             event.m_sequence++;
-            Event::setSequence(firstcomp, event.m_sequence);
+            if (newEvent->m_sequence < event.m_sequence) {
+                // override in new event, existing ones will be updated below
+                Event::setSequence(firstcomp, event.m_sequence);
+            } else {
+                // new event sequence is equal or higher, use that
+                event.m_sequence = newEvent->m_sequence;
+            }
         }
 
         // update cache: find old VEVENT and remove it before adding new one,
@@ -326,7 +333,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             if (Event::getSubID(comp) == subid) {
                 removeme = comp;
             } else if (settings().googleUpdateHack()) {
-                // increase modification time stamps and sequence to that of the new item,
+                // increase modification time stamps to that of the new item,
                 // Google rejects the whole update otherwise
                 if (!icaltime_is_null_time(lastmodtime)) {
                     icalproperty *dtstamp = icalcomponent_get_first_property(comp, ICAL_DTSTAMP_PROPERTY);
@@ -338,6 +345,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
                         icalproperty_set_lastmodified(lastmod, lastmodtime);
                     }
                 }
+                // set SEQ to the one increased above
                 Event::setSequence(comp, event.m_sequence);
             }
         }
@@ -464,7 +472,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                     // Google CalDAV:
                     // HTTP/1.1 409 Can't delete a recurring event except on its organizer's calendar
                     //
-                    // Workaround: remove RRULE before deleting
+                    // Workaround: remove RRULE and EXDATE before deleting
                     bool updated = false;
                     icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
                     if (comp) {
@@ -473,12 +481,36 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                             icalcomponent_remove_property(comp, prop);
                             updated = true;
                         }
+                        while ((prop = icalcomponent_get_first_property(comp, ICAL_EXDATE_PROPERTY)) != NULL) {
+                            icalcomponent_remove_property(comp, prop);
+                            updated = true;
+                        }
                     }
                     if (updated) {
                         SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: remove RRULE before deleting");
                         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
                         insertSubItem(davLUID, subid, icalstr.get());
-                        removeSubItem(davLUID, subid);
+                        // It has been observed that trying the DELETE immediately
+                        // failed again with the same "Can't delete a recurring event"
+                        // error although the event no longer has an RRULE. Seems
+                        // that the Google server sometimes need a bit of time until
+                        // changes really trickle through all databases. Let's
+                        // try a few times before giving up.
+                        for (int retry = 0; retry < 5; retry++) {
+                            try {
+                                SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: remove event, attempt #%d", retry);
+                                removeSubItem(davLUID, subid);
+                                break;
+                            } catch (const TransportStatusException &ex2) {
+                                if (ex2.syncMLStatus() == 409 &&
+                                    strstr(ex2.what(), "Can't delete a recurring event")) {
+                                    SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: try again in a second");
+                                    sleep(1);
+                                } else {
+                                    throw;
+                                }
+                            }
+                        }
                     } else {
                         SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack not applicable, giving up");
                         throw;
@@ -492,6 +524,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         return "";
     } else {
         bool found = false;
+        bool parentRemoved = false;
         for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
              comp;
              comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
@@ -499,6 +532,9 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                 icalcomponent_remove_component(event.m_calendar, comp);
                 icalcomponent_free(comp);
                 found = true;
+                if (subid.empty()) {
+                    parentRemoved = true;
+                }
             }
         }
         if (!found) {
@@ -507,7 +543,20 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         event.m_subids.erase(subid);
         // TODO: avoid updating the item immediately
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
-        InsertItemResult res = insertItem(davLUID, icalstr.get(), true);
+        InsertItemResult res;
+        if (parentRemoved && settings().googleChildHack()) {
+            // Must avoid VEVENTs with RECURRENCE-ID in
+            // event.m_calendar and the PUT request.  Brute-force
+            // approach here is to encode as string, escape, and parse
+            // again.
+            string item = icalstr.get();
+            Event::escapeRecurrenceID(item);
+            event.m_calendar.set(icalcomponent_new_from_string((char *)item.c_str()), // hack for old libical
+                                 "parsing iCalendar 2.0");
+            res = insertItem(davLUID, item, true);
+        } else {
+            res = insertItem(davLUID, icalstr.get(), true);
+        }
         if (res.m_merged ||
             res.m_luid != davLUID) {
             SE_THROW("unexpected result of removing sub event");
