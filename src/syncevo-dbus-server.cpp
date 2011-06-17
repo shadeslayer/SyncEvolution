@@ -1057,11 +1057,22 @@ class NetworkManagerClient : public DBusRemoteObject
 public:
     enum NM_State
       {
-        NM_STATE_UNKNOWN,
-        NM_STATE_ASLEEP,
-        NM_STATE_CONNECTING,
-        NM_STATE_CONNECTED,
-        NM_STATE_DISCONNECTED
+        NM_STATE_UNKNOWN = 0,
+
+        /* following values for NM < 0.9 */
+        NM_STATE_ASLEEP_DEPRECATED = 1,
+        NM_STATE_CONNECTING_DEPRECATED = 2,
+        NM_STATE_CONNECTED_DEPRECATED = 3,
+        NM_STATE_DISCONNECTED_DEPRECATED = 4,
+
+        /* following values for NM >= 0.9 */
+        NM_STATE_ASLEEP = 10,
+        NM_STATE_DISCONNECTED = 20,
+        NM_STATE_DISCONNECTING = 30,
+        NM_STATE_CONNECTING = 40,
+        NM_STATE_CONNECTED_LOCAL = 50,
+        NM_STATE_CONNECTED_SITE = 60,
+        NM_STATE_CONNECTED_GLOBAL = 70,
       };
 public:
     NetworkManagerClient(DBusServer& server);
@@ -5386,14 +5397,23 @@ NetworkManagerClient::NetworkManagerClient(DBusServer &server) :
 
 void NetworkManagerClient::stateChanged(uint32_t uiState)
 {
-    if(uiState==NM_STATE_CONNECTED) {
-        SE_LOG_DEBUG(NULL, NULL, "NetworkManager connected");
-        m_server.getPresenceStatus().updatePresenceStatus(
-            true, PresenceStatus::HTTP_TRANSPORT);
-    } else {
+    switch (uiState) {
+    case NM_STATE_ASLEEP:
+    case NM_STATE_DISCONNECTED:
+    case NM_STATE_DISCONNECTING:
+    case NM_STATE_CONNECTING:
+    case NM_STATE_ASLEEP_DEPRECATED:
+    case NM_STATE_CONNECTING_DEPRECATED:
+    case NM_STATE_DISCONNECTED_DEPRECATED:
         SE_LOG_DEBUG(NULL, NULL, "NetworkManager disconnected");
         m_server.getPresenceStatus().updatePresenceStatus(
             false, PresenceStatus::HTTP_TRANSPORT);
+        break;
+
+    default:
+        SE_LOG_DEBUG(NULL, NULL, "NetworkManager connected");
+        m_server.getPresenceStatus().updatePresenceStatus(
+            true, PresenceStatus::HTTP_TRANSPORT);
     }
 }
 
