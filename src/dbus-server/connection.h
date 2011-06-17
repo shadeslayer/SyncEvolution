@@ -22,8 +22,6 @@
 
 #include "session.h"
 
-using namespace GDBusCXX;
-
 SE_BEGIN_CXX
 
 class DBusServer;
@@ -40,7 +38,7 @@ class DBusServer;
  * this means the Session has to abort, unless reconnecting is
  * supported.
  */
-class Connection : public DBusObjectHelper, public Resource
+class Connection : public GDBusCXX::DBusObjectHelper, public Resource
 {
     DBusServer &m_server;
     StringMap m_peer;
@@ -107,24 +105,24 @@ class Connection : public DBusObjectHelper, public Resource
     static std::string buildDescription(const StringMap &peer);
 
     /** Connection.Process() */
-    void process(const Caller_t &caller,
+    void process(const GDBusCXX::Caller_t &caller,
                  const std::pair<size_t, const uint8_t *> &message,
                  const std::string &message_type);
     /** Connection.Close() */
-    void close(const Caller_t &caller,
+    void close(const GDBusCXX::Caller_t &caller,
                bool normal,
                const std::string &error);
     /** wrapper around sendAbort */
     void abort();
     /** Connection.Abort */
-    EmitSignal0 sendAbort;
+    GDBusCXX::EmitSignal0 sendAbort;
     bool m_abortSent;
     /** Connection.Reply */
-    EmitSignal5<const std::pair<size_t, const uint8_t *> &,
-                const std::string &,
-                const StringMap &,
-                bool,
-                const std::string &> reply;
+    GDBusCXX::EmitSignal5<const std::pair<size_t, const uint8_t *> &,
+                          const std::string &,
+                          const StringMap &,
+                          bool,
+                          const std::string &> reply;
 
     friend class DBusTransportAgent;
 
@@ -132,7 +130,7 @@ public:
     const std::string m_description;
 
     Connection(DBusServer &server,
-               const DBusConnectionPtr &conn,
+               const GDBusCXX::DBusConnectionPtr &conn,
                const std::string &session_num,
                const StringMap &peer,
                bool must_authenticate);

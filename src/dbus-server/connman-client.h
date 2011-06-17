@@ -24,8 +24,6 @@
 
 #include "gdbus/gdbus-cxx-bridge.h"
 
-using namespace GDBusCXX;
-
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -36,7 +34,7 @@ class DBusServer;
  * GetProperty  : getPropCb
  * PropertyChanged: propertyChanged
  **/
-class ConnmanClient : public DBusRemoteObject
+class ConnmanClient : public GDBusCXX::DBusRemoteObject
 {
 public:
     ConnmanClient (DBusServer &server);
@@ -55,9 +53,9 @@ public:
 
 private:
     DBusServer &m_server;
-    DBusConnectionPtr m_connmanConn;
+    GDBusCXX::DBusConnectionPtr m_connmanConn;
 
-    SignalWatch2 <std::string, boost::variant<std::vector<std::string>, std::string> > m_propertyChanged;
+    GDBusCXX::SignalWatch2 <std::string, boost::variant<std::vector<std::string>, std::string> > m_propertyChanged;
 };
 
 SE_END_CXX

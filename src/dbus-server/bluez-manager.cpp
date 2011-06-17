@@ -20,6 +20,8 @@
 #include "bluez-manager.h"
 #include "syncevo-dbus-server.h"
 
+using namespace GDBusCXX;
+
 SE_BEGIN_CXX
 
 BluezManager::BluezManager(DBusServer &server) :

@@ -25,7 +25,6 @@
 #include "gdbus/gdbus-cxx-bridge.h"
 
 #include <syncevo/declarations.h>
-using namespace GDBusCXX;
 
 SE_BEGIN_CXX
 
@@ -52,10 +51,10 @@ class Client
     bool m_notificationsEnabled;
 
 public:
-    const Caller_t m_ID;
+    const GDBusCXX::Caller_t m_ID;
 
     Client(DBusServer &server,
-           const Caller_t &ID) :
+           const GDBusCXX::Caller_t &ID) :
         m_server(server),
         m_attachCount(0),
         m_notificationsEnabled(true),

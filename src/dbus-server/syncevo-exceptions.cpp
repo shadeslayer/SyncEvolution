@@ -31,9 +31,9 @@ DBusMessage* SyncEvoHandleException(DBusMessage *msg)
     Exception::handle();
     try {
         throw;
-    } catch (const dbus_error &ex) {
+    } catch (const GDBusCXX::dbus_error &ex) {
         return b_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
-    } catch (const DBusCXXException &ex) {
+    } catch (const GDBusCXX::DBusCXXException &ex) {
         return b_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
     } catch (const std::runtime_error &ex) {
         return b_dbus_create_error(msg, "org.syncevolution.Exception", "%s", ex.what());

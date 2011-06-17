@@ -25,7 +25,6 @@
 #include "gdbus/gdbus-cxx-bridge.h"
 
 #include <syncevo/declarations.h>
-using namespace GDBusCXX;
 
 SE_BEGIN_CXX
 
@@ -48,7 +47,7 @@ class DBusServer;
  * This class is to manage querying bluetooth devices from org.bluez. Also
  * it acts a proxy to org.bluez.Manager.
  */
-class BluezManager : public DBusRemoteObject {
+class BluezManager : public GDBusCXX::DBusRemoteObject {
 public:
     BluezManager(DBusServer &server);
 
@@ -66,7 +65,7 @@ private:
      * Call methods of org.bluez.Adapter and listen signals from it
      * to get devices list and track its changes
      */
-    class BluezAdapter: public DBusRemoteObject
+    class BluezAdapter: public GDBusCXX::DBusRemoteObject
     {
      public:
         BluezAdapter (BluezManager &manager, const std::string &path);
@@ -89,13 +88,13 @@ private:
 
      private:
         /** callback of 'ListDevices' signal. Used to get all available devices of the adapter */
-        void listDevicesCb(const std::vector<DBusObject_t> &devices, const std::string &error);
+        void listDevicesCb(const std::vector<GDBusCXX::DBusObject_t> &devices, const std::string &error);
 
         /** callback of 'DeviceRemoved' signal. Used to track a device is removed */
-        void deviceRemoved(const DBusObject_t &object);
+        void deviceRemoved(const GDBusCXX::DBusObject_t &object);
 
         /** callback of 'DeviceCreated' signal. Used to track a new device is created */
-        void deviceCreated(const DBusObject_t &object);
+        void deviceCreated(const GDBusCXX::DBusObject_t &object);
 
         BluezManager &m_manager;
         /** the object path of adapter */
@@ -109,9 +108,9 @@ private:
         std::vector<boost::shared_ptr<BluezDevice> > m_devices;
 
         /** represents 'DeviceRemoved' signal of org.bluez.Adapter*/
-        SignalWatch1<DBusObject_t> m_deviceRemoved;
+        GDBusCXX::SignalWatch1<GDBusCXX::DBusObject_t> m_deviceRemoved;
         /** represents 'DeviceAdded' signal of org.bluez.Adapter*/
-        SignalWatch1<DBusObject_t> m_deviceAdded;
+        GDBusCXX::SignalWatch1<GDBusCXX::DBusObject_t> m_deviceAdded;
 
         friend class BluezDevice;
     };
@@ -121,7 +120,7 @@ private:
      * Call methods of org.bluez.Device and listen signals from it
      * to get properties of device and track its changes
      */
-    class BluezDevice: public DBusRemoteObject
+    class BluezDevice: public GDBusCXX::DBusRemoteObject
     {
      public:
         typedef std::map<std::string, boost::variant<std::vector<std::string>, std::string > > PropDict;
@@ -157,7 +156,7 @@ private:
         /** whether the calling of 'GetProperties' is returned */
         bool m_reply;
 
-        typedef SignalWatch2<std::string, boost::variant<std::vector<std::string>, std::string> > PropertySignal;
+        typedef GDBusCXX::SignalWatch2<std::string, boost::variant<std::vector<std::string>, std::string> > PropertySignal;
         /** represents 'PropertyChanged' signal of org.bluez.Device */
         PropertySignal m_propertyChanged;
 
@@ -170,17 +169,17 @@ private:
     void setDone(bool done) { m_done = done; }
 
     /** callback of 'DefaultAdapter' method to get the default bluetooth adapter  */
-    void defaultAdapterCb(const DBusObject_t &adapter, const std::string &error);
+    void defaultAdapterCb(const GDBusCXX::DBusObject_t &adapter, const std::string &error);
 
     /** callback of 'DefaultAdapterChanged' signal to track changes of the default adapter */
-    void defaultAdapterChanged(const DBusObject_t &adapter);
+    void defaultAdapterChanged(const GDBusCXX::DBusObject_t &adapter);
 
     DBusServer &m_server;
-    DBusConnectionPtr m_bluezConn;
+    GDBusCXX::DBusConnectionPtr m_bluezConn;
     boost::shared_ptr<BluezAdapter> m_adapter;
 
     /** represents 'DefaultAdapterChanged' signal of org.bluez.Adapter*/
-    SignalWatch1<DBusObject_t> m_adapterChanged;
+    GDBusCXX::SignalWatch1<GDBusCXX::DBusObject_t> m_adapterChanged;
 
     /** flag to indicate whether the calls are all returned */
     bool m_done;

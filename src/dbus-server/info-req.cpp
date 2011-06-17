@@ -21,6 +21,8 @@
 #include "session.h"
 #include "syncevo-dbus-server.h"
 
+using namespace GDBusCXX;
+
 SE_BEGIN_CXX
 
 InfoReq::InfoReq(DBusServer &server,

@@ -30,12 +30,10 @@ SE_END_CXX
 #define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
 #include "gdbus/gdbus-cxx-bridge.h"
 
-using namespace GDBusCXX;
-
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-class DBusSyncException : public DBusCXXException, public Exception
+class DBusSyncException : public GDBusCXX::DBusCXXException, public Exception
 {
  public:
     DBusSyncException(const std::string &file,

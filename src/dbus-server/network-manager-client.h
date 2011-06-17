@@ -24,8 +24,6 @@
 
 #include "gdbus/gdbus-cxx-bridge.h"
 
-using namespace GDBusCXX;
-
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -37,7 +35,7 @@ class DBusServer;
  * org.freedesktop.DBus.Properties. Dynamic changes are listened via
  * org.freedesktop.NetworkManager - StateChanged signal
  */
-class NetworkManagerClient : public DBusRemoteObject
+class NetworkManagerClient : public GDBusCXX::DBusRemoteObject
 {
 public:
     enum NM_State
@@ -107,8 +105,8 @@ private:
     };
 
     DBusServer &m_server;
-    DBusConnectionPtr m_networkManagerConn;
-    SignalWatch1<uint32_t> m_stateChanged;
+    GDBusCXX::DBusConnectionPtr m_networkManagerConn;
+    GDBusCXX::SignalWatch1<uint32_t> m_stateChanged;
     NetworkManagerProperties m_properties;
 };
 

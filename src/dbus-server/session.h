@@ -31,8 +31,6 @@
 #include "timeout.h"
 #include "resource.h"
 
-using namespace GDBusCXX;
-
 SE_BEGIN_CXX
 
 class DBusServer;
@@ -47,7 +45,7 @@ class LogRedirect;
  * boost::shared_ptr to track it and ensure that there are references
  * to it as long as the connection is needed.
  */
-class Session : public DBusObjectHelper,
+class Session : public GDBusCXX::DBusObjectHelper,
                 public Resource,
                 private ReadOperations,
                 private boost::noncopyable
@@ -195,10 +193,10 @@ class Session : public DBusObjectHelper,
     bool shutdownServer();
 
     /** Session.Attach() */
-    void attach(const Caller_t &caller);
+    void attach(const GDBusCXX::Caller_t &caller);
 
     /** Session.Detach() */
-    void detach(const Caller_t &caller);
+    void detach(const GDBusCXX::Caller_t &caller);
 
     /** Session.GetStatus() */
     void getStatus(std::string &status,
@@ -233,12 +231,12 @@ class Session : public DBusObjectHelper,
     void fireProgress(bool flush = false);
 
     /** Session.StatusChanged */
-    EmitSignal3<const std::string &,
-                uint32_t,
-                const SourceStatuses_t &> emitStatus;
+    GDBusCXX::EmitSignal3<const std::string &,
+                          uint32_t,
+                          const SourceStatuses_t &> emitStatus;
     /** Session.ProgressChanged */
-    EmitSignal2<int32_t,
-                const SourceProgresses_t &> emitProgress;
+    GDBusCXX::EmitSignal2<int32_t,
+                          const SourceProgresses_t &> emitProgress;
 
     static string syncStatusToString(SyncStatus state);
 

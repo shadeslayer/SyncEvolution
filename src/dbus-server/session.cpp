@@ -28,6 +28,8 @@
 #include "client.h"
 #include "dbus-sync.h"
 
+using namespace GDBusCXX;
+
 SE_BEGIN_CXX
 
 void Session::attach(const Caller_t &caller)

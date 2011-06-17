@@ -30,7 +30,7 @@ ConnmanClient::ConnmanClient(DBusServer &server):
     m_connmanConn = b_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
     if (m_connmanConn){
         typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
-        DBusClientCall1<PropDict>  getProp(*this,"GetProperties");
+        GDBusCXX::DBusClientCall1<PropDict>  getProp(*this,"GetProperties");
         getProp (boost::bind(&ConnmanClient::getPropCb, this, _1, _2));
         m_propertyChanged.activate(boost::bind(&ConnmanClient::propertyChanged, this, _1, _2));
     }else{

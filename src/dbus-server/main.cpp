@@ -26,13 +26,13 @@
 
 #include <syncevo/SyncContext.h>
 
-using namespace GDBusCXX;
 using namespace SyncEvo;
+using namespace GDBusCXX;
 
-SE_BEGIN_CXX
-
-static GMainLoop *loop = NULL;
-static bool shutdownRequested = false;
+namespace {
+    GMainLoop *loop = NULL;
+    bool shutdownRequested = false;
+}
 
 void niam(int sig)
 {
@@ -54,8 +54,6 @@ static bool parseDuration(int &duration, const char* value)
         return false;
     }
 }
-
-SE_END_CXX
 
 int main(int argc, char **argv, char **envp)
 {

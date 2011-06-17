@@ -30,8 +30,6 @@
 #include "network-manager-client.h"
 #include "presence-status.h"
 
-using namespace GDBusCXX;
-
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -57,15 +55,15 @@ class GLibNotify;
  * of these objects and deletes them before destructing itself,
  * that reference is guaranteed to remain valid.
  */
-class DBusServer : public DBusObjectHelper,
+class DBusServer : public GDBusCXX::DBusObjectHelper,
                    public LoggerBase
 {
     GMainLoop *m_loop;
     bool &m_shutdownRequested;
-    boost::shared_ptr<Restart> &m_restart;
+    boost::shared_ptr<SyncEvo::Restart> &m_restart;
 
     uint32_t m_lastSession;
-    typedef std::list< std::pair< boost::shared_ptr<Watch>, boost::shared_ptr<Client> > > Clients_t;
+    typedef std::list< std::pair< boost::shared_ptr<GDBusCXX::Watch>, boost::shared_ptr<Client> > > Clients_t;
     Clients_t m_clients;
 
     /**
@@ -161,26 +159,26 @@ class DBusServer : public DBusObjectHelper,
     StringMap getVersions();
 
     /** Server.Attach() */
-    void attachClient(const Caller_t &caller,
-                      const boost::shared_ptr<Watch> &watch);
+    void attachClient(const GDBusCXX::Caller_t &caller,
+                      const boost::shared_ptr<GDBusCXX::Watch> &watch);
 
     /** Server.Detach() */
-    void detachClient(const Caller_t &caller);
+    void detachClient(const GDBusCXX::Caller_t &caller);
 
     /** Server.DisableNotifications() */
-    void disableNotifications(const Caller_t &caller,
+    void disableNotifications(const GDBusCXX::Caller_t &caller,
                               const string &notifications) {
         setNotifications(false, caller, notifications);
     }
 
     /** Server.EnableNotifications() */
-    void enableNotifications(const Caller_t &caller,
+    void enableNotifications(const GDBusCXX::Caller_t &caller,
                              const string &notifications) {
         setNotifications(true, caller, notifications);
     }
 
     /** Server.NotificationAction() */
-    void notificationAction(const Caller_t &caller) {
+    void notificationAction(const GDBusCXX::Caller_t &caller) {
         pid_t pid;
         if((pid = fork()) == 0) {
             // search sync-ui from $PATH
@@ -199,31 +197,31 @@ class DBusServer : public DBusObjectHelper,
 
     /** actual implementation of enable and disable */
     void setNotifications(bool enable,
-                          const Caller_t &caller,
+                          const GDBusCXX::Caller_t &caller,
                           const string &notifications);
 
     /** Server.Connect() */
-    void connect(const Caller_t &caller,
-                 const boost::shared_ptr<Watch> &watch,
+    void connect(const GDBusCXX::Caller_t &caller,
+                 const boost::shared_ptr<GDBusCXX::Watch> &watch,
                  const StringMap &peer,
                  bool must_authenticate,
                  const std::string &session,
-                 DBusObject_t &object);
+                 GDBusCXX::DBusObject_t &object);
 
     /** Server.StartSession() */
-    void startSession(const Caller_t &caller,
-                      const boost::shared_ptr<Watch> &watch,
+    void startSession(const GDBusCXX::Caller_t &caller,
+                      const boost::shared_ptr<GDBusCXX::Watch> &watch,
                       const std::string &server,
-                      DBusObject_t &object) {
+                      GDBusCXX::DBusObject_t &object) {
         startSessionWithFlags(caller, watch, server, std::vector<std::string>(), object);
     }
 
     /** Server.StartSessionWithFlags() */
-    void startSessionWithFlags(const Caller_t &caller,
-                               const boost::shared_ptr<Watch> &watch,
+    void startSessionWithFlags(const GDBusCXX::Caller_t &caller,
+                               const boost::shared_ptr<GDBusCXX::Watch> &watch,
                                const std::string &server,
                                const std::vector<std::string> &flags,
-                               DBusObject_t &object);
+                               GDBusCXX::DBusObject_t &object);
 
     /** Server.GetConfig() */
     void getConfig(const std::string &config_name,
@@ -273,10 +271,10 @@ class DBusServer : public DBusObjectHelper,
                        std::vector<std::string> &transports);
 
     /** Server.GetSessions() */
-    void getSessions(std::vector<DBusObject_t> &sessions);
+    void getSessions(std::vector<GDBusCXX::DBusObject_t> &sessions);
 
     /** Server.InfoResponse() */
-    void infoResponse(const Caller_t &caller,
+    void infoResponse(const GDBusCXX::Caller_t &caller,
                       const std::string &id,
                       const std::string &state,
                       const std::map<string, string> &response);
@@ -293,11 +291,11 @@ class DBusServer : public DBusObjectHelper,
     void removeInfoReq(const InfoReq &req);
 
     /** Server.SessionChanged */
-    EmitSignal2<const DBusObject_t &,
+    GDBusCXX::EmitSignal2<const GDBusCXX::DBusObject_t &,
                 bool> sessionChanged;
 
     /** Server.PresenceChanged */
-    EmitSignal3<const std::string &,
+    GDBusCXX::EmitSignal3<const std::string &,
                 const std::string &,
                 const std::string &> presence;
 
@@ -305,26 +303,26 @@ class DBusServer : public DBusObjectHelper,
      * Server.TemplatesChanged, triggered each time m_syncDevices, the
      * input for the templates, is changed
      */
-    EmitSignal0 templatesChanged;
+    GDBusCXX::EmitSignal0 templatesChanged;
 
     /**
      * Server.ConfigChanged, triggered each time a session ends
      * which modified its configuration
      */
-    EmitSignal0 configChanged;
+    GDBusCXX::EmitSignal0 configChanged;
 
     /** Server.InfoRequest */
-    EmitSignal6<const std::string &,
-                const DBusObject_t &,
-                const std::string &,
-                const std::string &,
-                const std::string &,
-                const std::map<string, string> &> infoRequest;
+    GDBusCXX::EmitSignal6<const std::string &,
+                          const GDBusCXX::DBusObject_t &,
+                          const std::string &,
+                          const std::string &,
+                          const std::string &,
+                          const std::map<string, string> &> infoRequest;
 
     /** Server.LogOutput */
-    EmitSignal3<const DBusObject_t &,
-                string,
-                const std::string &> logOutput;
+    GDBusCXX::EmitSignal3<const GDBusCXX::DBusObject_t &,
+                          string,
+                          const std::string &> logOutput;
 
     friend class Session;
 
@@ -362,7 +360,7 @@ public:
     DBusServer(GMainLoop *loop,
                bool &shutdownRequested,
                boost::shared_ptr<Restart> &restart,
-               const DBusConnectionPtr &conn,
+               const GDBusCXX::DBusConnectionPtr &conn,
                int duration);
     ~DBusServer();
 
@@ -375,14 +373,14 @@ public:
     /**
      * look up client by its ID
      */
-    boost::shared_ptr<Client> findClient(const Caller_t &ID);
+    boost::shared_ptr<Client> findClient(const GDBusCXX::Caller_t &ID);
 
     /**
      * find client by its ID or create one anew
      */
-    boost::shared_ptr<Client> addClient(const DBusConnectionPtr &conn,
-                                        const Caller_t &ID,
-                                        const boost::shared_ptr<Watch> &watch);
+    boost::shared_ptr<Client> addClient(const GDBusCXX::DBusConnectionPtr &conn,
+                                        const GDBusCXX::Caller_t &ID,
+                                        const boost::shared_ptr<GDBusCXX::Watch> &watch);
 
     /** detach this resource from all clients which own it */
     void detach(Resource *resource);

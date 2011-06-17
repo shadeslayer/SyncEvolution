@@ -25,6 +25,8 @@
 #include <syncevo/TransportAgent.h>
 #include <syncevo/SyncContext.h>
 
+using namespace GDBusCXX;
+
 SE_BEGIN_CXX
 
 void Connection::failed(const std::string &reason)
