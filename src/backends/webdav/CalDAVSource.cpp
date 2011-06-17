@@ -472,7 +472,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                     // Google CalDAV:
                     // HTTP/1.1 409 Can't delete a recurring event except on its organizer's calendar
                     //
-                    // Workaround: remove RRULE before deleting
+                    // Workaround: remove RRULE and EXDATE before deleting
                     bool updated = false;
                     icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
                     if (comp) {
@@ -481,12 +481,36 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                             icalcomponent_remove_property(comp, prop);
                             updated = true;
                         }
+                        while ((prop = icalcomponent_get_first_property(comp, ICAL_EXDATE_PROPERTY)) != NULL) {
+                            icalcomponent_remove_property(comp, prop);
+                            updated = true;
+                        }
                     }
                     if (updated) {
                         SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: remove RRULE before deleting");
                         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
                         insertSubItem(davLUID, subid, icalstr.get());
-                        removeSubItem(davLUID, subid);
+                        // It has been observed that trying the DELETE immediately
+                        // failed again with the same "Can't delete a recurring event"
+                        // error although the event no longer has an RRULE. Seems
+                        // that the Google server sometimes need a bit of time until
+                        // changes really trickle through all databases. Let's
+                        // try a few times before giving up.
+                        for (int retry = 0; retry < 5; retry++) {
+                            try {
+                                SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: remove event, attempt #%d", retry);
+                                removeSubItem(davLUID, subid);
+                                break;
+                            } catch (const TransportStatusException &ex2) {
+                                if (ex2.syncMLStatus() == 409 &&
+                                    strstr(ex2.what(), "Can't delete a recurring event")) {
+                                    SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: try again in a second");
+                                    sleep(1);
+                                } else {
+                                    throw;
+                                }
+                            }
+                        }
                     } else {
                         SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack not applicable, giving up");
                         throw;
