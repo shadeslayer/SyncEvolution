@@ -312,9 +312,16 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         // Google hack: increase sequence number if smaller or equal to
         // sequence on server. Server rejects update otherwise.
         // See http://code.google.com/p/google-caldav-issues/issues/detail?id=26
-        if (settings().googleUpdateHack() && newEvent->m_sequence <= event.m_sequence) {
+        if (settings().googleUpdateHack()) {
+            // always bump SEQ by one before PUT
             event.m_sequence++;
-            Event::setSequence(firstcomp, event.m_sequence);
+            if (newEvent->m_sequence < event.m_sequence) {
+                // override in new event, existing ones will be updated below
+                Event::setSequence(firstcomp, event.m_sequence);
+            } else {
+                // new event sequence is equal or higher, use that
+                event.m_sequence = newEvent->m_sequence;
+            }
         }
 
         // update cache: find old VEVENT and remove it before adding new one,
@@ -326,7 +333,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             if (Event::getSubID(comp) == subid) {
                 removeme = comp;
             } else if (settings().googleUpdateHack()) {
-                // increase modification time stamps and sequence to that of the new item,
+                // increase modification time stamps to that of the new item,
                 // Google rejects the whole update otherwise
                 if (!icaltime_is_null_time(lastmodtime)) {
                     icalproperty *dtstamp = icalcomponent_get_first_property(comp, ICAL_DTSTAMP_PROPERTY);
@@ -338,6 +345,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
                         icalproperty_set_lastmodified(lastmod, lastmodtime);
                     }
                 }
+                // set SEQ to the one increased above
                 Event::setSequence(comp, event.m_sequence);
             }
         }
