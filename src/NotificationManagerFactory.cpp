@@ -39,17 +39,22 @@ boost::shared_ptr<NotificationManagerBase> NotificationManagerFactory::createMan
      * libnotify is enabled, we shall use the libnotify backend;
      * if everything fails, then we'll use the no-op backend.
      */
-    if(access(SYNC_UI_PATH, F_OK) != 0) { // i.e. it does not exist
-#if HAS_MLITE
+    if(access(SYNC_UI_PATH, F_OK) != 0) {
+        // i.e. it does not exist
+#if defined(HAS_MLITE)
         mgr.reset(new NotificationManager<NotificationBackendMLite>());
+#elif defined(HAS_NOTIFY)
+        mgr.reset(new NotificationManager<NotificationBackendLibnotify>());
 #endif
     } else { // it exists
-#if HAS_NOTIFY
+#if defined(HAS_NOTIFY)
         mgr.reset(new NotificationManager<NotificationBackendLibnotify>());
-#else
-        mgr.reset(new NotificationManager<NotificationBackendNoop>());
 #endif
     }
+
+    // Fallback if no manager was created
+    if(mgr.get() == 0)
+        mgr.reset(new NotificationManager<NotificationBackendNoop>());
 
     return mgr;
 }
