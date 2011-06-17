@@ -428,7 +428,7 @@ unsigned long Hash(const std::string &str)
 std::string SHA_256(const std::string &data)
 {
 #if USE_SHA256 == 1
-    GString hash(g_compute_checksum_for_data(G_CHECKSUM_SHA256, (guchar *)data.c_str(), data.size()),
+    GStringPtr hash(g_compute_checksum_for_data(G_CHECKSUM_SHA256, (guchar *)data.c_str(), data.size()),
                  "g_compute_checksum_for_data() failed");
     return std::string(hash.get());
 #elif USE_SHA256 == 2

@@ -19,7 +19,7 @@
  */
 
 #ifndef INCL_EVOLUTION_SMART_POINTER
-# define INCL_EVOLUTION_SMART_POINTER
+#define INCL_EVOLUTION_SMART_POINTER
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -215,7 +215,7 @@ template <class T> class arrayptr : public eptr<T, T, ArrayUnref<T> > {
 #ifdef HAVE_GLIB
 /** eptr for glib event handle */
 typedef SmartPtr<guint, guint, UnrefGLibEvent> GLibEvent;
-typedef SmartPtr<gchar *, gchar *, UnrefGString> GString;
+typedef SmartPtr<gchar *, gchar *, UnrefGString> GStringPtr;
 typedef SmartPtr<GMainLoop *, GMainLoop *, UnrefGMainLoop> GMainLoopPtr;
 #endif
 
