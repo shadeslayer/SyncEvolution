@@ -54,6 +54,9 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
      */
     void contactServer();
 
+    /** store resource URL permanently after successful sync */
+    void storeServerInfos();
+
     /* implementation of SyncSource interface */
     virtual void open();
     virtual bool isEmpty();
@@ -66,6 +69,13 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     virtual void beginSync(const std::string &lastToken, const std::string &resumeToken) {
         contactServer();
         TrackingSyncSource::beginSync(lastToken, resumeToken);
+    }
+    /** hook into session to store infos */
+    virtual std::string endSync(bool success) {
+        if (success) {
+             storeServerInfos();
+	}
+	return TrackingSyncSource::endSync(success);
     }
 
     /* implementation of TrackingSyncSource interface */

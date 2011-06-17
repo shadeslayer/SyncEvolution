@@ -55,8 +55,27 @@ Multiple calendars/address books
 
 This is not yet implemented. The code always ends up picking the
 default collection. Eventually the goal is to enable:
-- listing of available collections
-- selecting them via the "database" property
+1. listing of available collections
+2. selecting them via the "database" property
+
+Only the second point is currently implemented.
+
+The "database" property now can hold the final URL of the collection
+(aka database) on the WebDAV server which is used for the
+source. Setting it skips the entire auto-discovery process, which
+makes access quite a bit faster and more reliable.
+
+Because most UIs won't know initially how to find these URLs (listing
+them not supported by the core SyncEvolution) and/or won't have the
+necessary user dialogs, the property is set automatically after a
+successful sync. This avoids the accidental switching between
+databases when the user adds or removes databases on the server (which
+can lead to different results of the auto discovery).
+
+There's still no guarantee that the database picked by default is the
+"right" one. That can only be solved in the UI because servers
+typically don't have a "default" or "personal" flag for their
+collections.
 
 
 Concurrency

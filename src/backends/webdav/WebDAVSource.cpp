@@ -291,6 +291,22 @@ void WebDAVSource::contactServer()
         // we have done this work before, no need to repeat it
     }
 
+    // Can we skip auto-detection because a full resource URL is set?
+    std::string database = getDatabaseID();
+    if (!database.empty() &&
+        m_contextSettings) {
+        m_calendar = Neon::URI::parse(database);
+        // m_contextSettings = m_settings, so this sets m_settings->getURL()
+        m_contextSettings->setURL(database);
+        // start talking to host defined by m_settings->getURL()
+        m_session = Neon::Session::create(m_settings);
+        // force authentication
+        std::string user, pw;
+        m_settings->getCredentials("", user, pw);
+        m_session->forceAuthorization(user, pw);
+        return;
+    }
+
     int timeoutSeconds = m_settings->timeoutSeconds();
     int retrySeconds = m_settings->retrySeconds();
     SE_LOG_DEBUG(this, NULL, "timout %ds, retry %ds => %s",
@@ -824,6 +840,17 @@ void WebDAVSource::getSynthesisInfo(SynthesisInfo &info,
         SE_LOG_DEBUG(this, NULL, "using data conversion rules for '%s'", info.m_backendRule.c_str());
     }
 }
+
+void WebDAVSource::storeServerInfos()
+{
+    if (getDatabaseID().empty()) {
+        // user did not select resource, remember the one used for the
+        // next sync
+        setDatabaseID(m_calendar.toURL());
+        getProperties()->flush();
+    }
+}
+
 
 static const ne_propname getetag[] = {
     { "DAV:", "getetag" },
