@@ -143,7 +143,7 @@ fi
 
 BACKENDS=
 SUBS=
-for sub in `find src -name configure-sub.in`; do
+for sub in `find -L src -name configure-sub.in`; do
     case $sub in src/backends/*)
         BACKENDS="$BACKENDS `dirname $sub | sed -e 's;^src/;;'`";;
     esac
