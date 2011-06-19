@@ -127,6 +127,7 @@ libsyncevolution_include_HEADERS = \
 	declarations.h \
         Cmdline.h \
 	ConfigFilter.h \
+	GLibSupport.h \
 	TrackingSyncSource.h  \
         MapSyncSource.h \
         LogRedirect.h \
