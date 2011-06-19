@@ -781,7 +781,7 @@ context.add(evolutiontest)
 
 test = SyncEvolutionTest("googlecalendar", compile,
                          "", options.shell,
-                         "Client::Source::google_caldav Client::Sync::eds_event::testItems",
+                         "Client::Sync::eds_event::testItems Client::Source::google_caldav",
                          [ "google_caldav", "eds_event" ],
                          "CLIENT_TEST_WEBDAV='google caldav testcases=testcases/google_event.ics' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
@@ -794,7 +794,7 @@ context.add(test)
 
 test = SyncEvolutionTest("yahoo", compile,
                          "", options.shell,
-                         "Client::Source::yahoo_caldav Client::Source::yahoo_carddav Client::Sync::eds_contact::testItems Client::Sync::eds_event::testItems",
+                         "Client::Sync::eds_contact::testItems Client::Sync::eds_event::testItems Client::Source::yahoo_caldav Client::Source::yahoo_carddav",
                          [ "yahoo_caldav", "yahoo_carddav", "eds_event", "eds_contact" ],
                          "CLIENT_TEST_WEBDAV='yahoo caldav carddav carddav/testcases=testcases/yahoo_contact.vcf' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
@@ -806,7 +806,7 @@ context.add(test)
 
 test = SyncEvolutionTest("apple", compile,
                          "", options.shell,
-                         "Client::Source::apple_caldav Client::Source::apple_carddav Client::Sync::eds_event Client::Sync::eds_contact",
+                         "Client::Sync::eds_event Client::Sync::eds_contact Client::Source::apple_caldav Client::Source::apple_carddav",
                          [ "apple_caldav", "apple_carddav", "eds_event", "eds_contact" ],
                          "CLIENT_TEST_WEBDAV='apple caldav carddav' "
                          "CLIENT_TEST_NUM_ITEMS=250 " # test is local, so we can afford a higher number
