@@ -996,6 +996,17 @@ class SyncSourceBase : public Logger {
          * in <afterreadscript>.
          */
         std::string m_afterReadScript;
+
+        /**
+         * Arbitrary configuration options, can override the ones above
+         * because they are added to the <datastore></datastore>
+         * XML configuration directly before the closing element.
+         *
+         * One example is adding <updateallfields>: this is necessary
+         * in backends which depend on getting complete items (= for example,
+         * vCard 3.0 strings) from the engine.
+         */
+        std::string m_datastoreOptions;
     };
 
     /**

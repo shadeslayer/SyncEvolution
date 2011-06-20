@@ -171,6 +171,9 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
         info.m_datatypes <<
         "      </typesupport>\n";
 
+    // arbitrary configuration options, can override the ones above
+    xmlstream << info.m_datastoreOptions;
+
     xml = xmlstream.str();
 }
 
