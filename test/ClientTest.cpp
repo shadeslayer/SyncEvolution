@@ -1899,6 +1899,11 @@ void SyncTests::refreshClient(SyncOptions options) {
 void SyncTests::testDeleteAllRefresh() {
     source_it it;
 
+    // start with clean local data
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        it->second->deleteAll(it->second->createSourceA);
+    }
+
     // copy something to server first; doesn't matter whether it has the
     // item already or not, as long as it exists there afterwards
     for (it = sources.begin(); it != sources.end(); ++it) {
