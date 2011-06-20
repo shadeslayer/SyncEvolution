@@ -349,6 +349,9 @@ sub NormalizeItem {
         s/^(ORGANIZER[^:]*);SCHEDULE-STATUS=5.3/$1/gm;
         # seems to require a fixed number of recurrences; hmm, okay...
         s/^RRULE:COUNT=400;FREQ=DAILY/RRULE:FREQ=DAILY/gm;
+
+        # X- properties are stored, but not X- parameters
+        s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
     }
 
     if ($google || $yahoo) {
