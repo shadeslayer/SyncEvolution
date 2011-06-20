@@ -21,10 +21,13 @@
 #include "config.h"
 #endif
 
+#include <iostream>
+
 #include "syncevo-dbus-server.h"
 #include "restart.h"
 
 #include <syncevo/SyncContext.h>
+
 
 using namespace SyncEvo;
 using namespace GDBusCXX;
