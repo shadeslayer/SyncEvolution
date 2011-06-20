@@ -51,6 +51,7 @@ class EvolutionSyncSource : public TrackingSyncSource
     {
         TrackingSyncSource::getSynthesisInfo(info, fragments);
         info.m_backendRule = "EVOLUTION";
+        info.m_datastoreOptions += "      <updateallfields>true</updateallfields>\n";
     }
 
   protected:
