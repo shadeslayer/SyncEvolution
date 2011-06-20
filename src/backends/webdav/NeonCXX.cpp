@@ -573,8 +573,10 @@ bool Session::check(int error, int code, const ne_status *status, const string &
                 // potentially temporary server failure, may try again
                 retry = true;
             }
-        } else if (descr.find("Secure connection truncated") != descr.npos) {
+        } else if (descr.find("Secure connection truncated") != descr.npos ||
+                   descr.find("decryption failed or bad record mac") != descr.npos) {
             // occasionally seen with Google server; let's retry
+            // For example: "Could not read status line: SSL error: decryption failed or bad record mac"
             retry = true;
         }
         break;
