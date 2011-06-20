@@ -327,12 +327,6 @@ sub NormalizeItem {
       s/^PHOTO(.*?): .*\n/^PHOTO$1: [...]\n/mg; 
       # FN propertiey is not correct 
       s/^FN:.*\n/FN$1: [...]\n/mg;
-      # ';' in NOTE is lost by the server: ; in middle is replace by white space
-      # while ; in the end is omitted.
-      while (s!^NOTE:(.*)\\\;(.+)\n!NOTE:$1 $2\n!mg) {}
-      s!^NOTE:(.*)\\\;\n!NOTE:$1\n!mg;
-      # ';' in ORG is lost 
-      while (s!^ORG:(.*)\;(.*)\n!ORG:$1 $2\n!mg) {}
       # Not support car type in telephone
       s!^TEL\;TYPE=CAR(.*)\n!TEL$1\n!mg;
       # some properties are lost
