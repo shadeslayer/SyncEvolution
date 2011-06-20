@@ -256,6 +256,16 @@ sub NormalizeItem {
         s/^SUMMARY:(.*)$/SUMMARY:$1\nDESCRIPTION:$1/m;
     }
 
+    # strip configurable X- parameters or properties
+    my $strip = $ENV{CLIENT_TEST_STRIP_PROPERTIES};
+    if ($strip) {
+        s/^$strip(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
+    $strip = $ENV{CLIENT_TEST_STRIP_PARAMETERS};
+    if ($strip) {
+        while (s/^(\w+)([^:\n]*);$strip=\d+/$1$2/mg) {}
+    }
+
     if (!$full_timezones) {
         # Strip trailing digits from TZID. They are appended by
         # Evolution and SyncEvolution to distinguish VTIMEZONE

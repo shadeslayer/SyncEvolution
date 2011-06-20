@@ -2629,6 +2629,8 @@ void SyncTests::testExtensions() {
     // compare data in source A against reference data *without* telling synccompare
     // to ignore known data loss for the server
     ScopedEnvChange env("CLIENT_TEST_SERVER", "");
+    ScopedEnvChange envParams("CLIENT_TEST_STRIP_PARAMETERS", "X-EVOLUTION-UI-SLOT");
+    ScopedEnvChange envProps("CLIENT_TEST_STRIP_PROPERTIES", "(PHOTO|FN)");
     bool equal = true;
     for (it = sources.begin(); it != sources.end(); ++it) {
         string refDir = getCurrentTest() + "." + it->second->config.sourceName + ".ref.dat";
