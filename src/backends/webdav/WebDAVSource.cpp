@@ -163,6 +163,12 @@ WebDAVSource::WebDAVSource(const SyncSourceParams &params,
         m_contextSettings.reset(new ContextSettings(params.m_context));
         m_settings = m_contextSettings;
     }
+
+    /* insert contactServer() into BackupData_t and RestoreData_t (implemented by SyncSourceRevisions) */
+    m_operations.m_backupData = boost::bind(&WebDAVSource::backupData,
+                                            this, m_operations.m_backupData, _1, _2, _3);
+    m_operations.m_restoreData = boost::bind(&WebDAVSource::restoreData,
+                                             this, m_operations.m_restoreData, _1, _2, _3);
 }
 
 void WebDAVSource::replaceHTMLEntities(std::string &item)

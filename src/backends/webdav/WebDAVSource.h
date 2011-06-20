@@ -190,6 +190,22 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
                               RevisionMap_t &revisions,
                               bool &failed);
 
+    void backupData(const boost::function<Operations::BackupData_t> &op,
+                    const Operations::ConstBackupInfo &oldBackup,
+                    const Operations::BackupInfo &newBackup,
+                    BackupReport &report) {
+        contactServer();
+        op(oldBackup, newBackup, report);
+    }
+
+    void restoreData(const boost::function<Operations::RestoreData_t> &op,
+                     const Operations::ConstBackupInfo &oldBackup,
+                     bool dryrun,
+                     SyncSourceReport &report) {
+        contactServer();
+        op(oldBackup, dryrun, report);
+    }
+
     /**
      * Extracts ETag from response header, empty if not found.
      */
