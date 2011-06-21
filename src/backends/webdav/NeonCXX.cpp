@@ -120,13 +120,18 @@ std::string URI::toURL() const
 std::string URI::escape(const std::string &text)
 {
     SmartPtr<char *> tmp(ne_path_escape(text.c_str()));
-    return tmp.get();
+    // Fail gracefully. I have observed ne_path_escape returning NULL
+    // a couple of times, with input "%u". It makes sense, if the
+    // escaping fails, to just return the same string, because, well,
+    // it couldn't be escaped.
+    return tmp ? tmp.get() : text;
 }
 
 std::string URI::unescape(const std::string &text)
 {
     SmartPtr<char *> tmp(ne_path_unescape(text.c_str()));
-    return tmp.get();
+    // Fail gracefully. See also the similar comment for the escape() method.
+    return tmp ? tmp.get() : text;
 }
 
 std::string URI::normalizePath(const std::string &path, bool collection)
