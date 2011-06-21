@@ -70,7 +70,7 @@
         <property name="ROLE" rule="other">
           <value field="ROLE"/>
         </property>
-        <property name="X-KADDRESSBOOK-X-Profession" suppressempty="yes" rule="KDE">
+        <property name="X-KADDRESSBOOK-X-Profession" suppressempty="yes" show="no" rule="KDE">
           <value field="ROLE"/>
         </property>
 
@@ -150,7 +150,7 @@
           <value field="BLOGURL" show="yes"/>
         </property>
         <!-- the KDE way of expressing BLOGURL -->
-        <property name="X-KADDRESSBOOK-BlogFeed" suppressempty="yes" rule="KDE">
+        <property name="X-KADDRESSBOOK-BlogFeed" suppressempty="yes" show="no" rule="KDE">
           <value field="BLOGURL" show="yes"/>
         </property>
 
@@ -185,7 +185,7 @@
         <property name="X-MANAGER" suppressempty="yes" rule="other">
           <value field="MANAGER" show="yes"/>
         </property>
-        <property name="X-KADDRESSBOOK-X-ManagersName" suppressempty="yes" rule="KDE">
+        <property name="X-KADDRESSBOOK-X-ManagersName" suppressempty="yes" show="no" rule="KDE">
           <value field="MANAGER" show="yes"/>
         </property>
 
@@ -198,7 +198,7 @@
         <property name="X-ASSISTANT" suppressempty="yes" rule="other">
           <value field="ASSISTANT" show="yes"/>
         </property>
-        <property name="X-KADDRESSBOOK-X-AssistantsName" suppressempty="yes" rule="KDE">
+        <property name="X-KADDRESSBOOK-X-AssistantsName" suppressempty="yes" show="no" rule="KDE">
           <value field="ASSISTANT" show="yes"/>
         </property>
 
@@ -211,7 +211,7 @@
         <property name="X-SPOUSE" suppressempty="yes" rule="other">
           <value field="SPOUSE" show="yes"/>
         </property>
-        <property name="X-KADDRESSBOOK-X-SpousesName" suppressempty="yes" rule="KDE">
+        <property name="X-KADDRESSBOOK-X-SpousesName" suppressempty="yes" show="no" rule="KDE">
           <value field="SPOUSE" show="yes"/>
         </property>
 
@@ -224,7 +224,7 @@
         <property name="X-ANNIVERSARY" suppressempty="yes" rule="other">
           <value field="ANNIVERSARY" show="yes"/>
         </property>
-        <property name="X-KADDRESSBOOK-X-Anniversary" suppressempty="yes" rule="KDE">
+        <property name="X-KADDRESSBOOK-X-Anniversary" suppressempty="yes" show="no" rule="KDE">
           <value field="ANNIVERSARY" show="yes"/>
         </property>
 
@@ -236,7 +236,7 @@
             <value field="AIM_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/aim-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/aim-All" suppressempty="yes" show="no" rule="KDE">
           <value field="AIM_HANDLE"/>
         </property>
 
@@ -247,7 +247,7 @@
             <value field="GADUGADU_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/gadu-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/gadu-All" suppressempty="yes" show="no" rule="KDE">
           <value field="GADUGADU_HANDLE"/>
         </property>
 
@@ -259,7 +259,7 @@
             <value field="GROUPWISE_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/groupwise-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/groupwise-All" suppressempty="yes" show="no" rule="KDE">
           <value field="GROUPWISE_HANDLE"/>
         </property>
 
@@ -270,7 +270,7 @@
             <value field="ICQ_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/icq-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/icq-All" suppressempty="yes" show="no" rule="KDE">
           <value field="ICQ_HANDLE"/>
         </property>
 
@@ -281,7 +281,7 @@
             <value field="JABBER_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/xmpp-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/xmpp-All" suppressempty="yes" show="no" rule="KDE">
           <value field="JABBER_HANDLE"/>
         </property>
 
@@ -292,7 +292,7 @@
             <value field="MSN_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/msn-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/msn-All" suppressempty="yes" show="no" rule="KDE">
           <value field="MSN_HANDLE"/>
         </property>
 
@@ -303,7 +303,7 @@
             <value field="YAHOO_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/yahoo-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/yahoo-All" suppressempty="yes" show="no" rule="KDE">
           <value field="YAHOO_HANDLE"/>
         </property>
 
@@ -314,7 +314,7 @@
             <value field="SKYPE_SLOT"/>
           </parameter>
         </property>
-        <property name="X-messaging/skype-All" suppressempty="yes" rule="KDE">
+        <property name="X-messaging/skype-All" suppressempty="yes" show="no" rule="KDE">
           <value field="SKYPE_HANDLE"/>
         </property>
 
