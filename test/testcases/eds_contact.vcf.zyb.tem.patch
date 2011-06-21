@@ -21,7 +21,7 @@
  LABEL;TYPE=HOME:Test Drive 1\nTest Village\, Lower Test County\n12345\nTest
    Box #1\nTestovia
  ADR:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
-@@ -290,7 +290,7 @@
+@@ -289,7 +289,7 @@
  X-EVOLUTION-SPOUSE:
  NOTE:The first name is "First \; special \;".
  FN:Mr. First \; special \; middle Last
