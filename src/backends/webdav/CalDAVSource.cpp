@@ -865,6 +865,11 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
 {
     contactServer();
 
+    // If this runs as part of the sync preparations, then we might
+    // use the result to populate our m_cache. But because dumping
+    // data is typically disabled, this optimization isn't really
+    // worth that much.
+
     ItemCache cache;
     cache.init(oldBackup, newBackup, false);
 

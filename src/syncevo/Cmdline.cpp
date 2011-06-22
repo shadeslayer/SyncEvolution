@@ -2181,6 +2181,8 @@ static string internalToIni(const string &config)
 /** result of removeComments(filterRandomUUID(filterConfig())) for Google Calendar template/config */
 static const std::string googlecaldav =
                "syncURL = https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google\n"
+               "printChanges = 0\n"
+               "dumpData = 0\n"
                "deviceId = fixed-devid\n"
                "IconURI = image://themedimage/icons/services/google-calendar\n"
                "ConsumerReady = 1\n"
@@ -2191,6 +2193,8 @@ static const std::string googlecaldav =
 
 /** result of removeComments(filterRandomUUID(filterConfig())) for Yahoo Calendar + Contacts */
 static const std::string yahoo =
+               "printChanges = 0\n"
+               "dumpData = 0\n"
                "deviceId = fixed-devid\n"
                "ConsumerReady = 1\n"
                "peerType = WebDAV\n"
