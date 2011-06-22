@@ -531,7 +531,7 @@ sub NormalizeItem {
     }
     if ($memotoo) {
       if (/^BEGIN:VCARD/m ) {
-        s/^(FN|FBURL|CALURI|CATEGORIES|ROLE|X-MOZILLA-HTML|PHOTO|X-EVOLUTION-FILE-AS|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
+        s/^(FN|FBURL|CALURI|CATEGORIES|ROLE|X-MOZILLA-HTML|PHOTO|X-EVOLUTION-FILE-AS|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-GROUPWISE)(;[^:;\n]*)*:.*\r?\n?//gm;
         # only preserves ORG "Company", but loses "Department" and "Office"
         s/^ORG:([^;:\n]+)(;[^;:\n]+)(;[^\n]*)/ORG:$1$2/mg;
         # only preserves first 6 fields of 'ADR'
