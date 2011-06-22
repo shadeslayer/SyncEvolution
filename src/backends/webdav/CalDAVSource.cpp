@@ -43,6 +43,16 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
         "xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
         "<D:prop>\n"
         "<D:getetag/>\n"
+
+        // In practice, peers always return the full data dump
+        // even if asked to return only a subset. Therefore we use this
+        // REPORT to populate our m_cache instead of sending lots of GET
+        // requests later on: faster sync, albeit with higher
+        // memory consumption.
+        //
+        // Because incremental syncs typically don't use listAllSubItems(),
+        // this looks like a good trade-off.
+#ifdef SHORT_ALL_SUB_ITEMS_DATA
         "<C:calendar-data>\n"
         "<C:comp name=\"VCALENDAR\">\n"
         "<C:prop name=\"VERSION\"/>\n"
@@ -55,6 +65,10 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
         "<C:comp name=\"VTIMEZONE\"/>\n"
         "</C:comp>\n"
         "</C:calendar-data>\n"
+#else
+        "<C:calendar-data/>\n"
+#endif
+
         "</D:prop>\n"
         // filter expected by Yahoo! Calendar
         "<C:filter>\n"
@@ -120,6 +134,16 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
         event->m_etag = rev.first;
         event->m_subids = rev.second;
         event->m_sequence = maxSequence;
+#ifndef SHORT_ALL_SUB_ITEMS_DATA
+        // we got a full data dump, use it
+        for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
+             comp;
+             comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
+            // remove useless X-LIC-ERROR
+            Event::icalClean(comp);
+        }
+        event->m_calendar = calendar;
+#endif
         m_cache.insert(make_pair(davLUID, event));
     }
 
@@ -770,22 +794,27 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                 }
             }
 
-            // clean all X-LIC-ERROR warnings added by libical, for example:
-            // X-LIC-ERROR;X-LIC-ERRORTYPE=VALUE-PARSE-ERROR:No value for LOCATION property. Removing entire property:
-            icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_ANY_PROPERTY);
-            while (prop) {
-                icalproperty *next = icalcomponent_get_next_property(comp, ICAL_ANY_PROPERTY);
-                const char *name = icalproperty_get_property_name(prop);
-                if (name && !strcmp("X-LIC-ERROR", name)) {
-                    icalcomponent_remove_property(comp, prop);
-                    icalproperty_free(prop);
-                }
-                prop = next;
-            }
+            // remove useless X-LIC-ERROR
+            Event::icalClean(comp);
         }
     }
     return event;
 }
+
+void CalDAVSource::Event::icalClean(icalcomponent *comp)
+{
+    icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_ANY_PROPERTY);
+    while (prop) {
+        icalproperty *next = icalcomponent_get_next_property(comp, ICAL_ANY_PROPERTY);
+        const char *name = icalproperty_get_property_name(prop);
+        if (name && !strcmp("X-LIC-ERROR", name)) {
+            icalcomponent_remove_property(comp, prop);
+            icalproperty_free(prop);
+        }
+        prop = next;
+    }
+}
+
 
 std::string CalDAVSource::Event::icalTime2Str(const icaltimetype &tt)
 {

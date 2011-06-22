@@ -153,13 +153,32 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
 
 void GLibErrorException(const string &action, GError *gerror)
 {
-    string gerrorstr;
-    if (gerror) {
+    string gerrorstr = action;
+    if (!gerrorstr.empty()) {
         gerrorstr += ": ";
+    }
+    if (gerror) {
         gerrorstr += gerror->message;
         g_clear_error(&gerror);
     } else {
-        gerrorstr = ": failure";
+        gerrorstr = "failure";
+    }
+
+    SE_THROW(gerrorstr);
+}
+
+void GErrorCXX::throwError(const string &action)
+{
+    string gerrorstr = action;
+    if (!gerrorstr.empty()) {
+        gerrorstr += ": ";
+    }
+    if (m_gerror) {
+        gerrorstr += m_gerror->message;
+        // No need to clear m_error! Will be done as part of
+        // destructing the GErrorCCXX.
+    } else {
+        gerrorstr = "failure";
     }
 
     SE_THROW(gerrorstr);

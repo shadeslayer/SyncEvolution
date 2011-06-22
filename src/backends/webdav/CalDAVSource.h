@@ -114,6 +114,14 @@ class CalDAVSource : public WebDAVSource,
          */
         eptr<icalcomponent> m_calendar;
 
+        /**
+         * clean all X-LIC-ERROR warnings added by libical, for example:
+         * X-LIC-ERROR;X-LIC-ERRORTYPE=VALUE-PARSE-ERROR:No value for LOCATION property. Removing entire property:
+         *
+         * @param comp    VEVENT, VTODO, ...
+         */
+        static void icalClean(icalcomponent *comp);
+
         /** date-time as string, without time zone */
         static std::string icalTime2Str(const icaltimetype &tt);
 
