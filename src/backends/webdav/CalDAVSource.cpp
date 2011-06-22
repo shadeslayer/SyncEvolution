@@ -477,7 +477,10 @@ void CalDAVSource::Event::unescapeRecurrenceID(std::string &data)
 
 std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string &subid)
 {
-    Event &event = loadItem(davLUID);
+    // find item in cache first, load only if it is not going to be
+    // removed entirely
+    Event &event = findItem(davLUID);
+
     if (event.m_subids.size() == 1) {
         // remove entire merged item, nothing will be left after removal
         if (*event.m_subids.begin() != subid) {
@@ -548,6 +551,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         m_cache.erase(davLUID);
         return "";
     } else {
+        loadItem(event);
         bool found = false;
         bool parentRemoved = false;
         for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
@@ -602,7 +606,12 @@ void CalDAVSource::flushItem(const string &davLUID)
 
 std::string CalDAVSource::getSubDescription(const string &davLUID, const string &subid)
 {
-    Event &event = loadItem(davLUID);
+    Event &event = findItem(davLUID);
+    if (!event.m_calendar) {
+        // Don't load (expensive!) only to provide the description.
+        // Returning an empty string will trigger the fallback (logging the ID).
+        return "";
+    }
     for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
          comp;
          comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
@@ -636,13 +645,19 @@ std::string CalDAVSource::getDescription(const string &luid)
     return getSubDescription(ids.first, ids.second);
 }
 
-CalDAVSource::Event &CalDAVSource::loadItem(const std::string &davLUID)
+CalDAVSource::Event &CalDAVSource::findItem(const std::string &davLUID)
 {
     EventCache::iterator it = m_cache.find(davLUID);
     if (it == m_cache.end()) {
         throwError("event not found");
     }
-    return loadItem(*it->second);
+    return *it->second;
+}
+
+CalDAVSource::Event &CalDAVSource::loadItem(const std::string &davLUID)
+{
+    Event &event = findItem(davLUID);
+    return loadItem(event);
 }
 
 CalDAVSource::Event &CalDAVSource::loadItem(Event &event)

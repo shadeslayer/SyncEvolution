@@ -157,6 +157,7 @@ class CalDAVSource : public WebDAVSource,
         iterator findByUID(const std::string &uid);
     } m_cache;
 
+    Event &findItem(const std::string &davLUID);
     Event &loadItem(const std::string &davLUID);
     Event &loadItem(Event &event);
 
