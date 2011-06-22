@@ -2975,7 +2975,11 @@ void ReadOperations::getConfig(bool getTemplate,
     // set the flag for configs created or modified with it, but the
     // command line did not. Matches similar code in the Cmdline.cpp
     // migration code.
-    if (syncConfig->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0 /* SyncEvolution < 1.2 */) {
+    //
+    // This does not apply to templates which always have ConsumerReady
+    // set explicitly (to on or off) or not set (same as off).
+    if (!getTemplate &&
+        syncConfig->getConfigVersion(CONFIG_LEVEL_PEER, CONFIG_CUR_VERSION) == 0 /* SyncEvolution < 1.2 */) {
         localConfigs.insert(make_pair("ConsumerReady", "1"));
     }
 
