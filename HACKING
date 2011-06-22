@@ -146,6 +146,12 @@ It understands several environment variables, among them:
 - CLIENT_TEST_EVOLUTION_PREFIX=[name|file://<path>] overrides
   the evolutionsource setting in the configuration; if file:// is used
   then these database will be created automatically
+  NOTE : The automatic database creation is not supported for EDS 2.32. We need
+  to create manually the databases using Evolution. New database names must be
+  named ${CLIENT_TEST_EVOLUTION_PREFIX}${CLIENT_TEST_SOURCES}_[12].
+  Example: if CLIENT_TEST_EVOLUTION_PREFIX=Test_ and Client::Sync::eds_contact
+           is used, then addressbooks with the names 'Test_eds_contact_1' and
+           'Test_eds_contact_2' must exist.
 - CLIENT_TEST_XML=1 use XML format as default instead of the normal WBXML
 
 For unattended testing:
