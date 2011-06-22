@@ -79,6 +79,7 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     }
 
     /* implementation of TrackingSyncSource interface */
+    virtual std::string databaseRevision();
     virtual void listAllItems(RevisionMap_t &revisions);
     virtual InsertItemResult insertItem(const string &luid, const std::string &item, bool raw);
     void readItem(const std::string &luid, std::string &item, bool raw);

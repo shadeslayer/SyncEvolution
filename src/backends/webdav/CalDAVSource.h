@@ -34,7 +34,9 @@ class CalDAVSource : public WebDAVSource,
     /* implementation of SubSyncSource interface */
     virtual void begin() { contactServer(); }
     virtual void endSubSync(bool success) { if (success) { storeServerInfos(); } }
+    virtual std::string subDatabaseRevision() { return databaseRevision(); }
     virtual void listAllSubItems(SubRevisionMap_t &revisions);
+    virtual void setAllSubItems(const SubRevisionMap_t &revisions);
     virtual SubItemResult insertSubItem(const std::string &uid, const std::string &subid,
                                         const std::string &item);
     virtual void readSubItem(const std::string &uid, const std::string &subid, std::string &item);

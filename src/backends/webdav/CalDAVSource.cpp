@@ -130,6 +130,28 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
     return 0;
 }
 
+void CalDAVSource::setAllSubItems(const SubRevisionMap_t &revisions)
+{
+    if (!m_cache.m_initialized) {
+        // populate our cache (without data) from the information cached
+        // for us
+        BOOST_FOREACH(const SubSyncSource::SubRevisionMap_t::value_type &subentry,
+                      revisions) {
+            const std::string &luid = subentry.first;
+            const std::string &rev = subentry.second.first;
+            boost::shared_ptr<Event> &event = m_cache[luid];
+            event.reset(new Event);
+            event->m_DAVluid = luid;
+            event->m_etag = rev;
+            // We don't know the real UID (may be different from resource name == DAVluid),
+            // sequence and last-modified. This information will have to be filled
+            // in by loadItem() when some operation on this event needs it.
+            event->m_subids = subentry.second.second;
+        }
+        m_cache.m_initialized = true;
+    }
+}
+
 SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid, const std::string &callerSubID,
                                                          const std::string &item)
 {
@@ -179,7 +201,10 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
     }
     std::string subid = *newEvent->m_subids.begin();
 
-    // determine whether we already know the merged item even though our caller didn't
+    // Determine whether we already know the merged item even though
+    // our caller didn't. That additional safe guard will fail if
+    // setAllSubItems() was used to fill the cache, because then the m_UID
+    // values in the cache will not be set yet. That should be okay.
     std::string davLUID = luid;
     std::string knownSubID = callerSubID;
     if (davLUID.empty()) {
@@ -706,11 +731,17 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
         Event::unescapeRecurrenceID(item);
         event.m_calendar.set(icalcomponent_new_from_string((char *)item.c_str()), // hack for old libical
                              "parsing iCalendar 2.0");
-        // sequence number might have been increased by last save,
-        // so check it again
+
+        // Sequence number/last-modified might have been increased by last save.
+        // Or the cache was populated by setAllSubItems(), which doesn't give
+        // us the information. In that case, UID might also still be unknown.
+        // Either way, check it again.
         for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
              comp;
              comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
+            if (event.m_UID.empty()) {
+                event.m_UID = Event::getUID(comp);
+            }
             long sequence = Event::getSequence(comp);
             if (sequence > event.m_sequence) {
                 event.m_sequence = sequence;

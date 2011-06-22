@@ -881,6 +881,29 @@ void WebDAVSource::storeServerInfos()
     }
 }
 
+/**
+ * See https://trac.calendarserver.org/browser/CalendarServer/trunk/doc/Extensions/caldav-ctag.txt
+ */
+static const ne_propname getctag[] = {
+    { "http://calendarserver.org/ns/", "getctag" },
+    { NULL, NULL }
+};
+
+std::string WebDAVSource::databaseRevision()
+{
+    Timespec deadline = createDeadline();
+    Neon::Session::PropfindPropCallback_t callback =
+        boost::bind(&WebDAVSource::openPropCallback,
+                    this, _1, _2, _3, _4);
+    m_davProps[m_calendar.m_path]["http://calendarserver.org/ns/:getctag"] = "";
+    m_session->propfindProp(m_calendar.m_path, 0, getctag, callback, deadline);
+    // Fatal communication problems will be reported via exceptions.
+    // Once we get here, invalid or incomplete results can be
+    // treated as "don't have revision string".
+    string ctag = m_davProps[m_calendar.m_path]["http://calendarserver.org/ns/:getctag"];
+    return ctag;
+}
+
 
 static const ne_propname getetag[] = {
     { "DAV:", "getetag" },
