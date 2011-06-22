@@ -1666,8 +1666,8 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
     typedef map<string, string> RevisionMap_t;
 
     /**
-     * fills the complete mapping from UID to revision string of all
-     * currently existing items
+     * Fills the complete mapping from UID to revision string of all
+     * currently existing items.
      *
      * Usually both UID and revision string must be non-empty. The
      * only exception is a refresh-from-client: in that case the
@@ -1678,10 +1678,65 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
      * a non-empty string is necessary and none was provided.
      *
      * This call is typically only invoked only once during the
-     * lifetime of a source. The result returned in that invocation is
+     * lifetime of a source, at the time when detectChanges() needs
+     * the information. The result returned in that invocation is
      * used throught the session.
+     *
+     * When detectChanges() is called with CHANGES_NONE, listAllItems()
+     * is avoided. Instead the cached information is used. Sources
+     * may need to know that information, so in this case setAllItems()
+     * is called as part of detectChanges().
      */
     virtual void listAllItems(RevisionMap_t &revisions) = 0;
+
+    /**
+     * Called by SyncSourceRevisions::detectChanges() to tell
+     * the derived class about the cached information if (and only
+     * if) listAllItems() was not called. The derived class
+     * might not need this information, so the default implementation
+     * simply ignores.
+     *
+     * A more complex API could have been defined to only prepare the
+     * information when needed, but that seemed unnecessarily complex.
+     */
+    virtual void setAllItems(const RevisionMap_t &revisions) {}
+
+    /**
+     * Tells detectChanges() how to do its job.
+     */
+    enum ChangeMode {
+        /**
+         * Call listAllItems() and use the list of previous items
+         * to calculate changes.
+         */
+        CHANGES_FULL,
+
+        /**
+         * Don't rely on previous information. Will call
+         * listAllItems() and generate a full list of items based on
+         * the result.
+         *
+         * TODO: Added/updated/deleted information is still getting
+         * calculated based on the previous items although it is not
+         * needed. In other words, CHANGES_SLOW == CHANGES_FULL at the
+         * moment. Once we are sure that slow sync detection works,
+         * calculating changes in this mode can be removed.
+         */
+        CHANGES_SLOW,
+
+        /**
+         * Caller has already determined that a) no items have changed
+         * and that b) the list of previous items is valid. For example,
+         * some backends have a way of getting a revision string for
+         * the whole database and can compare that against the value
+         * from the end of the previous sync.
+         *
+         * In this mode, listAllItems() doesn't have to be called.
+         * A list of all items will be created, with no items marked
+         * as added/updated/deleted.
+         */
+        CHANGES_NONE
+    };
 
     /**
      * calculate changes, call when sync source is ready for
@@ -1692,8 +1747,12 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
      * the caller.
      *
      * @param trackingNode     a config node for exclusive use by this class
+     * @param mode             determines how changes are detected; if unsure,
+     *                         use CHANGES_FULL, which will always produce
+     *                         the required information, albeit more slowly
+     *                         than the other modes
      */
-    void detectChanges(ConfigNode &trackingNode);
+    void detectChanges(ConfigNode &trackingNode, ChangeMode mode);
 
     /**
      * record that an item was added or updated

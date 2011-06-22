@@ -33,10 +33,11 @@ TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,
     TestingSyncSource(params),
     m_trackingNode(trackingNode)
 {
+    boost::shared_ptr<ConfigNode> safeNode(new SafeConfigNode(params.m_nodes.getTrackingNode()));
     if (!m_trackingNode) {
-        m_trackingNode.reset(new PrefixConfigNode("item-",
-                                                  boost::shared_ptr<ConfigNode>(new SafeConfigNode(params.m_nodes.getTrackingNode()))));
+        m_trackingNode.reset(new PrefixConfigNode("item-", safeNode));
     }
+    m_metaNode = safeNode;
     m_operations.m_checkStatus = boost::bind(&TrackingSyncSource::checkStatus, this, _1);
     m_operations.m_isEmpty = boost::bind(&TrackingSyncSource::isEmpty, this);
     SyncSourceRevisions::init(this, this, granularitySeconds, m_operations);
@@ -44,7 +45,28 @@ TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,
 
 void TrackingSyncSource::checkStatus(SyncSourceReport &changes)
 {
-    detectChanges(*m_trackingNode);
+    // use the most reliable (and most expensive) method by default
+    ChangeMode mode = CHANGES_FULL;
+
+    // assume that we do a regular sync, with reusing stored information
+    // if possible
+    string oldRevision = m_metaNode->readProperty("databaseRevision");
+    if (!oldRevision.empty()) {
+        string newRevision = databaseRevision();
+        SE_LOG_DEBUG(this, NULL, "old database revision '%s', new revision '%s'",
+                     oldRevision.c_str(),
+                     newRevision.c_str());
+        if (newRevision == oldRevision) {
+            SE_LOG_DEBUG(this, NULL, "revisions match, no item changes");
+            mode = CHANGES_NONE;
+        }
+    }
+    if (mode == CHANGES_FULL) {
+        SE_LOG_DEBUG(this, NULL, "using full item scan to detect changes");
+    }
+
+    detectChanges(*m_trackingNode, mode);
+
     // copy our item counts into the report
     changes.setItemStat(ITEM_LOCAL, ITEM_ADDED, ITEM_TOTAL, getNewItems().size());
     changes.setItemStat(ITEM_LOCAL, ITEM_UPDATED, ITEM_TOTAL, getUpdatedItems().size());
@@ -54,7 +76,45 @@ void TrackingSyncSource::checkStatus(SyncSourceReport &changes)
 
 void TrackingSyncSource::beginSync(const std::string &lastToken, const std::string &resumeToken)
 {
-    detectChanges(*m_trackingNode);
+    // use the most reliable (and most expensive) method by default
+    ChangeMode mode = CHANGES_FULL;
+
+    // resume token overrides the normal token; safe to ignore in most
+    // cases and this detectChanges() is done independently of the
+    // token, but let's do it right here anyway
+    string token;
+    if (!resumeToken.empty()) {
+        token = resumeToken;
+    } else {
+        token = lastToken;
+    }
+    // slow sync if token is empty
+    if (token.empty()) {
+        SE_LOG_DEBUG(this, NULL, "slow sync or testing, do full item scan to detect changes");
+        mode = CHANGES_SLOW;
+    } else {
+        string oldRevision = m_metaNode->readProperty("databaseRevision");
+        if (!oldRevision.empty()) {
+            string newRevision = databaseRevision();
+            SE_LOG_DEBUG(this, NULL, "old database revision '%s', new revision '%s'",
+                         oldRevision.c_str(),
+                         newRevision.c_str());
+            if (newRevision == oldRevision) {
+                SE_LOG_DEBUG(this, NULL, "revisions match, no item changes");
+                mode = CHANGES_NONE;
+            }
+
+            // Reset old revision. If anything goes wrong, then we
+            // don't want to rely on a possibly incorrect optimization.
+            m_metaNode->setProperty("databaseRevision", "");
+            m_metaNode->flush();
+        }
+    }
+    if (mode == CHANGES_FULL) {
+        SE_LOG_DEBUG(this, NULL, "using full item scan to detect changes");
+    }
+
+    detectChanges(*m_trackingNode, mode);
 }
 
 std::string TrackingSyncSource::endSync(bool success)
@@ -63,15 +123,22 @@ std::string TrackingSyncSource::endSync(bool success)
     flush();
 
     if (success) {
+        string updatedRevision = databaseRevision();
+        m_metaNode->setProperty("databaseRevision", updatedRevision);
+        // flush both nodes, just in case; in practice, the properties
+        // end up in the same file and only get flushed once
         m_trackingNode->flush();
+        m_metaNode->flush();
     } else {
         // The Synthesis docs say that we should rollback in case of
         // failure. Cannot do that for data, so lets at least keep
         // the revision map unchanged.
     }
 
-    // no token handling at the moment (not needed for clients)
-    return "";
+    // no token handling at the moment (not needed for clients):
+    // return a non-empty token to distinguish an incremental
+    // sync from a slow sync in beginSync()
+    return "1";
 }
 
 TrackingSyncSource::InsertItemResult TrackingSyncSource::insertItem(const std::string &luid, const std::string &item)

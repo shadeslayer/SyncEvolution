@@ -35,8 +35,8 @@ class MapSyncSource;
  * be wrapped by MapSyncSource.
  *
  * The original interface will only be used in "raw" mode, which
- * should bypass any kind of cache used by the implementation and are
- * guaranteed to be passed merged items.
+ * should bypass any kind of cache used by the implementation.
+ * They are guaranteed to be passed merged items.
  *
  * The new methods with uid and subid are using during a sync
  * and should use the cache. They work on single items but modify
@@ -100,7 +100,31 @@ class SubSyncSource : virtual public SyncSourceBase
     /** called after a sync */
     virtual void endSubSync(bool success) = 0;
 
+    /**
+     * A unique identifier for the current state of the complete database.
+     * The semantic is the following:
+     * - empty string implies "state unknown" or "identifier not supported"
+     * - id not empty and ID1 == ID2 implies "nothing has changed";
+     *   the inverse is not true (ids may be different although nothing has changed)
+     *
+     * Matches TrackingSyncSource::databaseRevision().
+     */
+    virtual std::string subDatabaseRevision() { return ""; }
+
+    /**
+     * Either listAllSubItems() or setAllSubItems() will be called after begin().
+     * In the first case, the sub source is expected to provide a full list
+     * of its items. In the second case, the caller was able to determine
+     * that its cached copy of that list is still correct and provides it
+     * the the source.
+     */
     virtual void listAllSubItems(SubRevisionMap_t &revisions) = 0;
+
+    /**
+     * Called instead of listAllSubItems().
+     */
+    virtual void setAllSubItems(const SubRevisionMap_t &revisions) = 0;
+
     virtual SubItemResult insertSubItem(const std::string &uid, const std::string &subid,
                                         const std::string &item) = 0;
     virtual void readSubItem(const std::string &uid, const std::string &subid, std::string &item) = 0;
@@ -187,6 +211,8 @@ class MapSyncSource : public TrackingSyncSource,
     virtual std::string endSync(bool success) { m_sub->endSubSync(success); return TrackingSyncSource::endSync(success); }
     virtual bool isEmpty() { return dynamic_cast<SyncSource &>(*m_sub).getOperations().m_isEmpty(); }
     virtual void listAllItems(SyncSourceRevisions::RevisionMap_t &revisions);
+    virtual void setAllItems(const SyncSourceRevisions::RevisionMap_t &revisions);
+    virtual std::string databaseRevision() { return m_sub->subDatabaseRevision(); }
     virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw);
     virtual void readItem(const std::string &luid, std::string &item, bool raw);
     virtual void removeItem(const string &luid);

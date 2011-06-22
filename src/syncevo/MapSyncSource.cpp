@@ -183,6 +183,22 @@ void MapSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisions)
     }
 }
 
+void MapSyncSource::setAllItems(const SyncSourceRevisions::RevisionMap_t &revisions)
+{
+    SubSyncSource::SubRevisionMap_t subrevisions;
+    BOOST_FOREACH(const SyncSourceRevisions::RevisionMap_t::value_type &entry,
+                  revisions) {
+        const std::string &luid = entry.first;
+        const std::string &rev = entry.second;
+        StringPair ids = splitLUID(luid);
+        pair <string, set<string> > &subitems = subrevisions[ids.first];
+        subitems.first = rev;
+        subitems.second.insert(ids.second);
+    }
+    m_sub->setAllSubItems(subrevisions);
+}
+
+
 SyncSourceRaw::InsertItemResult MapSyncSource::insertItem(const std::string &luid, const std::string &item, bool raw)
 {
     StringPair ids = splitLUID(luid);

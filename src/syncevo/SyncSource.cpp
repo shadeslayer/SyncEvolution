@@ -918,8 +918,24 @@ void SyncSourceRevisions::restoreData(const SyncSource::Operations::ConstBackupI
     }
 }
 
-void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
+void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode, ChangeMode mode)
 {
+    if (mode == CHANGES_NONE) {
+        // shortcut because nothing changed: just copy our known item list
+        ConfigProps props;
+        trackingNode.readProperties(props);
+
+        RevisionMap_t revisions;
+        BOOST_FOREACH(const StringPair &mapping, props) {
+            const string &uid = mapping.first;
+            const string &revision = mapping.second;
+            addItem(uid);
+            revisions[uid] = revision;
+        }
+        setAllItems(revisions);
+        return;
+    }
+
     initRevisions();
 
     // Delay setProperty calls until after checking all uids.
@@ -936,6 +952,8 @@ void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode)
         // always remember the item, need full list
         addItem(uid);
 
+        // TODO: avoid unnecessary work in CHANGES_SLOW mode
+        // Not done yet to avoid introducing bugs.
         string serverRevision(trackingNode.readProperty(uid));
         if (!serverRevision.size()) {
             addItem(uid, NEW);
