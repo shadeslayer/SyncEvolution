@@ -29,8 +29,11 @@ SE_BEGIN_CXX
  * items in a merged item have the same revision string by only
  * storing the revision string once in a special "rev-" property.
  *
- * The original "item-" properties just indicate that a certain
- * luid exists by having a "1" value.
+ * The original "item-" properties indicate that a certain
+ * luid exists. They are also used to store the optional UID string
+ * for the luid. That UID string must be set before setProperty()
+ * is called by SyncSourceRevisions, in other words, before returning
+ * luid/rev information to it.
  *
  * This "rev-" property is reference counted using "<counter>-<revision>"
  * as value. This is necessary so that removeProperty() can decide
@@ -42,11 +45,69 @@ class MapConfigNode : public PrefixConfigNode
     /** same underlying storage as PrefixConfigNode, but with "rev-" instead of "item-" prefix */
     boost::shared_ptr<ConfigNode> m_revisions;
 
+    /** temporary storage for mainid -> uid mapping */
+    StringMap m_uids;
+
+    /** escape / in uid with %2F, so that splitMainIDValue() can use / as separator */
+    StringEscape m_escape;
+
+    /** compose rev-<mainid> value */
+    std::string composeMainIDValue(int refcount,
+                                   const std::string &uid,
+                                   const std::string &revision)
+    {
+        return StringPrintf("%d/%s/%s",
+                            refcount,
+                            m_escape.escape(uid).c_str(),
+                            revision.c_str());
+    }
+
+    /** split rev-<mainid> value again */
+    void splitMainIDValue(const std::string &value,
+                          int refcount,
+                          std::string &uid,
+                          std::string &revision) const
+    {
+        refcount = atoi(value.c_str());
+        size_t offset1 = value.find('/');
+        size_t offset2 = offset1 != std::string::npos ?
+            value.find('/', offset1 + 1) :
+            std::string::npos;
+        if (offset2 != std::string::npos) {
+            uid = m_escape.unescape(value.substr(offset1 + 1,
+                                                 offset2 - offset1 - 1));
+            revision = value.substr(offset2 + 1);
+        }
+    }
+
 public:
     MapConfigNode(const boost::shared_ptr<ConfigNode> &storage) :
         PrefixConfigNode("item-", storage),
-        m_revisions(new PrefixConfigNode("rev-", storage))
+        m_revisions(new PrefixConfigNode("rev-", storage)),
+        m_escape('%', "/")
     {}
+
+    /**
+     * Can be used to store a uid string for each mainid.
+     * Must be called before setProperty() ends up being called.
+     */
+    void rememberUID(const std::string &mainid, const std::string &uid)
+    {
+        m_uids[mainid] = uid;
+    }
+
+    /**
+     * Retrieves uid for a certain luid from the underlying key/value store.
+     * This is not the complementary method for rememberUID()!
+     */
+    std::string getUID(const std::string &mainid)
+    {
+        std::string value = m_revisions->readProperty(mainid);
+        int refcount;
+        std::string uid, revision;
+        splitMainIDValue(value, refcount, uid, revision);
+        return uid;
+    }
 
     static boost::shared_ptr<MapConfigNode> createNode(const SyncSourceParams &params)
     {
@@ -63,10 +124,11 @@ public:
             return "";
         } else {
             // item exists, return shared revision
-            std::string rev = m_revisions->readProperty(ids.first);
-            size_t offset = rev.find('-');
-            rev.erase(0, offset + 1);
-            return rev;
+            std::string value = m_revisions->readProperty(ids.first);
+            int refcount;
+            std::string uid, revision;
+            splitMainIDValue(value, refcount, uid, revision);
+            return revision;
         }
     }
 
@@ -79,12 +141,13 @@ public:
         std::string value = m_revisions->readProperty(ids.first);
         int refcount = atoi(value.c_str());
         if (PrefixConfigNode::readProperty(luid).empty()) {
-            // new item
+            // new item, create it together with its UID (passed to us
+            // out-of-band)
             PrefixConfigNode::setProperty(luid, "1");
             refcount++;
         }
         m_revisions->setProperty(ids.first,
-                                 StringPrintf("%d-%s", refcount, revision.c_str()));
+                                 composeMainIDValue(refcount, m_uids[ids.first], revision));
     }
 
     virtual void readProperties(ConfigProps &props) const
@@ -92,9 +155,14 @@ public:
         PrefixConfigNode::readProperties(props);
         BOOST_FOREACH(ConfigProps::value_type &entry, props) {
             StringPair ids = MapSyncSource::splitLUID(entry.first);
-            entry.second = m_revisions->readProperty(ids.first);
-            size_t offset = entry.second.find('-');
-            entry.second.erase(0, offset + 1);
+            std::string value = m_revisions->readProperty(ids.first);
+            int refcount;
+            std::string mainid, revision;
+            splitMainIDValue(value,
+                             refcount,
+                             mainid,
+                             revision);
+            entry.second = revision;
         }
     }
 
@@ -174,11 +242,11 @@ void MapSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisions)
     m_sub->listAllSubItems(subrevisions);
     BOOST_FOREACH(const SubSyncSource::SubRevisionMap_t::value_type &subentry,
                   subrevisions) {
-        const std::string &uid = subentry.first;
-        const std::string &rev = subentry.second.first;
-        BOOST_FOREACH(const std::string &subid, subentry.second.second) {
-            std::string luid = createLUID(uid, subid);
-            revisions[luid] = rev;
+        const std::string &mainid = subentry.first;
+        const SubSyncSource::SubRevisionEntry &entry = subentry.second;
+        BOOST_FOREACH(const std::string &subid, entry.m_subids) {
+            std::string luid = createLUID(mainid, subid);
+            revisions[luid] = entry.m_revision;
         }
     }
 }
@@ -191,9 +259,13 @@ void MapSyncSource::setAllItems(const SyncSourceRevisions::RevisionMap_t &revisi
         const std::string &luid = entry.first;
         const std::string &rev = entry.second;
         StringPair ids = splitLUID(luid);
-        pair <string, set<string> > &subitems = subrevisions[ids.first];
-        subitems.first = rev;
-        subitems.second.insert(ids.second);
+        SubSyncSource::SubRevisionEntry &subentry = subrevisions[ids.first];
+        if (subentry.m_revision.empty()) {
+            // must be new, store shared properties
+            subentry.m_revision = rev;
+            subentry.m_uid = static_cast<MapConfigNode &>(getTrackingNode()).getUID(ids.first);
+        }
+        subentry.m_subids.insert(ids.second);
     }
     m_sub->setAllSubItems(subrevisions);
 }
@@ -204,7 +276,8 @@ SyncSourceRaw::InsertItemResult MapSyncSource::insertItem(const std::string &lui
     StringPair ids = splitLUID(luid);
     checkFlush(ids.first);
     SubSyncSource::SubItemResult res = m_sub->insertSubItem(ids.first, ids.second, item);
-    return SyncSourceRaw::InsertItemResult(createLUID(res.m_uid, res.m_subid),
+    static_cast<MapConfigNode &>(getTrackingNode()).rememberUID(res.m_mainid, res.m_uid);
+    return SyncSourceRaw::InsertItemResult(createLUID(res.m_mainid, res.m_subid),
                                            res.m_revision, res.m_merged);
 }
 
@@ -255,12 +328,12 @@ std::pair<std::string, std::string> MapSyncSource::splitLUID(const std::string &
     }
 }
 
-void MapSyncSource::checkFlush(const std::string &uid)
+void MapSyncSource::checkFlush(const std::string &luid)
 {
-    if (uid != m_oldIDs &&
-        !m_oldIDs.empty()) {
-        m_sub->flushItem(m_oldIDs);
-        m_oldIDs = uid;
+    if (luid != m_oldLUID &&
+        !m_oldLUID.empty()) {
+        m_sub->flushItem(m_oldLUID);
+        m_oldLUID = luid;
     }
 }
 

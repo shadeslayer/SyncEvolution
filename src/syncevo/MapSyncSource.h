@@ -38,7 +38,7 @@ class MapSyncSource;
  * should bypass any kind of cache used by the implementation.
  * They are guaranteed to be passed merged items.
  *
- * The new methods with uid and subid are using during a sync
+ * The new methods with mainid and subid are using during a sync
  * and should use the cache. They work on single items but modify
  * merged items. Thus the revision string of all sub items in
  * the same merged item will get modified when manipulating
@@ -54,25 +54,32 @@ class SubSyncSource : virtual public SyncSourceBase
         {}
         
         /**
-         * @param uid       the uid after the operation; during an update the uid must
+         * @param mainid    the ID used to access a set of items; may be different
+         *                  from a (iCalendar 2.0) UID; during an update the mainid must
          *                  not be changed, so return the original one here
-         * @param subid     optional subid, same rules as for uid
+         * @param subid     optional subid, same rules as for mainid
          * @param revision  the revision string of the merged item after the operation; leave empty if not used
+         * @param uid       an arbitrary string, stored, but not used by MapSyncSource;
+         *                  used in the CalDAV backend to associate mainid (= resource path)
+         *                  with UID (= part of the item content, but with special semantic)
          * @param merged    set this to true if an existing sub item was updated instead of adding it
          */
-        SubItemResult(const string &uid,
+        SubItemResult(const string &mainid,
                       const string &subid,
                       const string &revision,
+                      const string &uid,
                       bool merged) :
-            m_uid(uid),
+            m_mainid(mainid),
             m_subid(subid),
             m_revision(revision),
+            m_uid(uid),
             m_merged(merged)
         {}
 
-        string m_uid;
+        string m_mainid;
         string m_subid;
         string m_revision;
+        string m_uid;
         bool m_merged;
     };
 
@@ -88,11 +95,20 @@ class SubSyncSource : virtual public SyncSourceBase
     virtual SDKInterface *getSynthesisAPI() const;
 
     /**
-     * uid to rev + list of subid
-     *
-     * Must contain an empty entry for the main item, if one exists.
+     * rev + uid + list of subid; mainid is part of the context
      */
-    typedef map<string, pair<string, set<string> > > SubRevisionMap_t;
+    struct SubRevisionEntry {
+        std::string m_revision;
+        std::string m_uid;
+        set<string> m_subids;
+    };
+    /**
+     * mainid to rev + uid + list of subid
+     *
+     * List must contain an empty entry for the main item, if and only
+     * if one exists.
+     */
+    typedef map<string, SubRevisionEntry> SubRevisionMap_t;
 
     /** called after open() and before any of the following methods */
     virtual void begin() = 0;
@@ -125,22 +141,22 @@ class SubSyncSource : virtual public SyncSourceBase
      */
     virtual void setAllSubItems(const SubRevisionMap_t &revisions) = 0;
 
-    virtual SubItemResult insertSubItem(const std::string &uid, const std::string &subid,
+    virtual SubItemResult insertSubItem(const std::string &mainid, const std::string &subid,
                                         const std::string &item) = 0;
-    virtual void readSubItem(const std::string &uid, const std::string &subid, std::string &item) = 0;
+    virtual void readSubItem(const std::string &mainid, const std::string &subid, std::string &item) = 0;
 
     /**
      * @return empty string if item is empty after removal, otherwise new revision string
      */
-    virtual std::string removeSubItem(const string &uid, const std::string &subid) = 0;
+    virtual std::string removeSubItem(const string &mainid, const std::string &subid) = 0;
 
     /**
      * Called whenever this class thinks that the item may no longer be
      * needed. Might be wrong...
      */
-    virtual void flushItem(const string &uid) = 0;
+    virtual void flushItem(const string &mainid) = 0;
 
-    virtual std::string getSubDescription(const string &uid, const string &subid) = 0;
+    virtual std::string getSubDescription(const string &mainid, const string &subid) = 0;
 
  private:
     MapSyncSource *m_parent;
@@ -154,14 +170,16 @@ class SubSyncSource : virtual public SyncSourceBase
  * treat each individual event as one item.
  *
  * Terminology:
- * - luid = SyncEvolution locally unique ID (VEVENT)
- * - uid = unique ID for underlying item (UID)
+ * - single item = item as presented by this class (VEVENT)
+ * - merged item = combination of all items sharing the same luid/uid (VCALENDAR)
+ * - luid = SyncEvolution locally unique ID (VEVENT), mapped to mainid+subid
+ * - mainid = ID for accessing the set of items (WebDAV resource path)
  * - subid = unique ID (RECURRENCE-ID) for sub-items (VEVENT) inside underlying item (VCALENDAR)
- * - single item = item as presented by this class
- * - merged item = item sharing the same uid
+ * - uid = another unique ID shared by underlying items (iCalendar 2.0 UID),
+ *         not used by this class
  *
- * "luid" is composed from "uid" and "subid" by backslash-escaping a
- * slash (/), then the concatenating the results with a slash as
+ * "luid" is composed from "mainid" and "subid" by backslash-escaping a
+ * slash (/), then concatenating the results with a slash as
  * separator. If the subid is empty, no slash is added. The main
  * advantage of this scheme is that it works well with sub sources
  * which use URI escaping.
@@ -173,16 +191,16 @@ class SubSyncSource : virtual public SyncSourceBase
  * This class uses the TrackingSyncSource infrastructure. The effect that
  * all sub items of a merged item share the same revision string is modelled
  * by telling the SyncSourceRevision instance to use a tracking node which
- * maps all luid keys to the same entry.
+ * maps all id keys to the same entry.
  *
  * The following rules apply:
  * - A single item is added if its luid is new, updated if it exists and
  *   the merged item's revision string is different, deleted if the luid is
  *   gone (same logic as in normal TrackingSyncSource).
- * - A uid is assigned to a new merged item by creating the merged item.
+ * - A mainid is assigned to a new merged item by creating the merged item.
  * - Changes for an existing merged item may be applied to a cache,
  *   which is explicitly flushed by this class. This implies that
- *   such local changes must keep the uid stable and have control
+ *   such local changes must keep the mainid stable and have control
  *   over the subid.
  * - Item logging is offered by this class (LoggingSyncSource), but
  *   entirely depends on the sub source to implement the functionality.
@@ -199,10 +217,10 @@ class MapSyncSource : public TrackingSyncSource,
                   const boost::shared_ptr<SubSyncSource> &sub);
     ~MapSyncSource() {}
 
-    /** compose luid from uid and subid */
-    static std::string createLUID(const std::string &uid, const std::string &subid);
+    /** compose luid from mainid and subid */
+    static std::string createLUID(const std::string &mainid, const std::string &subid);
 
-    /** split luid into uid (first) and subid (second) */
+    /** split luid into mainid (first) and subid (second) */
     static StringPair splitLUID(const std::string &luid);
 
     virtual Databases getDatabases() { return dynamic_cast<SyncSource &>(*m_sub).getDatabases(); }
@@ -225,7 +243,7 @@ class MapSyncSource : public TrackingSyncSource,
  private:
     boost::shared_ptr<SubSyncSource> m_sub;
     static StringEscape m_escape;
-    std::string m_oldIDs;
+    std::string m_oldLUID;
 
     /**
      * Flush sub source if new luid is different from previous one.
@@ -234,7 +252,7 @@ class MapSyncSource : public TrackingSyncSource,
      * roughly true. Exception: Synthesis sorts by add/update/delete
      * first.
      */
-    void checkFlush(const std::string &uid);
+    void checkFlush(const std::string &luid);
 };
 
 SE_END_CXX

@@ -111,8 +111,8 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
     eptr<icalcomponent> calendar(icalcomponent_new_from_string((char *)data.c_str()), // cast is a hack for broken definition in old libical
                                  "iCalendar 2.0");
     std::string davLUID = path2luid(Neon::URI::parse(href).m_path);
-    pair<string, set<string> > &rev = revisions[davLUID];
-    rev.first = ETag2Rev(etag);
+    SubRevisionEntry &entry = revisions[davLUID];
+    entry.m_revision = ETag2Rev(etag);
     long maxSequence = 0;
     std::string uid;
     for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
@@ -124,15 +124,16 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
         if (sequence > maxSequence) {
             maxSequence = sequence;
         }
-        rev.second.insert(subid);
+        entry.m_subids.insert(subid);
     }
+    entry.m_uid = uid;
 
     if (!m_cache.m_initialized) {
         boost::shared_ptr<Event> event(new Event);
         event->m_DAVluid = davLUID;
         event->m_UID = uid;
-        event->m_etag = rev.first;
-        event->m_subids = rev.second;
+        event->m_etag = entry.m_revision;
+        event->m_subids = entry.m_subids;
         event->m_sequence = maxSequence;
 #ifndef SHORT_ALL_SUB_ITEMS_DATA
         // we got a full data dump, use it
@@ -162,15 +163,16 @@ void CalDAVSource::setAllSubItems(const SubRevisionMap_t &revisions)
         BOOST_FOREACH(const SubSyncSource::SubRevisionMap_t::value_type &subentry,
                       revisions) {
             const std::string &luid = subentry.first;
-            const std::string &rev = subentry.second.first;
+            const SubRevisionEntry &entry = subentry.second;
             boost::shared_ptr<Event> &event = m_cache[luid];
             event.reset(new Event);
             event->m_DAVluid = luid;
-            event->m_etag = rev;
-            // We don't know the real UID (may be different from resource name == DAVluid),
-            // sequence and last-modified. This information will have to be filled
-            // in by loadItem() when some operation on this event needs it.
-            event->m_subids = subentry.second.second;
+            event->m_etag = entry.m_revision;
+            event->m_UID = entry.m_uid;
+            // We don't know sequence and last-modified. This
+            // information will have to be filled in by loadItem()
+            // when some operation on this event needs it.
+            event->m_subids = entry.m_subids;
         }
         m_cache.m_initialized = true;
     }
@@ -276,7 +278,8 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             data = &buffer;
         }
         res = insertItem(name, *data, true);
-        subres.m_uid = res.m_luid;
+        subres.m_mainid = res.m_luid;
+        subres.m_uid = newEvent->m_UID;
         subres.m_subid = subid;
         subres.m_revision = res.m_revision;
 
@@ -354,7 +357,8 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         }
         Event &event = loadItem(davLUID);
         // no changes expected yet, copy previous attributes
-        subres.m_uid = davLUID;
+        subres.m_mainid = davLUID;
+        subres.m_uid = event.m_UID;
         subres.m_subid = subid;
         subres.m_revision = event.m_etag;
 
