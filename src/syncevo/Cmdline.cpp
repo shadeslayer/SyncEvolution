@@ -2182,6 +2182,7 @@ static string internalToIni(const string &config)
 static const std::string googlecaldav =
                "syncURL = https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google\n"
                "deviceId = fixed-devid\n"
+               "IconURI = image://themedimage/icons/services/google-calendar\n"
                "ConsumerReady = 1\n"
                "peerType = WebDAV\n"
                "[calendar]\n"
