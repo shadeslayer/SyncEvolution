@@ -82,15 +82,14 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
     getSession()->startOperation("REPORT 'meta data'", deadline);
     while (true) {
         string result;
-        string href, etag, data;
+        string data;
         Neon::XMLParser parser;
-        parser.initReportParser(href, etag);
+        parser.initReportParser(boost::bind(&CalDAVSource::appendItem, this,
+                                            boost::ref(revisions),
+                                            _1, _2, boost::ref(data)));
         m_cache.clear();
         parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
-                           boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
-                           boost::bind(&CalDAVSource::appendItem, this,
-                                       boost::ref(revisions),
-                                       boost::ref(href), boost::ref(etag), boost::ref(data)));
+                           boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
         Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
         report.addHeader("Depth", "1");
         report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
@@ -103,8 +102,8 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
 }
 
 int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
-                             std::string &href,
-                             std::string &etag,
+                             const std::string &href,
+                             const std::string &etag,
                              std::string &data)
 {
     Event::unescapeRecurrenceID(data);
@@ -150,8 +149,6 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
 
     // reset data for next item
     data.clear();
-    href.clear();
-    etag.clear();
     return 0;
 }
 
@@ -753,9 +750,8 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                 getSession()->startOperation("REPORT 'single item'", deadline);
                 while (true) {
                     string result;
-                    string href, etag;
                     Neon::XMLParser parser;
-                    parser.initReportParser(href, etag);
+                    parser.initReportParser();
                     item = "";
                     parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
                                        boost::bind(Neon::XMLParser::append, boost::ref(item), _2, _3));
@@ -924,14 +920,13 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
         "</C:filter>\n"
         "</C:calendar-query>\n";
     string result;
-    string href, etag, data;
+    string data;
     Neon::XMLParser parser;
-    parser.initReportParser(href, etag);
+    parser.initReportParser(boost::bind(&CalDAVSource::backupItem, this,
+                                        boost::ref(cache),
+                                        _1, _2, boost::ref(data)));
     parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
-                       boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3),
-                       boost::bind(&CalDAVSource::backupItem, this,
-                                   boost::ref(cache),
-                                   boost::ref(href), boost::ref(etag), boost::ref(data)));
+                       boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
     Timespec deadline = createDeadline();
     getSession()->startOperation("REPORT 'full calendar'", deadline);
     while (true) {
@@ -947,8 +942,8 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
 }
 
 int CalDAVSource::backupItem(ItemCache &cache,
-                             std::string &href,
-                             std::string &etag,
+                             const std::string &href,
+                             const std::string &etag,
                              std::string &data)
 {
     Event::unescapeRecurrenceID(data);
@@ -958,8 +953,6 @@ int CalDAVSource::backupItem(ItemCache &cache,
 
     // reset data for next item
     data.clear();
-    href.clear();
-    etag.clear();
     return 0;
 }
 

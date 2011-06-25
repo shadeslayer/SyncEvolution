@@ -417,15 +417,30 @@ class XMLParser
     static int reset(std::string &buffer);
 
     /**
-     * Setup parser for handling REPORT result.
-     * Caller still needs to push a handler for
-     * "urn:ietf:params:xml:ns:caldav", "calendar-data".
-     * 
-     * @param href      caller's buffer for DAV:href
-     * @param etag      caller's buffer for DAV:getetag
+     * called once a response is completely parse
+     *
+     * @param href     the path for which the response was sent
+     * @param etag     it's etag, empty if not requested or available
      */
-    void initReportParser(std::string &href,
-                          std::string &etag);
+    typedef boost::function<void (const std::string &, const std::string &)> ResponseEndCB_t;
+
+    /**
+     * Setup parser for handling REPORT result.
+     * Already deals with href and etag, caching it
+     * for each response and passing it to the "response
+     * complete" callback.
+     *
+     * Caller still needs to push a handler for
+     * "urn:ietf:params:xml:ns:caldav", "calendar-data",
+     * or any other elements that it wants to know about.
+     * 
+     * @param responseEnd   called at the end of processing each response;
+     *                      this is the only time when all relevant
+     *                      parts of the response are guaranteed to have been seen;
+     *                      when expecting only one response, the callback
+     *                      is not needed
+     */
+    void initReportParser(const ResponseEndCB_t &responseEnd = ResponseEndCB_t());
 
  private:
     ne_xml_parser *m_parser;
@@ -442,6 +457,17 @@ class XMLParser
         EndCB_t m_end;
     };
     std::list<Callbacks> m_stack;
+
+    /** buffers for initReportParser() */
+    std::string m_href, m_etag;
+
+    int doResponseEnd(const ResponseEndCB_t &responseEnd) {
+        responseEnd(m_href, m_etag);
+        // clean up for next response
+        m_href.clear();
+        m_etag.clear();
+        return 0;
+    }
 
     static int startCB(void *userdata, int parent,
                        const char *nspace, const char *name,

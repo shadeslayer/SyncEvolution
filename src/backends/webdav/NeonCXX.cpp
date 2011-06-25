@@ -777,18 +777,20 @@ int XMLParser::reset(std::string &buffer)
     return 0;
 }
 
-void XMLParser::initReportParser(std::string &href,
-                                 std::string &etag)
+void XMLParser::initReportParser(const ResponseEndCB_t &responseEnd)
 {
     pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "multistatus", _2, _3));
-    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "response", _2, _3));
+    pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "response", _2, _3),
+                Neon::XMLParser::DataCB_t(),
+                boost::bind(&Neon::XMLParser::doResponseEnd,
+                            this, responseEnd));
     pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "href", _2, _3),
-                boost::bind(Neon::XMLParser::append, boost::ref(href), _2, _3));
+                boost::bind(Neon::XMLParser::append, boost::ref(m_href), _2, _3));
     pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "propstat", _2, _3));
     pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "status", _2, _3) /* check status? */);
     pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "prop", _2, _3));
     pushHandler(boost::bind(Neon::XMLParser::accept, "DAV:", "getetag", _2, _3),
-                boost::bind(Neon::XMLParser::append, boost::ref(etag), _2, _3));
+                boost::bind(Neon::XMLParser::append, boost::ref(m_etag), _2, _3));
 }
 
 Request::Request(Session &session,

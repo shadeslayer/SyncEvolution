@@ -171,14 +171,14 @@ class CalDAVSource : public WebDAVSource,
 
     /** callback for listAllSubItems: parse and add new item */
     int appendItem(SubRevisionMap_t &revisions,
-                   std::string &href,
-                   std::string &etag,
+                   const std::string &href,
+                   const std::string &etag,
                    std::string &data);
 
     /** callback for backupData(): dump into backup */
     int backupItem(ItemCache &cache,
-                   std::string &href,
-                   std::string &etag,
+                   const std::string &href,
+                   const std::string &etag,
                    std::string &data);
 };
 
