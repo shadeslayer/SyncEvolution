@@ -151,6 +151,32 @@ class TrackingSyncSource : public TestingSyncSource,
     virtual void listAllItems(SyncSourceRevisions::RevisionMap_t &revisions) = 0;
 
     /**
+     * Called at the start of the sync session to tell
+     * the derived class about the cached information if (and only
+     * if) listAllItems() and updateAllItems() were not called. The derived class
+     * might not need this information, so the default implementation
+     * simply ignores.
+     *
+     * A more complex API could have been defined to only prepare the
+     * information when needed, but that seemed unnecessarily complex.
+     */
+    virtual void setAllItems(const RevisionMap_t &revisions) {}
+
+    /**
+     * updates the revision map to reflect the current state
+     *
+     * May be called instead of listAllItems() if the caller has
+     * a valid list to start from. If the implementor
+     * cannot update the list, it must start from scratch by
+     * reseting the list and calling listAllItems(). The default
+     * implementation of this method does that.
+     */
+    virtual void updateAllItems(SyncSourceRevisions::RevisionMap_t &revisions) {
+        revisions.clear();
+        listAllItems(revisions);
+    }
+
+    /**
      * Create or modify an item.
      *
      * The sync source should be flexible: if the LUID is non-empty, it

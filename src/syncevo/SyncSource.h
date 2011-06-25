@@ -1695,7 +1695,7 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
     /**
      * Called by SyncSourceRevisions::detectChanges() to tell
      * the derived class about the cached information if (and only
-     * if) listAllItems() was not called. The derived class
+     * if) listAllItems() and updateAllItems() were not called. The derived class
      * might not need this information, so the default implementation
      * simply ignores.
      *
@@ -1703,6 +1703,20 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
      * information when needed, but that seemed unnecessarily complex.
      */
     virtual void setAllItems(const RevisionMap_t &revisions) {}
+
+    /**
+     * updates the revision map to reflect the current state
+     *
+     * May be called instead of listAllItems() if the caller has
+     * a valid list to start from. If the implementor
+     * cannot update the list, it must start from scratch by
+     * reseting the list and calling listAllItems(). The default
+     * implementation of this method does that.
+     */
+    virtual void updateAllItems(SyncSourceRevisions::RevisionMap_t &revisions) {
+        revisions.clear();
+        listAllItems(revisions);
+    }
 
     /**
      * Tells detectChanges() how to do its job.

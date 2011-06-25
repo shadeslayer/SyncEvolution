@@ -236,24 +236,9 @@ MapSyncSource::MapSyncSource(const SyncSourceParams &params,
     }
 }
 
-void MapSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisions)
+void MapSyncSource::RevMap2SubRevMap(const SyncSourceRevisions::RevisionMap_t &revisions,
+                                     SubSyncSource::SubRevisionMap_t &subrevisions)
 {
-    SubSyncSource::SubRevisionMap_t subrevisions;
-    m_sub->listAllSubItems(subrevisions);
-    BOOST_FOREACH(const SubSyncSource::SubRevisionMap_t::value_type &subentry,
-                  subrevisions) {
-        const std::string &mainid = subentry.first;
-        const SubSyncSource::SubRevisionEntry &entry = subentry.second;
-        BOOST_FOREACH(const std::string &subid, entry.m_subids) {
-            std::string luid = createLUID(mainid, subid);
-            revisions[luid] = entry.m_revision;
-        }
-    }
-}
-
-void MapSyncSource::setAllItems(const SyncSourceRevisions::RevisionMap_t &revisions)
-{
-    SubSyncSource::SubRevisionMap_t subrevisions;
     BOOST_FOREACH(const SyncSourceRevisions::RevisionMap_t::value_type &entry,
                   revisions) {
         const std::string &luid = entry.first;
@@ -267,9 +252,44 @@ void MapSyncSource::setAllItems(const SyncSourceRevisions::RevisionMap_t &revisi
         }
         subentry.m_subids.insert(ids.second);
     }
-    m_sub->setAllSubItems(subrevisions);
 }
 
+void MapSyncSource::SubRevMap2RevMap(const SubSyncSource::SubRevisionMap_t &subrevisions,
+                                     SyncSourceRevisions::RevisionMap_t &revisions)
+{
+    BOOST_FOREACH(const SubSyncSource::SubRevisionMap_t::value_type &subentry,
+                  subrevisions) {
+        const std::string &mainid = subentry.first;
+        const SubSyncSource::SubRevisionEntry &entry = subentry.second;
+        BOOST_FOREACH(const std::string &subid, entry.m_subids) {
+            std::string luid = createLUID(mainid, subid);
+            revisions[luid] = entry.m_revision;
+        }
+    }
+}
+
+void MapSyncSource::listAllItems(SyncSourceRevisions::RevisionMap_t &revisions)
+{
+    SubSyncSource::SubRevisionMap_t subrevisions;
+    m_sub->listAllSubItems(subrevisions);
+    SubRevMap2RevMap(subrevisions, revisions);
+}
+
+void MapSyncSource::updateAllItems(SyncSourceRevisions::RevisionMap_t &revisions)
+{
+    SubSyncSource::SubRevisionMap_t subrevisions;
+    RevMap2SubRevMap(revisions, subrevisions);
+    m_sub->updateAllSubItems(subrevisions);
+    revisions.clear();
+    SubRevMap2RevMap(subrevisions, revisions);
+}
+
+void MapSyncSource::setAllItems(const SyncSourceRevisions::RevisionMap_t &revisions)
+{
+    SubSyncSource::SubRevisionMap_t subrevisions;
+    RevMap2SubRevMap(revisions, subrevisions);
+    m_sub->setAllSubItems(subrevisions);
+}
 
 SyncSourceRaw::InsertItemResult MapSyncSource::insertItem(const std::string &luid, const std::string &item, bool raw)
 {

@@ -936,6 +936,33 @@ void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode, ChangeMode mod
         return;
     }
 
+    if (!m_revisionsSet &&
+        mode == CHANGES_FULL) {
+        ConfigProps props;
+        trackingNode.readProperties(props);
+        if (!props.empty()) {
+            // We were not asked to throw away all old information and
+            // there is some that may be worth salvaging, so let's give
+            // our derived class a chance to update it instead of having
+            // to reread everything.
+            //
+            // The exact number of items at which the update method is
+            // more efficient depends on the derived class; here we assume
+            // that even a single item makes it worthwhile. The derived
+            // class can always ignore the information if it has different
+            // tradeoffs.
+            //
+            // TODO (?): an API which only provides the information
+            // on demand...
+            m_revisions.clear();
+            m_revisions.insert(props.begin(), props.end());
+            updateAllItems(m_revisions);
+            // continue with m_revisions initialized below
+            m_revisionsSet = true;
+        }
+    }
+
+    // traditional, slow fallback follows...
     initRevisions();
 
     // Delay setProperty calls until after checking all uids.

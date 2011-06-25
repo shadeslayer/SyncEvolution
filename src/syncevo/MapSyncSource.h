@@ -128,13 +128,26 @@ class SubSyncSource : virtual public SyncSourceBase
     virtual std::string subDatabaseRevision() { return ""; }
 
     /**
-     * Either listAllSubItems() or setAllSubItems() will be called after begin().
+     * Either listAllSubItems(), setAllSubItems(), or updateAllSubitems()
+     * will be called after begin().
+     *
      * In the first case, the sub source is expected to provide a full list
      * of its items. In the second case, the caller was able to determine
      * that its cached copy of that list is still correct and provides it
-     * the the source.
+     * the the source. In the third case, some revision information is know,
+     * but it may be obsolete (revision string and/or subids changed or removed)
+     * or incomplete (new items missing). The callee then must update the
+     * information, possibly by falling back to listAllSubItems().
      */
     virtual void listAllSubItems(SubRevisionMap_t &revisions) = 0;
+
+    /**
+     * Called instead of listAllSubItems().
+     */
+    virtual void updateAllSubItems(SubRevisionMap_t &revisions) {
+        revisions.clear();
+        listAllSubItems(revisions);
+    }
 
     /**
      * Called instead of listAllSubItems().
@@ -229,6 +242,7 @@ class MapSyncSource : public TrackingSyncSource,
     virtual std::string endSync(bool success) { m_sub->endSubSync(success); return TrackingSyncSource::endSync(success); }
     virtual bool isEmpty() { return dynamic_cast<SyncSource &>(*m_sub).getOperations().m_isEmpty(); }
     virtual void listAllItems(SyncSourceRevisions::RevisionMap_t &revisions);
+    virtual void updateAllItems(SyncSourceRevisions::RevisionMap_t &revisions);
     virtual void setAllItems(const SyncSourceRevisions::RevisionMap_t &revisions);
     virtual std::string databaseRevision() { return m_sub->subDatabaseRevision(); }
     virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw);
@@ -253,6 +267,11 @@ class MapSyncSource : public TrackingSyncSource,
      * first.
      */
     void checkFlush(const std::string &luid);
+
+    void SubRevMap2RevMap(const SubSyncSource::SubRevisionMap_t &subrevisions,
+                          SyncSourceRevisions::RevisionMap_t &revisions);
+    void RevMap2SubRevMap(const SyncSourceRevisions::RevisionMap_t &revisions,
+                          SubSyncSource::SubRevisionMap_t &subrevisions);
 };
 
 SE_END_CXX
