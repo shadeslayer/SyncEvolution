@@ -272,8 +272,11 @@ struct ClientTestConfig{
      * callback which is invoked with a specific item as paramter
      * to do data type specific conversions before actually
      * using the test item; default is a NOP function
+     *
+     * @param update     modify item content so that it can be
+     *                   used as an update of the old data
      */
-    string (*mangleItem)(const char *data);
+    string (*mangleItem)(const char *data, bool update);
 
     /**
      * A very simple item that is inserted during basic tests. Ideally

@@ -200,7 +200,7 @@ static std::string importItem(TestingSyncSource *source, const ClientTestConfig 
     CPPUNIT_ASSERT(source);
     if (data.size()) {
         SyncSourceRaw::InsertItemResult res;
-        SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw("", config.mangleItem(data.c_str()).c_str()));
+        SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw("", config.mangleItem(data.c_str(), false).c_str()));
         CPPUNIT_ASSERT(!res.m_luid.empty());
         return res.m_luid;
     } else {
@@ -301,7 +301,7 @@ std::string LocalTests::insert(CreateSource createSource, const char *data, bool
     int numItems = 0;
     CPPUNIT_ASSERT_NO_THROW(numItems = countItems(source.get()));
     SyncSourceRaw::InsertItemResult res;
-    std::string mangled = config.mangleItem(data);
+    std::string mangled = config.mangleItem(data, false);
     if (inserted) {
         *inserted = mangled;
     }
@@ -338,7 +338,7 @@ static std::string updateItem(CreateSource createSource, const ClientTestConfig 
 
     // insert item
     SyncSourceRaw::InsertItemResult res;
-    std::string mangled = config.mangleItem(data);
+    std::string mangled = config.mangleItem(data, true);
     if (updated) {
         *updated = mangled;
     }
@@ -374,7 +374,7 @@ void LocalTests::update(CreateSource createSource, const char *data, bool check)
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
     CPPUNIT_ASSERT(it != source->getAllItems().end());
     string luid = *it;
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data)));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data, true)));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     if (!check) {
@@ -404,7 +404,7 @@ void LocalTests::update(CreateSource createSource, const char *data, const std::
     TestingSyncSourcePtr source(createSource());
 
     // update it
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data).c_str()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data, true).c_str()));
 
     backupStorage(config, client);
 }
@@ -500,7 +500,7 @@ void LocalTests::compareDatabases(TestingSyncSource &copy,
 
 std::string LocalTests::createItem(int item, const std::string &revision, int size)
 {
-    std::string data = config.mangleItem(config.templateItem);
+    std::string data = config.mangleItem(config.templateItem, false);
     std::stringstream prefix;
 
     // string to be inserted at start of unique properties;
@@ -1393,7 +1393,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = updateItem(createSourceA, config, parent, config.parentItem);
+    parent = updateItem(createSourceA, config, parent, config.parentItem, &parentData);
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -4050,11 +4050,22 @@ void ClientTest::postSync(int res, const std::string &logname)
 #endif
 }
 
-static string mangleNOP(const char *data) { return data; }
-
-static string mangleICalendar20(const char *data)
+static string mangleGeneric(const char *data, bool update)
 {
     std::string item = data;
+    if (update) {
+        boost::replace_first(item, "NOTE:", "NOTE:U ");
+    }
+    return item;
+}
+
+static string mangleICalendar20(const char *data, bool update)
+{
+    std::string item = data;
+
+    if (update) {
+        boost::replace_first(item, "DESCRIPTION:", "DESCRIPTION:U ");
+    }
 
     if (getenv("CLIENT_TEST_NO_UID")) {
         boost::replace_all(item, "UID:1234567890!@#$%^&*()<>@dummy\n", "");
@@ -4139,7 +4150,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         noutc = true;
     }
 
-    config.mangleItem = mangleNOP;
+    config.mangleItem = mangleGeneric;
 
     if (!strcmp(type, "eds_contact")) {
         config.sourceName = "eds_contact";
