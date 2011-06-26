@@ -340,9 +340,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
     std::string subid = *newEvent->m_subids.begin();
 
     // Determine whether we already know the merged item even though
-    // our caller didn't. That additional safe guard will fail if
-    // setAllSubItems() was used to fill the cache, because then the m_UID
-    // values in the cache will not be set yet. That should be okay.
+    // our caller didn't.
     std::string davLUID = luid;
     std::string knownSubID = callerSubID;
     if (davLUID.empty()) {
