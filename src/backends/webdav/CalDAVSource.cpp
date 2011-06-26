@@ -81,7 +81,6 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
     Timespec deadline = createDeadline();
     getSession()->startOperation("REPORT 'meta data'", deadline);
     while (true) {
-        string result;
         string data;
         Neon::XMLParser parser;
         parser.initReportParser(boost::bind(&CalDAVSource::appendItem, this,
@@ -749,7 +748,6 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                 Timespec deadline = createDeadline();
                 getSession()->startOperation("REPORT 'single item'", deadline);
                 while (true) {
-                    string result;
                     Neon::XMLParser parser;
                     parser.initReportParser();
                     item = "";
@@ -919,7 +917,6 @@ void CalDAVSource::backupData(const SyncSource::Operations::ConstBackupInfo &old
         "</C:comp-filter>\n"
         "</C:filter>\n"
         "</C:calendar-query>\n";
-    string result;
     string data;
     Neon::XMLParser parser;
     parser.initReportParser(boost::bind(&CalDAVSource::backupItem, this,
