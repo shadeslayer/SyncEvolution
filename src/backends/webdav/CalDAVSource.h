@@ -36,6 +36,7 @@ class CalDAVSource : public WebDAVSource,
     virtual void endSubSync(bool success) { if (success) { storeServerInfos(); } }
     virtual std::string subDatabaseRevision() { return databaseRevision(); }
     virtual void listAllSubItems(SubRevisionMap_t &revisions);
+    virtual void updateAllSubItems(SubRevisionMap_t &revisions);
     virtual void setAllSubItems(const SubRevisionMap_t &revisions);
     virtual SubItemResult insertSubItem(const std::string &uid, const std::string &subid,
                                         const std::string &item);
@@ -180,6 +181,11 @@ class CalDAVSource : public WebDAVSource,
                    const std::string &href,
                    const std::string &etag,
                    std::string &data);
+
+    /** add to m_cache */
+    void addSubItem(const std::string &luid,
+                    const SubRevisionEntry &entry);
+
 };
 
 SE_END_CXX

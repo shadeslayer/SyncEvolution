@@ -100,6 +100,117 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
     m_cache.m_initialized = true;
 }
 
+static void addStringPair(StringMap &pairs,
+                          const std::string &a,
+                          const std::string &b)
+{
+    pairs[a] = b;
+}
+
+void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
+{
+    // list items to identify new, updated and removed ones
+    const std::string query =
+        "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
+        "<C:calendar-query xmlns:D=\"DAV:\"\n"
+        "xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
+        "<D:prop>\n"
+        "<D:getetag/>\n"
+        "</D:prop>\n"
+        // filter expected by Yahoo! Calendar
+        "<C:filter>\n"
+        "<C:comp-filter name=\"VCALENDAR\">\n"
+        "<C:comp-filter name=\"VEVENT\">\n"
+        "</C:comp-filter>\n"
+        "</C:comp-filter>\n"
+        "</C:filter>\n"
+        "</C:calendar-query>\n";
+    Timespec deadline = createDeadline();
+    StringMap items;
+    getSession()->startOperation("updateAllSubItems REPORT 'list items'", deadline);
+    while (true) {
+        string data;
+        Neon::XMLParser parser;
+        items.clear();
+        parser.initReportParser(boost::bind(addStringPair, boost::ref(items), _1, _2));
+        Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
+        report.addHeader("Depth", "1");
+        report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+        if (report.run()) {
+            break;
+        }
+    }
+
+    // remove obsolete entries
+    SubRevisionMap_t::iterator it = revisions.begin();
+    while (it != revisions.end()) {
+        SubRevisionMap_t::iterator next = it;
+        ++next;
+        if (items.find(it->first) == items.end()) {
+            revisions.erase(it);
+        }
+        it = next;
+    }
+
+    // build list of new or updated entries,
+    // copy others to cache
+    m_cache.clear();
+    std::list<std::string> mustRead;
+    BOOST_FOREACH(const StringPair &item, items) {
+        SubRevisionMap_t::iterator it = revisions.find(item.first);
+        if (it == revisions.end() ||
+            it->second.m_revision != ETag2Rev(item.second)) {
+            // read current information below
+            mustRead.push_back(item.first);
+        } else {
+            // copy still relevant information
+            addSubItem(it->first, it->second);
+        }
+    }
+
+    // request dump of these items, add to cache and revisions
+    //
+    // Failures to find or read certain items will be
+    // ignored. appendItem() will only be called for actually
+    // retrieved items. This is partly intentional: Google is known to
+    // have problems with providing all of its data via GET or the
+    // multiget REPORT below. It returns a 404 error for items that a
+    // calendar-query includes (see loadItem()).  Such items are
+    // ignored it and thus will be silently skipped. This is not
+    // perfect, but better than failing the sync.
+    if (!mustRead.empty()) {
+        std::stringstream buffer;
+        buffer << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+            "<C:calendar-multiget xmlns:D=\"DAV:\"\n"
+            "   xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
+            "<D:prop>\n"
+            "   <C:calendar-data/>\n"
+            "</D:prop>\n";
+        BOOST_FOREACH(const std::string &href, mustRead) {
+            buffer << "<D:href>" << href << "</D:href>\n";
+        }
+        buffer << "</C:calendar-multiget>";
+        getSession()->startOperation("updateAllSubItems REPORT 'multiget new/updated items'", deadline);
+        while (true) {
+            string data;
+            Neon::XMLParser parser;
+            parser.initReportParser(boost::bind(&CalDAVSource::appendItem, this,
+                                                boost::ref(revisions),
+                                                _1, _2, boost::ref(data)));
+            m_cache.clear();
+            parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
+                               boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
+            Neon::Request report(*getSession(), "REPORT", getCalendar().m_path,
+                                 buffer.str(), parser);
+            report.addHeader("Depth", "1");
+            report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
+            if (report.run()) {
+                break;
+            }
+        }
+    }
+}
+
 int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
                              const std::string &href,
                              const std::string &etag,
@@ -151,6 +262,20 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
     return 0;
 }
 
+void CalDAVSource::addSubItem(const std::string &luid,
+                              const SubRevisionEntry &entry)
+{
+    boost::shared_ptr<Event> &event = m_cache[luid];
+    event.reset(new Event);
+    event->m_DAVluid = luid;
+    event->m_etag = entry.m_revision;
+    event->m_UID = entry.m_uid;
+    // We don't know sequence and last-modified. This
+    // information will have to be filled in by loadItem()
+    // when some operation on this event needs it.
+    event->m_subids = entry.m_subids;
+}
+
 void CalDAVSource::setAllSubItems(const SubRevisionMap_t &revisions)
 {
     if (!m_cache.m_initialized) {
@@ -158,17 +283,8 @@ void CalDAVSource::setAllSubItems(const SubRevisionMap_t &revisions)
         // for us
         BOOST_FOREACH(const SubSyncSource::SubRevisionMap_t::value_type &subentry,
                       revisions) {
-            const std::string &luid = subentry.first;
-            const SubRevisionEntry &entry = subentry.second;
-            boost::shared_ptr<Event> &event = m_cache[luid];
-            event.reset(new Event);
-            event->m_DAVluid = luid;
-            event->m_etag = entry.m_revision;
-            event->m_UID = entry.m_uid;
-            // We don't know sequence and last-modified. This
-            // information will have to be filled in by loadItem()
-            // when some operation on this event needs it.
-            event->m_subids = entry.m_subids;
+            addSubItem(subentry.first,
+                       subentry.second);
         }
         m_cache.m_initialized = true;
     }
