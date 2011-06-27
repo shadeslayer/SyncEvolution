@@ -118,7 +118,7 @@
       <arg type="a{ss}" name="info" direction="out">
         <doc:doc><doc:summary>
             "version" - main SyncEvolution release name (usually a number,
-sometimes also a beta or alpha suffix),
+            sometimes also a beta or alpha suffix),
             "system" - some plain text information about system libraries,
             "backends" - available backend libraries
         </doc:summary></doc:doc>
@@ -422,7 +422,7 @@ sometimes also a beta or alpha suffix),
             each entry contains in this order:
             an optional name that can be shown to the user
             (already localized or chosen by the user, empty if unavailable),
-            a unique value for the "evolutionSource" property,
+            a unique value for the "database" (previously, "evolutionSource") property,
             a boolean which is true at most once for the default source
           </doc:description>
         </doc:doc>
