@@ -212,9 +212,9 @@ class TimeoutTest:
         Timeout.addTimeout(2, callback, use_glib=False)
         time.sleep(10)
         end = time.time()
-        self.failUnless(self.called)
-        self.failIf(end - start < 2)
-        self.failIf(end - start >= 3)
+        self.assertTrue(self.called)
+        self.assertFalse(end - start < 2)
+        self.assertFalse(end - start >= 3)
 
     def testEmptyTimeout(self):
         """testEmptyTimeout - EmptyTimeout"""
@@ -226,9 +226,9 @@ class TimeoutTest:
         if not self.called:
             time.sleep(10)
         end = time.time()
-        self.failUnless(self.called)
-        self.failIf(end - start < 0)
-        self.failIf(end - start >= 1)
+        self.assertTrue(self.called)
+        self.assertFalse(end - start < 0)
+        self.assertFalse(end - start >= 1)
 
     def testTwoTimeouts(self):
         """testTwoTimeouts - TwoTimeouts"""
@@ -240,14 +240,14 @@ class TimeoutTest:
         Timeout.addTimeout(5, callback, use_glib=False)
         time.sleep(10)
         end = time.time()
-        self.failUnless(self.called)
-        self.failIf(end - start < 2)
-        self.failIf(end - start >= 3)
+        self.assertTrue(self.called)
+        self.assertFalse(end - start < 2)
+        self.assertFalse(end - start >= 3)
         time.sleep(10)
         end = time.time()
-        self.failUnless(self.called)
-        self.failIf(end - start < 5)
-        self.failIf(end - start >= 6)
+        self.assertTrue(self.called)
+        self.assertFalse(end - start < 5)
+        self.assertFalse(end - start >= 6)
 
     def testTwoReversedTimeouts(self):
         """testTwoReversedTimeouts - TwoReversedTimeouts"""
@@ -259,14 +259,14 @@ class TimeoutTest:
         Timeout.addTimeout(2, callback, use_glib=False)
         time.sleep(10)
         end = time.time()
-        self.failUnless(self.called)
-        self.failIf(end - start < 2)
-        self.failIf(end - start >= 3)
+        self.assertTrue(self.called)
+        self.assertFalse(end - start < 2)
+        self.assertFalse(end - start >= 3)
         time.sleep(10)
         end = time.time()
-        self.failUnless(self.called)
-        self.failIf(end - start < 5)
-        self.failIf(end - start >= 6)
+        self.assertTrue(self.called)
+        self.assertFalse(end - start < 5)
+        self.assertFalse(end - start >= 6)
 
 def TryKill(pid, signal):
     try:
@@ -477,7 +477,7 @@ class DBusUtil(Timeout):
 
     def serverExecutable(self):
         """returns full path of currently running syncevo-dbus-server binary"""
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         maps = open("/proc/%d/maps" % DBusUtil.pserver.pid, "r")
         regex = re.compile(r'[0-9a-f]*-[0-9a-f]* r-xp [0-9a-f]* [^ ]* \d* *(.*)\n')
         for line in maps:
@@ -520,10 +520,10 @@ class DBusUtil(Timeout):
         if wait and status == "queuing":
             # wait for signal
             loop.run()
-            self.failUnlessEqual(DBusUtil.quit_events, ["session " + sessionpath + " ready"])
+            self.assertEqual(DBusUtil.quit_events, ["session " + sessionpath + " ready"])
         elif DBusUtil.quit_events:
             # signal was processed inside D-Bus call?
-            self.failUnlessEqual(DBusUtil.quit_events, ["session " + sessionpath + " ready"])
+            self.assertEqual(DBusUtil.quit_events, ["session " + sessionpath + " ready"])
         if wait:
             # signal no longer needed, remove it because otherwise it
             # might record unexpected "session ready" events
@@ -635,7 +635,7 @@ class DBusUtil(Timeout):
         test/test-dbus/<snapshot> to own xdg_root (=./test-dbus). To
         be used only in tests which called runTest() with
         own_xdg=True."""
-        self.failUnless(self.own_xdg)
+        self.assertTrue(self.own_xdg)
 
         # Get the absolute path of the current python file.
         scriptpath = os.path.abspath(os.path.expanduser(os.path.expandvars(sys.argv[0])))
@@ -678,28 +678,28 @@ class DBusUtil(Timeout):
         lastError = 0
         for status, error, sources in statuses:
             # consecutive entries should not be equal
-            self.failIfEqual((lastStatus, lastError, lastSources), (status, error, sources))
+            self.assertNotEqual((lastStatus, lastError, lastSources), (status, error, sources))
             # no error, unless expected
             if expectedError:
                 if error:
-                    self.failUnlessEqual(expectedError, error)
+                    self.assertEqual(expectedError, error)
             else:
-                self.failUnlessEqual(error, 0)
+                self.assertEqual(error, 0)
             # keep order: session status must be unchanged or the next status 
             seps = status.split(';')
             lastSeps = lastStatus.split(';')
-            self.failUnless(statusPairs.has_key(seps[0]))
-            self.failUnless(statusPairs[seps[0]] >= statusPairs[lastSeps[0]])
+            self.assertTrue(statusPairs.has_key(seps[0]))
+            self.assertTrue(statusPairs[seps[0]] >= statusPairs[lastSeps[0]])
             # check specifiers
             if len(seps) > 1:
-                self.failUnlessEqual(seps[1], "waiting")
+                self.assertEqual(seps[1], "waiting")
             for sourcename, value in sources.items():
                 # no error
-                self.failUnlessEqual(value[2], 0)
+                self.assertEqual(value[2], 0)
                 # keep order: source status must also be unchanged or the next status
                 if lastSources.has_key(sourcename):
                     lastValue = lastSources[sourcename]
-                    self.failUnless(statusPairs[value[1]] >= statusPairs[lastValue[1]])
+                    self.assertTrue(statusPairs[value[1]] >= statusPairs[lastValue[1]])
 
             lastStatus = status
             lastSources = sources
@@ -708,21 +708,21 @@ class DBusUtil(Timeout):
         # check increasing progress percentage
         lastPercent = 0
         for percent, sources in progresses:
-            self.failIf(percent < lastPercent)
+            self.assertFalse(percent < lastPercent)
             lastPercent = percent
 
         status, error, sources = self.session.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "done")
-        self.failUnlessEqual(error, expectedError)
+        self.assertEqual(status, "done")
+        self.assertEqual(error, expectedError)
 
         # now check that report is sane
         reports = self.session.GetReports(0, 100, utf8_strings=True)
-        self.failUnlessEqual(len(reports), 1)
+        self.assertEqual(len(reports), 1)
         if expectedResult:
-            self.failUnlessEqual(int(reports[0]["status"]), expectedResult)
+            self.assertEqual(int(reports[0]["status"]), expectedResult)
         else:
-            self.failUnlessEqual(int(reports[0]["status"]), 200)
-            self.failIf("error" in reports[0])
+            self.assertEqual(int(reports[0]["status"]), 200)
+            self.assertFalse("error" in reports[0])
         return reports[0]
 
 class TestDBusServer(unittest.TestCase, DBusUtil):
@@ -738,19 +738,19 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """TestDBusServer.testCapabilities - Server.Capabilities()"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
-        self.failUnlessEqual(capabilities, ['ConfigChanged', 'DatabaseProperties', 'GetConfigName', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
+        self.assertEqual(capabilities, ['ConfigChanged', 'DatabaseProperties', 'GetConfigName', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
 
     def testVersions(self):
         """TestDBusServer.testVersions - Server.GetVersions()"""
         versions = self.server.GetVersions()
-        self.failIfEqual(versions["version"], "")
-        self.failIfEqual(versions["system"], None)
-        self.failIfEqual(versions["backends"], None)
+        self.assertNotEqual(versions["version"], "")
+        self.assertNotEqual(versions["system"], None)
+        self.assertNotEqual(versions["backends"], None)
 
     def testGetConfigsEmpty(self):
         """TestDBusServer.testGetConfigsEmpty - Server.GetConfigsEmpty()"""
         configs = self.server.GetConfigs(False, utf8_strings=True)
-        self.failUnlessEqual(configs, [])
+        self.assertEqual(configs, [])
 
     def testGetConfigsTemplates(self):
         """TestDBusServer.testGetConfigsTemplates - Server.GetConfigsTemplates()"""
@@ -775,17 +775,17 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """TestDBusServer.testGetConfigScheduleWorld - Server.GetConfigScheduleWorld()"""
         config1 = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
         config2 = self.server.GetConfig("ScheduleWorld", True, utf8_strings=True)
-        self.failIfEqual(config1[""]["deviceId"], config2[""]["deviceId"])
+        self.assertNotEqual(config1[""]["deviceId"], config2[""]["deviceId"])
         config1[""]["deviceId"] = "foo"
         config2[""]["deviceId"] = "foo"
-        self.failUnlessEqual(config1, config2)
+        self.assertEqual(config1, config2)
 
     def testInvalidConfig(self):
         """TestDBusServer.testInvalidConfig - Server.NoSuchConfig exception"""
         try:
             config1 = self.server.GetConfig("no-such-config", False, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: No configuration 'no-such-config' found")
         else:
             self.fail("no exception thrown")
@@ -1033,9 +1033,9 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         "http://http-only-1"}})
         self.session.Detach()
         def cb_http_presence(server, status, transport):
-            self.failUnlessEqual (status, "")
-            self.failUnlessEqual (server, "foo")
-            self.failUnlessEqual (transport, "http://http-only-1")
+            self.assertEqual (status, "")
+            self.assertEqual (server, "foo")
+            self.assertEqual (transport, "http://http-only-1")
             loop.quit()
 
         match = bus.add_signal_receiver(cb_http_presence,
@@ -1051,9 +1051,9 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.session.SetConfig(True, False, {"" : {"syncURL":
         "obex-bt://temp-bluetooth-peer-changed-from-http"}})
         def cb_bt_presence(server, status, transport):
-            self.failUnlessEqual (status, "")
-            self.failUnlessEqual (server, "foo")
-            self.failUnlessEqual (transport,
+            self.assertEqual (status, "")
+            self.assertEqual (server, "foo")
+            self.assertEqual (transport,
                     "obex-bt://temp-bluetooth-peer-changed-from-http")
             loop.quit()
         match.remove()
@@ -1098,8 +1098,8 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         loop.run()
         loop.run()
         time.sleep(1)
-        self.failUnlessEqual (self.foo, "")
-        self.failUnlessEqual (self.bar, "")
+        self.assertEqual (self.foo, "")
+        self.assertEqual (self.bar, "")
         match.remove()
 
     @property("ENV", "DBUS_TEST_CONNMAN=session")
@@ -1124,27 +1124,27 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         loop.run()
         time.sleep(1)
         (status, transports) = self.server.CheckPresence ("foo")
-        self.failUnlessEqual (status, "")
-        self.failUnlessEqual (transports, ["http://http-client"])
+        self.assertEqual (status, "")
+        self.assertEqual (transports, ["http://http-client"])
         (status, transports) = self.server.CheckPresence ("bar")
-        self.failUnlessEqual (status, "")
-        self.failUnlessEqual (transports, ["obex-bt://bt-client"])
+        self.assertEqual (status, "")
+        self.assertEqual (transports, ["obex-bt://bt-client"])
         (status, transports) = self.server.CheckPresence ("foobar")
-        self.failUnlessEqual (status, "")
-        self.failUnlessEqual (transports, ["obex-bt://bt-client-mixed",
+        self.assertEqual (status, "")
+        self.assertEqual (transports, ["obex-bt://bt-client-mixed",
         "http://http-client-mixed"])
 
         #count = 2
         self.conn.emitSignal()
         time.sleep(1)
         (status, transports) = self.server.CheckPresence ("foo")
-        self.failUnlessEqual (status, "no transport")
+        self.assertEqual (status, "no transport")
         (status, transports) = self.server.CheckPresence ("bar")
-        self.failUnlessEqual (status, "")
-        self.failUnlessEqual (transports, ["obex-bt://bt-client"])
+        self.assertEqual (status, "")
+        self.assertEqual (transports, ["obex-bt://bt-client"])
         (status, transports) = self.server.CheckPresence ("foobar")
-        self.failUnlessEqual (status, "")
-        self.failUnlessEqual (transports, ["obex-bt://bt-client-mixed"])
+        self.assertEqual (status, "")
+        self.assertEqual (transports, ["obex-bt://bt-client-mixed"])
 
     @property("ENV", "DBUS_TEST_CONNMAN=session")
     @timeout(100)
@@ -1157,14 +1157,14 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         loop.run()
         time.sleep(1)
         status = self.session.checkPresence()
-        self.failUnlessEqual (status, "")
+        self.assertEqual (status, "")
         self.conn.emitSignal()
         self.conn.emitSignal()
         self.conn.emitSignal()
         #count = 4
         time.sleep(1)
         status = self.session.checkPresence()
-        self.failUnlessEqual (status, "no transport")
+        self.assertEqual (status, "no transport")
 
     def run(self, result):
         self.runTest(result, True)
@@ -1181,15 +1181,15 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
 
     def testCreateSession(self):
         """TestDBusSession.testCreateSession - ask for session"""
-        self.failUnlessEqual(self.session.GetFlags(), [])
-        self.failUnlessEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetFlags(), [])
+        self.assertEqual(self.session.GetConfigName(), "@default");
 
     def testAttachSession(self):
         """TestDBusSession.testAttachSession - attach to running session"""
         self.session.Attach()
         self.session.Detach()
-        self.failUnlessEqual(self.session.GetFlags(), [])
-        self.failUnlessEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetFlags(), [])
+        self.assertEqual(self.session.GetConfigName(), "@default");
 
     @timeout(70)
     def testAttachOldSession(self):
@@ -1202,20 +1202,20 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         # sessions around for a minute. However, the session is
         # no longer listed because it really should only be used
         # by clients which heard about it before.
-        self.failUnlessEqual(self.server.GetSessions(), [])
+        self.assertEqual(self.server.GetSessions(), [])
         self.session.Attach()
-        self.failUnlessEqual(self.session.GetFlags(), [])
-        self.failUnlessEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetFlags(), [])
+        self.assertEqual(self.session.GetConfigName(), "@default");
         time.sleep(60)
-        self.failUnlessEqual(self.session.GetFlags(), [])        
+        self.assertEqual(self.session.GetFlags(), [])
 
     @timeout(70)
     def testExpireSession(self):
         """TestDBusSession.testExpireSession - ensure that session stays around for a minute"""
         self.session.Detach()
         time.sleep(5)
-        self.failUnlessEqual(self.session.GetFlags(), [])
-        self.failUnlessEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetFlags(), [])
+        self.assertEqual(self.session.GetConfigName(), "@default");
         time.sleep(60)
         try:
             self.session.GetFlags()
@@ -1228,17 +1228,17 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         """TestDBusSession.testCreateSessionWithFlags - ask for session with some specific flags and config"""
         self.session.Detach()
         self.sessionpath, self.session = self.createSession("FooBar@no-such-context", True, ["foo", "bar"])
-        self.failUnlessEqual(self.session.GetFlags(), ["foo", "bar"])
-        self.failUnlessEqual(self.session.GetConfigName(), "foobar@no-such-context");
+        self.assertEqual(self.session.GetFlags(), ["foo", "bar"])
+        self.assertEqual(self.session.GetConfigName(), "foobar@no-such-context");
 
     @timeout(20)
     def testSecondSession(self):
         """TestDBusSession.testSecondSession - a second session should not run unless the first one stops"""
         sessions = self.server.GetSessions()
-        self.failUnlessEqual(sessions, [self.sessionpath])
+        self.assertEqual(sessions, [self.sessionpath])
         sessionpath = self.server.StartSession("")
         sessions = self.server.GetSessions()
-        self.failUnlessEqual(sessions, [self.sessionpath, sessionpath])
+        self.assertEqual(sessions, [self.sessionpath, sessionpath])
 
         def session_ready(object, ready):
             if self.running:
@@ -1272,7 +1272,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
                                                 sessionpath),
                                  'org.syncevolution.Session')
         status, error, sources = session.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "queueing")
+        self.assertEqual(status, "queueing")
         # use hash so that we can write into it in callback()
         callback_called = {}
         def callback():
@@ -1282,7 +1282,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
             t1 = self.addTimeout(2, callback)
             # session 1 done
             loop.run()
-            self.failUnless(callback_called)
+            self.assertTrue(callback_called)
             # session 2 ready and idle
             loop.run()
             loop.run()
@@ -1291,9 +1291,9 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
                         "session " + sessionpath + " ready"]
             expected.sort()
             DBusUtil.quit_events.sort()
-            self.failUnlessEqual(DBusUtil.quit_events, expected)
+            self.assertEqual(DBusUtil.quit_events, expected)
             status, error, sources = session.GetStatus(utf8_strings=True)
-            self.failUnlessEqual(status, "idle")
+            self.assertEqual(status, "idle")
         finally:
             self.removeTimeout(t1)
 
@@ -1317,7 +1317,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         try:
             config = self.session.GetConfig(True, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: No template '' found")
         else:
             self.fail("no exception thrown")
@@ -1327,7 +1327,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         try:
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: '' has no '' source")
         else:
             self.fail("no exception thrown")
@@ -1337,7 +1337,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         try:
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: '' has no '' source")
         else:
             self.fail("no exception thrown")
@@ -1346,11 +1346,11 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         """TestSessionAPIsEmptyName.testGetReportsEmptyName - Test reports from all peers are returned in order when the peer name is empty for GetReports"""
         self.setupFiles('reports')
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(len(reports), 7)
+        self.assertEqual(len(reports), 7)
         refPeers = ["dummy-test", "dummy", "dummy-test", "dummy-test",
                     "dummy-test", "dummy_test", "dummy-test"]
         for i in range(0, len(refPeers)):
-            self.failUnlessEqual(reports[i]["peer"], refPeers[i])
+            self.assertEqual(reports[i]["peer"], refPeers[i])
 
     def testGetReportsContext(self):
         """TestSessionAPIsEmptyName.testGetReportsContext - Test reports from a context are returned when the peer name is empty for GetReports"""
@@ -1358,8 +1358,8 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         self.session.Detach()
         self.setUpSession("@context")
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(len(reports), 1)
-        self.failUnless(reports[0]["dir"].endswith("dummy_+test@context-2010-01-20-10-10"))
+        self.assertEqual(len(reports), 1)
+        self.assertTrue(reports[0]["dir"].endswith("dummy_+test@context-2010-01-20-10-10"))
 
 
 class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
@@ -1439,11 +1439,11 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.session.SetConfig(False, False, config, utf8_strings=True)
         # reset
         self.session.SetConfig(False, True, {}, utf8_strings=True)
-        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))
+        self.assertEqual(config, self.session.GetConfig(False, utf8_strings=True))
         # add sync prop
         self.session.SetConfig(True, True, { "": { "loglevel": "100" } }, utf8_strings=True)
         config[""]["loglevel"] = "100"
-        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))
+        self.assertEqual(config, self.session.GetConfig(False, utf8_strings=True))
         # add source
         self.session.SetConfig(True, True, { "source/foobar": { "sync": "two-way" } }, utf8_strings=True)
         config["source/foobar"] = { "sync": "two-way" }
@@ -1451,11 +1451,11 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # add source prop
         self.session.SetConfig(True, True, { "source/foobar": { "database": "xyz" } }, utf8_strings=True)
         config["source/foobar"]["database"] = "xyz"
-        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))
+        self.assertEqual(config, self.session.GetConfig(False, utf8_strings=True))
         # reset temporary settings
         self.session.SetConfig(False, True, { }, utf8_strings=True)
         config = copy.deepcopy(ref)
-        self.failUnlessEqual(config, self.session.GetConfig(False, utf8_strings=True))        
+        self.assertEqual(config, self.session.GetConfig(False, utf8_strings=True))
 
     @timeout(20)
     def testCreateGetConfig(self):
@@ -1466,12 +1466,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.setupConfig()
         """ get config and compare """
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config, self.config)
+        self.assertEqual(config, self.config)
         # terminate session and check whether a "config changed" signal
         # was sent as required
         self.session.Detach()
         loop.run()
-        self.failUnlessEqual(DBusUtil.events, ["ConfigChanged"])
+        self.assertEqual(DBusUtil.events, ["ConfigChanged"])
 
     def testUpdateConfig(self):
         """TestSessionAPIsDummy.testUpdateConfig -  test the config is permenantly updated correctly. """
@@ -1479,8 +1479,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ update the given config """
         self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["username"], "doe")
-        self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
+        self.assertEqual(config[""]["username"], "doe")
+        self.assertEqual(config["source/addressbook"]["sync"], "slow")
 
     def testUpdateConfigTemp(self):
         """TestSessionAPIsDummy.testUpdateConfigTemp -  test the config is just temporary updated but no effect in storage. """
@@ -1492,7 +1492,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.setUpSession("dummy-test")
         config = self.session.GetConfig(False, utf8_strings=True)
         """ no change of any properties """
-        self.failUnlessEqual(config, self.config)
+        self.assertEqual(config, self.config)
 
     def testGetConfigUpdateConfigTemp(self):
         """TestSessionAPIsDummy.testGetConfigUpdateConfigTemp -  test the config is temporary updated and in effect for GetConfig in the current session. """
@@ -1502,8 +1502,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         """ GetConfig is affected """
         config = self.session.GetConfig(False, utf8_strings=True)
         """ no change of any properties """
-        self.failUnlessEqual(config[""]["username"], "doe")
-        self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
+        self.assertEqual(config[""]["username"], "doe")
+        self.assertEqual(config["source/addressbook"]["sync"], "slow")
 
     def testGetConfigWithTempConfig(self):
         """TestSessionAPIsDummy.testGetConfigWithTempConfig -  test the config is gotten for a new temporary config. """
@@ -1511,7 +1511,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             return the configs temporarily set. """
         self.session.SetConfig(True, True, self.config, utf8_strings=True)
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config, self.config)
+        self.assertEqual(config, self.config)
 
     def testUpdateConfigError(self):
         """TestSessionAPIsDummy.testUpdateConfigError -  test the right error is reported when an invalid property value is set """
@@ -1522,7 +1522,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             self.session.SetConfig(True, False, config, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.InvalidCall: invalid value 'invalid-value' for "
                                  "property 'sync': 'not one of the valid values (two-way, slow, "
                                  "refresh-from-client = refresh-client, refresh-from-server = "
@@ -1536,7 +1536,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchConfig: The configuration 'dummy-test' doesn't exist")
         else:
             self.fail("no exception thrown")
@@ -1550,7 +1550,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             config1[""]["no-such-sync-property"] = "foo"
             self.session.SetConfig(False, False, config1, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.InvalidCall: unknown property 'no-such-sync-property'")
         else:
             self.fail("no exception thrown")
@@ -1560,7 +1560,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             config1["source/addressbook"]["no-such-source-property"] = "foo"
             self.session.SetConfig(False, False, config1, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.InvalidCall: unknown property 'no-such-source-property'")
         else:
             self.fail("no exception thrown")
@@ -1570,7 +1570,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             config1["no-such-key"] = { "foo": "bar" }
             self.session.SetConfig(False, False, config1, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.InvalidCall: invalid config entry 'no-such-key'")
         else:
             self.fail("no exception thrown")
@@ -1583,7 +1583,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             config = self.session.GetConfig(False, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                 "org.syncevolution.NoSuchConfig: No configuration 'dummy-test' found")
         else:
             self.fail("no exception thrown")
@@ -1593,7 +1593,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: 'dummy-test' has no '' source")
         else:
             self.fail("no exception thrown")
@@ -1604,7 +1604,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             self.session.CheckSource("dummy", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: 'dummy-test' "
                                  "has no 'dummy' source")
         else:
@@ -1618,7 +1618,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             self.session.CheckSource("memo", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.SourceUnusable: The source 'memo' is not usable")
         else:
             self.fail("no exception thrown")
@@ -1631,7 +1631,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.session.SetConfig(True, False, config, utf8_strings=True)
         except dbus.DBusException, ex:
             expected = "org.syncevolution.InvalidCall: invalid value 'no-such-backend' for property 'backend': "
-            self.failUnlessEqual(str(ex)[0:len(expected)], expected)
+            self.assertEqual(str(ex)[0:len(expected)], expected)
         else:
             self.fail("no exception thrown")
 
@@ -1645,7 +1645,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             self.session.CheckSource("memo", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.SourceUnusable: The source 'memo' is not usable")
         else:
             self.fail("no exception thrown")
@@ -1669,7 +1669,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: 'dummy-test' has no '' source")
         else:
             self.fail("no exception thrown")
@@ -1680,7 +1680,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             databases = self.session.GetDatabases("never_use_this_source_name", utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.NoSuchSource: 'dummy-test' has no 'never_use_this_source_name' source")
         else:
             self.fail("no exception thrown")
@@ -1702,7 +1702,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # sort two arrays
         databases1.sort()
         databases2.sort()
-        self.failUnlessEqual(databases1, databases2)
+        self.assertEqual(databases1, databases2)
 
     def testGetDatabasesUpdateConfigTemp(self):
         """TestSessionAPIsDummy.testGetDatabasesUpdateConfigTemp -  test the config is temporary updated and in effect for GetDatabases in the current session. """
@@ -1715,30 +1715,30 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         tempConfig = {"source/temp" : { "backend" : "file", "databaseFormat" : "text/calendar" }}
         self.session.SetConfig(True, True, tempConfig, utf8_strings=True)
         databases2 = self.session.GetDatabases("temp", utf8_strings=True)
-        self.failUnlessEqual(databases2, databases1)
+        self.assertEqual(databases2, databases1)
 
     def testGetReportsNoConfig(self):
         """TestSessionAPIsDummy.testGetReportsNoConfig -  Test nothing is gotten when the given server doesn't exist. Also covers boundaries """
         reports = self.session.GetReports(0, 0, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
         reports = self.session.GetReports(0, 1, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
         reports = self.session.GetReports(0xFFFFFFFF, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
 
     def testGetReportsNoReports(self):
         """TestSessionAPIsDummy.testGetReportsNoReports -  Test when the given server has no reports. Also covers boundaries """
         self.setupConfig()
         reports = self.session.GetReports(0, 0, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
         reports = self.session.GetReports(0, 1, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
         reports = self.session.GetReports(0xFFFFFFFF, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
 
     def testGetReportsByRef(self):
         """TestSessionAPIsDummy.testGetReportsByRef -  Test the reports are gotten correctly from reference files. Also covers boundaries """
@@ -1825,13 +1825,13 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                     "source-todo-stat-local-added-total" : "24",
                     "source-todo-stat-remote-removed-total" : "80" }
         reports = self.session.GetReports(0, 0, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
         # get only one report
         reports = self.session.GetReports(0, 1, utf8_strings=True)
         self.assertTrue(len(reports) == 1)
         del reports[0]["dir"]
 
-        self.failUnlessEqual(reports[0], report0)
+        self.assertEqual(reports[0], report0)
         """ the number of reference sessions is totally 5. Check the returned count
         when parameter is bigger than 5 """
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
@@ -1840,10 +1840,10 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         reports2 = self.session.GetReports(2, 0xFFFFFFFF, utf8_strings=True)
         self.assertTrue(len(reports2) == 3)
         # the first element of reports2 should be the same as the third element of reports
-        self.failUnlessEqual(reports[2], reports2[0])
+        self.assertEqual(reports[2], reports2[0])
         # indexed from 5, nothing could be gotten
         reports = self.session.GetReports(5, 0xFFFFFFFF, utf8_strings=True)
-        self.failUnlessEqual(reports, [])
+        self.assertEqual(reports, [])
 
     def testRestoreByRef(self):
         """TestSessionAPIsDummy.testRestoreByRef - restore data before or after a given session"""
@@ -1872,16 +1872,16 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         lastSources = {}
         statusPairs = {"": 0, "idle": 1, "running" : 2, "done" : 3}
         for status, error, sources in statuses:
-            self.failIf(status == lastStatus and lastSources == sources)
+            self.assertFalse(status == lastStatus and lastSources == sources)
             # no error
-            self.failUnlessEqual(error, 0)
+            self.assertEqual(error, 0)
             for sourcename, value in sources.items():
                 # no error
-                self.failUnlessEqual(value[2], 0)
+                self.assertEqual(value[2], 0)
                 # keep order: source status must also be unchanged or the next status
                 if lastSources.has_key(sourcename):
                     lastValue = lastSources[sourcename]
-                    self.failUnless(statusPairs[value[1]] >= statusPairs[lastValue[1]])
+                    self.assertTrue(statusPairs[value[1]] >= statusPairs[lastValue[1]])
 
             lastStatus = status
             lastSources = sources
@@ -1889,7 +1889,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # check increasing progress percentage
         lastPercent = 0
         for percent, sources in progresses:
-            self.failIf(percent < lastPercent)
+            self.assertFalse(percent < lastPercent)
             lastPercent = percent
 
         session.SetConfig(False, False, self.config, utf8_strings=True)
@@ -1908,7 +1908,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         try:
             session.Restore(dir, False, [], utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                     "org.syncevolution.InvalidCall: session is not active, call not allowed at this time")
         else:
             self.fail("no exception thrown")
@@ -1928,15 +1928,15 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # to dbus server
         def infoRequest(id, session, state, handler, type, params):
             if state == "request":
-                self.failUnlessEqual(self.lastState, "unknown")
+                self.assertEqual(self.lastState, "unknown")
                 self.lastState = "request"
                 self.server.InfoResponse(id, "working", {}, utf8_strings=True)
             elif state == "waiting":
-                self.failUnlessEqual(self.lastState, "request")
+                self.assertEqual(self.lastState, "request")
                 self.lastState = "waiting"
                 self.server.InfoResponse(id, "response", {"password" : "123456"}, utf8_strings=True)
             elif state == "done":
-                self.failUnlessEqual(self.lastState, "waiting")
+                self.assertEqual(self.lastState, "waiting")
                 self.lastState = "done"
             else:
                 self.fail("state should not be '" + state + "'")
@@ -1962,7 +1962,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.session.Sync("", {})
         loop.run()
         Timeout.removeTimeout(timeout_handler)
-        self.failUnlessEqual(self.lastState, "done")
+        self.assertEqual(self.lastState, "done")
 
     @timeout(60)
     def testAutoSyncNetworkFailure(self):
@@ -2259,7 +2259,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         self.setUpListeners(self.sessionpath)
         self.session.Sync("slow", {})
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
 
     def progressChanged(self, *args):
         # subclass specifies its own callback for ProgressChanged signals
@@ -2289,7 +2289,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
             if item[0] == "status" and item[1][0] == "aborting":
                 hasAbortingStatus = True
                 break
-        self.failUnlessEqual(hasAbortingStatus, True)
+        self.assertEqual(hasAbortingStatus, True)
 
     @timeout(300)
     def testSyncStatusSuspend(self):
@@ -2301,20 +2301,20 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
             if item[0] == "status" and "suspending" in item[1][0] :
                 hasSuspendingStatus = True
                 break
-        self.failUnlessEqual(hasSuspendingStatus, True)
+        self.assertEqual(hasSuspendingStatus, True)
 
     @timeout(300)
     def testSyncSecondSession(self):
         """TestSessionAPIsReal.testSyncSecondSession - ask for a second session that becomes ready after a real sync"""
         sessionpath2, session2 = self.createSession("", False)
         status, error, sources = session2.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "queueing")
+        self.assertEqual(status, "queueing")
         self.testSync()
         # now wait for second session becoming ready
         loop.run()
         status, error, sources = session2.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "idle")
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done",
+        self.assertEqual(status, "idle")
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done",
                                                     "session " + sessionpath2 + " ready"])
         session2.Detach()
 
@@ -2333,8 +2333,8 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
         loop.run()
         # TODO: check recorded events in DBusUtil.events
         status, error, sources = self.session.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "done")
-        self.failUnlessEqual(error, 10500)
+        self.assertEqual(status, "done")
+        self.assertEqual(error, 10500)
 
 class TestConnection(unittest.TestCase, DBusUtil):
     """Tests Server.Connect(). Tests depend on getting one Abort signal to terminate."""
@@ -2405,7 +2405,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath, connection = self.getConnection()
         connection.Close(False, 'good bye')
         loop.run()
-        self.failUnlessEqual(DBusUtil.events, [('abort',)])
+        self.assertEqual(DBusUtil.events, [('abort',)])
 
     def testInvalidConnect(self):
         """TestConnection.testInvalidConnect - get connection, send invalid initial message"""
@@ -2414,13 +2414,13 @@ class TestConnection(unittest.TestCase, DBusUtil):
         try:
             connection.Process('1234', 'invalid message type')
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
+            self.assertEqual(str(ex),
                                  "org.syncevolution.Exception: message type 'invalid message type' not supported for starting a sync")
         else:
             self.fail("no exception thrown")
         loop.run()
         # 'idle' status doesn't be checked
-        self.failUnless(('abort',) in DBusUtil.events)
+        self.assertTrue(('abort',) in DBusUtil.events)
 
     def testStartSync(self):
         """TestConnection.testStartSync - send a valid initial SyncML message"""
@@ -2428,40 +2428,39 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
         DBusUtil.quit_events = []
         # TODO: check events
-        self.failIfEqual(DBusUtil.reply, None)
-        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been accepted because must_authenticate=False
         # in Connect(); 508 = "refresh required" is normal
-        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
-        self.failIf('<Chal>' in DBusUtil.reply[0])
-        self.failUnlessEqual(DBusUtil.reply[3], False)
-        self.failIfEqual(DBusUtil.reply[4], '')
+        self.assertTrue('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
+        self.assertFalse('<Chal>' in DBusUtil.reply[0])
+        self.assertEqual(DBusUtil.reply[3], False)
+        self.assertNotEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
         loop.run()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
         # start another session for the server (ensures that the previous one is done),
         # then check the server side report
         DBusUtil.quit_events = []
         self.setUpSession("dummy-test")
         sessions = self.session.GetReports(0, 100)
-        self.failUnlessEqual(len(sessions), 1)
+        self.assertEqual(len(sessions), 1)
         # transport failure, only addressbook active and later aborted
-        self.failUnlessEqual(sessions[0]["status"], "20043")
-        self.failUnlessEqual(sessions[0]["error"], "D-Bus peer has disconnected")
-        self.failUnlessEqual(sessions[0]["source-addressbook-status"], "20017")
+        self.assertEqual(sessions[0]["status"], "20043")
+        self.assertEqual(sessions[0]["error"], "D-Bus peer has disconnected")
+        self.assertEqual(sessions[0]["source-addressbook-status"], "20017")
         # The other three sources are disabled and should not be listed in the
         # report. Used to be listed with status 0 in the past, which would also
         # be acceptable, but here we use the strict check for "not present" to
         # ensure that the current behavior is preserved.
-        self.failIf("source-calendar-status" in sessions[0])
-        self.failIf("source-todo-status" in sessions[0])
-        self.failIf("source-memo-status" in sessions[0])
-
+        self.assertFalse("source-calendar-status" in sessions[0])
+        self.assertFalse("source-todo-status" in sessions[0])
+        self.assertFalse("source-memo-status" in sessions[0])
 
     def testCredentialsWrong(self):
         """TestConnection.testCredentialsWrong - send invalid credentials"""
@@ -2469,22 +2468,22 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath, connection = self.getConnection(must_authenticate=True)
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
         DBusUtil.quit_events = []
         # TODO: check events
-        self.failIfEqual(DBusUtil.reply, None)
-        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been rejected because of wrong Nonce
-        self.failUnless('<Chal>' in DBusUtil.reply[0])
-        self.failUnlessEqual(DBusUtil.reply[3], False)
-        self.failIfEqual(DBusUtil.reply[4], '')
+        self.assertTrue('<Chal>' in DBusUtil.reply[0])
+        self.assertEqual(DBusUtil.reply[3], False)
+        self.assertNotEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
         # when the login fails, the server also ends the session
         loop.run()
         loop.run()
         loop.run()
         DBusUtil.quit_events.sort()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "connection " + conpath + " got final reply",
                                                     "session done"])
 
@@ -2497,19 +2496,19 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                      "<Type xmlns='syncml:metinf'>syncml:auth-basic</Type></Meta><Data>dGVzdDp0ZXN0</Data>")
         connection.Process(plain_auth, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
         DBusUtil.quit_events = []
-        self.failIfEqual(DBusUtil.reply, None)
-        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been accepted because with basic auth,
         # credentials can be replayed; 508 = "refresh required" is normal
-        self.failUnless('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
-        self.failUnlessEqual(DBusUtil.reply[3], False)
-        self.failIfEqual(DBusUtil.reply[4], '')
+        self.assertTrue('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
+        self.assertEqual(DBusUtil.reply[3], False)
+        self.assertNotEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
         loop.run()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
 
     def testStartSyncTwice(self):
@@ -2519,11 +2518,11 @@ class TestConnection(unittest.TestCase, DBusUtil):
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
         # TODO: check events
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
-        self.failIfEqual(DBusUtil.reply, None)
-        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
-        self.failUnlessEqual(DBusUtil.reply[3], False)
-        self.failIfEqual(DBusUtil.reply[4], '')
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.assertEqual(DBusUtil.reply[3], False)
+        self.assertNotEqual(DBusUtil.reply[4], '')
         DBusUtil.reply = None
         DBusUtil.quit_events = []
 
@@ -2545,18 +2544,18 @@ class TestConnection(unittest.TestCase, DBusUtil):
                      "session done",
                      "connection " + conpath2 + " got reply" ]
         expected.sort()
-        self.failUnlessEqual(DBusUtil.quit_events, expected)
-        self.failIfEqual(DBusUtil.reply, None)
-        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
-        self.failUnlessEqual(DBusUtil.reply[3], False)
-        self.failIfEqual(DBusUtil.reply[4], '')
+        self.assertEqual(DBusUtil.quit_events, expected)
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.assertEqual(DBusUtil.reply[3], False)
+        self.assertNotEqual(DBusUtil.reply[4], '')
         DBusUtil.quit_events = []
 
         # now quit for good
         connection2.Close(False, 'good bye')
         loop.run()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath2 + " aborted",
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath2 + " aborted",
                                                     "session done"])
 
     def testKillInactive(self):
@@ -2568,11 +2567,11 @@ class TestConnection(unittest.TestCase, DBusUtil):
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
         # TODO: check events
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
-        self.failIfEqual(DBusUtil.reply, None)
-        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
-        self.failUnlessEqual(DBusUtil.reply[3], False)
-        self.failIfEqual(DBusUtil.reply[4], '')
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.assertEqual(DBusUtil.reply[3], False)
+        self.assertNotEqual(DBusUtil.reply[4], '')
         DBusUtil.reply = None
         DBusUtil.quit_events = []
 
@@ -2585,18 +2584,18 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath3, connection3 = self.getConnection()
         connection3.Process(message1_clientB, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, [ "connection " + conpath2 + " aborted" ])
+        self.assertEqual(DBusUtil.quit_events, [ "connection " + conpath2 + " aborted" ])
         DBusUtil.quit_events = []
 
         # now quit for good
         connection3.Close(False, 'good bye client B')
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, [ "connection " + conpath3 + " aborted" ])
+        self.assertEqual(DBusUtil.quit_events, [ "connection " + conpath3 + " aborted" ])
         DBusUtil.quit_events = []
         connection.Close(False, 'good bye client A')
         loop.run()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
 
     @timeout(20)
@@ -2609,15 +2608,15 @@ class TestConnection(unittest.TestCase, DBusUtil):
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
         DBusUtil.quit_events = []
         # TODO: check events
-        self.failIfEqual(DBusUtil.reply, None)
-        self.failUnlessEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # wait for connection reset and "session done" due to timeout
         loop.run()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
 
 class TestMultipleConfigs(unittest.TestCase, DBusUtil):
@@ -2670,9 +2669,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         # "bar" shares properties with "foo"
         self.setUpSession("bar")
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
-        self.failUnlessEqual(config["source/addressbook"]["database"], "Personal")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.assertEqual(config["source/addressbook"]["database"], "Personal")
         self.session.SetConfig(True, False,
                                { "" : { "syncURL": "http://funambol" },
                                  "source/calendar" : { "uri" : "cal" },
@@ -2689,33 +2688,33 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         # check how view "foo" has been modified
         self.setUpSession("Foo@deFAULT")
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
-        self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
-        self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["syncURL"], "http://scheduleworld")
+        self.assertEqual(config["source/addressbook"]["database"], "Work")
+        self.assertEqual(config["source/addressbook"]["uri"], "card3")
         self.session.Detach()
 
         # different ways of addressing this context
         self.setUpSession("")
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnless("source/addressbook" in config)
-        self.failIf("uri" in config["source/addressbook"])
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertTrue("source/addressbook" in config)
+        self.assertFalse("uri" in config["source/addressbook"])
         self.session.Detach()
 
         self.setUpSession("@DEFAULT")
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
-        self.failUnless("source/addressbook" in config)
-        self.failIf("uri" in config["source/addressbook"])
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.assertTrue("source/addressbook" in config)
+        self.assertFalse("uri" in config["source/addressbook"])
         self.session.Detach()
 
         # different context
         self.setUpSession("@other_context")
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failIf("source/addressbook" in config)        
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertFalse("source/addressbook" in config)
         self.session.Detach()
 
     def testSharedTemplate(self):
@@ -2723,9 +2722,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setupConfigs()
 
         config = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
-        self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.assertEqual(config["source/addressbook"]["database"], "Work")
 
     def testSharedType(self):
         """TestMultipleConfigs.testSharedType - 'type' consists of per-peer and shared properties"""
@@ -2741,10 +2740,10 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
                                config,
                                utf8_strings=True)
         config = self.server.GetConfig("Foo", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["syncFormat"], "text/vcard")
+        self.assertEqual(config["source/addressbook"]["syncFormat"], "text/vcard")
         config = self.server.GetConfig("@default", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
-        self.failUnlessEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
+        self.assertEqual(config["source/addressbook"]["backend"], "file")
+        self.assertEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
         self.session.Detach()
 
     def testSharedTypeOther(self):
@@ -2758,23 +2757,23 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
                                config,
                                utf8_strings=True)
         config = self.server.GetConfig("Foo", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
+        self.assertEqual(config["source/addressbook"]["backend"], "file")
         config = self.server.GetConfig("@other", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
+        self.assertEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
         self.session.Detach()
 
         # adding second client must preserve type
         self.setUpSession("bar@other")
         config = self.server.GetConfig("Funambol@other", True, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
+        self.assertEqual(config["source/addressbook"]["backend"], "file")
         self.session.SetConfig(False, False,
                                config,
                                utf8_strings=True)
         config = self.server.GetConfig("bar", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["backend"], "file")
-        self.failUnlessEqual(config["source/addressbook"].get("syncFormat"), None)
+        self.assertEqual(config["source/addressbook"]["backend"], "file")
+        self.assertEqual(config["source/addressbook"].get("syncFormat"), None)
         config = self.server.GetConfig("@other", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
+        self.assertEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
 
     def testOtherContext(self):
         """TestMultipleConfigs.testOtherContext - write into independent context"""
@@ -2790,19 +2789,19 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
                                config,
                                utf8_strings=True)
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld2")
-        self.failUnlessEqual(config["source/addressbook"]["database"], "Play")
-        self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["syncURL"], "http://scheduleworld2")
+        self.assertEqual(config["source/addressbook"]["database"], "Play")
+        self.assertEqual(config["source/addressbook"]["uri"], "card30")
         self.session.Detach()
 
         # "foo" modified?
         self.setUpSession("foo")
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
-        self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
-        self.failUnlessEqual(config["source/addressbook"]["uri"], "card3")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["syncURL"], "http://scheduleworld")
+        self.assertEqual(config["source/addressbook"]["database"], "Work")
+        self.assertEqual(config["source/addressbook"]["uri"], "card3")
         self.session.Detach()
 
     def testSourceRemovalLocal(self):
@@ -2816,13 +2815,13 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
 
         # "addressbook" still exists in "foo" but only with default values
         config = self.server.GetConfig("foo", False, utf8_strings=True)
-        self.failIf("uri" in config["source/addressbook"])
-        self.failIf("sync" in config["source/addressbook"])
+        self.assertFalse("uri" in config["source/addressbook"])
+        self.assertFalse("sync" in config["source/addressbook"])
 
         # "addressbook" unchanged in "bar"
         config = self.server.GetConfig("bar", False, utf8_strings=True)
-        self.failUnlessEqual(config["source/addressbook"]["uri"], "card")
-        self.failUnlessEqual(config["source/addressbook"]["sync"], "refresh-from-client")
+        self.assertEqual(config["source/addressbook"]["uri"], "card")
+        self.assertEqual(config["source/addressbook"]["sync"], "refresh-from-client")
 
     def testSourceRemovalGlobal(self):
         """TestMultipleConfigs.testSourceRemovalGlobal - remove "addressbook" everywhere"""
@@ -2835,9 +2834,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
 
         # "addressbook" gone in "foo" and "bar"
         config = self.server.GetConfig("foo", False, utf8_strings=True)
-        self.failIf("source/addressbook" in config)
+        self.assertFalse("source/addressbook" in config)
         config = self.server.GetConfig("bar", False, utf8_strings=True)
-        self.failIf("source/addressbook" in config)
+        self.assertFalse("source/addressbook" in config)
 
     def testRemovePeer(self):
         """TestMultipleConfigs.testRemovePeer - check listing of peers while removing 'bar'"""
@@ -2845,27 +2844,27 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.testOtherContext()
         self.setUpSession("bar")
         peers = self.session.GetConfigs(False, utf8_strings=True)
-        self.failUnlessEqual(peers,
+        self.assertEqual(peers,
                              [ "bar", "foo", "foo@other_context" ])
         peers2 = self.server.GetConfigs(False, utf8_strings=True)
-        self.failUnlessEqual(peers, peers2)
+        self.assertEqual(peers, peers2)
         # remove "bar"
         self.session.SetConfig(False, False, {}, utf8_strings=True)
         peers = self.server.GetConfigs(False, utf8_strings=True)
-        self.failUnlessEqual(peers,
+        self.assertEqual(peers,
                              [ "foo", "foo@other_context" ])
         self.session.Detach()
 
         # other configs should not have been affected
         config = self.server.GetConfig("foo", False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld")
-        self.failUnlessEqual(config["source/calendar"]["uri"], "cal3")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["syncURL"], "http://scheduleworld")
+        self.assertEqual(config["source/calendar"]["uri"], "cal3")
         config = self.server.GetConfig("foo@other_context", False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["syncURL"], "http://scheduleworld2")
-        self.failUnlessEqual(config["source/addressbook"]["database"], "Play")
-        self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["syncURL"], "http://scheduleworld2")
+        self.assertEqual(config["source/addressbook"]["database"], "Play")
+        self.assertEqual(config["source/addressbook"]["uri"], "card30")
 
     def testRemoveContext(self):
         """TestMultipleConfigs.testRemoveContext - remove complete config"""
@@ -2873,9 +2872,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setUpSession("")
         self.session.SetConfig(False, False, {}, utf8_strings=True)
         config = self.session.GetConfig(False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
         peers = self.server.GetConfigs(False, utf8_strings=True)
-        self.failUnlessEqual(peers, ['foo@other_context'])
+        self.assertEqual(peers, ['foo@other_context'])
         self.session.Detach()
 
     def testTemplates(self):
@@ -2888,17 +2887,17 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         config[""]["DEVICEID"] = "shared-device-identifier"
         self.session.SetConfig(True, False, config, utf8_strings=True)
         config = self.server.GetConfig("", False, utf8_strings=True)
-        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.assertEqual(config[""]["deviceId"], "shared-device-identifier")
 
         # get template for default context
         config = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failUnlessEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertEqual(config[""]["deviceId"], "shared-device-identifier")
 
         # now for @other_context - different device ID!
         config = self.server.GetConfig("scheduleworld@other_context", True, utf8_strings=True)
-        self.failUnlessEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.failIfEqual(config[""]["deviceId"], "shared-device-identifier")
+        self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
+        self.assertNotEqual(config[""]["deviceId"], "shared-device-identifier")
 
 class TestLocalSync(unittest.TestCase, DBusUtil):
     """Tests involving local sync."""
@@ -2939,10 +2938,10 @@ END:VCARD''')
         self.setUpListeners(self.sessionpath)
         self.session.Sync("slow", {})
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
         self.checkSync()
         input = open(xdg_root + "/server/0", "r")
-        self.failUnless("FN:John Doe" in input.read())
+        self.assertTrue("FN:John Doe" in input.read())
 
     @timeout(10)
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
@@ -2952,14 +2951,14 @@ END:VCARD''')
         self.session.Sync("slow", {})
         time.sleep(2)
         status, error, sources = self.session.GetStatus(utf8_strings=True)
-        self.failUnlessEqual(status, "running")
-        self.failUnlessEqual(error, 0)
+        self.assertEqual(status, "running")
+        self.assertEqual(error, 0)
         self.session.Abort()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
         report = self.checkSync(20017, 20017) # aborted
-        self.failIf("error" in report) # ... but without error message
-        self.failUnlessEqual(report["source-addressbook-status"], "0") # unknown status for source (aborted early)
+        self.assertFalse("error" in report) # ... but without error message
+        self.assertEqual(report["source-addressbook-status"], "0") # unknown status for source (aborted early)
 
     def run(self, result):
         self.runTest(result)
@@ -2990,7 +2989,7 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
     @timeout(100)
     def testShutdown(self):
         """TestFileNotify.testShutdown - update server binary for 30 seconds, check that it shuts down at most 15 seconds after last mod"""
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         i = 0
         # Server must not shut down immediately, more changes might follow.
         # Simulate that.
@@ -2998,55 +2997,55 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
             self.modifyServerFile()
             time.sleep(5)
             i = i + 1
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         time.sleep(10)
-        self.failIf(self.isServerRunning())
+        self.assertFalse(self.isServerRunning())
 
     @timeout(30)
     def testSession(self):
         """TestFileNotify.testSession - create session, shut down directly after closing it"""
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         self.setUpSession("")
         self.modifyServerFile()
         time.sleep(15)
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         self.session.Detach()
         # should shut down almost immediately
         time.sleep(1)
-        self.failIf(self.isServerRunning())
+        self.assertFalse(self.isServerRunning())
 
     @timeout(30)
     def testSession2(self):
         """TestFileNotify.testSession2 - create session, shut down after quiesence period after closing it"""
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         self.setUpSession("")
         self.modifyServerFile()
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         self.session.Detach()
         time.sleep(8)
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         time.sleep(4)
-        self.failIf(self.isServerRunning())
+        self.assertFalse(self.isServerRunning())
 
     @timeout(60)
     def testRestart(self):
         """TestFileNotify.testRestart - set up auto sync, then check that server restarts"""
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         self.setUpSession("memotoo")
         config = self.session.GetConfig(True, utf8_strings=True)
         config[""]["autoSync"] = "1"
         self.session.SetConfig(False, False, config)
-        self.failUnless(self.isServerRunning())
+        self.assertTrue(self.isServerRunning())
         self.session.Detach()
         self.modifyServerFile()
         bus_name = self.server.bus_name
         # give server time to restart
         time.sleep(15)
         self.setUpServer()
-        self.failIfEqual(bus_name, self.server.bus_name)
+        self.assertNotEqual(bus_name, self.server.bus_name)
         # serverExecutable() will fail if the service wasn't properly
         # with execve() because then the old process is dead.
-        self.failUnlessEqual(self.serverexe, self.serverExecutable())
+        self.assertEqual(self.serverexe, self.serverExecutable())
 
 if __name__ == '__main__':
     unittest.main()
