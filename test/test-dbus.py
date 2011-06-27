@@ -336,7 +336,7 @@ class DBusUtil(Timeout):
         kill.communicate()
 
         """own_xdg is saved in self for we use this flag to check whether
-        copying reference directory tree."""
+        to copy the reference directory tree."""
         self.own_xdg = own_xdg
         env = copy.deepcopy(os.environ)
         if own_xdg:
