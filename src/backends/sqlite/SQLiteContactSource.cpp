@@ -374,7 +374,7 @@ bool SQLiteContactSource::serverModeEnabled() const
 
 void SQLiteContactSource::beginSync(const std::string &lastToken, const std::string &resumeToken)
 {
-    detectChanges(*m_trackingNode);
+    detectChanges(*m_trackingNode, CHANGES_FULL);
 }
 
 
