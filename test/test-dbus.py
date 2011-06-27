@@ -630,19 +630,16 @@ class DBusUtil(Timeout):
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
-    def setupFiles(self, snapshot):
+    def setUpFiles(self, snapshot):
         """ Copy reference directory trees from
         test/test-dbus/<snapshot> to own xdg_root (=./test-dbus). To
         be used only in tests which called runTest() with
         own_xdg=True."""
         self.assertTrue(self.own_xdg)
-
         # Get the absolute path of the current python file.
         scriptpath = os.path.abspath(os.path.expanduser(os.path.expandvars(sys.argv[0])))
-
         # reference directory 'test-dbus' is in the same directory as the current python file
         sourcedir = os.path.join(os.path.dirname(scriptpath), 'test-dbus', snapshot)
-
         """ Directories in test/test-dbus are copied to xdg_root, but
         maybe with different names, mappings are:
          test/test-dbus/<snapshot>   ./test-dbus
@@ -1344,7 +1341,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
 
     def testGetReportsEmptyName(self):
         """TestSessionAPIsEmptyName.testGetReportsEmptyName - Test reports from all peers are returned in order when the peer name is empty for GetReports"""
-        self.setupFiles('reports')
+        self.setUpFiles('reports')
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
         self.assertEqual(len(reports), 7)
         refPeers = ["dummy-test", "dummy", "dummy-test", "dummy-test",
@@ -1354,7 +1351,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
 
     def testGetReportsContext(self):
         """TestSessionAPIsEmptyName.testGetReportsContext - Test reports from a context are returned when the peer name is empty for GetReports"""
-        self.setupFiles('reports')
+        self.setUpFiles('reports')
         self.session.Detach()
         self.setUpSession("@context")
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
@@ -1743,7 +1740,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testGetReportsByRef(self):
         """TestSessionAPIsDummy.testGetReportsByRef -  Test the reports are gotten correctly from reference files. Also covers boundaries """
         """ This could be extractly compared since the reference files are known """
-        self.setupFiles('reports')
+        self.setUpFiles('reports')
         report0 = { "peer" : "dummy-test",
                     "start" : "1258520955",
                     "end" : "1258520964",
@@ -1847,7 +1844,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testRestoreByRef(self):
         """TestSessionAPIsDummy.testRestoreByRef - restore data before or after a given session"""
-        self.setupFiles('restore')
+        self.setUpFiles('restore')
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
         reports = self.session.GetReports(0, 1, utf8_strings=True)
@@ -1899,7 +1896,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     def testSecondRestore(self):
         """TestSessionAPIsDummy.testSecondRestore - right error thrown when session is not active?"""
-        self.setupFiles('restore')
+        self.setUpFiles('restore')
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
         reports = self.session.GetReports(0, 1, utf8_strings=True)
