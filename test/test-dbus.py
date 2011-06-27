@@ -678,16 +678,19 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """read templates"""
         configs = self.server.GetConfigs(True, utf8_strings=True)
         configs.sort()
-        self.failUnlessEqual(configs, ["Funambol",
-                                       "Google",
-                                       "Goosync",
-                                       "Memotoo",
-                                       "Mobical",
-                                       "Oracle",
-                                       "Ovi",
-                                       "ScheduleWorld",
-                                       "SyncEvolution",
-                                       "Synthesis"])
+        self.assertEqual(configs, ["Funambol",
+                                   "Google_Calendar",
+                                   "Google_Contacts",
+                                   "Goosync",
+                                   "Memotoo",
+                                   "Mobical",
+                                   "Oracle",
+                                   "Ovi",
+                                   "ScheduleWorld",
+                                   "SyncEvolution",
+                                   "Synthesis",
+                                   "Yahoo",
+                                   "eGroupware"])
 
     def testGetConfigScheduleWorld(self):
         """read ScheduleWorld template"""
