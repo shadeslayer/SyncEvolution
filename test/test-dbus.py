@@ -1607,7 +1607,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         else:
             self.fail("no exception thrown")
 
-    def testCheckSourceInvalidEvolutionSource(self):
+    def testCheckSourceInvalidDatabase(self):
         """TestSessionAPIsDummy.testCheckSourceInvalidEvolutionSource -  test the right error is reported when the evolutionsource is invalid """
         self.setupConfig()
         config = { "source/memo" : { "database" : "impossible-source"} }
