@@ -50,7 +50,8 @@ loop = gobject.MainLoop()
 debugger = "" # "gdb"
 server = ["syncevo-dbus-server"]
 monitor = ["dbus-monitor"]
-xdg_root = "xdg-root"
+# primarily for XDG files, but also other temporary files
+xdg_root = "temp-test-dbus"
 configName = "dbus_unittest"
 
 def property(key, value):
