@@ -190,6 +190,7 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
             buffer << "<D:href>" << href << "</D:href>\n";
         }
         buffer << "</C:calendar-multiget>";
+        std::string query = buffer.str();
         getSession()->startOperation("updateAllSubItems REPORT 'multiget new/updated items'", deadline);
         while (true) {
             string data;
@@ -201,7 +202,7 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
             parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
                                boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
             Neon::Request report(*getSession(), "REPORT", getCalendar().m_path,
-                                 buffer.str(), parser);
+                                 query, parser);
             report.addHeader("Depth", "1");
             report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
             if (report.run()) {
