@@ -186,6 +186,10 @@ class CalDAVSource : public WebDAVSource,
     void addSubItem(const std::string &luid,
                     const SubRevisionEntry &entry);
 
+    /** store as luid + revision */
+    void addResource(StringMap &items,
+                     const std::string &href,
+                     const std::string &etag);
 };
 
 SE_END_CXX

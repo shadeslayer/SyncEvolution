@@ -100,11 +100,12 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
     m_cache.m_initialized = true;
 }
 
-static void addStringPair(StringMap &pairs,
-                          const std::string &a,
-                          const std::string &b)
+void CalDAVSource::addResource(StringMap &items,
+                               const std::string &href,
+                               const std::string &etag)
 {
-    pairs[a] = b;
+    std::string davLUID = path2luid(Neon::URI::parse(href).m_path);
+    items[davLUID] = ETag2Rev(etag);
 }
 
 void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
@@ -132,7 +133,8 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
         string data;
         Neon::XMLParser parser;
         items.clear();
-        parser.initReportParser(boost::bind(addStringPair, boost::ref(items), _1, _2));
+        parser.initReportParser(boost::bind(&CalDAVSource::addResource,
+                                            this, boost::ref(items), _1, _2));
         Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
         report.addHeader("Depth", "1");
         report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");
@@ -159,7 +161,7 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
     BOOST_FOREACH(const StringPair &item, items) {
         SubRevisionMap_t::iterator it = revisions.find(item.first);
         if (it == revisions.end() ||
-            it->second.m_revision != ETag2Rev(item.second)) {
+            it->second.m_revision != item.second) {
             // read current information below
             mustRead.push_back(item.first);
         } else {
@@ -187,7 +189,7 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
             "   <C:calendar-data/>\n"
             "</D:prop>\n";
         BOOST_FOREACH(const std::string &href, mustRead) {
-            buffer << "<D:href>" << href << "</D:href>\n";
+            buffer << "<D:href>" << luid2path(href) << "</D:href>\n";
         }
         buffer << "</C:calendar-multiget>";
         std::string query = buffer.str();
