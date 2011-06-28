@@ -292,6 +292,7 @@ int Session::getCredentials(void *userdata, const char *realm, int attempt, char
             SyncEvo::Strncpy(username, user.c_str(), NE_ABUFSIZ);
             SyncEvo::Strncpy(password, pw.c_str(), NE_ABUFSIZ);
             session->m_credentialsSent = true;
+            SE_LOG_DEBUG(NULL, NULL, "retry request with credentials");
             return 0;
         } else {
             // give up
@@ -341,6 +342,7 @@ void Session::preSend(ne_request *req, ne_buffer *header)
 
         // check for acceptance of credentials later
         m_credentialsSent = true;
+        SE_LOG_DEBUG(NULL, NULL, "forced sending credentials");
     }
 }
 
@@ -472,7 +474,9 @@ int Session::propIterator(void *userdata,
 
 void Session::startOperation(const string &operation, const Timespec &deadline)
 {
-    SE_LOG_DEBUG(NULL, NULL, "starting %s", operation.c_str());
+    SE_LOG_DEBUG(NULL, NULL, "starting %s, credentials %s",
+                 operation.c_str(),
+                 m_settings->getCredentialsOkay() ? "okay" : "unverified");
 
     // remember current operation attributes
     m_operation = operation;
@@ -564,6 +568,7 @@ bool Session::checkError(int error, int code, const ne_status *status, const str
 
             // assume that credentials were valid, if sent
             if (m_credentialsSent) {
+                SE_LOG_DEBUG(NULL, NULL, "credentials accepted");
                 m_settings->setCredentialsOkay(true);
             }
 
@@ -669,6 +674,7 @@ bool Session::checkError(int error, int code, const ne_status *status, const str
 
     if (code == 401) {
         // fatal credential error, remember that
+        SE_LOG_DEBUG(NULL, NULL, "credentials rejected");
         m_settings->setCredentialsOkay(false);
     }
 
