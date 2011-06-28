@@ -79,21 +79,31 @@ void MapSyncSource::detectChanges(SyncSourceRevisions::ChangeMode mode)
         const std::string &mainid = prop.first;
         const std::string &value = prop.second;
         size_t pos = value.find('/');
-        if (pos != value.npos) {
-            std::string revision = m_escape.unescape(value.substr(0, pos));
-            size_t nextpos = value.find('/', pos + 1);
-            if (nextpos != value.npos) {
-                std::string uid = m_escape.unescape(value.substr(pos + 1, nextpos - pos - 1));
-                SubRevisionEntry &ids = m_revisions[mainid];
-                ids.m_revision = revision;
-                ids.m_uid = uid;
-                pos = nextpos;
-                while ((nextpos = value.find('/', pos + 1)) != value.npos) {
-                    std::string subid = m_escape.unescape(value.substr(pos + 1, nextpos - pos - 1));
-                    ids.m_subids.insert(subid);
+        bool okay = false;
+        if (pos == 0) {
+            pos = value.find('/', 1);
+            if (pos != value.npos) {
+                std::string revision = m_escape.unescape(value.substr(0, pos));
+                size_t nextpos = value.find('/', pos + 1);
+                if (nextpos != value.npos) {
+                    std::string uid = m_escape.unescape(value.substr(pos + 1, nextpos - pos - 1));
+                    SubRevisionEntry &ids = m_revisions[mainid];
+                    ids.m_revision = revision;
+                    ids.m_uid = uid;
                     pos = nextpos;
+                    while ((nextpos = value.find('/', pos + 1)) != value.npos) {
+                        std::string subid = m_escape.unescape(value.substr(pos + 1, nextpos - pos - 1));
+                        ids.m_subids.insert(subid);
+                        pos = nextpos;
+                    }
+                    okay = true;
                 }
             }
+        }
+        if (!okay) {
+            SE_LOG_DEBUG(this, NULL, "unsupported or corrupt revision entry: %s = %s",
+                         mainid.c_str(),
+                         value.c_str());
         }
     }
 
@@ -247,7 +257,7 @@ std::string MapSyncSource::endSync(bool success)
             const std::string &mainid = entry.first;
             const SubRevisionEntry &ids = entry.second;
             std::stringstream buffer;
-            buffer << m_escape.escape(ids.m_revision) << '/';
+            buffer << '/' << m_escape.escape(ids.m_revision) << '/';
             buffer << m_escape.escape(ids.m_uid) << '/';
             BOOST_FOREACH(const std::string &subid, ids.m_subids) {
                 buffer << m_escape.escape(subid) << '/';
