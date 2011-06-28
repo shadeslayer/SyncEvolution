@@ -2,6 +2,8 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+backenddir=@libdir@/syncevolution/backends
+templatedir=@datadir@/syncevolution/templates
 
 Name: libsyncevolution
 Description: SyncEvolution Library
