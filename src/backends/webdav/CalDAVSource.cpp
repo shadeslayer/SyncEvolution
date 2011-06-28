@@ -186,6 +186,7 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
             "<C:calendar-multiget xmlns:D=\"DAV:\"\n"
             "   xmlns:C=\"urn:ietf:params:xml:ns:caldav\">\n"
             "<D:prop>\n"
+            "   <D:getetag/>\n"
             "   <C:calendar-data/>\n"
             "</D:prop>\n";
         BOOST_FOREACH(const std::string &href, mustRead) {
@@ -227,6 +228,7 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
     entry.m_revision = ETag2Rev(etag);
     long maxSequence = 0;
     std::string uid;
+    entry.m_subids.clear();
     for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
          comp;
          comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
