@@ -1649,8 +1649,11 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testCheckSource(self):
         """TestSessionAPIsDummy.testCheckSource - testCheckSource - test all sources are okay"""
         self.setupConfig()
-        for source in self.sources:
-            self.session.CheckSource(source, utf8_strings=True)
+        try:
+            for source in self.sources:
+                self.session.CheckSource(source, utf8_strings=True)
+        except dbus.DBusException, ex:
+            self.fail(ex)
 
     def testCheckSourceUpdateConfigTemp(self):
         """TestSessionAPIsDummy.testCheckSourceUpdateConfigTemp -  test the config is temporary updated and in effect for GetDatabases in the current session. """
