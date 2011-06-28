@@ -132,6 +132,8 @@ struct URI {
     std::string m_query;
     std::string m_fragment;
 
+    URI() : m_port(0) {}
+
     /**
      * Split URL into parts. Throws TransportAgentException on
      * invalid url.  Port will be set to default for scheme if not set
