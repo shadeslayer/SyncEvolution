@@ -310,11 +310,22 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
          comp;
          comp = icalcomponent_get_next_component(newEvent->m_calendar, ICAL_VEVENT_COMPONENT)) {
         std::string subid = Event::getSubID(comp);
-        newEvent->m_UID = Event::getUID(comp);
-        if (newEvent->m_UID.empty()) {
-            // create new UID
-            newEvent->m_UID = UUID();
-            Event::setUID(comp, newEvent->m_UID);
+        EventCache::iterator it;
+        if (!luid.empty() &&
+            (it = m_cache.find(luid)) != m_cache.end()) {
+            // Additional sanity check: ensure that the expected UID is set.
+            // Necessary if the peer we synchronize with (aka the local
+            // data storage) doesn't support foreign UIDs. Maemo 5 calendar
+            // backend is one example.
+            Event::setUID(comp, it->second->m_UID);
+            newEvent->m_UID = it->second->m_UID;
+        } else {
+            newEvent->m_UID = Event::getUID(comp);
+            if (newEvent->m_UID.empty()) {
+                // create new UID
+                newEvent->m_UID = UUID();
+                Event::setUID(comp, newEvent->m_UID);
+            }
         }
         newEvent->m_sequence = Event::getSequence(comp);
         newEvent->m_subids.insert(subid);
