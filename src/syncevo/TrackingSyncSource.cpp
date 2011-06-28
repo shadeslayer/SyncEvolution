@@ -28,15 +28,11 @@
 SE_BEGIN_CXX
 
 TrackingSyncSource::TrackingSyncSource(const SyncSourceParams &params,
-                                       int granularitySeconds,
-                                       const boost::shared_ptr<ConfigNode> &trackingNode) :
-    TestingSyncSource(params),
-    m_trackingNode(trackingNode)
+                                       int granularitySeconds) :
+    TestingSyncSource(params)
 {
     boost::shared_ptr<ConfigNode> safeNode(new SafeConfigNode(params.m_nodes.getTrackingNode()));
-    if (!m_trackingNode) {
-        m_trackingNode.reset(new PrefixConfigNode("item-", safeNode));
-    }
+    m_trackingNode.reset(new PrefixConfigNode("item-", safeNode));
     m_metaNode = safeNode;
     m_operations.m_checkStatus = boost::bind(&TrackingSyncSource::checkStatus, this, _1);
     m_operations.m_isEmpty = boost::bind(&TrackingSyncSource::isEmpty, this);

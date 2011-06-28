@@ -30,7 +30,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_DAV
             boost::shared_ptr<Neon::Settings> settings;
             boost::shared_ptr<SubSyncSource> sub(new CalDAVSource(params, settings));
-            return new MapSyncSource(params, 0 /* seconds resolution */, sub);
+            return new MapSyncSource(params, sub);
 #else
             return RegisterSyncSource::InactiveSource;
 #endif

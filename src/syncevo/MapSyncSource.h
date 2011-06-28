@@ -30,6 +30,23 @@ using namespace std;
 class MapSyncSource;
 
 /**
+ * rev + uid + list of subid; mainid is part of the context
+ */
+struct SubRevisionEntry {
+    std::string m_revision;
+    std::string m_uid;
+    set<string> m_subids;
+};
+
+/**
+ * mainid to rev + uid + list of subid
+ *
+ * List must contain an empty entry for the main item, if and only
+ * if one exists.
+ */
+typedef map<string, SubRevisionEntry> SubRevisionMap_t;
+
+/**
  * This is the API that must be implemented in addition to
  * TrackingSyncSource and SyncSourceLogging by a source to
  * be wrapped by MapSyncSource.
@@ -93,22 +110,6 @@ class SubSyncSource : virtual public SyncSourceBase
     MapSyncSource *getParent() const { return m_parent; }
 
     virtual SDKInterface *getSynthesisAPI() const;
-
-    /**
-     * rev + uid + list of subid; mainid is part of the context
-     */
-    struct SubRevisionEntry {
-        std::string m_revision;
-        std::string m_uid;
-        set<string> m_subids;
-    };
-    /**
-     * mainid to rev + uid + list of subid
-     *
-     * List must contain an empty entry for the main item, if and only
-     * if one exists.
-     */
-    typedef map<string, SubRevisionEntry> SubRevisionMap_t;
 
     /** called after open() and before any of the following methods */
     virtual void begin() = 0;
@@ -197,14 +198,16 @@ class SubSyncSource : virtual public SyncSourceBase
  * advantage of this scheme is that it works well with sub sources
  * which use URI escaping.
  *
- * This class maps expects an extended TrackingSyncSource (=
+ * This class expects an extended TrackingSyncSource (=
  * SubSyncSource) merely because that interface is the most convenient
  * to work with. If necessary, the logic may be refactored later on.
  *
- * This class uses the TrackingSyncSource infrastructure. The effect that
- * all sub items of a merged item share the same revision string is modelled
- * by telling the SyncSourceRevision instance to use a tracking node which
- * maps all id keys to the same entry.
+ * This class uses much of the same infrastructure as the TrackingSyncSource,
+ * except for change detection. This used to be done with TrackingSyncSource
+ * as base class, but there are some key differences which made this very
+ * awkward, primarily the fact that all merged items share the same revision
+ * string. Now the tracking node is used to store one entry per merged item, in
+ * the format "ref-<mainid> = <revision>/<uid>/<subid1>/<subid2>/..."
  *
  * The following rules apply:
  * - A single item is added if its luid is new, updated if it exists and
@@ -218,7 +221,10 @@ class SubSyncSource : virtual public SyncSourceBase
  * - Item logging is offered by this class (LoggingSyncSource), but
  *   entirely depends on the sub source to implement the functionality.
  */
-class MapSyncSource : public TrackingSyncSource,
+class MapSyncSource :
+    public TestingSyncSource, // == SyncSourceSession, SyncSourceChanges, SyncSourceDelete, SyncSourceSerialize
+    virtual public SyncSourceAdmin,
+    virtual public SyncSourceBlob,
     virtual public SyncSourceLogging
 {
   public:
@@ -226,7 +232,6 @@ class MapSyncSource : public TrackingSyncSource,
      * @param sub      must also implement TrackingSyncSource and SyncSourceLogging interfaces!
      */
     MapSyncSource(const SyncSourceParams &params,
-                  int granularitySeconds,
                   const boost::shared_ptr<SubSyncSource> &sub);
     ~MapSyncSource() {}
 
@@ -236,18 +241,17 @@ class MapSyncSource : public TrackingSyncSource,
     /** split luid into mainid (first) and subid (second) */
     static StringPair splitLUID(const std::string &luid);
 
+    virtual void enableServerMode();
+    virtual bool serverModeEnabled() const;
+    virtual std::string getPeerMimeType() const { return getMimeType(); }
     virtual Databases getDatabases() { return dynamic_cast<SyncSource &>(*m_sub).getDatabases(); }
     virtual void open() { dynamic_cast<SyncSource &>(*m_sub).open(); }
-    virtual void beginSync(const std::string &lastToken, const std::string &resumeToken) { m_sub->begin(); TrackingSyncSource::beginSync(lastToken, resumeToken); }
-    virtual std::string endSync(bool success) { m_sub->endSubSync(success); return TrackingSyncSource::endSync(success); }
+    virtual void beginSync(const std::string &lastToken, const std::string &resumeToken);
+    virtual std::string endSync(bool success);
     virtual bool isEmpty() { return dynamic_cast<SyncSource &>(*m_sub).getOperations().m_isEmpty(); }
-    virtual void listAllItems(SyncSourceRevisions::RevisionMap_t &revisions);
-    virtual void updateAllItems(SyncSourceRevisions::RevisionMap_t &revisions);
-    virtual void setAllItems(const SyncSourceRevisions::RevisionMap_t &revisions);
-    virtual std::string databaseRevision() { return m_sub->subDatabaseRevision(); }
-    virtual InsertItemResult insertItem(const std::string &luid, const std::string &item, bool raw);
-    virtual void readItem(const std::string &luid, std::string &item, bool raw);
-    virtual void removeItem(const string &luid);
+    virtual InsertItemResult insertItem(const std::string &luid, const std::string &item);
+    virtual void readItem(const std::string &luid, std::string &item);
+    virtual void deleteItem(const string &luid);
     virtual void close() { dynamic_cast<SyncSource &>(*m_sub).close(); }
     virtual std::string getMimeType() const { return dynamic_cast<SyncSourceSerialize &>(*m_sub).getMimeType(); }
     virtual std::string getMimeVersion() const { return dynamic_cast<SyncSourceSerialize &>(*m_sub).getMimeVersion(); }
@@ -256,22 +260,33 @@ class MapSyncSource : public TrackingSyncSource,
 
  private:
     boost::shared_ptr<SubSyncSource> m_sub;
+    /** escape / in uid with %2F, so that splitMainIDValue() and splitLUID() can use / as separator */
     static StringEscape m_escape;
     std::string m_oldLUID;
 
     /**
-     * Flush sub source if new luid is different from previous one.
-     * Works for SyncML calendar sync based on the assumption that
-     * item operations are sorted by UID/RECURRENCE-ID, which is
-     * roughly true. Exception: Synthesis sorts by add/update/delete
-     * first.
+     * information about the current set of items:
+     * initialized as part of beginSync(),
+     * updated as items are modified,
+     * stored in endSync()
      */
-    void checkFlush(const std::string &luid);
+    SubRevisionMap_t m_revisions;
 
-    void SubRevMap2RevMap(const SubSyncSource::SubRevisionMap_t &subrevisions,
-                          SyncSourceRevisions::RevisionMap_t &revisions);
-    void RevMap2SubRevMap(const SyncSourceRevisions::RevisionMap_t &revisions,
-                          SubSyncSource::SubRevisionMap_t &subrevisions);
+    /** on-disk representation of m_revisions */
+    boost::shared_ptr<ConfigNode> m_trackingNode;
+
+    /**
+     * Stores meta information besides the item list:
+     * - "databaseRevision" = result of databaseRevision() at end of last sync
+     *
+     * Shares the same key/value store as m_trackingNode,
+     * which uses the "item-" prefix in its keys to
+     * avoid name clashes.
+     */
+    boost::shared_ptr<ConfigNode> m_metaNode;
+
+    /** mirrors SyncSourceRevisions::detectChanges() */
+    void detectChanges(SyncSourceRevisions::ChangeMode mode);
 };
 
 SE_END_CXX

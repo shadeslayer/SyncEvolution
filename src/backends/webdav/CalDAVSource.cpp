@@ -286,7 +286,7 @@ void CalDAVSource::setAllSubItems(const SubRevisionMap_t &revisions)
     if (!m_cache.m_initialized) {
         // populate our cache (without data) from the information cached
         // for us
-        BOOST_FOREACH(const SubSyncSource::SubRevisionMap_t::value_type &subentry,
+        BOOST_FOREACH(const SubRevisionMap_t::value_type &subentry,
                       revisions) {
             addSubItem(subentry.first,
                        subentry.second);

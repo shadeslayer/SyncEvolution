@@ -1365,7 +1365,7 @@ class SyncSourceChanges : virtual public SyncSourceBase {
      * and does not distinguish between added and updated items, so
      * for syncing, adding DELETED items is optional and all items
      * which are different from the last sync can be added as
-     * UPDATED. The client-test program expects that the information
+     * UPDATED. The client-test program expects that the informationb
      * is provided precisely.
      *
      * @return true if the luid was already listed
