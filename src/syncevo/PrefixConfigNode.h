@@ -63,7 +63,7 @@ class PrefixConfigNode : public ConfigNode {
     virtual void readProperties(ConfigProps &props) const;
     virtual void removeProperty(const string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }
-    virtual void clear() { m_node->clear(); }
+    virtual void clear();
 
  private:
     string m_prefix;

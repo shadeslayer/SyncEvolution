@@ -72,6 +72,18 @@ void PrefixConfigNode::readProperties(ConfigProps &props) const
     }
 }
 
+void PrefixConfigNode::clear()
+{
+    ConfigProps original;
+    m_readOnlyNode->readProperties(original);
+    BOOST_FOREACH(const StringPair &prop, original) {
+        string key = prop.first;
+        if (boost::starts_with(key, m_prefix)) {
+            m_node->removeProperty(key);
+        }
+    }
+}
+
 void PrefixConfigNode::removeProperty(const string &property)
 {
     m_node->removeProperty(m_prefix + property);
