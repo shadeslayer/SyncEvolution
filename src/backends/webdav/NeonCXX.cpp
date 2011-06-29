@@ -22,7 +22,7 @@
 #include <syncevo/LogRedirect.h>
 #include <syncevo/SmartPtr.h>
 
-#include <strstream>
+#include <sstream>
 
 #include <dlfcn.h>
 
