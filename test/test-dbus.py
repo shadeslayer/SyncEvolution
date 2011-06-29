@@ -1796,8 +1796,21 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         Thus we need a real server configuration to confirm sync could be run successfully.
         Typically we need make sure that at least one sync has been done before testing our
         desired unit tests. Note that it also covers session.Sync API itself """
-    """ All unit tests in this class have a dependency on a real sync config named 'dbus_unittest',
-        which should works correctly. """
+    """ All unit tests in this class have a dependency on a real sync
+    config named 'dbus_unittest'. That config must have preventSlowSync=0,
+    maxLogDirs=1, username, password set such that syncing succeeds
+    for at least one source. It does not matter which data is synchronized.
+    For example, the following config will work:
+    syncevolution --configure --template <server of your choice> \
+                  username=<your username> \
+                  password=<your password> \
+                  preventSlowSync=0 \
+                  maxLogDirs=1 \
+                  backend=file \
+                  database=file:///tmp/test_dbus_data \
+                  databaseFormat=text/vcard \
+                  dbus_unittest@test-dbus addressbook
+                  """
 
     def setUp(self):
         self.setUpServer()
@@ -1816,9 +1829,6 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         except dbus.DBusException, ex:
             self.fail(str(ex) + 
                       ". To test this case, please first set up a correct config named 'dbus_unittest'.")
-        updateProps = self.getDatabases(configProps)
-        # temporarily set evolutionsource and don't change them
-        self.session.SetConfig(True, True, updateProps, utf8_strings=True)
 
     def doSync(self):
         self.setupConfig()
