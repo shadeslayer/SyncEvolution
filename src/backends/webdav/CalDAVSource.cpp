@@ -220,6 +220,16 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
                              const std::string &etag,
                              std::string &data)
 {
+    // Ignore responses with no data: this is not perfect (should better
+    // try to figure out why there is no data), but better than
+    // failing.
+    //
+    // One situation is the response for the collection itself,
+    // which comes with a 404 status and no data with Google Calendar.
+    if (data.empty()) {
+        return 0;
+    }
+
     Event::unescapeRecurrenceID(data);
     eptr<icalcomponent> calendar(icalcomponent_new_from_string((char *)data.c_str()), // cast is a hack for broken definition in old libical
                                  "iCalendar 2.0");
