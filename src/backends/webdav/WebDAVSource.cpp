@@ -596,6 +596,17 @@ void WebDAVSource::contactServer()
                                             path.c_str(), username.c_str());
                 int code = 401;
                 SE_THROW_EXCEPTION_STATUS(TransportStatusException, descr, SyncMLStatus(code));
+            } else {
+                if (candidates.empty()) {
+                    // nothing left to try, bail out with this error
+                    throw;
+                } else {
+                    // ignore the error (whatever it was!), try next
+                    // candidate; needed to handle 502 "Connection
+                    // refused" for /.well-known/caldav/ from Yahoo!
+                    // Calendar
+                    SE_LOG_DEBUG(NULL, NULL, "ignore error for URI candidate: %s", ex.what());
+                }
             }
         } catch (const Exception &ex) {
             if (candidates.empty()) {
