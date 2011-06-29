@@ -112,6 +112,10 @@ backenddir='$(libdir)'/syncevolution/backends
 AC_SUBST(backenddir)
 AC_SUBST(backendsearchdir)
 
+# for ActiveSync backend
+syncevo_backenddir='$(libdir)'/syncevolution/backends
+AC_SUBST(syncevo_backenddir)
+
 dnl This string is sent as part of the SyncML DevInf (device
 dnl information) structure to the server. All SyncEvolution platforms
 dnl use "SyncEvolution" as HTTP user agent and "Mod" (model), so the
