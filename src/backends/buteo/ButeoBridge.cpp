@@ -178,7 +178,7 @@ bool ButeoBridge::init()
         }
 
         // configure local sync of calendar with CalDAV and/or CardDAV
-        std::string config = StringPrintf("source-config@%s", m_config.c_str());
+        std::string config = StringPrintf("target-config@%s", m_config.c_str());
         if (!SyncConfig(config).exists()) {
             Cmdline target(std::cout, std::cerr,
                            "buteo-sync",

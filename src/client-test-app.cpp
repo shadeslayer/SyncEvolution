@@ -490,7 +490,7 @@ private:
     /** called internally in this class */
     TestingSyncSource *createNamedSource(const string &name, bool isSourceA) {
         string database = getDatabaseName(name);
-        boost::shared_ptr<SyncConfig> context(new SyncConfig("source-config@client-test"));
+        boost::shared_ptr<SyncConfig> context(new SyncConfig("target-config@client-test"));
         SyncSourceNodes nodes = context->getSyncSourceNodes(name,
                                                             string("_") + m_clientID +
                                                             "_" + (isSourceA ? "A" : "B"));

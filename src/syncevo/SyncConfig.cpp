@@ -1327,7 +1327,7 @@ static BoolConfigProperty syncPropConsumerReady("ConsumerReady",
 
 /**
  * Some guidelines for peerType = WebDAV:
- * - Such templates may only be used to create the 'source-config@<target>.
+ * - Such templates may only be used to create the 'target-config@<target>.
  *   configurations. Typically <target> can be the same as the template's
  *   name.
  * - Because determining the default database in WebDAV can be difficult,

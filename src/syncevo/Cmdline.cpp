@@ -864,7 +864,7 @@ bool Cmdline::run() {
                         configTemplate =
                             peer = "SyncEvolution";
                         from = SyncConfig::createPeerTemplate(peer);
-                    } else if (peer == "source-config") {
+                    } else if (peer == "target-config") {
                         // Configuring the source context for local sync
                         // => determine template based on context name.
                         configTemplate = context;
@@ -2678,7 +2678,7 @@ protected:
                                   "   template name = template description\n"
                                   "   eGroupware = http://www.egroupware.org\n"
                                   "   Funambol = http://my.funambol.com\n"
-                                  "   Google_Calendar = event sync via CalDAV, use for the 'source-config@google-calendar' config\n"
+                                  "   Google_Calendar = event sync via CalDAV, use for the 'target-config@google-calendar' config\n"
                                   "   Google_Contacts = contact sync via SyncML, see http://www.google.com/support/mobile/bin/topic.py?topic=22181\n"
                                   "   Goosync = http://www.goosync.com/\n"
                                   "   Memotoo = http://www.memotoo.com\n"
@@ -2688,7 +2688,7 @@ protected:
                                   "   ScheduleWorld = server no longer in operation\n"
                                   "   SyncEvolution = http://www.syncevolution.org\n"
                                   "   Synthesis = http://www.synthesis.ch\n"
-                                  "   Yahoo = contact and event sync using WebDAV, use for the 'source-config@yahoo' config\n",
+                                  "   Yahoo = contact and event sync using WebDAV, use for the 'target-config@yahoo' config\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
     }
@@ -3110,12 +3110,12 @@ protected:
         {
             TestCmdline cmdline("--configure",
                                 "--template", "yahoo",
-                                "source-config@my-yahoo",
+                                "target-config@my-yahoo",
                                 NULL);
             cmdline.doit();
         }
         {
-            TestCmdline cmdline("--print-config", "source-config@my-yahoo", NULL);
+            TestCmdline cmdline("--print-config", "target-config@my-yahoo", NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF(yahoo,
                                       removeComments(filterRandomUUID(filterConfig(cmdline.m_out.str()))));
@@ -3124,12 +3124,12 @@ protected:
         // configure Google Calendar with template derived from config name
         {
             TestCmdline cmdline("--configure",
-                                "source-config@google-calendar",
+                                "target-config@google-calendar",
                                 NULL);
             cmdline.doit();
         }
         {
-            TestCmdline cmdline("--print-config", "source-config@google-calendar", NULL);
+            TestCmdline cmdline("--print-config", "target-config@google-calendar", NULL);
             cmdline.doit();
             CPPUNIT_ASSERT_EQUAL_DIFF(googlecaldav,
                                       removeComments(filterRandomUUID(filterConfig(cmdline.m_out.str()))));
@@ -3139,7 +3139,7 @@ protected:
         {
             TestCmdline cmdline("--configure",
                                 "--template", "yahooxyz",
-                                "source-config@my-yahoo-xyz",
+                                "target-config@my-yahoo-xyz",
                                 NULL);
             CPPUNIT_ASSERT(cmdline.m_cmdline->parse());
             CPPUNIT_ASSERT(!cmdline.m_cmdline->run());
@@ -3149,7 +3149,7 @@ protected:
         }
         {
             TestCmdline cmdline("--configure",
-                                "source-config@foobar",
+                                "target-config@foobar",
                                 NULL);
             CPPUNIT_ASSERT(cmdline.m_cmdline->parse());
             CPPUNIT_ASSERT(!cmdline.m_cmdline->run());

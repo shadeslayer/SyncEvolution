@@ -91,13 +91,13 @@ void LocalTransportAgent::start()
     }
 
     // initialize target client so that we can check passwords in the calling process
-    boost::shared_ptr<SyncContext> client(new SyncContext(std::string("source-config") + m_clientContext,
+    boost::shared_ptr<SyncContext> client(new SyncContext(std::string("target-config") + m_clientContext,
                                                           m_server->getConfigName(),
                                                           m_server->getRootPath() + "/." + m_clientContext,
                                                           boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
                                                           m_server->getDoLogging()));
 
-    // allow proceeding with sync even if no "source-config" was created,
+    // allow proceeding with sync even if no "target-config" was created,
     // because information about username/password (for WebDAV) or the
     // sources (for file backends) might be enough
     client->setConfigNeeded(false);
@@ -113,7 +113,7 @@ void LocalTransportAgent::start()
     // Copy non-empty credentials from main config, because
     // that is where the GUI knows how to store them. A better
     // solution would be to require that credentials are in the
-    // "source-config" config.
+    // "target-config" config.
     string tmp = m_server->getSyncUsername();
     if (!tmp.empty()) {
         client->setSyncUsername(tmp, true);

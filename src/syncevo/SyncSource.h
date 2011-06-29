@@ -48,9 +48,9 @@ struct SyncSourceParams {
      * @param    context     Additional non-source config settings.
      *                       When running as part of a normal sync, these are the
      *                       settings for the peer. When running in a local sync,
-     *                       these settings come from the "source-config" peer
+     *                       these settings come from the "target-config" peer
      *                       config inside the config context of the source.
-     *                       Testing uses "source-config@client-test". On the
+     *                       Testing uses "target-config@client-test". On the
      *                       command line, this is the config chosen by the
      *                       user, which may or may not have peer-specific settings!
      * @param    contextName optional name of context in which the source is defined,

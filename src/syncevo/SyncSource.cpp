@@ -371,7 +371,7 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
 SyncSource *SyncSource::createTestingSource(const string &name, const string &type, bool error,
                                             const char *prefix)
 {
-    boost::shared_ptr<SyncConfig> context(new SyncConfig("source-config@client-test"));
+    boost::shared_ptr<SyncConfig> context(new SyncConfig("target-config@client-test"));
     SyncSourceNodes nodes = context->getSyncSourceNodes(name);
     SyncSourceParams params(name, nodes, context);
     PersistentSyncSourceConfig sourceconfig(name, nodes);

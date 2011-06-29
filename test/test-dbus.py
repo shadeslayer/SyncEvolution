@@ -2461,7 +2461,7 @@ class TestLocalSync(unittest.TestCase, DBusUtil):
     def setUp(self):
         self.setUpServer()
         # create file<->file configs
-        self.setUpSession("source-config@client")
+        self.setUpSession("target-config@client")
         self.session.SetConfig(False, False,
                                {"" : { "loglevel": "4" },
                                 "source/addressbook": { "sync": "two-way",

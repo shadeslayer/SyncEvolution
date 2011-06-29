@@ -12,7 +12,7 @@ The approach will be something like this:
 * define "Google Calendar" service using it
 * configure it in sync UI
 * during sync, create or update "google@default" local sync
-  config, with "source-config@google" for remote CalDAV access
+  config, with "target-config@google" for remote CalDAV access
 
 Because of the limited applicability of the plugin, hard-coding
 specific services is okay.

@@ -170,7 +170,7 @@ namespace {
 
 /**
  * implements one specific source for local testing;
- * creates "source-config@client-test-<server>" peer config
+ * creates "target-config@client-test-<server>" peer config
  * and <type> source inside it before instantiating the
  * source
  */
@@ -214,7 +214,7 @@ public:
 
     TestingSyncSource *createSource(bool isSourceA) const
     {
-        boost::shared_ptr<SyncConfig> context(new SyncConfig(string("source-config@client-test-") + m_server));
+        boost::shared_ptr<SyncConfig> context(new SyncConfig(string("target-config@client-test-") + m_server));
         SyncSourceNodes nodes = context->getSyncSourceNodes(m_type,
                                                             /* string("_") m_clientID + */
                                                             string("_") + (isSourceA ? "A" : "B"));

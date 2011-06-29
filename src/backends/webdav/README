@@ -45,7 +45,7 @@ They also use:
   >= 11: plaintext HTTP authentication
 
 The recommended way of using the CalDAV and CardDAV backends is to
-configure a context with the "source-config" peer inside it. Such a
+configure a context with the "target-config" peer inside it. Such a
 context then can be used as part of a local sync with other
 sources. See the Google section below for examples.
 
@@ -115,13 +115,13 @@ syncevolution --configure \
               username=<your account> \
               password=<your password> \
               consumerReady=0 \
-              source-config@google calendar
+              target-config@google calendar
 
 # list events in the server
-syncevolution --print-items source-config@google calendar
+syncevolution --print-items target-config@google calendar
 
 # show the content of these events on stdout
-syncevolution --export - source-config@google calendar
+syncevolution --export - target-config@google calendar
 
 # set up synchronization, using "google-calendar" as peer name
 # because "google" is typically used for the SyncML-based
@@ -177,11 +177,11 @@ syncevolution --configure \
               username=<your account@yahoo.com or some other yahoo domain> \
               password=<your password> \
               consumerReady=0 \
-              source-config@yahoo addressbook calendar
+              target-config@yahoo addressbook calendar
 
 # list items, use "--export -" to see content
-syncevolution --print-items source-config@yahoo calendar
-syncevolution --print-items source-config@yahoo addressbook
+syncevolution --print-items target-config@yahoo calendar
+syncevolution --print-items target-config@yahoo addressbook
 
 # configure synchronization, with addressbook not enabled
 syncevolution --configure \
@@ -207,7 +207,7 @@ SYNCEVOLUTION_DEBUG=1 syncevolution --daemon=no loglevel=4 --print-items @google
 
 Each sync produces two log files, one for the main config
 ("google-calendar"), one for the target config
-("source-config@google"). It is possible to choose different log levels:
+("target-config@google"). It is possible to choose different log levels:
 
 syncevolution --run \
               loglevel=1 \
@@ -311,7 +311,7 @@ cover importing/exporting of items and change tracking.
 client-test needs to be told in the CLIENT_TEST_WEBDAV env variable
 which CalDAV or CardDAV servers are available and the sync properties
 for them. It then creates a suitable
-"source-config@client-test-<server>" config with "caldav" and/or
+"target-config@client-test-<server>" config with "caldav" and/or
 "carddav" sources. Sync properties can be specified; if not given, the
 relevant ones must be set inside that config already.
 
