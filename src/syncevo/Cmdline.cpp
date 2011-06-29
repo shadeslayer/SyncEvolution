@@ -2168,8 +2168,6 @@ static string internalToIni(const string &config)
         }
         string assignment = line.substr(colon + 1);
         // substitude aliases with generic values
-        boost::replace_first(assignment, "= F", "= 0");
-        boost::replace_first(assignment, "= T", "= 1");
         boost::replace_first(assignment, "= syncml:auth-md5", "= md5");
         boost::replace_first(assignment, "= syncml:auth-basix", "= basic");
         res << assignment << endl;
@@ -4225,7 +4223,7 @@ private:
                          "peers/scheduleworld/config.ini:# remoteIdentifier = \n"
                          "peers/scheduleworld/config.ini:# PeerIsClient = 0\n"
                          "peers/scheduleworld/config.ini:# SyncMLVersion = \n"
-                         "peers/scheduleworld/config.ini:# PeerName = \n"
+                         "peers/scheduleworld/config.ini:PeerName = ScheduleWorld\n"
                          "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                          "peers/scheduleworld/config.ini:# remoteDeviceId = \n"
                          "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
@@ -4340,7 +4338,7 @@ private:
             "spds/syncml/config.txt:# remoteIdentifier = \n"
             "spds/syncml/config.txt:# PeerIsClient = 0\n"
             "spds/syncml/config.txt:# SyncMLVersion = \n"
-            "spds/syncml/config.txt:# PeerName = \n"
+            "spds/syncml/config.txt:PeerName = ScheduleWorld\n"
             "spds/syncml/config.txt:deviceId = fixed-devid\n" /* this is not the default! */
             "spds/syncml/config.txt:# remoteDeviceId = \n"
             "spds/syncml/config.txt:# enableWBXML = 1\n"
@@ -4389,6 +4387,7 @@ private:
     string FunambolConfig() {
         string config = ScheduleWorldConfig();
         boost::replace_all(config, "/scheduleworld/", "/funambol/");
+        boost::replace_all(config, "PeerName = ScheduleWorld", "PeerName = Funambol");
 
         boost::replace_first(config,
                              "syncURL = http://sync.scheduleworld.com/funambol/ds",
@@ -4443,6 +4442,7 @@ private:
     string SynthesisConfig() {
         string config = ScheduleWorldConfig();
         boost::replace_all(config, "/scheduleworld/", "/synthesis/");
+        boost::replace_all(config, "PeerName = ScheduleWorld", "PeerName = Synthesis");
 
         boost::replace_first(config,
                              "syncURL = http://sync.scheduleworld.com/funambol/ds",
