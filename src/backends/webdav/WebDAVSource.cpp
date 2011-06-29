@@ -146,6 +146,7 @@ public:
             boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
             WebDAVCredentialsOkay.setProperty(*node, okay);
             node->flush();
+            m_credentialsOkay = okay;
         }
     }
 
