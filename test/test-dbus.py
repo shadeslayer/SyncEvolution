@@ -161,7 +161,7 @@ class TimeoutTest:
     """unit test for Timeout mechanism"""
 
     def testOneTimeout(self):
-        """simple timeout of two seconds"""
+        """testOneTimeout - OneTimeout"""
         self.called = False
         start = time.time()
         def callback():
@@ -174,7 +174,7 @@ class TimeoutTest:
         self.failIf(end - start >= 3)
 
     def testEmptyTimeout(self):
-        """called immediately because of zero timeout"""
+        """testEmptyTimeout - EmptyTimeout"""
         self.called = False
         start = time.time()
         def callback():
@@ -188,7 +188,7 @@ class TimeoutTest:
         self.failIf(end - start >= 1)
 
     def testTwoTimeouts(self):
-        """two timeouts after 2 and 5 seconds, installed in order"""
+        """testTwoTimeouts - TwoTimeouts"""
         self.called = False
         start = time.time()
         def callback():
@@ -207,7 +207,7 @@ class TimeoutTest:
         self.failIf(end - start >= 6)
 
     def testTwoReversedTimeouts(self):
-        """two timeouts after 2 and 5 seconds, installed in reversed order"""
+        """testTwoReversedTimeouts - TwoReversedTimeouts"""
         self.called = False
         start = time.time()
         def callback():
@@ -657,25 +657,25 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         self.runTest(result)
 
     def testCapabilities(self):
-        """check the Server.GetCapabilities() call"""
+        """TestDBusServer.testCapabilities - Server.Capabilities()"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
         self.failUnlessEqual(capabilities, ['ConfigChanged', 'DatabaseProperties', 'GetConfigName', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
 
     def testVersions(self):
-        """check the Server.GetVersions() call"""
+        """TestDBusServer.testVersions - Server.GetVersions()"""
         versions = self.server.GetVersions()
         self.failIfEqual(versions["version"], "")
         self.failIfEqual(versions["system"], None)
         self.failIfEqual(versions["backends"], None)
 
     def testGetConfigsEmpty(self):
-        """GetConfigs() with no configurations available"""
+        """TestDBusServer.testGetConfigsEmpty - Server.GetConfigsEmpty()"""
         configs = self.server.GetConfigs(False, utf8_strings=True)
         self.failUnlessEqual(configs, [])
 
     def testGetConfigsTemplates(self):
-        """read templates"""
+        """TestDBusServer.testGetConfigsTemplates - Server.GetConfigsTemplates()"""
         configs = self.server.GetConfigs(True, utf8_strings=True)
         configs.sort()
         self.assertEqual(configs, ["Funambol",
@@ -693,7 +693,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
                                    "eGroupware"])
 
     def testGetConfigScheduleWorld(self):
-        """read ScheduleWorld template"""
+        """TestDBusServer.testGetConfigScheduleWorld - Server.GetConfigScheduleWorld()"""
         config1 = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
         config2 = self.server.GetConfig("ScheduleWorld", True, utf8_strings=True)
         self.failIfEqual(config1[""]["deviceId"], config2[""]["deviceId"])
@@ -702,7 +702,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config1, config2)
 
     def testInvalidConfig(self):
-        """check that the right error is reported for invalid config name"""
+        """TestDBusServer.testInvalidConfig - Server.NoSuchConfig exception"""
         try:
             config1 = self.server.GetConfig("no-such-config", False, utf8_strings=True)
         except dbus.DBusException, ex:
@@ -720,7 +720,8 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testNoTerm(self):
-        """Test the dbus server stays alive within the duration"""
+        """TestDBusServerTerm.testNoTerm - D-Bus server must stay around during calls"""
+
         """The server should stay alive because we have dbus call within
         the duration. The loop is to make sure the total time is longer 
         than duration and the dbus server still stays alive for dbus calls.""" 
@@ -733,7 +734,7 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testTerm(self):
-        """Test the dbus server terminates automatically after a duration"""
+        """TestDBusServerTerm.testTerm - D-Bus server must auto-terminate"""
         #sleep a duration and wait for syncevo-dbus-server termination
         time.sleep(16)
         try:
@@ -745,7 +746,7 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testTermConnection(self):
-        """Test the dbus server doesn't terminate if it has connections"""
+        """TestDBusServerTerm.testTermConnection - D-Bus server must terminate after closing connection and not sooner"""
         conpath = self.server.Connect({'description': 'test-dbus.py',
                                        'transport': 'dummy'},
                                       False,
@@ -770,7 +771,8 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testTermAttachedClients(self):
-        """Test the dbus server doesn't terminate if it has attached clients"""
+        """TestDBusServerTerm.testTermAttachedClients - D-Bus server must not terminate while clients are attached"""
+
         """Also it tries to test the dbus server's behavior when a client 
         attaches the server many times"""
         self.server.Attach()
@@ -865,6 +867,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testPresenceSignal(self):
+        """TestDBusServerPresence.testPresenceSignal - check Server.Presence signal"""
         self.conn.reset()
         self.setUpSession("foo")
         self.session.SetConfig(False, False, {"" : {"syncURL":
@@ -942,6 +945,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testServerCheckPresence(self):
+        """TestDBusServerPresence.testServerCheckPresence - check Server.CheckPresence()"""
         self.conn.reset()
         self.setUpSession("foo")
         self.session.SetConfig(False, False, {"" : {"syncURL":
@@ -984,6 +988,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testSessionCheckPresence(self):
+        """TestDBusServerPresence.testSessionCheckPresence - check Session.CheckPresence()"""
         self.conn.reset()
         self.setUpSession("foobar")
         self.session.SetConfig(False, False, {"" : {"syncURL":
@@ -1015,12 +1020,12 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         self.runTest(result)
 
     def testCreateSession(self):
-        """ask for session"""
+        """TestDBusSession.testCreateSession - ask for session"""
         self.failUnlessEqual(self.session.GetFlags(), [])
         self.failUnlessEqual(self.session.GetConfigName(), "@default");
 
     def testAttachSession(self):
-        """attach to running session"""
+        """TestDBusSession.testAttachSession - attach to running session"""
         self.session.Attach()
         self.session.Detach()
         self.failUnlessEqual(self.session.GetFlags(), [])
@@ -1028,7 +1033,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
 
     @timeout(70)
     def testAttachOldSession(self):
-        """attach to session which no longer has clients"""
+        """TestDBusSession.testAttachOldSession - attach to session which no longer has clients"""
         self.session.Detach()
         time.sleep(5)
         # This used to be impossible with SyncEvolution 1.0 because it
@@ -1046,7 +1051,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
 
     @timeout(70)
     def testExpireSession(self):
-        """ensure that session stays around for a minute"""
+        """TestDBusSession.testExpireSession - ensure that session stays around for a minute"""
         self.session.Detach()
         time.sleep(5)
         self.failUnlessEqual(self.session.GetFlags(), [])
@@ -1060,7 +1065,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
             self.fail("Session.GetFlags() should have failed")
 
     def testCreateSessionWithFlags(self):
-        """ask for session with some specific flags and config"""
+        """TestDBusSession.testCreateSessionWithFlags - ask for session with some specific flags and config"""
         self.session.Detach()
         self.sessionpath, self.session = self.createSession("FooBar@no-such-context", True, ["foo", "bar"])
         self.failUnlessEqual(self.session.GetFlags(), ["foo", "bar"])
@@ -1068,7 +1073,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
 
     @timeout(20)
     def testSecondSession(self):
-        """a second session should not run unless the first one stops"""
+        """TestDBusSession.testSecondSession - a second session should not run unless the first one stops"""
         sessions = self.server.GetSessions()
         self.failUnlessEqual(sessions, [self.sessionpath])
         sessionpath = self.server.StartSession("")
@@ -1144,11 +1149,11 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         self.runTest(result)
 
     def testGetConfigEmptyName(self):
-        """reading empty default config"""
+        """TestSessionAPIsEmptyName.testGetConfigEmptyName - reading empty default config"""
         config = self.session.GetConfig(False, utf8_strings=True)
 
     def testGetTemplateEmptyName(self):
-        """trigger error by getting template for empty server name"""
+        """TestSessionAPIsEmptyName.testGetTemplateEmptyName - trigger error by getting template for empty server name"""
         try:
             config = self.session.GetConfig(True, utf8_strings=True)
         except dbus.DBusException, ex:
@@ -1158,7 +1163,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceEmptyName(self):
-        """Test the error is reported when the server name is empty for CheckSource"""
+        """TestSessionAPIsEmptyName.testCheckSourceEmptyName - Test the error is reported when the server name is empty for CheckSource"""
         try:
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
@@ -1168,7 +1173,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testGetDatabasesEmptyName(self):
-        """Test the error is reported when the server name is empty for GetDatabases"""
+        """TestSessionAPIsEmptyName.testGetDatabasesEmptyName - Test the error is reported when the server name is empty for GetDatabases"""
         try:
             self.session.GetDatabases("", utf8_strings=True)
         except dbus.DBusException, ex:
@@ -1178,7 +1183,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testGetReportsEmptyName(self):
-        """Test reports from all peers are returned in order when the peer name is empty for GetReports"""
+        """TestSessionAPIsEmptyName.testGetReportsEmptyName - Test reports from all peers are returned in order when the peer name is empty for GetReports"""
         self.setupFiles('reports')
         reports = self.session.GetReports(0, 0xFFFFFFFF, utf8_strings=True)
         self.failUnlessEqual(len(reports), 7)
@@ -1188,7 +1193,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
             self.failUnlessEqual(reports[i]["peer"], refPeers[i])
 
     def testGetReportsContext(self):
-        """Test reports from a context are returned when the peer name is empty for GetReports"""
+        """TestSessionAPIsEmptyName.testGetReportsContext - Test reports from a context are returned when the peer name is empty for GetReports"""
         self.setupFiles('reports')
         self.session.Detach()
         self.setUpSession("@context")
@@ -1261,7 +1266,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.session.SetConfig(False, False, self.config, utf8_strings=True)
 
     def testTemporaryConfig(self):
-        """various temporary config changes"""
+        """TestSessionAPIsDummy.testTemporaryConfig - various temporary config changes"""
         ref = { "": { "loglevel": "2", "configName": "dummy-test" } }
         config = copy.deepcopy(ref)
         self.session.SetConfig(False, False, config, utf8_strings=True)
@@ -1287,7 +1292,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     @timeout(20)
     def testCreateGetConfig(self):
-        """ test the config is created successfully. """
+        """TestSessionAPIsDummy.testCreateGetConfig -  test the config is created successfully. """
         self.setUpConfigListeners()
         self.config[""]["username"] = "creategetconfig"
         self.config[""]["password"] = "112233445566778"
@@ -1302,7 +1307,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(DBusUtil.events, ["ConfigChanged"])
 
     def testUpdateConfig(self):
-        """ test the config is permenantly updated correctly. """
+        """TestSessionAPIsDummy.testUpdateConfig -  test the config is permenantly updated correctly. """
         self.setupConfig()
         """ update the given config """
         self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
@@ -1311,7 +1316,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
 
     def testUpdateConfigTemp(self):
-        """ test the config is just temporary updated but no effect in storage. """
+        """TestSessionAPIsDummy.testUpdateConfigTemp -  test the config is just temporary updated but no effect in storage. """
         self.setupConfig()
         """ set config temporary """
         self.session.SetConfig(True, True, self.updateConfig, utf8_strings=True)
@@ -1323,7 +1328,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config, self.config)
 
     def testGetConfigUpdateConfigTemp(self):
-        """ test the config is temporary updated and in effect for GetConfig in the current session. """
+        """TestSessionAPIsDummy.testGetConfigUpdateConfigTemp -  test the config is temporary updated and in effect for GetConfig in the current session. """
         self.setupConfig()
         """ set config temporary """
         self.session.SetConfig(True, True, self.updateConfig, utf8_strings=True)
@@ -1334,7 +1339,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["sync"], "slow")
 
     def testGetConfigWithTempConfig(self):
-        """ test the config is gotten for a new temporary config. """
+        """TestSessionAPIsDummy.testGetConfigWithTempConfig -  test the config is gotten for a new temporary config. """
         """ The given config doesn't exist on disk and it's set temporarily. Then GetConfig should
             return the configs temporarily set. """
         self.session.SetConfig(True, True, self.config, utf8_strings=True)
@@ -1342,7 +1347,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config, self.config)
 
     def testUpdateConfigError(self):
-        """ test the right error is reported when an invalid property value is set """
+        """TestSessionAPIsDummy.testUpdateConfigError -  test the right error is reported when an invalid property value is set """
         self.setupConfig()
         config = { 
                      "source/addressbook" : { "sync" : "invalid-value"}
@@ -1360,7 +1365,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testUpdateNoConfig(self):
-        """ test the right error is reported when updating properties for a non-existing server """
+        """TestSessionAPIsDummy.testUpdateNoConfig -  test the right error is reported when updating properties for a non-existing server """
         try:
             self.session.SetConfig(True, False, self.updateConfig, utf8_strings=True)
         except dbus.DBusException, ex:
@@ -1370,7 +1375,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testUnknownConfigContent(self):
-        """config with unkown must be rejected"""
+        """TestSessionAPIsDummy.testUnknownConfigContent - config with unkown must be rejected"""
         self.setupConfig()
 
         try:
@@ -1404,7 +1409,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testClearAllConfig(self):
-        """ test all configs of a server are cleared correctly. """
+        """TestSessionAPIsDummy.testClearAllConfig -  test all configs of a server are cleared correctly. """
         """ first set up config and then clear all configs and also check a non-existing config """
         self.setupConfig()
         self.clearAllConfig()
@@ -1417,7 +1422,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceNoConfig(self):
-        """ test the right error is reported when the server doesn't exist """
+        """TestSessionAPIsDummy.testCheckSourceNoConfig -  test the right error is reported when the server doesn't exist """
         try:
             self.session.CheckSource("", utf8_strings=True)
         except dbus.DBusException, ex:
@@ -1427,7 +1432,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceNoSourceName(self):
-        """ test the right error is reported when the source doesn't exist """
+        """TestSessionAPIsDummy.testCheckSourceNoSourceName -  test the right error is reported when the source doesn't exist """
         self.setupConfig()
         try:
             self.session.CheckSource("dummy", utf8_strings=True)
@@ -1439,7 +1444,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceInvalidEvolutionSource(self):
-        """ test the right error is reported when the evolutionsource is invalid """
+        """TestSessionAPIsDummy.testCheckSourceInvalidEvolutionSource -  test the right error is reported when the evolutionsource is invalid """
         self.setupConfig()
         config = { "source/memo" : { "database" : "impossible-source"} }
         self.session.SetConfig(True, False, config, utf8_strings=True)
@@ -1452,7 +1457,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceInvalidType(self):
-        """ test the right error is reported when the type is invalid """
+        """TestSessionAPIsDummy.testCheckSourceInvalidType -  test the right error is reported when the type is invalid """
         self.setupConfig()
         # we cannot set an invalid type here, so pick one which is likely
         # to be not supported in syncevo-dbus-server
@@ -1467,7 +1472,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceNoType(self):
-        """ test the right error is reported when the source is unusable"""
+        """TestSessionAPIsDummy.testCheckSourceNoType -  test the right error is reported when the source is unusable"""
         self.setupConfig()
         config = { "source/memo" : { "backend" : "file",
                                      "databaseFormat" : "text/calendar",
@@ -1482,20 +1487,20 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSource(self):
-        """ test all are right """
+        """TestSessionAPIsDummy.testCheckSource - testCheckSource - test all sources are okay"""
         self.setupConfig()
         for source in self.sources:
             self.session.CheckSource(source, utf8_strings=True)
 
     def testCheckSourceUpdateConfigTemp(self):
-        """ test the config is temporary updated and in effect for GetDatabases in the current session. """
+        """TestSessionAPIsDummy.testCheckSourceUpdateConfigTemp -  test the config is temporary updated and in effect for GetDatabases in the current session. """
         self.setupConfig()
         tempConfig = {"source/temp" : { "backend" : "calendar"}}
         self.session.SetConfig(True, True, tempConfig, utf8_strings=True)
         databases2 = self.session.CheckSource("temp", utf8_strings=True)
 
     def testGetDatabasesNoConfig(self):
-        """ test the right error is reported when the server doesn't exist """
+        """TestSessionAPIsDummy.testGetDatabasesNoConfig -  test the right error is reported when the server doesn't exist """
         # make sure the config doesn't exist """
         try:
             self.session.GetDatabases("", utf8_strings=True)
@@ -1506,7 +1511,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testGetDatabasesEmpty(self):
-        """ test the right error is reported for non-existing source"""
+        """TestSessionAPIsDummy.testGetDatabasesEmpty -  test the right error is reported for non-existing source"""
         self.setupConfig()
         try:
             databases = self.session.GetDatabases("never_use_this_source_name", utf8_strings=True)
@@ -1517,7 +1522,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testGetDatabases(self):
-        """ test the right way to get databases """
+        """TestSessionAPIsDummy.testGetDatabases -  test the right way to get databases """
         self.setupConfig()
 
         # don't know actual databases, so compare results of two different times
@@ -1536,7 +1541,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(databases1, databases2)
 
     def testGetDatabasesUpdateConfigTemp(self):
-        """ test the config is temporary updated and in effect for GetDatabases in the current session. """
+        """TestSessionAPIsDummy.testGetDatabasesUpdateConfigTemp -  test the config is temporary updated and in effect for GetDatabases in the current session. """
         self.setupConfig()
         databases1 = self.session.GetDatabases("calendar", utf8_strings=True)
         tempConfig = {"source/temp" : { "backend" : "calendar"}}
@@ -1545,7 +1550,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(databases2, databases1)
 
     def testGetReportsNoConfig(self):
-        """ Test nothing is gotten when the given server doesn't exist. Also covers boundaries """
+        """TestSessionAPIsDummy.testGetReportsNoConfig -  Test nothing is gotten when the given server doesn't exist. Also covers boundaries """
         reports = self.session.GetReports(0, 0, utf8_strings=True)
         self.failUnlessEqual(reports, [])
         reports = self.session.GetReports(0, 1, utf8_strings=True)
@@ -1556,7 +1561,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(reports, [])
 
     def testGetReportsNoReports(self):
-        """ Test when the given server has no reports. Also covers boundaries """
+        """TestSessionAPIsDummy.testGetReportsNoReports -  Test when the given server has no reports. Also covers boundaries """
         self.setupConfig()
         reports = self.session.GetReports(0, 0, utf8_strings=True)
         self.failUnlessEqual(reports, [])
@@ -1568,7 +1573,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(reports, [])
 
     def testGetReportsByRef(self):
-        """ Test the reports are gotten correctly from reference files. Also covers boundaries """
+        """TestSessionAPIsDummy.testGetReportsByRef -  Test the reports are gotten correctly from reference files. Also covers boundaries """
         """ This could be extractly compared since the reference files are known """
         self.setupFiles('reports')
         report0 = { "peer" : "dummy-test",
@@ -1673,7 +1678,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(reports, [])
 
     def testRestoreByRef(self):
-        # test when the data before or after a given session is restored
+        """TestSessionAPIsDummy.testRestoreByRef - restore data before or after a given session"""
         self.setupFiles('restore')
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
@@ -1725,7 +1730,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         loop.run()
 
     def testSecondRestore(self):
-        # test the right error is thrown when session is not active
+        """TestSessionAPIsDummy.testSecondRestore - right error thrown when session is not active?"""
         self.setupFiles('restore')
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
@@ -1747,7 +1752,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
     @timeout(300)
     def testInteractivePassword(self):
-        """ test the info request is correctly working for password """
+        """TestSessionAPIsDummy.testInteractivePassword -  test the info request is correctly working for password """
         self.setupConfig()
         self.setUpListeners(self.sessionpath)
         self.lastState = "unknown"
@@ -1849,15 +1854,15 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
 
     @timeout(300)
     def testSync(self):
-        '''run a real sync with default server and test status list and progress number'''
-        ''' check events list is correct for StatusChanged and ProgressChanged '''
+        """TestSessionAPIsReal.testSync - run a real sync with default server and test status list and progress number"""
+        """ check events list is correct for StatusChanged and ProgressChanged """
         # do sync
         self.doSync()
         self.checkSync()
     
     @timeout(300)
     def testSyncStatusAbort(self):
-        ''' test status is set correctly when the session is aborted '''
+        """TestSessionAPIsReal.testSyncStatusAbort -  test status is set correctly when the session is aborted """
         self.operation = "abort"
         self.doSync()
         hasAbortingStatus = False
@@ -1869,7 +1874,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
 
     @timeout(300)
     def testSyncStatusSuspend(self):
-        ''' test status is set correctly when the session is suspended '''
+        """TestSessionAPIsReal.testSyncStatusSuspend -  test status is set correctly when the session is suspended """
         self.operation = "suspend"
         self.doSync()
         hasSuspendingStatus = False
@@ -1881,7 +1886,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
 
     @timeout(300)
     def testSyncSecondSession(self):
-        '''ask for a second session that becomes ready after a real sync'''
+        """TestSessionAPIsReal.testSyncSecondSession - ask for a second session that becomes ready after a real sync"""
         sessionpath2, session2 = self.createSession("", False)
         status, error, sources = session2.GetStatus(utf8_strings=True)
         self.failUnlessEqual(status, "queueing")
@@ -1903,7 +1908,7 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
         self.runTest(result, own_xdg=True)
 
     def testSyncNoConfig(self):
-        """Executes a real sync with no corresponding config."""
+        """testDBusSyncError.testSyncNoConfig - Executes a real sync with no corresponding config."""
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
@@ -1974,14 +1979,14 @@ class TestConnection(unittest.TestCase, DBusUtil):
         return (conpath, connection)
 
     def testConnect(self):
-        """get connection and close it"""
+        """TestConnection.testConnect - get connection and close it"""
         conpath, connection = self.getConnection()
         connection.Close(False, 'good bye')
         loop.run()
         self.failUnlessEqual(DBusUtil.events, [('abort',)])
 
     def testInvalidConnect(self):
-        """get connection, send invalid initial message"""
+        """TestConnection.testInvalidConnect - get connection, send invalid initial message"""
         self.setupConfig()
         conpath, connection = self.getConnection()
         try:
@@ -1996,7 +2001,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.failUnless(('abort',) in DBusUtil.events)
 
     def testStartSync(self):
-        """send a valid initial SyncML message"""
+        """TestConnection.testStartSync - send a valid initial SyncML message"""
         self.setupConfig()
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
@@ -2033,7 +2038,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
 
 
     def testCredentialsWrong(self):
-        """send invalid credentials"""
+        """TestConnection.testCredentialsWrong - send invalid credentials"""
         self.setupConfig()
         conpath, connection = self.getConnection(must_authenticate=True)
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
@@ -2058,7 +2063,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                     "session done"])
 
     def testCredentialsRight(self):
-        """send correct credentials"""
+        """TestConnection.testCredentialsRight - send correct credentials"""
         self.setupConfig()
         conpath, connection = self.getConnection(must_authenticate=True)
         plain_auth = TestConnection.message1.replace("<Type xmlns='syncml:metinf'>syncml:auth-md5</Type></Meta><Data>kHzMn3RWFGWSKeBpXicppQ==</Data>",
@@ -2081,7 +2086,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                     "session done"])
 
     def testStartSyncTwice(self):
-        """send the same SyncML message twice, starting two sessions"""
+        """TestConnection.testStartSyncTwice - send the same SyncML message twice, starting two sessions"""
         self.setupConfig()
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
@@ -2128,7 +2133,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                     "session done"])
 
     def testKillInactive(self):
-        """block server with client A, then let client B connect twice"""
+        """TestConnection.testKillInactive - block server with client A, then let client B connect twice"""
         #set up 2 configs
         self.setupConfig()
         self.setupConfig("dummy", "sc-pim-ppc")
@@ -2169,10 +2174,10 @@ class TestConnection(unittest.TestCase, DBusUtil):
 
     @timeout(20)
     def testTimeoutSync(self):
-        """start a sync, then wait for server to detect that we stopped replying
-        
-        The server-side configuration for sc-api-nat must contain a retryDuration=10
-        because this test itself will time out with a failure after 20 seconds."""
+        """TestConnection.testTimeoutSync - start a sync, then wait for server to detect that we stopped replying"""
+
+        # The server-side configuration for sc-api-nat must contain a retryDuration=10
+        # because this test itself will time out with a failure after 20 seconds.
         self.setupConfig()
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
@@ -2251,7 +2256,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.session.Detach()
 
     def testSharing(self):
-        """set up configs and tests reading them"""
+        """TestMultipleConfigs.testSharing - set up configs and tests reading them"""
         self.setupConfigs()
 
         # check how view "foo" has been modified
@@ -2287,7 +2292,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.session.Detach()
 
     def testSharedTemplate(self):
-        """templates must contain shared properties"""
+        """TestMultipleConfigs.testSharedTemplate - templates must contain shared properties"""
         self.setupConfigs()
 
         config = self.server.GetConfig("scheduleworld", True, utf8_strings=True)
@@ -2296,7 +2301,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["database"], "Work")
 
     def testSharedType(self):
-        """'type' consists of per-peer and shared properties"""
+        """TestMultipleConfigs.testSharedType - 'type' consists of per-peer and shared properties"""
         self.setupConfigs()
 
         # writing for peer modifies properties in "foo" and context
@@ -2316,7 +2321,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.session.Detach()
 
     def testSharedTypeOther(self):
-        """shared backend properties must be preserved when adding peers"""
+        """TestMultipleConfigs.testSharedTypeOther - shared backend properties must be preserved when adding peers"""
         # writing peer modifies properties in "foo" and creates context "@other"
         self.setUpSession("Foo@other")
         config = self.server.GetConfig("ScheduleWorld@other", True, utf8_strings=True)
@@ -2345,7 +2350,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
 
     def testOtherContext(self):
-        """write into independent context"""
+        """TestMultipleConfigs.testOtherContext - write into independent context"""
         self.setupConfigs()
 
         # write independent "foo@other_context" config
@@ -2374,7 +2379,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.session.Detach()
 
     def testSourceRemovalLocal(self):
-        '''remove "addressbook" source in "foo"'''
+        """TestMultipleConfigs.testSourceRemovalLocal - remove 'addressbook' source in 'foo'"""
         self.setupConfigs()
         self.setUpSession("foo")
         config = self.session.GetConfig(False, utf8_strings=True)
@@ -2393,7 +2398,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["sync"], "refresh-from-client")
 
     def testSourceRemovalGlobal(self):
-        '''remove "addressbook" everywhere'''
+        """TestMultipleConfigs.testSourceRemovalGlobal - remove "addressbook" everywhere"""
         self.setupConfigs()
         self.setUpSession("")
         config = self.session.GetConfig(False, utf8_strings=True)
@@ -2408,7 +2413,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failIf("source/addressbook" in config)
 
     def testRemovePeer(self):
-        '''check listing of peers while removing "bar"'''
+        """TestMultipleConfigs.testRemovePeer - check listing of peers while removing 'bar'"""
         self.setupConfigs()
         self.testOtherContext()
         self.setUpSession("bar")
@@ -2436,7 +2441,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config["source/addressbook"]["uri"], "card30")
 
     def testRemoveContext(self):
-        '''remove complete config'''
+        """TestMultipleConfigs.testRemoveContext - remove complete config"""
         self.setupConfigs()
         self.setUpSession("")
         self.session.SetConfig(False, False, {}, utf8_strings=True)
@@ -2447,7 +2452,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.session.Detach()
 
     def testTemplates(self):
-        '''templates reuse common properties'''
+        """TestMultipleConfigs.testTemplates - templates reuse common properties"""
         self.setupConfigs()
 
         # deviceID must be shared and thus be reused in templates
@@ -2495,7 +2500,7 @@ class TestLocalSync(unittest.TestCase, DBusUtil):
                                                         "database": "file://" + xdg_root + "/server" } })
 
     def testSync(self):
-        '''run a simple slow sync between local dirs'''
+        """TestLocalSync.testSync - run a simple slow sync between local dirs"""
         os.makedirs(xdg_root + "/server")
         output = open(xdg_root + "/server/0", "w")
         output.write('''BEGIN:VCARD
@@ -2516,7 +2521,7 @@ END:VCARD''')
     @property("resendDuration", "3")
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
     def testTimeout(self):
-        '''master must detect a hanging child'''
+        """TestLocalSync.testTimeout - master must detect a hanging child"""
         self.setUpListeners(self.sessionpath)
         self.session.Sync("slow", {})
         loop.run()
@@ -2527,7 +2532,7 @@ END:VCARD''')
     @timeout(10)
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
     def testConcurrency(self):
-        '''D-Bus server must remain responsive while sync runs'''
+        """TestLocalSync.testConcurrency - D-Bus server must remain responsive while sync runs"""
         self.setUpListeners(self.sessionpath)
         self.session.Sync("slow", {})
         time.sleep(2)
@@ -2569,7 +2574,7 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
 
     @timeout(100)
     def testShutdown(self):
-        """update server binary for 30 seconds, check that it shuts down at most 15 seconds after last mod"""
+        """TestFileNotify.testShutdown - update server binary for 30 seconds, check that it shuts down at most 15 seconds after last mod"""
         self.failUnless(self.isServerRunning())
         i = 0
         # Server must not shut down immediately, more changes might follow.
@@ -2584,7 +2589,7 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
 
     @timeout(30)
     def testSession(self):
-        """create session, shut down directly after closing it"""
+        """TestFileNotify.testSession - create session, shut down directly after closing it"""
         self.failUnless(self.isServerRunning())
         self.setUpSession("")
         self.modifyServerFile()
@@ -2597,7 +2602,7 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
 
     @timeout(30)
     def testSession2(self):
-        """create session, shut down after quiesence period after closing it"""
+        """TestFileNotify.testSession2 - create session, shut down after quiesence period after closing it"""
         self.failUnless(self.isServerRunning())
         self.setUpSession("")
         self.modifyServerFile()
@@ -2610,7 +2615,7 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
 
     @timeout(60)
     def testRestart(self):
-        """set up auto sync, then check that server restarts"""
+        """TestFileNotify.testRestart - set up auto sync, then check that server restarts"""
         self.failUnless(self.isServerRunning())
         self.setUpSession("memotoo")
         config = self.session.GetConfig(True, utf8_strings=True)
