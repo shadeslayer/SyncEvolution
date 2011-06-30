@@ -83,7 +83,7 @@ void MapSyncSource::detectChanges(SyncSourceRevisions::ChangeMode mode)
         if (pos == 0) {
             pos = value.find('/', 1);
             if (pos != value.npos) {
-                std::string revision = m_escape.unescape(value.substr(0, pos));
+                std::string revision = m_escape.unescape(value.substr(1, pos - 1));
                 size_t nextpos = value.find('/', pos + 1);
                 if (nextpos != value.npos) {
                     std::string uid = m_escape.unescape(value.substr(pos + 1, nextpos - pos - 1));
