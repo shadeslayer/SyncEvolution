@@ -267,27 +267,34 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
 
                 # first build list of all tests, assuming that they pass
                 dbustests = {}
-                test_start = re.compile(r'''^Test(.*)\.test([^ ]*)''')
-                test_fail = re.compile(r'''(FAIL|ERROR): Test(.*)\.test([^ ]*)''')
+                test_start = re.compile(r'''^Test(?P<cl>.*)\.test(?P<func>[^ ]*)''')
+                test_fail = re.compile(r'''(?P<type>FAIL|ERROR): Test(?P<cl>.*)\.test(?P<func>[^ ]*)''')
                 logfile = None
                 sepcount = 0
                 for line in open(rserver + "/output.txt"):
                     m = test_start.search(line)
                     if m:
-                        if not dbustests.get(m.group(1)):
-                            dbustests[m.group(1)] = {}
-                        dbustests[m.group(1)][m.group(2)] = "okay"
+                        is_okay = True
                     else:
                         m = test_fail.search(line)
-                        if m:
+                        is_okay = False
+                    if m:
+                        # create log file
+                        cl = m.group("cl")
+                        func = m.group("func")
+                        name = rserver + "/" + cl + "_" + func + ".log"
+                        logfile = open(name, "w")
+                        if not dbustests.get(cl):
+                            dbustests[cl] = {}
+                        if is_okay:
+                            # okay: write a single line with the full test description
+                            dbustests[cl][func] = "okay"
+                            logfile.write(line)
+                            logfile = None
+                        else:
                             # failed: start writing lines into separate log file
-                            name = rserver + "/" + m.group(2) + "_" + m.group(3) + ".log"
-                            logfile = open(name, "w")
+                            dbustests[cl][func] = m.group("type")
                             sepcount = 0
-                            print name, logfile
-                            if not dbustests.get(m.group(2)):
-                                dbustests[m.group(2)] = {}
-                            dbustests[m.group(2)][m.group(3)] = m.group(1)
                     if logfile:
                         logfile.write(line)
                         if line.startswith("-----------------------------------"):
