@@ -103,9 +103,12 @@ struct _app_data {
 
     GtkWidget *services_win; /* will be NULL when USE_MOBLIN_UX is set*/
     GtkWidget *emergency_win; /* will be NULL when USE_MOBLIN_UX is set*/
+#ifdef USE_MOBLIN_UX    
     GtkWidget *notebook; /* only in use with USE_MOBLIN_UX */
     GtkWidget *back_btn; /* only in use with USE_MOBLIN_UX */
+#endif
     GtkWidget *settings_btn; /* only in use with USE_MOBLIN_UX */
+
     guint settings_id;
 
     GtkWidget *service_box;
@@ -668,8 +671,11 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
-        gtk_widget_set_sensitive (data->settings_btn, FALSE);
         gtk_widget_set_sensitive (data->emergency_btn, FALSE);
+        
+        if (data->settings_btn)
+            gtk_widget_set_sensitive (data->settings_btn, FALSE);
+
         break;
     case SYNC_UI_STATE_SERVER_FAILURE:
         gtk_widget_hide (data->service_box);
@@ -686,7 +692,10 @@ set_app_state (app_data *data, app_state state)
         gtk_widget_set_sensitive (data->sync_btn, FALSE);
         gtk_widget_set_sensitive (data->emergency_btn, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
-        gtk_widget_set_sensitive (data->settings_btn, FALSE);
+        
+        if (data->settings_btn)
+            gtk_widget_set_sensitive (data->settings_btn, FALSE);
+
         break;
     case SYNC_UI_STATE_SERVER_OK:
         if (data->online) {
@@ -735,7 +744,9 @@ set_app_state (app_data *data, app_state state)
 
         gtk_widget_set_sensitive (data->main_frame, TRUE);
         gtk_widget_set_sensitive (data->change_service_btn, TRUE);
-        gtk_widget_set_sensitive (data->settings_btn, TRUE);
+        
+        if (data->settings_btn)
+            gtk_widget_set_sensitive (data->settings_btn, TRUE);
 
         data->syncing = FALSE;
         break;
@@ -751,8 +762,10 @@ set_app_state (app_data *data, app_state state)
         }
         gtk_widget_set_sensitive (data->main_frame, FALSE);
         gtk_widget_set_sensitive (data->change_service_btn, FALSE);
-        gtk_widget_set_sensitive (data->settings_btn, FALSE);
         gtk_widget_set_sensitive (data->emergency_btn, FALSE);
+        
+        if (data->settings_btn)
+            gtk_widget_set_sensitive (data->settings_btn, FALSE);
 
         gtk_widget_set_sensitive (data->sync_btn, 
                                   support_canceling && data->current_operation != OP_RESTORE);
