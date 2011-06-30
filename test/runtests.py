@@ -108,6 +108,7 @@ class Action:
 
     def tryexecution(self, step, logs):
         """wrapper around execute which handles exceptions, directories and stdout"""
+        print "*** running action %s" % self.name
         if logs:
             fd = -1
             oldstdout = os.dup(1)
@@ -141,7 +142,7 @@ class Action:
         os.chdir(cwd)
         if logs:
             if fd >= 0:
-                os.close(fd)
+                sys.stdout.close()
                 os.dup2(oldstdout, 1)
                 os.dup2(oldstderr, 2)
                 sys.stderr = olderr
