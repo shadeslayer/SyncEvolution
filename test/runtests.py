@@ -269,7 +269,8 @@ class Context:
         backenddir = os.path.join(self.tmpdir, "install/usr/lib/syncevolution/backends")
         # resultchecker doesn't need valgrind, remove it
         shell = re.sub(r'\S*valgrind\S*', '', options.shell)
-        self.runCommand("resultchecker.py " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+self.uri +" "+srcdir + " '" + shell + " " + options.testprefix +" '"+" '" +backenddir +"'");
+        uri = self.uri or ("file:///" + self.resultdir)
+        self.runCommand("resultchecker.py " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+uri +" "+srcdir + " '" + shell + " " + options.testprefix +" '"+" '" +backenddir +"'");
         # transform to html
         self.runCommand("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + self.lastresultdir +"/nightly.xml "+self.datadir +"/compare.xsl "+ self.resultdir+"/nightly.xml")
         self.runCommand("xsltproc -o " + self.resultdir + "/nightly.html --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + self.datadir +"/generate-html.xsl "+ self.resultdir+"/nightly.xml")
@@ -427,7 +428,7 @@ class AutotoolsBuild(Action):
 
 
 class SyncEvolutionTest(Action):
-    def __init__(self, name, build, serverlogs, runner, tests, sources, testenv="", lineFilter=None, testPrefix="", serverName=""):
+    def __init__(self, name, build, serverlogs, runner, tests, sources, testenv="", lineFilter=None, testPrefix="", serverName="", testBinary="./client-test"):
         """Execute TestEvolution for all (empty tests) or the
         selected tests."""
         Action.__init__(self, name)
@@ -445,6 +446,7 @@ class SyncEvolutionTest(Action):
         self.serverName = serverName
         if not self.serverName:
             self.serverName = name
+        self.testBinary = testBinary
 
     def execute(self):
         resdir = os.getcwd()
@@ -475,8 +477,8 @@ class SyncEvolutionTest(Action):
                       "CLIENT_TEST_LOG=%(log)s " \
                       "CLIENT_TEST_EVOLUTION_PREFIX=%(evoprefix)s " \
                       "%(runner)s " \
-                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:$PATH %(testprefix)s " \
-                      "./client-test" % \
+                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:.:$PATH %(testprefix)s " \
+                      "%(testbinary)s" % \
                       { "server": self.serverName,
                         "sources": ",".join(self.sources),
                         "env": self.testenv,
@@ -486,6 +488,7 @@ class SyncEvolutionTest(Action):
                         "log": self.serverlogs,
                         "evoprefix": context.databasePrefix,
                         "runner": self.runner,
+                        "testbinary": self.testBinary,
                         "testprefix": self.testPrefix }
             enabled = context.enabled.get(self.name)
             if not enabled:
@@ -546,7 +549,7 @@ parser.add_option("", "--lastresultdir",
                   type="string", dest="lastresultdir", default="",
                   help="directory for last day's log files and results")
 parser.add_option("", "--datadir",
-                  type="string", dest="datadir", default="",
+                  type="string", dest="datadir", default=os.path.dirname(os.path.abspath(os.path.expanduser(os.path.expandvars(sys.argv[0])))),
                   help="directory for files used by report generation")
 parser.add_option("", "--resulturi",
                   type="string", dest="uri", default=None,
@@ -779,6 +782,17 @@ evolutiontest = SyncEvolutionTest("evolution", compile,
                                   [],
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
+
+dbustest = SyncEvolutionTest("dbus", compile,
+                             "", options.shell,
+                             "",
+                             [],
+                             testPrefix=options.testprefix,
+                             testBinary=os.path.join(abspath(context.workdir),
+                                                     "syncevolution",
+                                                     "test",
+                                                     "test-dbus.py -v"))
+context.add(dbustest)
 
 test = SyncEvolutionTest("googlecalendar", compile,
                          "", options.shell,

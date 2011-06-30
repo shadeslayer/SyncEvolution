@@ -168,7 +168,12 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
     runservers = os.listdir(resultdir)
     #list source test servers statically, we have no idea how to differenciate
     #automatically whether the server is a source test or sync test.
-    sourceServers = ['evolution', 'evolution-prebuilt-build', 'yahoo', 'googlecalendar', 'apple']
+    sourceServers = ['evolution',
+                     'evolution-prebuilt-build',
+                     'yahoo',
+                     'googlecalendar',
+                     'apple',
+                     'dbus']
     sourceServersRun = 0
     haveSource = False
     #Only process servers listed in the input parameter and in the sourceServer
@@ -239,21 +244,95 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
             logs = map(lambda entry: entry[1], logs)
             logdic ={}
             logprefix ={}
-            for log in logs:
-                if(log.endswith('____compare.log')):
-                    continue
-                # <path>/Client_Sync_eds_contact_testItems.log
-                # <path>/SyncEvo_CmdlineTest_testConfigure.log
-                # <path>/N7SyncEvo11CmdlineTestE_testConfigure.log - C++ name mangling?
-                m = re.match(r'.*/(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)', log)
-                # Client_Sync_, Client_Source_, SyncEvo_, ...
-                prefix = m.group(1)
-                # eds_contact, CmdlineTest, ...
-                format = m.group(2)
-                if(format not in logdic):
-                    logdic[format]=[]
-                logdic[format].append(log)
-                logprefix[format]=prefix
+            if server == 'dbus':
+                # Extract tests and their results from output.txt,
+                # which contains Python unit test output. Example follows.
+                # Note that there can be arbitrary text between the test name
+                # and "ok" resp. "FAIL/ERROR". Therefore failed tests
+                # are identified not by those words but rather by the separate
+                # error reports at the end of the output. Those reports
+                # are split out into separate .log files for easy viewing
+                # via the .html report.
+                #
+                # TestDBusServer.testCapabilities - Server.Capabilities() ... ok
+                # TestDBusServer.testGetConfigScheduleWorld - Server.GetConfigScheduleWorld() ... ok
+                # TestDBusServer.testGetConfigsEmpty - Server.GetConfigsEmpty() ... ok
+                # TestDBusServer.testGetConfigsTemplates - Server.GetConfigsTemplates() ... FAIL
+                # TestDBusServer.testInvalidConfig - Server.NoSuchConfig exception ... ok
+                # TestDBusServer.testVersions - Server.GetVersions() ... ok
+                #
+                #======================================================================
+                # FAIL: TestDBusServer.testGetConfigsTemplates - Server.GetConfigsTemplates()
+                # ---------------------------------------------------------------------
+
+                # first build list of all tests, assuming that they pass
+                dbustests = {}
+                test_start = re.compile(r'''^Test(.*)\.test([^ ]*)''')
+                test_fail = re.compile(r'''(FAIL|ERROR): Test(.*)\.test([^ ]*)''')
+                logfile = None
+                sepcount = 0
+                for line in open(rserver + "/output.txt"):
+                    m = test_start.search(line)
+                    if m:
+                        if not dbustests.get(m.group(1)):
+                            dbustests[m.group(1)] = {}
+                        dbustests[m.group(1)][m.group(2)] = "okay"
+                    else:
+                        m = test_fail.search(line)
+                        if m:
+                            # failed: start writing lines into separate log file
+                            name = rserver + "/" + m.group(2) + "_" + m.group(3) + ".log"
+                            logfile = open(name, "w")
+                            sepcount = 0
+                            print name, logfile
+                            if not dbustests.get(m.group(2)):
+                                dbustests[m.group(2)] = {}
+                            dbustests[m.group(2)][m.group(3)] = m.group(1)
+                    if logfile:
+                        logfile.write(line)
+                        if line.startswith("-----------------------------------"):
+                            sepcount = sepcount + 1
+                            if sepcount >= 2:
+                                # end of failure output for this test
+                                logfile = None
+                # now write XML
+                indent +=space
+                indents.append(indent)
+                for testclass in dbustests:
+                    result.write('%s<%s prefix="">\n' %
+                                 (indent, testclass))
+                    indent +=space
+                    indents.append(indent)
+                    for testfunc in dbustests[testclass]:
+                        result.write('%s<%s>%s</%s>\n' %
+                                     (indent, testfunc,
+                                      dbustests[testclass][testfunc], 
+                                      testfunc))
+                    indents.pop()
+                    indent = indents[-1]
+                    result.write('%s</%s>\n' %
+                                 (indent, testclass))
+                indents.pop()
+                indent = indents[-1]
+            else:
+                for log in logs:
+                    if os.path.basename(log) in ['____compare.log',
+                                                 'syncevo.log', # D-Bus server output
+                                                 'dbus.log', # dbus-monitor output
+                                                 ]:
+                        continue
+                    # <path>/Client_Sync_eds_contact_testItems.log
+                    # <path>/SyncEvo_CmdlineTest_testConfigure.log
+                    # <path>/N7SyncEvo11CmdlineTestE_testConfigure.log - C++ name mangling?
+                    m = re.match(r'.*/(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)', log)
+                    # Client_Sync_, Client_Source_, SyncEvo_, ...
+                    prefix = m.group(1)
+                    # eds_contact, CmdlineTest, ...
+                    format = m.group(2)
+                    if(format not in logdic):
+                        logdic[format]=[]
+                    logdic[format].append(log)
+                    logprefix[format]=prefix
             for format in logdic.keys():
                 indent +=space
                 indents.append(indent)
