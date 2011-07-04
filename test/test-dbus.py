@@ -563,26 +563,6 @@ class DBusUtil(Timeout):
             if os.access(sourcepath, os.F_OK):
                 shutil.copytree(sourcepath, destpath)
 
-    def getDatabaseName(self, configName):
-        # get database names with the environment variable
-        prefix = os.getenv("CLIENT_TEST_EVOLUTION_PREFIX")
-        source = configName + '_1'
-        if prefix == None:
-            prefix = 'SyncEvolution_Test_'
-        return prefix + source;
-
-    def getDatabases(self, config):
-        # get 'database' for each source
-        updateProps = { }
-        for key, value in config.items():
-            if key != "":
-                tmpdict = { }
-                [source, sep, name] = key.partition('/')
-                if sep == '/':
-                    tmpdict["database"] = self.getDatabaseName(name)
-                updateProps[key] = tmpdict
-        return updateProps
-
     def checkSync(self, expectedError=0, expectedResult=0):
         # check recorded events in DBusUtil.events, first filter them
         statuses = []
@@ -1226,19 +1206,27 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                 "configName" : "dummy-test"
                               },
                          "source/addressbook" : { "sync" : "slow",
-                                                  "backend" : "addressbook",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/addressbook",
+                                                  "databaseFormat" : "text/vcard",
                                                   "uri" : "card"
                                                 },
                          "source/calendar"    : { "sync" : "disabled",
-                                                  "backend" : "calendar",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/calendar",
+                                                  "databaseFormat" : "text/calendar",
                                                   "uri" : "cal"
                                                 },
                          "source/todo"        : { "sync" : "disabled",
-                                                  "backend" : "todo",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/todo",
+                                                  "databaseFormat" : "text/calendar",
                                                   "uri" : "task"
                                                 },
                          "source/memo"        : { "sync" : "disabled",
-                                                  "backend" : "memo",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/memo",
+                                                  "databaseFormat" : "text/calendar",
                                                   "uri" : "text"
                                                 }
                        }
@@ -1248,11 +1236,6 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                "source/addressbook" : { "sync" : "slow"}
                             }
         self.sources = ['addressbook', 'calendar', 'todo', 'memo']
-
-        #create default or user settings database
-        updateProps = self.getDatabases(self.config)
-        for key, dict in updateProps.items():
-            self.config[key]["database"] = dict["database"]
 
     def run(self, result):
         self.runTest(result)
@@ -1544,8 +1527,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testGetDatabasesUpdateConfigTemp(self):
         """TestSessionAPIsDummy.testGetDatabasesUpdateConfigTemp -  test the config is temporary updated and in effect for GetDatabases in the current session. """
         self.setupConfig()
+        # file backend: reports a short help text instead of a real database list
         databases1 = self.session.GetDatabases("calendar", utf8_strings=True)
-        tempConfig = {"source/temp" : { "backend" : "calendar"}}
+        # databaseFormat is required for file backend, otherwise it
+        # cannot be instantiated and even simple operations as reading
+        # the (in this case fixed) list of databases fail
+        tempConfig = {"source/temp" : { "backend" : "file", "databaseFormat" : "text/calendar" }}
         self.session.SetConfig(True, True, tempConfig, utf8_strings=True)
         databases2 = self.session.GetDatabases("temp", utf8_strings=True)
         self.failUnlessEqual(databases2, databases1)
@@ -1936,28 +1923,31 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                 "RetryInterval" : "1",
                                 "RetryDuration" : "10"
                               },
-                         "source/addressbook" : { "sync" : "two-way",
-                                                  "backend" : "addressbook",
+                         "source/addressbook" : { "sync" : "slow",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/addressbook",
+                                                  "databaseFormat" : "text/vcard",
                                                   "uri" : "card"
                                                 },
-                         "source/calendar"    : { "sync" : "two-way",
-                                                  "backend" : "calendar",
+                         "source/calendar"    : { "sync" : "disabled",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/calendar",
+                                                  "databaseFormat" : "text/calendar",
                                                   "uri" : "cal"
                                                 },
-                         "source/todo"        : { "sync" : "two-way",
-                                                  "backend" : "todo",
+                         "source/todo"        : { "sync" : "disabled",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/todo",
+                                                  "databaseFormat" : "text/calendar",
                                                   "uri" : "task"
                                                 },
-                         "source/memo"        : { "sync" : "two-way",
-                                                  "backend" : "memo",
+                         "source/memo"        : { "sync" : "disabled",
+                                                  "backend" : "file",
+                                                  "database" : "file://" + xdg_root + "/memo",
+                                                  "databaseFormat" : "text/calendar",
                                                   "uri" : "text"
                                                 }
                        }
-
-        #create default or user settings evolutionsource
-        updateProps = self.getDatabases(self.config)
-        for key, dict in updateProps.items():
-            self.config[key]["database"] = dict["database"]
 
     def setupConfig(self, name="dummy-test", deviceId="sc-api-nat"):
         self.setUpSession(name)
