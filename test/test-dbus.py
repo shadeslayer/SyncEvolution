@@ -2513,18 +2513,6 @@ END:VCARD''')
         self.failUnless("FN:John Doe" in input.read())
 
     @timeout(10)
-    @property("resendDuration", "3")
-    @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
-    def testTimeout(self):
-        """TestLocalSync.testTimeout - master must detect a hanging child"""
-        self.setUpListeners(self.sessionpath)
-        self.session.Sync("slow", {})
-        loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
-        report = self.checkSync(20017, 20043) # sources aborted, transport failure
-        self.failUnlessEqual(report["error"], "timeout, retry period exceeded")
-
-    @timeout(10)
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
     def testConcurrency(self):
         """TestLocalSync.testConcurrency - D-Bus server must remain responsive while sync runs"""
