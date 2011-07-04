@@ -2023,9 +2023,13 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(sessions[0]["status"], "20043")
         self.failUnlessEqual(sessions[0]["error"], "D-Bus peer has disconnected")
         self.failUnlessEqual(sessions[0]["source-addressbook-status"], "20017")
-        self.failUnlessEqual(sessions[0]["source-calendar-status"], "0")
-        self.failUnlessEqual(sessions[0]["source-todo-status"], "0")
-        self.failUnlessEqual(sessions[0]["source-memo-status"], "0")
+        # The other three sources are disabled and should not be listed in the
+        # report. Used to be listed with status 0 in the past, which would also
+        # be acceptable, but here we use the strict check for "not present" to
+        # ensure that the current behavior is preserved.
+        self.failIf("source-calendar-status" in sessions[0])
+        self.failIf("source-todo-status" in sessions[0])
+        self.failIf("source-memo-status" in sessions[0])
 
 
     def testCredentialsWrong(self):
