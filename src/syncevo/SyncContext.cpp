@@ -1837,7 +1837,7 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
 
 void SyncContext::throwError(const string &error)
 {
-    throwError(STATUS_FATAL, error);
+    throwError(SyncMLStatus(STATUS_FATAL + sysync::LOCAL_STATUS_CODE), error);
 }
 
 void SyncContext::throwError(SyncMLStatus status, const string &error)

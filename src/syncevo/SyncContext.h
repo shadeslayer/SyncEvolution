@@ -383,7 +383,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void checkStatus(SyncReport &report);
 
     /**
-     * throws a runtime_error with the given string
+     * throws a StatusException with a local, fatal error with the given string
      * or (on the iPhone, where exception handling is not
      * supported by the toolchain) prints an error directly
      * and aborts
@@ -400,7 +400,9 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      *
      * output format: <failure>
      *
-     * @param status     a more specific status code; other throwError() variants use STATUS_FATAL
+     * @param status     a more specific status code; other throwError() variants
+     *                   use STATUS_FATAL + sysync::LOCAL_STATUS_CODE, which is interpreted
+     *                   as a fatal local error
      * @param action     a string describing what was attempted *and* how it failed
      */
     static void throwError(SyncMLStatus status, const string &failure);
