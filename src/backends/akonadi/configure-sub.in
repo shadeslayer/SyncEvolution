@@ -1,12 +1,14 @@
 dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
+AC_CHECK_PROGS([QMAKE], [qmake qmake-qt4])
+
 # Check for Akonadi. There is no .pc file for it,
 # so fall back to normal header file and library checking.
 # kdepimlibs5-dev >= 4.3 provides the necessary files.
 AKONADIFOUND=yes
 if ! test "$KDEPIM_CFLAGS"; then
-   KDEPIM_CFLAGS="-I`kde4-config --path include` -I`kde4-config --path include`/KDE -I`qmake -query QT_INSTALL_HEADERS`"
+   KDEPIM_CFLAGS="-I`kde4-config --path include` -I`kde4-config --path include`/KDE -I`$QMAKE -query QT_INSTALL_HEADERS`"
 fi
 if ! test "$KDEPIM_LIBS"; then
    KDEPIM_LIBS="-L`kde4-config --prefix`/lib`kde4-config --libsuffix` -lakonadi-kde"
