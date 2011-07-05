@@ -455,15 +455,21 @@ class SyncEvolutionTest(Action):
         # clear previous test results
         context.runCommand("%s %s testclean" % (self.runner, context.make))
         try:
-            if context.setupcmd:
-                cmd = "%s %s %s %s ./syncevolution" % (self.testenv, self.runner, context.setupcmd, self.name)
-                context.runCommand("%s || ( sleep 5 && %s )" % (cmd, cmd))
             backenddir = os.path.join(context.tmpdir, "install/usr/lib/syncevolution/backends")
             confdir = os.path.join(context.workdir, "syncevolution/src/syncevo/configs")
             templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
             if not os.access(backenddir, os.F_OK):
                 # try relative to client-test inside the current directory
                 backenddir = "backends"
+            installenv = \
+                "SYNCEVOLUTION_TEMPLATE_DIR=%s " \
+                "SYNCEVOLUTION_XML_CONFIG_DIR=%s " \
+                "SYNCEVOLUTION_BACKEND_DIR=%s " \
+                % ( templatedir, confdir, backenddir )
+
+            if context.setupcmd:
+                cmd = "%s %s %s %s %s ./syncevolution" % (self.testenv, installenv, self.runner, context.setupcmd, self.name)
+                context.runCommand("%s || ( sleep 5 && %s )" % (cmd, cmd))
 
             # proxy must be set in test config! Necessary because not all tests work with the env proxy (local CalDAV, for example).
             basecmd = "http_proxy= " \
@@ -471,21 +477,16 @@ class SyncEvolutionTest(Action):
                       "CLIENT_TEST_SOURCES=%(sources)s " \
                       "SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 " \
                       "CLIENT_TEST_ALARM=1200 " \
-                      "%(env)s " \
-                      "SYNCEVOLUTION_TEMPLATE_DIR=%(templates)s " \
-                      "SYNCEVOLUTION_XML_CONFIG_DIR=%(configs)s " \
-                      "SYNCEVOLUTION_BACKEND_DIR=%(backends)s " \
+                      "%(env)s %(installenv)s" \
                       "CLIENT_TEST_LOG=%(log)s " \
                       "CLIENT_TEST_EVOLUTION_PREFIX=%(evoprefix)s " \
                       "%(runner)s " \
-                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs PATH=backends/webdav:.:$PATH %(testprefix)s " \
+                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs:.libs:syncevo/.libs PATH=backends/webdav:.:$PATH %(testprefix)s " \
                       "%(testbinary)s" % \
                       { "server": self.serverName,
                         "sources": ",".join(self.sources),
                         "env": self.testenv,
-                        "templates": templatedir,
-                        "configs": confdir,
-                        "backends": backenddir,
+                        "installenv": installenv,
                         "log": self.serverlogs,
                         "evoprefix": context.databasePrefix,
                         "runner": self.runner,
