@@ -490,6 +490,7 @@ class DBusUtil(Timeout):
         def config():
             if self.running:
                 DBusUtil.events.append("ConfigChanged")
+                DBusUtil.quit_events.append("ConfigChanged")
                 loop.quit()
 
         bus.add_signal_receiver(config,
@@ -809,6 +810,8 @@ class Connman (dbus.service.Object):
             loop.quit()
             return {"ConnectedTechnologies":["ethernet", "some other stuff"],
                     "AvailableTechnologies": ["bluetooth"]}
+        else:
+            return {}
 
     @dbus.service.signal(dbus_interface='net.connman.Manager', signature='sv')
     def PropertyChanged(self, key, value):
@@ -840,11 +843,16 @@ class Connman (dbus.service.Object):
 
 class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     """Tests Presence signal and checkPresence API"""
+
     name = dbus.service.BusName ("net.connman", bus);
-    conn = Connman (bus, "/")
 
     def setUp(self):
+        self.conn = Connman (bus, "/")
         self.setUpServer()
+
+    def tearDown(self):
+        self.conn.remove_from_connection()
+        self.conf = None
 
     @timeout(100)
     def testPresenceSignal(self):
