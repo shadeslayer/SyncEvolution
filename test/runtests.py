@@ -269,8 +269,9 @@ class Context:
         backenddir = os.path.join(self.tmpdir, "install/usr/lib/syncevolution/backends")
         # resultchecker doesn't need valgrind, remove it
         shell = re.sub(r'\S*valgrind\S*', '', options.shell)
+        prefix = re.sub(r'\S*valgrind\S*', '', options.testprefix)
         uri = self.uri or ("file:///" + self.resultdir)
-        self.runCommand("resultchecker.py " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+uri +" "+srcdir + " '" + shell + " " + options.testprefix +" '"+" '" +backenddir +"'");
+        self.runCommand("resultchecker.py " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+uri +" "+srcdir + " '" + shell + " " + testprefix +" '"+" '" +backenddir +"'");
         # transform to html
         self.runCommand("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + self.lastresultdir +"/nightly.xml "+self.datadir +"/compare.xsl "+ self.resultdir+"/nightly.xml")
         self.runCommand("xsltproc -o " + self.resultdir + "/nightly.html --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + self.datadir +"/generate-html.xsl "+ self.resultdir+"/nightly.xml")
