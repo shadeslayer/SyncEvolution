@@ -784,11 +784,14 @@ evolutiontest = SyncEvolutionTest("evolution", compile,
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
+# test-dbus.py doesn't need valgrind, remove it
+shell = re.sub(r'\S*valgrind\S*', '', options.shell)
+testprefix = re.sub(r'\S*valgrind\S*', '', options.testprefix)
 dbustest = SyncEvolutionTest("dbus", compile,
-                             "", options.shell,
+                             "", shell,
                              "",
                              [],
-                             testPrefix=options.testprefix,
+                             testPrefix=testprefix,
                              testBinary=os.path.join(abspath(context.workdir),
                                                      "syncevolution",
                                                      "test",
