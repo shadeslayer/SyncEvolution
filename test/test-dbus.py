@@ -1451,15 +1451,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
     def testCheckSourceInvalidType(self):
         """TestSessionAPIsDummy.testCheckSourceInvalidType -  test the right error is reported when the type is invalid """
         self.setupConfig()
-        # we cannot set an invalid type here, so pick one which is likely
-        # to be not supported in syncevo-dbus-server
-        config = { "source/memo" : { "backend" : "apple-contacts"} }
-        self.session.SetConfig(True, False, config, utf8_strings=True)
+        config = { "source/memo" : { "backend" : "no-such-backend"} }
         try:
-            self.session.CheckSource("memo", utf8_strings=True)
+            self.session.SetConfig(True, False, config, utf8_strings=True)
         except dbus.DBusException, ex:
-            self.failUnlessEqual(str(ex),
-                                 "org.syncevolution.SourceUnusable: The source 'memo' is not usable")
+            expected = "org.syncevolution.InvalidCall: invalid value 'no-such-backend' for property 'backend': "
+            self.failUnlessEqual(str(ex)[0:len(expected)], expected)
         else:
             self.fail("no exception thrown")
 
