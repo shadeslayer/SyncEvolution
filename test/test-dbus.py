@@ -671,6 +671,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
                                    "ScheduleWorld",
                                    "SyncEvolution",
                                    "Synthesis",
+                                   "WebDAV",
                                    "Yahoo",
                                    "eGroupware"])
 

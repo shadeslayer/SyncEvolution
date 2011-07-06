@@ -2688,6 +2688,7 @@ protected:
                                   "   ScheduleWorld = server no longer in operation\n"
                                   "   SyncEvolution = http://www.syncevolution.org\n"
                                   "   Synthesis = http://www.synthesis.ch\n"
+                                  "   WebDAV = contact and event sync using WebDAV, use for the 'target-config@<server>' config\n"
                                   "   Yahoo = contact and event sync using WebDAV, use for the 'target-config@yahoo' config\n",
                                   help.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("", help.m_err.str());
