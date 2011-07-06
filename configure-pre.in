@@ -435,19 +435,23 @@ fi
 
 AC_CHECK_PROGS([QMAKE], [qmake qmake-qt4])
 
-KDEKWALLETFOUND=yes
-if ! test "$KDE_KWALLET_CFLAGS"; then
-    KDE_KWALLET_CFLAGS="-I`kde4-config --path include` -I`kde4-config --path include`/KDE -I`$QMAKE -query QT_INSTALL_HEADERS`"
+if test "$QMAKE"; then
+   KDEKWALLETFOUND=yes
+   if ! test "$KDE_KWALLET_CFLAGS"; then
+      KDE_KWALLET_CFLAGS="-I`kde4-config --path include` -I`kde4-config --path include`/KDE -I`$QMAKE -query QT_INSTALL_HEADERS`"
+   fi
+   if ! test "$KDE_KWALLET_LIBS"; then
+      KDE_KWALLET_LIBS="-lkdeui -lkdecore `pkg-config --libs QtDBus`"
+   fi
+   AC_LANG_PUSH(C++)
+   old_CPPFLAGS="$CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS $KDE_KWALLET_CFLAGS"
+   AC_CHECK_HEADERS(kwallet.h, [], [KDEKWALLETFOUND=no])
+   CPPFLAGS="$old_CPPFLAGS"
+   AC_LANG_POP(C++)
+else
+   KDEKWALLETFOUND=no
 fi
-if ! test "$KDE_KWALLET_LIBS"; then
-    KDE_KWALLET_LIBS="-lkdeui -lkdecore `pkg-config --libs QtDBus`"
-fi
-AC_LANG_PUSH(C++)
-old_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS $KDE_KWALLET_CFLAGS"
-AC_CHECK_HEADERS(kwallet.h, [], [KDEKWALLETFOUND=no])
-CPPFLAGS="$old_CPPFLAGS"
-AC_LANG_POP(C++)
 
 # In contrast to the GNOME KEYRING, the KWallet is
 # currently considered optional. "configure" will never enable
@@ -456,7 +460,7 @@ AC_LANG_POP(C++)
 AC_ARG_ENABLE(kwallet,
               AS_HELP_STRING([--enable-kwallet], [enable access to KWallet]),
               [use_kde_kwallet="$enableval"
-              test $KDEKWALLETFOUND = "yes" || $use_kde_kwallet = "no" || AC_MSG_ERROR([kwallet.pc not found. Install it to compile with the KWallet enabled.])],
+              test $KDEKWALLETFOUND = "yes" || test "$use_kde_kwallet" = "no" || AC_MSG_ERROR([kwallet.pc not found. Install it to compile with the KWallet enabled.])],
               [use_kde_kwallet="no"])
 
 if test "$use_kde_kwallet" = "yes"; then
