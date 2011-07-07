@@ -151,6 +151,9 @@ sub NormalizeItem {
         s/UID:UNIQUE-UID-\d+-/UID:/g;
     }
 
+    # merge all CATEGORIES properties into one comma-separated one
+    while ( s/^CATEGORIES:([^\n]*)\n(.*)^CATEGORIES:([^\n]*)\n/CATEGORIES:$1,$3\n$2/ms ) {}
+
     # exact order of categories is irrelevant
     s/^CATEGORIES:(\S+)/"CATEGORIES:" . sortlist($1)/mge;
 
