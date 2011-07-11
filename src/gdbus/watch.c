@@ -137,7 +137,7 @@ static DBusHandlerResult filter_function(DBusConnection *connection,
 static ConnectionData *get_connection_data(DBusConnection *connection)
 {
 	ConnectionData *data;
-	dbus_bool_t result;
+	/* dbus_bool_t result; */
 
 	DBG("connection %p", connection);
 
@@ -163,7 +163,7 @@ static ConnectionData *get_connection_data(DBusConnection *connection)
 			return NULL;
 		}
 
-		result = dbus_connection_add_filter(connection,
+		/* result = */ dbus_connection_add_filter(connection,
 						filter_function, data, NULL);
 	}
 
