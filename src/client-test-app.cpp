@@ -311,7 +311,7 @@ public:
     static void getSourceConfig(const RegisterSyncSourceTest *test, Config &config) {
         memset(&config, 0, sizeof(config));
         ClientTest::getTestData(test->m_testCaseName.c_str(), config);
-        config.createSourceA = boost::bind(createSource, _1, _2, _3);
+        config.createSourceA = createSource;
         config.createSourceB = createSource;
         config.sourceName = test->m_configName.c_str();
 
