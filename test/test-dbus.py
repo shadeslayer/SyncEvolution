@@ -287,6 +287,10 @@ class DBusUtil(Timeout):
             var, value = assignment.split("=")
             env[var] = value
 
+        # always print all debug output directly (no output redirection),
+        # and increase log level
+        env["SYNCEVOLUTION_DEBUG"] = "1"
+
         dbuslog = "dbus.log"
         syncevolog = "syncevo.log"
         pmonitor = subprocess.Popen(monitor,
