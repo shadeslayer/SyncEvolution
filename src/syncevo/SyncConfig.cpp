@@ -1462,12 +1462,20 @@ void SyncConfig::setConfigVersion(ConfigLevel level, ConfigLimit limit, int vers
     }
 }
 
-ConfigPropertyRegistry &SyncConfig::getRegistry()
+/**
+ * This constructor updates some of the properties above and then adds
+ * them to the registry. This cannot be done inside getRegistry()
+ * itself because that function may be invoked by other global
+ * instances before the properties above were constructed (BMC
+ * #19464).
+ */
+static class RegisterSyncConfigProperties
 {
-    static ConfigPropertyRegistry registry;
-    static bool initialized;
+public:
+    RegisterSyncConfigProperties()
+    {
+        ConfigPropertyRegistry &registry = SyncConfig::getRegistry();
 
-    if (!initialized) {
         registry.push_back(&syncPropSyncURL);
         registry.push_back(&syncPropUsername);
         registry.push_back(&syncPropPassword);
@@ -1556,10 +1564,12 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
         syncPropDevID.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         syncPropContextMinVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         syncPropContextCurVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
-
-        initialized = true;
     }
+} RegisterSyncConfigProperties;
 
+ConfigPropertyRegistry &SyncConfig::getRegistry()
+{
+    static ConfigPropertyRegistry registry;
     return registry;
 }
 
@@ -2266,12 +2276,15 @@ static ConfigProperty sourcePropAdminData(SourceAdminDataName,
 
 static IntConfigProperty sourcePropSynthesisID("synthesisID", "unique integer ID, necessary for libsynthesis", "0");
 
-ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
+/**
+ * Same as RegisterSyncConfigProperties, only for SyncSource properties.
+ */
+static class RegisterSyncSourceConfigProperties
 {
-    static ConfigPropertyRegistry registry;
-    static bool initialized;
-
-    if (!initialized) {
+public:
+    RegisterSyncSourceConfigProperties()
+    {
+        ConfigPropertyRegistry &registry = SyncSourceConfig::getRegistry();
         registry.push_back(&SyncSourceConfig::m_sourcePropSync);
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropBackend);
@@ -2302,10 +2315,13 @@ ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
         sourcePropDatabaseFormat.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropUser.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         sourcePropPassword.setSharing(ConfigProperty::SOURCE_SET_SHARING);
-
-        initialized = true;
     }
+} RegisterSyncSourceConfigProperties;
 
+
+ConfigPropertyRegistry &SyncSourceConfig::getRegistry()
+{
+    static ConfigPropertyRegistry registry;
     return registry;
 }
 
