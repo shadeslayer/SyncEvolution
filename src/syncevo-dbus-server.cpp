@@ -422,14 +422,20 @@ class AutoTerm {
             time_t now = time(NULL);
             if (at->m_lastUsed + at->m_interval <= now) {
                 // yes, shut down event loop and daemon
+                SE_LOG_DEBUG(NULL, NULL, "terminating because not in use and idle for more than %ld seconds", (long)at->m_interval);
                 shutdownRequested = true;
                 g_main_loop_quit(loop);
             } else {
                 // check again later
+                SE_LOG_DEBUG(NULL, NULL, "not terminating because last used %ld seconds ago, check again in %ld seconds",
+                             (long)(now - at->m_lastUsed),
+                             (long)(at->m_lastUsed + at->m_interval - now));
                 at->m_checkSource = g_timeout_add_seconds(at->m_lastUsed + at->m_interval - now,
                                                           checkCallback,
                                                           data);
             }
+        } else {
+            SE_LOG_DEBUG(NULL, NULL, "not terminating, not renewing timeout because busy");
         }
         // always remove the current timeout, its job is done
         return FALSE;
@@ -488,6 +494,7 @@ class AutoTerm {
         if (m_refs > 0) {
             // in use, don't need timeout
             if (m_checkSource) {
+                SE_LOG_DEBUG(NULL, NULL, "deactivating idle termination because in use");
                 g_source_remove(m_checkSource);
                 m_checkSource = 0;
             }
@@ -497,6 +504,7 @@ class AutoTerm {
             // reset the timer. Therefore we don't have to remove it.
             m_lastUsed = time(NULL);
             if (!m_checkSource) {
+                SE_LOG_DEBUG(NULL, NULL, "activating idle termination in %ld seconds because idle", m_interval);
                 m_checkSource = g_timeout_add_seconds(m_interval,
                                                       checkCallback,
                                                       static_cast<gpointer>(this));
@@ -6494,17 +6502,41 @@ void AutoSyncManager::initConfig(const string &configName)
     unsigned int interval = config.getAutoSyncInterval();
     unsigned int duration = config.getAutoSyncDelay();
 
+    SE_LOG_DEBUG(NULL, NULL, "auto sync: %s: auto sync '%s', %s, %s, %d seconds repeat interval, %d seconds online duration",
+                 configName.c_str(),
+                 autoSync.c_str(),
+                 bt ? "Bluetooth" : "no Bluetooth",
+                 http ? "HTTP" : "no HTTP",
+                 interval, duration);
+
     BOOST_FOREACH(string url, urls) {
         if((boost::istarts_with(url, "http") && http)
                 || (boost::istarts_with(url, "obex-bt") && bt)) {
             AutoSyncTask syncTask(configName, duration, url);
             PeerMap::iterator it = m_peerMap.find(interval);
             if(it != m_peerMap.end()) {
+                SE_LOG_DEBUG(NULL, NULL,
+                             "auto sync: adding config %s url %s to existing interval %ld",
+                             configName.c_str(),
+                             url.c_str(),
+                             interval);
                 it->second->push_back(syncTask);
             } else {
                 boost::shared_ptr<AutoSyncTaskList> list(new AutoSyncTaskList(*this, interval));
                 list->push_back(syncTask);
                 list->createTimeoutSource();
+                if (m_peerMap.empty()) {
+                    // Adding first auto sync task. Ensure that we don't shut down.
+                    SE_LOG_DEBUG(NULL, NULL, "auto sync: adding first config %s url %s, prevent auto-termination",
+                                 configName.c_str(),
+                                 url.c_str());
+                    m_server.autoTermRef();
+                } else {
+                    SE_LOG_DEBUG(NULL, NULL, "auto sync: adding config %s url %s, %ld already added earlier",
+                                 configName.c_str(),
+                                 url.c_str(),
+                                 (long)m_peerMap.size());
+                }
                 m_peerMap.insert(std::make_pair(interval, list));
             }
         }
@@ -6529,6 +6561,16 @@ void AutoSyncManager::remove(const string &configName)
         if(list->empty()) {
             PeerMap::iterator erased = it++;
             m_peerMap.erase(erased);
+            if (m_peerMap.empty()) {
+                // removed last entry, remove lock on auto termination
+                SE_LOG_DEBUG(NULL, NULL, "auto sync: last auto sync config %s gone, allow auto-termination",
+                             configName.c_str());
+                m_server.autoTermUnref();
+            } else {
+                SE_LOG_DEBUG(NULL, NULL, "auto sync: sync config %s gone, still %ld configure for auto-sync",
+                             configName.c_str(),
+                             (long)m_peerMap.size());
+            }
         } else {
             ++it;
         }
@@ -6547,6 +6589,8 @@ void AutoSyncManager::remove(const string &configName)
 
 void AutoSyncManager::update(const string &configName)
 {
+    SE_LOG_DEBUG(NULL, NULL, "auto sync: refreshing %s", configName.c_str());
+
     // remove task from m_peerMap and tasks in the working queue for this config
     remove(configName);
     // re-load the config and re-init peer map
@@ -6555,6 +6599,8 @@ void AutoSyncManager::update(const string &configName)
     //don't clear if the task is running
     if(m_session && !hasActiveSession()
             && boost::iequals(m_session->getConfigName(), configName)) {
+        SE_LOG_DEBUG(NULL, NULL, "auto sync: removing queued session for %s during update",
+                     configName.c_str());
         m_server.dequeue(m_session.get());
         m_session.reset();
         m_activeTask.reset();
@@ -6800,6 +6846,7 @@ int main(int argc, char **argv, char **envp)
 
         SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);
         server.run();
+        SE_LOG_INFO(NULL, NULL, "%s: terminating",  argv[0]);
 	return 0;
     } catch ( const std::exception &ex ) {
         SE_LOG_ERROR(NULL, NULL, "%s", ex.what());

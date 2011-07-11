@@ -786,6 +786,78 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
         else:
             self.fail("no exception thrown")
 
+    @timeout(100)
+    def testAutoSyncOn(self):
+        """TestDBusServerTerm.testAutoSyncOn - D-Bus server must not terminate while auto syncing is enabled"""
+        self.setUpSession("scheduleworld")
+        # enable auto syncing with a very long delay to prevent accidentally running it
+        config = self.session.GetConfig(True, utf8_strings=True)
+        config[""]["autoSync"] = "1"
+        config[""]["autoSyncInterval"] = "60m"
+        self.session.SetConfig(False, False, config)
+        self.session.Detach()
+
+        time.sleep(16)
+
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            self.fail("dbus server should not terminate")
+
+    @timeout(100)
+    def testAutoSyncOff(self):
+        """TestDBusServerTerm.testAutoSyncOff - D-Bus server must terminate after auto syncing was disabled"""
+        self.setUpSession("scheduleworld")
+        # enable auto syncing with a very long delay to prevent accidentally running it
+        config = self.session.GetConfig(True, utf8_strings=True)
+        config[""]["autoSync"] = "1"
+        config[""]["autoSyncInterval"] = "60m"
+        self.session.SetConfig(False, False, config)
+        self.session.Detach()
+
+        self.setUpSession("scheduleworld")
+        config[""]["autoSync"] = "0"
+        self.session.SetConfig(True, False, config)
+        self.session.Detach()
+
+        time.sleep(16)
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            pass
+        else:
+            self.fail("no exception thrown")
+
+    @timeout(100)
+    def testAutoSyncOff2(self):
+        """TestDBusServerTerm.testAutoSyncOff2 - D-Bus server must terminate after auto syncing was disabled after a while"""
+        self.setUpSession("scheduleworld")
+        # enable auto syncing with a very long delay to prevent accidentally running it
+        config = self.session.GetConfig(True, utf8_strings=True)
+        config[""]["autoSync"] = "1"
+        config[""]["autoSyncInterval"] = "60m"
+        self.session.SetConfig(False, False, config)
+        self.session.Detach()
+
+        # wait until -d 10 second timeout has triggered in syncevo-dbus-server
+        time.sleep(11)
+
+        self.setUpSession("scheduleworld")
+        config[""]["autoSync"] = "0"
+        self.session.SetConfig(True, False, config)
+        self.session.Detach()
+
+        # should shut down after the 10 second idle period
+        time.sleep(16)
+
+        try:
+            self.server.GetConfigs(True, utf8_strings=True)
+        except dbus.DBusException:
+            pass
+        else:
+            self.fail("no exception thrown")
+
+
 class Connman (dbus.service.Object):
     count = 0
     @dbus.service.method(dbus_interface='net.connman.Manager', in_signature='', out_signature='a{sv}')
