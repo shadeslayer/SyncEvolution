@@ -8,5 +8,14 @@ eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
 trap "kill $DBUS_SESSION_BUS_PID" EXIT
 
+# Work-around for GNOME keyring daemon not started
+# when accessed via org.freedesktop.secrets: start it
+# explicitly.
+# See https://launchpad.net/bugs/525642 and
+# https://bugzilla.redhat.com/show_bug.cgi?id=572137
+/usr/bin/gnome-keyring-daemon --start --foreground --components=secrets &
+KEYRING_PID=$!
+trap "kill $KEYRING_PID" EXIT
+
 # run program
 "$@"
