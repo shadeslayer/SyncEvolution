@@ -756,7 +756,11 @@ void LocalTests::testChanges() {
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
     CPPUNIT_ASSERT(it != source->getAllItems().end());
     luid = *it;
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, item));
+    // It is not required for incremental syncing that sources must be
+    // able to return unchanged items. For example, ActiveSyncSource doesn't support
+    // it because it gets only IDs and data of added or updated items.
+    // Don't test it.
+    // SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, item));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // delete item again via sync source A
