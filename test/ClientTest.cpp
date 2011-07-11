@@ -121,11 +121,11 @@ public:
         base_t(source)
     {
         CPPUNIT_ASSERT(source);
-        SOURCE_ASSERT_NO_FAILURE(source, source->open());
+        source->open();
         string node = source->getTrackingNode()->getName();
-        SOURCE_ASSERT_NO_FAILURE(source, source->beginSync(m_anchors[node], ""));
+        source->beginSync(m_anchors[node], "");
         if (isServerMode()) {
-            SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
+            source->enableServerMode();
         }
     }
     ~TestingSyncSourcePtr()
@@ -141,16 +141,16 @@ public:
                 callback();
             }
             string node = get()->getTrackingNode()->getName();
-            SOURCE_ASSERT_NO_FAILURE(get(), (m_anchors[node] = get()->endSync(true)));
-            SOURCE_ASSERT_NO_FAILURE(get(), get()->close());
+            m_anchors[node] = get()->endSync(true);
+            get()->close();
         }
-        CPPUNIT_ASSERT_NO_THROW(base_t::reset(source));
+        base_t::reset(source);
         if (source) {
-            SOURCE_ASSERT_NO_FAILURE(source, source->open());
+            source->open();
             string node = source->getTrackingNode()->getName();
-            SOURCE_ASSERT_NO_FAILURE(source, source->beginSync(m_anchors[node], ""));
+            source->beginSync(m_anchors[node], "");
             if (isServerMode()) {
-                SOURCE_ASSERT_NO_FAILURE(source, source->enableServerMode());
+                source->enableServerMode();
             }
             BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
                           source->getOperations().m_endSession) {
@@ -309,7 +309,7 @@ std::string LocalTests::insert(CreateSource createSource, const char *data, bool
     CPPUNIT_ASSERT(!res.m_luid.empty());
 
     // delete source again
-    source.reset();
+    CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     if (!relaxed) {
         // two possible results:
@@ -700,7 +700,7 @@ void LocalTests::testSimpleInsert() {
     CPPUNIT_ASSERT(config.insertItem);
     CPPUNIT_ASSERT(config.createSourceA);
 
-    insert(createSourceA, config.insertItem);
+    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.insertItem));
 }
 
 // delete all items
@@ -710,8 +710,8 @@ void LocalTests::testLocalDeleteAll() {
     CPPUNIT_ASSERT(config.createSourceA);
 
     // make sure there is something to delete, then delete again
-    insert(createSourceA, config.insertItem);
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.insertItem));
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 }
 
 // clean database, then insert
@@ -728,7 +728,7 @@ void LocalTests::testLocalUpdate() {
 
     testLocalDeleteAll();
     testSimpleInsert();
-    update(createSourceA, config.updateItem);
+    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.updateItem));
 }
 
 // complex sequence of changes
@@ -742,7 +742,8 @@ void LocalTests::testChanges() {
     testSimpleInsert();
 
     // clean changes in sync source B by creating and closing it
-    TestingSyncSourcePtr source(createSourceB());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // no new changes now
@@ -764,7 +765,7 @@ void LocalTests::testChanges() {
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // delete item again via sync source A
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
@@ -795,7 +796,7 @@ void LocalTests::testChanges() {
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // update item via sync source A
-    update(createSourceA, config.updateItem);
+    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.updateItem));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
@@ -810,11 +811,11 @@ void LocalTests::testChanges() {
 
     // start anew, then create and update an item -> should only be listed as new
     // or updated, but not both
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    source.reset();
+    CPPUNIT_ASSERT_NO_THROW(source.reset());
     testSimpleInsert();
-    update(createSourceA, config.updateItem);
+    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.updateItem));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()) + countUpdatedItems(source.get()));
@@ -822,11 +823,11 @@ void LocalTests::testChanges() {
 
     // start anew, then create, delete and recreate an item -> should only be listed as new or updated,
     // even if (as for calendar with UID) the same LUID gets reused
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    source.reset();
+    CPPUNIT_ASSERT_NO_THROW(source.reset());
     testSimpleInsert();
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     testSimpleInsert();
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -889,7 +890,7 @@ void LocalTests::testManyChanges() {
     CPPUNIT_ASSERT(config.templateItem);
     CPPUNIT_ASSERT(config.uniqueProperties);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // check that everything is empty, also resets change counter of sync source B
     TestingSyncSourcePtr copy;
@@ -898,7 +899,8 @@ void LocalTests::testManyChanges() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // now insert plenty of items
-    int numItems = insertManyItems(createSourceA).size();
+    int numItems;
+    CPPUNIT_ASSERT_NO_THROW(numItems = insertManyItems(createSourceA).size());
 
     // check that exactly this number of items is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -909,7 +911,7 @@ void LocalTests::testManyChanges() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // delete all items
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // verify again
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -934,7 +936,7 @@ void LocalTests::testLinkedItemsParent() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData;
     TestingSyncSourcePtr copy;
@@ -945,7 +947,7 @@ void LocalTests::testLinkedItemsParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // now insert main item
-    parent = insert(createSourceA, config.parentItem, config.itemType, &parentData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, config.itemType, &parentData));
 
     // check that exactly the parent is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -958,7 +960,7 @@ void LocalTests::testLinkedItemsParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // delete all items
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // verify again
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -976,7 +978,7 @@ void LocalTests::testLinkedItemsChild() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string childData;
     TestingSyncSourcePtr copy;
@@ -987,7 +989,7 @@ void LocalTests::testLinkedItemsChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // same as above for child item
-    child = insert(createSourceA, config.childItem, config.itemType, &childData);
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -998,7 +1000,7 @@ void LocalTests::testLinkedItemsChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1015,7 +1017,7 @@ void LocalTests::testLinkedItemsParentChild() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1026,8 +1028,8 @@ void LocalTests::testLinkedItemsParentChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert parent first, then child
-    parent = insert(createSourceA, config.parentItem, config.itemType, &parentData);
-    child = insert(createSourceA, config.childItem, config.itemType, &childData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, config.itemType, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1039,7 +1041,7 @@ void LocalTests::testLinkedItemsParentChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1057,7 +1059,7 @@ void LocalTests::testLinkedItemsChildParent() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1068,8 +1070,8 @@ void LocalTests::testLinkedItemsChildParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, then parent
-    child = insert(createSourceA, config.childItem, false, &parentData);
-    parent = insert(createSourceA, config.parentItem, true, &childData);
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, true, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1081,7 +1083,7 @@ void LocalTests::testLinkedItemsChildParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1099,7 +1101,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1110,7 +1112,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, check changes, then insert the parent
-    child = insert(createSourceA, config.childItem, config.itemType, &childData);
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1121,7 +1123,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = insert(createSourceA, config.parentItem, true, &parentData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, true, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1136,7 +1138,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1154,7 +1156,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1165,8 +1167,8 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove parent, then child
-    parent = insert(createSourceA, config.parentItem, false, &parentData);
-    child = insert(createSourceA, config.childItem, false, &childData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1178,7 +1180,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, parent);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1190,7 +1192,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, child);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1208,7 +1210,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr source, copy;
@@ -1219,8 +1221,8 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove child, then parent
-    parent = insert(createSourceA, config.parentItem, false, &parentData);
-    child = insert(createSourceA, config.childItem, false, &childData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1232,7 +1234,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, child);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     if (getCurrentTest() == "Client::Source::eds_event::testLinkedItemsRemoveNormal") {
@@ -1251,13 +1253,14 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     // parent might have been updated
-    int updated = countUpdatedItems(copy.get());
+    int updated;
+    CPPUNIT_ASSERT_NO_THROW(updated = countUpdatedItems(copy.get()));
     SOURCE_ASSERT(copy.get(), 0 <= updated && updated <= 1);
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, parent);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1275,7 +1278,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1286,7 +1289,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent twice (should be turned into update)
-    parent = insert(createSourceA, config.parentItem, false, &parentData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1297,7 +1300,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = insert(createSourceA, config.parentItem, false, &parentData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1308,7 +1311,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, parent);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1325,7 +1328,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1336,7 +1339,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add child twice (should be turned into update)
-    child = insert(createSourceA, config.childItem, false, &childData);
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1347,7 +1350,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = insert(createSourceA, config.childItem);
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1358,7 +1361,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, child);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1375,7 +1378,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1386,7 +1389,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent, then update it
-    parent = insert(createSourceA, config.parentItem, false, &parentData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1397,7 +1400,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = updateItem(createSourceA, config, parent, config.parentItem, &parentData);
+    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, config.parentItem, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1408,7 +1411,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, parent);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1426,7 +1429,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1437,7 +1440,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add child, then update it
-    child = insert(createSourceA, config.childItem, false, &childData);
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1448,7 +1451,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = updateItem(createSourceA, config, child, config.childItem, &childData);
+    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, config.childItem, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1459,7 +1462,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, child);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1476,7 +1479,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1487,8 +1490,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update child
-    parent = insert(createSourceA, config.parentItem, false, &parentData);
-    child = insert(createSourceA, config.childItem, false, &childData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1500,7 +1503,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    child = updateItem(createSourceA, config, child, config.childItem, &childData);
+    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, config.childItem, &childData));
 
     // child has to be listed as modified, parent may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1513,8 +1516,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, parent);
-    deleteItem(createSourceA, child);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1533,7 +1536,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     CPPUNIT_ASSERT(config.parentItem);
     CPPUNIT_ASSERT(config.childItem);
 
-    deleteAll(createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1544,8 +1547,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update parent
-    parent = insert(createSourceA, config.parentItem, false, &parentData);
-    child = insert(createSourceA, config.childItem, false, &childData);
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1557,7 +1560,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    parent = updateItem(createSourceA, config, parent, config.parentItem, &parentData);
+    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, config.parentItem, &parentData));
 
     // parent has to be listed as modified, child may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1570,8 +1573,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    deleteItem(createSourceA, parent);
-    deleteItem(createSourceA, child);
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
