@@ -2194,6 +2194,7 @@ static const std::string yahoo =
                "printChanges = 0\n"
                "dumpData = 0\n"
                "deviceId = fixed-devid\n"
+               "IconURI = image://themedimage/icons/services/yahoo\n"
                "ConsumerReady = 1\n"
                "peerType = WebDAV\n"
                "[addressbook]\n"
@@ -4235,7 +4236,7 @@ private:
                          "peers/scheduleworld/config.ini:# SSLVerifyServer = 1\n"
                          "peers/scheduleworld/config.ini:# SSLVerifyHost = 1\n"
                          "peers/scheduleworld/config.ini:WebURL = http://www.scheduleworld.com\n"
-                         "peers/scheduleworld/config.ini:# IconURI = \n"
+                         "peers/scheduleworld/config.ini:IconURI = image://themedimage/icons/services/scheduleworld\n"
                          "peers/scheduleworld/config.ini:# ConsumerReady = 0\n"
                          "peers/scheduleworld/config.ini:# peerType = \n"
 
@@ -4356,7 +4357,7 @@ private:
             "spds/syncml/config.txt:# SSLVerifyServer = 1\n"
             "spds/syncml/config.txt:# SSLVerifyHost = 1\n"
             "spds/syncml/config.txt:WebURL = http://www.scheduleworld.com\n"
-            "spds/syncml/config.txt:# IconURI = \n"
+            "spds/syncml/config.txt:IconURI = image://themedimage/icons/services/scheduleworld\n"
             "spds/syncml/config.txt:# ConsumerReady = 0\n"
             "spds/sources/addressbook/config.txt:sync = two-way\n"
             "spds/sources/addressbook/config.txt:type = addressbook:text/vcard\n"
@@ -4397,6 +4398,10 @@ private:
         boost::replace_first(config,
                              "WebURL = http://www.scheduleworld.com",
                              "WebURL = http://my.funambol.com");
+
+        boost::replace_first(config,
+                             "IconURI = image://themedimage/icons/services/scheduleworld",
+                             "IconURI = image://themedimage/icons/services/funambol");
 
         boost::replace_first(config,
                              "# ConsumerReady = 0",
@@ -4451,7 +4456,11 @@ private:
 
         boost::replace_first(config,
                              "WebURL = http://www.scheduleworld.com",
-                             "WebURL = http://www.synthesis.ch");        
+                             "WebURL = http://www.synthesis.ch");
+
+        boost::replace_first(config,
+                             "IconURI = image://themedimage/icons/services/scheduleworld",
+                             "IconURI = image://themedimage/icons/services/synthesis");
 
         boost::replace_first(config,
                              "addressbook/config.ini:uri = card3",
