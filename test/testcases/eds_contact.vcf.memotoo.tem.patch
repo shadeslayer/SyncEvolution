@@ -1,3 +1,12 @@
+@@ -32,7 +32,7 @@
+ BEGIN:VCARD
+ VERSION:3.0
+ NICKNAME:user12
+-NOTE:ampersand entity &amp\; less-than entity &lt\;
++NOTE:ampersand entity xxx less-than entity yyy - HTML entities replaced by corresponding characters by Memotoo
+ FN:xml entities
+ N:xml;entities;;;
+ X-EVOLUTION-FILE-AS:xml\, entities
 @@ -137,7 +137,7 @@
  NICKNAME:user7
  X-EVOLUTION-SPOUSE:
@@ -23,7 +32,7 @@
  X-AIM;X-EVOLUTION-UI-SLOT=1:AIM JOHN
  X-YAHOO;X-EVOLUTION-UI-SLOT=2:YAHOO JDOE
  X-ICQ;X-EVOLUTION-UI-SLOT=3:ICQ JD
-@@ -290,7 +288,7 @@
+@@ -289,7 +287,7 @@
  X-EVOLUTION-SPOUSE:
  NOTE:The first name is "First \; special \;".
  FN:Mr. First \; special \; middle Last
