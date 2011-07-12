@@ -6519,7 +6519,7 @@ void AutoSyncManager::initConfig(const string &configName)
                              "auto sync: adding config %s url %s to existing interval %ld",
                              configName.c_str(),
                              url.c_str(),
-                             interval);
+                             (long)interval);
                 it->second->push_back(syncTask);
             } else {
                 boost::shared_ptr<AutoSyncTaskList> list(new AutoSyncTaskList(*this, interval));
