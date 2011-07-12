@@ -1866,6 +1866,69 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         Timeout.removeTimeout(timeout_handler)
         self.failUnlessEqual(self.lastState, "done")
 
+    @timeout(60)
+    def testAutoSyncFailure(self):
+        """TestSessionAPIsDummy.testAutoSyncFailure - test that auto-sync is triggered, fails here"""
+        self.setupConfig()
+        # enable auto-sync
+        config = self.config
+        config[""]["autoSync"] = "1"
+        config[""]["autoSyncDelay"] = "0"
+        config[""]["autoSyncInterval"] = "10s"
+        config[""]["password"] = "foobar"
+        self.session.SetConfig(True, False, config, utf8_strings=True)
+
+        def session_ready(object, ready):
+            if self.running and object != self.sessionpath:
+                self.auto_sync_session_path = object
+                DBusUtil.quit_events.append("session " + object + (ready and " ready" or " done"))
+                loop.quit()
+
+        signal = bus.add_signal_receiver(session_ready,
+                                         'SessionChanged',
+                                         'org.syncevolution.Server',
+                                         'org.syncevolution',
+                                         None,
+                                         byte_arrays=True,
+                                         utf8_strings=True)
+
+        # shut down current session, will allow auto-sync
+        self.session.Detach()
+
+        # wait for start and end of auto-sync session
+        loop.run()
+        loop.run()
+        end = time.time()
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                    "session " + self.auto_sync_session_path + " done"])
+        DBusUtil.quit_events = []
+        # session must be around for a while after terminating, to allow
+        # reading information about it by clients who didn't start it
+        # and thus wouldn't know what the session was about otherwise
+        session = dbus.Interface(bus.get_object('org.syncevolution',
+                                                self.auto_sync_session_path),
+                                 'org.syncevolution.Session')
+        reports = session.GetReports(0, 100, utf8_strings=True)
+        self.failUnlessEqual(len(reports), 1)
+        self.failUnlessEqual(reports[0]["status"], "20043")
+        name = session.GetConfigName()
+        self.failUnlessEqual(name, "dummy-test")
+        flags = session.GetFlags()
+        self.failUnlessEqual(flags, [])
+        first_auto = self.auto_sync_session_path
+
+        # check that interval between auto-sync sessions is right
+        loop.run()
+        start = time.time()
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                    "session " + self.auto_sync_session_path + " done"])
+        self.failIfEqual(first_auto, self.auto_sync_session_path)
+        delta = start - end
+        self.failUnless(delta < 13)
+        self.failUnless(delta > 7)
+
+
 class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
         Thus we need a real server configuration to confirm sync could be run successfully.

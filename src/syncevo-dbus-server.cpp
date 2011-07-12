@@ -1430,6 +1430,9 @@ class DBusServer : public DBusObjectHelper,
      */
     bool callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost::function<bool ()> &callback);
 
+    /** called 1 minute after last client detached from a session */
+    static bool sessionExpired(const boost::shared_ptr<Session> &session);
+
 public:
     DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int duration);
     ~DBusServer();
@@ -1483,6 +1486,21 @@ public:
      * and if so, activates the first one in the queue.
      */
     void checkQueue();
+
+    /**
+     * Special behavior for sessions: keep them around for another
+     * minute after the are no longer needed. Must be called by the
+     * creator of the session right before it would normally cause the
+     * destruction of the session.
+     *
+     * This allows another client to attach and/or get information
+     * about the session.
+     *
+     * This is implemented as a timeout which holds a reference to the
+     * session. Once the timeout fires, it is called and then removed,
+     * which removes the reference.
+     */
+    void delaySessionDestruction(const boost::shared_ptr<Session> &session);
 
     /**
      * Invokes the given callback once in the given amount of seconds.
@@ -1596,9 +1614,6 @@ class Client
 
     /** current client setting for notifications (see HAS_NOTIFY) */
     bool m_notificationsEnabled;
-
-    /** called 1 minute after last client detached from a session */
-    static bool sessionExpired(const boost::shared_ptr<Session> &session);
 
 public:
     const Caller_t m_ID;
@@ -2759,14 +2774,6 @@ Client::~Client()
     }
 }
 
-bool Client::sessionExpired(const boost::shared_ptr<Session> &session)
-{
-    SE_LOG_DEBUG(NULL, NULL, "session %s expired",
-                 session->getSessionID().c_str());
-    // don't call me again
-    return false;
-}
-
 void Client::detach(Resource *resource)
 {
     for (Resources_t::iterator it = m_resources.begin();
@@ -2776,19 +2783,8 @@ void Client::detach(Resource *resource)
             if (it->unique()) {
                 boost::shared_ptr<Session> session = boost::dynamic_pointer_cast<Session>(*it);
                 if (session) {
-                    // Special behavior for sessions: keep them
-                    // around for another minute after the last
-                    // client detaches. This allows another client
-                    // to attach and/or get information about the
-                    // session.
-                    // This is implemented as a timeout which holds
-                    // a reference to the session. Once the timeout
-                    // fires, it is called and then removed, which
-                    // removes the reference.
-                    m_server.addTimeout(boost::bind(&Client::sessionExpired,
-                                                    session),
-                                        60 /* 1 minute */);
-
+                    // give clients a chance to query the session
+                    m_server.delaySessionDestruction(session);
                     // allow other sessions to start
                     session->done();
                 }
@@ -3856,6 +3852,8 @@ Session::Session(DBusServer &server,
     add(this, &Session::execute, "Execute");
     add(emitStatus);
     add(emitProgress);
+
+    SE_LOG_DEBUG(NULL, NULL, "session %s created", getPath());
 }
 
 void Session::done()
@@ -3863,6 +3861,7 @@ void Session::done()
     if (m_done) {
         return;
     }
+    SE_LOG_DEBUG(NULL, NULL, "session %s done", getPath());
 
     /* update auto sync manager when a config is changed */
     if (m_setConfig) {
@@ -3883,6 +3882,7 @@ void Session::done()
 
 Session::~Session()
 {
+    SE_LOG_DEBUG(NULL, NULL, "session %s deconstructing", getPath());
     done();
 }
 
@@ -5954,6 +5954,23 @@ void DBusServer::checkQueue()
     }
 }
 
+bool DBusServer::sessionExpired(const boost::shared_ptr<Session> &session)
+{
+    SE_LOG_DEBUG(NULL, NULL, "session %s expired",
+                 session->getSessionID().c_str());
+    // don't call me again
+    return false;
+}
+
+void DBusServer::delaySessionDestruction(const boost::shared_ptr<Session> &session)
+{
+    SE_LOG_DEBUG(NULL, NULL, "delaying destruction of session %s by one minute",
+                 session->getSessionID().c_str());
+    addTimeout(boost::bind(&DBusServer::sessionExpired,
+                           session),
+               60 /* 1 minute */);
+}
+
 bool DBusServer::callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost::function<bool ()> &callback)
 {
     if (!callback()) {
@@ -6678,6 +6695,7 @@ void AutoSyncManager::startTask()
                                            newSession);
         m_session->setPriority(Session::PRI_AUTOSYNC);
         m_session->addListener(this);
+        m_session->activate();
         m_server.enqueue(m_session);
     }
 }
@@ -6736,6 +6754,11 @@ void AutoSyncManager::syncDone(SyncMLStatus status)
             m_notificationManager->publish(summary, body);
         }
     }
+
+    // keep session around to give clients a chance to query it
+    m_server.delaySessionDestruction(m_session);
+    m_session->done();
+
     m_session.reset();
     m_activeTask.reset();
     m_syncSuccessStart = false;
