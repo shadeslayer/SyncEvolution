@@ -735,22 +735,25 @@ class AutoSyncManager : public SessionListener
         string m_peer;
         /** the time that the peer must at least have been around (seconds) */
         unsigned int m_delay;
-        /** the 'syncURL' used by synchronization. It always contains only one sync URL. */
-        string m_url;
+        /** each task matches with exactly one transport supported for a peer */
+        enum Transport {
+            NEEDS_HTTP,
+            NEEDS_BT,
+            NEEDS_OTHER
+        } m_transport;
+        /** individual sync URL for which this task was created, matches m_transport */
+        std::string m_url;
 
-        AutoSyncTask(const string &peer, unsigned int delay, const string &url)
-            : m_peer(peer), m_delay(delay), m_url(url)
+        AutoSyncTask(const string &peer, unsigned int delay, Transport transport, const std::string &url)
+            : m_peer(peer), m_delay(delay), m_transport(transport), m_url(url)
         {
         }
 
         /** compare whether two tasks are the same. May refine it later with more information */
         bool operator==(const AutoSyncTask &right) const
         {
-            if(boost::iequals(m_peer, right.m_peer) &&
-                    boost::iequals(m_url, right.m_url)) {
-                return true;
-            }
-            return false;
+            return boost::iequals(m_peer, right.m_peer) &&
+                m_url == right.m_url;
         }
     };
 
@@ -6527,9 +6530,20 @@ void AutoSyncManager::initConfig(const string &configName)
                  interval, duration);
 
     BOOST_FOREACH(string url, urls) {
-        if((boost::istarts_with(url, "http") && http)
-                || (boost::istarts_with(url, "obex-bt") && bt)) {
-            AutoSyncTask syncTask(configName, duration, url);
+        AutoSyncTask::Transport transport = AutoSyncTask::NEEDS_OTHER; // fallback for unknown sync URL
+        if (boost::istarts_with(url, "http")) {
+            transport = AutoSyncTask::NEEDS_HTTP;
+        } else if (boost::istarts_with(url, "local")) {
+            // TODO: instead of assuming that local sync needs HTTP, really look into the target config
+            // and determine what the peerType is
+            transport = AutoSyncTask::NEEDS_HTTP;
+        } else if (boost::istarts_with(url, "obex-bt")) {
+            transport = AutoSyncTask::NEEDS_BT;
+        }
+        if((transport == AutoSyncTask::NEEDS_HTTP && http) ||
+           (transport == AutoSyncTask::NEEDS_BT && bt) ||
+           (transport == AutoSyncTask::NEEDS_OTHER)) {
+            AutoSyncTask syncTask(configName, duration, transport, url);
             PeerMap::iterator it = m_peerMap.find(interval);
             if(it != m_peerMap.end()) {
                 SE_LOG_DEBUG(NULL, NULL,
@@ -6657,12 +6671,8 @@ bool AutoSyncManager::findTask(const AutoSyncTask &syncTask)
 bool AutoSyncManager::taskLikelyToRun(const AutoSyncTask &syncTask)
 {
     PresenceStatus &status = m_server.getPresenceStatus(); 
-    // avoid doing any checking of task list if http and bt presence are false
-    if(!status.getHttpPresence() && !status.getBtPresence()) {
-        return false;
-    }
 
-    if(boost::istarts_with(syncTask.m_url, "http") && status.getHttpPresence()) {
+    if (syncTask.m_transport == AutoSyncTask::NEEDS_HTTP && status.getHttpPresence()) {
         // don't add duplicate tasks
         if(!findTask(syncTask)) {
             Timer& timer = status.getHttpTimer();
@@ -6672,7 +6682,8 @@ bool AutoSyncManager::taskLikelyToRun(const AutoSyncTask &syncTask)
                 return true;
             }
         } 
-    } else if (boost::istarts_with(syncTask.m_url, "obex-bt") && status.getBtPresence()) {
+    } else if ((syncTask.m_transport == AutoSyncTask::NEEDS_BT && status.getBtPresence()) ||
+               syncTask.m_transport == AutoSyncTask::NEEDS_OTHER) {
         // don't add duplicate tasks
         if(!findTask(syncTask)) {
             return true;
@@ -6718,7 +6729,7 @@ void AutoSyncManager::prepare()
 
         string mode;
         Session::SourceModes_t sourceModes;
-        m_session->sync(mode, sourceModes);
+        m_session->sync("", Session::SourceModes_t());
     }
 }
 

@@ -1928,6 +1928,52 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.failUnless(delta < 13)
         self.failUnless(delta > 7)
 
+    @timeout(60)
+    def testAutoSyncLocal(self):
+        """TestSessionAPIsDummy.testAutoSyncLocal - test that auto-sync is triggered for local sync"""
+        self.setupConfig()
+        # enable auto-sync
+        config = self.config
+        config[""]["syncURL"] = "local://@foobar" # will fail
+        config[""]["autoSync"] = "1"
+        config[""]["autoSyncDelay"] = "0"
+        config[""]["autoSyncInterval"] = "10s"
+        config[""]["password"] = "foobar"
+        self.session.SetConfig(True, False, config, utf8_strings=True)
+
+        def session_ready(object, ready):
+            if self.running and object != self.sessionpath:
+                self.auto_sync_session_path = object
+                DBusUtil.quit_events.append("session " + object + (ready and " ready" or " done"))
+                loop.quit()
+
+        signal = bus.add_signal_receiver(session_ready,
+                                         'SessionChanged',
+                                         'org.syncevolution.Server',
+                                         'org.syncevolution',
+                                         None,
+                                         byte_arrays=True,
+                                         utf8_strings=True)
+
+        # shut down current session, will allow auto-sync
+        self.session.Detach()
+
+        # wait for start and end of auto-sync session
+        loop.run()
+        loop.run()
+        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                    "session " + self.auto_sync_session_path + " done"])
+        session = dbus.Interface(bus.get_object('org.syncevolution',
+                                                self.auto_sync_session_path),
+                                 'org.syncevolution.Session')
+        reports = session.GetReports(0, 100, utf8_strings=True)
+        self.failUnlessEqual(len(reports), 1)
+        self.failUnlessEqual(reports[0]["status"], "10500")
+        name = session.GetConfigName()
+        self.failUnlessEqual(name, "dummy-test")
+        flags = session.GetFlags()
+        self.failUnlessEqual(flags, [])
+
 
 class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
