@@ -1,25 +1,25 @@
-SyncEvolution 1.1.99.3 -> 1.1.99.4, 21.04.2011
+SyncEvolution 1.1.99.1 -> 1.1.99.5, 13.07.2011
 ==============================================
 
-Akonadi backend and KWallet support merged. Not included
-yet in syncevolution.org binaries. To use it, compile
-from source.
+Release 1.1.99.5 is the first release candidate for 1.2. It has gone
+through a long stabilization period and thus is suitable for normal users.
 
-Various bug fixes and improvements... see Changelog for details.
+The major new feature of the 1.2 release is support for non-SyncML
+protocols in general and CalDAV/CardDAV in particular. ActiveSync
+support is in development. These protocols are implemented as backends
+which are combined with other backends by SyncEvolution in a so called
+"local sync". The GTK sync-ui does not yet support configuring
+non-SyncML protocols. See the README.rst and man page for more
+information on how to use the new feature via the command line.
 
+Properties not supported by SyncML servers can now be preserved
+locally in two-way synchronization (BMC #15030). This depends on
+information about what properties a SyncML server supports ("CtCap"),
+which is typically not provided by servers. SyncEvolution contains a
+copy of that information for Google Contacts (BMC #15029).
 
-SyncEvolution 1.1.99.2 -> 1.1.99.3, 26.02.2011
-==============================================
-
-Adds CalDAV and CardDAV support. See src/backends/webdav/README
-or mailing list for usage instructions.
-
-
-SyncEvolution 1.1.1 -> 1.1.99.2, 04.02.2011
-===========================================
-
-Major internal changes. Supports synchronization between two
-SyncEvolution backends ("local sync").
+Akonadi backend and KWallet support were merged. They are not included
+yet in syncevolution.org binaries. To use them compile from source.
 
 The configuration format was updated to solve a conceptual problem
 inherited with the legacy property names: the "type" property had
@@ -30,16 +30,28 @@ backend selection for some other peer (BMC #1023). Now
 "type". "type" is still accepted by the command line as alias.
 
 Old configurations can still be read. But writing, as it happens
-during a sync, must migrate the configuration first. 1.1.99.2 is an
-experimental version and does not migrate configurations
-automatically, as the final 1.2 release will do. The error 22005
-indicates that the user has to accept the backward-incompatible config
-change. The command line prints instructions; basically do
-"syncevolution --migrate @default".
+during a sync, must migrate the configuration first. In contrast to
+earlier, more experimental releases in the 1.2 series, 1.1.99.5 and
+later automatically migrate configurations. The old configurations
+will still be available (see "syncevolution --print-configs") but must
+be renamed manually to use them again under their original names with
+older SyncEvolution releases.
 
-The old configurations will still be available (see "syncevolution
---print-configs") but must be renamed manually to use them again under
-their original names.
+Other changes:
+* syncevo-http-server was enhanced considerably. See http://syncevolution.org/wiki/http-server-howto
+* support NetworkManager API >= 0.9 (BMC #19470)
+* Sync mode is recorded when running in SyncML server mode (BMC #2786).
+* syncevo-dbus-server automatically stops when some of its libraries
+  are updated and restarts if auto-syncing is on (BMC #14955).
+* Using the --sync-property and --source-property command line options is
+  optional, just specifying the property assignment is enough.
+* Added support for Buteo, mKCal and QtContacts in MeeGo.
+  Buteo and mKCal were removed again from MeeGo, so the code
+  is obsolete. The QtContacts backend may be still be useful
+  to access items via that API, but for syncing on MeeGo
+  the normal EDS backend is used since MeeGo reverted back
+  to EDS as PIM storage.
+* code cleanup and various minor fixes/improvements, see ChangeLog
 
 
 SyncEvolution 1.1 -> 1.1.1, 26.12.2010
