@@ -541,8 +541,8 @@ List the known configuration templates::
 Create a new configuration, using the existing Memotoo template::
 
   syncevolution --configure \
-                --sync-property "username=123456" \
-                --sync-property "password=!@#ABcd1234" \
+                username=123456 \
+                "password=!@#ABcd1234" \
                 memotoo
 
 Note that putting passwords into the command line, even for
@@ -565,7 +565,7 @@ Synchronize all sources::
 Deactivate all sources::
 
   syncevolution --configure \
-                --source-property sync=none \
+                sync=none \
                 memotoo
 
 Activate address book synchronization again, using the --sync shortcut::
@@ -577,15 +577,15 @@ Activate address book synchronization again, using the --sync shortcut::
 Change the password for a configuration::
 
   syncevolution --configure \
-                --sync-property password=foo \
+                password=foo \
                 memotoo
 
 Set up another configuration for under a different account, using
 the same default databases as above::
 
   syncevolution --configure \
-                --sync-property username=joe \
-                --sync-property password=foo \
+                username=joe \
+                password=foo \
                 --template memotoo \
                 memotoo_joe
 
@@ -594,17 +594,17 @@ local databases (can be used to simulate synchronizing between two
 clients, see `Exchanging Data`_::
 
   syncevolution --configure \
-                --sync-property "username=123456" \
-                --sync-property "password=!@#ABcd1234" \
-                --source-property sync=none \
-                 memotoo@other
+                username=123456 \
+                password=!@#ABcd1234" \
+                sync=none \
+                memotoo@other
   
   syncevolution --configure \
                 --source-property database=<name of other address book> \
                 @other addressbook
 
   syncevolution --configure \
-                --source-property sync=two-way \
+                sync=two-way \
                 memotoo@other addressbook
 
   syncevolution memotoo 
@@ -615,6 +615,118 @@ and/or updates the configuration so that it looks like configurations
 created anew with the current syncevolution::
 
   syncevolution --migrate memotoo
+
+
+Synchronization beyond SyncML
+=============================
+
+In the simple examples above, SyncEvolution exchanges data with
+servers via the SyncML protocol. Starting with release 1.2,
+SyncEvolution also supports other protocols like CalDAV and
+CardDAV.
+
+These protocols are implemented in backends which look like data
+sources. SyncEvolution then synchronizes data between a pair of
+backends. Because the entire sync logic (matching of items, merging)
+is done locally by SyncEvolution, this mode of operation is called
+*local sync*.
+
+Some examples of things that can be done with local sync:
+
+* synchronize events with a CalDAV server and contacts with a CardDAV server
+* mirror a local database as items in a directory, with format conversion
+  and one-way or two-way data transfer (export vs. true syncing)
+
+Because local sync involves two sides, two configurations are
+needed. One is called the *target config*. By convention it must be
+called ``target-config@<some context name>``, for example
+``target-config@google-calendar``. The target config holds properties
+which apply to all sources inside that context, like user name, 
+password and URL for the server. Once configured, the target config
+can be used to list/import/export/update items via the SyncEvolution
+command line. It cannot be used for synchronization because it does
+not defined what the items are supposed to be synchronized with.
+
+For synchronization, a second *sync config* is needed. This config has
+the same role as the traditional SyncML configs and is typically
+defined in the same implicit ``@default`` context as those
+configs. All configs in that context use the same local data. The sync
+config defines the database pairs and the sync mode (one-way, two-way, ...).
+
+The first step is to select a target config with
+``syncURL=local://@<some context name>``. Multiple sync configs can
+access the same target config. In the second step, the ``uri`` of each
+source in the sync config must be set to the name of the corresponding
+source in the target config.  The ``sync`` property in the sync config
+defines the direction of the data flow. It can be set temporarily when
+starting a synchronzation with the sync config.
+
+  **Warning:** in local sync, the sync config side acts as
+  server. Therefore the ``from-server`` variants
+  (``one-way-from-server``, ``refresh-from-server``) transfer data
+  from the sync config into the target config. The ``from-client``
+  variants transfer in the other direction, even if the target config
+  happens to access data on a remote server.
+
+
+CalDAV and CardDAV
+==================
+
+This section explains how to use local syncing for CalDAV and
+CardDAV. Both protocols are based on WebDAV and are provided by the
+same backend. They share ``username/password/syncURL`` properties
+defined in their target config.
+
+The credentials must be provided if the server is password
+protected. The ``syncURL`` is optional if the ``username`` is an email
+address and the server supports auto-discovery of its CalDAV and/or
+CardDAV services (using DNS SRV entries, ``.well-known`` URIs, properties
+of the current principal, ...).
+
+The ``database`` property of each source can be set to the URL of a
+specific *collection* (= database in WebDAV terminology). If not set,
+then the WebDAV backend first locates the server based on ``username``
+or ``syncURL`` and then scans it for the default event resp. contact
+collection. This is done once in the initial synchronization. At the end
+of a successful synchroniation, the automatic choice is made permanent
+by setting the ``database`` property.
+
+  **Warning:** the protocols do not uniquely identify this default
+  collection. The backend tries to make an educated guess, but it might
+  pick the wrong one if the server provides more than one address book
+  or calendar. A future version of SyncEvolution will support listing
+  the available collections, but 1.2 does not yet support that.
+
+Configuration templates for Google Calendar, Yahoo Calendar and a
+generic CalDAV/CardDAV server are included in SyncEvolution. The Yahoo
+template also contains an entry for contact synchronization, but using
+it is not recommended due to known server-side issues.
+
+The following commands set up synchronization with a generic WebDAV
+server that supports CalDAV, CardDAV and auto-discovery. For Google and Yahoo,
+replace ``webdav`` with ``google-calendar`` resp. ``yahoo`` and remove the
+``addressbook`` source when setting up the sync config. ::
+
+   # configure target config
+   syncevolution --configure \
+                --template webdav \
+                username=123456 \
+                password=!@#ABcd1234" \
+                target-config@webdav
+
+   # configure sync config
+   syncevolution --configure \
+                 --template SyncEvolution_Client \
+                 username= \
+                 password= \
+                 webdav \
+                 calendar addressbook
+
+   # initial slow sync
+   syncevolution --sync slow webdav
+
+   # incremental sync
+   syncevolution webdav
 
 
 NOTES
