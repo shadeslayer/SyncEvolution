@@ -1283,6 +1283,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.config = { 
                          "" : { "syncURL" : "http://impossible-syncurl-just-for-testing-to-avoid-conflict",
                                 "username" : "unknown",
+                                # the password request tests depend on not having a real password here
                                 "password" : "-",
                                 "deviceId" : "foo",
                                 "RetryInterval" : "10",
@@ -1872,6 +1873,10 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.setupConfig()
         # enable auto-sync
         config = self.config
+        # Note that writing this config will modify the host's keyring!
+        # Use a syncURL that is unlikely to conflict with the host
+        # or any other D-Bus test.
+        config[""]["syncURL"] = "http://no-such-domain.foobar"
         config[""]["autoSync"] = "1"
         config[""]["autoSyncDelay"] = "0"
         config[""]["autoSyncInterval"] = "10s"
