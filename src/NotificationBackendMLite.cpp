@@ -59,7 +59,7 @@ void NotificationBackendMLite::publish(
     MRemoteAction action(SYNCEVOLUTION_SERVICE_NAME,
                          SYNCEVOLUTION_OBJECT_PATH,
                          SYNCEVOLUTION_INTERFACE,
-                         "org.syncevolution.Server.NotificationAction");
+                         "NotificationAction");
     n.setAction(action);
 
     n.publish();

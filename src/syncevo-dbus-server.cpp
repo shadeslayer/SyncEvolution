@@ -1269,9 +1269,16 @@ class DBusServer : public DBusObjectHelper,
         pid_t pid;
         if((pid = fork()) == 0) {
             // search sync-ui from $PATH
-            if(execlp("sync-ui", "sync-ui", (const char*)0) < 0) {
-                exit(0);
-            }
+            execlp("sync-ui", "sync-ui", (const char*)0);
+
+            // Failing that, try meego-ux-settings/Sync
+            execlp("meego-qml-launcher",
+              "meego-qml-launcher",
+              "--opengl", "--fullscreen", "--app", "meego-ux-settings",
+              "--cmd", "showPage", "--cdata", "Sync", (const char*)0);
+
+            // Failing that, simply exit
+            exit(0);
         }
     }
 
