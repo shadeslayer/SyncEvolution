@@ -8,7 +8,7 @@ dnl Invoke autogen.sh to produce a configure script.
 #
 # Starting with the 1.1 release cycle, the rpm-style
 # .99 pseudo-version number is used to mark a pre-release.
-AC_INIT([syncevolution], [1.1.99.4])
+AC_INIT([syncevolution], [1.1.99.5])
 # STABLE_VERSION=1.0.1+
 AC_SUBST(STABLE_VERSION)
 
@@ -16,7 +16,9 @@ AC_SUBST(STABLE_VERSION)
 # Determined by gen-autotools.sh based on versioning.
 # Official, stable releases enable it, pre-releases
 # disable it.
-define([STABLE_RELEASE], [no])
+#
+# SyncEvolution >= 1.1.99.5: release mode by default
+define([STABLE_RELEASE], [yes])
 
 # Line above is patched by gen-autotools.sh. Handle
 # both "yes" and "no".
