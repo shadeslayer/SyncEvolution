@@ -382,23 +382,11 @@ class GitCheckout(Action):
         self.basedir = os.path.join(abspath(workdir), name)
 
     def execute(self):
-        url = self.url
-        if url.startswith("git@gitorious.org:"):
-            # use git protocol instead of personal access,
-            # because nightly testing doesn't have ssh access
-            url = url.replace("git@gitorious.org:", "git://gitorious.org/")
         if os.access(self.basedir, os.F_OK):
-            cmd = "cd %s && perl -pi -e 's!git\@gitorious.org:!git://gitorious.org/!' .git/config && git fetch" % (self.basedir)
+            cmd = "cd %s && git fetch" % (self.basedir)
         else:
-            cmd = "git clone %s %s && chmod -R g+w %s && cd %s && git config core.sharedRepository group " % (url, self.basedir, self.basedir, self.basedir)
+            cmd = "git clone %s %s && chmod -R g+w %s && cd %s && git config core.sharedRepository group " % (self.url, self.basedir, self.basedir, self.basedir)
         context.runCommand(cmd)
-
-        if (url != self.url):
-            # restore personal access via ssh so that other users
-            # can commit their changes
-            cmd = "cd %s && perl -pi -e 's!git://gitorious.org/!git\@gitorious.org:!' .git/config" % (self.basedir)
-            context.runCommand(cmd)
-
         context.runCommand("set -x; cd %(dir)s && git show-ref &&"
                            "((git tag -l | grep -w -q %(rev)s) && git checkout %(rev)s ||"
                            "((git branch -l | grep -w -q %(rev)s) && git checkout %(rev)s || git checkout -b %(rev)s origin/%(rev)s) && git merge origin/%(rev)s)" %
