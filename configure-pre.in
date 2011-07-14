@@ -32,7 +32,7 @@ AC_ARG_ENABLE(release-mode,
                               ask before making downgrades impossible (or difficult).
                               Default in this source code is
                               "stable release: STABLE_RELEASE"]),
-              enable_release_mode="$enableval", enable_release_mode="SYNCEVOLUTION_STABLE_RELEASE")
+              enable_release_mode="$enableval", enable_release_mode="STABLE_RELEASE")
 if test "$enable_release_mode" = "yes"; then
    AC_DEFINE(SYNCEVOLUTION_STABLE_RELEASE, 1, [binary is meant for end-users])
 fi
