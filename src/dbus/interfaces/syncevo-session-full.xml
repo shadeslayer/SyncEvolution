@@ -246,7 +246,7 @@
 
     <method name="CheckPresence">
       <doc:doc><doc:description>Checks whether a sync with the current server can start.</doc:description></doc:doc>
-      <arg type="s" name="status">
+      <arg type="s" name="status" direction="out">
         <doc:doc>
           <doc:summary>
             See org.syncevolution.Server Presence signal for details.
