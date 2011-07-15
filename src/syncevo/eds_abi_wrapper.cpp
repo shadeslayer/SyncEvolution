@@ -198,7 +198,7 @@ extern "C" void EDSAbiWrapperInit()
 
 # ifdef ENABLE_EBOOK
     ebookhandle =
-    findSymbols("libebook-1.2.so", 5, 9,
+    findSymbols("libebook-1.2.so", 5, 10,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_book_add_contact, "e_book_add_contact",
                 &EDSAbiWrapperSingleton.e_book_authenticate_user, "e_book_authenticate_user",
@@ -232,7 +232,7 @@ extern "C" void EDSAbiWrapperInit()
 
 # ifdef ENABLE_ECAL
     ecalhandle =
-    findSymbols("libecal-1.2.so", 3, 7,
+    findSymbols("libecal-1.2.so", 3, 8,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_cal_add_timezone, "e_cal_add_timezone",
                 &EDSAbiWrapperSingleton.e_cal_component_get_icalcomponent, "e_cal_component_get_icalcomponent",
