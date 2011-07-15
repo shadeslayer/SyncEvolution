@@ -138,7 +138,7 @@ source will synchronize it in `two-way` mode once.
 
 In SyncEvolution's predefined configuration templates, the following
 names for sources are used. Different names can be chosen for sources
-that are defined manually. ::
+that are defined manually.
 
  * addressbook: a list of contacts
  * calendar: calendar *events*
