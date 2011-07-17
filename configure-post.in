@@ -94,6 +94,11 @@ fi
 dnl --enable-evolution-compatibility
 if test "$enable_evolution_compatibility" = "yes"; then
    AC_DEFINE(EVOLUTION_COMPATIBILITY, 1, [avoid hard dependency on Evolution shared objects])
+   # don't link against libs wrapped by eds_abi_wrapper (no longer limited to EDS alone...)
+   ECAL_LIBS=
+   EBOOK_LIBS=
+   EPACKAGE_LIBS=
+   BLUEZ_LIBS=
 fi
 AM_CONDITIONAL([ENABLE_EVOLUTION_COMPATIBILITY], [test "$enable_evolution_compatibility" = "yes"])
 PKG_CHECK_MODULES(LIBICAL_AVAILABLE,
