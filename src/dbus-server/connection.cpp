@@ -17,7 +17,7 @@
  * 02110-1301  USA
  */
 
-#include "syncevo-dbus-server.h"
+#include "server.h"
 #include "connection.h"
 #include "client.h"
 

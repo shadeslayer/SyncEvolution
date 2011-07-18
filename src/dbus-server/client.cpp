@@ -20,7 +20,7 @@
 
 #include "client.h"
 #include "session.h"
-#include "syncevo-dbus-server.h"
+#include "server.h"
 #include "resource.h"
 
 SE_BEGIN_CXX

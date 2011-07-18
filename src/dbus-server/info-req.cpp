@@ -19,7 +19,7 @@
 
 #include "info-req.h"
 #include "session.h"
-#include "syncevo-dbus-server.h"
+#include "server.h"
 
 using namespace GDBusCXX;
 

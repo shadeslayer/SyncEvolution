@@ -23,7 +23,7 @@
 #include <syncevo/LogRedirect.h>
 #include <syncevo/GLibSupport.h>
 
-#include "syncevo-dbus-server.h"
+#include "server.h"
 #include "info-req.h"
 #include "connection.h"
 #include "bluez-manager.h"

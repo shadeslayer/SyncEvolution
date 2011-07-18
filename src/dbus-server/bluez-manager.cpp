@@ -18,7 +18,7 @@
  */
 
 #include "bluez-manager.h"
-#include "syncevo-dbus-server.h"
+#include "server.h"
 
 using namespace GDBusCXX;
 

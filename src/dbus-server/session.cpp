@@ -20,7 +20,7 @@
 #include <syncevo/LogRedirect.h>
 
 #include "session.h"
-#include "syncevo-dbus-server.h"
+#include "server.h"
 #include "restart.h"
 #include "info-req.h"
 #include "cmdline-wrapper.h"

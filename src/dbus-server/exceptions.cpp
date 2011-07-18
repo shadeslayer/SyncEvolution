@@ -17,7 +17,7 @@
  * 02110-1301  USA
  */
 
-#include "syncevo-exceptions.h"
+#include "exceptions.h"
 
 SE_BEGIN_CXX
 

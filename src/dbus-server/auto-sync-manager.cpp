@@ -19,7 +19,7 @@
 
 #include "auto-sync-manager.h"
 #include "session.h"
-#include "syncevo-dbus-server.h"
+#include "server.h"
 
 #include <glib/gi18n.h>
 

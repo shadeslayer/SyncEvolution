@@ -13,14 +13,14 @@ server_cpp_files = 				\
 	dbus-sync.cpp				\
 	dbus-transport-agent.cpp		\
 	dbus-user-interface.cpp			\
+	exceptions.cpp				\
 	info-req.cpp				\
 	network-manager-client.cpp		\
 	presence-status.cpp			\
 	progress-data.cpp			\
 	read-operations.cpp			\
-	session.cpp				\
 	server.cpp				\
-	exceptions.cpp
+	session.cpp
 
 server_h_files = \
 	$(server_cpp_files:%.cpp=%.h)		\

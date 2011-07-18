@@ -18,7 +18,7 @@
  */
 
 #include "read-operations.h"
-#include "syncevo-dbus-server.h"
+#include "server.h"
 #include "dbus-user-interface.h"
 
 SE_BEGIN_CXX

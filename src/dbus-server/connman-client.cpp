@@ -18,7 +18,7 @@
  */
 
 #include "connman-client.h"
-#include "syncevo-dbus-server.h"
+#include "server.h"
 
 SE_BEGIN_CXX
 

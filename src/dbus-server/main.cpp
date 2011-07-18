@@ -23,7 +23,7 @@
 
 #include <iostream>
 
-#include "syncevo-dbus-server.h"
+#include "server.h"
 #include "restart.h"
 
 #include <syncevo/SyncContext.h>

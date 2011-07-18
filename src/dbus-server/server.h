@@ -23,7 +23,7 @@
 #include <boost/weak_ptr.hpp>
 
 #include "auto-sync-manager.h"
-#include "syncevo-exceptions.h"
+#include "exceptions.h"
 #include "auto-term.h"
 #include "read-operations.h"
 #include "connman-client.h"
