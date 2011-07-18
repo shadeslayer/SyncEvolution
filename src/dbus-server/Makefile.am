@@ -1,64 +1,50 @@
 noinst_LTLIBRARIES = libsyncevodbusserver.la
 
-libsyncevodbusserver_la_SOURCES = \
-	../NotificationBackendBase.h \
-	../NotificationBackendNoop.h \
-	../NotificationBackendNoop.cpp \
-	../NotificationBackendLibnotify.h \
-	../NotificationBackendLibnotify.cpp \
-	../NotificationBackendMLite.h \
-	../NotificationBackendMLite.cpp \
-	../NotificationManager.h \
-	../NotificationManagerBase.h \
-	../NotificationManagerFactory.h \
-	../NotificationManagerFactory.cpp \
-	auto-sync-manager.h	\
-	auto-sync-manager.cpp	\
-	auto-term.h		\
-	bluez-manager.h		\
-	bluez-manager.cpp	\
-	client.h		\
-	client.cpp		\
-	cmdline-wrapper.h	\
-	connection.h		\
-	connection.cpp		\
-	connman-client.h	\
-	connman-client.cpp	\
-	dbus-sync.h		\
-	dbus-sync.cpp		\
-	dbus-transport-agent.h		\
-	dbus-transport-agent.cpp	\
-	dbus-user-interface.h	\
-	dbus-user-interface.cpp	\
-	info-req.h		\
-	info-req.cpp		\
-	main.cpp		\
-	network-manager-client.h	\
-	network-manager-client.cpp	\
-	presence-status.h	\
-	presence-status.cpp	\
-	progress-data.h		\
-	progress-data.cpp	\
-	read-operations.h	\
-	read-operations.cpp	\
-	resource.h		\
-	restart.h		\
-	session.h		\
-	session.cpp		\
-	session-listener.h	\
-	source-progress.h	\
-	source-status.h		\
-	syncevo-dbus-server.h	\
-	syncevo-dbus-server.cpp \
-	syncevo-exceptions.h	\
-	syncevo-exceptions.cpp	\
-	timeout.h		\
+server_cpp_files = 				\
+	../NotificationBackendNoop.cpp 		\
+	../NotificationBackendLibnotify.cpp 	\
+	../NotificationBackendMLite.cpp 	\
+	../NotificationManagerFactory.cpp 	\
+	auto-sync-manager.cpp			\
+	bluez-manager.cpp			\
+	client.cpp				\
+	connection.cpp				\
+	connman-client.cpp			\
+	dbus-sync.cpp				\
+	dbus-transport-agent.cpp		\
+	dbus-user-interface.cpp			\
+	info-req.cpp				\
+	network-manager-client.cpp		\
+	presence-status.cpp			\
+	progress-data.cpp			\
+	read-operations.cpp			\
+	session.cpp				\
+	server.cpp				\
+	exceptions.cpp
+
+server_h_files = \
+	$(server_cpp_files:%.cpp=%.h)		\
+	../NotificationBackendBase.h 		\
+	../NotificationManager.h 		\
+	../NotificationManagerBase.h 		\
+	auto-term.h				\
+	cmdline-wrapper.h			\
+	resource.h				\
+	restart.h				\
+	session-listener.h			\
+	source-progress.h			\
+	source-status.h				\
+	timeout.h				\
 	timer.h
+
+libsyncevodbusserver_la_SOURCES = 		\
+	$(server_h_files)			\
+	$(server_cpp_files)			\
+	main.cpp
 
 libsyncevodbusserver_la_LIBADD = $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS) $(LIBSOUP_LIBS)
 libsyncevodbusserver_la_CPPFLAGS = -DHAVE_CONFIG_H  -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\" -I$(top_srcdir)/src -I$(top_srcdir)/test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
 libsyncevodbusserver_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(SYNTHESIS_CFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(KEYRING_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(KDE_KWALLET_CFLAGS)
-
 
 # Deal with .service, .desktop and startup script files.
 CLEANFILES =	org.syncevolution.service \
