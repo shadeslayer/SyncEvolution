@@ -27,7 +27,7 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 
 /*
  * Implements org.connman.Manager
@@ -37,7 +37,7 @@ class DBusServer;
 class ConnmanClient : public GDBusCXX::DBusRemoteObject
 {
 public:
-    ConnmanClient (DBusServer &server);
+    ConnmanClient (Server &server);
     virtual const char *getDestination() const {return "net.connman";}
     virtual const char *getPath() const {return "/";}
     virtual const char *getInterface() const {return "net.connman.Manager";}
@@ -52,7 +52,7 @@ public:
     bool isAvailable() { return m_connmanConn; }
 
 private:
-    DBusServer &m_server;
+    Server &m_server;
     GDBusCXX::DBusConnectionPtr m_connmanConn;
 
     GDBusCXX::SignalWatch2 <std::string, boost::variant<std::vector<std::string>, std::string> > m_propertyChanged;

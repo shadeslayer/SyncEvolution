@@ -24,7 +24,7 @@ using namespace GDBusCXX;
 
 SE_BEGIN_CXX
 
-BluezManager::BluezManager(DBusServer &server) :
+BluezManager::BluezManager(Server &server) :
     m_server(server),
     m_adapterChanged(*this, "DefaultAdapterChanged")
 {
@@ -125,7 +125,7 @@ void BluezManager::BluezDevice::checkSyncService(const std::vector<std::string> 
 {
     static const char * SYNCML_CLIENT_UUID = "00000002-0000-1000-8000-0002ee000002";
     bool hasSyncService = false;
-    DBusServer &server = m_adapter.m_manager.m_server;
+    Server &server = m_adapter.m_manager.m_server;
     BOOST_FOREACH(const string &uuid, uuids) {
         //if the device has sync service, add it to the device list
         if(boost::iequals(uuid, SYNCML_CLIENT_UUID)) {
@@ -170,7 +170,7 @@ void BluezManager::BluezDevice::getPropertiesCb(const PropDict &props, const str
 void BluezManager::BluezDevice::propertyChanged(const string &name,
                                                 const boost::variant<vector<string>, string> &prop)
 {
-    DBusServer &server = m_adapter.m_manager.m_server;
+    Server &server = m_adapter.m_manager.m_server;
     if(boost::iequals(name, "Name")) {
         m_name = boost::get<std::string>(prop);
         SyncConfig::DeviceDescription device;

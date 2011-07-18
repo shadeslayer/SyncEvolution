@@ -28,7 +28,7 @@
 
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 class Resource;
 class Session;
 
@@ -39,7 +39,7 @@ class Session;
  */
 class Client
 {
-    DBusServer &m_server;
+    Server &m_server;
 
     typedef std::list< boost::shared_ptr<Resource> > Resources_t;
     Resources_t m_resources;
@@ -53,7 +53,7 @@ class Client
 public:
     const GDBusCXX::Caller_t m_ID;
 
-    Client(DBusServer &server,
+    Client(Server &server,
            const GDBusCXX::Caller_t &ID) :
         m_server(server),
         m_attachCount(0),

@@ -33,7 +33,7 @@
 
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 class Connection;
 class CmdlineWrapper;
 class DBusSync;
@@ -50,7 +50,7 @@ class Session : public GDBusCXX::DBusObjectHelper,
                 private ReadOperations,
                 private boost::noncopyable
 {
-    DBusServer &m_server;
+    Server &m_server;
     std::vector<std::string> m_flags;
     const std::string m_sessionID;
     std::string m_peerDeviceID;
@@ -249,7 +249,7 @@ public:
      * so that it can create more shared pointers as
      * needed.
      */
-    static boost::shared_ptr<Session> createSession(DBusServer &server,
+    static boost::shared_ptr<Session> createSession(Server &server,
                                                     const std::string &peerDeviceID,
                                                     const std::string &config_name,
                                                     const std::string &session,
@@ -264,7 +264,7 @@ public:
     void done();
 
 private:
-    Session(DBusServer &server,
+    Session(Server &server,
             const std::string &peerDeviceID,
             const std::string &config_name,
             const std::string &session,
@@ -324,7 +324,7 @@ public:
     std::string getStubConnectionError() { return m_connectionError; }
 
 
-    DBusServer &getServer() { return m_server; }
+    Server &getServer() { return m_server; }
     std::string getConfigName() { return m_configName; }
     std::string getSessionID() const { return m_sessionID; }
     std::string getPeerDeviceID() const { return m_peerDeviceID; }

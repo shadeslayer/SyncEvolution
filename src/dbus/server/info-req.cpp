@@ -25,7 +25,7 @@ using namespace GDBusCXX;
 
 SE_BEGIN_CXX
 
-InfoReq::InfoReq(DBusServer &server,
+InfoReq::InfoReq(Server &server,
                  const string &type,
                  const InfoMap &parameters,
                  const Session *session,

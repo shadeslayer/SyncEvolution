@@ -27,7 +27,7 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 
 /**
  * Client for org.freedesktop.NetworkManager
@@ -58,7 +58,7 @@ public:
         NM_STATE_CONNECTED_GLOBAL = 70,
       };
 public:
-    NetworkManagerClient(DBusServer& server);
+    NetworkManagerClient(Server& server);
 
     virtual const char *getDestination() const {
         return "org.freedesktop.NetworkManager";
@@ -104,7 +104,7 @@ private:
         NetworkManagerClient &m_manager;
     };
 
-    DBusServer &m_server;
+    Server &m_server;
     GDBusCXX::DBusConnectionPtr m_networkManagerConn;
     GDBusCXX::SignalWatch1<uint32_t> m_stateChanged;
     NetworkManagerProperties m_properties;

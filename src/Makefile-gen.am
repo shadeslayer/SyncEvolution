@@ -27,7 +27,7 @@ else
 SUBDIRS += $(SYNTHESIS_SUBDIR_INCLUDES)
 endif
 if COND_DBUS
-SUBDIRS += gdbus dbus-server
+SUBDIRS += gdbus
 endif
 SUBDIRS += dbus
 if COND_GUI
@@ -35,7 +35,7 @@ SUBDIRS += gtk-ui
 else
 endif
 
-DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) dbus-server gtk-ui gnome-bluetooth synthesis-includes
+DIST_SUBDIRS = gdbus dbus syncevo $(BACKENDS) gtk-ui gnome-bluetooth synthesis-includes
 
 AM_CPPFLAGS = $(SUBDIRS:%=-I$(srcdir)/%) -I$(srcdir)/../test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
 
@@ -161,7 +161,7 @@ distclean-local:
 	rm -rf $(CLEAN_CLIENT_SRC)
 
 # Do the linking here, as with all SyncEvolution executables.
-# Sources are compiled in dbus-server.
+# Sources are compiled in dbus/server.
 if COND_DBUS
 libexec_PROGRAMS += syncevo-dbus-server
 
@@ -182,11 +182,11 @@ if ENABLE_UNIT_TESTS
 nodist_syncevo_dbus_server_SOURCES = ../test/test.cpp
 endif
 
-syncevo_dbus_server_LDADD = dbus-server/libsyncevodbusserver.la gdbus/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS)
+syncevo_dbus_server_LDADD = dbus/server/libsyncevodbusserver.la gdbus/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS)
 syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(srcdir)/gdbus $(AM_CPPFLAGS) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
 syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(KEYRING_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(KDE_KWALLET_CFLAGS)
 syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS) $(LIBSOUP_LIBS)
-syncevo_dbus_server_DEPENDENCIES = dbus-server/libsyncevodbusserver.la gdbus/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+syncevo_dbus_server_DEPENDENCIES = dbus/server/libsyncevodbusserver.la gdbus/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
 endif
 
 # With --disable-shared autotools links against libfunambol.a which does not

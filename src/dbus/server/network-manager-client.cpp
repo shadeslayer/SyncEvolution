@@ -23,7 +23,7 @@
 
 SE_BEGIN_CXX
 
-NetworkManagerClient::NetworkManagerClient(DBusServer &server) :
+NetworkManagerClient::NetworkManagerClient(Server &server) :
     m_server(server),
     m_stateChanged(*this, "StateChanged"),
     m_properties(*this)

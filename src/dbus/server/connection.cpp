@@ -391,7 +391,7 @@ void Connection::shutdown()
     m_server.detach(this);
 }
 
-Connection::Connection(DBusServer &server,
+Connection::Connection(Server &server,
                        const DBusConnectionPtr &conn,
                        const std::string &sessionID,
                        const StringMap &peer,
@@ -399,7 +399,7 @@ Connection::Connection(DBusServer &server,
     DBusObjectHelper(conn.get(),
                      std::string("/org/syncevolution/Connection/") + sessionID,
                      "org.syncevolution.Connection",
-                     boost::bind(&DBusServer::autoTermCallback, &server)),
+                     boost::bind(&Server::autoTermCallback, &server)),
     m_server(server),
     m_peer(peer),
     m_mustAuthenticate(must_authenticate),

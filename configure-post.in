@@ -164,7 +164,7 @@ AC_CONFIG_FILES(
         src/gdbus/Makefile
         src/dbus/Makefile
         src/dbus/glib/Makefile
-        src/dbus-server/Makefile
+        src/dbus/server/Makefile
         src/Makefile
         src/syncevo/Makefile
         src/syncevo/syncevolution.pc

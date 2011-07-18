@@ -1,10 +1,12 @@
+if COND_DBUS
+
 noinst_LTLIBRARIES = libsyncevodbusserver.la
 
 server_cpp_files = 				\
-	../NotificationBackendNoop.cpp 		\
-	../NotificationBackendLibnotify.cpp 	\
-	../NotificationBackendMLite.cpp 	\
-	../NotificationManagerFactory.cpp 	\
+	../../NotificationBackendNoop.cpp 	\
+	../../NotificationBackendLibnotify.cpp 	\
+	../../NotificationBackendMLite.cpp 	\
+	../../NotificationManagerFactory.cpp 	\
 	auto-sync-manager.cpp			\
 	bluez-manager.cpp			\
 	client.cpp				\
@@ -24,9 +26,9 @@ server_cpp_files = 				\
 
 server_h_files = \
 	$(server_cpp_files:%.cpp=%.h)		\
-	../NotificationBackendBase.h 		\
-	../NotificationManager.h 		\
-	../NotificationManagerBase.h 		\
+	../../NotificationBackendBase.h 	\
+	../../NotificationManager.h 		\
+	../../NotificationManagerBase.h 	\
 	auto-term.h				\
 	cmdline-wrapper.h			\
 	resource.h				\
@@ -74,3 +76,5 @@ $(service_DATA): $(service_in_files) Makefile
 EXTRA_DIST =	$(service_in_files) \
 		$(SYNCEVO_DBUS_SERVER_SCRIPT_IN) \
 		$(SYNCEVO_DBUS_SERVER_DESKTOP_IN)
+
+endif

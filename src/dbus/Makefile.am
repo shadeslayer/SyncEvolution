@@ -1,1 +1,1 @@
-SUBDIRS = interfaces glib qt
+SUBDIRS = interfaces glib qt server

@@ -31,7 +31,7 @@
 
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 class Session;
 
 
@@ -45,14 +45,14 @@ class Session;
  * queue. Once actived, it is put in the working queue.
  *
  * At any time, there is at most one session for the first task. Once
- * it is active by DBusServer, we prepare it and make it ready to
+ * it is active by Server, we prepare it and make it ready to
  * run. After completion, a new session is created again for the next
  * task. And so on.
  *
- * The DBusServer is in charge of dispatching requests from dbus
+ * The Server is in charge of dispatching requests from dbus
  * clients and automatic sync tasks.  
  * 
- * See DBusServer::run().
+ * See Server::run().
  *
  * Here there are 3 scenarios which have been considered to do
  * automatic sync right now:
@@ -64,7 +64,7 @@ class Session;
 
 class AutoSyncManager : public SessionListener
 {
-    DBusServer &m_server;
+    Server &m_server;
 
     public:
     /**
@@ -203,7 +203,7 @@ class AutoSyncManager : public SessionListener
     bool taskLikelyToRun(const AutoSyncTask &syncTask);
 
  public:
-    AutoSyncManager(DBusServer &server)
+    AutoSyncManager(Server &server)
         : m_server(server), m_syncSuccessStart(false)
     {
         init();

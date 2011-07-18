@@ -23,7 +23,7 @@
 
 SE_BEGIN_CXX
 
-ReadOperations::ReadOperations(const std::string &config_name, DBusServer &server) :
+ReadOperations::ReadOperations(const std::string &config_name, Server &server) :
     m_configName(config_name), m_server(server)
 {}
 

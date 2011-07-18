@@ -110,7 +110,7 @@ int main(int argc, char **argv, char **envp)
             err.throwFailure("b_dbus_setup_bus()", " failed - server already running?");
         }
 
-        SyncEvo::DBusServer server(loop, shutdownRequested, restart, conn, duration);
+        SyncEvo::Server server(loop, shutdownRequested, restart, conn, duration);
         server.activate();
 
         SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);

@@ -22,7 +22,7 @@
 
 SE_BEGIN_CXX
 
-ConnmanClient::ConnmanClient(DBusServer &server):
+ConnmanClient::ConnmanClient(Server &server):
     m_server(server),
     m_propertyChanged(*this, "PropertyChanged")
 {

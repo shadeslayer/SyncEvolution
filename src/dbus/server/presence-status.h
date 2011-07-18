@@ -29,7 +29,7 @@ class PresenceStatus {
     bool m_httpPresence;
     bool m_btPresence;
     bool m_initiated;
-    DBusServer &m_server;
+    Server &m_server;
 
     /** two timers to record when the statuses of network and bt are changed */
     Timer m_httpTimer;
@@ -70,7 +70,7 @@ class PresenceStatus {
     }
 
     public:
-    PresenceStatus (DBusServer &server)
+    PresenceStatus (Server &server)
         :m_httpPresence (false), m_btPresence (false), m_initiated (false), m_server (server),
         m_httpTimer(), m_btTimer()
     {
@@ -84,7 +84,7 @@ class PresenceStatus {
 
     void init();
 
-    /* Implement DBusServer::checkPresence*/
+    /* Implement Server::checkPresence*/
     void checkPresence (const string &peer, string& status, std::vector<std::string> &transport);
 
     void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config);

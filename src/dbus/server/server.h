@@ -36,7 +36,7 @@ SE_BEGIN_CXX
 class Session;
 class Connection;
 class DBusTransportAgent;
-class DBusServer;
+class Server;
 class InfoReq;
 class BluezManager;
 class Timeout;
@@ -50,12 +50,12 @@ class GLibNotify;
  * Implements the main org.syncevolution.Server interface.
  *
  * All objects created by it get a reference to the creating
- * DBusServer instance so that they can call some of its
+ * Server instance so that they can call some of its
  * methods. Because that instance holds references to all
  * of these objects and deletes them before destructing itself,
  * that reference is guaranteed to remain valid.
  */
-class DBusServer : public GDBusCXX::DBusObjectHelper,
+class Server : public GDBusCXX::DBusObjectHelper,
                    public LoggerBase
 {
     GMainLoop *m_loop;
@@ -357,14 +357,14 @@ class DBusServer : public GDBusCXX::DBusObjectHelper,
     static bool sessionExpired(const boost::shared_ptr<Session> &session);
 
 public:
-    DBusServer(GMainLoop *loop,
+    Server(GMainLoop *loop,
                bool &shutdownRequested,
                boost::shared_ptr<Restart> &restart,
                const GDBusCXX::DBusConnectionPtr &conn,
                int duration);
-    ~DBusServer();
+    ~Server();
 
-    /** access to the GMainLoop reference used by this DBusServer instance */
+    /** access to the GMainLoop reference used by this Server instance */
     GMainLoop *getLoop() { return m_loop; }
 
     /** process D-Bus calls until the server is ready to quit */
@@ -431,7 +431,7 @@ public:
 
     /**
      * Invokes the given callback once in the given amount of seconds.
-     * Keeps a copy of the callback. If the DBusServer is destructed
+     * Keeps a copy of the callback. If the Server is destructed
      * before that time, then the callback will be deleted without
      * being called.
      */

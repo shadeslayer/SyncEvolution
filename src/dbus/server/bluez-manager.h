@@ -28,7 +28,7 @@
 
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 
 /**
  * Query bluetooth devices from org.bluez
@@ -49,7 +49,7 @@ class DBusServer;
  */
 class BluezManager : public GDBusCXX::DBusRemoteObject {
 public:
-    BluezManager(DBusServer &server);
+    BluezManager(Server &server);
 
     virtual const char *getDestination() const {return "org.bluez";}
     virtual const char *getPath() const {return "/";}
@@ -174,7 +174,7 @@ private:
     /** callback of 'DefaultAdapterChanged' signal to track changes of the default adapter */
     void defaultAdapterChanged(const GDBusCXX::DBusObject_t &adapter);
 
-    DBusServer &m_server;
+    Server &m_server;
     GDBusCXX::DBusConnectionPtr m_bluezConn;
     boost::shared_ptr<BluezAdapter> m_adapter;
 

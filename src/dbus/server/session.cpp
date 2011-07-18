@@ -377,7 +377,7 @@ string Session::syncStatusToString(SyncStatus state)
     };
 }
 
-boost::shared_ptr<Session> Session::createSession(DBusServer &server,
+boost::shared_ptr<Session> Session::createSession(Server &server,
                                                   const std::string &peerDeviceID,
                                                   const std::string &config_name,
                                                   const std::string &session,
@@ -388,7 +388,7 @@ boost::shared_ptr<Session> Session::createSession(DBusServer &server,
     return me;
 }
 
-Session::Session(DBusServer &server,
+Session::Session(Server &server,
                  const std::string &peerDeviceID,
                  const std::string &config_name,
                  const std::string &session,
@@ -396,7 +396,7 @@ Session::Session(DBusServer &server,
     DBusObjectHelper(server.getConnection(),
                      std::string("/org/syncevolution/Session/") + session,
                      "org.syncevolution.Session",
-                     boost::bind(&DBusServer::autoTermCallback, &server)),
+                     boost::bind(&Server::autoTermCallback, &server)),
     ReadOperations(config_name, server),
     m_server(server),
     m_flags(flags),
@@ -495,7 +495,7 @@ void Session::shutdownFileModified()
     if (m_active) {
         // (re)set shutdown timer: once it fires, we are ready to shut down;
         // brute-force approach, will reset timer many times
-        m_shutdownTimer.activate(DBusServer::SHUTDOWN_QUIESENCE_SECONDS,
+        m_shutdownTimer.activate(Server::SHUTDOWN_QUIESENCE_SECONDS,
                                  boost::bind(&Session::shutdownServer, this));
     }
 }
@@ -547,12 +547,12 @@ void Session::setActive(bool active)
                              (unsigned long)m_shutdownLastMod.tv_nsec,
                              (unsigned long)now.tv_sec,
                              (unsigned long)now.tv_nsec);
-                if (m_shutdownLastMod + DBusServer::SHUTDOWN_QUIESENCE_SECONDS <= now) {
+                if (m_shutdownLastMod + Server::SHUTDOWN_QUIESENCE_SECONDS <= now) {
                     // ready to shutdown immediately
                     shutdownServer();
                 } else {
                     // need to wait
-                    int secs = DBusServer::SHUTDOWN_QUIESENCE_SECONDS -
+                    int secs = Server::SHUTDOWN_QUIESENCE_SECONDS -
                         (now - m_shutdownLastMod).tv_sec;
                     SE_LOG_DEBUG(NULL, NULL, "shut down in %ds", secs);
                     m_shutdownTimer.activate(secs, boost::bind(&Session::shutdownServer, this));

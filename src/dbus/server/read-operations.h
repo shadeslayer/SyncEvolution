@@ -28,7 +28,7 @@
 SE_BEGIN_CXX
 
 class DBusUserInterface;
-class DBusServer;
+class Server;
 
 /**
  * Implements the read-only methods in a Session and the Server.
@@ -40,9 +40,9 @@ class ReadOperations
 public:
     const std::string m_configName;
 
-    DBusServer &m_server;
+    Server &m_server;
 
-    ReadOperations(const std::string &config_name, DBusServer &server);
+    ReadOperations(const std::string &config_name, Server &server);
 
     /** the double dictionary used to represent configurations */
     typedef std::map< std::string, StringMap > Config_t;

@@ -36,7 +36,7 @@ using namespace GDBusCXX;
 
 SE_BEGIN_CXX
 
-void DBusServer::clientGone(Client *c)
+void Server::clientGone(Client *c)
 {
     for(Clients_t::iterator it = m_clients.begin();
         it != m_clients.end();
@@ -52,7 +52,7 @@ void DBusServer::clientGone(Client *c)
     SE_LOG_DEBUG(NULL, NULL, "unknown client has disconnected?!");
 }
 
-std::string DBusServer::getNextSession()
+std::string Server::getNextSession()
 {
     // Make the session ID somewhat random. This protects to
     // some extend against injecting unwanted messages into the
@@ -64,10 +64,10 @@ std::string DBusServer::getNextSession()
     return StringPrintf("%u%u", rand(), m_lastSession);
 }
 
-vector<string> DBusServer::getCapabilities()
+vector<string> Server::getCapabilities()
 {
     // Note that this is tested by test-dbus.py in
-    // TestDBusServer.testCapabilities, update the test when adding
+    // TestServer.testCapabilities, update the test when adding
     // capabilities.
     vector<string> capabilities;
 
@@ -81,7 +81,7 @@ vector<string> DBusServer::getCapabilities()
     return capabilities;
 }
 
-StringMap DBusServer::getVersions()
+StringMap Server::getVersions()
 {
     StringMap versions;
 
@@ -91,7 +91,7 @@ StringMap DBusServer::getVersions()
     return versions;
 }
 
-void DBusServer::attachClient(const Caller_t &caller,
+void Server::attachClient(const Caller_t &caller,
                               const boost::shared_ptr<Watch> &watch)
 {
     boost::shared_ptr<Client> client = addClient(getConnection(),
@@ -101,7 +101,7 @@ void DBusServer::attachClient(const Caller_t &caller,
     client->increaseAttachCount();
 }
 
-void DBusServer::detachClient(const Caller_t &caller)
+void Server::detachClient(const Caller_t &caller)
 {
     boost::shared_ptr<Client> client = findClient(caller);
     if (client) {
@@ -110,7 +110,7 @@ void DBusServer::detachClient(const Caller_t &caller)
     }
 }
 
-void DBusServer::setNotifications(bool enabled,
+void Server::setNotifications(bool enabled,
                                   const Caller_t &caller,
                                   const string & /* notifications */)
 {
@@ -122,7 +122,7 @@ void DBusServer::setNotifications(bool enabled,
     }
 }
 
-bool DBusServer::notificationsEnabled()
+bool Server::notificationsEnabled()
 {
     for(Clients_t::iterator it = m_clients.begin();
         it != m_clients.end();
@@ -134,7 +134,7 @@ bool DBusServer::notificationsEnabled()
     return true;
 }
 
-void DBusServer::connect(const Caller_t &caller,
+void Server::connect(const Caller_t &caller,
                          const boost::shared_ptr<Watch> &watch,
                          const StringMap &peer,
                          bool must_authenticate,
@@ -166,7 +166,7 @@ void DBusServer::connect(const Caller_t &caller,
     object = c->getPath();
 }
 
-void DBusServer::startSessionWithFlags(const Caller_t &caller,
+void Server::startSessionWithFlags(const Caller_t &caller,
                                        const boost::shared_ptr<Watch> &watch,
                                        const std::string &server,
                                        const std::vector<std::string> &flags,
@@ -187,14 +187,14 @@ void DBusServer::startSessionWithFlags(const Caller_t &caller,
     object = session->getPath();
 }
 
-void DBusServer::checkPresence(const std::string &server,
+void Server::checkPresence(const std::string &server,
                                std::string &status,
                                std::vector<std::string> &transports)
 {
     return m_presence.checkPresence(server, status, transports);
 }
 
-void DBusServer::getSessions(std::vector<DBusObject_t> &sessions)
+void Server::getSessions(std::vector<DBusObject_t> &sessions)
 {
     sessions.reserve(m_workQueue.size() + 1);
     if (m_activeSession) {
@@ -208,7 +208,7 @@ void DBusServer::getSessions(std::vector<DBusObject_t> &sessions)
     }
 }
 
-DBusServer::DBusServer(GMainLoop *loop,
+Server::Server(GMainLoop *loop,
                        bool &shutdownRequested,
                        boost::shared_ptr<Restart> &restart,
                        const DBusConnectionPtr &conn,
@@ -216,7 +216,7 @@ DBusServer::DBusServer(GMainLoop *loop,
     DBusObjectHelper(conn.get(),
                      "/org/syncevolution/Server",
                      "org.syncevolution.Server",
-                     boost::bind(&DBusServer::autoTermCallback, this)),
+                     boost::bind(&Server::autoTermCallback, this)),
     m_loop(loop),
     m_shutdownRequested(shutdownRequested),
     m_restart(restart),
@@ -240,24 +240,24 @@ DBusServer::DBusServer(GMainLoop *loop,
     struct timeval tv;
     gettimeofday(&tv, NULL);
     srand(tv.tv_usec);
-    add(this, &DBusServer::getCapabilities, "GetCapabilities");
-    add(this, &DBusServer::getVersions, "GetVersions");
-    add(this, &DBusServer::attachClient, "Attach");
-    add(this, &DBusServer::detachClient, "Detach");
-    add(this, &DBusServer::enableNotifications, "EnableNotifications");
-    add(this, &DBusServer::disableNotifications, "DisableNotifications");
-    add(this, &DBusServer::notificationAction, "NotificationAction");
-    add(this, &DBusServer::connect, "Connect");
-    add(this, &DBusServer::startSession, "StartSession");
-    add(this, &DBusServer::startSessionWithFlags, "StartSessionWithFlags");
-    add(this, &DBusServer::getConfigs, "GetConfigs");
-    add(this, &DBusServer::getConfig, "GetConfig");
-    add(this, &DBusServer::getReports, "GetReports");
-    add(this, &DBusServer::checkSource, "CheckSource");
-    add(this, &DBusServer::getDatabases, "GetDatabases");
-    add(this, &DBusServer::checkPresence, "CheckPresence");
-    add(this, &DBusServer::getSessions, "GetSessions");
-    add(this, &DBusServer::infoResponse, "InfoResponse");
+    add(this, &Server::getCapabilities, "GetCapabilities");
+    add(this, &Server::getVersions, "GetVersions");
+    add(this, &Server::attachClient, "Attach");
+    add(this, &Server::detachClient, "Detach");
+    add(this, &Server::enableNotifications, "EnableNotifications");
+    add(this, &Server::disableNotifications, "DisableNotifications");
+    add(this, &Server::notificationAction, "NotificationAction");
+    add(this, &Server::connect, "Connect");
+    add(this, &Server::startSession, "StartSession");
+    add(this, &Server::startSessionWithFlags, "StartSessionWithFlags");
+    add(this, &Server::getConfigs, "GetConfigs");
+    add(this, &Server::getConfig, "GetConfig");
+    add(this, &Server::getReports, "GetReports");
+    add(this, &Server::checkSource, "CheckSource");
+    add(this, &Server::getDatabases, "GetDatabases");
+    add(this, &Server::checkPresence, "CheckPresence");
+    add(this, &Server::getSessions, "GetSessions");
+    add(this, &Server::infoResponse, "InfoResponse");
     add(sessionChanged);
     add(templatesChanged);
     add(configChanged);
@@ -275,7 +275,7 @@ DBusServer::DBusServer(GMainLoop *loop,
     }
 }
 
-DBusServer::~DBusServer()
+Server::~Server()
 {
     // make sure all other objects are gone before destructing ourselves
     m_syncSession.reset();
@@ -284,7 +284,7 @@ DBusServer::~DBusServer()
     LoggerBase::popLogger();
 }
 
-void DBusServer::fileModified()
+void Server::fileModified()
 {
     if (!m_shutdownSession) {
         string newSession = getNextSession();
@@ -302,7 +302,7 @@ void DBusServer::fileModified()
     m_shutdownSession->shutdownFileModified();
 }
 
-void DBusServer::run(LogRedirect &redirect)
+void Server::run(LogRedirect &redirect)
 {
     // This has the intended side effect that it loads everything into
     // memory which might be dynamically loadable, like backend
@@ -329,7 +329,7 @@ void DBusServer::run(LogRedirect &redirect)
     BOOST_FOREACH(const string &file, files) {
         try {
             SE_LOG_DEBUG(NULL, NULL, "watching: %s", file.c_str());
-            boost::shared_ptr<SyncEvo::GLibNotify> notify(new GLibNotify(file.c_str(), boost::bind(&DBusServer::fileModified, this)));
+            boost::shared_ptr<SyncEvo::GLibNotify> notify(new GLibNotify(file.c_str(), boost::bind(&Server::fileModified, this)));
             m_files.push_back(notify);
         } catch (...) {
             // ignore errors for indidividual files
@@ -385,7 +385,7 @@ void DBusServer::run(LogRedirect &redirect)
 /**
  * look up client by its ID
  */
-boost::shared_ptr<Client> DBusServer::findClient(const Caller_t &ID)
+boost::shared_ptr<Client> Server::findClient(const Caller_t &ID)
 {
     for(Clients_t::iterator it = m_clients.begin();
         it != m_clients.end();
@@ -397,7 +397,7 @@ boost::shared_ptr<Client> DBusServer::findClient(const Caller_t &ID)
     return boost::shared_ptr<Client>();
 }
 
-boost::shared_ptr<Client> DBusServer::addClient(const DBusConnectionPtr &conn,
+boost::shared_ptr<Client> Server::addClient(const DBusConnectionPtr &conn,
                                                 const Caller_t &ID,
                                                 const boost::shared_ptr<Watch> &watch)
 {
@@ -409,12 +409,12 @@ boost::shared_ptr<Client> DBusServer::addClient(const DBusConnectionPtr &conn,
     // add to our list *before* checking that peer exists, so
     // that clientGone() can remove it if the check fails
     m_clients.push_back(std::make_pair(watch, client));
-    watch->setCallback(boost::bind(&DBusServer::clientGone, this, client.get()));
+    watch->setCallback(boost::bind(&Server::clientGone, this, client.get()));
     return client;
 }
 
 
-void DBusServer::detach(Resource *resource)
+void Server::detach(Resource *resource)
 {
     BOOST_FOREACH(const Clients_t::value_type &client_entry,
                   m_clients) {
@@ -422,7 +422,7 @@ void DBusServer::detach(Resource *resource)
     }
 }
 
-void DBusServer::enqueue(const boost::shared_ptr<Session> &session)
+void Server::enqueue(const boost::shared_ptr<Session> &session)
 {
     WorkQueue_t::iterator it = m_workQueue.end();
     while (it != m_workQueue.begin()) {
@@ -437,7 +437,7 @@ void DBusServer::enqueue(const boost::shared_ptr<Session> &session)
     checkQueue();
 }
 
-int DBusServer::killSessions(const std::string &peerDeviceID)
+int Server::killSessions(const std::string &peerDeviceID)
 {
     int count = 0;
 
@@ -479,7 +479,7 @@ int DBusServer::killSessions(const std::string &peerDeviceID)
     return count;
 }
 
-void DBusServer::dequeue(Session *session)
+void Server::dequeue(Session *session)
 {
     if (m_syncSession.get() == session) {
         // This is the running sync session.
@@ -511,7 +511,7 @@ void DBusServer::dequeue(Session *session)
     }
 }
 
-void DBusServer::checkQueue()
+void Server::checkQueue()
 {
     if (m_activeSession) {
         // still busy
@@ -536,7 +536,7 @@ void DBusServer::checkQueue()
     }
 }
 
-bool DBusServer::sessionExpired(const boost::shared_ptr<Session> &session)
+bool Server::sessionExpired(const boost::shared_ptr<Session> &session)
 {
     SE_LOG_DEBUG(NULL, NULL, "session %s expired",
                  session->getSessionID().c_str());
@@ -544,16 +544,16 @@ bool DBusServer::sessionExpired(const boost::shared_ptr<Session> &session)
     return false;
 }
 
-void DBusServer::delaySessionDestruction(const boost::shared_ptr<Session> &session)
+void Server::delaySessionDestruction(const boost::shared_ptr<Session> &session)
 {
     SE_LOG_DEBUG(NULL, NULL, "delaying destruction of session %s by one minute",
                  session->getSessionID().c_str());
-    addTimeout(boost::bind(&DBusServer::sessionExpired,
+    addTimeout(boost::bind(&Server::sessionExpired,
                            session),
                60 /* 1 minute */);
 }
 
-bool DBusServer::callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost::function<bool ()> &callback)
+bool Server::callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost::function<bool ()> &callback)
 {
     if (!callback()) {
         m_timeouts.remove(timeout);
@@ -563,13 +563,13 @@ bool DBusServer::callTimeout(const boost::shared_ptr<Timeout> &timeout, const bo
     }
 }
 
-void DBusServer::addTimeout(const boost::function<bool ()> &callback,
+void Server::addTimeout(const boost::function<bool ()> &callback,
                             int seconds)
 {
     boost::shared_ptr<Timeout> timeout(new Timeout);
     m_timeouts.push_back(timeout);
     timeout->activate(seconds,
-                      boost::bind(&DBusServer::callTimeout,
+                      boost::bind(&Server::callTimeout,
                                   this,
                                   // avoid copying the shared pointer here,
                                   // otherwise the Timeout will never be deleted
@@ -577,7 +577,7 @@ void DBusServer::addTimeout(const boost::function<bool ()> &callback,
                                   callback));
 }
 
-void DBusServer::infoResponse(const Caller_t &caller,
+void Server::infoResponse(const Caller_t &caller,
                               const std::string &id,
                               const std::string &state,
                               const std::map<string, string> &response)
@@ -590,7 +590,7 @@ void DBusServer::infoResponse(const Caller_t &caller,
     }
 }
 
-boost::shared_ptr<InfoReq> DBusServer::createInfoReq(const string &type,
+boost::shared_ptr<InfoReq> Server::createInfoReq(const string &type,
                                                      const std::map<string, string> &parameters,
                                                      const Session *session)
 {
@@ -600,12 +600,12 @@ boost::shared_ptr<InfoReq> DBusServer::createInfoReq(const string &type,
     return infoReq;
 }
 
-std::string DBusServer::getNextInfoReq()
+std::string Server::getNextInfoReq()
 {
     return StringPrintf("%u", ++m_lastInfoReq);
 }
 
-void DBusServer::emitInfoReq(const InfoReq &req)
+void Server::emitInfoReq(const InfoReq &req)
 {
     infoRequest(req.getId(),
                 req.getSessionPath(),
@@ -615,7 +615,7 @@ void DBusServer::emitInfoReq(const InfoReq &req)
                 req.getParam());
 }
 
-void DBusServer::removeInfoReq(const InfoReq &req)
+void Server::removeInfoReq(const InfoReq &req)
 {
     // remove InfoRequest from hash map
     InfoReqMap::iterator it = m_infoReqMap.find(req.getId());
@@ -624,7 +624,7 @@ void DBusServer::removeInfoReq(const InfoReq &req)
     }
 }
 
-void DBusServer::getDeviceList(SyncConfig::DeviceList &devices)
+void Server::getDeviceList(SyncConfig::DeviceList &devices)
 {
     //wait bluez or other device managers
     while(!m_bluezManager->isDone()) {
@@ -635,7 +635,7 @@ void DBusServer::getDeviceList(SyncConfig::DeviceList &devices)
     devices = m_syncDevices;
 }
 
-void DBusServer::addPeerTempl(const string &templName,
+void Server::addPeerTempl(const string &templName,
                               const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl)
 {
     std::string lower = templName;
@@ -643,7 +643,7 @@ void DBusServer::addPeerTempl(const string &templName,
     m_matchedTempls.insert(MatchedTemplates::value_type(lower, peerTempl));
 }
 
-boost::shared_ptr<SyncConfig::TemplateDescription> DBusServer::getPeerTempl(const string &peer)
+boost::shared_ptr<SyncConfig::TemplateDescription> Server::getPeerTempl(const string &peer)
 {
     std::string lower = peer;
     boost::to_lower(lower);
@@ -655,7 +655,7 @@ boost::shared_ptr<SyncConfig::TemplateDescription> DBusServer::getPeerTempl(cons
     }
 }
 
-bool DBusServer::getDevice(const string &deviceId, SyncConfig::DeviceDescription &device)
+bool Server::getDevice(const string &deviceId, SyncConfig::DeviceDescription &device)
 {
     SyncConfig::DeviceList::iterator syncDevIt;
     for(syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
@@ -667,7 +667,7 @@ bool DBusServer::getDevice(const string &deviceId, SyncConfig::DeviceDescription
     return false;
 }
 
-void DBusServer::addDevice(const SyncConfig::DeviceDescription &device)
+void Server::addDevice(const SyncConfig::DeviceDescription &device)
 {
     SyncConfig::DeviceList::iterator it;
     for(it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
@@ -681,7 +681,7 @@ void DBusServer::addDevice(const SyncConfig::DeviceDescription &device)
     }
 }
 
-void DBusServer::removeDevice(const string &deviceId)
+void Server::removeDevice(const string &deviceId)
 {
     SyncConfig::DeviceList::iterator syncDevIt;
     for(syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
@@ -693,7 +693,7 @@ void DBusServer::removeDevice(const string &deviceId)
     }
 }
 
-void DBusServer::updateDevice(const string &deviceId,
+void Server::updateDevice(const string &deviceId,
                               const SyncConfig::DeviceDescription &device)
 {
     SyncConfig::DeviceList::iterator it;
@@ -706,7 +706,7 @@ void DBusServer::updateDevice(const string &deviceId,
     }
 }
 
-void DBusServer::messagev(Level level,
+void Server::messagev(Level level,
                           const char *prefix,
                           const char *file,
                           int line,

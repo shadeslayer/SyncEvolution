@@ -24,7 +24,7 @@
 
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 
 /**
  * Represents and implements the Connection interface.
@@ -40,7 +40,7 @@ class DBusServer;
  */
 class Connection : public GDBusCXX::DBusObjectHelper, public Resource
 {
-    DBusServer &m_server;
+    Server &m_server;
     StringMap m_peer;
     bool m_mustAuthenticate;
     enum {
@@ -129,7 +129,7 @@ class Connection : public GDBusCXX::DBusObjectHelper, public Resource
 public:
     const std::string m_description;
 
-    Connection(DBusServer &server,
+    Connection(Server &server,
                const GDBusCXX::DBusConnectionPtr &conn,
                const std::string &session_num,
                const StringMap &peer,

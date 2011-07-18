@@ -27,7 +27,7 @@
 
 SE_BEGIN_CXX
 
-class DBusServer;
+class Server;
 class Session;
 
 /**
@@ -49,7 +49,7 @@ public:
      * constructor
      * The default timeout is 120 seconds
      */
-    InfoReq(DBusServer &server,
+    InfoReq(Server &server,
             const std::string &type,
             const InfoMap &parameters,
             const Session *session,
@@ -102,7 +102,7 @@ private:
     /** check whether the request is timeout */
     bool checkTimeout();
 
-    friend class DBusServer;
+    friend class Server;
 
     /** set response from dbus clients */
 void setResponse(const GDBusCXX::Caller_t &caller, const std::string &state, const InfoMap &response);
@@ -117,7 +117,7 @@ void setResponse(const GDBusCXX::Caller_t &caller, const std::string &state, con
     std::string getType() const { return m_type; }
     const InfoMap& getParam() const { return m_param; }
 
-    DBusServer &m_server;
+    Server &m_server;
 
     /** caller's session, might be NULL */
     const Session *m_session;
