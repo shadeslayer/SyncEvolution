@@ -820,6 +820,7 @@ void LocalTests::testChanges() {
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()) + countUpdatedItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+    CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // start anew, then create, delete and recreate an item -> should only be listed as new or updated,
     // even if (as for calendar with UID) the same LUID gets reused
