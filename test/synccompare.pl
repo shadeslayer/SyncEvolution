@@ -424,7 +424,7 @@ sub NormalizeItem {
 
     if ($funambol) {
       # several properties are not preserved
-      s/^(CALURI|FBURL|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO|X-ASSISTANT)(;[^:;\n]*)*:.*\r?\n?//gm;
+      s/^(CALURI|FBURL|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-YAHOO|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-ASSISTANT)(;[^:;\n]*)*:.*\r?\n?//gm;
 
       # quoted-printable line breaks are =0D=0A, not just single =0A
       s/(?<!=0D)=0A/=0D=0A/g;
@@ -562,7 +562,7 @@ sub NormalizeItem {
       }
     }
     if ($mobical) {
-      s/^(CALURI|CATEGORIES|FBURL|NICKNAME|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-MANAGER|X-SPOUSE|X-YAHOO|X-AIM)(;[^:;\n]*)*:.*\r?\n?//gm;
+      s/^(CALURI|CATEGORIES|FBURL|NICKNAME|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-MANAGER|X-SPOUSE|X-YAHOO|X-AIM)(;[^:;\n]*)*:.*\r?\n?//gm;
 
       # some workrounds here for mobical's bug 
       s/^(FN|BDAY)(;[^:;\n]*)*:.*\r?\n?//gm;

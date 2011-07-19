@@ -9,7 +9,7 @@ if COND_CORE
 SUBDIRS += po test
 dist_doc_DATA += README NEWS COPYING $(TEST_README_FILES) test/syncevo-http-server-logging.conf
 if COND_HTML_README
-dist_doc_DATA += README.html
+# dist_doc_DATA += README.html
 endif
 if COND_MAN_PAGES
 man_MANS += syncevolution.1
@@ -207,13 +207,21 @@ dist-hook:
 	fi
 
 if ENABLE_EVOLUTION_COMPATIBILITY
+# check .so (relevant for modular builds) and main syncevolution binary
+# (relevant in that case and for static builds) for dependencies on
+# problematic libraries and symbols
+#
+# ical_strdup is an exception because it is in SyncEvolution.
 installcheck-local:
-	for i in `find . -name *.so`; do \
-		if ldd $$i | grep -e libecal -e libebook -e libedata -e libical -e libbluetooth; then \
+	for i in `find $(DESTDIR)/$(libdir)/syncevolution $(DESTDIR)/$(libdir)/libsyncevo* $(DESTDIR)/$(libdir)/libsynthesis* -name *.so` $(DESTDIR)/$(bindir)/syncevolution; do \
+		if objdump -T -C $$i | grep -v :: | grep '\*UND\*' | sort | grep -v -w ical_strdup | grep -e ical -e " e_"; then \
 			echo "$$i should not depend on EDS, libical or libbluetooth"; \
-			objdump -T -C $$i | grep -v :: | grep -e ical -e " e_"; \
 			exit 1; \
-		fi \
+		fi; \
+		if ldd $$i | grep -e libecal -e libebook -e libedata -e libical -e libbluetooth; then \
+			echo "$$i should not be linked against EDS, libical or libbluetooth"; \
+			exit 1; \
+		fi; \
 	done
 endif
 
