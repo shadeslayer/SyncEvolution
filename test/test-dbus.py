@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python -u
 #
 # Copyright (C) 2009 Intel Corporation
 #
@@ -291,8 +291,11 @@ class DBusUtil(Timeout):
         # and increase log level
         env["SYNCEVOLUTION_DEBUG"] = "1"
 
-        dbuslog = "dbus.log"
-        syncevolog = "syncevo.log"
+        # testAutoSyncFailure (__main__.TestSessionAPIsDummy) => testAutoSyncFailure_TestSessionAPIsDummy
+        testname = str(self).replace(" ", "_").replace("__main__.", "").replace("(", "").replace(")", "")
+        dbuslog = testname + ".dbus.log"
+        syncevolog = testname + ".syncevo.log"
+
         pmonitor = subprocess.Popen(monitor,
                                     stdout=open(dbuslog, "w"),
                                     stderr=subprocess.STDOUT)
@@ -315,11 +318,17 @@ class DBusUtil(Timeout):
                     time.sleep(2)
                     break
         else:
+            logfile = open(syncevolog, "w")
+            logfile.write("env:\n%s\n\nargs:\n%s\n\n" % (env, server + serverArgs))
+            logfile.flush()
+            size = os.path.getsize(syncevolog)
             DBusUtil.pserver = subprocess.Popen(server + serverArgs,
                                                 env=env,
-                                                stdout=open(syncevolog, "w"),
+                                                stdout=logfile,
                                                 stderr=subprocess.STDOUT)
-            while os.path.getsize(syncevolog) == 0:
+            while (os.path.getsize(syncevolog) == size or \
+                    not ("syncevo-dbus-server: ready to run" in open(syncevolog).read())) and \
+                    self.isServerRunning():
                 time.sleep(1)
 
         numerrors = len(result.errors)
