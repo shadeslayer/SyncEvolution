@@ -4072,6 +4072,13 @@ static string mangleICalendar20(const char *data, bool update)
     std::string item = data;
 
     if (update) {
+        if (item.find("BEGIN:VJOURNAL") != item.npos) {
+            // Need to modify first line of description and summary
+            // consistently for a note because in plain text
+            // representation, these lines are expected to be
+            // identical.
+            boost::replace_first(item, "SUMMARY:", "SUMMARY:U ");
+        }
         boost::replace_first(item, "DESCRIPTION:", "DESCRIPTION:U ");
     }
 
