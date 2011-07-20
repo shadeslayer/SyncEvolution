@@ -426,11 +426,11 @@ class DBusUtil(Timeout):
         signal = bus.add_signal_receiver(session_ready,
                                          'SessionChanged',
                                          'org.syncevolution.Server',
-                                         'org.syncevolution',
+                                         self.server.bus_name,
                                          None,
                                          byte_arrays=True,
                                          utf8_strings=True)
-        session = dbus.Interface(bus.get_object('org.syncevolution',
+        session = dbus.Interface(bus.get_object(self.server.bus_name,
                                                 sessionpath),
                                  'org.syncevolution.Session')
         status, error, sources = session.GetStatus(utf8_strings=True)
@@ -485,14 +485,14 @@ class DBusUtil(Timeout):
         bus.add_signal_receiver(progress,
                                 'ProgressChanged',
                                 'org.syncevolution.Session',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 sessionpath,
                                 byte_arrays=True, 
                                 utf8_strings=True)
         bus.add_signal_receiver(status,
                                 'StatusChanged',
                                 'org.syncevolution.Session',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 sessionpath,
                                 byte_arrays=True, 
                                 utf8_strings=True)
@@ -509,7 +509,7 @@ class DBusUtil(Timeout):
         bus.add_signal_receiver(config,
                                 'ConfigChanged',
                                 'org.syncevolution.Server',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
@@ -535,14 +535,14 @@ class DBusUtil(Timeout):
         bus.add_signal_receiver(abort,
                                 'Abort',
                                 'org.syncevolution.Connection',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 conpath,
                                 byte_arrays=True, 
                                 utf8_strings=True)
         bus.add_signal_receiver(reply,
                                 'Reply',
                                 'org.syncevolution.Connection',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 conpath,
                                 byte_arrays=True, 
                                 utf8_strings=True)
@@ -753,7 +753,7 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
         except dbus.DBusException:
             self.fail("dbus server should not terminate")
 
-        connection = dbus.Interface(bus.get_object('org.syncevolution',
+        connection = dbus.Interface(bus.get_object(self.server.bus_name,
                                                    conpath),
                                     'org.syncevolution.Connection')
         connection.Close(False, "good bye", utf8_strings=True)
@@ -957,7 +957,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         match = bus.add_signal_receiver(cb_http_presence,
                                 'Presence',
                                 'org.syncevolution.Server',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
@@ -976,7 +976,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         match = bus.add_signal_receiver(cb_bt_presence,
                                 'Presence',
                                 'org.syncevolution.Server',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
@@ -1005,7 +1005,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         match = bus.add_signal_receiver(cb_bt_http_presence,
                                 'Presence',
                                 'org.syncevolution.Server',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
@@ -1163,7 +1163,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         bus.add_signal_receiver(session_ready,
                                 'SessionChanged',
                                 'org.syncevolution.Server',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
@@ -1178,12 +1178,12 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         bus.add_signal_receiver(status,
                                 'StatusChanged',
                                 'org.syncevolution.Session',
-                                'org.syncevolution',
+                                self.server.bus_name,
                                 sessionpath,
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
-        session = dbus.Interface(bus.get_object('org.syncevolution',
+        session = dbus.Interface(bus.get_object(self.server.bus_name,
                                                 sessionpath),
                                  'org.syncevolution.Session')
         status, error, sources = session.GetStatus(utf8_strings=True)
@@ -1856,7 +1856,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         signal = bus.add_signal_receiver(infoRequest,
                                          'InfoRequest',
                                          'org.syncevolution.Server',
-                                         'org.syncevolution',
+                                         self.server.bus_name,
                                          None,
                                          byte_arrays=True,
                                          utf8_strings=True)
@@ -1901,7 +1901,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         signal = bus.add_signal_receiver(session_ready,
                                          'SessionChanged',
                                          'org.syncevolution.Server',
-                                         'org.syncevolution',
+                                         self.server.bus_name,
                                          None,
                                          byte_arrays=True,
                                          utf8_strings=True)
@@ -1919,7 +1919,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # session must be around for a while after terminating, to allow
         # reading information about it by clients who didn't start it
         # and thus wouldn't know what the session was about otherwise
-        session = dbus.Interface(bus.get_object('org.syncevolution',
+        session = dbus.Interface(bus.get_object(self.server.bus_name,
                                                 self.auto_sync_session_path),
                                  'org.syncevolution.Session')
         reports = session.GetReports(0, 100, utf8_strings=True)
@@ -1964,7 +1964,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         signal = bus.add_signal_receiver(session_ready,
                                          'SessionChanged',
                                          'org.syncevolution.Server',
-                                         'org.syncevolution',
+                                         self.server.bus_name,
                                          None,
                                          byte_arrays=True,
                                          utf8_strings=True)
@@ -1977,7 +1977,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         loop.run()
         self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
                                                     "session " + self.auto_sync_session_path + " done"])
-        session = dbus.Interface(bus.get_object('org.syncevolution',
+        session = dbus.Interface(bus.get_object(self.server.bus_name,
                                                 self.auto_sync_session_path),
                                  'org.syncevolution.Session')
         reports = session.GetReports(0, 100, utf8_strings=True)
@@ -2169,7 +2169,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                       must_authenticate,
                                       "")
         self.setUpConnectionListeners(conpath)
-        connection = dbus.Interface(bus.get_object('org.syncevolution',
+        connection = dbus.Interface(bus.get_object(self.server.bus_name,
                                                    conpath),
                                     'org.syncevolution.Connection')
         return (conpath, connection)
