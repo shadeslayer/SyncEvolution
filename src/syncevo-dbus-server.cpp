@@ -1050,6 +1050,9 @@ public:
 
     void getPropCb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const string &error);
 
+    /** TRUE if watching ConnMan status */
+    bool isAvailable() { return m_connmanConn; }
+
 private:
     DBusServer &m_server;
     DBusConnectionPtr m_connmanConn;
@@ -1102,6 +1105,9 @@ public:
     }
 
     void stateChanged(uint32_t uiState);
+
+    /** TRUE if watching Network Manager status */
+    bool isAvailable() { return m_networkManagerConn; }
 
 private:
 
@@ -5701,6 +5707,12 @@ DBusServer::DBusServer(GMainLoop *loop, const DBusConnectionPtr &conn, int durat
 
     LoggerBase::pushLogger(this);
     setLevel(LoggerBase::DEBUG);
+
+    if (!m_connman.isAvailable() &&
+        !m_networkManager.isAvailable()) {
+        // assume that we are online if no network manager was found at all
+        getPresenceStatus().updatePresenceStatus(true, true);
+    }
 }
 
 DBusServer::~DBusServer()
