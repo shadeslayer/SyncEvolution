@@ -1334,6 +1334,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                             }
         self.sources = ['addressbook', 'calendar', 'todo', 'memo']
 
+        # set by SessionReady signal handlers in some tests
+        self.auto_sync_session_path = None
+
     def run(self, result):
         self.runTest(result)
 
@@ -1895,7 +1898,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.session.SetConfig(True, False, config, utf8_strings=True)
 
         def session_ready(object, ready):
-            if self.running and object != self.sessionpath:
+            if self.running and object != self.sessionpath and \
+                (self.auto_sync_session_path == None and ready or \
+                 self.auto_sync_session_path == object):
                 self.auto_sync_session_path = object
                 DBusUtil.quit_events.append("session " + object + (ready and " ready" or " done"))
                 loop.quit()
@@ -1932,6 +1937,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         flags = session.GetFlags()
         self.failUnlessEqual(flags, [])
         first_auto = self.auto_sync_session_path
+        self.auto_sync_session_path = None
 
         # check that interval between auto-sync sessions is right
         loop.run()
@@ -1958,7 +1964,9 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.session.SetConfig(True, False, config, utf8_strings=True)
 
         def session_ready(object, ready):
-            if self.running and object != self.sessionpath:
+            if self.running and object != self.sessionpath and \
+                (self.auto_sync_session_path == None and ready or \
+                 self.auto_sync_session_path == object):
                 self.auto_sync_session_path = object
                 DBusUtil.quit_events.append("session " + object + (ready and " ready" or " done"))
                 loop.quit()
