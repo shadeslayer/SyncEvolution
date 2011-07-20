@@ -720,6 +720,7 @@ replace ``webdav`` with ``google-calendar`` resp. ``yahoo`` and remove the
    # configure sync config
    syncevolution --configure \
                  --template SyncEvolution_Client \
+                 syncURL=local://@webdav \
                  username= \
                  password= \
                  webdav \
