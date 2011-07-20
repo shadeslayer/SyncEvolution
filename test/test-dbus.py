@@ -940,6 +940,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.conn.remove_from_connection()
         self.conf = None
 
+    @property("ENV", "DBUS_TEST_CONNMAN=session")
     @timeout(100)
     def testPresenceSignal(self):
         """TestDBusServerPresence.testPresenceSignal - check Server.Presence signal"""
@@ -1018,6 +1019,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.failUnlessEqual (self.bar, "")
         match.remove()
 
+    @property("ENV", "DBUS_TEST_CONNMAN=session")
     @timeout(100)
     def testServerCheckPresence(self):
         """TestDBusServerPresence.testServerCheckPresence - check Server.CheckPresence()"""
@@ -1061,6 +1063,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.failUnlessEqual (status, "")
         self.failUnlessEqual (transports, ["obex-bt://bt-client-mixed"])
 
+    @property("ENV", "DBUS_TEST_CONNMAN=session")
     @timeout(100)
     def testSessionCheckPresence(self):
         """TestDBusServerPresence.testSessionCheckPresence - check Session.CheckPresence()"""
@@ -1081,7 +1084,6 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.failUnlessEqual (status, "no transport")
 
     def run(self, result):
-        os.environ["DBUS_TEST_CONNMAN"] = "session"
         self.runTest(result, True)
 
 class TestDBusSession(unittest.TestCase, DBusUtil):
