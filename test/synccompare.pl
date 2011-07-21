@@ -216,7 +216,12 @@ sub NormalizeItem {
     s/^PHOTO;(.*)TYPE=[A-Z]*/PHOTO;$1/mg;
     # encoding is not case sensitive, skip white space in the middle of binary data
     if (s/^PHOTO;.*?ENCODING=(b|B|BASE64).*?:\s*/PHOTO;ENCODING=B: /mgi) {
-      while (s/^PHOTO(.*?): (\S+)[\t ]+(\S+)/PHOTO$1: $2$3/mg) {}
+        if ($memotoo) {
+            # transcodes image data, can't compare it
+            s/(^PHOTO.*:).*/$1<stripped by synccompare>/mg;
+        } else {
+            while (s/^PHOTO(.*?): (\S+)[\t ]+(\S+)/PHOTO$1: $2$3/mg) {}
+        }
     }
     # ignore extra day factor in front of weekday
     s/^RRULE:(.*)BYDAY=\+?1(\D)/RRULE:$1BYDAY=$2/mg;
@@ -534,7 +539,7 @@ sub NormalizeItem {
     }
     if ($memotoo) {
       if (/^BEGIN:VCARD/m ) {
-        s/^(FN|FBURL|CALURI|CATEGORIES|ROLE|X-MOZILLA-HTML|PHOTO|X-EVOLUTION-FILE-AS|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-GROUPWISE)(;[^:;\n]*)*:.*\r?\n?//gm;
+        s/^(FN|FBURL|CALURI|CATEGORIES|ROLE|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-GROUPWISE)(;[^:;\n]*)*:.*\r?\n?//gm;
         # only preserves ORG "Company", but loses "Department" and "Office"
         s/^ORG:([^;:\n]+)(;[^;:\n]+)(;[^\n]*)/ORG:$1$2/mg;
         # only preserves first 6 fields of 'ADR'
