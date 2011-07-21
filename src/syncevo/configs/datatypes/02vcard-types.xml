@@ -6,9 +6,11 @@
       <use mimeprofile="vCard"/>
      <incomingscript><![CDATA[
         $VCARD_INCOMING_NAMECHANGE_SCRIPT
+        $VCARD_INCOMING_PHOTO_VALUE_SCRIPT
       ]]></incomingscript>
       <outgoingscript><![CDATA[
         $VCARD_OUTGOING_ADDREV_SCRIPT
+        $VCARD_OUTGOING_PHOTO_VALUE_SCRIPT
       ]]></outgoingscript>
     </datatype>
 
@@ -18,8 +20,10 @@
       <use mimeprofile="vCard"/>
       <incomingscript><![CDATA[
         $VCARD_INCOMING_NAMECHANGE_SCRIPT
+        $VCARD_INCOMING_PHOTO_VALUE_SCRIPT
       ]]></incomingscript>
       <outgoingscript><![CDATA[
         $VCARD_OUTGOING_ADDREV_SCRIPT
+        $VCARD_OUTGOING_PHOTO_VALUE_SCRIPT
       ]]></outgoingscript>
     </datatype>

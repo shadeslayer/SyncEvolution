@@ -76,6 +76,7 @@ class EvolutionContactSource : public EvolutionSyncSource,
         info.m_profile = "\"vCard\", 2";
         info.m_native = "vCard30";
         info.m_beforeWriteScript = "$VCARD_BEFOREWRITE_SCRIPT_EVOLUTION;";
+        info.m_afterReadScript = "$VCARD_AFTERREAD_SCRIPT_EVOLUTION;";
     }
 
   private:

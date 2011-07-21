@@ -1,0 +1,22 @@
+    <macro name="VCARD_INCOMING_PHOTO_VALUE_SCRIPT"><![CDATA[
+      // Ensure that PHOTO_VALUE is set to "binary" if not set (the default).
+      // Avoids potential issues when merging.
+      if (PHOTO_VALUE == EMPTY) {
+          PHOTO_VALUE = "binary";
+      }
+      // same for PHOTO_TYPE, except that we have no good default.
+      if (PHOTO_TYPE == EMPTY) {
+          PHOTO_TYPE = "unknown";
+      }
+    ]]></macro>
+
+    <macro name="VCARD_OUTGOING_PHOTO_VALUE_SCRIPT"><![CDATA[
+      // Ensure that PHOTO_VALUE == "binary" is not sent (it's the default).
+      if (PHOTO_VALUE == "binary") {
+          PHOTO_VALUE = UNASSIGNED;
+      }
+      // Hide our internal photo type default.
+      if (PHOTO_TYPE == "unknown") {
+          PHOTO_TYPE = UNASSIGNED;
+      }
+    ]]></macro>

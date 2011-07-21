@@ -99,4 +99,9 @@
              }
          }
      }
+     $VCARD_OUTGOING_PHOTO_VALUE_SCRIPT;
+   ]]></macro>
+
+   <macro name="VCARD_AFTERREAD_SCRIPT_EVOLUTION"><![CDATA[
+     $VCARD_INCOMING_PHOTO_VALUE_SCRIPT;
    ]]></macro>

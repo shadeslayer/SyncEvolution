@@ -1,0 +1,16 @@
+@@ -1,5 +1,15 @@
+ BEGIN:VCARD
+ VERSION:3.0
++NICKNAME:user18
++NOTE:PHOTO with uri as value
++FN:photo URI
++N:URI;photo
++PHOTO;VALUE=uri:http://example.com/photo.jpg
++X-EVOLUTION-FILE-AS:URI\, photo
++END:VCARD
++
++BEGIN:VCARD
++VERSION:3.0
+ NICKNAME:user17
+ NOTE:triggers parser bug in Funambol 3.0: trailing = is mistaken for soft line break=
+ FN:parserbug=

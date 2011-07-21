@@ -108,8 +108,9 @@
 
       <!-- Photo -->
       <field name="PHOTO" type="blob" compare="never" merge="fillempty"/>
-      <field name="PHOTO_TYPE" type="integer" compare="never" merge="fillempty"/>
-      
+      <field name="PHOTO_TYPE" type="string" compare="never" merge="fillempty"/>
+      <field name="PHOTO_VALUE" type="string" compare="never" merge="fillempty"/>
+
       <!-- Crypto fields for KAddressbook -->
       <field name="CRYPTOENCRYPTPREF" type="string" compare="conflict"/>
       <field name="CRYPTOPROTOPREF" array="yes" type="string" compare="conflict"/>
