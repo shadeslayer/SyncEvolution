@@ -10,6 +10,7 @@
       ]]></incomingscript>
       <outgoingscript><![CDATA[
         $VCARD_OUTGOING_ADDREV_SCRIPT
+        $VCARD_OUTGOING_PHOTO_INLINING_SCRIPT
         $VCARD_OUTGOING_PHOTO_VALUE_SCRIPT
       ]]></outgoingscript>
     </datatype>
@@ -24,6 +25,7 @@
       ]]></incomingscript>
       <outgoingscript><![CDATA[
         $VCARD_OUTGOING_ADDREV_SCRIPT
+        $VCARD_OUTGOING_PHOTO_INLINING_SCRIPT
         $VCARD_OUTGOING_PHOTO_VALUE_SCRIPT
       ]]></outgoingscript>
     </datatype>

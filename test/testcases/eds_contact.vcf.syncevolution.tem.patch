@@ -1,6 +1,26 @@
-@@ -1,5 +1,15 @@
+@@ -1,5 +1,35 @@
  BEGIN:VCARD
  VERSION:3.0
++NICKNAME:user20
++NOTE:PHOTO with invalid relative file URI
++FN:bad file URI
++N:URI;bad file
++PHOTO;VALUE=uri;TYPE=PNG:file://testcases/no-such.png
++X-EVOLUTION-FILE-AS:URI\, bad file
++END:VCARD
++
++BEGIN:VCARD
++VERSION:3.0
++NICKNAME:user19
++NOTE:PHOTO with relative file URI
++FN:file URI
++N:URI;file
++PHOTO;VALUE=uri;TYPE=PNG:file://testcases/local.png
++X-EVOLUTION-FILE-AS:URI\, file
++END:VCARD
++
++BEGIN:VCARD
++VERSION:3.0
 +NICKNAME:user18
 +NOTE:PHOTO with uri as value
 +FN:photo URI

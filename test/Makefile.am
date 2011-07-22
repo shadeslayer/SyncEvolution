@@ -21,6 +21,7 @@ EXTRA_DIST = \
 	testcases/yahoo_contact.vcf \
 	testcases/lcs/file1.txt \
 	testcases/lcs/file2.txt \
+	testcases/local.png \
 	testcases/templates/clients/phone/nokia/S40/7210c.ini \
 	testcases/templates/clients/SyncEvolution.ini \
         syncevo-http-server.py \

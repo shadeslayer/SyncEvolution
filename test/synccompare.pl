@@ -223,6 +223,9 @@ sub NormalizeItem {
             while (s/^PHOTO(.*?): (\S+)[\t ]+(\S+)/PHOTO$1: $2$3/mg) {}
         }
     }
+    # special case for the inlining of the local test case PHOTO
+    s!^PHOTO;;VALUE=uri:file://testcases/local.png$!PHOTO;;VALUE=uri:<local.png>!m;
+    s!^PHOTO;ENCODING=B: iVBORw0KGgoAAAANSUh.*UQOVkeH/aKBSLM04QlMqAAFNBTl\+CjN9AAAAAElFTkSuQmCC$!PHOTO;;VALUE=uri:<local.png>!m;
     # ignore extra day factor in front of weekday
     s/^RRULE:(.*)BYDAY=\+?1(\D)/RRULE:$1BYDAY=$2/mg;
     # remove default VALUE=DATE-TIME
