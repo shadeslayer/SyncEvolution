@@ -393,7 +393,7 @@
         </property>
 
         <property name="PHOTO" filter="no">
-          <value field="PHOTO" conversion="BLOB_B64"/>
+          <value field="PHOTO" conversion="BLOB_AUTO"/>
           <parameter name="TYPE" default="no" show="yes">
             <value field="PHOTO_TYPE"/>
           </parameter>
