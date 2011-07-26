@@ -884,6 +884,10 @@ SYNCEVOLUTION_DEBUG
 SYNCEVOLUTION_GNUTLS_DEBUG
    Enables additional debugging output when using the libsoup HTTP transport library.
 
+SYNCEVOLUTION_DATA_DIR
+   Overrides the default path to the bluetooth device lookup table,
+   normally `/usr/lib/syncevolution/`.
+
 SYNCEVOLUTION_BACKEND_DIR
    Overrides the default path to plugins, normally `/usr/lib/syncevolution/backends`.
 

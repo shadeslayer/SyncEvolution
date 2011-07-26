@@ -20,7 +20,12 @@
 #include "bluez-manager.h"
 #include "server.h"
 
+#include <algorithm>
+
+#include <boost/assign/list_of.hpp>
+
 using namespace GDBusCXX;
+
 
 SE_BEGIN_CXX
 
@@ -121,6 +126,22 @@ BluezManager::BluezDevice::BluezDevice (BluezAdapter &adapter, const string &pat
     m_propertyChanged.activate(boost::bind(&BluezDevice::propertyChanged, this, _1, _2));
 }
 
+/**
+ * check whether the current device has the PnP Information attribute.
+ */
+static bool hasPnpInfoService(const std::vector<std::string> &uuids)
+{
+    // The UUID that indicates the PnPInformation attribute is available.
+    static const char * PNPINFOMATION_ATTRIBUTE_UUID = "00001200-0000-1000-8000-00805f9b34fb";
+
+    // Note: GetProperties appears to return this list sorted which binary_search requires.
+    if(std::binary_search(uuids.begin(), uuids.end(), PNPINFOMATION_ATTRIBUTE_UUID)) {
+        return true;
+    }
+
+    return false;
+}
+
 void BluezManager::BluezDevice::checkSyncService(const std::vector<std::string> &uuids)
 {
     static const char * SYNCML_CLIENT_UUID = "00000002-0000-1000-8000-0002ee000002";
@@ -131,7 +152,17 @@ void BluezManager::BluezDevice::checkSyncService(const std::vector<std::string> 
         if(boost::iequals(uuid, SYNCML_CLIENT_UUID)) {
             hasSyncService = true;
             if(!m_mac.empty()) {
-                server.addDevice(SyncConfig::DeviceDescription(m_mac, m_name, SyncConfig::MATCH_FOR_SERVER_MODE));
+                SyncConfig::DeviceDescription deviceDesc(m_mac, m_name,
+                                                         SyncConfig::MATCH_FOR_SERVER_MODE);
+                server.addDevice(deviceDesc);
+                if(hasPnpInfoService(uuids)) {
+                    DBusClientCall1<ServiceDict> discoverServices(*this,
+                                                                  "DiscoverServices");
+                    static const std::string PNP_INFO_UUID("0x1200");
+                    discoverServices(PNP_INFO_UUID,
+                                     boost::bind(&BluezDevice::discoverServicesCb,
+                                                 this, _1, _2));
+                }
             }
             break;
         }
@@ -139,6 +170,121 @@ void BluezManager::BluezDevice::checkSyncService(const std::vector<std::string> 
     // if sync service is not available now, possible to remove device
     if(!hasSyncService && !m_mac.empty()) {
         server.removeDevice(m_mac);
+    }
+}
+
+/*
+ * Parse the XML-formatted service record.
+ */
+bool extractValuefromServiceRecord(const std::string &serviceRecord,
+                                   const std::string &attributeId,
+                                   std::string &attributeValue)
+{
+    // Find atribute
+    size_t pos  = serviceRecord.find(attributeId);
+
+    // Only proceed if the attribute id was found.
+    if(pos != std::string::npos) {
+        pos = serviceRecord.find("value", pos + attributeId.size());
+        pos = serviceRecord.find("\"", pos) + 1;
+        int valLen = serviceRecord.find("\"", pos) - pos;
+        attributeValue = serviceRecord.substr(pos, valLen);
+        return true;
+    }
+
+    return false;
+}
+
+/*
+ * Get the names of the PnpInformation vendor and product from their
+ * respective ids.  At a minimum we need a matching vendor id for this
+ * function to return true. If the product id is not found then we set
+ * it to "", an empty string.
+ */
+static bool getPnpInfoNamesFromValues(const std::string &vendorValue,  std::string &vendorName,
+                                      const std::string &productValue, std::string &productName)
+{
+    static GKeyFile *bt_key_vals = NULL;
+
+    if(!bt_key_vals) {
+        bt_key_vals = g_key_file_new();
+        GError *err = NULL;
+        string filePath(SyncEvolutionDataDir() + "/bluetooth_products.ini");
+        if(!g_key_file_load_from_file(bt_key_vals, filePath.c_str(),
+                                      G_KEY_FILE_NONE, &err)) {
+            SE_LOG_DEBUG(NULL, NULL, "%s[%d]: %s - filePath = %s, error = %s",
+                         __FILE__, __LINE__, "Bluetooth products File not loaded",
+                         filePath.c_str(), err->message);
+            return false;
+        }
+    }
+
+    const char *VENDOR_GROUP  = "Vendors";
+    const char *PRODUCT_GROUP = "Products";
+
+    char *vendor = g_key_file_get_string(bt_key_vals, VENDOR_GROUP,
+                                         vendorValue.c_str(), NULL);
+    if(vendor) {
+        vendorName = vendor;
+    } else {
+        // We at least need a vendor id match.
+        return false;
+    }
+
+    char *product = g_key_file_get_string(bt_key_vals, PRODUCT_GROUP,
+                                          productValue.c_str(), NULL);
+    if(product)  {
+        productName = product;
+    } else {
+        // If the product is not in the look-up table, the product is
+        // set to an empty string.
+        productName = "";
+    }
+
+    return true;
+}
+
+void BluezManager::BluezDevice::discoverServicesCb(const ServiceDict &serviceDict,
+                                                   const string &error)
+{
+    ServiceDict::const_iterator iter = serviceDict.begin();
+
+    if(iter != serviceDict.end()) {
+        std::string serviceRecord = (*iter).second;
+
+        if(!serviceRecord.empty()) {
+            static const std::string SOURCE_ATTRIBUTE_ID("0x0205");
+            std::string sourceId;
+            extractValuefromServiceRecord(serviceRecord, SOURCE_ATTRIBUTE_ID, sourceId);
+
+            // A sourceId of 0x001 indicates that the vendor ID was
+            // assigned by the Bluetooth SIG.
+            // TODO: A sourceId of 0x002, means the vendor id was assigned by
+            // the USB Implementor's forum. We do nothing in this case but
+            // should do that look up as well.
+            if(!boost::iequals(sourceId, "0x0001")) { return; }
+
+            std::string vendorId, productId;
+            static const std::string VENDOR_ATTRIBUTE_ID ("0x0201");
+            static const std::string PRODUCT_ATTRIBUTE_ID("0x0202");
+            extractValuefromServiceRecord(serviceRecord, VENDOR_ATTRIBUTE_ID,  vendorId);
+            extractValuefromServiceRecord(serviceRecord, PRODUCT_ATTRIBUTE_ID, productId);
+
+            std::string vendorName, productName;
+            if (!getPnpInfoNamesFromValues(vendorId,                   vendorName,
+                                           vendorId + "_" + productId, productName)) {
+                return;
+            }
+
+            Server &server = m_adapter.m_manager.m_server;
+            SyncConfig::DeviceDescription devDesc;
+            if (server.getDevice(m_mac, devDesc)) {
+                devDesc.m_pnpInformation =
+                    boost::shared_ptr<SyncConfig::PnpInformation>(
+                        new SyncConfig::PnpInformation(vendorName, productName));
+                server.updateDevice(m_mac, devDesc);
+            }
+        }
     }
 }
 
@@ -175,7 +321,7 @@ void BluezManager::BluezDevice::propertyChanged(const string &name,
         m_name = boost::get<std::string>(prop);
         SyncConfig::DeviceDescription device;
         if(server.getDevice(m_mac, device)) {
-            device.m_fingerprint = m_name;
+            device.m_deviceName = m_name;
             server.updateDevice(m_mac, device);
         }
     } else if(boost::iequals(name, "UUIDs")) {

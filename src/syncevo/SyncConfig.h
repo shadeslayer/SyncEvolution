@@ -1032,6 +1032,10 @@ class SyncConfig {
         // The matched percentage of the template, larger the better.
         int m_rank;
 
+        // A string that can be shown in GUIs. For bluetooth devices
+        // this is the user-modifiable device name.
+        std::string m_peerName;
+
         //a unique identity of the device that the template is for, used by caller
         std::string m_deviceId;
 
@@ -1049,11 +1053,14 @@ class SyncConfig {
         // The template name (device class) presented
         std::string m_templateName;
 
-        TemplateDescription (const std::string &templateId, const std::string &description, 
-                const int rank, const std::string deviceId, const std::string &fingerprint, const std::string &path, const std::string &model, const std::string &templateName)
+        TemplateDescription (const std::string &templateId, const std::string &description,
+                             const int rank, const std::string &peerName, const std::string &deviceId,
+                             const std::string &fingerprint, const std::string &path,
+                             const std::string &model, const std::string &templateName)
             :   m_templateId (templateId),
                 m_description (description),
                 m_rank (rank),
+                m_peerName (peerName),
                 m_deviceId (deviceId),
                 m_fingerprint (fingerprint),
                 m_path (path),
@@ -1079,17 +1086,41 @@ class SyncConfig {
 
     typedef std::list<boost::shared_ptr <TemplateDescription> > TemplateList;
 
+    /* This information is available if the device supports the
+     * Device Id Profile.
+     */
+    struct PnpInformation
+    {
+        const std::string m_vendor;
+        const std::string m_product;
+        bool isKnownProduct() const {return !m_product.empty();}
+        PnpInformation(const std::string &vendor,
+                       const std::string &product)
+            :m_vendor(vendor), m_product(product)
+        {}
+    };
+
     struct DeviceDescription {
         /** the id of the device */
         std::string m_deviceId;
-        /** the finger print of the device used for matching templates */
-        std::string m_fingerprint;
+        /* The user-modifiable name of the device. This will be used
+         * as the fingerprint if the PnpInformation is not
+         * available. */
+        std::string m_deviceName;
+        /* For bluetooth devices, we use PnpInformation's immutable
+         * product id which provides a more reliable fingerprint than
+         * the user-modifiable device string. The fingerprint of the
+         * device is used for matching templates. */
+        std::string getFingerprint() const;
         /** match mode used for matching templates */
         MatchMode m_matchMode;
+        /** the PnPInformation for the device if available */
+        boost::shared_ptr<PnpInformation> m_pnpInformation;
+
         DeviceDescription(const std::string &deviceId,
-                          const std::string &fingerprint,
+                          const std::string &deviceName,
                           MatchMode mode)
-            :m_deviceId(deviceId), m_fingerprint(fingerprint), m_matchMode(mode)
+            :m_deviceId(deviceId), m_deviceName(deviceName), m_matchMode(mode)
         {}
         DeviceDescription() : m_matchMode(INVALID)
         {}

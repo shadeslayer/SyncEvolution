@@ -661,6 +661,11 @@ bool Server::getDevice(const string &deviceId, SyncConfig::DeviceDescription &de
     for(syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
         if(boost::equals(syncDevIt->m_deviceId, deviceId)) {
             device = *syncDevIt;
+            if(syncDevIt->m_pnpInformation) {
+                device.m_pnpInformation = boost::shared_ptr<SyncConfig::PnpInformation>(
+                    new SyncConfig::PnpInformation(syncDevIt->m_pnpInformation->m_vendor,
+                                                   syncDevIt->m_pnpInformation->m_product));
+            }
             return true;
         }
     }

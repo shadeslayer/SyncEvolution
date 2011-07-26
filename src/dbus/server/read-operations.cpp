@@ -120,6 +120,8 @@ void ReadOperations::getConfig(bool getTemplate,
             localConfigs.insert(pair<string, string>("score", score.str()));
             // Actually this fingerprint is transferred by getConfigs, which refers to device name
             localConfigs.insert(pair<string, string>("deviceName", peerTemplate->m_fingerprint));
+            // This is the user-modifiable device name. Could be shown in GUIs, for example
+            localConfigs.insert(pair<string, string>("peerName", peerTemplate->m_peerName));
             // This is the fingerprint of the template
             localConfigs.insert(pair<string, string>("fingerPrint", peerTemplate->m_matchedModel));
             // This is the template name presented to UI (or device class)

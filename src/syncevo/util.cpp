@@ -859,6 +859,16 @@ std::string Flags2String(int flags, const Flag *descr, const std::string &sep)
     return boost::join(tmp, ", ");
 }
 
+std::string SyncEvolutionDataDir()
+{
+    std::string dataDir(DATA_DIR);
+    const char *envvar = getenv("SYNCEVOLUTION_DATA_DIR");
+    if (envvar) {
+        dataDir = envvar;
+    }
+    return dataDir;
+}
+
 ScopedEnvChange::ScopedEnvChange(const string &var, const string &value) :
     m_var(var)
 {

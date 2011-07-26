@@ -497,6 +497,15 @@ struct Flag {
 std::string Flags2String(int flags, const Flag *descr, const std::string &sep = ", ");
 
 /**
+ * Returns the path to the data directory. This is generally
+ * /usr/share/syncevolution/ but can be overridden by setting the
+ * SYNCEVOLUTION_DATA_DIR environment variable.
+ *
+ * @retval dataDir the path to the data directory
+ */
+std::string SyncEvolutionDataDir();
+
+/**
  * Temporarily set env variable, restore old value on destruction.
  * Useful for unit tests which depend on the environment.
  */

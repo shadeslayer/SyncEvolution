@@ -219,6 +219,27 @@ string SyncConfig::normalizeConfigString(const string &config, NormalizeFlags fl
     return normal;
 }
 
+std::string SyncConfig::DeviceDescription::getFingerprint() const
+{
+    std::string fingerprint;
+
+    /** In the case that we have the PnpInformation we prefer it over
+     *  the mutable device name. The is true even if we only found the
+     *  vendor component of the PnpInformation.
+     */
+    if (m_pnpInformation) {
+        if(m_pnpInformation->isKnownProduct())
+            fingerprint = m_pnpInformation->m_product;
+        else
+            fingerprint = m_pnpInformation->m_vendor;
+    }
+    else {
+        fingerprint = m_deviceName;
+    }
+
+    return fingerprint;
+}
+
 bool SyncConfig::splitConfigString(const string &config, string &peer, string &context)
 {
     string::size_type at = config.rfind('@');
@@ -692,15 +713,17 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
                 continue;
             }
             BOOST_FOREACH (const DeviceList::value_type &entry, peers){
-                int rank = templateConf.metaMatch (entry.m_fingerprint, entry.m_matchMode);
+                std:string fingerprint(entry.getFingerprint());
+                int rank = templateConf.metaMatch (fingerprint, entry.m_matchMode);
                 if (fuzzyMatch){
                     if (rank > TemplateConfig::NO_MATCH) {
                         result.push_back (boost::shared_ptr<TemplateDescription>(
                                     new TemplateDescription(templateConf.getTemplateId(),
                                                             templateConf.getDescription(),
                                                             rank,
+                                                            entry.m_deviceName,
                                                             entry.m_deviceId,
-                                                            entry.m_fingerprint,
+                                                            fingerprint,
                                                             sDir,
                                                             templateConf.getFingerprint(),
                                                             templateConf.getTemplateName()
@@ -712,9 +735,10 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
                                 new TemplateDescription(templateConf.getTemplateId(),
                                                         templateConf.getDescription(),
                                                         rank,
+                                                        entry.m_deviceName,
                                                         entry.m_deviceId,
-                                                        entry.m_fingerprint,
-                                                        sDir, 
+                                                        fingerprint,
+                                                        sDir,
                                                         templateConf.getFingerprint(),
                                                         templateConf.getTemplateName())
                                 ));
@@ -1461,6 +1485,8 @@ void SyncConfig::setConfigVersion(ConfigLevel level, ConfigLimit limit, int vers
         prop.setProperty(*getNode(prop), version);
     }
 }
+
+
 
 /**
  * This constructor updates some of the properties above and then adds

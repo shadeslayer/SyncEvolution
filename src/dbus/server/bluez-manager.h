@@ -124,6 +124,7 @@ private:
     {
      public:
         typedef std::map<std::string, boost::variant<std::vector<std::string>, std::string > > PropDict;
+        typedef std::map<uint32_t, std::string> ServiceDict;
 
         BluezDevice (BluezAdapter &adapter, const std::string &path);
 
@@ -134,14 +135,17 @@ private:
         std::string getMac() { return m_mac; }
 
         /**
-         * check whether the current device has sync service
-         * if yes, put it in the adapter's sync devices listn
+         * check whether the current device has sync service if yes,
+         * put it in the adapter's sync devices list
          */
         void checkSyncService(const std::vector<std::string> &uuids);
 
      private:
         /** callback of 'GetProperties' method. The properties of the device is gotten */
         void getPropertiesCb(const PropDict &props, const std::string &error);
+
+        /** callback of 'DiscoverServices' method. The service records are retrieved */
+        void discoverServicesCb(const ServiceDict &serviceDict, const std::string &error);
 
         /** callback of 'PropertyChanged' signal. Changed property is tracked */
         void propertyChanged(const std::string &name, const boost::variant<std::vector<std::string>, std::string> &prop);

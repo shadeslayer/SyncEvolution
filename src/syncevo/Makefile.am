@@ -170,6 +170,7 @@ CLEANFILES = SyncEvolutionXML.c
 libsyncevolution_la_LIBADD = @EPACKAGE_LIBS@ @GIO_LIBS@ @GTHREAD_LIBS@ @GLIB_LIBS@ $(SYNTHESIS_LIBS) $(TRANSPORT_LIBS) @LIBS@ $(SYNCEVOLUTION_LDADD) $(NSS_LIBS)
 libsyncevolution_la_CXXFLAGS = $(TRANSPORT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNTHESIS_CFLAGS) $(NSS_CFLAGS)
 libsyncevolution_la_CPPFLAGS = $(AM_CPPFLAGS) \
+        -DDATA_DIR=\""$(pkgdatadir)"\" \
 	-DXML_CONFIG_DIR=\""$(datadir)/syncevolution/xml"\" \
 	-DTEMPLATE_DIR=\""$(datadir)/syncevolution/templates"\" \
 	-DLIBDIR=\""$(libdir)"\"
