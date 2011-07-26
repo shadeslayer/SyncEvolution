@@ -6764,6 +6764,22 @@ void AutoSyncManager::syncSuccessStart()
     }
 }
 
+/**
+ * True if the error is likely to go away by itself when continuing
+ * with auto-syncing. This errs on the side of showing notifications
+ * too often rather than not often enough.
+ */
+static bool ErrorIsTemporary(SyncMLStatus status)
+{
+    switch (status) {
+    case STATUS_TRANSPORT_FAILURE:
+        return true;
+    default:
+        // pretty much everying this not temporary
+        return false;
+    }
+}
+
 void AutoSyncManager::syncDone(SyncMLStatus status)
 {
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been done.\n", m_activeTask->m_peer.c_str());
@@ -6776,8 +6792,9 @@ void AutoSyncManager::syncDone(SyncMLStatus status)
             body = StringPrintf(_("We have just finished syncing your computer with the %s sync service."), m_activeTask->m_peer.c_str());
             //TODO: set config information for 'sync-ui'
             m_notificationManager->publish(summary, body);
-        } else if(m_syncSuccessStart || (!m_syncSuccessStart && status == STATUS_FATAL)) {
-            //if sync is successfully started and has errors, or not started successful with a fatal problem
+        } else if (m_syncSuccessStart || !ErrorIsTemporary(status)) {
+            // if sync is successfully started and has errors, or not started successful with a permanent error
+            // that needs attention
             summary = StringPrintf(_("Sync problem."));
             body = StringPrintf(_("Sorry, there's a problem with your sync that you need to attend to."));
             //TODO: set config information for 'sync-ui'
