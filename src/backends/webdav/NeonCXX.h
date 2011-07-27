@@ -19,6 +19,9 @@
 #include <string>
 #include <list>
 
+// TODO: remove this again
+using namespace std;
+
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
