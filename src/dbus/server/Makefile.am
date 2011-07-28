@@ -3,10 +3,10 @@ if COND_DBUS
 noinst_LTLIBRARIES = libsyncevodbusserver.la
 
 server_cpp_files = 				\
-	../../NotificationBackendNoop.cpp 	\
-	../../NotificationBackendLibnotify.cpp 	\
-	../../NotificationBackendMLite.cpp 	\
-	../../NotificationManagerFactory.cpp 	\
+	NotificationBackendNoop.cpp		\
+	NotificationBackendLibnotify.cpp	\
+	NotificationBackendMLite.cpp		\
+	NotificationManagerFactory.cpp		\
 	auto-sync-manager.cpp			\
 	bluez-manager.cpp			\
 	client.cpp				\
@@ -26,9 +26,9 @@ server_cpp_files = 				\
 
 server_h_files = \
 	$(server_cpp_files:%.cpp=%.h)		\
-	../../NotificationBackendBase.h 	\
-	../../NotificationManager.h 		\
-	../../NotificationManagerBase.h 	\
+	NotificationBackendBase.h	 	\
+	NotificationManager.h 			\
+	NotificationManagerBase.h 		\
 	auto-term.h				\
 	cmdline-wrapper.h			\
 	resource.h				\

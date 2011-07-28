@@ -166,17 +166,6 @@ if COND_DBUS
 libexec_PROGRAMS += syncevo-dbus-server
 
 syncevo_dbus_server_SOURCES = \
-	NotificationBackendBase.h \
-	NotificationBackendNoop.h \
-	NotificationBackendNoop.cpp \
-	NotificationBackendLibnotify.h \
-	NotificationBackendLibnotify.cpp \
-	NotificationBackendMLite.h \
-	NotificationBackendMLite.cpp \
-	NotificationManager.h \
-	NotificationManagerBase.h \
-	NotificationManagerFactory.h \
-	NotificationManagerFactory.cpp \
 	$(CORE_SOURCES)
 if ENABLE_UNIT_TESTS
 nodist_syncevo_dbus_server_SOURCES = ../test/test.cpp
