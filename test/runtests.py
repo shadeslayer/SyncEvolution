@@ -15,6 +15,8 @@ the result of each action:
 """
 
 import os, sys, popen2, traceback, re, time, smtplib, optparse, stat, shutil, StringIO, MimeWriter
+import shlex
+import subprocess
 
 try:
     import gzip
@@ -177,15 +179,28 @@ class Context:
         self.lastresultdir = lastresultdir
         self.datadir = datadir
 
-    def runCommand(self, cmd):
+    def runCommand(self, cmdstr):
         """Log and run the given command, throwing an exception if it fails."""
+        cmd = shlex.split(cmdstr)
         if "valgrindcheck.sh" in cmd:
-            print "*** ( cd %s; env VALGRIND_LOG='%s' VALGRIND_ARGS='%s' CLIENT_TEST_WEBDAV='%s' %s )" % \
-                (os.getcwd(), os.getenv("VALGRIND_LOG", ""), os.getenv("VALGRIND_ARGS", ""), os.getenv("CLIENT_TEST_WEBDAV", ""), cmd)
-        else:
-            print "*** ( cd %s; env CLIENT_TEST_WEBDAV='%s' %s )" % (os.getcwd(), os.getenv("CLIENT_TEST_WEBDAV", ""), cmd)
+            cmd.insert(0, "VALGRIND_LOG='%s'" % os.getenv("VALGRIND_LOG", ""))
+            cmd.insert(0, "VALGRIND_ARGS='%s'" % os.getenv("VALGRIND_ARGS", ""))
+
+        # move "sudo" or "env" command invocation in front of
+        # all the leading env variable assignments: necessary
+        # because sudo ignores them otherwise
+        command = 0
+        isenv = re.compile(r'[a-zA-Z0-9_]*=.*')
+        while isenv.match(cmd[command]):
+           command = command + 1
+        if cmd[command] in ("env", "sudo"):
+            cmd.insert(0, cmd[command])
+            del cmd[command + 1]
+
+        cmdstr = " ".join(map(lambda x: ' ' in x and "'%s'"%x or x, cmd))
+        print "*** ( cd %s; %s )" % (os.getcwd(), cmdstr)
         sys.stdout.flush()
-        result = os.system(cmd)
+        result = os.system(cmdstr)
         if result != 0:
             raise Exception("%s: failed (return code %d)" % (cmd, result>>8))
 
