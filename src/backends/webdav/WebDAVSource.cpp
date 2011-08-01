@@ -144,8 +144,10 @@ public:
     virtual void setCredentialsOkay(bool okay) {
         if (m_credentialsOkay != okay && m_context) {
             boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
-            WebDAVCredentialsOkay.setProperty(*node, okay);
-            node->flush();
+            if (!node->isReadOnly()) {
+                WebDAVCredentialsOkay.setProperty(*node, okay);
+                node->flush();
+            }
             m_credentialsOkay = okay;
         }
     }
