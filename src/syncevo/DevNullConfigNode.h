@@ -55,6 +55,7 @@ class DevNullConfigNode : public ConfigNode {
     virtual void removeProperty(const string &property) {}
     virtual void clear() {}
     virtual bool exists() const { return false; }
+    virtual bool isReadOnly() const { return true; }
 };
 
 

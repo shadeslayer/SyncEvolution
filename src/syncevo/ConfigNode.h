@@ -191,6 +191,11 @@ class ConfigNode {
      * Node exists in backend storage.
      */
     virtual bool exists() const = 0;
+
+    /**
+     * Node is read-only. Otherwise read-write.
+     */
+    virtual bool isReadOnly() const = 0;
 };
 
 

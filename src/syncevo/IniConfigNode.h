@@ -55,6 +55,7 @@ class IniBaseConfigNode: public ConfigNode {
     virtual void reload() = 0;
     virtual string getName() const { return m_data->getName(); }
     virtual bool exists() const { return m_data->exists(); }
+    virtual bool isReadOnly() const { return true; }
 };
 
 /**

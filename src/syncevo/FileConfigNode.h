@@ -59,6 +59,7 @@ class FileBaseConfigNode: public ConfigNode {
     virtual void flush();
     virtual string getName() const { return m_path + "/" + m_fileName; }
     virtual bool exists() const { return m_exists; }
+    virtual bool isReadOnly() const { return m_readonly; }
 };
 /**
  * This class started its life as the Posix implementation of the
