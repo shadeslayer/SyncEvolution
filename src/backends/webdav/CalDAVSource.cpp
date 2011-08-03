@@ -421,6 +421,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             Event::escapeRecurrenceID(buffer);
             data = &buffer;
         }
+        SE_LOG_DEBUG(this, NULL, "inserting new VEVENT");
         res = insertItem(name, *data, true);
         subres.m_mainid = res.m_luid;
         subres.m_uid = newEvent->m_UID;
@@ -580,14 +581,45 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         }
 
         // TODO: avoid updating item on server immediately?
-        InsertItemResult res = insertItem(event.m_DAVluid, data, true);
-        if (res.m_merged ||
-            res.m_luid != event.m_DAVluid) {
-            // should not merge with anything, if so, our cache was invalid
-            SE_THROW("CalDAV item not updated as expected");
+        try {
+            SE_LOG_DEBUG(this, NULL, "updating VEVENT");
+            InsertItemResult res = insertItem(event.m_DAVluid, data, true);
+            if (res.m_merged ||
+                res.m_luid != event.m_DAVluid) {
+                // should not merge with anything, if so, our cache was invalid
+                SE_THROW("CalDAV item not updated as expected");
+            }
+            event.m_etag = res.m_revision;
+            subres.m_revision = event.m_etag;
+        } catch (const TransportStatusException &ex) {
+            if (ex.syncMLStatus() == 403 &&
+                strstr(ex.what(), "You don't have access to change that event")) {
+                // Google Calendar sometimes refuses writes for specific items,
+                // typically meetings organized by someone else.
+#if 1
+                // Treat like a temporary, per item error to avoid aborting the
+                // whole sync session. Doesn't really solve the problem (client
+                // and server remain out of sync and will run into this again and
+                // again), but better than giving up on all items or ignoring the
+                // problem.
+                SE_THROW_EXCEPTION_STATUS(StatusException,
+                                          "CalDAV peer rejected updated with 403, keep trying",
+                                          SyncMLStatus(417));
+#else
+                // Assume that the item hasn't changed and mark it as "merged".
+                // This is incorrect. The 403 error has been seen in cases where
+                // a detached recurrence had to be added to an existing meeting
+                // series. Ignoring the problem means would keep the detached
+                // recurrence out of the server permanently.
+                SE_LOG_INFO(this, NULL, "%s: not updated because CalDAV server refused write access for it",
+                            getSubDescription(event, subid).c_str());
+                subres.m_merged = true;
+                subres.m_revision = event.m_etag;
+#endif
+            } else {
+                throw;
+            }
         }
-        event.m_etag = res.m_revision;
-        subres.m_revision = event.m_etag;
     }
 
     return subres;
