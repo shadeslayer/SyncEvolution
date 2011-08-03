@@ -358,10 +358,10 @@ class Server : public GDBusCXX::DBusObjectHelper,
 
 public:
     Server(GMainLoop *loop,
-               bool &shutdownRequested,
-               boost::shared_ptr<Restart> &restart,
-               const GDBusCXX::DBusConnectionPtr &conn,
-               int duration);
+           bool &shutdownRequested,
+           boost::shared_ptr<Restart> &restart,
+           const GDBusCXX::DBusConnectionPtr &conn,
+           int duration);
     ~Server();
 
     /** access to the GMainLoop reference used by this Server instance */

@@ -92,7 +92,7 @@ StringMap Server::getVersions()
 }
 
 void Server::attachClient(const Caller_t &caller,
-                              const boost::shared_ptr<Watch> &watch)
+                          const boost::shared_ptr<Watch> &watch)
 {
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
@@ -111,8 +111,8 @@ void Server::detachClient(const Caller_t &caller)
 }
 
 void Server::setNotifications(bool enabled,
-                                  const Caller_t &caller,
-                                  const string & /* notifications */)
+                              const Caller_t &caller,
+                              const string & /* notifications */)
 {
     boost::shared_ptr<Client> client = findClient(caller);
     if (client && client->getAttachCount()) {
@@ -135,11 +135,11 @@ bool Server::notificationsEnabled()
 }
 
 void Server::connect(const Caller_t &caller,
-                         const boost::shared_ptr<Watch> &watch,
-                         const StringMap &peer,
-                         bool must_authenticate,
-                         const std::string &session,
-                         DBusObject_t &object)
+                     const boost::shared_ptr<Watch> &watch,
+                     const StringMap &peer,
+                     bool must_authenticate,
+                     const std::string &session,
+                     DBusObject_t &object)
 {
     if (!session.empty()) {
         // reconnecting to old connection is not implemented yet
@@ -167,10 +167,10 @@ void Server::connect(const Caller_t &caller,
 }
 
 void Server::startSessionWithFlags(const Caller_t &caller,
-                                       const boost::shared_ptr<Watch> &watch,
-                                       const std::string &server,
-                                       const std::vector<std::string> &flags,
-                                       DBusObject_t &object)
+                                   const boost::shared_ptr<Watch> &watch,
+                                   const std::string &server,
+                                   const std::vector<std::string> &flags,
+                                   DBusObject_t &object)
 {
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
@@ -188,8 +188,8 @@ void Server::startSessionWithFlags(const Caller_t &caller,
 }
 
 void Server::checkPresence(const std::string &server,
-                               std::string &status,
-                               std::vector<std::string> &transports)
+                           std::string &status,
+                           std::vector<std::string> &transports)
 {
     return m_presence.checkPresence(server, status, transports);
 }
@@ -209,10 +209,10 @@ void Server::getSessions(std::vector<DBusObject_t> &sessions)
 }
 
 Server::Server(GMainLoop *loop,
-                       bool &shutdownRequested,
-                       boost::shared_ptr<Restart> &restart,
-                       const DBusConnectionPtr &conn,
-                       int duration) :
+               bool &shutdownRequested,
+               boost::shared_ptr<Restart> &restart,
+               const DBusConnectionPtr &conn,
+               int duration) :
     DBusObjectHelper(conn.get(),
                      "/org/syncevolution/Server",
                      "org.syncevolution.Server",
@@ -398,8 +398,8 @@ boost::shared_ptr<Client> Server::findClient(const Caller_t &ID)
 }
 
 boost::shared_ptr<Client> Server::addClient(const DBusConnectionPtr &conn,
-                                                const Caller_t &ID,
-                                                const boost::shared_ptr<Watch> &watch)
+                                            const Caller_t &ID,
+                                            const boost::shared_ptr<Watch> &watch)
 {
     boost::shared_ptr<Client> client(findClient(ID));
     if (client) {
@@ -591,8 +591,8 @@ void Server::infoResponse(const Caller_t &caller,
 }
 
 boost::shared_ptr<InfoReq> Server::createInfoReq(const string &type,
-                                                     const std::map<string, string> &parameters,
-                                                     const Session *session)
+                                                 const std::map<string, string> &parameters,
+                                                 const Session *session)
 {
     boost::shared_ptr<InfoReq> infoReq(new InfoReq(*this, type, parameters, session));
     boost::weak_ptr<InfoReq> item(infoReq) ;
@@ -636,7 +636,7 @@ void Server::getDeviceList(SyncConfig::DeviceList &devices)
 }
 
 void Server::addPeerTempl(const string &templName,
-                              const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl)
+                          const boost::shared_ptr<SyncConfig::TemplateDescription> peerTempl)
 {
     std::string lower = templName;
     boost::to_lower(lower);
@@ -694,7 +694,7 @@ void Server::removeDevice(const string &deviceId)
 }
 
 void Server::updateDevice(const string &deviceId,
-                              const SyncConfig::DeviceDescription &device)
+                          const SyncConfig::DeviceDescription &device)
 {
     SyncConfig::DeviceList::iterator it;
     for(it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
@@ -707,12 +707,12 @@ void Server::updateDevice(const string &deviceId,
 }
 
 void Server::messagev(Level level,
-                          const char *prefix,
-                          const char *file,
-                          int line,
-                          const char *function,
-                          const char *format,
-                          va_list args)
+                      const char *prefix,
+                      const char *file,
+                      int line,
+                      const char *function,
+                      const char *format,
+                      va_list args)
 {
     // iterating over args in messagev() is destructive, must make a copy first
     va_list argsCopy;
