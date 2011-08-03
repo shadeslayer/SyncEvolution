@@ -17,6 +17,13 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
+/**
+ * @return "<master>" if subid is empty, otherwise subid
+ */
+static std::string SubIDName(const std::string &subid)
+{
+    return subid.empty() ? "<master>" : subid;
+}
 
 CalDAVSource::CalDAVSource(const SyncSourceParams &params,
                            const boost::shared_ptr<Neon::Settings> &settings) :
@@ -641,14 +648,24 @@ void CalDAVSource::Event::unescapeRecurrenceID(std::string &data)
 
 std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string &subid)
 {
-    // find item in cache first, load only if it is not going to be
-    // removed entirely
-    Event &event = findItem(davLUID);
+    EventCache::iterator it = m_cache.find(davLUID);
+    if (it == m_cache.end()) {
+        // gone already, no need to do anything
+        SE_LOG_DEBUG(this, NULL, "%s: ignoring request to delete %s recurrence in non-existent item",
+                     davLUID.c_str(), SubIDName(subid).c_str());
+        return "";
+    }
+    // use item as it is, load only if it is not going to be removed entirely
+    Event &event = *it->second;
 
     if (event.m_subids.size() == 1) {
         // remove entire merged item, nothing will be left after removal
         if (*event.m_subids.begin() != subid) {
-            SE_THROW("event not found");
+            SE_LOG_DEBUG(this, NULL, "%s: ignoring request to remove the %s recurrence because only the %s recurrence exists",
+                         davLUID.c_str(),
+                         SubIDName(subid).c_str(),
+                         SubIDName(*event.m_subids.begin()).c_str());
+            return event.m_etag;
         } else {
             try {
                 removeItem(event.m_DAVluid);
@@ -731,7 +748,10 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
             }
         }
         if (!found) {
-            SE_THROW("event not found");
+            SE_LOG_DEBUG(this, NULL, "%s: ignoring request to remove the %s recurrence because it does not exist",
+                         davLUID.c_str(),
+                         SubIDName(subid).c_str());
+            return event.m_etag;
         }
         event.m_subids.erase(subid);
         // TODO: avoid updating the item immediately
@@ -770,7 +790,17 @@ void CalDAVSource::flushItem(const string &davLUID)
 
 std::string CalDAVSource::getSubDescription(const string &davLUID, const string &subid)
 {
-    Event &event = findItem(davLUID);
+    EventCache::iterator it = m_cache.find(davLUID);
+    if (it == m_cache.end()) {
+        // unknown item, return empty string for fallback
+        return "";
+    } else {
+        return getSubDescription(*it->second, subid);
+    }
+}
+
+std::string CalDAVSource::getSubDescription(Event &event, const string &subid)
+{
     if (!event.m_calendar) {
         // Don't load (expensive!) only to provide the description.
         // Returning an empty string will trigger the fallback (logging the ID).
