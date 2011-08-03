@@ -160,6 +160,9 @@ class SubSyncSource : virtual public SyncSourceBase
     virtual void readSubItem(const std::string &mainid, const std::string &subid, std::string &item) = 0;
 
     /**
+     * Ensure that the sub-item does not exist. It is not an error to be called
+     * for a non-existent sub-item or item.
+     *
      * @return empty string if item is empty after removal, otherwise new revision string
      */
     virtual std::string removeSubItem(const string &mainid, const std::string &subid) = 0;
@@ -170,6 +173,11 @@ class SubSyncSource : virtual public SyncSourceBase
      */
     virtual void flushItem(const string &mainid) = 0;
 
+    /**
+     * Describe sub-item. Might be called for item which does not exist and
+     * must not throw an error in that case. Providing a description is optional
+     * and should only be done when it is reasonably cheap.
+     */
     virtual std::string getSubDescription(const string &mainid, const string &subid) = 0;
 
  private:
