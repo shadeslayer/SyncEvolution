@@ -1149,6 +1149,12 @@ bool Cmdline::run() {
                 !ops.m_readNextItem) {
                 source->throwError("reading items not supported");
             }
+
+            ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
+            BOOST_FOREACH(const ConfigProperty *prop, registry) {
+                prop->checkPassword(*context, m_server, *context->getProperties());
+            }
+
             err = ops.m_startDataRead("", "");
             CHECK_ERROR("reading items");
             list<string> luids;
