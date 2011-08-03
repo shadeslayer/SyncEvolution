@@ -170,9 +170,11 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
         if (it == revisions.end() ||
             it->second.m_revision != item.second) {
             // read current information below
+            SE_LOG_DEBUG(NULL, NULL, "updateAllSubItems(): read new or modified item %s", item.first.c_str());
             mustRead.push_back(item.first);
         } else {
             // copy still relevant information
+            SE_LOG_DEBUG(NULL, NULL, "updateAllSubItems(): unmodified item %s", it->first.c_str());
             addSubItem(it->first, it->second);
         }
     }
@@ -208,7 +210,6 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
             parser.initReportParser(boost::bind(&CalDAVSource::appendItem, this,
                                                 boost::ref(revisions),
                                                 _1, _2, boost::ref(data)));
-            m_cache.clear();
             parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
                                boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
             Neon::Request report(*getSession(), "REPORT", getCalendar().m_path,
