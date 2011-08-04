@@ -1682,6 +1682,7 @@ void SyncTests::addTests(bool isFirstSource) {
                     ADD_TEST(SyncTests, testManyDeletes);
                     ADD_TEST(SyncTests, testSlowSyncSemantic);
                     ADD_TEST(SyncTests, testComplexRefreshFromServerSemantic);
+                    ADD_TEST(SyncTests, testDeleteBothSides);
 
                     if (config.updateItem) {
                         ADD_TEST(SyncTests, testUpdate);
@@ -2890,6 +2891,56 @@ void SyncTests::testComplexRefreshFromServerSemantic()
                                           CheckSyncReport(0,0,1, 0,0,0, true, RefreshFromPeerMode())));
     }
 }
+
+/**
+ * - create the same item on A, server, B via testCopy()
+ * - delete on both sides
+ * - sync A
+ * - sync B
+ *
+ * Must not fail, even though the Synthesis engine will ask the backends
+ * for deletion of an already deleted item.
+ */
+void SyncTests::testDeleteBothSides()
+{
+    testCopy();
+
+    source_it it;
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        it->second->deleteAll(it->second->createSourceA);
+    }
+    for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
+        it->second->deleteAll(it->second->createSourceA);
+    }
+
+    doSync("delete-item-A",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        if (it->second->config.createSourceB) {
+            TestingSyncSourcePtr source;
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
+            CPPUNIT_ASSERT_NO_THROW(source.reset());
+        }
+    }
+
+
+    // it is undefined whether the item is meant to be reported as deleted again here:
+    // a SyncML client test will mark it as deleted, local sync as server won't
+    accessClientB->doSync("delete-item-B",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_TWO_WAY)));
+    for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
+        if (it->second->config.createSourceB) {
+            TestingSyncSourcePtr source;
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
+            CPPUNIT_ASSERT_NO_THROW(source.reset());
+        }
+    }
+}
+
 
 /**
  * implements testMaxMsg(), testLargeObject(), testLargeObjectEncoded()

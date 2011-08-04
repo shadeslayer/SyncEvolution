@@ -750,6 +750,7 @@ protected:
     virtual void testManyDeletes();
     virtual void testSlowSyncSemantic();
     virtual void testComplexRefreshFromServerSemantic();
+    virtual void testDeleteBothSides();
 
     virtual void doInterruptResume(int changes,
                   boost::shared_ptr<TransportWrapper> wrapper); 

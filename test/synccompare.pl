@@ -231,6 +231,9 @@ sub NormalizeItem {
     # remove default VALUE=DATE-TIME
     s/^(DTSTART|DTEND)([^:\n]*);VALUE=DATE-TIME/$1$2/mg;
 
+    # remove default LANGUAGE=en-US
+    s/^([^:\n]*);LANGUAGE=en-US/$1/mg;
+
     # normalize values which look like a date to YYYYMMDD because the hyphen is optional
     s/:(\d{4})-(\d{2})-(\d{2})/:$1$2$3/g;
 
