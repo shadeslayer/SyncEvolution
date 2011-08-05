@@ -25,6 +25,10 @@
 #include <syncevo/eds_abi_wrapper.h>
 
 #include <syncevo/declarations.h>
+#include <syncevo/GLibSupport.h>
+
+SE_GOBJECT_BASED_TYPE(GMainLoop, GMainLoop)
+
 SE_BEGIN_CXX
 
 
@@ -85,6 +89,30 @@ class EvolutionSyncSource : public TrackingSyncSource
 #endif
 };
 
+/**
+ * Utility class which hides the mechanisms needed to handle events
+ * during asynchronous calls.
+ */
+class EvolutionAsync {
+    public:
+    EvolutionAsync()
+    {
+        m_loop = GMainLoopCXX::steal(g_main_loop_new(NULL, FALSE));
+    }
+     
+    /** start processing events */
+    void run() {
+        g_main_loop_run(m_loop.get());
+    }
+ 
+    /** stop processing events, to be called inside run() by callback */
+    void quit() {
+        g_main_loop_quit(m_loop.get());
+    }
+ 
+    private:
+    GMainLoopCXX m_loop;
+};
 
 SE_END_CXX
 #endif // INCL_EVOLUTIONSYNCSOURCE

@@ -25,6 +25,7 @@
 #endif
 
 #include <syncevo/util.h>
+#include <syncevo/eds_abi_wrapper.h>
 
 #ifdef HAVE_GLIB
 # include <glib-object.h>
@@ -33,6 +34,7 @@
 typedef void *GMainLoop;
 #endif
 
+#include <boost/shared_ptr.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/utility.hpp>
 #include <boost/foreach.hpp>
@@ -68,6 +70,24 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
 
 #ifdef HAVE_GLIB
 
+SE_END_CXX
+/** static functions for handling (un)referencing of GObjects */
+class GObjectRef {
+    public:
+        // Regular GObject
+        static void ref(GObject *obj) { g_object_ref(obj); }
+        static void unref(GObject *obj) { g_object_unref(obj); }
+        // GMainLoop
+        static void ref(GMainLoop *obj) { g_main_loop_ref(obj); }
+        static void unref(GMainLoop *obj) { g_main_loop_unref(obj); }
+#ifdef ENABLE_EBOOK
+        // EBookQuery
+        static void ref(EBookQuery *query) { e_book_query_ref(query); }
+        static void unref(EBookQuery *query) { e_book_query_unref(query); }
+#endif
+};
+SE_BEGIN_CXX
+
 /**
  * Defines a shared pointer for a GObject-based type, with intrusive
  * reference counting. Use *outside* of SyncEvolution namespace
@@ -76,7 +96,7 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
  * *inside* the SyncEvolution namespace.
  *
  * Example:
- * SE_GOBJECT_TYPE(GFile);
+ * SE_GOBJECT_TYPE(GFile)
  * SE_BEGIN_CXX
  * {
  *   // reference normally increased during construction,
@@ -86,20 +106,31 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
  *   // file freed here as filecxx gets destroyed
  * }
  * SE_END_CXX
+ *
+ * If the GObject-based type uses custom ref/unref functions, then use 
+ * SE_GOBJECT_BASED_TYPE(_x, _base) macro instead and indicate the base.
+ * Make sure corresponding ref()/unref() functions are defined in the
+ * GObjectRef class.
+ *
+ * Example:
+ * SE_GOBJECT_BASED_TYPE(EBookQuery, EBookQuery)
  */
-#define SE_GOBJECT_TYPE(_x) \
-    void inline intrusive_ptr_add_ref(_x *ptr) { g_object_ref(ptr); } \
-    void inline intrusive_ptr_release(_x *ptr) { g_object_unref(ptr); } \
+#define SE_GOBJECT_BASED_TYPE(_x, _base) \
+    void inline intrusive_ptr_add_ref(_x *ptr) { GObjectRef::ref((_base *)ptr); } \
+    void inline intrusive_ptr_release(_x *ptr) { GObjectRef::unref((_base *)ptr); } \
     SE_BEGIN_CXX \
     class _x ## CXX : public boost::intrusive_ptr<_x> { \
     public: \
          _x ## CXX(_x *ptr, bool add_ref = true) : boost::intrusive_ptr<_x>(ptr, add_ref) {} \
          _x ## CXX() {} \
          _x ## CXX(const _x ## CXX &other) : boost::intrusive_ptr<_x>(other) {} \
+         operator _x * () { return boost::intrusive_ptr<_x>::get(); } \
 \
          static  _x ## CXX steal(_x *ptr) { return _x ## CXX(ptr, false); } \
     }; \
     SE_END_CXX \
+
+#define SE_GOBJECT_TYPE(_x) SE_GOBJECT_BASED_TYPE(_x, GObject)
 
 SE_END_CXX
 
@@ -153,13 +184,30 @@ struct GErrorCXX {
             if (m_gerror) {
                 g_clear_error(&m_gerror);
             }
-            m_gerror = g_error_copy(other.m_gerror);
+            if (other.m_gerror) {
+                m_gerror = g_error_copy(other.m_gerror);
+            }
         }
         return *this;
     }
+    GErrorCXX &operator =(const GError* err) {
+       if (m_gerror) {
+           g_clear_error(&m_gerror);
+       }
+       if (err) {
+           m_gerror = g_error_copy(err);
+       }
+       return *this;
+    }
+
+    /** For convenient access to GError members (message, domain, ...) */
+    GError*	operator-> () const { return m_gerror; }
 
     /** error description, with fallback if not set (not expected, so not localized) */
     operator const char * () { return m_gerror ? m_gerror->message : "<<no error>>"; }
+
+    /** Check if a gError was set */
+    bool isNull() const { return m_gerror == NULL; }
 
     /** clear error */
     ~GErrorCXX() { g_clear_error(&m_gerror); }
@@ -176,6 +224,11 @@ struct GErrorCXX {
     operator GError ** () { return &m_gerror; }
 
     /**
+     * Use this when passing GErrorCXX instance to C functions to read it.
+     */
+    operator GError * () { return m_gerror; }
+
+    /**
      * always throws an exception, including information from GError if available:
      * <action>: <error message>|failure
      */
@@ -183,6 +236,7 @@ struct GErrorCXX {
 };
 
 template<class T> void NoopDestructor(T *) {}
+template<class T> void GObjectDestructor(T *obj) { g_object_unref(obj); }
 
 /**
  * Wraps a G[S]List of pointers to a specific type.
@@ -202,17 +256,19 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
     static void listFree(GSList *l) { g_slist_free(l); }
     static void listFree(GList *l) { g_list_free(l); }
 
-    static GSList *listPrepend(GSList *list, T *entry) { return g_slist_prepend(list, static_cast<gpointer>(entry)); }
-    static GList *listPrepend(GList *list, T *entry) { return g_list_prepend(list, static_cast<gpointer>(entry)); }
+    static GSList *listPrepend(GSList *list, T *entry) { return g_slist_prepend(list, (gpointer)entry); }
+    static GList *listPrepend(GList *list, T *entry) { return g_list_prepend(list, (gpointer)entry); }
 
-    static GSList *listAppend(GSList *list, T *entry) { return g_slist_append(list, static_cast<gpointer>(entry)); }
-    static GList *listAppend(GList *list, T *entry) { return g_list_append(list, static_cast<gpointer>(entry)); }
+    static GSList *listAppend(GSList *list, T *entry) { return g_slist_append(list, (gpointer)entry); }
+    static GList *listAppend(GList *list, T *entry) { return g_list_append(list, (gpointer)entry); }
 
  public:
     typedef T * value_type;
 
     /** empty error, NULL pointer */
     GListCXX() : m_list(NULL) {}
+
+    GListCXX(L* l) : m_list(l) {}
 
     /** free list */
     ~GListCXX() { clear(); }
@@ -287,6 +343,19 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
 
     void push_back(T *entry) { m_list = listAppend(m_list, entry); }
     void push_front(T *entry) { m_list = listPrepend(m_list, entry); }
+};
+
+/**
+ * Wraps a C gchar array and takes care of freeing the memory.
+ */
+class PlainGStr : public boost::shared_ptr<gchar>
+{
+    public:
+        PlainGStr() {}
+        PlainGStr(gchar *str) : boost::shared_ptr<char>(str, g_free) {}
+        PlainGStr(const PlainGStr &other) : boost::shared_ptr<gchar>(other) {}    
+        operator const gchar *() const { return &**this; }
+        const gchar *c_str() const { return &**this; }
 };
 
 

@@ -24,6 +24,7 @@
 #include "config.h"
 #include "EvolutionSyncSource.h"
 #include <syncevo/SmartPtr.h>
+#include <syncevo/GLibSupport.h>
 
 #include <boost/noncopyable.hpp>
 
@@ -32,6 +33,13 @@
 #include <set>
 
 #include <syncevo/declarations.h>
+
+#ifdef USE_EBOOK_CLIENT
+SE_GOBJECT_TYPE(EBookClient)
+SE_GOBJECT_TYPE(EBookClientView)
+SE_GOBJECT_BASED_TYPE(EBookQuery, EBookQuery)
+#endif
+
 SE_BEGIN_CXX
 
 /**
@@ -84,7 +92,11 @@ class EvolutionContactSource : public EvolutionSyncSource,
     std::string getRevision(const std::string &uid);
 
     /** valid after open(): the address book that this source references */
+#ifdef USE_EBOOK_CLIENT
+    EBookClientCXX m_addressbook;
+#else
     eptr<EBook, GObject> m_addressbook;
+#endif
 
     /** the format of vcards that new items are expected to have */
     const EVCardFormat m_vcardFormat;

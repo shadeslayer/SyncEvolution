@@ -52,11 +52,20 @@
 
 #ifdef HAVE_EDS
 #include <glib-object.h>
+#include <libedataserver/eds-version.h>
 #include <libedataserver/e-source.h>
 #include <libedataserver/e-source-list.h>
+#if EDS_CHECK_VERSION(3,1,0)
+#define USE_EBOOK_CLIENT 1
+#endif
 #ifdef ENABLE_EBOOK
+#ifdef USE_EBOOK_CLIENT
+#include <libebook/e-book-client.h>
+#else
 #include <libebook/e-book.h>
+#endif
 #include <libebook/e-vcard.h>
+#include <libebook/e-book-query.h>
 #endif
 #ifdef ENABLE_ECAL
 # define HANDLE_LIBICAL_MEMORY 1
