@@ -751,6 +751,9 @@ protected:
     virtual void testSlowSyncSemantic();
     virtual void testComplexRefreshFromServerSemantic();
     virtual void testDeleteBothSides();
+    virtual void testLinkedItemsParentChild();
+    virtual void testLinkedItemsChild();
+    virtual void testLinkedItemsChildParent();
 
     virtual void doInterruptResume(int changes,
                   boost::shared_ptr<TransportWrapper> wrapper); 

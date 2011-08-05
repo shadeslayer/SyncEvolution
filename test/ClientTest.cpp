@@ -1684,6 +1684,16 @@ void SyncTests::addTests(bool isFirstSource) {
                     ADD_TEST(SyncTests, testComplexRefreshFromServerSemantic);
                     ADD_TEST(SyncTests, testDeleteBothSides);
 
+                    if (config.parentItem &&
+                        config.childItem) {
+                        ADD_TEST(SyncTests, testLinkedItemsParentChild);
+
+                        if (config.linkedItemsRelaxedSemantic) {
+                            ADD_TEST(SyncTests, testLinkedItemsChild);
+                            ADD_TEST(SyncTests, testLinkedItemsChildParent);
+                        }
+                    }
+
                     if (config.updateItem) {
                         ADD_TEST(SyncTests, testUpdate);
                     }
@@ -2941,6 +2951,151 @@ void SyncTests::testDeleteBothSides()
     }
 }
 
+/**
+ * - adds parent on client A
+ * - syncs A
+ * - adds unrelated item via client B (necessary to trigger corner cases in
+ *   change tracking, see BMC #22329)
+ * - syncs B
+ * - adds child on client A
+ * - syncs A and B
+ * - compares
+ */
+void SyncTests::testLinkedItemsParentChild()
+{
+    source_it it;
+
+    // clean server, client A and client B
+    deleteAll();
+    accessClientB->refreshClient();
+
+    // create and copy parent item
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        CPPUNIT_ASSERT(it->second->config.parentItem);
+        TestingSyncSourcePtr source;
+        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                                   it->second->config.parentItem,
+                                                   it->second->config.itemType));
+    }
+    doSync("send-parent",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
+
+    // create independent item, refresh client B and server
+    for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
+        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                                   it->second->config.insertItem,
+                                                   it->second->config.itemType));
+    }
+    accessClientB->doSync("recv-parent",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(1,0,0, 1,0,0, true, SYNC_TWO_WAY)));
+
+    // add child on client A
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        CPPUNIT_ASSERT(it->second->config.childItem);
+        TestingSyncSourcePtr source;
+        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                                   it->second->config.childItem,
+                                                   it->second->config.itemType));
+    }
+    // parent may or may not be considered updated
+    doSync("send-child",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(1,0,0, 1,-1,0, true, SYNC_TWO_WAY)));
+    // parent may or may not be considered updated here
+    accessClientB->doSync("recv-child",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(1,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
+
+    // final comparison
+    compareDatabases();
+}
+
+/**
+ * - adds child on client A
+ * - syncs A
+ * - syncs B
+ * - compare
+ */
+void SyncTests::testLinkedItemsChild()
+{
+    source_it it;
+
+    // clean server, client A and client B
+    deleteAll();
+    accessClientB->refreshClient();
+
+    // create and copy child item
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        CPPUNIT_ASSERT(it->second->config.childItem);
+        TestingSyncSourcePtr source;
+        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                                   it->second->config.childItem,
+                                                   it->second->config.itemType));
+    }
+    doSync("send",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
+    accessClientB->doSync("recv",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
+
+    // final comparison
+    compareDatabases();
+}
+
+
+/**
+ * - adds child on client A
+ * - syncs A and B
+ * - adds parent on client A
+ * - syncs A and B
+ * - compares
+ */
+void SyncTests::testLinkedItemsChildParent()
+{
+    source_it it;
+
+    // clean server, client A and client B
+    deleteAll();
+    accessClientB->refreshClient();
+
+    // create and copy child item
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        CPPUNIT_ASSERT(it->second->config.childItem);
+        TestingSyncSourcePtr source;
+        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                                   it->second->config.childItem,
+                                                   it->second->config.itemType));
+    }
+    doSync("send-child",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
+    accessClientB->doSync("recv-child",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
+
+    // add parent on client A
+    for (it = sources.begin(); it != sources.end(); ++it) {
+        CPPUNIT_ASSERT(it->second->config.parentItem);
+        TestingSyncSourcePtr source;
+        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                                   it->second->config.parentItem,
+                                                   it->second->config.itemType));
+    }
+    // child may or may not be considered updated
+    doSync("send-parent",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,-1,0, true, SYNC_TWO_WAY)));
+    // child may or may not be considered updated here
+    accessClientB->doSync("recv-parent",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(1,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
+
+    // final comparison
+    compareDatabases();
+}
 
 /**
  * implements testMaxMsg(), testLargeObject(), testLargeObjectEncoded()
@@ -4419,7 +4574,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "SUMMARY:Recurring\n"
             "DESCRIPTION:recurs each Monday\\, 10 times\n"
             "CLASS:PUBLIC\n"
-            "RRULE:FREQ=WEEKLY;COUNT=10;INTERVAL=1;BYDAY=SU\n"
+            "RRULE:FREQ=WEEKLY;UNTIL=20080608T070000Z;INTERVAL=1;BYDAY=SU\n"
             "CREATED:20080407T193241\n"
             "LAST-MODIFIED:20080407T193241Z\n"
             "END:VEVENT\n"
