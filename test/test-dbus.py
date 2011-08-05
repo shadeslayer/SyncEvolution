@@ -226,6 +226,18 @@ class TimeoutTest:
         self.failIf(end - start < 5)
         self.failIf(end - start >= 6)
 
+def ShutdownSubprocess(popen, timeout):
+    start = time.time()
+    os.kill(popen.pid, signal.SIGTERM)
+    while popen.poll() == None and start + timeout >= time.time():
+        time.sleep(0.01)
+    if popen.poll() == None:
+        os.kill(popen.pid, signal.SIGKILL)
+        while popen.poll() == None and start + timeout + 1 >= time.time():
+            time.sleep(0.01)
+        return False
+    return True
+
 class DBusUtil(Timeout):
     """Contains the common run() method for all D-Bus test suites
     and some utility functions."""
@@ -363,17 +375,25 @@ class DBusUtil(Timeout):
             print "\ndone, quit gdb now\n"
         hasfailed = numerrors + numfailures != len(result.errors) + len(result.failures)
 
-        if not debugger and DBusUtil.pserver.poll() == None:
-            os.kill(DBusUtil.pserver.pid, signal.SIGTERM)
-        DBusUtil.pserver.communicate()
+        if debugger:
+            # allow debugger to run as long as it is needed
+            DBusUtil.pserver.communicate()
+        else:
+            # force shutdown in 5 seconds
+            if not ShutdownSubprocess(DBusUtil.pserver, 5):
+                print "   syncevo-dbus-server had to be killed with SIGKILL"
+                result.errors.append((self,
+                                      "syncevo-dbus-server had to be killed with SIGKILL"))
         serverout = open(syncevolog).read()
         if DBusUtil.pserver is not None and DBusUtil.pserver.returncode != -15:
             hasfailed = True
         if hasfailed:
             # give D-Bus time to settle down
             time.sleep(1)
-        os.kill(pmonitor.pid, signal.SIGTERM)
-        pmonitor.communicate()
+        if not ShutdownSubprocess(pmonitor, 5):
+            print "   dbus-monitor had to be killed with SIGKILL"
+            result.errors.append((self,
+                                  "dbus-monitor had to be killed with SIGKILL"))
         monitorout = open(dbuslog).read()
         report = "\n\nD-Bus traffic:\n%s\n\nserver output:\n%s\n" % \
             (monitorout, serverout)
