@@ -197,7 +197,7 @@ class Context:
             cmd.insert(0, cmd[command])
             del cmd[command + 1]
 
-        cmdstr = " ".join(map(lambda x: ' ' in x and "'%s'"%x or x, cmd))
+        cmdstr = " ".join(map(lambda x: (' ' in x or x == '') and "'%s'"%x or x, cmd))
         print "*** ( cd %s; %s )" % (os.getcwd(), cmdstr)
         sys.stdout.flush()
         result = os.system(cmdstr)
