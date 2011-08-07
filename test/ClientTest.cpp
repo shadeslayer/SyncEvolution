@@ -865,15 +865,21 @@ void LocalTests::testImport() {
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     restoreStorage(config, client);
     std::string testcases;
-    SOURCE_ASSERT_EQUAL(source.get(), 0, config.import(client, *source.get(), config, config.testcases, testcases));
+    std::string importFailures = config.import(client, *source.get(), config, config.testcases, testcases);
     backupStorage(config, client);
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // export again and compare against original file
     TestingSyncSourcePtr copy;
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
-    compareDatabases(testcases.c_str(), *copy.get());
+    bool equal = compareDatabases(testcases.c_str(), *copy.get(), false);
     CPPUNIT_ASSERT_NO_THROW(source.reset());
+
+    if (importFailures.empty()) {
+        CPPUNIT_ASSERT_MESSAGE("imported and exported data equal", equal);
+    } else {
+        CPPUNIT_ASSERT_EQUAL(std::string(""), importFailures);
+    }
 }
 
 // same as testImport() with immediate delete
@@ -4178,15 +4184,26 @@ void ClientTest::getItems(const char *file, list<string> &items, std::string &te
     }
 }
 
-int ClientTest::import(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
-                       const char *file, std::string &realfile)
+std::string ClientTest::import(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
+                               const char *file, std::string &realfile)
 {
     list<string> items;
     getItems(file, items, realfile);
+    std::string failures;
     BOOST_FOREACH(string &data, items) {
-        importItem(&source, config, data);
+        try {
+            importItem(&source, config, data);
+        } catch (...) {
+            std::string explanation;
+            Exception::handle(explanation);
+            failures += "Failed to import:\n";
+            failures += data;
+            failures += "\n";
+            failures += explanation;
+            failures += "\n";
+        }
     }
-    return 0;
+    return failures;
 }
 
 bool ClientTest::compare(ClientTest &client, const char *fileA, const char *fileB)

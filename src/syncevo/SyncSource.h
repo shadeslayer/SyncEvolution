@@ -374,10 +374,10 @@ struct ClientTestConfig{
      * @param file       the name of the file to import
      * @retval realfile  the name of the file that was really imported;
      *                   this may depend on the current server that is being tested
-     * @return error code, 0 for success
+     * @return error string, empty for success
      */
-    int (*import)(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
-                  const char *file, std::string &realfile);
+    std::string (*import)(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
+                          const char *file, std::string &realfile);
 
     /**
      * a function which compares two files with items in the format used by "dump"

@@ -300,9 +300,9 @@ class ClientTest {
     /**
      * utility function for importing items with blank lines as separator
      */
-    static int import(ClientTest &client, TestingSyncSource &source,
-                      const ClientTestConfig &config,
-                      const char *file, std::string &realfile);
+    static std::string import(ClientTest &client, TestingSyncSource &source,
+                              const ClientTestConfig &config,
+                              const char *file, std::string &realfile);
 
     /**
      * utility function for comparing vCard and iCal files with the external
