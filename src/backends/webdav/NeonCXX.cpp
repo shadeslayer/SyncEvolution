@@ -474,9 +474,12 @@ int Session::propIterator(void *userdata,
 
 void Session::startOperation(const string &operation, const Timespec &deadline)
 {
-    SE_LOG_DEBUG(NULL, NULL, "starting %s, credentials %s",
+    SE_LOG_DEBUG(NULL, NULL, "starting %s, credentials %s, %s",
                  operation.c_str(),
-                 m_settings->getCredentialsOkay() ? "okay" : "unverified");
+                 m_settings->getCredentialsOkay() ? "okay" : "unverified",
+                 deadline ? StringPrintf("deadline in %.1lfs",
+                                         (deadline - Timespec::monotonic()).duration()).c_str() :
+                 "no deadline");
 
     // remember current operation attributes
     m_operation = operation;
