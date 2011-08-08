@@ -27,10 +27,26 @@
 
 #include <boost/noncopyable.hpp>
 
+#ifdef ENABLE_ECAL
+
 #include <syncevo/declarations.h>
+
+#ifdef USE_ECAL_CLIENT
+SE_GOBJECT_TYPE(ECalClient)
+SE_GOBJECT_TYPE(ECalClientView)
+#endif
+
 SE_BEGIN_CXX
 
-#ifdef ENABLE_ECAL
+/** 
+ * Source type independent from ECal / ECalClient to abstract
+ * the two different enums in the APIs.
+ */
+typedef enum {
+	  EVOLUTION_CAL_SOURCE_TYPE_EVENTS,
+	  EVOLUTION_CAL_SOURCE_TYPE_TASKS,
+	  EVOLUTION_CAL_SOURCE_TYPE_MEMOS
+} EvolutionCalendarSourceType;
 
 /**
  * Implements access to Evolution calendars, either
@@ -47,11 +63,11 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
   public:
     /**
      * @param    type        chooses which kind of calendar data to use:
-     *                       E_CAL_SOURCE_TYPE_TODO,
-     *                       E_CAL_SOURCE_TYPE_JOURNAL,
-     *                       E_CAL_SOURCE_TYPE_EVENT
+     *                       EVOLUTION_CAL_SOURCE_TYPE_EVENTS,
+     *                       EVOLUTION_CAL_SOURCE_TYPE_TASKS,
+     *                       EVOLUTION_CAL_SOURCE_TYPE_MEMOS
      */
-    EvolutionCalendarSource(ECalSourceType type,
+    EvolutionCalendarSource(EvolutionCalendarSourceType type,
                             const SyncSourceParams &params);
     virtual ~EvolutionCalendarSource() { close(); }
 
@@ -64,27 +80,6 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
     virtual void close(); 
     virtual std::string getMimeType() const { return "text/calendar"; }
     virtual std::string getMimeVersion() const { return "2.0"; }
-
-  protected:
-    //
-    // implementation of TrackingSyncSource callbacks
-    //
-    virtual void listAllItems(RevisionMap_t &revisions);
-    virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
-    void readItem(const std::string &luid, std::string &item, bool raw);
-    virtual void removeItem(const string &uid);
-
-    // implementation of SyncSourceLogging callback
-    virtual std::string getDescription(const string &luid);
-
-  protected:
-    /** valid after open(): the calendar that this source references */
-    eptr<ECal, GObject> m_calendar;
-
-    ECalSourceType m_type;         /**< use events or todos? */
-    string m_typeName;             /**< "calendar", "task list", "memo list" */
-    ECal *(*m_newSystem)(void);    /**< e_cal_new_system_calendar, etc. */
-    
 
     /**
      * An item is identified in the calendar by
@@ -113,6 +108,54 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
     };
 
     /**
+     * Extract item ID from calendar item.  An icalcomponent must
+     * refer to the VEVENT/VTODO/VJOURNAL component.
+     */
+    static ItemID getItemID(ECalComponent *ecomp);
+    static ItemID getItemID(icalcomponent *icomp);
+
+    /**
+     * Extract modification string from calendar item.
+     * @return empty string if no time was available
+     */
+    static string getItemModTime(ECalComponent *ecomp);
+    static string getItemModTime(icalcomponent *icomp);
+
+  protected:
+    //
+    // implementation of TrackingSyncSource callbacks
+    //
+    virtual void listAllItems(RevisionMap_t &revisions);
+    virtual InsertItemResult insertItem(const string &uid, const std::string &item, bool raw);
+    void readItem(const std::string &luid, std::string &item, bool raw);
+    virtual void removeItem(const string &uid);
+
+    // implementation of SyncSourceLogging callback
+    virtual std::string getDescription(const string &luid);
+
+  protected:
+    /** valid after open(): the calendar that this source references */
+#ifdef USE_ECAL_CLIENT
+    ECalClientCXX m_calendar;
+#else
+    eptr<ECal, GObject> m_calendar;
+    ECal *(*m_newSystem)(void);    /**< e_cal_new_system_calendar, etc. */
+#endif
+    string m_typeName;             /**< "calendar", "task list", "memo list" */
+    EvolutionCalendarSourceType m_type;         /**< use events, tasks or memos? */
+
+    // Convenience function for source type casting
+#ifdef USE_ECAL_CLIENT
+    ECalClientSourceType sourceType() const {
+        return (ECalClientSourceType)m_type;
+    }
+#else
+    ECalSourceType sourceType() const {
+        return (ECalSourceType)m_type;
+    }
+#endif
+
+    /**
      * retrieve the item with the given id - may throw exception
      *
      * caller has to free result
@@ -125,11 +168,12 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
 
     /** returns the type which the ical library uses for our components */
     icalcomponent_kind getCompType() {
-        return m_type == E_CAL_SOURCE_TYPE_EVENT ? ICAL_VEVENT_COMPONENT :
-            m_type == E_CAL_SOURCE_TYPE_JOURNAL ? ICAL_VJOURNAL_COMPONENT :
+        return m_type == EVOLUTION_CAL_SOURCE_TYPE_EVENTS ? ICAL_VEVENT_COMPONENT :
+            m_type == EVOLUTION_CAL_SOURCE_TYPE_MEMOS ? ICAL_VJOURNAL_COMPONENT :
             ICAL_VTODO_COMPONENT;
     }
 
+#ifndef USE_ECAL_CLIENT
     /** ECalAuthFunc which calls the authenticate() methods */
     static char *eCalAuthFunc(ECal *ecal,
                               const char *prompt,
@@ -141,24 +185,12 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
     /** actual implementation of ECalAuthFunc */
     char *authenticate(const char *prompt,
                        const char *key);
+#endif
 
     /**
      * Returns the LUID of a calendar item.
      */
     string getLUID(ECalComponent *ecomp);
-
-    /**
-     * Extract item ID from calendar item.  An icalcomponent must
-     * refer to the VEVENT/VTODO/VJOURNAL component.
-     */
-    ItemID getItemID(ECalComponent *ecomp);
-    ItemID getItemID(icalcomponent *icomp);
-
-    /**
-     * Extract modification string from calendar item.
-     * @return empty string if no time was available
-     */
-    string getItemModTime(ECalComponent *ecomp);
 
     /**
      * Extract modification string of an item stored in
@@ -170,7 +202,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
     /**
      * Convert to string in canonical representation.
      */
-    string icalTime2Str(const struct icaltimetype &tt);
+    static string icalTime2Str(const struct icaltimetype &tt);
 
     /**
      * A set of all existing objects. Initialized in the last call to
@@ -204,12 +236,7 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
     ICalComps_t removeEvents(const string &uid, bool returnOnlyChildren);
 };
 
-#else
-
-typedef int ECalSourceType;
+SE_END_CXX
 
 #endif // ENABLE_ECAL
-
-
-SE_END_CXX
 #endif // INCL_EVOLUTIONSYNCSOURCE

@@ -46,16 +46,6 @@ static const string
 EVOLUTION_CALENDAR_PRODID("PRODID:-//ACME//NONSGML SyncEvolution//EN"),
 EVOLUTION_CALENDAR_VERSION("VERSION:2.0");
 
-class unrefECalObjectList {
- public:
-    /** free list of ECalChange instances */
-    static void unref(GList *pointer) {
-        if (pointer) {
-            e_cal_free_object_list(pointer);
-        }
-    }
-};
-
 static int granularity()
 {
     // This long delay is necessary in combination
@@ -75,35 +65,41 @@ static int granularity()
     return secs;
 }
 
-EvolutionCalendarSource::EvolutionCalendarSource(ECalSourceType type,
+EvolutionCalendarSource::EvolutionCalendarSource(EvolutionCalendarSourceType type,
                                                  const SyncSourceParams &params) :
     EvolutionSyncSource(params, granularity()),
     m_type(type)
 {
     switch (m_type) {
-     case E_CAL_SOURCE_TYPE_EVENT:
+     case EVOLUTION_CAL_SOURCE_TYPE_EVENTS:
         SyncSourceLogging::init(InitList<std::string>("SUMMARY") + "LOCATION",
                                 ", ",
                                 m_operations);
         m_typeName = "calendar";
+#ifndef USE_ECAL_CLIENT
         m_newSystem = e_cal_new_system_calendar;
+#endif
         break;
-     case E_CAL_SOURCE_TYPE_TODO:
+     case EVOLUTION_CAL_SOURCE_TYPE_TASKS:
         SyncSourceLogging::init(InitList<std::string>("SUMMARY"),
                                 ", ",
                                 m_operations);
         m_typeName = "task list";
+#ifndef USE_ECAL_CLIENT
         m_newSystem = e_cal_new_system_tasks;
+#endif
         break;
-     case E_CAL_SOURCE_TYPE_JOURNAL:
+     case EVOLUTION_CAL_SOURCE_TYPE_MEMOS:
         SyncSourceLogging::init(InitList<std::string>("SUBJECT"),
                                 ", ",
                                 m_operations);
         m_typeName = "memo list";
+#ifndef USE_ECAL_CLIENT
         // This is not available in older Evolution versions.
         // A configure check could detect that, but as this isn't
         // important the functionality is simply disabled.
         m_newSystem = NULL /* e_cal_new_system_memos */;
+#endif
         break;
      default:
         SyncContext::throwError("internal error, invalid calendar type");
@@ -117,7 +113,11 @@ SyncSource::Databases EvolutionCalendarSource::getDatabases()
     GError *gerror = NULL;
     Databases result;
 
-    if (!e_cal_get_sources(&sources, m_type, &gerror)) {
+#ifdef USE_ECAL_CLIENT
+    if (!e_cal_client_get_sources(&sources, sourceType(), &gerror)) {
+#else
+    if (!e_cal_get_sources(&sources, sourceType(), &gerror)) {
+#endif
         // ignore unspecific errors (like on Maemo with no support for memos)
         // and continue with empty list (perhaps defaults work)
         if (!gerror) {
@@ -142,6 +142,15 @@ SyncSource::Databases EvolutionCalendarSource::getDatabases()
         }
     }
 
+#ifdef USE_ECAL_CLIENT
+    if (result.empty()) {
+        ECalClientCXX calendar = ECalClientCXX::steal(e_cal_client_new_system(sourceType(), NULL));
+        if (calendar) {
+          const char *uri = e_client_get_uri (E_CLIENT ((ECalClient*)calendar));
+          result.push_back(Database("<<system>>", uri ? uri : "<<unknown uri>>"));
+        }
+    }
+#else
     if (result.empty() && m_newSystem) {
         eptr<ECal, GObject> calendar(m_newSystem());
         if (calendar.get()) {
@@ -150,9 +159,40 @@ SyncSource::Databases EvolutionCalendarSource::getDatabases()
             result.push_back(Database("<<system>>", uri ? uri : "<<unknown uri>>"));
         }
     }
+#endif
 
     return result;
 }
+
+#ifdef USE_ECAL_CLIENT
+static void
+handle_error_cb (EClient */*client*/, const gchar *error_msg, gpointer user_data)
+{
+    EvolutionCalendarSource *that = static_cast<EvolutionCalendarSource *>(user_data);
+    SE_LOG_ERROR(that, NULL, error_msg);
+}
+
+static gboolean
+handle_authentication_cb (EClient */*client*/, ECredentials *credentials, gpointer user_data)
+{
+    EvolutionCalendarSource *that = static_cast<EvolutionCalendarSource *>(user_data);
+    std::string passwd = that->getPassword();
+    std::string prompt = e_credentials_peek(credentials, E_CREDENTIALS_KEY_PROMPT_TEXT);
+    std::string key = e_credentials_peek(credentials, E_CREDENTIALS_KEY_PROMPT_KEY);
+
+    SE_LOG_DEBUG(that, NULL, "authentication requested, prompt \"%s\", key \"%s\" => %s",
+                 prompt.c_str(), key.c_str(),
+                 !passwd.empty() ? "returning configured password" : "no password configured");
+
+    if (!passwd.empty()) {
+        e_credentials_set (credentials, E_CREDENTIALS_KEY_PASSWORD, passwd.c_str());
+        return true;
+    } else {
+        return false;
+    }
+}
+
+#else
 
 char *EvolutionCalendarSource::authenticate(const char *prompt,
                                             const char *key)
@@ -165,12 +205,74 @@ char *EvolutionCalendarSource::authenticate(const char *prompt,
     return !passwd.empty() ? strdup(passwd.c_str()) : NULL;
 }
 
+#endif
+
 void EvolutionCalendarSource::open()
 {
     ESourceList *sources;
-    GError *gerror = NULL;
 
-    if (!e_cal_get_sources(&sources, m_type, &gerror)) {
+#ifdef USE_ECAL_CLIENT
+    GErrorCXX gerror;
+    if (!e_cal_client_get_sources (&sources, sourceType(), gerror)) {
+        gerror.throwError("unable to access backend databases");
+    }
+
+    string id = getDatabaseID();    
+    ESource *source = findSource(sources, id);
+    bool onlyIfExists = true;
+    bool created = false;
+
+    // Open twice. This solves an issue where Evolution's CalDAV
+    // backend only updates its local cache *after* a sync (= while
+    // closing the calendar?), instead of doing it *before* a sync (in
+    // e_cal_open()).
+    //
+    // This workaround is applied to *all* backends because there might
+    // be others with similar problems and for local storage it is
+    // a reasonably cheap operation (so no harm there).
+    for (int retries = 0; retries < 2; retries++) {
+        if (!source) {
+            // might have been special "<<system>>" or "<<default>>", try that and
+            // creating address book from file:// URI before giving up
+            if ((id.empty() || id == "<<system>>")) {
+                m_calendar = ECalClientCXX::steal(e_cal_client_new_system(sourceType(), gerror));
+            } else if (!id.compare(0, 7, "file://")) {
+                m_calendar = ECalClientCXX::steal(e_cal_client_new_from_uri(id.c_str(), sourceType(), gerror));
+            } else {
+                throwError(string("not found: '") + id + "'");
+            }
+            created = true;
+            onlyIfExists = false;
+        } else {
+            m_calendar = ECalClientCXX::steal(e_cal_client_new(source, sourceType(), gerror));
+        }
+
+        if (!gerror.isNull()) {
+            gerror.throwError("create calendar");
+        }
+
+        // Listen for errors
+        g_signal_connect (m_calendar, "backend-error", G_CALLBACK (handle_error_cb), this); 
+
+        // Handle authentication requests from the backend
+        g_signal_connect (m_calendar, "authenticate", G_CALLBACK (handle_authentication_cb), this);
+    
+        if (!e_client_open_sync(E_CLIENT ((ECalClient*)m_calendar), onlyIfExists, NULL, gerror)) {
+            if (created) {
+                // opening newly created address books often failed, perhaps that also applies to calendars - try again
+                gerror.clear();
+                sleep(5);
+                if (!e_client_open_sync(E_CLIENT ((ECalClient*)m_calendar), onlyIfExists, NULL, gerror)) {
+                    gerror.throwError(string("opening ") + m_typeName );
+                }
+            } else {
+                gerror.throwError(string("opening ") + m_typeName );
+            }
+        }
+    }
+#else
+    GError *gerror = NULL;
+    if (!e_cal_get_sources(&sources, sourceType(), &gerror)) {
         throwError("unable to access backend databases", gerror);
     }
 
@@ -194,14 +296,14 @@ void EvolutionCalendarSource::open()
             if ((id.empty() || id == "<<system>>") && m_newSystem) {
                 m_calendar.set(m_newSystem(), (string("system ") + m_typeName).c_str());
             } else if (!id.compare(0, 7, "file://")) {
-                m_calendar.set(e_cal_new_from_uri(id.c_str(), m_type), (string("creating ") + m_typeName).c_str());
+                m_calendar.set(e_cal_new_from_uri(id.c_str(), sourceType()), (string("creating ") + m_typeName).c_str());
             } else {
                 throwError(string("not found: '") + id + "'");
             }
             created = true;
             onlyIfExists = false;
         } else {
-            m_calendar.set(e_cal_new(source, m_type), m_typeName.c_str());
+            m_calendar.set(e_cal_new(source, sourceType()), m_typeName.c_str());
         }
 
         e_cal_set_auth_func(m_calendar, eCalAuthFunc, this);
@@ -220,6 +322,8 @@ void EvolutionCalendarSource::open()
         }
     }
 
+#endif
+
     g_signal_connect_after(m_calendar,
                            "backend-died",
                            G_CALLBACK(SyncContext::fatalError),
@@ -235,8 +339,110 @@ bool EvolutionCalendarSource::isEmpty()
     return revisions.empty();
 }
 
+#ifdef USE_ECAL_CLIENT
+class ECalClientViewSyncHandler {
+  public:
+    ECalClientViewSyncHandler(ECalClientView *view, void (*processList)(const GSList *list, void *user_data), void *user_data): 
+    m_view(view), m_processList(processList), m_userData(user_data)
+    {}
+
+    bool processSync(GError **gerror)
+    {
+        // Listen for view signals
+        g_signal_connect(m_view, "objects-added", G_CALLBACK(objectsAdded), this);
+        g_signal_connect(m_view, "complete", G_CALLBACK(completed), this);
+
+        // Start the view
+        e_cal_client_view_start (m_view, m_error);
+        if (!m_error.isNull()) {
+          g_propagate_error (gerror, m_error);
+          return false;
+        }
+
+        // Async -> Sync
+        m_loop.run();
+        e_cal_client_view_stop (m_view, NULL);
+
+        if (!m_error.isNull()) {
+          g_propagate_error (gerror, m_error);
+          return false;
+        } else {
+          return true;
+        }
+    }
+ 
+    static void objectsAdded(ECalClientView *ebookview,
+                             const GSList *objects,
+                             gpointer user_data) {
+        ECalClientViewSyncHandler *that = (ECalClientViewSyncHandler *)user_data;
+        that->m_processList(objects, that->m_userData);
+    }
+ 
+    static void completed(ECalClientView *ebookview,
+                          const GError *error,
+                          gpointer user_data) {
+        ECalClientViewSyncHandler *that = (ECalClientViewSyncHandler *)user_data;
+        that->m_error = error;
+        that->m_loop.quit();
+    }
+ 
+    public:
+      // Process list callback
+      void (*m_processList)(const GSList *list, void *user_data);
+      void *m_userData;
+      // Event loop for Async -> Sync
+      EvolutionAsync m_loop;
+
+    private:
+      // View watched
+      ECalClientView *m_view;
+
+      // Possible error while watching the view
+      GErrorCXX m_error;
+};
+
+static void list_revisions(const GSList *objects, void *user_data)
+{
+    EvolutionCalendarSource::RevisionMap_t *revisions = 
+        static_cast<EvolutionCalendarSource::RevisionMap_t *>(user_data);
+    const GSList *l;
+
+    for (l = objects; l; l = l->next) {
+        icalcomponent *icomp = (icalcomponent*)l->data;
+        EvolutionCalendarSource::ItemID id = EvolutionCalendarSource::getItemID(icomp);
+        string luid = id.getLUID();
+        string modTime = EvolutionCalendarSource::getItemModTime(icomp);
+
+        (*revisions)[luid] = modTime;
+    }
+}
+#endif
+
 void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
 {
+#ifdef USE_ECAL_CLIENT
+    GErrorCXX gerror;
+    ECalClientView *view;
+
+    if (!e_cal_client_get_view_sync (m_calendar, "#t", &view, NULL, gerror)) {
+        gerror.throwError( "getting the view" );
+    }
+    ECalClientViewCXX viewPtr = ECalClientViewCXX::steal(view);
+    
+    // TODO: Optimization: use set fields_of_interest (UID / REV / LAST-MODIFIED)
+
+    ECalClientViewSyncHandler handler(viewPtr, list_revisions, &revisions);
+    if (!handler.processSync(gerror)) {
+        gerror.throwError("watching view");
+    }
+
+    // Update m_allLUIDs
+    m_allLUIDs.clear();
+    RevisionMap_t::iterator it;
+    for(it = revisions.begin(); it != revisions.end(); it++) {
+        m_allLUIDs.insert(it->first);
+    }
+#else
     GError *gerror = NULL;
     GList *nextItem;
 
@@ -258,6 +464,7 @@ void EvolutionCalendarSource::listAllItems(RevisionMap_t &revisions)
         revisions[luid] = modTime;
         nextItem = nextItem->next;
     }
+#endif
 }
 
 void EvolutionCalendarSource::close()
@@ -319,6 +526,17 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     GError *gerror = NULL;
 
     // fix up TZIDs
+#ifdef USE_ECAL_CLIENT
+    if (!e_cal_client_check_timezones(icomp,
+                                      NULL,
+                                      e_cal_client_tzlookup,
+                                      (const void *)m_calendar.get(),
+                                      NULL,
+                                      &gerror)) {
+        throwError(string("fixing timezones") + data,
+                   gerror);
+    }
+#else
     if (!e_cal_check_timezones(icomp,
                                NULL,
                                e_cal_tzlookup_ecal,
@@ -327,6 +545,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         throwError(string("fixing timezones") + data,
                    gerror);
     }
+#endif
 
     // insert before adding/updating the event so that the new VTIMEZONE is
     // immediately available should anyone want it
@@ -342,7 +561,11 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
             // cannot add a VTIMEZONE without TZID
             SE_LOG_DEBUG(this, NULL, "skipping VTIMEZONE without TZID");
         } else {
+#ifdef USE_ECAL_CLIENT
+            gboolean success = e_cal_client_add_timezone_sync(m_calendar, zone, NULL, &gerror);
+#else
             gboolean success = e_cal_add_timezone(m_calendar, zone, &gerror);
+#endif
             if (!success) {
                 throwError(string("error adding VTIMEZONE ") + tzid,
                            gerror);
@@ -413,7 +636,12 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
                 }
 
                 // creating new objects works for normal events and detached occurrences alike
+#ifdef USE_ECAL_CLIENT
+                if(e_cal_client_create_object_sync(m_calendar, subcomp, (char **)&uid, 
+                                                   NULL, &gerror)) {
+#else
                 if(e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
+#endif
                     // Evolution workaround: don't rely on uid being set if we already had
                     // one. In Evolution 2.12.1 it was set to garbage. The recurrence ID
                     // shouldn't have changed either.
@@ -428,9 +656,15 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
                 // Recreate any children removed earlier: when we get here,
                 // the parent exists and we must update it.
                 BOOST_FOREACH(boost::shared_ptr< eptr<icalcomponent> > &icalcomp, children) {
+#ifdef USE_ECAL_CLIENT
+                    if (!e_cal_client_modify_object_sync(m_calendar, *icalcomp,
+                                             CALOBJ_MOD_THIS, NULL,
+                                             &gerror)) {
+#else
                     if (!e_cal_modify_object(m_calendar, *icalcomp,
                                              CALOBJ_MOD_THIS,
                                              &gerror)) {
+#endif
                         throwError(string("recreating item ") + newluid, gerror);
                     }
                 }
@@ -491,32 +725,55 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
 
                 // Parent is gone, too, and needs to be recreated.
                 const char *uid = NULL;
+#ifdef USE_ECAL_CLIENT
+                if(!e_cal_client_create_object_sync(m_calendar, subcomp, (char **)&uid, 
+                                                    NULL, &gerror)) {
+#else
                 if(!e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
+#endif
                     throwError(string("creating updated item ") + luid, gerror);
                 }
 
                 // Recreate any children removed earlier: when we get here,
                 // the parent exists and we must update it.
                 BOOST_FOREACH(boost::shared_ptr< eptr<icalcomponent> > &icalcomp, children) {
+#ifdef USE_ECAL_CLIENT
+                    if (!e_cal_client_modify_object_sync(m_calendar, *icalcomp,
+                                                         CALOBJ_MOD_THIS, NULL,
+                                                         &gerror)) {
+#else
                     if (!e_cal_modify_object(m_calendar, *icalcomp,
                                              CALOBJ_MOD_THIS,
                                              &gerror)) {
+#endif
                         throwError(string("recreating item ") + luid, gerror);
                     }
                 }
             } else {
                 // no children, updating is simple
+#ifdef USE_ECAL_CLIENT
+                if (!e_cal_client_modify_object_sync(m_calendar, subcomp,
+                                                     CALOBJ_MOD_ALL, NULL,
+                                                     &gerror)) {
+#else
                 if (!e_cal_modify_object(m_calendar, subcomp,
                                          CALOBJ_MOD_ALL,
                                          &gerror)) {
+#endif
                     throwError(string("updating item ") + luid, gerror);
                 }
             }
         } else {
             // child event
+#ifdef USE_ECAL_CLIENT
+            if (!e_cal_client_modify_object_sync(m_calendar, subcomp,
+                                                 CALOBJ_MOD_THIS, NULL,
+                                                 &gerror)) {
+#else
             if (!e_cal_modify_object(m_calendar, subcomp,
                                      CALOBJ_MOD_THIS,
                                      &gerror)) {
+#endif
                 throwError(string("updating item ") + luid, gerror);
             }
         }
@@ -549,6 +806,21 @@ EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const
     }
 
     // removes all events with that UID, including children
+#ifdef USE_ECAL_CLIENT
+    GErrorCXX gerror;
+    if(!e_cal_client_remove_object_sync(m_calendar,
+                            uid.c_str(), NULL, CALOBJ_MOD_ALL,
+                            NULL, gerror)) {
+
+        if (gerror->domain == E_CAL_CLIENT_ERROR &&
+            gerror->code == E_CAL_CLIENT_ERROR_OBJECT_NOT_FOUND) {
+            SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant item ignored",
+                         uid.c_str());
+        } else {
+            gerror.throwError(string("deleting item " ) + uid);
+        }
+    }
+#else
     GError *gerror = NULL;
     if(!e_cal_remove_object(m_calendar,
                             uid.c_str(),
@@ -562,6 +834,7 @@ EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const
             throwError(string("deleting item " ) + uid, gerror);
         }
     }
+#endif
 
     return events;
 }
@@ -584,18 +857,34 @@ void EvolutionCalendarSource::removeItem(const string &luid)
         // recreate children
         BOOST_FOREACH(boost::shared_ptr< eptr<icalcomponent> > &icalcomp, children) {
             char *uid;
-
+#ifdef USE_ECAL_CLIENT
+            if (!e_cal_client_create_object_sync(m_calendar, *icalcomp, &uid, 
+                                                 NULL, &gerror)) {
+#else
             if (!e_cal_create_object(m_calendar, *icalcomp, &uid, &gerror)) {
+#endif
                 throwError(string("recreating item ") + luid, gerror);
             }
         }
-    } else if(!e_cal_remove_object_with_mod(m_calendar,
-                                            id.m_uid.c_str(),
-                                            id.m_rid.c_str(),
-                                            CALOBJ_MOD_THIS,
-                                            &gerror)) {
+    } 
+#ifdef USE_ECAL_CLIENT
+    else if(!e_cal_client_remove_object_sync(m_calendar,
+                                             id.m_uid.c_str(),
+                                             id.m_rid.c_str(),
+                                             CALOBJ_MOD_THIS,
+                                             NULL,
+                                             &gerror)) {
+        if (gerror->domain == E_CAL_CLIENT_ERROR &&
+            gerror->code == E_CAL_CLIENT_ERROR_OBJECT_NOT_FOUND) {
+#else
+    else if(!e_cal_remove_object_with_mod(m_calendar,
+                                          id.m_uid.c_str(),
+                                          id.m_rid.c_str(),
+                                          CALOBJ_MOD_THIS,
+                                          &gerror)) {
         if (gerror->domain == E_CALENDAR_ERROR &&
             gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
+#endif
             SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant item ignored",
                          luid.c_str());
             g_clear_error(&gerror);
@@ -632,11 +921,20 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const ItemID &id)
     GError *gerror = NULL;
     icalcomponent *comp = NULL;
 
+#ifdef USE_ECAL_CLIENT
+    if (!e_cal_client_get_object_sync(m_calendar,
+                                      id.m_uid.c_str(),
+                                      !id.m_rid.empty() ? id.m_rid.c_str() : NULL,
+                                      &comp,
+                                      NULL,
+                                      &gerror)) {
+#else
     if (!e_cal_get_object(m_calendar,
                           id.m_uid.c_str(),
                           !id.m_rid.empty() ? id.m_rid.c_str() : NULL,
                           &comp,
                           &gerror)) {
+#endif
         throwError(string("retrieving item: ") + id.getLUID(), gerror);
     }
     if (!comp) {
@@ -651,7 +949,11 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
     eptr<icalcomponent> comp(retrieveItem(id));
     eptr<char> icalstr;
 
+#ifdef USE_ECAL_CLIENT
+    icalstr = e_cal_client_get_component_as_string(m_calendar, comp);
+#else
     icalstr = e_cal_get_component_as_string(m_calendar, comp);
+#endif
 
     if (!icalstr) {
         // One reason why e_cal_get_component_as_string() can fail is
@@ -723,7 +1025,7 @@ std::string EvolutionCalendarSource::getDescription(const string &luid)
             descr += summary;
         }
         
-        if (m_type == E_CAL_SOURCE_TYPE_EVENT) {
+        if (m_type == EVOLUTION_CAL_SOURCE_TYPE_EVENTS) {
             const char *location = icalcomponent_get_location(comp);
             if (location && location[0]) {
                 if (!descr.empty()) {
@@ -733,7 +1035,7 @@ std::string EvolutionCalendarSource::getDescription(const string &luid)
             }
         }
 
-        if (m_type == E_CAL_SOURCE_TYPE_JOURNAL &&
+        if (m_type == EVOLUTION_CAL_SOURCE_TYPE_MEMOS &&
             descr.empty()) {
             // fallback to first line of body text
             icalproperty *desc = icalcomponent_get_first_property(comp, ICAL_DESCRIPTION_PROPERTY);
@@ -786,7 +1088,7 @@ EvolutionCalendarSource::ItemID EvolutionCalendarSource::getItemID(ECalComponent
 {
     icalcomponent *icomp = e_cal_component_get_icalcomponent(ecomp);
     if (!icomp) {
-        throwError("internal error in getItemID(): ECalComponent without icalcomp");
+        SE_THROW("internal error in getItemID(): ECalComponent without icalcomp");
     }
     return getItemID(icomp);
 }
@@ -814,16 +1116,21 @@ string EvolutionCalendarSource::getItemModTime(ECalComponent *ecomp)
     }
 }
 
+string EvolutionCalendarSource::getItemModTime(icalcomponent *icomp)
+{
+    icalproperty *modprop = icalcomponent_get_first_property(icomp, ICAL_LASTMODIFIED_PROPERTY);
+    if (!modprop) {
+        return "";
+    }
+    struct icaltimetype modTime = icalproperty_get_lastmodified(modprop);
+
+    return icalTime2Str(modTime);
+}
+
 string EvolutionCalendarSource::getItemModTime(const ItemID &id)
 {
     eptr<icalcomponent> icomp(retrieveItem(id));
-    icalproperty *lastModified = icalcomponent_get_first_property(icomp, ICAL_LASTMODIFIED_PROPERTY);
-    if (!lastModified) {
-        return "";
-    } else {
-        struct icaltimetype modTime = icalproperty_get_lastmodified(lastModified);
-        return icalTime2Str(modTime);
-    }
+    return getItemModTime(icomp);
 }
 
 string EvolutionCalendarSource::icalTime2Str(const icaltimetype &tt)
@@ -834,7 +1141,7 @@ string EvolutionCalendarSource::icalTime2Str(const icaltimetype &tt)
     } else {
         eptr<char> timestr(ical_strdup(icaltime_as_ical_string(tt)));
         if (!timestr) {
-            throwError("cannot convert to time string");
+            SE_THROW("cannot convert to time string");
         }
         return timestr.get();
     }

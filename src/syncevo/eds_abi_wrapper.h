@@ -57,6 +57,7 @@
 #include <libedataserver/e-source-list.h>
 #if EDS_CHECK_VERSION(3,1,0)
 #define USE_EBOOK_CLIENT 1
+#define USE_ECAL_CLIENT 1
 #endif
 #ifdef ENABLE_EBOOK
 #ifdef USE_EBOOK_CLIENT
@@ -69,7 +70,12 @@
 #endif
 #ifdef ENABLE_ECAL
 # define HANDLE_LIBICAL_MEMORY 1
+#ifdef USE_ECAL_CLIENT
+#include <libecal/e-cal-client.h>
+#include <libecal/e-cal-check-timezones.h>
+#else
 #include <libecal/e-cal.h>
+#endif
 #endif
 #endif
 #ifdef ENABLE_BLUETOOTH

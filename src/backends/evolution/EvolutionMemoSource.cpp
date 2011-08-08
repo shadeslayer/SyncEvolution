@@ -173,9 +173,15 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     char *uid = NULL;
 
     if (!update) {
+#ifdef USE_ECAL_CLIENT
+        if(!e_cal_client_create_object_sync(m_calendar, subcomp, &uid, NULL, &gerror)) {
+            if (gerror->domain == E_CAL_CLIENT_ERROR &&
+                gerror->code == E_CAL_CLIENT_ERROR_OBJECT_ID_ALREADY_EXISTS) {
+#else
         if(!e_cal_create_object(m_calendar, subcomp, &uid, &gerror)) {
             if (gerror->domain == E_CALENDAR_ERROR &&
                 gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
+#endif
                 // Deal with error due to adding already existing item.
                 // Should never happen for plain text journal entries because
                 // they have no embedded ID, but who knows...
@@ -199,7 +205,12 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
             icalcomponent_set_uid(subcomp, id.m_uid.c_str());
         }
 
+#ifdef USE_ECAL_CLIENT
+        if (!e_cal_client_modify_object_sync(m_calendar, subcomp, CALOBJ_MOD_ALL, 
+                                             NULL, &gerror)) {
+#else
         if (!e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, &gerror)) {
+#endif
             throwError(string("updating memo item ") + luid, gerror);
         }
         ItemID newid = getItemID(subcomp);
