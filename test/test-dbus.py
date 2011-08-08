@@ -226,13 +226,23 @@ class TimeoutTest:
         self.failIf(end - start < 5)
         self.failIf(end - start >= 6)
 
+def TryKill(pid, signal):
+    try:
+        os.kill(pid, signal)
+    except OSError, ex:
+        # might have quit in the meantime, deal with the race
+        # condition
+        if ex.errno != 3:
+            raise ex
+
 def ShutdownSubprocess(popen, timeout):
     start = time.time()
-    os.kill(popen.pid, signal.SIGTERM)
+    if popen.poll() == None:
+        TryKill(popen.pid, signal.SIGTERM)
     while popen.poll() == None and start + timeout >= time.time():
         time.sleep(0.01)
     if popen.poll() == None:
-        os.kill(popen.pid, signal.SIGKILL)
+        TryKill(popen.pid, signal.SIGKILL)
         while popen.poll() == None and start + timeout + 1 >= time.time():
             time.sleep(0.01)
         return False
