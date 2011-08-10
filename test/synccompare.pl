@@ -85,6 +85,7 @@ my $funambol = $server =~ /funambol/;
 my $google = $server =~ /google/;
 my $google_valarm = $ENV{CLIENT_TEST_GOOGLE_VALARM};
 my $yahoo = $server =~ /yahoo/;
+my $davical = $server =~ /davical/;
 my $apple = $server =~ /apple/;
 my $evolution = $client =~ /evolution/;
 my $addressbook = $client =~ /addressbook/;
@@ -335,7 +336,7 @@ sub NormalizeItem {
     #                                      >    LY                                 
     s/^(\w+)([^:\n]*);X-EVOLUTION-ENDDATE=[0-9TZ]*/$1$2/mg;
 
-    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo || $yahoo) {
+    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo || $yahoo || $davical) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
     }

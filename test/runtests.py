@@ -827,6 +827,18 @@ test = SyncEvolutionTest("yahoo", compile,
                          testPrefix=options.testprefix)
 context.add(test)
 
+test = SyncEvolutionTest("davical", compile,
+                         "", options.shell,
+                         "Client::Sync::eds_contact::testItems Client::Sync::eds_event::testItems Client::Source::davical_caldav Client::Source::davical_carddav",
+                         [ "davical_caldav", "davical_carddav", "eds_event", "eds_contact" ],
+                         "CLIENT_TEST_WEBDAV='davical caldav carddav' "
+                         "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
+                         "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
+                         "CLIENT_TEST_MODE=server " # for Client::Sync
+                         ,
+                         testPrefix=options.testprefix)
+context.add(test)
+
 test = SyncEvolutionTest("apple", compile,
                          "", options.shell,
                          "Client::Sync::eds_event Client::Sync::eds_contact Client::Source::apple_caldav Client::Source::apple_carddav",
