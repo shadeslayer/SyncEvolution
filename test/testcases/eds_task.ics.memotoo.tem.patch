@@ -23,14 +23,21 @@
  BEGIN:VTODO
  UID:20090401T145153Z-22321-1000-1-18@pohly-MOBL
  DTSTAMP:20090401T145153Z
-@@ -29,8 +11,8 @@
+@@ -28,14 +10,12 @@
+ CREATED:20090401T145153Z
  LAST-MODIFIED:20090401T145153Z
  DESCRIPTION:This is a test task in time zone New York\, to be started May 
-  1st 2009\, due Mai 2st 2009.\n\nIt uses non-standard status values.
+- 1st 2009\, due Mai 2st 2009.\n\nIt uses non-standard status values.
 -DUE;TZID=/softwarestudio.org/Tzfile/America/New_York:20090502T130000
 -DTSTART;TZID=/softwarestudio.org/Tzfile/America/New_York:20090501T100000
-+DUE:20090502T170000Z
-+DTSTART:20090501T140000Z
++ 1st 2009 (not supported by Memotoo)\, due Mai 2st 2009.\n\nIt uses non-standard status values.
++DUE:20090502T190000
  CLASS:PUBLIC
- PERCENT-COMPLETE:99
+-PERCENT-COMPLETE:99
  STATUS:COMPLETED
+ CATEGORIES:Business,Waiting
+-COMPLETED:20090401T030000Z
++COMPLETED:20090401T050000
+ URL:http://foo.com
+ SEQUENCE:1
+ END:VTODO
