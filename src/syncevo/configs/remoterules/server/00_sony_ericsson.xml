@@ -4,6 +4,9 @@ specific models later on -->
       <manufacturer>SonyEricsson</manufacturer>
       <finalrule>no</finalrule>
 
+      <outputcharset>ISO-8859-1</outputcharset>
+      <inputcharset>ISO-8859-1</inputcharset>
+
       <!-- At least the Sony Ericsson T700 is only able to deal with alarm
 times in UTC,
            but rejects relative times. BMC #10091 -->
