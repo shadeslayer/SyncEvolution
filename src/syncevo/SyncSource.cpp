@@ -357,11 +357,12 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
             backends += ") ";
         }
         string problem =
-            StringPrintf("%s: backend '%s' not supported %sor not fully configured (format '%s')",
+            StringPrintf("%s: backend '%s' not supported %sor not correctly configured (databaseFormat '%s', syncFormat '%s')",
                          params.m_name.c_str(),
                          sourceType.m_backend.c_str(),
                          backends.c_str(),
-                         sourceType.m_localFormat.c_str());
+                         sourceType.m_localFormat.c_str(),
+                         sourceType.m_format.c_str());
         SyncContext::throwError(problem);
     }
 
