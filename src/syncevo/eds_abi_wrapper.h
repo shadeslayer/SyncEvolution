@@ -166,6 +166,7 @@ struct EDSAbiWrapper {
     const char* (*icalcomponent_get_location) (icalcomponent* comp);
     const char* (*icalcomponent_get_summary) (icalcomponent* comp);
     const char* (*icalcomponent_get_uid) (icalcomponent* comp);
+    struct icaltimetype (*icalcomponent_get_dtstart)(icalcomponent* comp);
     icalcomponent_kind (*icalcomponent_isa) (const icalcomponent* component);
     icalcomponent* (*icalcomponent_new_clone) (icalcomponent* component);
     icalcomponent* (*icalcomponent_new_from_string) (char* str);
@@ -178,16 +179,19 @@ struct EDSAbiWrapper {
     icalcomponent* (*icalcomponent_vanew) (icalcomponent_kind kind, ...);
     const char* (*icalparameter_get_tzid) (const icalparameter* value);
     void (*icalparameter_set_tzid) (icalparameter* value, const char* v);
+    icalparameter *(*icalparameter_new_from_value_string)(icalparameter_kind kind, const char *value);
     icalproperty *(*icalproperty_new_clone)(icalproperty *prop);
     void (*icalproperty_free)(icalproperty *prop);
     const char* (*icalproperty_get_description) (const icalproperty* prop);
     const char* (*icalproperty_get_property_name) (const icalproperty* prop);
     const char* (*icalproperty_get_uid) (const icalproperty* prop);
+    struct icaltimetype (*icalproperty_get_recurrenceid) (const icalproperty* prop);
+    void (*icalproperty_set_recurrenceid) (const icalproperty* prop, icaltimetype rid);
     int (*icalproperty_get_sequence) (const icalproperty* prop);
     icalparameter* (*icalproperty_get_first_parameter) (icalproperty* prop, icalparameter_kind kind);
     struct icaltimetype (*icalproperty_get_lastmodified) (const icalproperty* prop);
-    icalproperty* (*icalproperty_vanew_lastmodified) (struct icaltimetype v, ...);
     icalparameter* (*icalproperty_get_next_parameter) (icalproperty* prop, icalparameter_kind kind);
+    void (*icalproperty_set_parameter)(icalproperty *prop, icalparameter *param);
     const char* (*icalproperty_get_summary) (const icalproperty* prop);
     icalproperty* (*icalproperty_new_description) (const char* v);
     icalproperty* (*icalproperty_new_summary) (const char* v);
@@ -201,12 +205,15 @@ struct EDSAbiWrapper {
     void (*icalproperty_remove_parameter_by_kind)(icalproperty* prop,
                                                   icalparameter_kind kind);
     int (*icaltime_is_null_time)(const struct icaltimetype t);
+    int (*icaltime_is_utc)(const struct icaltimetype t);
     const char* (*icaltime_as_ical_string) (const struct icaltimetype tt);
     icaltimetype (*icaltime_from_string)(const char* str);
     icaltimetype (*icaltime_from_timet)(const time_t v, const int is_date);
     icaltimetype (*icaltime_null_time)();
     time_t (*icaltime_as_timet)(const struct icaltimetype);
     void (*icaltime_set_timezone)(icaltimetype *tt, const icaltimezone *zone);
+    struct icaltimetype (*icaltime_convert_to_zone)(const struct icaltimetype tt, icaltimezone *zone);
+    const icaltimezone *(*icaltime_get_timezone)(const struct icaltimetype t);
 
     void (*icaltimezone_free) (icaltimezone *zone, int free_struct);
     icaltimezone* (*icaltimezone_get_builtin_timezone) (const char *location);
@@ -326,6 +333,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalcomponent_get_location EDSAbiWrapperSingleton.icalcomponent_get_location
 #   define icalcomponent_get_summary EDSAbiWrapperSingleton.icalcomponent_get_summary
 #   define icalcomponent_get_uid EDSAbiWrapperSingleton.icalcomponent_get_uid
+#   define icalcomponent_get_dtstart EDSAbiWrapperSingleton.icalcomponent_get_dtstart
 #   define icalcomponent_isa EDSAbiWrapperSingleton.icalcomponent_isa
 #   define icalcomponent_new_clone EDSAbiWrapperSingleton.icalcomponent_new_clone
 #   define icalcomponent_new_from_string EDSAbiWrapperSingleton.icalcomponent_new_from_string
@@ -338,15 +346,19 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalcomponent_vanew EDSAbiWrapperSingleton.icalcomponent_vanew
 #   define icalparameter_get_tzid EDSAbiWrapperSingleton.icalparameter_get_tzid
 #   define icalparameter_set_tzid EDSAbiWrapperSingleton.icalparameter_set_tzid
+#   define icalparameter_new_from_value_string EDSAbiWrapperSingleton.icalparameter_new_from_value_string
 #   define icalproperty_new_clone EDSAbiWrapperSingleton.icalproperty_new_clone
 #   define icalproperty_free EDSAbiWrapperSingleton.icalproperty_free
 #   define icalproperty_get_description EDSAbiWrapperSingleton.icalproperty_get_description
 #   define icalproperty_get_uid EDSAbiWrapperSingleton.icalproperty_get_uid
+#   define icalproperty_get_recurrenceid EDSAbiWrapperSingleton.icalproperty_get_recurrenceid
+#   define icalproperty_set_recurrenceid EDSAbiWrapperSingleton.icalproperty_set_recurrenceid
 #   define icalproperty_get_sequence EDSAbiWrapperSingleton.icalproperty_get_sequence
 #   define icalproperty_get_property_name EDSAbiWrapperSingleton.icalproperty_get_property_name
 #   define icalproperty_get_first_parameter EDSAbiWrapperSingleton.icalproperty_get_first_parameter
 #   define icalproperty_get_lastmodified EDSAbiWrapperSingleton.icalproperty_get_lastmodified
 #   define icalproperty_get_next_parameter EDSAbiWrapperSingleton.icalproperty_get_next_parameter
+#   define icalproperty_set_parameter EDSAbiWrapperSingleton.icalproperty_set_parameter
 #   define icalproperty_get_summary EDSAbiWrapperSingleton.icalproperty_get_summary
 #   define icalproperty_new_description EDSAbiWrapperSingleton.icalproperty_new_description
 #   define icalproperty_new_summary EDSAbiWrapperSingleton.icalproperty_new_summary
@@ -359,12 +371,15 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalproperty_set_uid EDSAbiWrapperSingleton.icalproperty_set_uid
 #   define icalproperty_remove_parameter_by_kind EDSAbiWrapperSingleton.icalproperty_remove_parameter_by_kind
 #   define icaltime_is_null_time EDSAbiWrapperSingleton.icaltime_is_null_time
+#   define icaltime_is_utc EDSAbiWrapperSingleton.icaltime_is_utc
 #   define icaltime_as_ical_string (EDSAbiWrapperSingleton.icaltime_as_ical_string_r ? EDSAbiWrapperSingleton.icaltime_as_ical_string_r : EDSAbiWrapperSingleton.icaltime_as_ical_string)
 #   define icaltime_from_string EDSAbiWrapperSingleton.icaltime_from_string
 #   define icaltime_from_timet EDSAbiWrapperSingleton.icaltime_from_timet
 #   define icaltime_null_time EDSAbiWrapperSingleton.icaltime_null_time
 #   define icaltime_as_timet EDSAbiWrapperSingleton.icaltime_as_timet
 #   define icaltime_set_timezone EDSAbiWrapperSingleton.icaltime_set_timezone
+#   define icaltime_convert_to_zone EDSAbiWrapperSingleton.icaltime_convert_to_zone
+#   define icaltime_get_timezone EDSAbiWrapperSingleton.icaltime_get_timezone
 #   define icaltimezone_free EDSAbiWrapperSingleton.icaltimezone_free
 #   define icaltimezone_get_builtin_timezone EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone
 #   define icaltimezone_get_builtin_timezone_from_tzid EDSAbiWrapperSingleton.icaltimezone_get_builtin_timezone_from_tzid
