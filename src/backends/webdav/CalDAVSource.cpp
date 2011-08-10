@@ -241,6 +241,7 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
     Event::unescapeRecurrenceID(data);
     eptr<icalcomponent> calendar(icalcomponent_new_from_string((char *)data.c_str()), // cast is a hack for broken definition in old libical
                                  "iCalendar 2.0");
+    Event::fixIncomingCalendar(calendar.get());
     std::string davLUID = path2luid(Neon::URI::parse(href).m_path);
     SubRevisionEntry &entry = revisions[davLUID];
     entry.m_revision = ETag2Rev(etag);
@@ -272,8 +273,6 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
         for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
              comp;
              comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
-            // remove useless X-LIC-ERROR
-            Event::icalClean(comp);
         }
         event->m_calendar = calendar;
 #endif
@@ -971,6 +970,7 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
         Event::unescapeRecurrenceID(item);
         event.m_calendar.set(icalcomponent_new_from_string((char *)item.c_str()), // hack for old libical
                              "parsing iCalendar 2.0");
+        Event::fixIncomingCalendar(event.m_calendar.get());
 
         // Sequence number/last-modified might have been increased by last save.
         // Or the cache was populated by setAllSubItems(), which doesn't give
@@ -994,28 +994,74 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                     event.m_lastmodtime = mod;
                 }
             }
-
-            // remove useless X-LIC-ERROR
-            Event::icalClean(comp);
         }
     }
     return event;
 }
 
-void CalDAVSource::Event::icalClean(icalcomponent *comp)
+void CalDAVSource::Event::fixIncomingCalendar(icalcomponent *calendar)
 {
-    icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_ANY_PROPERTY);
-    while (prop) {
-        icalproperty *next = icalcomponent_get_next_property(comp, ICAL_ANY_PROPERTY);
-        const char *name = icalproperty_get_property_name(prop);
-        if (name && !strcmp("X-LIC-ERROR", name)) {
-            icalcomponent_remove_property(comp, prop);
-            icalproperty_free(prop);
+    // Evolution has a problem when the parent event uses a time
+    // zone and the RECURRENCE-ID uses UTC (can happen in Exchange
+    // meeting invitations): then Evolution and/or libical do not
+    // recognize that the detached recurrence overrides the
+    // regular recurrence and display both.
+    //
+    // As a workaround, remember time zone of DTSTART in parent event
+    // in the first loop iteration. Then below transform the RECURRENCE-ID
+    // time.
+    bool ridInUTC = false;
+    const icaltimezone *zone = NULL;
+
+    for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
+         comp;
+         comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
+        // remember whether we need to convert RECURRENCE-ID
+        struct icaltimetype rid = icalcomponent_get_recurrenceid(comp);
+        if (icaltime_is_utc(rid)) {
+            ridInUTC = true;
         }
-        prop = next;
+
+        // is parent event? -> remember time zone
+        static const struct icaltimetype null = { 0 };
+        if (!memcmp(&rid, &null, sizeof(null))) {
+            struct icaltimetype dtstart = icalcomponent_get_dtstart(comp);
+            zone = icaltime_get_timezone(dtstart);
+        }
+
+        // remove useless X-LIC-ERROR
+        icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_ANY_PROPERTY);
+        while (prop) {
+            icalproperty *next = icalcomponent_get_next_property(comp, ICAL_ANY_PROPERTY);
+            const char *name = icalproperty_get_property_name(prop);
+            if (name && !strcmp("X-LIC-ERROR", name)) {
+                icalcomponent_remove_property(comp, prop);
+                icalproperty_free(prop);
+            }
+            prop = next;
+        }
+    }
+
+    // now update RECURRENCE-ID?
+    if (zone && ridInUTC) {
+        for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
+             comp;
+             comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
+            icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_RECURRENCEID_PROPERTY);
+            if (prop) {
+                struct icaltimetype rid = icalproperty_get_recurrenceid(prop);
+                if (icaltime_is_utc(rid)) {
+                    rid = icaltime_convert_to_zone(rid, const_cast<icaltimezone *>(zone)); // icaltime_convert_to_zone should take a "const timezone" but doesn't
+                    icalproperty_set_recurrenceid(prop, rid);
+                    icalproperty_remove_parameter_by_kind(prop, ICAL_TZID_PARAMETER);
+                    icalparameter *param = icalparameter_new_from_value_string(ICAL_TZID_PARAMETER,
+                                                                               icaltimezone_get_tzid(const_cast<icaltimezone *>(zone)));
+                    icalproperty_set_parameter(prop, param);
+                }
+            }
+        }
     }
 }
-
 
 std::string CalDAVSource::Event::icalTime2Str(const icaltimetype &tt)
 {
