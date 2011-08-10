@@ -218,10 +218,12 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 templates=[]
                 oldpath = os.getcwd()
                 os.chdir (srcdir)
-                fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_SOURCES=file_contact ./client-test -h |grep 'Client::Sync::file_contact'|grep -v 'Retry' |grep -v 'Suspend' | grep -v 'Resend'")
+                # get list for source "file_event" because a) it is expected to be enabled
+                # and b) it has more tests than, for example, file_contact (testLinkedItems*)
+                fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_SOURCES=file_event ./client-test -h |grep 'Client::Sync::file_event'|grep -v 'Retry' |grep -v 'Suspend' | grep -v 'Resend'")
                 os.chdir(oldpath)
                 for line in fout:
-                    l = line.partition('Client::Sync::file_contact::')[2].rpartition('\n')[0]
+                    l = line.partition('Client::Sync::file_event::')[2].rpartition('\n')[0]
                     if(l!=''):
                         templates.append(l);
                 indent +=space
