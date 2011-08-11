@@ -199,7 +199,9 @@ class Context:
             del cmd[command + 1]
 
         cmdstr = " ".join(map(lambda x: (' ' in x or x == '') and "'%s'"%x or x, cmd))
-        print "*** ( cd %s; %s )" % (os.getcwd(), cmdstr)
+        print "*** ( cd %s; export %s; %s )" % (os.getcwd(),
+                                                " ".join(map(lambda x: "'%s=%s'" % (x, os.getenv(x, "")), [ "LD_LIBRARY_PATH" ])),
+                                                cmdstr)
         sys.stdout.flush()
         result = os.system(cmdstr)
         if result != 0:
@@ -485,7 +487,7 @@ class SyncEvolutionTest(Action):
                       "CLIENT_TEST_LOG=%(log)s " \
                       "CLIENT_TEST_EVOLUTION_PREFIX=%(evoprefix)s " \
                       "%(runner)s " \
-                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs:.libs:syncevo/.libs PATH=backends/webdav:.:$PATH %(testprefix)s " \
+                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs:.libs:syncevo/.libs:$LD_LIBRARY_PATH PATH=backends/webdav:.:$PATH %(testprefix)s " \
                       "%(testbinary)s" % \
                       { "server": self.serverName,
                         "sources": ",".join(self.sources),
