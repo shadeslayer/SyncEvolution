@@ -111,7 +111,7 @@ perl \
     -e '   }' \
     -e '   if (!$skipping) {' \
     -e '      $pid = $newpid unless $pid;' \
-    -e '      if ($onlyfirst && $newpid && $pid != $newpid && /(definitely|possibly|indirectly) lost in loss record/) {' \
+    -e '      if ($onlyfirst && $newpid && $pid != $newpid && /(possibly|indirectly) lost in loss record/) {' \
     -e '         $skipping = 1;' \
     -e '      } else {' \
     -e '         print;' \
