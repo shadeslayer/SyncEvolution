@@ -663,6 +663,7 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
                                                                ICAL_ANY_PROPERTY);
 
         while (prop) {
+            // removes only the *first* TZID - but there shouldn't be more than one
             icalproperty_remove_parameter_by_kind(prop, ICAL_TZID_PARAMETER);
             prop = icalcomponent_get_next_property (comp,
                                                     ICAL_ANY_PROPERTY);
@@ -672,7 +673,9 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
         icalstr = icalcomponent_as_ical_string(comp);
         if (!icalstr) {
             throwError(string("could not encode item as iCalendar: ") + id.getLUID());
-        }
+        } else {
+            SE_LOG_DEBUG(this, NULL, "had to remove TZIDs because e_cal_get_component_as_string() failed for:\n%s", icalstr.get());
+	}
     }
 
     /*
