@@ -169,12 +169,27 @@ public:
     TestEvolution(const string &id) :
         ClientTest(getenv("CLIENT_TEST_DELAY") ? atoi(getenv("CLIENT_TEST_DELAY")) : 0,
                    getenv("CLIENT_TEST_LOG") ? getenv("CLIENT_TEST_LOG") : ""),
+        m_initialized(false),
         m_clientID(id),
         m_configs(SyncSource::getTestRegistry())
     {
+    }
+
+    /**
+     * code depends on other global constructors to run first, execute it after constructor but before
+     * any other methods
+     */
+    void init()
+    {
+        if (m_initialized) {
+	    return;
+        } else {
+            m_initialized = true;
+        }
+
         const char *server = getenv("CLIENT_TEST_SERVER");
 
-        if (id == "1") {
+        if (m_clientID == "1") {
             m_clientB.reset(new TestEvolution("2"));
         }
 
@@ -230,21 +245,21 @@ public:
         }
         // get configuration and set obligatory fields
         LoggerBase::instance().setLevel(Logger::DEBUG);
-        std::string root = std::string("evolution/") + server + "_" + id;
-        boost::shared_ptr<SyncConfig> config(new SyncConfig(string(server) + "_" + id));
+        std::string root = std::string("evolution/") + server + "_" + m_clientID;
+        boost::shared_ptr<SyncConfig> config(new SyncConfig(string(server) + "_" + m_clientID));
         boost::shared_ptr<SyncConfig> from = boost::shared_ptr<SyncConfig> ();
 
         if (!config->exists()) {
             // no configuration yet, create in different contexts because
             // device ID is different
-            config.reset(new SyncConfig(string(server) + "_" + id + "@client-test-" + id));
+            config.reset(new SyncConfig(string(server) + "_" + m_clientID + "@client-test-" + m_clientID));
             config->setDefaults();
             from = SyncConfig::createPeerTemplate(server);
             if(from) {
                 set<string> filter;
                 config->copy(*from, &filter);
             }
-            config->setDevID(id == "1" ? "sc-api-nat" : "sc-pim-ppc");
+            config->setDevID(m_clientID == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
         BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
             ClientTest::Config testconfig;
@@ -275,22 +290,27 @@ public:
     }
 
     virtual LocalTests *createLocalTests(const std::string &name, int sourceParam, ClientTest::Config &co) {
+        init();
         return new EvolutionLocalTests(name, *this, sourceParam, co);
     }
 
     virtual int getNumLocalSources() {
+        init();
         return m_localSource2Config.size();
     }
 
     virtual int getNumSyncSources() {
+        init();
         return m_syncSource2Config.size();
     }
 
     virtual void getLocalSourceConfig(int source, Config &config) {
+        init();
         getSourceConfig(m_configs[m_localSource2Config[source]], config);
     }
 
     virtual void getSyncSourceConfig(int source, Config &config) {
+        init();
         getSourceConfig(m_configs[m_syncSource2Config[source]], config);
     }
 
@@ -305,6 +325,7 @@ public:
     }
 
     virtual void getSourceConfig (const string &configName, Config &config) {
+        init();
         return getSourceConfig (m_configs[configName], config);
     }
 
@@ -319,6 +340,7 @@ public:
     }
 
     virtual ClientTest *getClientB() {
+        init();
         return m_clientB.get();
     }
 
@@ -336,6 +358,8 @@ public:
                                 const std::string &logbase,
                                 const SyncOptions &options)
     {
+        init();
+
         // check whether using buteo to do sync
         const char *buteo = getenv("CLIENT_TEST_BUTEO");
         bool useButeo = false;
@@ -451,6 +475,7 @@ public:
     }
   
 private:
+    bool m_initialized;
     string m_clientID;
     std::auto_ptr<TestEvolution> m_clientB;
     const TestRegistry &m_configs;

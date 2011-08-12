@@ -11,7 +11,7 @@
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-extern BoolConfigProperty WebDAVCredentialsOkay;
+extern BoolConfigProperty &WebDAVCredentialsOkay();
 SE_END_CXX
 
 #ifdef ENABLE_DAV

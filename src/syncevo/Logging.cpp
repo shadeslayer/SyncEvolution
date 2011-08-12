@@ -27,13 +27,21 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-static LoggerStdout DefaultLogger;
 std::string Logger::m_processName;
-static std::vector<LoggerBase *> loggers;
+
+static std::vector<LoggerBase *> &loggers()
+{
+    // allocate array once and never free it because it might be needed till
+    // the very end of the application life cycle
+    static std::vector<LoggerBase *> *loggers = new std::vector<LoggerBase *>;
+    return *loggers;
+}
+
 LoggerBase &LoggerBase::instance()
 {
-    if (!loggers.empty()) {
-        return *loggers[loggers.size() - 1];
+    static LoggerStdout DefaultLogger;
+    if (!loggers().empty()) {
+        return *loggers()[loggers().size() - 1];
     } else {
         return DefaultLogger;
     }
@@ -41,28 +49,28 @@ LoggerBase &LoggerBase::instance()
 
 void LoggerBase::pushLogger(LoggerBase *logger)
 {
-    loggers.push_back(logger);
+    loggers().push_back(logger);
 }
 
 void LoggerBase::popLogger()
 {
-    if (loggers.empty()) {
+    if (loggers().empty()) {
         throw "too many popLogger() calls";
     } else {
-        loggers.pop_back();
+        loggers().pop_back();
     }
 }
 
 int LoggerBase::numLoggers()
 {
-    return (int)loggers.size();
+    return (int)loggers().size();
 }
 
 LoggerBase *LoggerBase::loggerAt(int index)
 {
-    return index < 0 || index >= (int)loggers.size() ?
+    return index < 0 || index >= (int)loggers().size() ?
         NULL :
-        loggers[index];
+        loggers()[index];
 }
 
 

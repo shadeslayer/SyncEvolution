@@ -1476,6 +1476,12 @@ public:
     {
         ConfigPropertyRegistry &registry = SyncConfig::getRegistry();
 
+	// temporarily move existing properties away so that the important
+	// standard properties come first when using the traditional
+	// push_back() way of adding them
+	ConfigPropertyRegistry tmp;
+	std::swap(registry, tmp);
+
         registry.push_back(&syncPropSyncURL);
         registry.push_back(&syncPropUsername);
         registry.push_back(&syncPropPassword);
@@ -1528,6 +1534,10 @@ public:
         registry.push_back(&syncPropPeerMinVersion);
         registry.push_back(&syncPropPeerCurVersion);
 #endif
+
+        BOOST_FOREACH (const ConfigProperty *prop, tmp) {
+            registry.push_back(prop);
+        }
 
         // obligatory sync properties
         //
@@ -2285,6 +2295,13 @@ public:
     RegisterSyncSourceConfigProperties()
     {
         ConfigPropertyRegistry &registry = SyncSourceConfig::getRegistry();
+
+	// temporarily move existing properties away so that the important
+	// standard properties come first when using the traditional
+	// push_back() way of adding them
+	ConfigPropertyRegistry tmp;
+	std::swap(registry, tmp);
+
         registry.push_back(&SyncSourceConfig::m_sourcePropSync);
         registry.push_back(&sourcePropURI);
         registry.push_back(&sourcePropBackend);
@@ -2296,6 +2313,10 @@ public:
         registry.push_back(&sourcePropPassword);
         registry.push_back(&sourcePropAdminData);
         registry.push_back(&sourcePropSynthesisID);
+
+        BOOST_FOREACH (const ConfigProperty *prop, tmp) {
+            registry.push_back(prop);
+        }
 
         // obligatory source properties
         SyncSourceConfig::m_sourcePropSync.setObligatory(true);

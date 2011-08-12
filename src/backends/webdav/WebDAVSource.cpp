@@ -18,7 +18,11 @@
 
 SE_BEGIN_CXX
 
-BoolConfigProperty WebDAVCredentialsOkay("webDAVCredentialsOkay", "credentials were accepted before");
+BoolConfigProperty &WebDAVCredentialsOkay()
+{
+    static BoolConfigProperty okay("webDAVCredentialsOkay", "credentials were accepted before");
+    return okay;
+}
 
 #ifdef ENABLE_DAV
 
@@ -89,8 +93,8 @@ public:
                                           urlWithUsername.c_str()));
                 }
             }
-            boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
-            m_credentialsOkay = WebDAVCredentialsOkay.getPropertyValue(*node);
+            boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay());
+            m_credentialsOkay = WebDAVCredentialsOkay().getPropertyValue(*node);
         }
     }
 
@@ -143,9 +147,9 @@ public:
     virtual bool getCredentialsOkay() { return m_credentialsOkay; }
     virtual void setCredentialsOkay(bool okay) {
         if (m_credentialsOkay != okay && m_context) {
-            boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay);
+            boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay());
             if (!node->isReadOnly()) {
-                WebDAVCredentialsOkay.setProperty(*node, okay);
+                WebDAVCredentialsOkay().setProperty(*node, okay);
                 node->flush();
             }
             m_credentialsOkay = okay;
