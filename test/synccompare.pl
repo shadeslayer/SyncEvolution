@@ -123,11 +123,25 @@ sub splitvalue {
 # normalize the DATE-TIME duration unless the VALUE isn't a duration
 sub NormalizeTrigger {
     my $value = shift;
-    $value =~ s/([+-]?)P(?:(\d*)D)?T(?:(\d*)H)?(?:(\d*)M)?(?:(\d*)S)?/$1 .
-      "P" . (int($2) ? ($2 . "D") : "") . "T" .
-      (int($3) ? ($3 . "H") : "") .
-      (int($4) ? ($4 . "M") : "") .
-      (int($5) ? ($5 . "S") : "")/e;
+    $value =~ /([+-]?)P(?:(\d*)D)?T(?:(\d*)H)?(?:(\d*)M)?(?:(\d*)S)?/;
+    my ($sign, $days, $hours, $minutes, $seconds) = ($1, int($2), int($3), int($4), int($5));
+    while ($seconds >= 60) {
+        $minutes++;
+        $seconds -= 60;
+    }
+    while ($minutes >= 60) {
+        $hours++;
+        $minutes -= 60;
+    }
+    while ($hours >= 24) {
+        $days++;
+        $hours -= 24;
+    }
+    $value = $sign;
+    $value .= ($days . "D") if $days;
+    $value .= ($hours . "H") if $hours;
+    $value .= ($minutes . "M") if $minutes;
+    $value .= ($seconds . "S") if $seconds;
     return $value;
 }
 

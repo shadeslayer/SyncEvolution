@@ -663,12 +663,7 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
                                                                ICAL_ANY_PROPERTY);
 
         while (prop) {
-            icalparameter *param = icalproperty_get_first_parameter(prop,
-                                                                    ICAL_TZID_PARAMETER);
-            while (param) {
-                icalproperty_remove_parameter_by_kind(prop, ICAL_TZID_PARAMETER);
-                param = icalproperty_get_next_parameter (prop, ICAL_TZID_PARAMETER);
-            }
+            icalproperty_remove_parameter_by_kind(prop, ICAL_TZID_PARAMETER);
             prop = icalcomponent_get_next_property (comp,
                                                     ICAL_ANY_PROPERTY);
         }
