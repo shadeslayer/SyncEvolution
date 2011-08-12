@@ -609,13 +609,15 @@ sub NormalizeItem {
 
     if ($exchange) {
         # unsupported properties
-        s/^(SEQUENCE)(;[^:;\n]*)*:.*\r?\n?//gm;
+        s/^(SEQUENCE|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
         # added properties which can be ignored (?)
         s/^(X-MEEGO-ACTIVESYNCD-[a-zA-Z]*)(;[^:;\n]*)*:.*\r?\n?//gm;
         # ORGANIZER added - remove and thus ignore if we have no ATTENDEEs
         if (!/^ATTENDEE/m) {
             s/^(ORGANIZER)(;[^:;\n]*)*:.*\r?\n?//gm;
         }
+        # ignore added VALARM DESCRIPTION
+        s/^DESCRIPTION:Reminder\n//m;
     }
 
     # treat X-MOZILLA-HTML=FALSE as if the property didn't exist
