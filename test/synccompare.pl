@@ -79,6 +79,7 @@ my $full_timezones = $ENV{CLIENT_TEST_FULL_TIMEZONES}; # do not simplify VTIMEZO
 # properties supported by Synthesis. Remove this again.
 # $synthesis = 1;
 
+my $exchange = $server =~ /exchange/; # Exchange via ActiveSync
 my $egroupware = $server =~ /egroupware/;
 my $funambol = $server =~ /funambol/;
 my $google = $server =~ /google/;
@@ -590,6 +591,17 @@ sub NormalizeItem {
 
     if ($zyb) {
         s/^(CALURI|CATEGORIES|FBURL|NICKNAME|X-MOZILLA-HTML|PHOTO|X-EVOLUTION-FILE-AS|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-MANAGER|X-SPOUSE|X-YAHOO|X-AIM)(;[^:;\n]*)*:.*\r?\n?//gm;
+    }
+
+    if ($exchange) {
+        # unsupported properties
+        s/^(SEQUENCE)(;[^:;\n]*)*:.*\r?\n?//gm;
+        # added properties which can be ignored (?)
+        s/^(X-MEEGO-ACTIVESYNCD-[a-zA-Z]*)(;[^:;\n]*)*:.*\r?\n?//gm;
+        # ORGANIZER added - remove and thus ignore if we have no ATTENDEEs
+        if (!/^ATTENDEE/m) {
+            s/^(ORGANIZER)(;[^:;\n]*)*:.*\r?\n?//gm;
+        }
     }
 
     # treat X-MOZILLA-HTML=FALSE as if the property didn't exist
