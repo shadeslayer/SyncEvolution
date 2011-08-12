@@ -13,24 +13,46 @@
 # environment variable. The log file can be chosen via VALGRIND_LOG,
 # with valgrind.<pid of shell>.out as default.
 
-
 LOGFILE=${VALGRIND_LOG:-valgrind.$$.out}
 
 trap "if [ -f $LOGFILE ]; then cat $LOGFILE >&2; rm $LOGFILE; fi" EXIT
 
 killvalgrind () {
     # killall did not always find valgrind when evolution-data-server-2.22 forked?!
+    # This will kill *all* running valgrind instances, even those not started
+    # by this script. That's better than missing some processes which were started
+    # directly or indirectly and now no longer are associated with our process.
     killall -q $1 valgrind
-    for i in `ps x | grep " valgrind " | sed -e 's/^ *//' | cut -f1 -d " "`; do kill $1 $i; done
+    for i in `ps x | grep -v grep | grep -e " valgrind " -e valgrind.bin | sed -e 's/^ *//' | cut -f1 -d " "`; do kill $1 $i; done
 }
 
-( set -x; env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --gen-suppressions=all --log-file=$LOGFILE "$@" )
+( set -x; env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --gen-suppressions=all --log-file=$LOGFILE "$@" ) &
+VALGRIND_PID=$!
+
+intvalgrind () {
+    kill -INT $VALGRIND_PID
+}
+termvalgrind () {
+    kill -TERM $VALGRIND_PID
+}
+
+trap "kill -TERM $VALGRIND_PID" TERM
+trap "kill -INT $VALGRIND_PID" INT
+
+wait $VALGRIND_PID
 RET=$?
+echo valgrindcheck: "$@": returned $RET
 
 # give other valgrind instances some time to settle down, then kill them
 sleep 1
 killvalgrind -15
-sleep 5
+# let valgrind chew on leak checking for up to 30 seconds before killing it
+# for good
+i=0
+while ps x | grep -v grep | grep -q -e " valgrind " -e valgrind.bin && [ $i -lt 30 ]; do
+    sleep 1
+    i=`expr $i + 1`
+done
 killvalgrind -9
 # Filter out leaks in forked processes if VALGRIND_LEAK_CHECK_ONLY_FIRST is set,
 # detect if unfiltered errors were reported by valgrind. Unfiltered errors
@@ -123,7 +145,14 @@ perl \
     -e '}' \
     -e 'exit $ret;' \
     $LOGFILE
-RET=$?
+SUBRET=$?
+
+# bad valgrind log result overrides successful completion or being killed by SIGTERM (143) or SIGINT (130)
+if ( [ $RET -eq 0 ] || [ $RET -eq 130 ] || [ $RET -eq 143 ] ) && [ $SUBRET -ne 0 ]; then
+    RET=$SUBRET
+    echo valgrindcheck: "$@": log analysis overrides return code with $SUBRET
+fi
 rm $LOGFILE
 
+echo valgrindcheck: "$@": final result $RET
 exit $RET
