@@ -182,10 +182,10 @@ class Context:
     def runCommand(self, cmdstr):
         """Log and run the given command, throwing an exception if it fails."""
         cmd = shlex.split(cmdstr)
-        if "valgrindcheck.sh" in cmd:
-            cmd.insert(0, "VALGRIND_LOG='%s'" % os.getenv("VALGRIND_LOG", ""))
-            cmd.insert(0, "VALGRIND_ARGS='%s'" % os.getenv("VALGRIND_ARGS", ""))
-            cmd.insert(0, "VALGRIND_LEAK_CHECK_ONLY_FIRST='%s'" % os.getenv("VALGRIND_LEAK_CHECK_ONLY_FIRST", ""))
+        if "valgrindcheck.sh" in cmdstr:
+            cmd.insert(0, "VALGRIND_LOG=%s" % os.getenv("VALGRIND_LOG", ""))
+            cmd.insert(0, "VALGRIND_ARGS=%s" % os.getenv("VALGRIND_ARGS", ""))
+            cmd.insert(0, "VALGRIND_LEAK_CHECK_ONLY_FIRST=%s" % os.getenv("VALGRIND_LEAK_CHECK_ONLY_FIRST", ""))
 
         # move "sudo" or "env" command invocation in front of
         # all the leading env variable assignments: necessary
