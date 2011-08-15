@@ -76,8 +76,7 @@ string normalizePath(const string &path)
                    (path[index] == '/' ||
                     (path[index] == '.' &&
                      index + 1 < path.size() &&
-                     (path[index + 1] == '.' ||
-                      path[index + 1] == '/')))) {
+                     path[index + 1] == '/'))) {
                 index++;
             }
         }
