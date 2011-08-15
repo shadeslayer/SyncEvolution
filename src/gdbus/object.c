@@ -94,7 +94,7 @@ static BDBusPropertyTable *find_property(InterfaceData *interface,
 	if (interface == NULL)
 		return NULL;
 
-	for (property = interface->properties; property->name; property++)
+	for (property = interface->properties; property && property->name; property++)
 		if (strcmp(property->name, name) == 0)
 			return property;
 
@@ -490,7 +490,7 @@ static void do_getall(DBusConnection *connection, DBusMessageIter *iter,
 	if (interface == NULL)
 		return;
 
-	for (property = interface->properties; property->name; property++) {
+	for (property = interface->properties; property && property->name; property++) {
 		DBusMessage *message;
 		DBusMessageIter entry, value;
 		dbus_bool_t result;
