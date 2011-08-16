@@ -1022,11 +1022,13 @@ void CalDAVSource::Event::fixIncomingCalendar(icalcomponent *calendar)
             ridInUTC = true;
         }
 
-        // is parent event? -> remember time zone
+        // is parent event? -> remember time zone unless it is UTC
         static const struct icaltimetype null = { 0 };
         if (!memcmp(&rid, &null, sizeof(null))) {
             struct icaltimetype dtstart = icalcomponent_get_dtstart(comp);
-            zone = icaltime_get_timezone(dtstart);
+            if (!icaltime_is_utc(dtstart)) {
+                zone = icaltime_get_timezone(dtstart);
+            }
         }
 
         // remove useless X-LIC-ERROR

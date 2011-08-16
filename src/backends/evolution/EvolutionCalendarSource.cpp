@@ -670,7 +670,7 @@ string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
         }
 
         // now try again
-        icalstr = icalcomponent_as_ical_string(comp);
+        icalstr = e_cal_get_component_as_string(m_calendar, comp);
         if (!icalstr) {
             throwError(string("could not encode item as iCalendar: ") + id.getLUID());
         } else {
