@@ -41,7 +41,7 @@ trap "kill -INT $VALGRIND_PID" INT
 
 wait $VALGRIND_PID
 RET=$?
-echo valgrindcheck: "$@": returned $RET
+echo valgrindcheck: "$@": returned $RET >&2
 
 # give other valgrind instances some time to settle down, then kill them
 sleep 1
@@ -150,9 +150,9 @@ SUBRET=$?
 # bad valgrind log result overrides successful completion or being killed by SIGTERM (143) or SIGINT (130)
 if ( [ $RET -eq 0 ] || [ $RET -eq 130 ] || [ $RET -eq 143 ] ) && [ $SUBRET -ne 0 ]; then
     RET=$SUBRET
-    echo valgrindcheck: "$@": log analysis overrides return code with $SUBRET
+    echo valgrindcheck: "$@": log analysis overrides return code with $SUBRET >&2
 fi
 rm $LOGFILE
 
-echo valgrindcheck: "$@": final result $RET
+echo valgrindcheck: "$@": final result $RET >&2
 exit $RET

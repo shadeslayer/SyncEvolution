@@ -40,7 +40,7 @@ fi
 # run program
 "$@"
 res=$?
-echo dbus-session.sh: program returned $res
+echo dbus-session.sh: program returned $res >&2
 
 # Now also shut down EDS, if started by us. Update total result code if any of them
 # failed the valgrind check.
@@ -60,7 +60,7 @@ shutdown () {
     wait "$pid"
     subres=$?
     case $subres in 0|130|143) true;; # 130 and 143 indicate that it was killed, probably by us
-                    *) echo $program failed with return code $subres
+                    *) echo $program failed with return code $subres >&2
 	               if [ $res -eq 0 ]; then
                            res=$subres
                        fi
@@ -75,5 +75,5 @@ if [ "$DBUS_SESSION_SH_EDS_BASE" ]; then
     shutdown "$E_BOOK_PID" "$DBUS_SESSION_SH_EDS_BASE/e-addressbook-factory"
 fi
 
-echo dbus-session.sh: final result $res
+echo dbus-session.sh: final result $res >&2
 return $res
