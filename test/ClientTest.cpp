@@ -1690,7 +1690,10 @@ void SyncTests::addTests(bool isFirstSource) {
                     ADD_TEST(SyncTests, testComplexRefreshFromServerSemantic);
                     ADD_TEST(SyncTests, testDeleteBothSides);
 
-                    if (config.parentItem &&
+                    // only add when testing individual source,
+                    // test data not guaranteed to be available for all sources
+                    if (sources.size() == 1 &&
+                        config.parentItem &&
                         config.childItem) {
                         ADD_TEST(SyncTests, testLinkedItemsParentChild);
 
@@ -4559,6 +4562,17 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
 
+        // Servers have very different understandings of how
+	// recurrence interacts with time zones and RRULE.
+	// Must use different test cases for some servers to
+	// avoid having the linkedItems test cases fail
+	// because of that.
+	std::string server;
+	const char *tmp = getenv("CLIENT_TEST_SERVER");
+	if (tmp) {
+	    server = tmp;
+	}
+	// default: time zones + UNTIL in UTC
         config.parentItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -4633,6 +4647,127 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DESCRIPTION:second instance modified\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
+
+	if (server == "funambol") {
+	    // converts UNTIL into floating time - broken?!
+	    config.parentItem =
+	        "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VTIMEZONE\n"
+                "TZID:/softwarestudio.org/Olson_20011030_5/Europe/Berlin\n"
+                "X-LIC-LOCATION:Europe/Berlin\n"
+                "BEGIN:DAYLIGHT\n"
+                "TZOFFSETFROM:+0100\n"
+                "TZOFFSETTO:+0200\n"
+                "TZNAME:CEST\n"
+                "DTSTART:19700329T020000\n"
+                "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=-1SU;BYMONTH=3\n"
+                "END:DAYLIGHT\n"
+                "BEGIN:STANDARD\n"
+                "TZOFFSETFROM:+0200\n"
+                "TZOFFSETTO:+0100\n"
+                "TZNAME:CET\n"
+                "DTSTART:19701025T030000\n"
+                "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=-1SU;BYMONTH=10\n"
+                "END:STANDARD\n"
+                "END:VTIMEZONE\n"
+                "BEGIN:VEVENT\n"
+                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "DTSTAMP:20080407T193125Z\n"
+                "DTSTART;TZID=/softwarestudio.org/Olson_20011030_5/Europe/Berlin:20080406T090000\n"
+                "DTEND;TZID=/softwarestudio.org/Olson_20011030_5/Europe/Berlin:20080406T093000\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:XXX\n"
+                "SUMMARY:Recurring\n"
+                "DESCRIPTION:recurs each Monday\\, 10 times\n"
+                "CLASS:PUBLIC\n"
+                "RRULE:FREQ=WEEKLY;UNTIL=20080608T090000;INTERVAL=1;BYDAY=SU\n"
+                "CREATED:20080407T193241\n"
+                "LAST-MODIFIED:20080407T193241Z\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+	} else if (server == "mobical") {
+	    // UTC time
+	    config.parentItem =
+	        "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VEVENT\n"
+                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "DTSTAMP:20080407T193125Z\n"
+                "DTSTART:20080406T070000Z\n"
+                "DTEND:20080406T073000Z\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:XXX\n"
+                "SUMMARY:Recurring\n"
+                "DESCRIPTION:recurs each Monday\\, 10 times\n"
+                "CLASS:PUBLIC\n"
+                "RRULE:FREQ=WEEKLY;UNTIL=20080608T070000Z;INTERVAL=1;BYDAY=SU\n"
+                "CREATED:20080407T193241\n"
+                "LAST-MODIFIED:20080407T193241Z\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+            config.childItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VEVENT\n"
+                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "DTSTAMP:20080407T193125Z\n"
+                "DTSTART:20080413T070000Z\n"
+                "DTEND:20080413T073000Z\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:XXX\n"
+                "SUMMARY:Recurring: Modified\n"
+                "CLASS:PUBLIC\n"
+                "CREATED:20080407T193241\n"
+                "LAST-MODIFIED:20080407T193647Z\n"
+                "RECURRENCE-ID:20080413T070000Z\n"
+                "DESCRIPTION:second instance modified\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+	} else if (server == "memotoo") {
+	    // local time
+	    config.parentItem =
+	        "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VEVENT\n"
+                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "DTSTAMP:20080407T193125Z\n"
+                "DTSTART:20080406T070000\n"
+                "DTEND:20080406T073000\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:XXX\n"
+                "SUMMARY:Recurring\n"
+                "DESCRIPTION:recurs each Monday\\, 10 times\n"
+                "CLASS:PUBLIC\n"
+                "RRULE:FREQ=WEEKLY;UNTIL=20080608T070000;INTERVAL=1;BYDAY=SU\n"
+                "CREATED:20080407T193241\n"
+                "LAST-MODIFIED:20080407T193241Z\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+            config.childItem =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VEVENT\n"
+                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "DTSTAMP:20080407T193125Z\n"
+                "DTSTART:20080413T070000\n"
+                "DTEND:20080413T073000\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:XXX\n"
+                "SUMMARY:Recurring: Modified\n"
+                "CLASS:PUBLIC\n"
+                "CREATED:20080407T193241\n"
+                "LAST-MODIFIED:20080407T193647Z\n"
+                "RECURRENCE-ID:20080413T070000\n"
+                "DESCRIPTION:second instance modified\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+	}
 
         config.templateItem = config.insertItem;
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
