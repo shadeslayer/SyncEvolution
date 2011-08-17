@@ -4922,3 +4922,100 @@
    obj:*libglib*
    fun:g_main_loop_run
 }
+
+# ==26674== Command: /usr/lib/evolution/e-addressbook-factory
+# ==26674== Parent PID: 26669
+# ==26674== 
+# ==26674== Thread 3:
+# ==26674== Syscall param pwrite64(buf) points to uninitialised byte(s)
+# ==26674==    at 0x5F12A33: ??? (syscall-template.S:82)
+# ==26674==    by 0x72D2937: __os_io (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x72BFBCD: ??? (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x72BFDD6: __memp_bhwrite (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x72CF04F: __memp_sync_int (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x726C516: __db_sync (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x727C014: __db_sync_pp (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x10CF123A: e_book_backend_file_create_contact (e-book-backend-file.c:232)
+# ==26674==    by 0x4E4083B: _e_book_backend_create_contact (e-book-backend-sync.c:375)
+# ==26674==    by 0x4E472AA: operation_thread (e-data-book.c:115)
+# ==26674==    by 0x58503E3: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x584DCF5: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x5F0AB3F: start_thread (pthread_create.c:304)
+# ==26674==    by 0x61F536C: clone (clone.S:112)
+# ==26674==  Address 0xdf5f510 is 3,824 bytes inside a block of size 4,096 alloc'd
+# ==26674==    at 0x4C2779D: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+# ==26674==    by 0x72D01D7: __os_malloc (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x72BFC77: ??? (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x72BFDD6: __memp_bhwrite (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x72CF04F: __memp_sync_int (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x726C516: __db_sync (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x727C014: __db_sync_pp (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x10CF123A: e_book_backend_file_create_contact (e-book-backend-file.c:232)
+# ==26674==    by 0x4E4083B: _e_book_backend_create_contact (e-book-backend-sync.c:375)
+# ==26674==    by 0x4E472AA: operation_thread (e-data-book.c:115)
+# ==26674==    by 0x58503E3: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x584DCF5: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x5F0AB3F: start_thread (pthread_create.c:304)
+# ==26674==    by 0x61F536C: clone (clone.S:112)
+# ==26674== 
+{
+   partially initialized data written by libdb - caused by libdb itself?
+   Memcheck:Param
+   pwrite64(buf)
+   ...
+   obj:*libdb*
+}
+
+# ==26674== 332 bytes in 83 blocks are definitely lost in loss record 1,605 of 1,715
+# ==26674==    at 0x4C2779D: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+# ==26674==    by 0x72CFF54: __os_umalloc (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x7294C35: __db_retcopy (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x726EB4D: __dbc_iget (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x727CDCC: __dbc_get_pp (in /usr/lib/libdb-5.1.so)
+# ==26674==    by 0x10CF090C: e_book_backend_file_get_contact_list (e-book-backend-file.c:469)
+# ==26674==    by 0x4E4189B: _e_book_backend_get_contact_list (e-book-backend-sync.c:443)
+# ==26674==    by 0x4E472FA: operation_thread (e-data-book.c:123)
+# ==26674==    by 0x58503E3: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x584DCF5: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x5F0AB3F: start_thread (pthread_create.c:304)
+# ==26674==    by 0x61F536C: clone (clone.S:112)
+# ==26674== ...
+# ==26674== 12,552 (1,272 direct, 11,280 indirect) bytes in 53 blocks are definitely lost in loss record 1,711 of 1,715
+# ==26674==    at 0x4C2779D: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+# ==26674==    by 0x582D392: g_malloc (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x5843FE6: g_slice_alloc (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x58214BD: g_list_prepend (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x10CF0942: e_book_backend_file_get_contact_list (e-book-backend-file.c:478)
+# ==26674==    by 0x4E4189B: _e_book_backend_get_contact_list (e-book-backend-sync.c:443)
+# ==26674==    by 0x4E472FA: operation_thread (e-data-book.c:123)
+# ==26674==    by 0x58503E3: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x584DCF5: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==26674==    by 0x5F0AB3F: start_thread (pthread_create.c:304)
+# ==26674==    by 0x61F536C: clone (clone.S:112)
+# ==26674== 
+{
+   e_book_backend_file_get_contact_list memory leak
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:e_book_backend_file_get_contact_list
+}
+
+# ==8730== 28 bytes in 1 blocks are possibly lost in loss record 1,733 of 2,913
+# ==8730==    at 0x50CE796: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+# ==8730==    by 0x738429B: g_malloc0 (in /lib/libglib-2.0.so.0.2800.6)
+# ==8730==    by 0x921E176: ORBit_alloc_by_tc (in /usr/lib/libORBit-2.so.0.1.0)
+# ==8730==    by 0x921871A: ORBit_small_alloc (in /usr/lib/libORBit-2.so.0.1.0)
+# ==8730==    by 0x92240C3: ??? (in /usr/lib/libORBit-2.so.0.1.0)
+# ==8730==    by 0x9226115: ORBit_demarshal_IOR (in /usr/lib/libORBit-2.so.0.1.0)
+# ==8730==    by 0x921BC55: ORBit_demarshal_object (in /usr/lib/libORBit-2.so.0.1.0)
+# ==8730==    by 0x87C4E7F: ??? (in /usr/lib/libgconf-2.so.4.1.5)
+# ==8730==    by 0x9777BEF: ???
+# ==8730== 
+{
+   gconf/orbit mem leak
+   Memcheck:Leak
+   ...
+   obj:*libORBit*
+   obj:*libgconf*
+}
