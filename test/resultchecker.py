@@ -217,15 +217,22 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 of test cases'''
                 templates=[]
                 oldpath = os.getcwd()
-                os.chdir (srcdir)
-                # get list for source "file_event" because a) it is expected to be enabled
-                # and b) it has more tests than, for example, file_contact (testLinkedItems*)
-                fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_SOURCES=file_event ./client-test -h |grep 'Client::Sync::file_event'|grep -v 'Retry' |grep -v 'Suspend' | grep -v 'Resend'")
-                os.chdir(oldpath)
-                for line in fout:
-                    l = line.partition('Client::Sync::file_event::')[2].rpartition('\n')[0]
-                    if(l!=''):
-                        templates.append(l);
+                # Get list of Client::Sync tests one source at a time (because
+                # the result might depend on CLIENT_TEST_SOURCES and which source
+                # is listed there first) and combine the result for the common
+                # data types (because some tests are only enable for contacts, others
+                # only for events).
+                # The order of the tests matters, so don't use a hash and start with
+                # a source which has only the common tests enabled. Additional tests
+                # then get added at the end.
+                for source in ('file_task', 'file_event', 'file_contact', 'eds_contact', 'eds_event'):
+                    os.chdir (srcdir)
+                    fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_SOURCES="+source+" ./client-test -h")
+                    os.chdir(oldpath)
+                    for line in fout:
+                        l = line.partition('Client::Sync::'+source+'::')[2].rpartition('\n')[0]
+                        if l != '' and l not in templates:
+                            templates.append(l)
                 indent +=space
                 indents.append(indent)
                 result.write(indent+'<sync>\n')

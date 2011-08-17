@@ -603,7 +603,7 @@
             </tr>
 
             <xsl:for-each select="$list-of-unit-cases">
-                <xsl:sort select="name(.)" type="text"/>
+                <!--xsl:sort select="name(.)" type="text"/ -->
                 <xsl:variable name="unit" select="."/>
                 <tr>
                     <td width="300">
