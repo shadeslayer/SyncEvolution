@@ -292,7 +292,10 @@ public:
                     // module!
                     string fullpath = dirpath + '/' + entry;
                     fullpath = normalizePath(fullpath);
-                    dlhandle = dlopen(fullpath.c_str(), RTLD_NOW|RTLD_GLOBAL);
+                    // RTLD_LAZY is needed for the WebDAV backend, which
+                    // needs to do an explicit dlopen() of libneon in compatibility
+                    // mode before any of the neon functions can be resolved.
+                    dlhandle = dlopen(fullpath.c_str(), RTLD_LAZY|RTLD_GLOBAL);
                     // remember which modules were found and which were not
                     if (dlhandle) {
                         debug<<"Loading backend library "<<entry<<endl;

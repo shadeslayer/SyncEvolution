@@ -22,3 +22,15 @@ if test "$enable_dav" = "yes"; then
         BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $NEON_CFLAGS"
 fi
 AM_CONDITIONAL([ENABLE_ICAL], [test "$enable_dav" = "yes"])
+
+AC_ARG_ENABLE(neon-compatibility,
+              AS_HELP_STRING([--enable-neon-compatibility],
+                             [increase compatibility with binary libneon installations by loading libneon[-gnutls].27.so dynamically instead of linking against it]),
+              [enable_neon_compat="$enableval"],
+              [enable_neon_compat="no"]
+              )
+if test "$enable_neon_compat" = "yes"; then
+        AC_DEFINE(NEON_COMPATIBILITY, 1, [dynamically open libneon])
+        NEON_LIBS="`echo $NEON_LIBS | sed -e 's/\(-lneon\|[^ ]*libneon.la\)/-ldl/'`"
+fi
+AM_CONDITIONAL([NEON_COMPATIBILITY], [test "$enable_neon_compat" = "yes"])

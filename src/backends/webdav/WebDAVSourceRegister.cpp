@@ -9,6 +9,9 @@
 #ifdef ENABLE_UNIT_TESTS
 #include "test.h"
 #endif
+#ifdef NEON_COMPATIBILITY
+#include <dlfcn.h>
+#endif
 
 #include <boost/bind.hpp>
 #include <boost/tokenizer.hpp>
@@ -21,6 +24,28 @@ static SyncSource *createSource(const SyncSourceParams &params)
     SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     bool isMe;
 
+    // Backend is enabled if a suitable libneon can be found. In
+    // binary compatibility mode, libneon was not linked against.
+    // Instead we dlopen() it and don't care whether that is
+    // libneon.so.27 or libneon-gnutls.so.27. Debian Testing only has
+    // the later.
+#ifdef NEON_COMPATIBILITY
+    static bool enabled;
+    if (!enabled) {
+        // try libneon.so.27 first because it seems to be a bit more
+        // common and upstream seems to use OpenSSL
+        void *dl = dlopen("libneon.so.27", RTLD_LAZY|RTLD_GLOBAL);
+        if (!dl) {
+            dl = dlopen("libneon-gnutls.so.27", RTLD_LAZY|RTLD_GLOBAL);
+        }
+        if (dl) {
+            enabled = true;
+        }
+    }
+#else
+    static bool enabled = true;
+#endif
+
     isMe = sourceType.m_backend == "CalDAV";
     if (isMe) {
         if (sourceType.m_format == "" ||
@@ -28,12 +53,13 @@ static SyncSource *createSource(const SyncSourceParams &params)
             sourceType.m_format == "text/x-calendar" ||
             sourceType.m_format == "text/x-vcalendar") {
 #ifdef ENABLE_DAV
-            boost::shared_ptr<Neon::Settings> settings;
-            boost::shared_ptr<SubSyncSource> sub(new CalDAVSource(params, settings));
-            return new MapSyncSource(params, sub);
-#else
-            return RegisterSyncSource::InactiveSource;
+            if (enabled) {
+                boost::shared_ptr<Neon::Settings> settings;
+                boost::shared_ptr<SubSyncSource> sub(new CalDAVSource(params, settings));
+                return new MapSyncSource(params, sub);
+            }
 #endif
+            return RegisterSyncSource::InactiveSource;
         }
     }
 
@@ -43,11 +69,12 @@ static SyncSource *createSource(const SyncSourceParams &params)
             sourceType.m_format == "text/x-vcard" ||
             sourceType.m_format == "text/vcard") {
 #ifdef ENABLE_DAV
-            boost::shared_ptr<Neon::Settings> settings;
-            return new CardDAVSource(params, settings);
-#else
-            return RegisterSyncSource::InactiveSource;
+            if (enabled) {
+                boost::shared_ptr<Neon::Settings> settings;
+                return new CardDAVSource(params, settings);
+            }
 #endif
+            return RegisterSyncSource::InactiveSource;
         }
     }
 
