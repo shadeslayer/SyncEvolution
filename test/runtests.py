@@ -283,8 +283,8 @@ class Context:
 
         # run testresult checker 
         #calculate the src dir where client-test can be located
-        srcdir = os.path.join(self.tmpdir,"build/src")
-        backenddir = os.path.join(self.tmpdir, "install/usr/lib/syncevolution/backends")
+        srcdir = os.path.join(compile.builddir, "src")
+        backenddir = os.path.join(compile.installdir, "usr/lib/syncevolution/backends")
         # resultchecker doesn't need valgrind, remove it
         shell = re.sub(r'\S*valgrind\S*', '', options.shell)
         prefix = re.sub(r'\S*valgrind\S*', '', options.testprefix)
@@ -461,12 +461,18 @@ class SyncEvolutionTest(Action):
         # clear previous test results
         context.runCommand("%s %s testclean" % (self.runner, context.make))
         try:
-            backenddir = os.path.join(context.tmpdir, "install/usr/lib/syncevolution/backends")
-            confdir = os.path.join(context.workdir, "syncevolution/src/syncevo/configs")
-            templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
+            # use installed backends if available
+            backenddir = os.path.join(compile.installdir, "usr/lib/syncevolution/backends")
             if not os.access(backenddir, os.F_OK):
-                # try relative to client-test inside the current directory
+                # fallback: relative to client-test inside the current directory
                 backenddir = "backends"
+            # same with configs and templates, except that they use the source as fallback
+            confdir = os.path.join(compile.installdir, "usr/lib/syncevolution/xml")
+            if not os.access(confdir, os.F_OK):
+                confdir = os.path.join(context.workdir, "syncevolution/src/syncevo/configs")
+            templatedir = os.path.join(compile.installdir, "usr/lib/syncevolution/templates")
+            if not os.access(templatedir, os.F_OK):
+                templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
             installenv = \
                 "SYNCEVOLUTION_TEMPLATE_DIR=%s " \
                 "SYNCEVOLUTION_XML_CONFIG_DIR=%s " \
@@ -719,6 +725,7 @@ else:
 if options.prebuilt:
     compile = Action("compile")
     compile.builddir = options.prebuilt
+    compile.installdir = os.path.join(options.prebuilt, "../install")
     compile.status = compile.DONE
     compile.execute = compile.nop
 else:
