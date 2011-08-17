@@ -479,9 +479,8 @@ class SyncEvolutionTest(Action):
                 "SYNCEVOLUTION_BACKEND_DIR=%s " \
                 % ( templatedir, confdir, backenddir )
 
-            if context.setupcmd:
-                cmd = "%s %s %s %s %s ./syncevolution" % (self.testenv, installenv, self.runner, context.setupcmd, self.name)
-                context.runCommand("%s || ( sleep 5 && %s )" % (cmd, cmd))
+            cmd = "%s %s %s %s %s ./syncevolution" % (self.testenv, installenv, self.runner, context.setupcmd, self.name)
+            context.runCommand(cmd)
 
             # proxy must be set in test config! Necessary because not all tests work with the env proxy (local CalDAV, for example).
             basecmd = "http_proxy= " \
