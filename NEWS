@@ -1,3 +1,114 @@
+SyncEvolution 1.1.99.5 -> 1.1.99.6, 17.08.2011
+==============================================
+
+Mostly bug fixes, some improvements in testing and packaging. This
+release was tested successfully with DAViCal 0.9.9.4.
+
+* CalDAV: fixed incorrect change tracking causing "event not found" (BMC #22329)
+
+* CalDAV: handle delete<->delete conflict during local sync (BMC #22327)
+
+  If the same event was deleted both locally and in the CalDAV server, syncing
+  failed with "event not found".
+
+* Google Contacts: ensure that first/middle/name are set when storing in EDS (BMC #20864)
+
+  Evolution and the MeeGo UX assume that first/middle/last name are set.
+  That is not the case when a contact is created in the Google Contacts
+  web interface. Such contacts are sent by Google without the N
+  property.
+
+  SyncEvolution now tries to recreate the name components from the FN
+  string, by splitting at word boundaries and assuming "<first>
+  <middle> <last>" or "<last>, <first>" format. Obviously this
+  heuristic fails for some locales.
+
+* CalDAV: continue despite Google Calendar access problems (see BMC #19484)
+
+  An attempt to work around "403 You don't have access to change that
+  event" errors, perhaps caused by
+  http://code.google.com/p/google-caldav-issues/issues/detail?id=38
+  The problem is now recorded instead of aborting the sync. The sync
+  then ends in a 22001 = "partial failure" error and the operation
+  will be retried in the next sync.
+
+* CalDAV: transform UTC RECURRENCE-ID for Evolution (BMC #22594)
+
+  Evolution showed a meeting twice on the day of a modified recurrence,
+  if the meeting series was originally created and modified in Exchange,
+  then imported into Google Calendar.
+
+* CalDAV syncevolution.org binaries now works when libneon.so.27
+  or libneon-gnutls.so.27 (Debian) are installed. Previously
+  libneon.so.27 was required, which is no longer available in
+  Debian Testing.
+
+* syncevo-dbus-server/gdbus: fixed segfault when asked for properties
+  when none are available (BMC #22152)
+
+* Evolution Calendar: fixed error handling for broken TZIDs
+
+* Sony Ericsson: use ISO-8859-1 for all devices (BMC #14414)
+
+  Passing invalid UTF-8 strings into libecal caused glib to
+  abort syncevo-dbus-server.
+
+* item operations: authentication problem for WebDAV when using keyring (BMC #21311)
+
+  The password wasn't looked up in the keyring when using --print-items/import/export/...
+
+* WebDAV: fixed item operations without configuration (BMC #22164)
+
+  Previously failed with "[ERROR] : virtual read-only configuration node, cannot write
+  property webDAVCredentialsOkay = 1".
+
+* auto sync: show all failed syncs except for temporary network errors (BMC #21888)
+
+  Notifications were meant to be shown for all errors except temporary
+  ones. This has never been implemented correctly since the feature was
+  introduced: instead of hiding known temporary errors, all errors except
+  500 (fatal error) were suppressed.
+
+* vCard: inline local photo data (BMC #19661)
+
+  Some platforms (Maemo, MeeGo) store photos in separate files. Now SyncEvolution
+  efficiently includes that photo data in the generated vCard right before sending
+  it to a peer; previously it sent a useless local file:// URI. The Maemo port
+  has a less efficient workaround for that which now should be obsolete.
+
+* syncevo-dbus-server: online status wrong without Network Manager or ConnMan (BMC #21543)
+
+  When neither Network Manager nor ConnMan are running, network presence was "not
+  online". This prevented running automatic syncs.
+
+* fixed compile issues with Debian Testing/gcc 4.6.1
+
+
+Known issues, might still be resolved for the final 1.2:
+--------------------------------------------------------
+
+* syncevolution.org binaries: libnotify1 -> libnotify4 incompatibility (BMC #22668)
+
+  Newer distros no longer have the libnotify.so.1 that syncevolution.org
+  binaries depend on. As a workaround it is possible to install the libnotify1
+  package from older distro releases.
+
+* CalDAV: add<->add conflicts (BMC #22669)
+
+  Suppose the same meeting invitation for event UID=FOO is processed in
+  both Evolution and Google Calendar. This always happens when the meeting
+  invitation emails is sent to Google Mail, then later viewed in Evolution.
+  On the Evolution side, the invitation is accepted. In Google Calendar this is
+  still open.
+
+  When syncing in that state the sync engine does not recognize that
+  both sides have added the same meeting and the "meeting accepted"
+  information eventually gets lost.
+
+  As a workaround, always synchronize the calendar before processing
+  meeting invitation emails.
+
+
 SyncEvolution 1.1.99.1 -> 1.1.99.5, 13.07.2011
 ==============================================
 
