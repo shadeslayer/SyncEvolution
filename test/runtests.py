@@ -198,7 +198,7 @@ class Context:
             cmd.insert(0, cmd[command])
             del cmd[command + 1]
 
-        cmdstr = " ".join(map(lambda x: (' ' in x or x == '') and "'%s'"%x or x, cmd))
+        cmdstr = " ".join(map(lambda x: (' ' in x or x == '') and ("'" in x and '"%s"' or "'%s'") % x or x, cmd))
         print "*** ( cd %s; export %s; %s )" % (os.getcwd(),
                                                 " ".join(map(lambda x: "'%s=%s'" % (x, os.getenv(x, "")), [ "LD_LIBRARY_PATH" ])),
                                                 cmdstr)
