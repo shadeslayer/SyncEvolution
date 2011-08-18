@@ -1,0 +1,26 @@
+@@ -156,14 +156,14 @@
+ VERSION:3.0
+ URL:http://john.doe.com
+ TITLE:Senior Tester
+-ORG:Test Inc.;Testing;test#1
++ORG:Test Inc.;Testing
+ ROLE:professional test case
+ X-EVOLUTION-MANAGER:John Doe Senior
+ X-EVOLUTION-ASSISTANT:John Doe Junior
+ NICKNAME:user1
+ BDAY:2006-01-08
+ X-FOOBAR-EXTENSION;X-FOOBAR-PARAMETER=foobar:has to be stored internally by engine and preserved in testExtensions test; never sent to a peer
+-X-TEST;PARAMETER1=nonquoted;PARAMETER2="quoted because of spaces":Content with\nMultiple\nText lines\nand national chars: äöü
++X-TEST;PARAMETER1=nonquoted;PARAMETER2="quoted because of spaces":Text with\nMultiple\nText lines\nand national chars: äöü
+ X-EVOLUTION-ANNIVERSARY:2006-01-09
+ X-EVOLUTION-SPOUSE:Joan Doe
+ NOTE:This is a test case which uses almost all Evolution fields.
+@@ -198,8 +198,6 @@
+ TEL;TYPE=WORK;TYPE=FAX;X-EVOLUTION-UI-SLOT=4:businessfax 4
+ TEL;TYPE=HOME;TYPE=FAX;X-EVOLUTION-UI-SLOT=5:homefax 5
+ TEL;TYPE=PAGER;X-EVOLUTION-UI-SLOT=6:pager 6
+-TEL;TYPE=CAR;X-EVOLUTION-UI-SLOT=7:car 7
+-TEL;TYPE=PREF;X-EVOLUTION-UI-SLOT=8:primary 8
+ X-AIM;X-EVOLUTION-UI-SLOT=1:AIM JOHN
+ X-YAHOO;X-EVOLUTION-UI-SLOT=2:YAHOO JDOE
+ X-ICQ;X-EVOLUTION-UI-SLOT=3:ICQ JD

@@ -421,15 +421,11 @@ sub NormalizeItem {
 
     if ($synthesis) {
       # does not preserve certain properties
-      s/^(FN|BDAY|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|NICKNAME|UID|PHOTO|CALURI|SEQUENCE|TRANSP|ORGANIZER)(;[^:;\n]*)*:.*\r?\n?//gm;
+      s/^(FN|BDAY|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-AIM|NICKNAME|UID|PHOTO|CALURI|SEQUENCE|TRANSP|ORGANIZER|ROLE|FBURL|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GADUGADU|X-GROUPWISE|X-ICQ|X-JABBER|X-MANAGER|X-MSN|X-SIP|X-SKYPE|X-SPOUSE|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
       # default ADR is HOME
       s/^ADR;TYPE=HOME/ADR/gm;
       # only some parts of N are preserved
       s/^N((?:;[^;:]*)*)\:(.*)/@_ = split(\/(?<!\\);\/, $2); "N$1:$_[0];" . ($_[1] || "") . ";;" . ($_[3] || "")/gme;
-      # this vcard contains too many ADR and PHONE entries - ignore it
-      if (/This is a test case which uses almost all Evolution fields/) {
-        next;
-      }
       # breaks lines at semicolons, which adds white space
       while( s/^ADR:(.*); +/ADR:$1;/gm ) {}
       # no attributes stored for ATTENDEEs
