@@ -113,6 +113,11 @@ itodo20
      UID, DTSTART,PERCENT-COMPLETE,SEQUENCE, URL, CLASS
 text
   -- N/A
+  -- All-day events are not supported. The server is sent such events as DTSTART/END 00:00:00/23:59:59 
+     floating time and returns them with shifted times (DTSTART 22:00:00 UTC on a different day).
+     This cannot be recognized as an all-day event anymore by the client.
+  -- For the same reason, exceptions to a recurring meeting may shift during synchronization
+     (EXDATE:20001231 -> EXDATE:20001230T220000Z).
 
 * Known test failures:
 Client::Sync::vcard21
