@@ -20,6 +20,10 @@ AC_SUBST(STABLE_VERSION)
 # SyncEvolution >= 1.1.99.5: release mode by default
 define([STABLE_RELEASE], [yes])
 
+# Minimum version of libsynthesis as defined in its
+# configure script and thus .pc files:
+define([SYNTHESIS_MIN_VERSION], [3.4.0.16.1])
+
 # Line above is patched by gen-autotools.sh. Handle
 # both "yes" and "no".
 define([STABLE_RELEASE_HELP], ifelse(STABLE_RELEASE,yes,--disable-release-mode,--enable-release-mode))
@@ -721,7 +725,7 @@ else
     #SYNTHESIS_ENGINE="`echo $SYNTHESIS_LIBS | sed -e 's/-lsynthesisstubs/-lsynthesis/'`"
 
     # can't use the SDK alone because of sysync::SySyncDebugPuts()
-    PKG_CHECK_MODULES([SYNTHESIS], [synthesis >= 3.4.0.16.1])
+    PKG_CHECK_MODULES([SYNTHESIS], [synthesis >= SYNTHESIS_MIN_VERSION])
     SYNTHESIS_ENGINE="$SYNTHESIS_LIBS"
 fi
 
@@ -762,6 +766,13 @@ if test $SYNTHESIS_SRC != "no-synthesis-source"; then
     if (set -x; mkdir -p $SYNTHESIS_SUBDIR && cd $SYNTHESIS_SUBDIR && eval "\$SHELL \"\$SYNTHESIS_CONFIGURE\" $ac_configure_args \"--srcdir=\$SYNTHESIS_SRC\" " ); then true; else
         AC_MSG_ERROR( [configuring Synthesis library failed] )
     fi
+
+    # do the version check with the .pc files prepared by the configure step above
+    export PKG_CONFIG_PATH=$SYNTHESIS_SUBDIR:$PKG_CONFIG_PATH
+    PKG_CHECK_MODULES([WITH_SYNTHESIS_SRC], [synthesis >= SYNTHESIS_MIN_VERSION],
+                      [],
+                      [AC_MSG_ERROR([need at least libsynthesis >= SYNTHESIS_MIN_VERSION; the latest libsynthesis for SyncEvolution is the one from http://meego.gitorious.org/meego-middleware/libsynthesis])])
+
 fi
 
 AC_SUBST(SYNTHESIS_CFLAGS)
