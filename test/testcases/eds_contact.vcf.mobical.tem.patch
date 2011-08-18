@@ -70,7 +70,13 @@
  X-EVOLUTION-FILE-AS:characters\, special
  X-EVOLUTION-BLOG-URL:
  CALURI:
-@@ -161,7 +170,7 @@
+@@ -156,12 +165,12 @@
+ VERSION:3.0
+ URL:http://john.doe.com
+ TITLE:Senior Tester
+-ORG:Test Inc.;Testing;test#1
++ORG:Test Inc.
+ ROLE:professional test case
  X-EVOLUTION-MANAGER:John Doe Senior
  X-EVOLUTION-ASSISTANT:John Doe Junior
  NICKNAME:user1
