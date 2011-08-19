@@ -36,7 +36,8 @@ class Server;
  * 1) get default adapter from bluez by calling 'DefaultAdapter' method of org.bluez.Manager
  * 2) get all devices of the adapter by calling 'ListDevices' method of org.bluez.Adapter
  * 3) iterate all devices and get properties for each one by calling 'GetProperties' method of org.bluez.Device.
- *    Then check its UUIDs whether it contains sync services and put it in the sync device list if it is
+ *    Then check its UUIDs whether it contains sync services and put it in the sync device list if it is. If this
+ *    is a sync device we then call DiscoverServices to check for the PnPInformation service record.
  *
  * To track changes of devices dynamically, here also listen signals from bluez:
  * org.bluez.Manager - DefaultAdapterChanged: default adapter is changed and thus have to get its devices

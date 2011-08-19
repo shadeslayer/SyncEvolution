@@ -26,6 +26,7 @@ import signal
 import shutil
 import copy
 import heapq
+import string
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
@@ -3044,6 +3045,135 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
         # serverExecutable() will fail if the service wasn't properly
         # with execve() because then the old process is dead.
         self.assertEqual(self.serverexe, self.serverExecutable())
+
+bt_mac         = "D4:5D:42:73:E4:6C"
+bt_fingerprint = "Nokia 5230"
+bt_name        = "My Nokia 5230"
+bt_template    = "Bluetooth_%s_1" % (bt_mac)
+bt_adaptor     = "/org/bluez/1036/hci0"
+bt_device      = "%s/dev_%s" % (bt_adaptor, string.replace(bt_mac, ':', '_'))
+
+class BluezManager (dbus.service.Object):
+    def __init__(self):
+        bus_name = dbus.service.BusName('org.bluez', bus)
+        dbus.service.Object.__init__(self, bus_name, '/')
+
+    @dbus.service.method(dbus_interface='org.bluez.Manager', in_signature='', out_signature='o')
+    def DefaultAdapter(self):
+        return bt_adaptor
+
+    @dbus.service.signal(dbus_interface='org.bluez.Manager', signature='o')
+    def DefaultAdapterChanged(self, obj):
+        return bt_adaptor
+
+class BluezAdapter (dbus.service.Object):
+    def __init__(self):
+        self.SUPPORTS_MULTIPLE_OBJECT_PATHS = True
+        bus_name = dbus.service.BusName('org.bluez', bus)
+        dbus.service.Object.__init__(self, bus_name, bt_adaptor)
+
+    @dbus.service.signal(dbus_interface='org.bluez.Adapter', signature='o')
+    def DeviceCreated(self, obj):
+        return bt_adaptor
+
+    @dbus.service.signal(dbus_interface='org.bluez.Adapter', signature='o')
+    def DeviceRemoved(self, obj):
+        return bt_device
+
+    @dbus.service.method(dbus_interface='org.bluez.Adapter', in_signature='', out_signature='ao')
+    def ListDevices(self):
+        return [bt_device]
+
+class BluezDevice (dbus.service.Object):
+    def __init__(self):
+        self.SUPPORTS_MULTIPLE_OBJECT_PATHS = True
+        bus_name = dbus.service.BusName('org.bluez', bus)
+        dbus.service.Object.__init__(self, bus_name, bt_device)
+
+    @dbus.service.method(dbus_interface='org.bluez.Device', in_signature='', out_signature='a{sv}')
+    def GetProperties(self):
+        return {"Name": bt_name,
+                "Address": bt_mac,
+                "UUIDs": ['00000002-0000-1000-8000-0002ee000002',
+                          '00001000-0000-1000-8000-00805f9b34fb',
+                          '00001101-0000-1000-8000-00805f9b34fb',
+                          '00001103-0000-1000-8000-00805f9b34fb',
+                          '00001105-0000-1000-8000-00805f9b34fb',
+                          '00001106-0000-1000-8000-00805f9b34fb',
+                          '0000110a-0000-1000-8000-00805f9b34fb',
+                          '0000110c-0000-1000-8000-00805f9b34fb',
+                          '0000110e-0000-1000-8000-00805f9b34fb',
+                          '00001112-0000-1000-8000-00805f9b34fb',
+                          '0000111b-0000-1000-8000-00805f9b34fb',
+                          '0000111f-0000-1000-8000-00805f9b34fb',
+                          '0000112d-0000-1000-8000-00805f9b34fb',
+                          '0000112f-0000-1000-8000-00805f9b34fb',
+                          '00001200-0000-1000-8000-00805f9b34fb',
+                          '00005005-0000-1000-8000-0002ee000001',
+                          '00005557-0000-1000-8000-0002ee000001',
+                          '00005601-0000-1000-8000-0002ee000001']}
+
+    @dbus.service.method(dbus_interface='org.bluez.Device', in_signature='s', out_signature='a{us}')
+    def DiscoverServices(self, ignore):
+        # This should be the last method to call. So, we need to quit the loop to exit.
+        loop.quit()
+        return { 65569L: '<?xml version="1.0" encoding="UTF-8" ?><record><attribute id="0x0000"><uint32 value="0x00010021" /></attribute><attribute id="0x0001"><sequence><uuid value="0x1200" /></sequence></attribute><attribute id="0x0005"><sequence><uuid value="0x1002" /></sequence></attribute><attribute id="0x0006"><sequence><uint16 value="0x454e" /><uint16 value="0x006a" /><uint16 value="0x0100" /></sequence></attribute><attribute id="0x0100"><text value="PnP Information" /></attribute><attribute id="0x0200"><uint16 value="0x0102" /></attribute><attribute id="0x0201"><uint16 value="0x0001" /></attribute><attribute id="0x0202"><uint16 value="0x00e7" /></attribute><attribute id="0x0203"><uint16 value="0x0000" /></attribute><attribute id="0x0204"><boolean value="true" /></attribute><attribute id="0x0205"><uint16 value="0x0001" /></attribute></record>'}
+
+    @dbus.service.signal(dbus_interface='org.bluez.Device', signature='sv')
+    def PropertyChanged(self, key, value):
+        if(key == "Name"):
+            bt_name = value
+
+    def emitSignal(self):
+        """ Change the device name. """
+        self.PropertyChanged("Name", [string.replace(bt_name, "My", "Changed")])
+        return
+
+class TestBluetooth(unittest.TestCase, DBusUtil):
+    """Tests that Bluetooth works properly."""
+
+    name = dbus.service.BusName ("org.bluez", bus);
+
+    def setUp(self):
+        self.man_conn = BluezManager()
+        self.adp_conn = BluezAdapter()
+        self.dev_conn = BluezDevice()
+        loop.run()
+        self.setUpServer()
+
+    def tearDown(self):
+        self.man_conn.remove_from_connection()
+        self.adp_conn.remove_from_connection()
+        self.dev_conn.remove_from_connection()
+
+    def run(self, result):
+        self.runTest(result)
+
+    @property("ENV", "DBUS_TEST_BLUETOOTH=session")
+    @timeout(100)
+    def testBluetoothProductId(self):
+        """TestBluetooth.testBluetoothProductId - check that fingerprint was properly matched using productId"""
+        # This needs to be called before we can fetch the single config.
+        configs = self.server.GetConfigs(True, utf8_strings=True)
+        config  = self.server.GetConfig(bt_template, True, utf8_strings=True)
+        self.failIf(string.find(config['']["fingerPrint"], bt_fingerprint) < 0)
+
+    @property("ENV", "DBUS_TEST_BLUETOOTH=session")
+    @timeout(100)
+    def testBluetoothTemplates(self):
+        """TestBluetooth.testBluetoothTemplates - check for the bluetooth device's template"""
+        configs = self.server.GetConfigs(True, utf8_strings=True)
+        config = next((config for config in configs if config == bt_template), None)
+        self.failUnless(config)
+
+    @property("ENV", "DBUS_TEST_BLUETOOTH=session")
+    @timeout(100)
+    def testBluetoothUserModifiableDeviceName(self):
+        """TestBluetooth.testBluetoothUserModifiableDeviceName - check that peerName equals """
+        # This needs to be called before we can fetch the single config.
+        configs = self.server.GetConfigs(True, utf8_strings=True)
+        config  = self.server.GetConfig(bt_template, True, utf8_strings=True)
+        self.failUnlessEqual(config['']["peerName"], bt_name)
 
 if __name__ == '__main__':
     unittest.main()

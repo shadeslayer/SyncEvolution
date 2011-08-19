@@ -33,7 +33,8 @@ BluezManager::BluezManager(Server &server) :
     m_server(server),
     m_adapterChanged(*this, "DefaultAdapterChanged")
 {
-    m_bluezConn = b_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
+    const char *bluetoothTest = getenv ("DBUS_TEST_BLUETOOTH");
+    m_bluezConn = b_dbus_setup_bus(bluetoothTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
     if(m_bluezConn) {
         m_done = false;
         DBusClientCall1<DBusObject_t> getAdapter(*this, "DefaultAdapter");
