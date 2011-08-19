@@ -17,6 +17,9 @@
  * 02110-1301  USA
  */
 
+
+#include <syncevo/GLibSupport.h>
+
 #include "bluez-manager.h"
 #include "server.h"
 
@@ -31,7 +34,9 @@ SE_BEGIN_CXX
 
 BluezManager::BluezManager(Server &server) :
     m_server(server),
-    m_adapterChanged(*this, "DefaultAdapterChanged")
+    m_adapterChanged(*this, "DefaultAdapterChanged"),
+    m_lookupTable()
+
 {
     const char *bluetoothTest = getenv ("DBUS_TEST_BLUETOOTH");
     m_bluezConn = b_dbus_setup_bus(bluetoothTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
@@ -196,26 +201,42 @@ bool extractValuefromServiceRecord(const std::string &serviceRecord,
     return false;
 }
 
+void BluezManager::loadBluetoothDeviceLookupTable()
+{
+    GError *err = NULL;
+    string filePath(SyncEvolutionDataDir() + "/bluetooth_products.ini");
+    if(!g_key_file_load_from_file(m_lookupTable.bt_key_file, filePath.c_str(),
+                                  G_KEY_FILE_NONE, &err)) {
+        SE_LOG_DEBUG(NULL, NULL, "%s[%d]: %s - filePath = %s, error = %s",
+                     __FILE__, __LINE__, "Bluetooth products file not loaded",
+                     filePath.c_str(), err->message);
+        m_lookupTable.isLoaded = false;
+    } else {
+        m_lookupTable.isLoaded = true;
+    }
+}
+
 /*
  * Get the names of the PnpInformation vendor and product from their
- * respective ids.  At a minimum we need a matching vendor id for this
+ * respective ids. At a minimum we need a matching vendor id for this
  * function to return true. If the product id is not found then we set
  * it to "", an empty string.
  */
-static bool getPnpInfoNamesFromValues(const std::string &vendorValue,  std::string &vendorName,
-                                      const std::string &productValue, std::string &productName)
+bool BluezManager::getPnpInfoNamesFromValues(const std::string &vendorValue, std::string &vendorName,
+                                             const std::string &productValue, std::string &productName)
 {
-    static GKeyFile *bt_key_vals = NULL;
-
-    if(!bt_key_vals) {
-        bt_key_vals = g_key_file_new();
-        GError *err = NULL;
-        string filePath(SyncEvolutionDataDir() + "/bluetooth_products.ini");
-        if(!g_key_file_load_from_file(bt_key_vals, filePath.c_str(),
-                                      G_KEY_FILE_NONE, &err)) {
-            SE_LOG_DEBUG(NULL, NULL, "%s[%d]: %s - filePath = %s, error = %s",
-                         __FILE__, __LINE__, "Bluetooth products File not loaded",
-                         filePath.c_str(), err->message);
+    if(!m_lookupTable.bt_key_file) {
+        // If this is the first invocation we then we need to start watching the loopup table.
+        if (!m_watchedFile) {
+            m_lookupTable.bt_key_file = g_key_file_new();
+            string filePath(SyncEvolutionDataDir() + "/bluetooth_products.ini");
+            m_watchedFile = boost::shared_ptr<SyncEvo::GLibNotify>(
+                new GLibNotify(filePath.c_str(),
+                               boost::bind(&BluezManager::loadBluetoothDeviceLookupTable, this)));
+        }
+        loadBluetoothDeviceLookupTable();
+        // Make sure the file was actually loaded
+        if(!m_lookupTable.isLoaded) {
             return false;
         }
     }
@@ -223,7 +244,7 @@ static bool getPnpInfoNamesFromValues(const std::string &vendorValue,  std::stri
     const char *VENDOR_GROUP  = "Vendors";
     const char *PRODUCT_GROUP = "Products";
 
-    char *vendor = g_key_file_get_string(bt_key_vals, VENDOR_GROUP,
+    char *vendor = g_key_file_get_string(m_lookupTable.bt_key_file, VENDOR_GROUP,
                                          vendorValue.c_str(), NULL);
     if(vendor) {
         vendorName = vendor;
@@ -232,7 +253,7 @@ static bool getPnpInfoNamesFromValues(const std::string &vendorValue,  std::stri
         return false;
     }
 
-    char *product = g_key_file_get_string(bt_key_vals, PRODUCT_GROUP,
+    char *product = g_key_file_get_string(m_lookupTable.bt_key_file, PRODUCT_GROUP,
                                           productValue.c_str(), NULL);
     if(product)  {
         productName = product;
@@ -272,8 +293,8 @@ void BluezManager::BluezDevice::discoverServicesCb(const ServiceDict &serviceDic
             extractValuefromServiceRecord(serviceRecord, PRODUCT_ATTRIBUTE_ID, productId);
 
             std::string vendorName, productName;
-            if (!getPnpInfoNamesFromValues(vendorId,                   vendorName,
-                                           vendorId + "_" + productId, productName)) {
+            if (!m_adapter.m_manager.getPnpInfoNamesFromValues(vendorId,                   vendorName,
+                                                               vendorId + "_" + productId, productName)) {
                 return;
             }
 

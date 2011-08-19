@@ -29,6 +29,7 @@
 SE_BEGIN_CXX
 
 class Server;
+class GLibNotify;
 
 /**
  * Query bluetooth devices from org.bluez
@@ -182,6 +183,17 @@ private:
     Server &m_server;
     GDBusCXX::DBusConnectionPtr m_bluezConn;
     boost::shared_ptr<BluezAdapter> m_adapter;
+
+    // Holds the bluetooth lookup table and whether it was successfully loaded.
+    struct lookupTable {
+        GKeyFile *bt_key_file;
+        bool isLoaded;
+    } m_lookupTable;
+
+    boost::shared_ptr<GLibNotify> m_watchedFile;
+    void loadBluetoothDeviceLookupTable();
+    bool getPnpInfoNamesFromValues(const std::string &vendorValue,  std::string &vendorName,
+                                   const std::string &productValue, std::string &productName);
 
     /** represents 'DefaultAdapterChanged' signal of org.bluez.Adapter*/
     GDBusCXX::SignalWatch1<GDBusCXX::DBusObject_t> m_adapterChanged;
