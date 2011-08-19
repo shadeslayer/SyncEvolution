@@ -6519,13 +6519,16 @@ void AutoSyncManager::initConfig(const string &configName)
 
     //enable http and bt?
     bool http = false, bt = false;
+    bool any = false;
     if(autoSync.empty() || boost::iequals(autoSync, "0")
             || boost::iequals(autoSync, "f")) {
         http = false;
         bt = false;
+        any = false;
     } else if(boost::iequals(autoSync, "1") || boost::iequals(autoSync, "t")) {
         http = true;
         bt = true;
+        any = true;
     } else {
         vector<string> options;
         boost::split(options, autoSync, boost::is_any_of(",")); 
@@ -6561,7 +6564,7 @@ void AutoSyncManager::initConfig(const string &configName)
         }
         if((transport == AutoSyncTask::NEEDS_HTTP && http) ||
            (transport == AutoSyncTask::NEEDS_BT && bt) ||
-           (transport == AutoSyncTask::NEEDS_OTHER)) {
+           (transport == AutoSyncTask::NEEDS_OTHER && any)) {
             AutoSyncTask syncTask(configName, duration, transport, url);
             PeerMap::iterator it = m_peerMap.find(interval);
             if(it != m_peerMap.end()) {
