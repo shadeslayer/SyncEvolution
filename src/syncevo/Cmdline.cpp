@@ -424,8 +424,7 @@ void Cmdline::makeObsolete(boost::shared_ptr<SyncConfig> &from)
 {
     string oldname = from->getRootPath();
     string newname, suffix;
-    int counter = 0;
-    while (true) {
+    for (int counter = 0; true; counter++) {
         ostringstream newsuffix;
         newsuffix << ".old";
         if (counter) {
@@ -433,6 +432,16 @@ void Cmdline::makeObsolete(boost::shared_ptr<SyncConfig> &from)
         }
         suffix = newsuffix.str();
         newname = oldname + suffix;
+        if (from->hasPeerProperties()) {
+            boost::shared_ptr<SyncConfig> renamed(new SyncConfig(from->getPeerName() + suffix));
+            if (renamed->exists()) {
+                // don't pick a config name which has the same peer name
+                // as some other, existing config
+                continue;
+            }
+        }
+
+        // now renaming should succeed, but let's check anyway
         if (!rename(oldname.c_str(),
                     newname.c_str())) {
             break;
@@ -442,7 +451,6 @@ void Cmdline::makeObsolete(boost::shared_ptr<SyncConfig> &from)
                                   newname.c_str(),
                                   strerror(errno)));
         }
-        counter++;
     }
 
     string newConfigName;
@@ -518,12 +526,28 @@ void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
         // config to hide that old config from normal UI users. Must
         // do this without going through SyncConfig, because that
         // would bump the version.
-        FileConfigNode node(from->getRootPath(), "config.ini", false);
         BoolConfigProperty ready("ConsumerReady", "", "0");
-        if (ready.getPropertyValue(node)) {
-            ready.setProperty(node, false);
+        // Also disable auto-syncing in the migrated config.
+        StringConfigProperty autosync("autoSync", "", "");
+        {
+            FileConfigNode node(from->getRootPath(), "config.ini", false);
+            if (ready.getPropertyValue(node)) {
+                ready.setProperty(node, false);
+            }
+            if (!autosync.getProperty(node).empty()) {
+                autosync.setProperty(node, "0");
+            }
+            node.flush();
         }
-        node.flush();
+
+        // same for very old configs
+        {
+            FileConfigNode node(from->getRootPath() + "/spds/syncml", "config.txt", false);
+            if (!autosync.getProperty(node).empty()) {
+                autosync.setProperty(node, "0");
+            }
+            node.flush();
+        }
 
         // Set ConsumerReady for migrated SyncEvolution < 1.2
         // configs, because in older releases all existing
@@ -2242,6 +2266,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testListSources);
     CPPUNIT_TEST(testMigrate);
     CPPUNIT_TEST(testMigrateContext);
+    CPPUNIT_TEST(testMigrateAutoSync);
     CPPUNIT_TEST_SUITE_END();
     
 public:
@@ -3897,8 +3922,9 @@ protected:
             boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
-            string renamedConfig = scanFiles(newRoot, "scheduleworld.old");
-            boost::replace_all(createdConfig, "/scheduleworld/", "/scheduleworld.old/");
+            string renamedConfig = scanFiles(newRoot, "scheduleworld.old.1");
+            boost::replace_first(createdConfig, "ConsumerReady = 1", "ConsumerReady = 0");
+            boost::replace_all(createdConfig, "/scheduleworld/", "/scheduleworld.old.1/");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
         }
 
@@ -3939,6 +3965,7 @@ protected:
                                  "peers/scheduleworld/config.ini");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old.1");
+            boost::replace_first(createdConfig, "ConsumerReady = 1", "ConsumerReady = 0");
             CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
         }
 
@@ -3996,8 +4023,8 @@ protected:
             boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
-            renamedConfig = scanFiles(otherRoot, "scheduleworld.old");
-            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old/");
+            renamedConfig = scanFiles(otherRoot, "scheduleworld.old.3");
+            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.3/");
             boost::replace_all(expected, "ConsumerReady = 1", "ConsumerReady = 0");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
 
@@ -4012,11 +4039,11 @@ protected:
                 CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
             }
             migratedConfig = scanFiles(otherRoot, "scheduleworld");
-            boost::replace_all(expected, "/scheduleworld.old/", "/scheduleworld/");
+            boost::replace_all(expected, "/scheduleworld.old.3/", "/scheduleworld/");
             boost::replace_all(expected, "ConsumerReady = 0", "ConsumerReady = 1");          
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
-            renamedConfig = scanFiles(otherRoot, "scheduleworld.old.1");
-            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.1/");
+            renamedConfig = scanFiles(otherRoot, "scheduleworld.old.4");
+            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.4/");
             boost::replace_all(expected, "ConsumerReady = 1", "ConsumerReady = 0");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
 
@@ -4042,10 +4069,10 @@ protected:
                 CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
             }
             migratedConfig = scanFiles(otherRoot, "scheduleworld");
-            boost::replace_all(expected, "/scheduleworld.old.1/", "/scheduleworld/");
+            boost::replace_all(expected, "/scheduleworld.old.4/", "/scheduleworld/");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
-            renamedConfig = scanFiles(otherRoot, "scheduleworld.old.2");
-            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.2/");
+            renamedConfig = scanFiles(otherRoot, "scheduleworld.old.5");
+            boost::replace_all(expected, "/scheduleworld/", "/scheduleworld.old.5/");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, renamedConfig);
         }
     }
@@ -4123,6 +4150,82 @@ protected:
             CPPUNIT_ASSERT(migratedConfig.find("peers/memotoo/sources/addressbook/config.ini:# sync = disabled") != migratedConfig.npos);
             CPPUNIT_ASSERT(migratedConfig.find("peers/memotoo/sources/calendar/config.ini:# sync = disabled") != migratedConfig.npos);
             CPPUNIT_ASSERT(migratedConfig.find("peers/memotoo/sources/memo/config.ini:sync = refresh-from-client") != migratedConfig.npos);
+        }
+    }
+
+    void testMigrateAutoSync() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        string oldRoot = m_testDir + "/.sync4j/evolution/scheduleworld";
+        string newRoot = m_testDir + "/syncevolution/default";
+
+        string oldConfig = "spds/syncml/config.txt:autoSync = 1\n";
+        oldConfig += OldScheduleWorldConfig();
+
+        {
+            // migrate old config
+            createFiles(oldRoot, oldConfig);
+            string createdConfig = scanFiles(oldRoot);
+            TestCmdline cmdline("--migrate",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+
+            string migratedConfig = scanFiles(newRoot);
+            string expected = ScheduleWorldConfig();
+            boost::replace_first(expected, "# autoSync = 0", "autoSync = 1");
+            sortConfig(expected);
+            // migrating SyncEvolution < 1.2 configs sets
+            // ConsumerReady, to keep config visible in the updated
+            // sync-ui
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+            boost::replace_first(expected, "# database = ", "database = xyz");
+            boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+            boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+            // migrating "type" sets forceSyncFormat (always)
+            // and databaseFormat (if format was part of type, as for addressbook)
+            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+            boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
+            string renamedConfig = scanFiles(oldRoot + ".old");
+            // autoSync must have been unset
+            boost::replace_first(createdConfig, ":autoSync = 1", ":autoSync = 0");
+            CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
+        }
+
+        {
+            // rewrite existing config with autoSync set
+            string createdConfig = scanFiles(newRoot, "scheduleworld");
+
+            TestCmdline cmdline("--migrate",
+                                "scheduleworld",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+
+            string migratedConfig = scanFiles(newRoot, "scheduleworld");
+            string expected = ScheduleWorldConfig();
+            boost::replace_first(expected, "# autoSync = 0", "autoSync = 1");
+            sortConfig(expected);
+            boost::replace_all(expected, "# ConsumerReady = 0", "ConsumerReady = 1");
+            boost::replace_first(expected, "# database = ", "database = xyz");
+            boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
+            boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
+            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
+            boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
+            CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
+            string renamedConfig = scanFiles(newRoot, "scheduleworld.old.1");
+            // autoSync must have been unset
+            boost::replace_first(createdConfig, ":autoSync = 1", ":autoSync = 0");
+            // the scheduleworld config was consumer ready, the migrated one isn't
+            boost::replace_all(createdConfig, "ConsumerReady = 1", "ConsumerReady = 0");
+            boost::replace_all(createdConfig, "/scheduleworld/", "/scheduleworld.old.1/");
+            CPPUNIT_ASSERT_EQUAL_DIFF(createdConfig, renamedConfig);
         }
     }
 
@@ -4518,7 +4621,7 @@ private:
                 size_t fileoff = fullpath.rfind('/');
                 mkdir_p(fullpath.substr(0, fileoff));
                 out.open(fullpath.c_str(),
-                         append ? ios_base::out : (ios_base::out|ios_base::trunc));
+                         append ? (ios_base::out|ios_base::ate|ios_base::app) : (ios_base::out|ios_base::trunc));
                 outname = newname;
             }
             out << line << endl;
