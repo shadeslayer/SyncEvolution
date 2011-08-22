@@ -6,5 +6,5 @@ src/gtk-ui/sync.desktop.in
 src/gtk-ui/sync-gtk.desktop.in
 src/gtk-ui/sync-config-widget.c
 src/gnome-bluetooth/syncevolution.c
-src/NotificationBackendLibnotify.cpp
+src/dbus/server/NotificationBackendLibnotify.cpp
 src/dbus/server/auto-sync-manager.cpp
