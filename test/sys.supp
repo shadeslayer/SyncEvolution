@@ -542,3 +542,73 @@
     fun:smlProcessData
 }
 
+# ==19808== Invalid read of size 4
+# ==19808==    at 0x106E4E9A: asn1_der_coding (in /usr/lib/x86_64-linux-gnu/libtasn1.so.3.1.11)
+# ==19808==    by 0xD37A2F8: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD35D754: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD35D995: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD360442: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD3537EC: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD3505DF: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD3506D4: gnutls_handshake (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0x1473F1A8: ??? (in /usr/lib/gio/modules/libgiognutls.so)
+# ==19808==    by 0x14740D22: ??? (in /usr/lib/gio/modules/libgiognutls.so)
+# ==19808==    by 0x5B9C6F0: soup_socket_write (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x5B8BEDA: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x5B8C81D: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x6762E7D: g_closure_invoke (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x67748D6: ??? (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x677DD04: g_signal_emit_valist (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x677DED2: g_signal_emit (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x5B9A1AD: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x1473EC0F: ??? (in /usr/lib/gio/modules/libgiognutls.so)
+# ==19808==    by 0x6DF64A2: g_main_context_dispatch (in /lib/libglib-2.0.so.0.2800.6)
+# ==19808==    by 0x6DF6C7F: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==19808==    by 0x6DF72F1: g_main_loop_run (in /lib/libglib-2.0.so.0.2800.6)
+# ==19808==    by 0x7240A8: SyncEvo::SoupTransportAgent::wait(bool) (SoupTransportAgent.cpp:177)
+# ==19808==    by 0x6B6E51: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3597)
+# ==19808==    by 0x6BD0B4: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2904)
+# ==19808==    by 0x4F6521: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:472)
+# ==19808==    by 0x511D6B: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3959)
+# ==19808==    by 0x5C0BDF: SyncEvo::SyncTests::testTwoWaySync() (ClientTest.h:688)
+# ==19808==    by 0x610F749: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19808==    by 0x6102C83: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19808==  Address 0x10fbcaf4 is 20 bytes inside a block of size 22 alloc'd
+# ==19808==    at 0x4C2779D: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+# ==19808==    by 0x106E4E7B: asn1_der_coding (in /usr/lib/x86_64-linux-gnu/libtasn1.so.3.1.11)
+# ==19808==    by 0xD37A2F8: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD35D754: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD35D995: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD360442: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD3537EC: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD3505DF: ??? (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0xD3506D4: gnutls_handshake (in /usr/lib/libgnutls.so.26.16.14)
+# ==19808==    by 0x1473F1A8: ??? (in /usr/lib/gio/modules/libgiognutls.so)
+# ==19808==    by 0x14740D22: ??? (in /usr/lib/gio/modules/libgiognutls.so)
+# ==19808==    by 0x5B9C6F0: soup_socket_write (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x5B8BEDA: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x5B8C81D: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x6762E7D: g_closure_invoke (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x67748D6: ??? (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x677DD04: g_signal_emit_valist (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x677DED2: g_signal_emit (in /usr/lib/libgobject-2.0.so.0.2800.6)
+# ==19808==    by 0x5B9A1AD: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==19808==    by 0x1473EC0F: ??? (in /usr/lib/gio/modules/libgiognutls.so)
+# ==19808==    by 0x6DF64A2: g_main_context_dispatch (in /lib/libglib-2.0.so.0.2800.6)
+# ==19808==    by 0x6DF6C7F: ??? (in /lib/libglib-2.0.so.0.2800.6)
+# ==19808==    by 0x6DF72F1: g_main_loop_run (in /lib/libglib-2.0.so.0.2800.6)
+# ==19808==    by 0x7240A8: SyncEvo::SoupTransportAgent::wait(bool) (SoupTransportAgent.cpp:177)
+# ==19808==    by 0x6B6E51: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3597)
+# ==19808==    by 0x6BD0B4: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2904)
+# ==19808==    by 0x4F6521: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:472)
+# ==19808==    by 0x511D6B: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:3959)
+# ==19808==    by 0x5C0BDF: SyncEvo::SyncTests::testTwoWaySync() (ClientTest.h:688)
+# ==19808==    by 0x610F749: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==19808== 
+{
+   glib-networking 2.28.7 + gnutls 2.10.5-3 + Google: ASN buffer
+   Memcheck:Addr4
+   fun:asn1_der_coding
+   ...
+   obj:*libgiognutls.so
+}
