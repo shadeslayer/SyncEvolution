@@ -486,6 +486,7 @@ syncevo-http-server itself is installed""")
         os.environ["PATH"] = ":".join((os.path.join(path, "libexec/"),
                                        os.path.join(path, "bin"),
                                        os.environ.get("PATH", "")))
+        os.environ["SYNCEVOLUTION_DATA_DIR"] = os.path.join(path, "share/syncevolution")
         os.environ["SYNCEVOLUTION_XML_CONFIG_DIR"] = os.path.join(path, "share/syncevolution/xml")
         os.environ["SYNCEVOLUTION_TEMPLATE_DIR"] = os.path.join(path, "share/syncevolution/templates")
         # try whether it can be started
