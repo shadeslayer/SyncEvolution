@@ -33,6 +33,7 @@ import dbus.service
 import gobject
 import sys
 import re
+import atexit
 
 # introduced in python-gobject 2.16, not available
 # on all Linux distros => make it optional
@@ -44,15 +45,50 @@ except ImportError:
 
 DBusGMainLoop(set_as_default=True)
 
-bus = dbus.SessionBus()
-loop = gobject.MainLoop()
-
 debugger = "" # "gdb"
 server = ["syncevo-dbus-server"]
 monitor = ["dbus-monitor"]
 # primarily for XDG files, but also other temporary files
 xdg_root = "temp-test-dbus"
 configName = "dbus_unittest"
+
+# See notification-daemon.py for a stand-alone version.
+#
+# Embedded here to avoid issues with setting up the environment
+# in such a way that the stand-alone version can be run
+# properly.
+class Notifications (dbus.service.Object):
+    '''fake org.freedesktop.Notifications implementation,'''
+    '''used when there is none already registered on the session bus'''
+
+    @dbus.service.method(dbus_interface='org.freedesktop.Notifications', in_signature='', out_signature='ssss')
+    def GetServerInformation(self):
+        return ('test-dbus', 'SyncEvolution', '0.1', '1.1')
+
+    @dbus.service.method(dbus_interface='org.freedesktop.Notifications', in_signature='', out_signature='as')
+    def GetCapabilities(self):
+        return ['actions', 'body', 'body-hyperlinks', 'body-markup', 'icon-static', 'sound']
+
+    @dbus.service.method(dbus_interface='org.freedesktop.Notifications', in_signature='susssasa{sv}i', out_signature='u')
+    def Notify(self, app, replaces, icon, summary, body, actions, hints, expire):
+        return random.randint(1,100)
+
+# fork before connecting to the D-Bus daemon
+child = os.fork()
+if child == 0:
+    bus = dbus.SessionBus()
+    loop = gobject.MainLoop()
+    name = dbus.service.BusName("org.freedesktop.Notifications", bus)
+    # start dummy notification daemon, if possible;
+    # if it fails, ignore (probably already one running)
+    notifications = Notifications(bus, "/org/freedesktop/Notifications")
+    loop.run()
+    sys.exit(0)
+
+# testing continues in parent process
+atexit.register(os.kill, child, 9)
+bus = dbus.SessionBus()
+loop = gobject.MainLoop()
 
 def property(key, value):
     """Function decorator which sets an arbitrary property of a test.
@@ -313,6 +349,10 @@ class DBusUtil(Timeout):
         # and increase log level
         env["SYNCEVOLUTION_DEBUG"] = "1"
 
+        # can be set by a test to run additional tests on the content
+        # of the D-Bus log
+        self.runTestDBusCheck = None
+
         # testAutoSyncFailure (__main__.TestSessionAPIsDummy) => testAutoSyncFailure_TestSessionAPIsDummy
         testname = str(self).replace(" ", "_").replace("__main__.", "").replace("(", "").replace(")", "")
         dbuslog = testname + ".dbus.log"
@@ -407,6 +447,13 @@ class DBusUtil(Timeout):
         monitorout = open(dbuslog).read()
         report = "\n\nD-Bus traffic:\n%s\n\nserver output:\n%s\n" % \
             (monitorout, serverout)
+        if self.runTestDBusCheck:
+            try:
+                self.runTestDBusCheck(self, monitorout)
+            except:
+                # only append report if not part of some other error below
+                result.errors.append((self,
+                                      "D-Bus log failed check: %s\n%s" % (sys.exc_info()[1], (not hasfailed and report) or "")))
         if DBusUtil.pserver.returncode and DBusUtil.pserver.returncode != -15:
             # create a new failure specifically for the server
             result.errors.append((self,
@@ -2028,6 +2075,29 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         flags = session.GetFlags()
         self.failUnlessEqual(flags, [])
 
+        # check that org.freedesktop.Notifications.Notify was called
+        def checkDBusLog(self, content):
+            notifications = re.findall(r'^method call .* dest=org.freedesktop.Notifications .*interface=org.freedesktop.Notifications; member=Notify\n((?:^   .*\n)*)',
+                                       content,
+                                       re.MULTILINE)
+            self.failUnlessEqual(notifications,
+                                 ['   string "SyncEvolution"\n'
+                                  '   uint32 0\n'
+                                  '   string ""\n'
+                                  '   string "Sync problem."\n'
+                                  '   string "Sorry, there\'s a problem with your sync that you need to attend to."\n'
+                                  '   array [\n'
+                                  '      string "view"\n'
+                                  '      string "View"\n'
+                                  '      string "default"\n'
+                                  '      string "Dismiss"\n'
+                                  '   ]\n'
+                                  '   array [\n'
+                                  '   ]\n'
+                                  '   int32 -1\n'])
+
+        # done as part of post-processing in runTest()
+        self.runTestDBusCheck = checkDBusLog
 
 class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
