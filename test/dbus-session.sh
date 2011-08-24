@@ -6,7 +6,6 @@
 # start D-Bus session
 eval `dbus-launch`
 export DBUS_SESSION_BUS_ADDRESS
-trap "kill $DBUS_SESSION_BUS_PID" EXIT
 
 # Work-around for GNOME keyring daemon not started
 # when accessed via org.freedesktop.secrets: start it
@@ -15,7 +14,9 @@ trap "kill $DBUS_SESSION_BUS_PID" EXIT
 # https://bugzilla.redhat.com/show_bug.cgi?id=572137
 /usr/bin/gnome-keyring-daemon --start --foreground --components=secrets &
 KEYRING_PID=$!
-trap "kill $KEYRING_PID" EXIT
+
+# kill all programs started by us
+trap "kill $KEYRING_PID; kill $DBUS_SESSION_BUS_PID" EXIT
 
 # If DBUS_SESSION_SH_EDS_BASE is set and our main program runs
 # under valgrind, then also check EDS. DBUS_SESSION_SH_EDS_BASE
