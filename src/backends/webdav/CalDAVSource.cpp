@@ -555,6 +555,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             if (removeme) {
                 subres.m_merged = true;
                 icalcomponent_remove_component(event.m_calendar, removeme);
+                icalcomponent_free(removeme);
             } else {
                 event.m_subids.insert(subid);
             }
@@ -562,6 +563,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             if (removeme) {
                 // this is what we expect when the caller mentions the DAV LUID
                 icalcomponent_remove_component(event.m_calendar, removeme);
+                icalcomponent_free(removeme);
             } else {
                 // caller confused?!
                 SE_THROW("event not found");
@@ -721,10 +723,12 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                         icalproperty *prop;
                         while ((prop = icalcomponent_get_first_property(comp, ICAL_RRULE_PROPERTY)) != NULL) {
                             icalcomponent_remove_property(comp, prop);
+                            icalproperty_free(prop);
                             updated = true;
                         }
                         while ((prop = icalcomponent_get_first_property(comp, ICAL_EXDATE_PROPERTY)) != NULL) {
                             icalcomponent_remove_property(comp, prop);
+                            icalproperty_free(prop);
                             updated = true;
                         }
                     }
