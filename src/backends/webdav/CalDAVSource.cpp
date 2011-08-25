@@ -618,6 +618,49 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
                 subres.m_merged = true;
                 subres.m_revision = event.m_etag;
 #endif
+            } else if (ex.syncMLStatus() == 409 &&
+                       strstr(ex.what(), "Can only store an event with a newer DTSTAMP")) {
+                SE_LOG_DEBUG(NULL, NULL, "resending VEVENT with updated SEQUENCE/LAST-MODIFIED/DTSTAMP to work around 409");
+
+                // Sometimes a PUT of two linked events updates one of them on the server
+                // (visible in modified SEQUENCE and LAST-MODIFIED values) and then
+                // fails with 409 because, presumably, the other item now has
+                // too low SEQUENCE/LAST-MODIFIED/DTSTAMP values.
+                //
+                // An attempt with splitting the PUT in advance worked for some cases,
+                // but then it still happened for others. So let's use brute force and
+                // try again once more after reading the updated event anew.
+                eptr<icalcomponent> fullcal = event.m_calendar;
+                loadItem(event);
+                event.m_sequence++;
+                lastmodtime = icaltime_from_timet(event.m_lastmodtime, false);
+                lastmodtime.is_utc = 1;
+                event.m_calendar = fullcal;
+                for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
+                     comp;
+                     comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
+                    if (!icaltime_is_null_time(lastmodtime)) {
+                        icalproperty *dtstamp = icalcomponent_get_first_property(comp, ICAL_DTSTAMP_PROPERTY);
+                        if (dtstamp) {
+                            icalproperty_set_dtstamp(dtstamp, lastmodtime);
+                        }
+                        icalproperty *lastmod = icalcomponent_get_first_property(comp, ICAL_LASTMODIFIED_PROPERTY);
+                        if (lastmod) {
+                            icalproperty_set_lastmodified(lastmod, lastmodtime);
+                        }
+                    }
+                    Event::setSequence(comp, event.m_sequence);
+                }
+                eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
+                std::string data = icalstr.get();
+                InsertItemResult res = insertItem(event.m_DAVluid, data, true);
+                if (res.m_merged ||
+                    res.m_luid != event.m_DAVluid) {
+                    // should not merge with anything, if so, our cache was invalid
+                    SE_THROW("CalDAV item not updated as expected");
+                }
+                event.m_etag = res.m_revision;
+                subres.m_revision = event.m_etag;
             } else {
                 throw;
             }
