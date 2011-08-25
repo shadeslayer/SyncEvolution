@@ -147,10 +147,12 @@ perl \
     $LOGFILE
 SUBRET=$?
 
-# bad valgrind log result overrides successful completion or being killed by SIGTERM (143) or SIGINT (130)
-if ( [ $RET -eq 0 ] || [ $RET -eq 130 ] || [ $RET -eq 143 ] ) && [ $SUBRET -ne 0 ]; then
+# bad valgrind log result always overrides normal completion status:
+# that way the valgrind errors also show up in the nightly test summary
+# in the case where some other test already failed
+if [ $SUBRET -ne 0 ]; then
     RET=$SUBRET
-    echo valgrindcheck: "$@": log analysis overrides return code with $SUBRET >&2
+    echo valgrindcheck: "$@": log analysis overrides return code $RET with $SUBRET >&2
 fi
 rm $LOGFILE
 
