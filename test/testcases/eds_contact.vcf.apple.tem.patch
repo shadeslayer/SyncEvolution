@@ -1,9 +1,0 @@
-@@ -147,7 +147,7 @@
- FBURL:
- X-EVOLUTION-VIDEO-URL:
- X-MOZILLA-HTML:FALSE
--ADR;TYPE=HOME:;Address Line 2\nAddress Line 3;Address Line 1;;;;
-+ADR;TYPE=HOME:;Address Line 2 Address Line 3;Address Line 1;;;;
- LABEL;TYPE=HOME:Address Line 1\nAddress Line 2\nAddress Line 3
- UID:pas-id-43C15DFB000001AB
- END:VCARD
