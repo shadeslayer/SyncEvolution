@@ -39,11 +39,7 @@ dist_src_gtk_ui_themerc_DATA = $(src_gtk_ui_themercfiles)
 src_gtk_ui_desktopdir = $(datadir)/applications
 
 dist_noinst_DATA += \
-  src/gtk-ui/ui.glade \
   $(src_gtk_ui_applications_in_files)
-
-src/gtk-ui/ui.xml: src/gtk-ui/ui.glade
-	$(AM_V_GEN)$(GTK_BUILDER_CONV) $< $@
 
 # sync-ui: default GUI, could be plain GTK or Moblin UX
 # sync-ui-gtk: GTK GUI
@@ -99,6 +95,5 @@ src_gtk_ui_sync_ui_moblin_CFLAGS = $(src_gtk_ui_sync_ui_CFLAGS)
 src_gtk_ui_sync_ui_moblin_CPPFLAGS = $(src_gtk_ui_sync_ui_CPPFLAGS) -DUSE_MOBLIN_UX
 
 CLEANFILES += \
-  src/gtk-ui/ui.xml \
   src/gtk-ui/sync-moblin.desktop \
   $(src_gtk_ui_applications_generated)

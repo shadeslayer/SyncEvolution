@@ -588,7 +588,6 @@ if test $enable_gui != "no"; then
 
     PKG_CHECK_MODULES(GUI, $gui_modules)
 
-    AC_PATH_PROG([GTK_BUILDER_CONV], gtk-builder-convert)
 elif test "$enable_dbus_service" = "yes"; then
     # syncevo-dbus-server needs localization
     :
