@@ -2488,6 +2488,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                     "connection " + conpath + " got final reply",
                                                     "session done"])
 
+    @timeout(20)
     def testCredentialsRight(self):
         """TestConnection.testCredentialsRight - send correct credentials"""
         self.setupConfig()
