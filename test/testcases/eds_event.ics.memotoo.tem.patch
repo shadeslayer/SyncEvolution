@@ -129,7 +129,7 @@
   ^\npercent %\ntilde ~\ntick `\nbacktick `\ndouble quotation - not tested 
   because Evolution encodes it incorrectly\nsingle quotation '\ncolon :\n
   semicolon \;\ncomma \,\n
-@@ -211,7 +191,7 @@
+@@ -212,7 +192,7 @@
  DTEND:20060406T200000Z
  TRANSP:OPAQUE
  SEQUENCE:2
@@ -138,7 +138,7 @@
  SUMMARY:meeting invitation
  CLASS:PUBLIC
  ORGANIZER;CN=Patrick Ohly:MAILTO:Patrick.Ohly@gmx.de
-@@ -230,14 +210,14 @@
+@@ -231,14 +211,14 @@
  BEGIN:VEVENT
  UID:20080407T193125Z-19554-727-1-50@gollum
  DTSTAMP:20080407T193125Z
@@ -156,7 +156,7 @@
  CREATED:20080407T193241Z
  LAST-MODIFIED:20080407T193241
  END:VEVENT
-@@ -247,7 +227,7 @@
+@@ -248,7 +228,7 @@
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0
  BEGIN:VEVENT
@@ -165,7 +165,7 @@
  DTSTAMP:20080407T193125Z
  DTSTART:20080413T090000Z
  DTEND:20080413T093000Z
-@@ -257,7 +237,6 @@
+@@ -258,7 +238,6 @@
  CLASS:PUBLIC
  CREATED:20080407T193241Z
  LAST-MODIFIED:20080407T193647
@@ -173,7 +173,7 @@
  DESCRIPTION:second instance modified
  END:VEVENT
  END:VCALENDAR
-@@ -265,28 +244,11 @@
+@@ -266,28 +245,11 @@
  BEGIN:VCALENDAR
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0
