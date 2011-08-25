@@ -466,6 +466,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
                     icalproperty *lastmod = icalcomponent_get_first_property(firstcomp, ICAL_LASTMODIFIED_PROPERTY);
                     if (lastmod) {
                         lastmodtime = icaltime_from_timet(newEvent->m_lastmodtime, false);
+                        lastmodtime.is_utc = 1;
                         icalproperty_set_lastmodified(lastmod, lastmodtime);
                     }
                     icalproperty *dtstamp = icalcomponent_get_first_property(firstcomp, ICAL_DTSTAMP_PROPERTY);
