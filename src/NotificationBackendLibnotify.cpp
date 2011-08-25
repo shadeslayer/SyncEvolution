@@ -24,12 +24,39 @@
 #if HAS_NOTIFY
 
 #include "NotificationBackendLibnotify.h"
+#include "syncevo/util.h"
 
 #include <stdlib.h>
 #include <glib/gi18n.h>
 #include <boost/algorithm/string/predicate.hpp>
 
+#ifdef NOTIFY_COMPATIBILITY
+# include <dlfcn.h>
+#endif
+
 SE_BEGIN_CXX
+
+#ifdef NOTIFY_COMPATIBILITY
+/**
+ * set to real old C notify_notification_new() (with widget pointer) or new one (without);
+ * because of the x86/AMD64 calling conventions, calling the newer function with
+ * one extra parameter is okay
+ */
+gboolean (*notify_init)(const char *app_name);
+GList *(*notify_get_server_caps)(void);
+NotifyNotification *(*notify_notification_new)(const char *summary, const char *body, const char *icon, void *widget);
+void (*notify_notification_add_action)(NotifyNotification *notification,
+                                       const char *action,
+                                       const char *label,
+                                       NotifyActionCallback callback,
+                                       gpointer user_data,
+                                       GFreeFunc free_func);
+void (*notify_notification_clear_actions)(NotifyNotification *notification);
+gboolean (*notify_notification_close)(NotifyNotification *notification,
+                                      GError **error);
+gboolean (*notify_notification_show)(NotifyNotification *notification,
+                                     GError **error);
+#endif
 
 NotificationBackendLibnotify::NotificationBackendLibnotify()
     : m_initialized(false),
@@ -63,6 +90,27 @@ bool NotificationBackendLibnotify::init()
     bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
+
+#ifdef NOTIFY_COMPATIBILITY
+    void *dlhandle = NULL;
+    for (int i = 1; i < 4 && !dlhandle; i++) {
+        dlhandle = dlopen(StringPrintf("libnotify.so.%d", i).c_str(), RTLD_LAZY|RTLD_GLOBAL);
+    }
+    if (!dlhandle) {
+        return false;
+    }
+
+#define LOOKUP(_x) (_x = reinterpret_cast<typeof(_x)>(dlsym(dlhandle, #_x)))
+    if (!LOOKUP(notify_init) ||
+        !LOOKUP(notify_get_server_caps) ||
+        !LOOKUP(notify_notification_new) ||
+        !LOOKUP(notify_notification_add_action) ||
+        !LOOKUP(notify_notification_clear_actions) ||
+        !LOOKUP(notify_notification_close) ||
+        !LOOKUP(notify_notification_show)) {
+        return false;
+    }
+#endif
 
     m_initialized = notify_init("SyncEvolution");
     if(m_initialized) {
