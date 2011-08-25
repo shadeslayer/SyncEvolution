@@ -85,6 +85,12 @@ void NotificationBackendLibnotify::notifyAction(
     // if dismissed, ignore.
 }
 
+static bool NotFound(const char *func)
+{
+    SE_LOG_DEBUG(NULL, NULL, "%s: not found", func);
+    return false;
+}
+
 bool NotificationBackendLibnotify::init()
 {
     bindtextdomain (GETTEXT_PACKAGE, SYNCEVOLUTION_LOCALEDIR);
@@ -93,14 +99,22 @@ bool NotificationBackendLibnotify::init()
 
 #ifdef NOTIFY_COMPATIBILITY
     void *dlhandle = NULL;
-    for (int i = 1; i < 4 && !dlhandle; i++) {
+    int i;
+    for (i = 1; i <= 4; i++) {
         dlhandle = dlopen(StringPrintf("libnotify.so.%d", i).c_str(), RTLD_LAZY|RTLD_GLOBAL);
+        if (!dlhandle) {
+            SE_LOG_DEBUG(NULL, NULL, "failed to load libnotify.so.%d: %s", i, dlerror());
+        } else {
+            break;
+        }
     }
     if (!dlhandle) {
         return false;
     }
 
-#define LOOKUP(_x) (_x = reinterpret_cast<typeof(_x)>(dlsym(dlhandle, #_x)))
+#define LOOKUP(_x) ((_x = reinterpret_cast<typeof(_x)>(dlsym(dlhandle, #_x))) || \
+                    NotFound(#_x))
+
     if (!LOOKUP(notify_init) ||
         !LOOKUP(notify_get_server_caps) ||
         !LOOKUP(notify_notification_new) ||
@@ -110,6 +124,7 @@ bool NotificationBackendLibnotify::init()
         !LOOKUP(notify_notification_show)) {
         return false;
     }
+    SE_LOG_DEBUG(NULL, NULL, "using libnotify.so.%d", i);
 #endif
 
     m_initialized = notify_init("SyncEvolution");

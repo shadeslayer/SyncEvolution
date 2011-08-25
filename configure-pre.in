@@ -523,7 +523,6 @@ if test $enable_dbus_service = "yes"; then
         AC_DEFINE(NOTIFY_COMPATIBILITY, 1, [dynamically open libnotify])
         LIBNOTIFY_LIBS="`echo $LIBNOTIFY_LIBS | sed -e 's/\(-lnotify\|[^ ]*libnotify.la\)/-ldl/'`"
     fi
-    AM_CONDITIONAL([NOTIFY_COMPATIBILITY], [test "$enable_notify_compat" = "yes"])
 
     # Here we're using QtGui too because mlite fails to depend on it,
     # despite using QAction.
@@ -543,6 +542,8 @@ if test $enable_dbus_service = "yes"; then
     fi
     AC_DEFINE(DBUS_SERVICE, 1, [define if dbus service is enabled])
 fi
+AM_CONDITIONAL([NOTIFY_COMPATIBILITY], [test "$enable_notify_compat" = "yes"])
+
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
 AC_SUBST(DBUS_GLIB_CFLAGS)
