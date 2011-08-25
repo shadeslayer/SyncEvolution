@@ -162,7 +162,34 @@ class TestingSyncSource;
  * is okay, but it will disable all tests that need the
  * information.
  */
-struct ClientTestConfig{
+struct ClientTestConfig {
+    ClientTestConfig() {
+        /*
+         * brute-force old-style initialization - must not embed C++ classes!
+         * TODO: replace old-style C values with self-initializing C++ classes
+         */
+        memset(this, 0, sizeof(*this));
+    }
+    ClientTestConfig(const ClientTestConfig &other) {
+        memcpy(this, &other, sizeof(*this));
+        if (other.linkedItems) {
+            linkedItems = new std::vector<LinkedItems_t>(*other.linkedItems);
+        }
+    }
+    ~ClientTestConfig() {
+        delete linkedItems;
+    }
+    ClientTestConfig &operator = (const ClientTestConfig &other) {
+        if (this != &other) {
+            delete linkedItems;
+            memcpy(this, &other, sizeof(*this));
+            if (other.linkedItems) {
+                linkedItems = new std::vector<LinkedItems_t>(*other.linkedItems);
+            }
+            return *this;
+        }
+    }
+
     /**
      * The name is used in test names and has to be set.
      */
@@ -276,7 +303,7 @@ struct ClientTestConfig{
      * @param update     modify item content so that it can be
      *                   used as an update of the old data
      */
-    string (*mangleItem)(const char *data, bool update);
+    std::string (*mangleItem)(const std::string &data, bool update);
 
     /**
      * A very simple item that is inserted during basic tests. Ideally
@@ -313,10 +340,11 @@ struct ClientTestConfig{
     const char *mergeItem2;
 
     /**
-     * These two items are related: one is main one, the other is
-     * a subordinate one. The semantic is that the main item is
-     * complete on it its own, while the other normally should only
-     * be used in combination with the main one.
+     * The items in the inner vector are related: the first one the is
+     * main one, the other(s) is/are a subordinate ones. The semantic
+     * is that the main item is complete on it its own, while the
+     * other normally should only be used in combination with the main
+     * one.
      *
      * Because SyncML cannot express such dependencies between items,
      * a SyncSource has to be able to insert, updated and remove
@@ -328,7 +356,12 @@ struct ClientTestConfig{
      * One example for main and subordinate items are a recurring
      * iCalendar 2.0 event and a detached recurrence.
      */
-    const char *parentItem, *childItem;
+    typedef std::vector<std::string> LinkedItems_t;
+
+    /**
+     * The linked items may exist in different variations (outer vector).
+     */
+    std::vector<LinkedItems_t> *linkedItems;
 
     /**
      * Backends atomic modification tests

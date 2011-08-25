@@ -341,14 +341,23 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                     # <path>/Client_Sync_eds_contact_testItems.log
                     # <path>/SyncEvo_CmdlineTest_testConfigure.log
                     # <path>/N7SyncEvo11CmdlineTestE_testConfigure.log - C++ name mangling?
-                    m = re.match(r'.*/(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)', log)
+                    m = re.match(r'.*/(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)\.log', log)
                     # Client_Sync_, Client_Source_, SyncEvo_, ...
                     prefix = m.group(1)
                     # eds_contact, CmdlineTest, ...
                     format = m.group(2)
+                    # testImport
+                    casename = m.group(3)
+                    # special case grouping of some tests: include group inside casename instead of
+                    # format, example:
+                    # <path>/Client_Source_apple_caldav_LinkedItems_1_testLinkedItemsParent
+                    m = re.match(r'(.*)_(LinkedItems_\d+)', format)
+                    if m:
+                        format = m.group(1)
+                        casename = m.group(2) + '::' + casename
                     if(format not in logdic):
                         logdic[format]=[]
-                    logdic[format].append(log)
+                    logdic[format].append((casename, log))
                     logprefix[format]=prefix
             for format in logdic.keys():
                 indent +=space
@@ -360,23 +369,27 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 qformat = qformat.replace("_", "__");
                 qformat = qformat.replace("+", "_-");
                 result.write(indent+'<'+qformat+' prefix="'+prefix+'">\n')
-                for case in logdic[format]:
+                for casename, log in logdic[format]:
                     indent +=space
                     indents.append(indent)
-                    casename = case.rpartition('_')[2].partition('.')[0]
-                    result.write(indent+'<'+casename+'>')
+                    # must avoid :: in XML
+                    tag = casename.replace('::', '__')
+                    # special case LinkedItems_1::testLinkedItems...: shorten it
+                    # if tag.startswith('LinkedItems_'):
+                    #    tag = tag.split('_', 1)[1]
+                    result.write(indent+'<'+tag+'>')
                     match=format+'::'+casename
                     matchOk=match+": okay \*\*\*"
                     matchKnownFailure=match+": \*\*\* failure ignored \*\*\*"
-                    if not os.system("grep -q '" + matchKnownFailure + "' "+case):
+                    if not os.system("grep -q '" + matchKnownFailure + "' "+log):
                        result.write('knownfailure')
-                    elif not os.system("tail -10 %s | grep -q 'external transport failure (local, status 20043)'" % case):
+                    elif not os.system("tail -10 %s | grep -q 'external transport failure (local, status 20043)'" % log):
                         result.write('network')
-                    elif os.system("grep -q '" + matchOk + "' "+case):
+                    elif os.system("grep -q '" + matchOk + "' "+log):
                        result.write('failed')
                     else:
                         result.write('okay')
-                    result.write('</'+casename+'>\n')
+                    result.write('</'+tag+'>\n')
                     indents.pop()
                     indent = indents[-1]
                 result.write(indent+'</'+qformat+'>\n')

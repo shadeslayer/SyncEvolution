@@ -495,21 +495,21 @@ public:
      * @retval inserted    actual data that was inserted, optional
      * @return the LUID of the inserted item
      */
-    virtual std::string insert(CreateSource createSource, const char *data, bool relaxed = false, std::string *inserted = NULL);
+    virtual std::string insert(CreateSource createSource, const std::string &data, bool relaxed = false, std::string *inserted = NULL);
 
     /**
      * assumes that exactly one element is currently inserted and updates it with the given item
      *
      * @param check     if true, then reopen the source and verify that the reported items are as expected
      */
-    virtual void update(CreateSource createSource, const char *data, bool check = true);
+    virtual void update(CreateSource createSource, const std::string &data, bool check = true);
 
     /**
      * updates one item identified by its LUID with the given item
      *
      * The type of the item is cleared, as in insert() above.
      */
-    virtual void update(CreateSource createSource, const char *data, const std::string &luid);
+    virtual void update(CreateSource createSource, const std::string &data, const std::string &luid);
 
     /** deletes all items locally via sync source */
     virtual void deleteAll(CreateSource createSource);
@@ -590,6 +590,8 @@ public:
     virtual void testLinkedItemsInsertBothUpdateChild();
     virtual void testLinkedItemsInsertBothUpdateParent();
 
+    /** retrieve right set of items for running test */
+    ClientTestConfig::LinkedItems_t getParentChildData();
 };
 
 int countItemsOfType(TestingSyncSource *source, int state);

@@ -257,41 +257,44 @@ void LocalTests::addTests() {
                 ADD_TEST(LocalTests, testManyChanges);
             }
 
-            if (config.parentItem &&
-                config.childItem) {
-                ADD_TEST(LocalTests, testLinkedItemsParent);
+            // create a sub-suite for each set of linked items
+            for (int i = 0; config.linkedItems && i < (int)config.linkedItems->size(); i++) {
+                CppUnit::TestSuite *linked = new CppUnit::TestSuite(getName() + StringPrintf("::LinkedItems_%d", i));
+                ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParent);
                 if (config.linkedItemsRelaxedSemantic) {
-                    ADD_TEST(LocalTests, testLinkedItemsChild);
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChild);
                 }
-                ADD_TEST(LocalTests, testLinkedItemsParentChild);
+                ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParentChild);
                 if (config.linkedItemsRelaxedSemantic) {
-                    ADD_TEST(LocalTests, testLinkedItemsChildParent);
-                }
-                if (config.linkedItemsRelaxedSemantic) {
-                    ADD_TEST(LocalTests, testLinkedItemsChildChangesParent);
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChildParent);
                 }
                 if (config.linkedItemsRelaxedSemantic) {
-                    ADD_TEST(LocalTests, testLinkedItemsRemoveParentFirst);
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChildChangesParent);
                 }
-                ADD_TEST(LocalTests, testLinkedItemsRemoveNormal);
+                if (config.linkedItemsRelaxedSemantic) {
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsRemoveParentFirst);
+                }
+                ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsRemoveNormal);
                 if (config.sourceKnowsItemSemantic) {
-                    ADD_TEST(LocalTests, testLinkedItemsInsertParentTwice);
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertParentTwice);
                     if (config.linkedItemsRelaxedSemantic) {
-                        ADD_TEST(LocalTests, testLinkedItemsInsertChildTwice);
+                        ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertChildTwice);
                     }
                 }
-                ADD_TEST(LocalTests, testLinkedItemsParentUpdate);
+                ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParentUpdate);
                 if (config.linkedItemsRelaxedSemantic) {
-                    ADD_TEST(LocalTests, testLinkedItemsUpdateChild);
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsUpdateChild);
                 }
-                ADD_TEST(LocalTests, testLinkedItemsInsertBothUpdateChild);
-                ADD_TEST(LocalTests, testLinkedItemsInsertBothUpdateParent);
+                ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateChild);
+                ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateParent);
+
+                addTest(linked);
             }
         }
     }
 }
 
-std::string LocalTests::insert(CreateSource createSource, const char *data, bool relaxed, std::string *inserted) {
+std::string LocalTests::insert(CreateSource createSource, const std::string &data, bool relaxed, std::string *inserted) {
     restoreStorage(config, client);
 
     // create source
@@ -328,7 +331,7 @@ std::string LocalTests::insert(CreateSource createSource, const char *data, bool
 }
 
 /** deletes specific item locally via sync source */
-static std::string updateItem(CreateSource createSource, const ClientTestConfig &config, const std::string &uid, const char *data, std::string *updated = NULL) {
+static std::string updateItem(CreateSource createSource, const ClientTestConfig &config, const std::string &uid, const std::string &data, std::string *updated = NULL) {
     std::string newuid;
 
     CPPUNIT_ASSERT(createSource.createSource);
@@ -360,9 +363,8 @@ static void removeItem(CreateSource createSource, const std::string &luid)
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->deleteItem(luid));
 }
 
-void LocalTests::update(CreateSource createSource, const char *data, bool check) {
+void LocalTests::update(CreateSource createSource, const std::string &data, bool check) {
     CPPUNIT_ASSERT(createSource.createSource);
-    CPPUNIT_ASSERT(data);
 
     restoreStorage(config, client);
 
@@ -395,9 +397,8 @@ void LocalTests::update(CreateSource createSource, const char *data, bool check)
     backupStorage(config, client);
 }
 
-void LocalTests::update(CreateSource createSource, const char *data, const std::string &luid) {
+void LocalTests::update(CreateSource createSource, const std::string &data, const std::string &luid) {
     CPPUNIT_ASSERT(createSource.createSource);
-    CPPUNIT_ASSERT(data);
 
     restoreStorage(config, client);
     // create source
@@ -939,9 +940,7 @@ template<class T, class V> int countEqual(const T &container,
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsParent() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -954,7 +953,7 @@ void LocalTests::testLinkedItemsParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // now insert main item
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, config.itemType, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], config.itemType, &parentData));
 
     // check that exactly the parent is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -981,9 +980,7 @@ void LocalTests::testLinkedItemsParent() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsChild() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -996,7 +993,7 @@ void LocalTests::testLinkedItemsChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // same as above for child item
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, config.itemType, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1020,9 +1017,7 @@ void LocalTests::testLinkedItemsChild() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsParentChild() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1035,8 +1030,8 @@ void LocalTests::testLinkedItemsParentChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert parent first, then child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, config.itemType, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, config.itemType, &childData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], config.itemType, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1062,9 +1057,7 @@ void LocalTests::testLinkedItemsParentChild() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsChildParent() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1077,8 +1070,8 @@ void LocalTests::testLinkedItemsChildParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, then parent
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, true, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1104,9 +1097,7 @@ void LocalTests::testLinkedItemsChildParent() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsChildChangesParent() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1119,7 +1110,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, check changes, then insert the parent
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, config.itemType, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1130,7 +1121,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, true, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1159,9 +1150,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsRemoveParentFirst() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1174,8 +1163,8 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove parent, then child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1213,9 +1202,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsRemoveNormal() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1228,8 +1215,8 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove child, then parent
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1244,7 +1231,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
-    if (getCurrentTest() == "Client::Source::eds_event::testLinkedItemsRemoveNormal") {
+    if (getCurrentTest().find("::eds_event::") != std::string::npos) {
         // hack: ignore EDS side effect of adding EXDATE to parent, see http://bugs.meego.com/show_bug.cgi?id=10906
         size_t pos = parentData.rfind("DTSTART");
         parentData.insert(pos, "EXDATE:20080413T090000\n");
@@ -1281,9 +1268,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsInsertParentTwice() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1296,7 +1281,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent twice (should be turned into update)
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1307,7 +1292,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1331,9 +1316,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsInsertChildTwice() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1346,7 +1329,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add child twice (should be turned into update)
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1357,7 +1340,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1]));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1381,9 +1364,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsParentUpdate() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1396,7 +1377,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent, then update it
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1407,7 +1388,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, config.parentItem, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, items[0], &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, NULL);
@@ -1432,9 +1413,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsUpdateChild() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1447,7 +1426,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add child, then update it
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1458,7 +1437,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, config.childItem, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, items[1], &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &childData, NULL);
@@ -1482,9 +1461,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsInsertBothUpdateChild() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1497,8 +1474,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1510,7 +1487,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, config.childItem, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, items[1], &childData));
 
     // child has to be listed as modified, parent may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1539,9 +1516,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
 // test inserting, removing and updating of parent + child item in
 // various order plus change tracking
 void LocalTests::testLinkedItemsInsertBothUpdateParent() {
-    // check additional requirements
-    CPPUNIT_ASSERT(config.parentItem);
-    CPPUNIT_ASSERT(config.childItem);
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
@@ -1554,8 +1529,8 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update parent
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, config.parentItem, false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, config.childItem, false, &childData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     compareDatabases(*copy, &parentData, &childData, NULL);
@@ -1567,7 +1542,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, config.parentItem, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, items[0], &parentData));
 
     // parent has to be listed as modified, child may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1592,6 +1567,19 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
 }
 
+ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()
+{
+    // extract _%d suffix and use it as index for our config
+    std::string test = getCurrentTest();
+    const std::string testname = "LinkedItems_";
+    size_t off = test.find(testname);
+    CPPUNIT_ASSERT(off != test.npos);
+    int i = atoi(test.c_str() + off + testname.size());
+    CPPUNIT_ASSERT(config.linkedItems);
+    CPPUNIT_ASSERT(i >= 0 && i < (int)config.linkedItems->size());
+    CPPUNIT_ASSERT((*config.linkedItems)[i].size() >= 2);
+    return (*config.linkedItems)[i];
+}
 
 SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> sourceIndices, bool isClientA) :
     CppUnit::TestSuite(name),
@@ -1662,7 +1650,12 @@ void SyncTests::addTests(bool isFirstSource) {
         ADD_TEST(SyncTests, testSlowSync);
         ADD_TEST(SyncTests, testRefreshFromServerSync);
         ADD_TEST(SyncTests, testRefreshFromClientSync);
-        if (isFirstSource) {
+        // testTimeout is independent of the actual peer; all it needs
+        // is a SyncML client config. Can't test for that explicitly
+        // here, so only rule out the test if we run in server mode.
+        if (isFirstSource &&
+            (!getenv("CLIENT_TEST_MODE") ||
+             strcmp(getenv("CLIENT_TEST_MODE"), "server"))) {
             ADD_TEST(SyncTests, testTimeout);
         }
 
@@ -1693,8 +1686,8 @@ void SyncTests::addTests(bool isFirstSource) {
                     // only add when testing individual source,
                     // test data not guaranteed to be available for all sources
                     if (sources.size() == 1 &&
-                        config.parentItem &&
-                        config.childItem) {
+                        config.linkedItems &&
+                        !config.linkedItems->empty()) {
                         ADD_TEST(SyncTests, testLinkedItemsParentChild);
 
                         if (config.linkedItemsRelaxedSemantic) {
@@ -2980,10 +2973,12 @@ void SyncTests::testLinkedItemsParentChild()
 
     // create and copy parent item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.parentItem);
+        CPPUNIT_ASSERT(it->second->config.linkedItems);
+        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
+        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.parentItem,
+                                                   (*it->second->config.linkedItems)[0][0],
                                                    it->second->config.itemType));
     }
     doSync("send-parent",
@@ -3002,10 +2997,12 @@ void SyncTests::testLinkedItemsParentChild()
 
     // add child on client A
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.childItem);
+        CPPUNIT_ASSERT(it->second->config.linkedItems);
+        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
+        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.childItem,
+                                                   (*it->second->config.linkedItems)[0][1],
                                                    it->second->config.itemType));
     }
     // parent may or may not be considered updated
@@ -3037,10 +3034,12 @@ void SyncTests::testLinkedItemsChild()
 
     // create and copy child item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.childItem);
+        CPPUNIT_ASSERT(it->second->config.linkedItems);
+        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
+        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.childItem,
+                                                   (*it->second->config.linkedItems)[0][1],
                                                    it->second->config.itemType));
     }
     doSync("send",
@@ -3072,10 +3071,12 @@ void SyncTests::testLinkedItemsChildParent()
 
     // create and copy child item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.childItem);
+        CPPUNIT_ASSERT(it->second->config.linkedItems);
+        CPPUNIT_ASSERT(!(*it->second->config.linkedItems)[0].empty());
+        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.childItem,
+                                                   (*it->second->config.linkedItems)[0][1],
                                                    it->second->config.itemType));
     }
     doSync("send-child",
@@ -3087,10 +3088,12 @@ void SyncTests::testLinkedItemsChildParent()
 
     // add parent on client A
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.parentItem);
+        CPPUNIT_ASSERT(it->second->config.linkedItems);
+        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
+        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.parentItem,
+                                                   (*it->second->config.linkedItems)[0][0],
                                                    it->second->config.itemType));
     }
     // child may or may not be considered updated
@@ -4284,7 +4287,7 @@ void ClientTest::postSync(int res, const std::string &logname)
 #endif
 }
 
-static string mangleGeneric(const char *data, bool update)
+static string mangleGeneric(const std::string &data, bool update)
 {
     std::string item = data;
     if (update) {
@@ -4293,7 +4296,7 @@ static string mangleGeneric(const char *data, bool update)
     return item;
 }
 
-static string mangleICalendar20(const char *data, bool update)
+static string mangleICalendar20(const std::string &data, bool update)
 {
     std::string item = data;
 
@@ -4365,7 +4368,7 @@ static string mangleICalendar20(const char *data, bool update)
 
 void ClientTest::getTestData(const char *type, Config &config)
 {
-    memset(&config, 0, sizeof(config));
+    config = Config();
     char *numitems = getenv("CLIENT_TEST_NUM_ITEMS");
     config.numItems = numitems ? atoi(numitems) : 100;
     char *env = getenv("CLIENT_TEST_RETRY");
@@ -4572,8 +4575,11 @@ void ClientTest::getTestData(const char *type, Config &config)
 	if (tmp) {
 	    server = tmp;
 	}
-	// default: time zones + UNTIL in UTC
-        config.parentItem =
+	// default: time zones + UNTIL in UTC, with VALARM
+        config.linkedItems = new std::vector<ClientTestConfig::LinkedItems_t>;
+        config.linkedItems->resize(1);
+        (*config.linkedItems)[0].resize(2);
+        (*config.linkedItems)[0][0] =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4610,7 +4616,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "LAST-MODIFIED:20080407T193241Z\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-        config.childItem =
+        (*config.linkedItems)[0][1] =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4650,7 +4656,7 @@ void ClientTest::getTestData(const char *type, Config &config)
 
 	if (server == "funambol") {
 	    // converts UNTIL into floating time - broken?!
-	    config.parentItem =
+	    (*config.linkedItems)[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4689,7 +4695,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:VCALENDAR\n";
 	} else if (server == "mobical") {
 	    // UTC time
-	    config.parentItem =
+	    (*config.linkedItems)[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4708,7 +4714,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "LAST-MODIFIED:20080407T193241Z\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-            config.childItem =
+            (*config.linkedItems)[0][1] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4729,7 +4735,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:VCALENDAR\n";
 	} else if (server == "memotoo") {
 	    // local time, except for detached recurrence
-	    config.parentItem =
+	    (*config.linkedItems)[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4748,7 +4754,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "LAST-MODIFIED:20080407T193241Z\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-            config.childItem =
+            (*config.linkedItems)[0][1] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4767,7 +4773,24 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "DESCRIPTION:second instance modified\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-	}
+	} else {
+            // in particular for Google Calendar: also try with
+            // VALARM, because testing showed that the server works
+            // differently with and without VALARM data included
+            config.linkedItems->resize(2);
+            (*config.linkedItems)[1].resize(2);
+            const std::string valarm =
+                "BEGIN:VALARM\n"
+                "ACTION:DISPLAY\n"
+                "DESCRIPTION:This is an event reminder\n"
+                "TRIGGER;VALUE=DURATION;RELATED=START:-PT1H\n"
+                "X-EVOLUTION-ALARM-UID:foo@bar\n"
+                "END:VALARM\nEND:VEVENT";
+            (*config.linkedItems)[1][0] = (*config.linkedItems)[0][0];
+            boost::replace_first((*config.linkedItems)[1][0], "END:VEVENT", valarm);
+            (*config.linkedItems)[1][1] = (*config.linkedItems)[0][1];
+            boost::replace_first((*config.linkedItems)[1][1], "END:VEVENT", valarm);
+        }
 
         config.templateItem = config.insertItem;
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
@@ -4857,8 +4880,6 @@ void ClientTest::getTestData(const char *type, Config &config)
         /* change location and description of insertItem in testMerge(), add alarm */
         config.mergeItem1 = "";
         config.mergeItem2 = "";
-        config.parentItem = "";
-        config.childItem = "";
         config.templateItem = config.insertItem;
         config.uniqueProperties = "SUMMARY:UID:LOCATION";
         config.sizeProperty = "DESCRIPTION";
