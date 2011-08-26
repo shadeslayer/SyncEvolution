@@ -1001,6 +1001,9 @@ class FunambolTest(SyncEvolutionTest):
                                      "eds_task",
                                      "eds_memo" ],
                                    "CLIENT_TEST_SKIP="
+                                   # test cannot pass because we don't have CtCap info about
+                                   # the Funambol server
+                                   "Client::Sync::eds_contact::testExtensions,"
                                    "Client::Sync::eds_event::Retry,"
                                    "Client::Sync::eds_event::Suspend,"
                                    "Client::Sync::eds_event::Resend,"
