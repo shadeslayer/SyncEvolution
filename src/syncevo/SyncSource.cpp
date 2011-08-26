@@ -558,6 +558,14 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
         info.m_datatypes =
             "        <use datatype='vCard21' mode='rw'/>\n"
             "        <use datatype='vCard30' mode='rw' preferred='yes'/>\n";
+        // If a backend overwrites the m_beforeWriteScript, then it must
+        // include $VCARD_OUTGOING_PHOTO_VALUE_SCRIPT in its own script,
+        // otherwise it will be sent invalid, empty PHOTO;TYPE=unknown;VALUE=binary:
+        // properties.
+        info.m_beforeWriteScript = "$VCARD_OUTGOING_PHOTO_VALUE_SCRIPT;\n";
+        // Likewise for reading. This is needed to ensure proper merging
+        // of contact data.
+        info.m_afterReadScript = "$VCARD_INCOMING_PHOTO_VALUE_SCRIPT;\n";
     } else if (type == "text/x-calendar" || type == "text/x-vcalendar") {
         info.m_native = "vCalendar10";
         info.m_fieldlist = "calendar";
