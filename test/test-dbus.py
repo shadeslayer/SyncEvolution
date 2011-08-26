@@ -2002,8 +2002,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         loop.run()
         loop.run()
         end = time.time()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
-                                                    "session " + self.auto_sync_session_path + " done"])
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                "session " + self.auto_sync_session_path + " done"])
         DBusUtil.quit_events = []
         # session must be around for a while after terminating, to allow
         # reading information about it by clients who didn't start it
@@ -2012,12 +2012,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                                 self.auto_sync_session_path),
                                  'org.syncevolution.Session')
         reports = session.GetReports(0, 100, utf8_strings=True)
-        self.failUnlessEqual(len(reports), 1)
-        self.failUnlessEqual(reports[0]["status"], "20043")
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0]["status"], "20043")
         name = session.GetConfigName()
-        self.failUnlessEqual(name, "dummy-test")
+        self.assertEqual(name, "dummy-test")
         flags = session.GetFlags()
-        self.failUnlessEqual(flags, [])
+        self.assertEqual(flags, [])
         first_auto = self.auto_sync_session_path
         self.auto_sync_session_path = None
 
@@ -2025,20 +2025,19 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         loop.run()
         start = time.time()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
-                                                    "session " + self.auto_sync_session_path + " done"])
-        self.failIfEqual(first_auto, self.auto_sync_session_path)
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                "session " + self.auto_sync_session_path + " done"])
+        self.assertNotEqual(first_auto, self.auto_sync_session_path)
         delta = start - end
-        self.failUnless(delta < 13)
-        self.failUnless(delta > 7)
+        self.assertTrue(delta < 13)
+        self.assertTrue(delta > 7)
 
         # check that org.freedesktop.Notifications.Notify was not called
         # (network errors are considered temporary, can't tell in this case
         # that the name lookup error is permanent)
         def checkDBusLog(self, content):
             notifications = GrepNotifications(content)
-            self.failUnlessEqual(notifications,
-                                 [])
+            self.assertEqual(notifications, [])
 
         # done as part of post-processing in runTest()
         self.runTestDBusCheck = checkDBusLog
@@ -2078,38 +2077,38 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # wait for start and end of auto-sync session
         loop.run()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
-                                                    "session " + self.auto_sync_session_path + " done"])
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                "session " + self.auto_sync_session_path + " done"])
         session = dbus.Interface(bus.get_object(self.server.bus_name,
                                                 self.auto_sync_session_path),
                                  'org.syncevolution.Session')
         reports = session.GetReports(0, 100, utf8_strings=True)
-        self.failUnlessEqual(len(reports), 1)
-        self.failUnlessEqual(reports[0]["status"], "10500")
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0]["status"], "10500")
         name = session.GetConfigName()
-        self.failUnlessEqual(name, "dummy-test")
+        self.assertEqual(name, "dummy-test")
         flags = session.GetFlags()
-        self.failUnlessEqual(flags, [])
+        self.assertEqual(flags, [])
 
         # check that org.freedesktop.Notifications.Notify was called
         # once to report the failed attempt to start the sync
         def checkDBusLog(self, content):
             notifications = GrepNotifications(content)
-            self.failUnlessEqual(notifications,
-                                 ['   string "SyncEvolution"\n'
-                                  '   uint32 0\n'
-                                  '   string ""\n'
-                                  '   string "Sync problem."\n'
-                                  '   string "Sorry, there\'s a problem with your sync that you need to attend to."\n'
-                                  '   array [\n'
-                                  '      string "view"\n'
-                                  '      string "View"\n'
-                                  '      string "default"\n'
-                                  '      string "Dismiss"\n'
-                                  '   ]\n'
-                                  '   array [\n'
-                                  '   ]\n'
-                                  '   int32 -1\n'])
+            self.assertEqual(notifications,
+                             ['   string "SyncEvolution"\n'
+                              '   uint32 0\n'
+                              '   string ""\n'
+                              '   string "Sync problem."\n'
+                              '   string "Sorry, there\'s a problem with your sync that you need to attend to."\n'
+                              '   array [\n'
+                              '      string "view"\n'
+                              '      string "View"\n'
+                              '      string "default"\n'
+                              '      string "Dismiss"\n'
+                              '   ]\n'
+                              '   array [\n'
+                              '   ]\n'
+                              '   int32 -1\n'])
 
         # done as part of post-processing in runTest()
         self.runTestDBusCheck = checkDBusLog
@@ -2162,53 +2161,53 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         # wait for start and end of auto-sync session
         loop.run()
         loop.run()
-        self.failUnlessEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
-                                                    "session " + self.auto_sync_session_path + " done"])
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                "session " + self.auto_sync_session_path + " done"])
         session = dbus.Interface(bus.get_object(self.server.bus_name,
                                                 self.auto_sync_session_path),
                                  'org.syncevolution.Session')
         reports = session.GetReports(0, 100, utf8_strings=True)
-        self.failUnlessEqual(len(reports), 1)
-        self.failUnlessEqual(reports[0]["status"], "200")
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0]["status"], "200")
         name = session.GetConfigName()
-        self.failUnlessEqual(name, "dummy-test")
+        self.assertEqual(name, "dummy-test")
         flags = session.GetFlags()
-        self.failUnlessEqual(flags, [])
+        self.assertEqual(flags, [])
 
         # check that org.freedesktop.Notifications.Notify was called
         # when starting and completing the sync
         def checkDBusLog(self, content):
             notifications = GrepNotifications(content)
-            self.failUnlessEqual(notifications,
-                                 ['   string "SyncEvolution"\n'
-                                  '   uint32 0\n'
-                                  '   string ""\n'
-                                  '   string "dummy-test is syncing"\n'
-                                  '   string "We have just started to sync your computer with the dummy-test sync service."\n'
-                                  '   array [\n'
-                                  '      string "view"\n'
-                                  '      string "View"\n'
-                                  '      string "default"\n'
-                                  '      string "Dismiss"\n'
-                                  '   ]\n'
-                                  '   array [\n'
-                                  '   ]\n'
-                                  '   int32 -1\n',
+            self.assertEqual(notifications,
+                             ['   string "SyncEvolution"\n'
+                              '   uint32 0\n'
+                              '   string ""\n'
+                              '   string "dummy-test is syncing"\n'
+                              '   string "We have just started to sync your computer with the dummy-test sync service."\n'
+                              '   array [\n'
+                              '      string "view"\n'
+                              '      string "View"\n'
+                              '      string "default"\n'
+                              '      string "Dismiss"\n'
+                              '   ]\n'
+                              '   array [\n'
+                              '   ]\n'
+                              '   int32 -1\n',
 
-                                  '   string "SyncEvolution"\n'
-                                  '   uint32 0\n'
-                                  '   string ""\n'
-                                  '   string "dummy-test sync complete"\n'
-                                  '   string "We have just finished syncing your computer with the dummy-test sync service."\n'
-                                  '   array [\n'
-                                  '      string "view"\n'
-                                  '      string "View"\n'
-                                  '      string "default"\n'
-                                  '      string "Dismiss"\n'
-                                  '   ]\n'
-                                  '   array [\n'
-                                  '   ]\n'
-                                  '   int32 -1\n'])
+                              '   string "SyncEvolution"\n'
+                              '   uint32 0\n'
+                              '   string ""\n'
+                              '   string "dummy-test sync complete"\n'
+                              '   string "We have just finished syncing your computer with the dummy-test sync service."\n'
+                              '   array [\n'
+                              '      string "view"\n'
+                              '      string "View"\n'
+                              '      string "default"\n'
+                              '      string "Dismiss"\n'
+                              '   ]\n'
+                              '   array [\n'
+                              '   ]\n'
+                              '   int32 -1\n'])
 
         # done as part of post-processing in runTest()
         self.runTestDBusCheck = checkDBusLog
