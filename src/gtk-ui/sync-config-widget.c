@@ -1604,7 +1604,7 @@ sync_config_widget_constructor (GType                  gtype,
     sync_config_widget_update_expander (self);
 
     /* hack to get focus in the right place on "Setup new service" */
-    if (GTK_WIDGET_VISIBLE (self->entry)) {
+    if (gtk_widget_get_visible (self->entry)) {
         gtk_widget_grab_focus (self->entry);
     }
 
@@ -1616,10 +1616,10 @@ sync_config_widget_map (GtkWidget *widget)
 {
     SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
 
-    if (self->label_box && GTK_WIDGET_VISIBLE (self->expando_box)) {
+    if (self->label_box && gtk_widget_get_visible (self->expando_box)) {
         gtk_widget_map (self->label_box);
     }
-    if (self->expando_box && GTK_WIDGET_VISIBLE (self->expando_box)) {
+    if (self->expando_box && gtk_widget_get_visible (self->expando_box)) {
         gtk_widget_map (self->expando_box);
     }
     GTK_WIDGET_CLASS (sync_config_widget_parent_class)->map (widget);
@@ -1796,10 +1796,10 @@ static void
 device_combo_changed (GtkComboBox *combo,
                       SyncConfigWidget *self)
 {
-    char *selected;
+    int active;
 
-    selected = gtk_combo_box_get_active_text (GTK_COMBO_BOX (combo));
-    gtk_widget_set_sensitive (self->device_select_btn, selected != NULL);
+    active = gtk_combo_box_get_active (GTK_COMBO_BOX (combo));
+    gtk_widget_set_sensitive (self->device_select_btn, active > -1);
 }
 
 static void
@@ -1835,7 +1835,7 @@ sync_config_widget_init (SyncConfigWidget *self)
     GtkListStore *store;
     GtkCellRenderer *renderer;
 
-    GTK_WIDGET_SET_FLAGS (GTK_WIDGET (self), GTK_NO_WINDOW);
+    gtk_widget_set_has_window (GTK_WIDGET (self), FALSE);
 
     self->label_box = gtk_event_box_new ();
     gtk_widget_set_app_paintable (self->label_box, TRUE);
@@ -2123,7 +2123,7 @@ sync_config_widget_set_expanded (SyncConfigWidget *self, gboolean expanded)
         if (self->expanded) {
             gtk_widget_hide (self->button);
             gtk_widget_show (self->expando_box);
-            if (GTK_WIDGET_VISIBLE (self->entry)) {
+            if (gtk_widget_get_visible (self->entry)) {
                 gtk_widget_grab_focus (self->entry);
             } else {
                 gtk_widget_grab_focus (self->username_entry);

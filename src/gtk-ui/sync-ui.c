@@ -859,7 +859,7 @@ key_press_cb (GtkWidget *widget,
 {
     int page = gtk_notebook_get_current_page (GTK_NOTEBOOK (data->notebook));
 
-    if (event->keyval == GDK_Escape && page != PAGE_MAIN) {
+    if (event->keyval == GDK_KEY_Escape && page != PAGE_MAIN) {
         show_main_view (data);
     }
 
@@ -1068,17 +1068,18 @@ services_box_allocate_cb (GtkWidget     *widget,
                           app_data *data)
 {
     if (GTK_IS_WIDGET (data->expanded_config)) {
-        int y, height;
+        int y;
         GtkAdjustment *adj;
+        GtkAllocation alloc;
 
         gtk_widget_translate_coordinates (data->expanded_config,
                                           data->services_box,
                                           0, 0, NULL, &y);
-        height = data->expanded_config->allocation.height;
+        gtk_widget_get_allocation (data->expanded_config, &alloc);
 
         adj = gtk_scrolled_window_get_vadjustment
                 (GTK_SCROLLED_WINDOW (data->scrolled_window));
-        gtk_adjustment_clamp_page (adj, y, y + height);
+        gtk_adjustment_clamp_page (adj, y, y + alloc.height);
 
         data->expanded_config = NULL;
     }
@@ -1668,7 +1669,7 @@ add_backup (app_data *data, const char *peername, const char *dir,
     gtk_misc_set_alignment (GTK_MISC (timelabel), 0.0, 0.5);
     gtk_label_set_line_wrap (GTK_LABEL (timelabel), TRUE);
     gtk_widget_set_size_request (timelabel, 600, -1);
-    gtk_box_pack_start_defaults (GTK_BOX (box), timelabel);
+    gtk_box_pack_start (GTK_BOX (box), timelabel, TRUE, TRUE, 0);
 
     /* TRANSLATORS: label for a backup in emergency view. Placeholder is 
      * service or device name */
@@ -1677,7 +1678,7 @@ add_backup (app_data *data, const char *peername, const char *dir,
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
     gtk_widget_set_size_request (label, 600, -1);
-    gtk_box_pack_start_defaults (GTK_BOX (box), label);
+    gtk_box_pack_start (GTK_BOX (box), label, TRUE, TRUE, 0);
     g_free (text);
 
     button = gtk_button_new ();
@@ -1874,7 +1875,7 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
     g_free (pretty_name);
     g_free (title);
     gtk_misc_set_alignment (GTK_MISC (lbl), 0.0, 0.5);
-    gtk_box_pack_start_defaults (GTK_BOX (conf->box), lbl);
+    gtk_box_pack_start (GTK_BOX (conf->box), lbl, TRUE, TRUE, 0);
 
     box = gtk_hbox_new (FALSE, 0);
     gtk_box_pack_start (GTK_BOX (conf->box), box, FALSE, FALSE, 0);
@@ -1887,7 +1888,7 @@ update_service_source_ui (const char *name, source_config *conf, app_data *data)
 
     conf->label = gtk_label_new (NULL);
     gtk_misc_set_alignment (GTK_MISC (conf->label), 0.0, 0.5);
-    gtk_box_pack_start_defaults (GTK_BOX (conf->box), conf->label);
+    gtk_box_pack_start (GTK_BOX (conf->box), conf->label, TRUE, TRUE, 0);
 
     source_config_update_widget (conf);
 
@@ -3428,7 +3429,7 @@ info_request_cb (SyncevoServer *syncevo,
                                           _("Cancel sync"), GTK_RESPONSE_CANCEL,
                                           _("Sync with password"), GTK_RESPONSE_OK,
                                           NULL);
-    content = GTK_DIALOG (dialog)->vbox;
+    content = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
 
     align = gtk_alignment_new (0.0, 0.5, 0.0, 0.0);
     gtk_alignment_set_padding (GTK_ALIGNMENT (align), 0, 0, 16, 16);
@@ -3451,7 +3452,8 @@ info_request_cb (SyncevoServer *syncevo,
     gtk_widget_show (align);
     gtk_box_pack_start (GTK_BOX (content), align, FALSE, FALSE, 6);
 
-    data->password_dialog_entry = gtk_entry_new_with_max_length (99);
+    data->password_dialog_entry = gtk_entry_new ();
+    gtk_entry_set_max_length (GTK_ENTRY (data->password_dialog_entry), 99);
     gtk_entry_set_width_chars (GTK_ENTRY (data->password_dialog_entry), 30);
     gtk_entry_set_visibility (GTK_ENTRY (data->password_dialog_entry), FALSE);
 
@@ -3484,7 +3486,7 @@ static void
 server_templates_changed_cb (SyncevoServer *server,
                              app_data *data)
 {
-    if (GTK_WIDGET_VISIBLE (data->services_box)) {
+    if (gtk_widget_get_visible (data->services_box)) {
         update_services_list (data);
     }
 }

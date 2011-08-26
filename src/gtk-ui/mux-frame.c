@@ -172,7 +172,7 @@ mux_frame_paint (GtkWidget *widget, GdkRectangle *area)
     cairo_paint (cairo);
 
     /* draw bullet before title */
-    if (GTK_FRAME (frame)->label_widget) {
+    if (gtk_frame_get_label_widget (GTK_FRAME (frame))) {
         gdk_cairo_set_source_color (cairo, &frame->bullet_color);
 
         rounded_rectangle (cairo,
@@ -197,7 +197,7 @@ mux_frame_expose(GtkWidget *widget,
                  GdkEventExpose *event)
 {
     GtkWidgetClass *grand_parent;
-    if (GTK_WIDGET_DRAWABLE (widget)) {
+    if (gtk_widget_is_drawable (widget)) {
         mux_frame_paint (widget, &event->area);
 
         grand_parent = GTK_WIDGET_CLASS (g_type_class_peek_parent (mux_frame_parent_class));
@@ -210,18 +210,18 @@ static void
 mux_frame_size_request (GtkWidget *widget,
                         GtkRequisition *requisition)
 {
-    GtkFrame *frame = GTK_FRAME (widget);
-    GtkBin *bin = GTK_BIN (widget);
+    GtkWidget *label = gtk_frame_get_label_widget (GTK_FRAME (widget));
+    GtkWidget *child = gtk_bin_get_child (GTK_BIN (widget));
     GtkRequisition child_req;
     GtkRequisition title_req;
 
     child_req.width = child_req.height = 0;
-    if (bin->child)
-        gtk_widget_size_request (bin->child, &child_req);
+    if (child)
+        gtk_widget_size_request (child, &child_req);
 
     title_req.width = title_req.height = 0;
-    if (frame->label_widget) {
-        gtk_widget_size_request (frame->label_widget, &title_req);
+    if (label) {
+        gtk_widget_size_request (label, &title_req);
         /* add room for bullet */
         title_req.height = title_req.height * mux_frame_bullet_size_factor +  
                            2 * MUX_FRAME_BULLET_PADDING;
