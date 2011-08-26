@@ -713,7 +713,7 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
                 continue;
             }
             BOOST_FOREACH (const DeviceList::value_type &entry, peers){
-                std:string fingerprint(entry.getFingerprint());
+                std::string fingerprint(entry.getFingerprint());
                 int rank = templateConf.metaMatch (fingerprint, entry.m_matchMode);
                 if (fuzzyMatch){
                     if (rank > TemplateConfig::NO_MATCH) {
