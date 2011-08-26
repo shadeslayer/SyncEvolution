@@ -541,6 +541,9 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
 {
     string type = getMimeType();
 
+    // default remote rule (local-storage.xml): suppresses empty properties
+    info.m_backendRule = "LOCALSTORAGE";
+
     if (type == "text/x-vcard") {
         info.m_native = "vCard21";
         info.m_fieldlist = "contacts";
