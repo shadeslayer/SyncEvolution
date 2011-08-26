@@ -47,6 +47,31 @@ mux_frame_finalize (GObject *object)
 }
 
 static void
+label_changed_cb (MuxFrame *frame)
+{
+    char *font = NULL;
+    GtkFrame *gtk_frame = GTK_FRAME (frame);
+    GtkWidget *label = gtk_frame_get_label_widget (GTK_FRAME (frame));
+
+    if (!label)
+        return;
+
+    /* ensure font is correct */
+    gtk_widget_style_get (GTK_WIDGET (frame),
+                          "title-font", &font,
+                          NULL);
+    if (font) {
+        PangoFontDescription *desc;
+        desc = pango_font_description_from_string (font);
+        gtk_widget_modify_font (label, desc);
+        pango_font_description_free (desc);
+        g_free (font);
+    }
+
+    gtk_misc_set_alignment (GTK_MISC (label), 0.0, 1.0);
+}
+
+static void
 mux_frame_update_style (MuxFrame *frame)
 {
     GdkColor *border_color, *bullet_color;
@@ -55,7 +80,6 @@ mux_frame_update_style (MuxFrame *frame)
     gtk_widget_style_get (GTK_WIDGET (frame),
                           "border-color", &border_color, 
                           "bullet-color", &bullet_color,
-                          "title-font", &font,
                           NULL);
 
     if (border_color) {
@@ -71,40 +95,9 @@ mux_frame_update_style (MuxFrame *frame)
         frame->bullet_color = mux_frame_default_bullet_color;
     }
 
-    if (font) {
-        if (GTK_FRAME (frame)->label_widget) {
-            PangoFontDescription *desc;
-            desc = pango_font_description_from_string (font);
-            gtk_widget_modify_font (GTK_FRAME (frame)->label_widget, desc);
-            pango_font_description_free (desc);
-        }
-        g_free (font);
-    }
+    label_changed_cb (frame);
 }
 
-static void
-label_changed_cb (MuxFrame *frame)
-{
-    char *font = NULL;
-    GtkFrame *gtk_frame = GTK_FRAME (frame);
-
-    if (!gtk_frame->label_widget)
-        return;
-
-    /* ensure font is correct */
-    gtk_widget_style_get (GTK_WIDGET (frame),
-                          "title-font", &font,
-                          NULL);
-    if (font) {
-        PangoFontDescription *desc;
-        desc = pango_font_description_from_string (font);
-        gtk_widget_modify_font (gtk_frame->label_widget, desc);
-        pango_font_description_free (desc);
-        g_free (font);
-    }
-    
-    gtk_misc_set_alignment (GTK_MISC (gtk_frame->label_widget), 0.0, 1.0);
-}
 static void
 rounded_rectangle (cairo_t * cr,
                    double x, double y, double w, double h,
