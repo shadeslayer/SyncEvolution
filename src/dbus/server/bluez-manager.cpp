@@ -34,9 +34,7 @@ SE_BEGIN_CXX
 
 BluezManager::BluezManager(Server &server) :
     m_server(server),
-    m_adapterChanged(*this, "DefaultAdapterChanged"),
-    m_lookupTable()
-
+    m_adapterChanged(*this, "DefaultAdapterChanged")
 {
     const char *bluetoothTest = getenv ("DBUS_TEST_BLUETOOTH");
     m_bluezConn = b_dbus_setup_bus(bluetoothTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
