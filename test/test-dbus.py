@@ -1620,7 +1620,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceInvalidBackend(self):
-        """TestSessionAPIsDummy.testCheckSourceInvalidType -  test the right error is reported when the type is invalid """
+        """TestSessionAPIsDummy.testCheckSourceInvalidBackend -  test the right error is reported when the type is invalid """
         self.setupConfig()
         config = { "source/memo" : { "backend" : "no-such-backend"} }
         try:
@@ -1632,7 +1632,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
 
     def testCheckSourceNoBackend(self):
-        """TestSessionAPIsDummy.testCheckSourceNoType -  test the right error is reported when the source is unusable"""
+        """TestSessionAPIsDummy.testCheckSourceNoBackend -  test the right error is reported when the source is unusable"""
         self.setupConfig()
         config = { "source/memo" : { "backend" : "file",
                                      "databaseFormat" : "text/calendar",
@@ -2725,7 +2725,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.assertEqual(config["source/addressbook"]["database"], "Work")
 
     def testSharedProperties(self):
-        """TestMultipleConfigs.testSharedType - 'type' consists of per-peer and shared properties"""
+        """TestMultipleConfigs.testSharedProperties - 'type' consists of per-peer and shared properties"""
         self.setupConfigs()
 
         # writing for peer modifies properties in "foo" and context
@@ -2745,7 +2745,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.session.Detach()
 
     def testSharedPropertyOther(self):
-        """TestMultipleConfigs.testSharedTypeOther - shared backend properties must be preserved when adding peers"""
+        """TestMultipleConfigs.testSharedPropertyOther - shared backend properties must be preserved when adding peers"""
         # writing peer modifies properties in "foo" and creates context "@other"
         self.setUpSession("Foo@other")
         config = self.server.GetConfig("ScheduleWorld@other", True, utf8_strings=True)
@@ -2760,7 +2760,7 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.assertEqual(config["source/addressbook"]["databaseFormat"], "text/x-vcard")
         self.session.Detach()
 
-        # adding second client must preserve property
+        # adding second client must preserve backend value
         self.setUpSession("bar@other")
         config = self.server.GetConfig("Funambol@other", True, utf8_strings=True)
         self.assertEqual(config["source/addressbook"]["backend"], "file")
