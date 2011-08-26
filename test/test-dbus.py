@@ -749,6 +749,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         configs = self.server.GetConfigs(False, utf8_strings=True)
         self.assertEqual(configs, [])
 
+    @property("ENV", "DBUS_TEST_BLUETOOTH=none")
     def testGetConfigsTemplates(self):
         """TestDBusServer.testGetConfigsTemplates - Server.GetConfigsTemplates()"""
         configs = self.server.GetConfigs(True, utf8_strings=True)
