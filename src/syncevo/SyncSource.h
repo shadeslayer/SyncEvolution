@@ -186,8 +186,8 @@ struct ClientTestConfig {
             if (other.linkedItems) {
                 linkedItems = new std::vector<LinkedItems_t>(*other.linkedItems);
             }
-            return *this;
         }
+        return *this;
     }
 
     /**
