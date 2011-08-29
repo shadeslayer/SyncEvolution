@@ -1032,22 +1032,24 @@ class SyncConfig {
         // The matched percentage of the template, larger the better.
         int m_rank;
 
-        // A string that can be shown in GUIs. For bluetooth devices
-        // this is the user-modifiable device name.
+        // This can be either the user-modifiable device name, vendor
+        // name, or product name (vendor + model). This depends on
+        // whether the device supports the Bluetooth Device ID profile
+        // and, if so, whether we have the model in the lookup table.
         std::string m_peerName;
 
         //a unique identity of the device that the template is for, used by caller
         std::string m_deviceId;
 
-        // A string identify which fingerprint the template is matched with.
-        std::string m_fingerprint;
+        // This is always the user-modifiable device name.
+        std::string m_deviceName;
 
         // A unique string identify the template path, so that a later operation
         // fetching this config will be much easier
         std::string m_path;
 
         // A string indicates the original fingerprint in the matched template, this
-        // will not necessarily the same with m_fingerprint
+        // will not necessarily be the same as m_deviceName
         std::string m_matchedModel;
 
         // The template name (device class) presented
@@ -1062,7 +1064,7 @@ class SyncConfig {
                 m_rank (rank),
                 m_peerName (peerName),
                 m_deviceId (deviceId),
-                m_fingerprint (fingerprint),
+                m_deviceName (fingerprint),
                 m_path (path),
                 m_matchedModel(model),
                 m_templateName (templateName)

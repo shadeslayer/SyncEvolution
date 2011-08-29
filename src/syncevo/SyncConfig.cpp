@@ -714,16 +714,19 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
             }
             BOOST_FOREACH (const DeviceList::value_type &entry, peers){
                 std::string fingerprint(entry.getFingerprint());
-                int rank = templateConf.metaMatch (fingerprint, entry.m_matchMode);
+                // peerName should be empty if no reliable device info is on hand.
+                std::string peerName = entry.m_pnpInformation ? fingerprint : "";
+
+                int rank = templateConf.metaMatch (entry.getFingerprint(), entry.m_matchMode);
                 if (fuzzyMatch){
                     if (rank > TemplateConfig::NO_MATCH) {
                         result.push_back (boost::shared_ptr<TemplateDescription>(
                                     new TemplateDescription(templateConf.getTemplateId(),
                                                             templateConf.getDescription(),
                                                             rank,
-                                                            entry.m_deviceName,
+                                                            peerName,
                                                             entry.m_deviceId,
-                                                            fingerprint,
+                                                            entry.m_deviceName,
                                                             sDir,
                                                             templateConf.getFingerprint(),
                                                             templateConf.getTemplateName()
@@ -735,9 +738,9 @@ SyncConfig::TemplateList SyncConfig::matchPeerTemplates(const DeviceList &peers,
                                 new TemplateDescription(templateConf.getTemplateId(),
                                                         templateConf.getDescription(),
                                                         rank,
-                                                        entry.m_deviceName,
+                                                        peerName,
                                                         entry.m_deviceId,
-                                                        fingerprint,
+                                                        entry.m_deviceName,
                                                         sDir,
                                                         templateConf.getFingerprint(),
                                                         templateConf.getTemplateName())
@@ -2596,7 +2599,7 @@ SyncConfig::TemplateDescription::TemplateDescription (const std::string &name, c
 :   m_templateId (name), m_description (description)
 {
     m_rank = TemplateConfig::LEVEL3_MATCH;
-    m_fingerprint = "";
+    m_deviceName = "";
     m_path = "";
     m_matchedModel = name;
 }
@@ -2607,8 +2610,8 @@ SyncConfig::TemplateDescription::TemplateDescription (const std::string &name, c
 bool SyncConfig::TemplateDescription::compare_op (boost::shared_ptr<SyncConfig::TemplateDescription> &left, boost::shared_ptr<SyncConfig::TemplateDescription> &right)
 {
     //first sort against the fingerprint string
-    if (left->m_fingerprint != right->m_fingerprint) {
-        return (left->m_fingerprint < right->m_fingerprint);
+    if (left->m_deviceName != right->m_deviceName) {
+        return (left->m_deviceName < right->m_deviceName);
     }
     // sort against the rank
     if (right->m_rank != left->m_rank) {

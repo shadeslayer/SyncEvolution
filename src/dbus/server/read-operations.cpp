@@ -45,7 +45,7 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
         std::map<std::string, int> numbers;
         BOOST_FOREACH(const boost::shared_ptr<SyncConfig::TemplateDescription> peer, list) {
             //if it is not a template for device
-            if(peer->m_fingerprint.empty()) {
+            if(peer->m_deviceName.empty()) {
                 configNames.push_back(peer->m_templateId);
             } else {
                 string templName = "Bluetooth_";
@@ -119,8 +119,9 @@ void ReadOperations::getConfig(bool getTemplate,
             score << peerTemplate->m_rank;
             localConfigs.insert(pair<string, string>("score", score.str()));
             // Actually this fingerprint is transferred by getConfigs, which refers to device name
-            localConfigs.insert(pair<string, string>("deviceName", peerTemplate->m_fingerprint));
-            // This is the user-modifiable device name. Could be shown in GUIs, for example
+            localConfigs.insert(pair<string, string>("deviceName", peerTemplate->m_deviceName));
+            // This is the reliable device info obtained from the bluetooth
+            // device id profile (DIP) or emtpy if DIP not supported.
             localConfigs.insert(pair<string, string>("peerName", peerTemplate->m_peerName));
             // This is the fingerprint of the template
             localConfigs.insert(pair<string, string>("fingerPrint", peerTemplate->m_matchedModel));
