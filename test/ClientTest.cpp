@@ -4845,6 +4845,18 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "DESCRIPTION:second instance modified\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
+        } else if (server == "exchange") {
+            BOOST_FOREACH(std::string &item, (*config.linkedItems)[0]) {
+                // time zone name changes on server to "Standard Timezone",
+                // with some information stripped
+                boost::replace_all(item,
+                                   "/softwarestudio.org/Olson_20011030_5/Europe/Berlin",
+                                   "Standard Timezone");
+                // some properties are not stored/supported
+                boost::replace_all(item, "TZNAME:CET\n", "");
+                boost::replace_all(item, "TZNAME:CEST\n", "");
+                boost::replace_all(item, "X-LIC-LOCATION:Europe/Berlin\n", "");
+            }
 	} else {
             // in particular for Google Calendar: also try with
             // VALARM, because testing showed that the server works
