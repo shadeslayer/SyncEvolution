@@ -753,6 +753,7 @@ protected:
     virtual void testSlowSyncSemantic();
     virtual void testComplexRefreshFromServerSemantic();
     virtual void testDeleteBothSides();
+    virtual void testAddBothSides();
     virtual void testLinkedItemsParentChild();
     virtual void testLinkedItemsChild();
     virtual void testLinkedItemsChildParent();
