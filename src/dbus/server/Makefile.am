@@ -27,12 +27,31 @@ server_cpp_files = 				\
 server_h_files = \
 	$(server_cpp_files:%.cpp=%.h)		\
 	NotificationBackendBase.h	 	\
+	NotificationBackendLibnotify.h		\
+	NotificationBackendMLite.h		\
+	NotificationBackendNoop.h		\
 	NotificationManager.h 			\
 	NotificationManagerBase.h 		\
+	NotificationManagerFactory.h		\
+	auto-sync-manager.h			\
 	auto-term.h				\
+	bluez-manager.h				\
+	client.h				\
 	cmdline-wrapper.h			\
+	connection.h				\
+	connman-client.h			\
+	dbus-sync.h				\
+	dbus-transport-agent.h			\
+	dbus-user-interface.h			\
+	exceptions.h				\
+	info-req.h				\
+	network-manager-client.h		\
+	presence-status.h			\
+	progress-data.h				\
+	read-operations.h			\
 	resource.h				\
 	restart.h				\
+	session.h				\
 	session-listener.h			\
 	source-progress.h			\
 	source-status.h				\
