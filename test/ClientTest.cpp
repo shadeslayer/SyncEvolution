@@ -4857,6 +4857,48 @@ void ClientTest::getTestData(const char *type, Config &config)
                 boost::replace_all(item, "TZNAME:CEST\n", "");
                 boost::replace_all(item, "X-LIC-LOCATION:Europe/Berlin\n", "");
             }
+
+            // also test recurring all-day events with exceptions
+            config.linkedItems->resize(2);
+            (*config.linkedItems)[1].resize(2);
+            (*config.linkedItems)[1][0] =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VEVENT\n"
+                "UID:20110829T130000Z-19554-727-1-50@gollum\n"
+                "DTSTAMP:20080407T193125Z\n"
+                "DTSTART;VALUE=DATE:20080406\n"
+                "DTEND;VALUE=DATE:20080407\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:XXX\n"
+                "SUMMARY:Recurring all day event\n"
+                "DESCRIPTION:recurs each Monday\\, 3 times\n"
+                "CLASS:PUBLIC\n"
+                "RRULE:FREQ=WEEKLY;UNTIL=20080420;INTERVAL=1;BYDAY=SU\n"
+                "CREATED:20080407T193241Z\n"
+                "LAST-MODIFIED:20080407T193241Z\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
+            (*config.linkedItems)[1][1] =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VEVENT\n"
+                "UID:20110829T130000Z-19554-727-1-50@gollum\n"
+                "DTSTAMP:20080407T193125Z\n"
+                "DTSTART;VALUE=DATE:20080413\n"
+                "DTEND;VALUE=DATE:20080414\n"
+                "TRANSP:OPAQUE\n"
+                "SEQUENCE:XXX\n"
+                "SUMMARY:Recurring: Modified second instance\n"
+                "CLASS:PUBLIC\n"
+                "CREATED:20080407T193241Z\n"
+                "LAST-MODIFIED:20080407T193647Z\n"
+                "RECURRENCE-ID;VALUE=DATE:20080413\n"
+                "DESCRIPTION:second instance modified\n"
+                "END:VEVENT\n"
+                "END:VCALENDAR\n";
 	} else {
             // in particular for Google Calendar: also try with
             // VALARM, because testing showed that the server works
