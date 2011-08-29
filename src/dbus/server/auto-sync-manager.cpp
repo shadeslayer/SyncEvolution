@@ -23,6 +23,8 @@
 
 #include <glib/gi18n.h>
 
+#include <boost/tokenizer.hpp>
+
 SE_BEGIN_CXX
 
 void AutoSyncManager::init()
@@ -59,9 +61,8 @@ void AutoSyncManager::initConfig(const std::string &configName)
         bt = true;
         any = true;
     } else {
-        std::vector<std::string> options;
-        boost::split(options, autoSync, boost::is_any_of(","));
-        BOOST_FOREACH(std::string op, options) {
+        BOOST_FOREACH(std::string op,
+		      boost::tokenizer< boost::char_separator<char> >(autoSync, boost::char_separator<char>(","))) {
             if(boost::iequals(op, "http")) {
                 http = true;
             } else if(boost::iequals(op, "obex-bt")) {
