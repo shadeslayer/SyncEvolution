@@ -383,6 +383,15 @@ struct ClientTestConfig {
     bool sourceKnowsItemSemantic;
 
     /**
+     * Set this to true if the backend does not have IDs which are the
+     * same for all clients and across slow syncs. For example, when
+     * testing the ActiveSync backend this field needs to be true,
+     * because items are renumbered as 1:x with x = 1, 2, ... for each
+     * clients when a sync anchor is assigned to it.
+     */
+    bool sourceLUIDsAreVolatile;
+
+    /**
      * called to dump all items into a file, required by tests which need
      * to compare items
      *
