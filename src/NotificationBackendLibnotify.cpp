@@ -157,7 +157,7 @@ void NotificationBackendLibnotify::publish(
 #ifndef NOTIFY_CHECK_VERSION
 # define NOTIFY_CHECK_VERSION(_x,_y,_z) 0
 #endif
-#if !NOTIFY_CHECK_VERSION(0,7,0)
+#if !NOTIFY_CHECK_VERSION(0,7,0) || defined(NOTIFY_COMPATIBILITY)
     m_notification = notify_notification_new(summary.c_str(), body.c_str(), NULL, NULL);
 #else
     m_notification = notify_notification_new(summary.c_str(), body.c_str(), NULL);
