@@ -1,0 +1,45 @@
+src/dbus/interfaces/%.xml: src/dbus/interfaces/%-full.xml
+	$(AM_V_GEN)$(XSLT) -o $@ $(top_srcdir)/src/dbus/interfaces/spec-strip-docs.xsl $<
+
+if COND_DOC
+src/dbus/interfaces/%-doc.xml: src/dbus/interfaces/%-full.xml
+	$(AM_V_GEN)$(XSLT) -o $@ $(top_srcdir)/src/dbus/interfaces/spec-to-docbook.xsl $<
+
+src/dbus/interfaces/syncevo-dbus-api-doc.xml: src/dbus/interfaces/syncevo-server-doc.xml src/dbus/interfaces/syncevo-session-doc.xml src/dbus/interfaces/syncevo-connection-doc.xml
+	$(AM_V_GEN)echo '<?xml version="1.0" encoding="UTF-8"?>' >$@ \
+	&& echo '<reference><title>SyncEvolution D-Bus API $(VERSION)</title>' >>$@ \
+	&& for xml in $+; \
+	do \
+	  tail -n +2 $$xml >>$@; \
+	done; \
+	echo '</reference>' >>$@
+
+src/dbus/interfaces/syncevo-dbus-api-doc.html: src/dbus/interfaces/syncevo-dbus-api-doc.xml
+	$(AM_V_GEN)$(XSLT) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
+
+doc_DATA += src/dbus/interfaces/syncevo-dbus-api-doc.html
+
+endif
+
+if COND_DOC
+src_dbus_interfaces_built_sources = \
+  src/dbus/interfaces/syncevo-server-doc.xml \
+  src/dbus/interfaces/syncevo-connection-doc.xml \
+  src/dbus/interfaces/syncevo-session-doc.xml \
+  src/dbus/interfaces/syncevo-dbus-api-doc.xml \
+  src/dbus/interfaces/syncevo-dbus-api-doc.html
+else
+src_dbus_interfaces_built_sources =
+endif
+
+BUILT_SOURCES += $(src_dbus_interfaces_built_sources)
+
+CLEANFILES += $(src_dbus_interfaces_built_sources)
+
+dist_noinst_DATA += \
+	src/dbus/interfaces/spec-strip-docs.xsl \
+	src/dbus/interfaces/spec-to-docbook.xsl \
+	src/dbus/interfaces/syncevo-connection-full.xml  \
+	src/dbus/interfaces/syncevo-server-full.xml \
+	src/dbus/interfaces/syncevo-session-full.xml \
+	src/dbus/interfaces/README

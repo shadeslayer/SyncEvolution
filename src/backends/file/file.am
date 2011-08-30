@@ -1,0 +1,28 @@
+dist_noinst_DATA += src/backends/file/configure-sub.in
+
+src_backends_file_lib = src/backends/file/syncfile.la
+MOSTLYCLEANFILES += $(src_backends_file_lib)
+if ENABLE_MODULES
+src_backends_file_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_file_backend_LTLIBRARIES = $(src_backends_file_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_file_lib)
+endif
+
+src_backends_file_src = \
+  src/backends/file/FileSyncSource.h \
+  src/backends/file/FileSyncSource.cpp
+
+src_backends_file_syncfile_la_SOURCES = $(src_backends_file_src)
+src_backends_file_syncfile_la_LIBADD = $(FILE_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_file_syncfile_la_LDFLAGS = -module -avoid-version
+src_backends_file_syncfile_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_file_syncfile_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_file_syncfile_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)
+# If you need special test cases for your sync source, then
+# install them here. Here's how the sqlite backend does that:
+#
+#../../testcases/sqlite_vcard21.vcf: $(FUNAMBOL_SUBDIR)/test/test/testcases/vcard21.vcf
+#	mkdir -p ${@D}
+#	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; s/;X-EVOLUTION-UI-SLOT=\d+//g; print;' $< >$@
+#all: ../../testcases/sqlite_vcard21.vcf

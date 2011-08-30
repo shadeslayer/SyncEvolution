@@ -1,0 +1,84 @@
+if COND_DBUS
+
+noinst_LTLIBRARIES += src/dbus/server/libsyncevodbusserver.la
+
+src_dbus_server_server_cpp_files = \
+  src/dbus/server/NotificationBackendNoop.cpp \
+  src/dbus/server/NotificationBackendLibnotify.cpp \
+  src/dbus/server/NotificationBackendMLite.cpp \
+  src/dbus/server/NotificationManagerFactory.cpp \
+  src/dbus/server/auto-sync-manager.cpp \
+  src/dbus/server/bluez-manager.cpp \
+  src/dbus/server/client.cpp \
+  src/dbus/server/connection.cpp \
+  src/dbus/server/connman-client.cpp \
+  src/dbus/server/dbus-sync.cpp \
+  src/dbus/server/dbus-transport-agent.cpp \
+  src/dbus/server/dbus-user-interface.cpp \
+  src/dbus/server/exceptions.cpp \
+  src/dbus/server/info-req.cpp \
+  src/dbus/server/network-manager-client.cpp \
+  src/dbus/server/presence-status.cpp \
+  src/dbus/server/progress-data.cpp \
+  src/dbus/server/read-operations.cpp \
+  src/dbus/server/server.cpp \
+  src/dbus/server/session.cpp
+
+src_dbus_server_server_h_files = \
+  $(src_dbus_server_server_cpp_files:.cpp=.h) \
+  src/dbus/server/NotificationBackendBase.h \
+  src/dbus/server/NotificationManager.h \
+  src/dbus/server/NotificationManagerBase.h \
+  src/dbus/server/auto-term.h \
+  src/dbus/server/cmdline-wrapper.h \
+  src/dbus/server/resource.h \
+  src/dbus/server/restart.h \
+  src/dbus/server/session-listener.h \
+  src/dbus/server/source-progress.h \
+  src/dbus/server/source-status.h \
+  src/dbus/server/timeout.h \
+  src/dbus/server/timer.h
+
+src_dbus_server_libsyncevodbusserver_la_SOURCES = \
+  $(src_dbus_server_server_h_files) \
+  $(src_dbus_server_server_cpp_files) \
+  src/dbus/server/main.cpp
+
+dist_pkgdata_DATA += src/dbus/server/bluetooth_products.ini
+
+src_dbus_server_libsyncevodbusserver_la_LIBADD = $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS) $(LIBSOUP_LIBS)
+src_dbus_server_libsyncevodbusserver_la_CPPFLAGS = -DHAVE_CONFIG_H  -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\" -I$(top_srcdir)/src -I$(top_srcdir)/test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
+src_dbus_server_libsyncevodbusserver_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(SYNTHESIS_CFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(KEYRING_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(KDE_KWALLET_CFLAGS) $(SYNCEVO_WFLAGS)
+
+# Deal with .service, .desktop and startup script files.
+CLEANFILES += \
+  $(src_dbus_server_service_files) \
+  $(src_dbus_server_desktop) \
+  $(src_dbus_server_script)
+
+src_dbus_server_script_in = src/dbus/server/syncevo-dbus-server-startup.sh.in
+src_dbus_server_script = $(src_dbus_server_script_in:.sh.in=.sh)
+src_dbus_server_desktop_in = src/dbus/server/syncevo-dbus-server.desktop.in
+src_dbus_server_desktop = $(src_dbus_server_desktop_in:.desktop.in=.desktop)
+src_dbus_server_autostartdir = $(sysconfdir)/xdg/autostart
+src_dbus_server_autostart_DATA = $(src_dbus_server_desktop)
+
+libexec_SCRIPTS += $(src_dbus_server_script)
+$(src_dbus_server_script): $(src_dbus_server_script_in)
+	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< >$@
+$(src_dbus_server_desktop): $(src_dbus_server_desktop_in)
+	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< >$@
+
+src_dbus_server_service_files_in = src/dbus/server/org.syncevolution.service.in
+src_dbus_server_service_files = $(src_dbus_server_service_files_in:.service.in=.service)
+src_dbus_server_servicedir = $(DBUS_SERVICES_DIR)
+src_dbus_server_service_DATA = $(src_dbus_server_service_files)
+$(src_dbus_server_service_files): $(src_dbus_server_service_files_in)
+	@sed -e "s|\@libexecdir\@|$(libexecdir)|" $< >$@
+
+dist_noinst_DATA += \
+  $(src_dbus_server_service_files_in) \
+  $(src_dbus_server_script_in) \
+  $(src_dbus_server_desktop_in)
+
+endif

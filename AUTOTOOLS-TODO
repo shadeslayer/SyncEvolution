@@ -1,0 +1,126 @@
+REGRESSIONS:
+
+
+- None.
+
+
+IMPROVEMENTS:
+
+
+- Add a check for qt-mobility for QtContacts backend.
+
+
+- Probably client test should be built only when unit tests or integration tests
+  are enabled.
+
+
+- Look at the note at the bottom of configure.ac:
+
+  # Avoid hard-coding paths in backends. These names are chosen so
+  # that a backend can alternatively use its own top-level configure
+  # with PKG_CHECK_MODULES(SYNCEVOLUTION, "syncevolution") to set them.
+  # need absolute path, use pwd instead of relative $srcdir
+  SYNCEVOLUTION_CFLAGS=-I`cd $srcdir && pwd`/src
+  SYNCEVOLUTION_LIBS=`pwd`/src/syncevo/libsyncevolution.la
+  AC_SUBST(SYNCEVOLUTION_CFLAGS)
+  AC_SUBST(SYNCEVOLUTION_LIBS)
+
+  Backends does not have their own top-level configure scripts, so usage of
+  absolute path have to be checked. For now this is worked around
+  in generated backends.am. Also, for relative path not $(srcdir) should be used
+  but $(builddir).
+
+
+- Review CLEANFILES, DISTCLEANFILES, MAINTAINERCLEANFILES and MOSTLYCLEANFILES.
+  That is - check which files should be assigned to which of CLEAN variables.
+
+
+- Check why distcheck outputs:
+  ==================
+  All 0 tests passed
+  ==================
+
+  There should have been at least one test being run. The same behavior exists
+  in old build system.
+
+
+- Check why there are so many failed tests when running `make check' explicitly.
+  The same number of failures exists in old build system:
+
+  Run: 583   Failure total: 528   Failures: 206   Errors: 322
+
+
+- Tidy up configure.ac and some .am files.
+
+
+- Maybe write scripts generating configs_xml.am, templates.am and profiles.am.
+
+
+QUESTIONS:
+
+
+- None.
+
+
+PERSISTENT:
+
+
+- Hunt for common variables clobbering.
+
+
+- Silence more verbose output if found.
+
+
+NITPICKS:
+
+
+- Check if SyncEvolutionXML.c should always be recreated, patches always checked
+  and test-client always relinked.
+
+
+- Check if /etc/sync and /lib/sync really have to be created, even if they are
+  going to be empty after install (this is probably some buteo stuff).
+
+
+- Maybe do not create /share/man/man1 directory if we do not put there anything.
+
+
+- If backends are static libraries then do not create /lib/syncevolution,
+  because nothing is put here.
+
+
+- Change $(foo) to @foo@ for all variables substituted by configure script. This
+  might be useful when looking for actual value of variable appearing out of
+  nowhere in .am file. Maybe make also all configure variables UPPER_CASE
+  and all local Automake variables lower_case.
+
+
+- Lower autoreconf's warnings level later. Namely - don't warn about some
+  portability issues. The warnings about obsolete stuff should rather remain.
+  For now only some glib macros are using obsolete features.
+
+
+- Should stamp files be marked as intermediate or rather as secondary files?
+
+
+- Check why 'copying selected object files to avoid basename conflicts...' is
+  displayed between linking src/dbus/server/libsyncevodbusserver.la
+  and compiling src/gdbus/src_gdbus_libgdbussyncevo_la-debug.lo. This is
+  probably harmless.
+
+
+TRACKING:
+
+
+- Handle nobase prefixes. Link to track:
+  http://debbugs.gnu.org/cgi/bugreport.cgi?bug=9289
+
+
+- Explanation why make -jX used to fail:
+  It failed because usually Automake generates dependencies of a library/program
+  by looking at its _LIBADD/_LDADD variable. But this generation doesn't work
+  correctly when _LIBADD/_LDADD variable has AC_SUBSTed variable - automake then
+  just discards them and resulting _DEPENDENCIES variable does not contain them.
+  As a workaround _DEPENDENCIES variable have to be written explicitly. Link to
+  track:
+  http://debbugs.gnu.org/cgi/bugreport.cgi?bug=9320

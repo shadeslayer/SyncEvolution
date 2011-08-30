@@ -6,9 +6,9 @@ dnl Invoke autogen.sh to produce a configure script.
 AC_ARG_ENABLE(buteo,
               AS_HELP_STRING([--enable-buteo],
                              [enable Buteo client plugin]),
-	      [enable_buteo="$enableval"],
+              [enable_buteo="$enableval"],
               [enable_buteo="no"]
-              )
+             )
 
 if test "$enable_buteo" = "yes"; then
         AC_DEFINE(ENABLE_BUTEO, 1, [Buteo available])

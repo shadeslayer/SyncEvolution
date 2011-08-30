@@ -7,9 +7,11 @@ AC_SUBST(SQLITE_CFLAGS)
 AC_SUBST(SQLITE_LIBS)
 BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $SQLITE_CFLAGS"
 
-AC_ARG_ENABLE_BACKEND(sqlite, sqlite,
-                      AS_HELP_STRING([--enable-sqlite], [enable access to PIM data stored in SQLite files (experimental, default off)]),
-		      [enable_sqlite="$enableval"], [enable_sqlite="no"])
+SE_ARG_ENABLE_BACKEND(sqlite, sqlite,
+                      [AS_HELP_STRING([--enable-sqlite],
+                                      [enable access to PIM data stored in SQLite files (experimental, default off)])],
+                      [enable_sqlite="$enableval"], [enable_sqlite="no"]
+                     )
 
 if test "$enable_sqlite" = "yes"; then
         test "x${SQLITEFOUND}" = "xyes" || AC_MSG_ERROR([--enable-sqlite requires pkg-config information for sqlite3, which was not found])

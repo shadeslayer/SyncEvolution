@@ -1,0 +1,22 @@
+dist_noinst_DATA += src/backends/qtcontacts/configure-sub.in
+
+src_backends_qtcontacts_lib = src/backends/qtcontacts/syncqtcontacts.la
+MOSTLYCLEANFILES += $(src_backends_qtcontacts_lib)
+if ENABLE_MODULES
+src_backends_qtcontacts_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_qtcontacts_backend_LTLIBRARIES = $(src_backends_qtcontacts_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_qtcontacts_lib)
+endif
+
+src_backends_qtcontacts_syncqtcontacts_la_SOURCES = \
+  src/backends/qtcontacts/QtContactsSource.h \
+  src/backends/qtcontacts/QtContactsSource.cpp
+src_backends_qtcontacts_syncqtcontacts_la_LIBADD = $(QT_CONTACTS_LIBS) $(QT_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_qtcontacts_syncqtcontacts_la_LDFLAGS = -module -avoid-version $(QT_LDFLAGS)
+src_backends_qtcontacts_syncqtcontacts_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS) $(QT_CPPFLAGS)
+src_backends_qtcontacts_syncqtcontacts_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)
+# Allow Qt to set some compile flags, but not the ones normally set via configure.
+# In particular -W is not compatible with the SyncEvolution header files (we have
+# unused parameters in some inline functions).
+src_backends_qtcontacts_syncqtcontacts_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(filter-out -O2 -g -W -Wall, $(QT_CXXFLAGS)) $(SYNCEVO_WFLAGS)

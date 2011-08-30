@@ -1,0 +1,38 @@
+dist_noinst_DATA += \
+  src/backends/webdav/configure-sub.in \
+  src/backends/webdav/WebDAVSourceRegister.cpp \
+  src/backends/webdav/syncevo-webdav-lookup.sh \
+  src/backends/webdav/README
+
+src_backends_webdav_lib = src/backends/webdav/syncdav.la
+MOSTLYCLEANFILES += $(src_backends_webdav_lib)
+if ENABLE_MODULES
+src_backends_webdav_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_webdav_backend_LTLIBRARIES = $(src_backends_webdav_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_webdav_lib)
+endif
+
+bin_SCRIPTS += src/backends/webdav/syncevo-webdav-lookup
+CLEANFILES += src/backends/webdav/syncevo-webdav-lookup
+
+src/backends/webdav/syncevo-webdav-lookup: src/backends/webdav/syncevo-webdav-lookup.sh
+	$(AM_V_GEN)rm -f $@ ; \
+	ln -s $(notdir $<) $@
+
+src_backends_webdav_src = \
+  src/backends/webdav/CalDAVSource.h \
+  src/backends/webdav/CalDAVSource.cpp \
+  src/backends/webdav/CardDAVSource.h \
+  src/backends/webdav/CardDAVSource.cpp \
+  src/backends/webdav/WebDAVSource.h \
+  src/backends/webdav/WebDAVSource.cpp \
+  src/backends/webdav/NeonCXX.h \
+  src/backends/webdav/NeonCXX.cpp
+
+src_backends_webdav_syncdav_la_SOURCES = $(src_backends_webdav_src)
+src_backends_webdav_syncdav_la_LIBADD = $(NEON_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_webdav_syncdav_la_LDFLAGS = -module -avoid-version
+src_backends_webdav_syncdav_la_CXXFLAGS = $(NEON_CFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_webdav_syncdav_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_webdav_syncdav_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

@@ -1,0 +1,21 @@
+dist_noinst_DATA += \
+  src/backends/akonadi/configure-sub.in \
+  src/backends/akonadi/README
+
+src_backends_akonadi_lib = src/backends/akonadi/syncakonadi.la
+MOSTLYCLEANFILES += $(src_backends_akonadi_lib)
+if ENABLE_MODULES
+src_backends_akonadi_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_akonadi_backend_LTLIBRARIES = $(src_backends_akonadi_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_akonadi_lib)
+endif
+
+src_backends_akonadi_syncakonadi_la_SOURCES = \
+  src/backends/akonadi/akonadisyncsource.h \
+  src/backends/akonadi/akonadisyncsource.cpp
+src_backends_akonadi_syncakonadi_la_LIBADD = $(KDEPIM_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_akonadi_syncakonadi_la_LDFLAGS = -module -avoid-version
+src_backends_akonadi_syncakonadi_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_akonadi_syncakonadi_la_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_akonadi_syncakonadi_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

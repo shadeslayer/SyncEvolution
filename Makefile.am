@@ -1,38 +1,56 @@
+include $(top_srcdir)/setup-variables.am
+include $(top_srcdir)/autotroll.am
+include $(top_srcdir)/build/build.am
+
+AUTOMAKE_OPTIONS = subdir-objects
+
 ## Process this file with automake to produce Makefile.in
 
-ACLOCAL_AMFLAGS = -I m4 -I m4-repo
+ACLOCAL_AMFLAGS = -I m4 -I m4-repo ${ACLOCAL_FLAGS}
+
+if COND_CORE
+SUBDIRS += $(SYNTHESIS_SUBDIR)
+else
+SUBDIRS += $(SYNTHESIS_SUBDIR_INCLUDES)
+endif
+
+SUBDIRS += .
+
+disted_docs =
+distbin_docs =
 
 man_MANS =
-dist_doc_DATA =
-SUBDIRS = src
+include src/src.am
 if COND_CORE
-SUBDIRS += po test
-dist_doc_DATA += README NEWS COPYING $(TEST_README_FILES) test/syncevo-http-server-logging.conf
+include test/test.am
+SUBDIRS += po
+disted_docs += README NEWS COPYING $(TEST_README_FILES) test/syncevo-http-server-logging.conf
+distbin_docs += $(disted_docs)
+dist_doc_DATA += $(disted_docs)
 if COND_HTML_README
-dist_doc_DATA += README.html
+distbin_docs += README.html
+# do not distribute in tarball.
+doc_DATA += README.html
 endif
 if COND_MAN_PAGES
 man_MANS += syncevolution.1
 endif
 endif
-DIST_SUBDIRS = src po test
+DIST_SUBDIRS += po
 
-EXTRA_DIST = \
-	HACKING \
-	LICENSE.txt \
-	LICENSE.LGPL-21 \
-        README.rst \
-	description \
-	configure-pre.in \
-	configure-post.in \
-	gen-autotools.sh \
-	autogen.sh \
-	Doxyfile
+dist_noinst_DATA += \
+  HACKING \
+  LICENSE.txt \
+  LICENSE.LGPL-21 \
+  README.rst \
+  description \
+  autogen.sh \
+  Doxyfile \
+  po/LINGUAS.README
 
-MAINTAINERCLEANFILES = Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs 
-CLEANFILES =
+MAINTAINERCLEANFILES += Makefile.in config.h.in config.guess config.sub configure depcomp install-sh ltmain.sh missing mkinstalldirs
 
-TEST_README_FILES = $(wildcard $(srcdir)/test/README.*)
+TEST_README_FILES = $(wildcard $(top_srcdir)/test/README.*)
 
 DEV_FILE_PATTERN = $(1)$(2)/etc $(1)$(2)/include $(1)$(2)/lib/*.so $(1)$(2)/lib/*.a $(1)$(2)/lib/*.la $(1)$(2)/lib/*/*.la $(1)$(2)/lib/pkgconfig
 
@@ -40,7 +58,7 @@ DEV_FILE_PATTERN = $(1)$(2)/etc $(1)$(2)/include $(1)$(2)/lib/*.so $(1)$(2)/lib/
 if COND_DBUS
 # when building with D-Bus, we have no choice: the service has to go into /usr
 # in order to be found
-distbin : $(dist_doc_DATA) INSTALL-tar-gz all
+distbin : $(distbin_docs) INSTALL-tar-gz all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 )
 	@ [ "$(prefix)" = "/usr" ] || (echo "please reconfigure with --prefix=/usr"; exit 1 )
 	rm -rf $(distdir)
@@ -56,11 +74,11 @@ distbin : $(dist_doc_DATA) INSTALL-tar-gz all
 else
 # without D-Bus, we can simply create an archive with a bin directory
 # and everything works
-distbin : $(dist_doc_DATA) all
+distbin : $(distbin_docs) all
 	@ [ "$(BINSUFFIX)" ] || (echo "please invoke with e.g. 'make distbin BINSUFFIX=debian-3.1'"; exit 1 ) 
 	rm -rf $(distdir)
 	$(MAKE) prefix=`pwd`/$(distdir) install
-	echo removing developer files and empty directories
+	@echo removing developer files and empty directories
 	rm -rf $(call DEV_FILE_PATTERN,$(distdir),/)
 	for i in `find $(distdir) -type d | sort -r`; do rmdir $$i 2>/dev/null || true; done
 	cp $(filter-out all, $+) $(distdir)
@@ -73,10 +91,10 @@ iphone : SyncEvolution.plist
 IPHONE_FILENAME = syncevolution-$(VERSION)-iphone.zip
 
 SyncEvolution.plist : SyncEvolution.plist.in $(IPHONE_FILENAME)
-	sed -e 's/__FILENAME__/$(IPHONE_FILENAME)/' \
-	    -e 's/__VERSION__/$(VERSION)/' \
-	    -e 's/__SIZE__/$(shell ls -l $(IPHONE_FILENAME) | sed -e 's/  */ /g' | cut -d ' ' -f 5)/' \
-	    $< >$@
+	$(AM_V_GEN)sed -e 's/__FILENAME__/$(IPHONE_FILENAME)/' \
+	               -e 's/__VERSION__/$(VERSION)/' \
+	               -e 's/__SIZE__/$(shell ls -l $(IPHONE_FILENAME) | sed -e 's/  */ /g' | cut -d ' ' -f 5)/' \
+	               $< >$@
 
 $(IPHONE_FILENAME) : all
 	rm -rf syncevolution-iphone $@
@@ -147,7 +165,7 @@ deb rpm : dist/$(distdir) dist/debian/control description-pak
 		cp -r `pwd`/$</usr/* /usr
 	if [ $@ = "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm .; fi
 
-.PHONY: dist/$(distdir) clean_dist
+all_phonies += dist/$(distdir) clean_dist
 dist/$(distdir): all
 	rm -rf $@
 	$(MAKE) install DESTDIR=`pwd`/$@
@@ -159,7 +177,7 @@ clean_dist:
 
 # required by dpkg-shlibdeps
 dist/debian/control:
-	mkdir -p ${@D}
+	mkdir -p ${dir $@}
 	touch $@
 
 # for checkinstall
@@ -169,7 +187,7 @@ description-pak : description
 # Build "html" inside the build dir, using source files
 # from the SyncEvolution source directory and (if built)
 # the installed client-api.build directory.
-.PHONY: doc clean-html
+all_phonies += doc clean-html
 doc:
 	rm -rf html
 	export VERSION="SyncEvolution $(VERSION)"; \
@@ -182,35 +200,21 @@ clean-local: clean-html
 clean-html:
 	rm -rf html
 
-# configure.in is updated
-# by gen-autotools.sh. This scripts is run
-# each time "make all" (which depends on "Makefile")
-# runs; this is easier than trying to anticipated
-# when the script would produce different output.
-# The no-op "true" seem to be necessary for make to
-# re-check the configure.in time stamps.
-$(srcdir)/configure.in: check-autotools
-	@ true
-
-# Rebuilding the autotools files should never be necessary
-# with source tar balls. Some parts of it depend on "git describe".
-# So avoid it when there is no .git repo.
-.PHONY: check-autotools
-check-autotools:
-	@ cd $(srcdir) && ( [ ! -e .git ] || ./gen-autotools.sh )
-
-dist-hook:
+all_dist_hooks += dot_dist_hook
+dot_dist_hook:
 	@if test -d "$(srcdir)/.git"; \
 	then \
-		echo Creating ChangeLog && \
-		( cd "$(top_srcdir)" && \
-		  echo '# Generated by configure.  Do no edit.'; echo; \
-		  $(top_srcdir)/missing --run perl $(top_srcdir)/build/gen-changelog.pl ) > ChangeLog.tmp \
-		&& mv -f ChangeLog.tmp $(top_distdir)/ChangeLog \
-		|| ( rm -f ChangeLog.tmp ; \
-		     echo Failed to generate ChangeLog >&2 ); \
+	  printf '%s' 'Creating ChangeLog...' && \
+	  ( cd "$(top_srcdir)" && \
+	    printf '%s\n\n' '# Generated by configure.  Do not edit.'; \
+	    $(top_srcdir)/missing --run perl $(top_srcdir)/build/gen-changelog.pl ) > ChangeLog.tmp && \
+	  ( mv -f ChangeLog.tmp $(top_distdir)/ChangeLog && \
+	    printf '%s\n' ' done.' ) || \
+	  ( rm -f ChangeLog.tmp ; \
+	    printf '%s\n' ' failed.'; \
+	    echo Failed to generate ChangeLog >&2 ); \
 	else \
-		echo A git checkout is required to generate a ChangeLog >&2; \
+	  echo 'A git checkout is required to generate a ChangeLog.' >&2; \
 	fi
 
 if ENABLE_EVOLUTION_COMPATIBILITY
@@ -219,16 +223,18 @@ if ENABLE_EVOLUTION_COMPATIBILITY
 # problematic libraries and symbols
 #
 # ical_strdup is an exception because it is in SyncEvolution.
-installcheck-local:
-	for i in `find $(DESTDIR)/$(libdir)/syncevolution $(DESTDIR)/$(libdir)/libsyncevo* $(DESTDIR)/$(libdir)/libsynthesis* -name *.so` $(DESTDIR)/$(bindir)/syncevolution; do \
-		if objdump -T -C $$i | grep -v :: | grep '\*UND\*' | sort | grep -v -w ical_strdup | grep -e ical -e " e_"; then \
-			echo "$$i should not depend on EDS, libical or libbluetooth"; \
-			exit 1; \
-		fi; \
-		if ldd $$i | grep -e libecal -e libebook -e libedata -e libical -e libbluetooth; then \
-			echo "$$i should not be linked against EDS, libical or libbluetooth"; \
-			exit 1; \
-		fi; \
+all_local_installchecks += toplevel_so_check
+toplevel_so_check:
+	for i in `find $(DESTDIR)/$(libdir)/syncevolution $(DESTDIR)/$(libdir)/libsyncevo* $(DESTDIR)/$(libdir)/libsynthesis* -name *.so` $(DESTDIR)/$(bindir)/syncevolution; \
+	do \
+	  if objdump -T -C $$i | grep -v :: | grep '\*UND\*' | sort | grep -v -w ical_strdup | grep -e ical -e " e_"; then \
+	    echo "$$i should not depend on EDS, libical or libbluetooth"; \
+	   exit 1; \
+	  fi; \
+	  if ldd $$i | grep -e libecal -e libebook -e libedata -e libical -e libbluetooth; then \
+	    echo "$$i should not be linked against EDS, libical or libbluetooth"; \
+	    exit 1; \
+	  fi; \
 	done
 endif
 
@@ -237,17 +243,32 @@ PATCH_README = -e "s/^:Version: .*/:Version: $(VERSION)/" -e "s/:Date: .*/:Date:
 
 # produce man pages
 syncevolution.1: README.rst
-	sed $(PATCH_README) $< | $(RST2MAN) --exit-status=3 - >$@
+	$(AM_V_GEN)sed $(PATCH_README) $< | $(RST2MAN) --exit-status=3 - >$@
 CLEANFILES += syncevolution.1
 
 # README is the traditional name in the distribution,
 # continue using it instead of README.rst.
 README: README.rst
-	sed $(PATCH_README) $< >$@
+	$(AM_V_GEN)sed $(PATCH_README) $< >$@
 CLEANFILES += README
 
 # The README.html is also used on syncevolution.org as "Usage" page,
 # therefore we must use <h3> headers and lower to fit into the page.
 README.html: README.rst
-	sed $(PATCH_README) $< | $(RST2HTML) --initial-header-level=3 --exit-status=3 - >$@
+	$(AM_V_GEN)sed $(PATCH_README) $< | $(RST2HTML) --initial-header-level=3 --exit-status=3 - >$@
 CLEANFILES += README.html
+
+.PHONY: $(all_phonies) ;
+
+installcheck-local: $(all_local_installchecks) ;
+
+dist-hook: $(all_dist_hooks)
+
+# Force sequential installation. This is a workaround for relinking failures
+# during concurrent distcheck (a backed was relinked against not yet installed
+# libsyncevolution.la).
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-data-am
+
+.DELETE_ON_ERROR:

@@ -3,13 +3,13 @@ dnl Invoke autogen.sh to produce a configure script.
 
 # BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS ..."
 
-AC_ARG_ENABLE_BACKEND(kcalextended,
+SE_ARG_ENABLE_BACKEND(kcalextended,
                       kcalextended,
-                      AS_HELP_STRING([--enable-kcalextended],
-                                     [enable support for Maemo's KCalExtended storage]),
-		      [enable_kcalextended="$enableval"],
+                      [AS_HELP_STRING([--enable-kcalextended],
+                                      [enable support for Maemo's KCalExtended storage])],
+                      [enable_kcalextended="$enableval"],
                       [enable_kcalextended="no"]
-                      )
+                     )
 
 if test "$enable_kcalextended" = "yes"; then
         AC_DEFINE(ENABLE_KCALEXTENDED, 1, [KCalExtended available])

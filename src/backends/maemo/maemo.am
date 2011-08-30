@@ -1,0 +1,21 @@
+dist_noinst_DATA += src/backends/maemo/configure-sub.in
+
+src_backends_maemo_lib = src/backends/maemo/syncmaemocal.la
+MOSTLYCLEANFILES += $(src_backends_maemo_lib)
+if ENABLE_MODULES
+src_backends_maemo_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_maemo_backend_LTLIBRARIES = $(src_backends_maemo_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_maemo_lib)
+endif
+
+src_backends_maemo_src = \
+  src/backends/maemo/MaemoCalendarSource.h \
+  src/backends/maemo/MaemoCalendarSource.cpp
+
+src_backends_maemo_syncmaemocal_la_SOURCES = $(src_backends_maemo_src)
+src_backends_maemo_syncmaemocal_la_LIBADD = $(MCALB_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_maemo_syncmaemocal_la_LDFLAGS = -module -avoid-version
+src_backends_maemo_syncmaemocal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_maemo_syncmaemocal_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_maemo_syncmaemocal_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

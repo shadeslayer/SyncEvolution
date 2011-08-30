@@ -1,0 +1,27 @@
+# this file is not standalone. it needs variable TEST_FILES_GENERATED to be
+# already defined.
+
+src_testcasesdir = $(docdir)/testcases
+dist_src_testcases_DATA = \
+  src/testcases/local.png \
+  src/testcases/google_event.ics \
+  src/testcases/yahoo_contact.vcf \
+  src/testcases/eds_contact.vcf \
+  src/testcases/eds_event.ics \
+  src/testcases/eds_event.ics.local \
+  src/testcases/eds_memo.ics \
+  src/testcases/eds_task.ics \
+  $(TEST_FILES_GENERATED)
+
+src_testcases_lcsdir = $(docdir)/testcases/lcs
+dist_src_testcases_lcs_DATA = \
+  src/testcases/lcs/file1.txt \
+  src/testcases/lcs/file2.txt
+
+src_testcases_templates_clientsdir = $(docdir)/testcases/templates/clients
+dist_src_testcases_templates_clients_DATA = \
+  src/testcases/templates/clients/SyncEvolution.ini
+
+src_testcases_templates_clients_phone_nokia_s40dir = $(docdir)/testcases/templates/clients/phone/nokia/S40
+dist_src_testcases_templates_clients_phone_nokia_s40_DATA = \
+  src/testcases/templates/clients/phone/nokia/S40/7210c.ini

@@ -24,7 +24,7 @@
 
 #include <algorithm>
 #include <libsoup/soup-status.h>
-#include <Logging.h>
+#include <syncevo/Logging.h>
 
 #ifdef HAVE_LIBSOUP_SOUP_GNOME_FEATURES_H
 #include <libsoup/soup-gnome-features.h>

@@ -1,0 +1,108 @@
+if COND_GUI
+
+src_dbus_glib_lib = src/dbus/glib/libsyncevo-dbus.la
+
+lib_LTLIBRARIES += $(src_dbus_glib_lib)
+
+src_dbus_glib_cppflags = \
+  -I$(top_srcdir) \
+  $(SYNTHESIS_CFLAGS) \
+  -I$(top_srcdir)/src/dbus/glib \
+  -I$(top_builddir)/src/dbus/glib
+
+DISTCLEANFILES += src/dbus/glib/syncevo-dbus.pc
+
+dist_noinst_DATA += \
+  src/dbus/glib/syncevo-dbus.pc.in \
+  src/dbus/glib/syncevo-marshal.list \
+  src/dbus/glib/README
+
+#pkgconfigdir is defined in $(top_srcdir)/setup-variables.am
+pkgconfig_DATA += src/dbus/glib/syncevo-dbus.pc
+
+noinst_PROGRAMS += src/dbus/glib/test-syncevo-dbus
+
+src_dbus_glib_test_syncevo_dbus_SOURCES = src/dbus/glib/test.c
+src_dbus_glib_test_syncevo_dbus_LDADD = $(DBUS_GLIB_LIBS) $(src_dbus_glib_lib)
+src_dbus_glib_test_syncevo_dbus_CFLAGS = $(DBUS_GLIB_CFLAGS) $(SYNCEVO_WFLAGS)
+src_dbus_glib_test_syncevo_dbus_CPPFLAGS = $(src_dbus_glib_cppflags)
+
+src_dbus_glib_built_sources = \
+  src/dbus/glib/syncevo-marshal.c \
+  src/dbus/glib/syncevo-marshal.h \
+  src/dbus/glib/syncevo-server-bindings.h \
+  src/dbus/glib/syncevo-connection-bindings.h \
+  src/dbus/glib/syncevo-session-bindings.h \
+  src/dbus/glib/syncevo-server-glue.h \
+  src/dbus/glib/syncevo-connection-glue.h \
+  src/dbus/glib/syncevo-session-glue.h \
+  src/dbus/glib/syncevo-server.xml \
+  src/dbus/glib/syncevo-connection.xml \
+  src/dbus/glib/syncevo-session.xml
+
+BUILT_SOURCES += $(src_dbus_glib_built_sources)
+
+CLEANFILES += $(src_dbus_glib_built_sources)
+
+# D-Bus binding tool gets confused by doc comments, strip them first
+src/dbus/glib/%.xml: $(top_srcdir)/src/dbus/interfaces/spec-strip-docs.xsl $(top_srcdir)/src/dbus/interfaces/%-full.xml
+	$(AM_V_GEN)$(XSLT) -o $@ $+
+
+src/dbus/glib/%-bindings.h: src/dbus/glib/stamp-%-bindings.h
+	$(AM_V_GEN)
+	@true
+src/dbus/glib/stamp-%-bindings.h: src/dbus/glib/%.xml
+	$(AM_V_at)XGENNAME='$(dir $@)xgen-$(notdir $@)' \
+	&& BINDINGSNAME='$(dir $@)$(subst stamp-,,$(notdir $@))' \
+	&& $(DBUS_BINDING_TOOL) --mode=glib-client --prefix=syncevo $< >"$$XGENNAME" \
+	&& (cmp -s "$$XGENNAME" "$$BINDINGSNAME" || cp "$$XGENNAME" "$$BINDINGSNAME" )\
+	&& rm -f "$$XGENNAME" \
+	&& echo 'timestamp' >$@
+
+src/dbus/glib/syncevo-marshal.h: $(top_srcdir)/src/dbus/glib/syncevo-marshal.list $(GLIB_GENMARSHAL)
+	$(AM_V_GEN)$(GLIB_GENMARSHAL) $< --header --prefix=syncevo_marshal > $@
+src/dbus/glib/syncevo-marshal.c: $(top_srcdir)/src/dbus/glib/syncevo-marshal.list src/dbus/glib/syncevo-marshal.h $(GLIB_GENMARSHAL)
+	$(AM_V_GEN)echo "#include \"syncevo-marshal.h\"" > $@ \
+	&& $(GLIB_GENMARSHAL) --prefix=syncevo_marshal $(top_srcdir)/src/dbus/glib/syncevo-marshal.list --body >> $@
+
+src/dbus/glib/%-glue.h: src/dbus/glib/stamp-%-glue.h
+	$(AM_V_GEN)
+	@true
+src/dbus/glib/stamp-%-glue.h: src/dbus/glib/%.xml
+	$(AM_V_at)XGENNAME='$(dir $@)xgen-$(notdir $@)' \
+	&& GLUENAME='$(dir $@)$(subst stamp-,,$(notdir $@))' \
+	&& $(DBUS_BINDING_TOOL) --prefix=syncevo --mode=glib-server $< >"$$XGENNAME" \
+	&& (cmp -s "$$XGENNAME" "$$GLUENAME" || cp "$$XGENNAME" "$$GLUENAME") \
+	&& rm -f "$$XGENNAME" \
+	&& echo 'timestamp' >$@
+
+nodist_src_dbus_glib_libsyncevo_dbus_la_SOURCES = \
+  $(src_dbus_glib_built_sources)
+
+src_dbus_glib_libsyncevo_dbus_la_SOURCES = \
+  $(src_dbus_glib_syncevo_dbus_headers) \
+  src/dbus/glib/syncevo-dbus-types.c \
+  src/dbus/glib/syncevo-server.c \
+  src/dbus/glib/syncevo-session.c
+
+src_dbus_glib_libsyncevo_dbus_la_CFLAGS = \
+  -I$(top_srcdir) \
+  -I$(top_builddir) \
+  $(DBUS_GLIB_CFLAGS) \
+  $(SYNCEVO_WFLAGS)
+
+src_dbus_glib_libsyncevo_dbus_la_LIBADD = \
+  $(DBUS_GLIB_LIBS)
+
+src_dbus_glib_libsyncevo_dbus_la_CPPFLAGS = \
+  $(src_dbus_glib_cppflags)
+
+src_dbus_glib_syncevo_dbus_headers = \
+  src/dbus/glib/syncevo-dbus-types.h \
+  src/dbus/glib/syncevo-server.h \
+  src/dbus/glib/syncevo-session.h
+
+src_dbus_glib_libsyncevo_dbus_includedir = $(includedir)/syncevo-dbus
+src_dbus_glib_libsyncevo_dbus_include_HEADERS = \
+  $(src_dbus_glib_syncevo_dbus_headers)
+endif

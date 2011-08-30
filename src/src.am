@@ -1,0 +1,351 @@
+src_cppflags = -I$(top_srcdir)/src
+
+if ENABLE_GNOME_BLUETOOTH_PANEL
+include $(top_srcdir)/src/gnome-bluetooth/gnome-bluetooth.am
+src_cppflags += -I$(top_srcdir)/src/gnome-bluetooth
+endif
+
+
+if COND_CORE
+include $(top_srcdir)/src/syncevo/syncevo.am
+src_cppflags += -I$(top_srcdir)/src/syncevo
+include $(top_srcdir)/src/backends/backends.am
+src_cppflags += $(addprefix -I$(top_srcdir)/,$(BACKENDS)) -I$(SYNTHESIS_SUBDIR)
+bin_PROGRAMS += src/syncevolution
+bin_SCRIPTS += src/synccompare
+include $(top_srcdir)/src/templates/templates.am
+else
+src_cppflags += -I$(top_srcdir)/$(SYNTHESIS_SUBDIR_INCLUDES)
+endif
+
+if COND_DBUS
+include $(top_srcdir)/src/gdbus/gdbus.am
+src_cppflags += -I$(top_srcdir)/src/gdbus
+endif
+include $(top_srcdir)/src/dbus/dbus.am
+src_cppflags += -I$(top_srcdir)/src/dbus
+if COND_GUI
+include $(top_srcdir)/src/gtk-ui/gtk-ui.am
+src_cppflags += -I$(top_srcdir)/src/gtk-ui
+endif
+
+src_cppflags += -I$(top_srcdir)/test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
+
+DISTCLEANFILES += src/synccompare
+CLEANFILES += src/libstdc++.a src/client-test $(CLIENT_LIB_TEST_FILES)
+
+if COND_DBUS
+nodist_bin_SCRIPTS += src/syncevo-http-server
+endif
+src/syncevo-http-server: $(top_srcdir)/test/syncevo-http-server.py
+	$(AM_V_GEN)cp $< $@
+CLEANFILES += src/syncevo-http-server
+
+nodist_bin_SCRIPTS += src/syncevo-phone-config
+src/syncevo-phone-config: $(top_srcdir)/test/syncevo-phone-config.py
+	$(AM_V_GEN)cp $< $@
+CLEANFILES += src/syncevo-phone-config
+
+SYNCEVOLUTION_DEP =
+if !ENABLE_MODULES
+# SYNCEVOLUTION_LDADD is defined in configure script.
+SYNCEVOLUTION_LDADD += @SYNCSOURCES@
+SYNCEVOLUTION_DEP += @SYNCSOURCES@
+endif
+dist_noinst_DATA += \
+  src/shlibs.local \
+  src/synthesis-includes/Makefile.am \
+  src/synthesis-includes/Makefile.in
+
+DISTCLEANFILES += src/synthesis-includes/Makefile
+
+# synccompare is created by replacing its 'import Algorithm::Diff;'
+# with a simplified copy of Diff.pm.
+src/synccompare : $(top_srcdir)/test/Algorithm/Diff.pm $(top_srcdir)/test/synccompare.pl
+	$(AM_V_GEN)perl -e '$$diff = shift; open(DIFF, "<$$diff"); ($$_) = split(/__END__/, join("", <DIFF>)); s/\*import.*//m; s/require +Exporter;//; s/^#.*\n//mg; s/ +#.*\n//mg; $$diff = $$_;' -e 'while(<>) {' @MODIFY_SYNCCOMPARE@ -e 's/use +Algorithm::Diff;/"# embedded version of Algorithm::Diff follows, copyright by the original authors\n" . $$diff . "# end of embedded Algorithm::Diff\n"/e; print;}' $+ >$@ \
+	&&chmod u+x $@
+
+CORE_SOURCES =
+
+# The files which register backends have to be compiled into
+# "client-test" and "syncevolution" in order to pull in the
+# code from the libs which implement the backends.
+#
+# Unit testing also goes there.
+#
+# When using modules the registration is done inside the
+# module and the register file is unnecessary. However, they
+# still need to be included in "make dist".
+if ENABLE_MODULES
+dist_noinst_DATA += $(BACKEND_REGISTRIES)
+else
+CORE_SOURCES += $(BACKEND_REGISTRIES)
+endif
+
+CORE_CXXFLAGS = $(SYNTHESIS_CFLAGS)
+CORE_LDADD = $(SYNCEVOLUTION_LDADD) src/syncevo/libsyncevolution.la $(GLIB_LIBS) $(GTHREAD_LIBS) $(GOBJECT_LIBS) $(LIBS)
+CORE_DEP = $(SYNCEVOLUTION_DEP) src/syncevo/libsyncevolution.la $(SYNTHESIS_DEP)
+CORE_LD_FLAGS = -Wl,-uSyncEvolution_Module_Version -Wl,--export-dynamic
+
+# put link to static c++ library into current directory, needed if compiling with --enable-static-c++
+src/libstdc++.a :
+	$(AM_V_GEN)path=`$(CXX) $(CORE_LDADD) $(LD_FLAGS) -print-file-name=src/libstdc++.a` && ln -s $$path .
+
+src_syncevolution_SOURCES = \
+  src/syncevolution.cpp \
+  src/CmdlineSyncClient.h \
+  src/CmdlineSyncClient.cpp \
+  $(CORE_SOURCES)
+
+if ENABLE_UNIT_TESTS
+nodist_src_syncevolution_SOURCES = test/test.cpp
+endif
+
+# SYNCEVOLUTION_LDADD will be replaced with libsyncebook.la/libsyncecal.la/libsyncsqlite.la
+# if linking statically against them, empty otherwise;
+# either way this does not lead to a dependency on those libs - done explicitly
+src_syncevolution_LDADD = $(CORE_LDADD) $(KEYRING_LIBS) $(KDE_KWALLET_LIBS)
+if COND_DBUS
+src_syncevolution_LDADD += src/gdbus/libgdbussyncevo.la
+endif
+src_syncevolution_LDFLAGS = $(CORE_LD_FLAGS) $(DBUS_LIBS)
+src_syncevolution_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) -I$(top_srcdir)/src/gdbus $(DBUS_CFLAGS) $(KDE_KWALLET_CFLAGS) $(SYNCEVO_WFLAGS)
+src_syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
+src_syncevolution_CPPFLAGS = $(src_cppflags)
+
+# rule which is only relevant when compiling Synthesis in subdirectory
+#$(SYNTHESIS_LIB) : $(SYNTHESIS_SUBDIR)/all
+#$(SYNTHESIS_SUBDIR)/% :
+#	[ ! "$(SYNTHESIS_SUBDIR)" ] || ( cd ${dir $@} && $(MAKE) ${notdir $@} )
+
+# include Synthesis in distribution: package only files in git if using a git checkout
+all_dist_hooks += src_dist_hook
+src_dist_hook:
+	@set -x; [ ! '$(SYNTHESIS_SUBDIR)' ] || \
+	mkdir -p $(distdir)/synthesis && \
+	if test -d '$(SYNTHESIS_SRC)/.git'; \
+	then \
+	  ( ( cd '$(SYNTHESIS_SRC)' && git archive HEAD ) | ( cd '$(distdir)/synthesis' && tar xf - && $$SHELL autogen.sh && rm -rf autom4te.cache ) ) && \
+	  ( printf '%s' 'Creating ChangeLog...' && \
+	    ( ( cd '$(SYNTHESIS_SRC)' && \
+	        echo '# Generated by configure.  Do not edit.' && \
+	        githash=`git show-ref --head --hash | head -1` && \
+	        echo "# git revision $$githash"  && \
+	        echo "# git tag `git describe --tags $$githash`" && \
+	        echo && \
+	        '$(top_srcdir)/missing' --run perl '$(top_srcdir)/build/gen-changelog.pl' ) >ChangeLog.tmp ) && \
+	    ( mv -f ChangeLog.tmp '$(distdir)/synthesis/ChangeLog' && \
+	      printf '%s\n' ' done.' ) || \
+	    ( rm -f ChangeLog.tmp ; \
+	      printf '%s\n' ' failed.'; \
+	      echo 'Failed to generate ChangeLog.' >&2 ) \
+	  ); \
+	elif test '$(SYNTHESIS_SRC)' != 'no-synthesis-source'; \
+	then \
+	  cp -a '$(SYNTHESIS_SRC)/'* '$(distdir)/synthesis' && \
+	  for i in _build autom4te.cache; do [ ! -d "$(SYNTHESIS_SRC)/$$i" ] || chmod -R u+rwx "$(SYNTHESIS_SRC)/$$i"; done && \
+	  find '$(distdir)' -name '.libs' -o -name '*~' -o -name '.*' -o -name '*.o' -o -name '*.lo' -o -name 'CVS' -o -name '.svn' -o -name '.git' -o -name 'autom4te.cache' -print0 | xargs -0 rm -rf; \
+	fi
+
+clean-local: testclean
+	rm -rf src/testcases
+	[ ! -L src/templates ] || rm src/templates
+
+# files created during testing
+testclean:
+	rm -rf src/*.test.vcf src/*.log src/*.tests src/*.diff src/*.dat src/*Client_Sync_*client.*
+
+distclean-local:
+	rm -rf $(SYNTHESIS_SUBDIR)
+	rm -rf $(CLEAN_CLIENT_SRC)
+
+# Do the linking here, as with all SyncEvolution executables.
+# Sources are compiled in dbus/server.
+if COND_DBUS
+libexec_PROGRAMS += src/syncevo-dbus-server
+
+src_syncevo_dbus_server_SOURCES = \
+  $(CORE_SOURCES)
+if ENABLE_UNIT_TESTS
+nodist_src_syncevo_dbus_server_SOURCES = test/test.cpp
+endif
+
+src_syncevo_dbus_server_LDADD = src/dbus/server/libsyncevodbusserver.la src/gdbus/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS)
+src_syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(top_srcdir)/src/gdbus $(src_cppflags) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
+src_syncevo_dbus_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(KEYRING_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(KDE_KWALLET_CFLAGS) $(SYNCEVO_WFLAGS)
+src_syncevo_dbus_server_LDFLAGS = $(CORE_LD_FLAGS) $(LIBSOUP_LIBS)
+src_syncevo_dbus_server_DEPENDENCIES = src/dbus/server/libsyncevodbusserver.la src/gdbus/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+endif
+
+# With --disable-shared autotools links against libfunambol.a which does not
+# pull any of the test suites into the test binary, so they would not be
+# executed. The workaround is to explicitly set them as undefined on the
+# link line.
+src_client_test_SOURCES = \
+  src/client-test-app.cpp \
+  src/CmdlineSyncClient.cpp \
+  test/ClientTest.cpp \
+  test/ClientTest.h \
+  test/client-test-main.cpp \
+  $(CORE_SOURCES)
+nodist_src_client_test_SOURCES = test/test.cpp
+
+if ENABLE_BUTEO_TESTS
+src_client_test_buteo_moc_files = src/client-test-buteo.moc.cpp
+src_client_test_SOURCES += \
+  src/client-test-buteo.h \
+  src/client-test-buteo.cpp
+nodist_src_client_test_SOURCES += $(src_client_test_buteo_moc_files)
+BUILT_SOURCES += $(src_client_test_buteo_moc_files)
+endif
+
+# list of test file base files
+#
+# Generated files (testcases/eds_event.ics.funambol.tem) are derived from
+# the original base file ($(srcdir)/test/testcases/eds_event.ics) by
+# applying a patch ($(srcdir)/test/testcases/eds_event.ics.funambol.tem.patch).
+CLIENT_LIB_TEST_FILES = \
+  src/testcases/lcs/file1.txt \
+  src/testcases/lcs/file2.txt \
+  src/testcases/local.png \
+  src/testcases/templates/clients/SyncEvolution.ini \
+  src/testcases/templates/clients/phone/nokia/S40/7210c.ini \
+  src/testcases/google_event.ics \
+  src/testcases/yahoo_contact.vcf \
+  src/testcases/eds_contact.vcf \
+  src/testcases/eds_event.ics \
+  src/testcases/eds_event.ics.local \
+  src/testcases/eds_memo.ics \
+  src/testcases/eds_task.ics
+
+# all patch files
+TEST_FILES_PATCHES = $(wildcard $(top_srcdir)/test/testcases/*.patch)
+# generated local files
+# converts from
+# $(top_srcdir)/test/testcases/eds_contact.vcf.apple.tem.patch
+# to
+# src/testcases/eds_contact.vcf.apple.tem
+TEST_FILES_GENERATED = $(subst .patch,,$(subst $(top_srcdir)/test/,src/,$(TEST_FILES_PATCHES)))
+# all patched files, regardless whether the patch already exists
+TEST_FILES_PATCHED = $(wildcard src/testcases/*.tem)
+# add files created via patches
+CLIENT_LIB_TEST_FILES += $(TEST_FILES_GENERATED)
+
+src_client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(src_cppflags) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(QT_CPPFLAGS)
+src_client_test_CXXFLAGS = @CPPUNIT_CXXFLAGS@ $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(filter-out -O2 -g -W -Wall, $(QT_CXXFLAGS)) $(SYNCEVO_WFLAGS)
+src_client_test_LDFLAGS = @CPPUNIT_LDFLAGS@ `nm src/syncevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-Wl,-u/'` $(CORE_LD_FLAGS) $(KEYRING_LIBS) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LDFLAGS)
+src_client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LIBS)
+# These dependencies are intentionally a bit too broad:
+# they ensure that all files are in place to *run* client-test.
+
+# rule to generate patched files from patches:
+# make cannot compute the dependencies completely, so run the commands
+# on each make invocation and do the time stamp test ourselves
+#
+# If we create the patched file anew, then set its time to the more
+# recent of the two input files. That way it won't be re-generated
+# (because it is not older), and it won't be used to refresh the patch
+# either in testcase2patch (because it is not newer either).
+# That is useful on platforms where diff produces different results
+# than the one in the source (possible because the "find shortest
+# patch" problem may have multiple solutions).
+all_phonies += $(TEST_FILES_GENERATED)
+$(TEST_FILES_GENERATED):
+	@ set -e \
+	&& mkdir -p 'src/testcases' \
+	&& echo 'checking whether server specific test case $@ is up-to-date'; \
+	patchfile='$(top_srcdir)/test/$(subst src/,,$@).patch'; \
+	basefile='$(top_srcdir)/test/$(subst src/,,$(basename $(basename $@)))'; \
+	( [ -e '$@' ] && [ ! '$@' -ot "$$patchfile" ] && [ ! $@ -ot "$$basefile" ] && echo '   $@ up-to-date' ) || \
+	( [ ! -s "$$patchfile" ] && echo "   copy $$basefile to $@ because patch file is empty" && cp "$$basefile" '$@' ) || \
+	( echo "   generating $@ by applying $$patchfile to $$basefile" && \
+	  (echo '*** foo'; echo '--- bar'; cat "$$patchfile") | patch -s -o '$@' "$$basefile" && \
+	  ( if [ "$$basefile" -ot "$$patchfile" ]; then \
+	    touch -r "$$patchfile" '$@'; else \
+	    touch -r "$$basefile" '$@'; fi ) \
+	)
+
+
+# rule to regenerate patches:
+# like generating the patched files, this is run every time.
+# It must avoid making the patch file more recent than the
+# patched file, otherwise the rule above would needlessly recreate
+# it (not nice when having the file open in an editor).
+#
+# To avoid needlessly updating the content of the patch file,
+# the first two lines with changing information (paths, file dates)
+# are stripped from it.
+all_phonies += testcase2patch
+testcase2patch: $(TEST_FILES_GENERATED)
+	@ set -e \
+	&& echo 'checking whether test case patch files are up-to-date'; \
+	for i in src/testcases/*.tem; do \
+	  temfile=`echo "$$i" | cut -d / -f 2-` \
+	  patchfile="$(top_srcdir)/test/$$temfile.patch"; \
+	  basefile="$(top_srcdir)/test/`echo $$temfile | cut -d . -f  -2`"; \
+	  if [ "$$patchfile" -ot "$$i" ] || [ "$$patchfile" -ot "$$basefile" ]; \
+	  then \
+	    diff -u "$$basefile" "$$i" | tail -n +3 > "$$patchfile" || true; \
+	    touch -r "$$i" "$$patchfile"; \
+	    echo "   updated $$patchfile"; \
+	  else \
+	    echo "   $$patchfile up-to-date"; \
+	  fi; \
+	done
+
+# copy base test files
+$(filter-out %.tem, $(filter src/testcases/%, $(subst $(top_srcdir)/test/,src/,$(CLIENT_LIB_TEST_FILES)))) : src/% : $(top_srcdir)/test/%
+	$(AM_V_at)mkdir -p '$(dir $@)'; \
+	cp '$<' '$@'
+
+# The binary does not really depend on the test cases, only running it does.
+# Listing the dependencies here is done to ensure that one doesn't accidentally
+# runs the binary with out-dated auxiliary files.
+src_client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch src/synccompare src/templates
+
+CLEANFILES += $(src_client_test_buteo_moc_files)
+
+# copy template directory into current working directory, if not there
+# yet
+all_phonies += src/templates
+src/templates:
+	$(AM_V_at)if test '$(top_srcdir)/src/templates' != 'src/templates' && test '$(top_srcdir)' != '.'; \
+	then \
+	  rm -rf src/templates; \
+	  ln -s '$(top_srcdir)/src/templates' 'src/templates'; \
+	fi
+
+# distribute test system?
+if ENABLE_TESTING
+# yes: install client-test in bindir, test files in datadir
+TESTS += test/run_src_client_test.sh
+bin_PROGRAMS += src/client-test
+include $(top_srcdir)/src/testcases.am
+else
+# The "all" dependency causes a rebuild even if the actual input files
+# haven't changed. If client-test is part of the regular targets built
+# by "all", then it must not depend on all!
+EXTRA_PROGRAMS += src/client-test
+nodist_src_client_test_SOURCES += $(CLIENT_LIB_TEST_FILES)
+src_client_test_DEPENDENCIES += all
+endif
+
+# test program for output redirection, has to be built
+# and run manually
+EXTRA_PROGRAMS += src/abort-redirect
+CLEANFILES += src/abort-redirect.log
+src_abort_redirect_SOURCES = test/abort-redirect.cpp
+src_abort_redirect_CPPFLAGS = -DHAVE_CONFIG_H $(src_cppflags)
+src_abort_redirect_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_abort_redirect_LDFLAGS = $(CORE_LD_FLAGS)
+src_abort_redirect_LDADD = $(CORE_LDADD)
+src_abort_redirect_DEPENDENCIES = all
+
+
+# special target for testing with valgrind
+valgrind : src/test
+	valgrind --leak-check=yes --suppressions=valgrind.supp src/client-test
+
+# old-style name for test program(s)
+all_phonies += test valgrind
+src/test: src/client-test

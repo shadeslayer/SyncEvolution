@@ -1,0 +1,36 @@
+dist_noinst_DATA += \
+  test/abort-redirect.cpp \
+  test/ClientTest.h \
+  test/ClientTest.cpp \
+  test/client-test-main.cpp \
+  test/test.h \
+  test/test.cpp
+
+dist_noinst_SCRIPTS += \
+  test/Algorithm/Diff.pm \
+  test/syncevo-http-server.py \
+  test/syncevo-phone-config.py \
+  test/synccompare.pl \
+  test/run_src_client_test.sh
+
+dist_noinst_DATA += \
+  test/COPYING \
+  test/Algorithm/Artistic \
+  test/Algorithm/COPYING \
+  test/Algorithm/README \
+  test/testcases/eds_event.ics \
+  test/testcases/eds_event.ics.local \
+  test/testcases/eds_task.ics \
+  test/testcases/vcal10.ics \
+  test/testcases/eds_contact.vcf \
+  test/testcases/eds_contact.vcf \
+  test/testcases/eds_memo.ics \
+  test/testcases/google_event.ics \
+  test/testcases/yahoo_contact.vcf \
+  test/testcases/lcs/file1.txt \
+  test/testcases/lcs/file2.txt \
+  test/testcases/local.png \
+  test/testcases/templates/clients/phone/nokia/S40/7210c.ini \
+  test/testcases/templates/clients/SyncEvolution.ini \
+  test/syncevo-http-server-logging.conf \
+  $(wildcard test/testcases/*.patch)

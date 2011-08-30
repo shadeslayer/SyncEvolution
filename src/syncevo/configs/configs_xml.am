@@ -1,0 +1,31 @@
+# TODO: preferably generate this list instead
+#./*.xml
+src_syncevo_configsdir = $(datadir)/syncevolution/xml
+dist_src_syncevo_configs_DATA = $(wildcard src/syncevo/configs/*.xml)
+# ./datatypes/*.xml
+src_syncevo_configs_datatypesdir = $(datadir)/syncevolution/xml/datatypes
+dist_src_syncevo_configs_datatypes_DATA = $(wildcard src/syncevo/configs/datatypes/*.xml)
+# ./datatypes/server/*.xml
+src_syncevo_configs_datatypes_serverdir = $(datadir)/syncevolution/xml/datatypes/server
+dist_src_syncevo_configs_datatypes_server_DATA = $(wildcard src/syncevo/configs/datatypes/server/*.xml)
+# ./debug/*.xml
+src_syncevo_configs_debugdir = $(datadir)/syncevolution/xml/debug
+dist_src_syncevo_configs_debug_DATA = $(wildcard src/syncevo/configs/debug/*.xml)
+# ./remoterules/*.xml
+src_syncevo_configs_remoterulesdir = $(datadir)/syncevolution/xml/remoterules
+dist_src_syncevo_configs_remoterules_DATA = $(wildcard src/syncevo/configs/remoterules/*.xml)
+# ./remoterules/client/*.xml
+src_syncevo_configs_remoterules_clientdir = $(datadir)/syncevolution/xml/remoterules/client
+dist_src_syncevo_configs_remoterules_client_DATA = $(wildcard src/syncevo/configs/remoterules/client/*.xml)
+# ./remoterules/server/*.xml
+src_syncevo_configs_remoterules_serverdir = $(datadir)/syncevolution/xml/remoterules/server
+dist_src_syncevo_configs_remoterules_server_DATA = $(wildcard src/syncevo/configs/remoterules/server/*.xml)
+# ./scripting/*.xml
+src_syncevo_configs_scriptingdir = $(datadir)/syncevolution/xml/scripting
+dist_src_syncevo_configs_scripting_DATA = $(wildcard src/syncevo/configs/scripting/*.xml)
+# ./scripting/client/*.xml
+src_syncevo_configs_scripting_clientdir = $(datadir)/syncevolution/xml/scripting/client
+dist_src_syncevo_configs_scripting_client_DATA = $(wildcard src/syncevo/configs/scripting/client/*.xml)
+# ./scripting/server/*.xml
+src_syncevo_configs_scripting_serverdir = $(datadir)/syncevolution/xml/scripting/server
+dist_src_syncevo_configs_scripting_server_DATA = $(wildcard src/syncevo/configs/scripting/server/*.xml)

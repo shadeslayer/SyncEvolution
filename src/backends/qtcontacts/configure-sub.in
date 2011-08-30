@@ -3,13 +3,13 @@ dnl Invoke autogen.sh to produce a configure script.
 
 # BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS ..."
 
-AC_ARG_ENABLE_BACKEND(qtcontacts,
+SE_ARG_ENABLE_BACKEND(qtcontacts,
                       qtcontacts,
-                      AS_HELP_STRING([--enable-qtcontacts],
-                                     [enable support for QtMobility's QtContacts storage]),
-		      [enable_qtcontacts="$enableval"],
+                      [AS_HELP_STRING([--enable-qtcontacts],
+                                      [enable support for QtMobility's QtContacts storage])],
+                      [enable_qtcontacts="$enableval"],
                       [enable_qtcontacts="no"]
-                      )
+                     )
 
 if test "$enable_qtcontacts" = "yes"; then
         AC_DEFINE(ENABLE_QTCONTACTS, 1, [QtContacts available])

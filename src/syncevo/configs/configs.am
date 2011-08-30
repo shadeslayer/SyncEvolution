@@ -1,0 +1,7 @@
+src_syncevo_configs_xmldir = $(datadir)/syncevolution/xml
+dist_src_syncevo_configs_xml_SCRIPTS = src/syncevo/configs/update-samples.pl
+
+dist_noinst_DATA += \
+  src/syncevo/configs/README
+
+include $(top_srcdir)/src/syncevo/configs/configs_xml.am

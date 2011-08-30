@@ -1,0 +1,41 @@
+Untested:
+- flags of configure script:
+  --enable-mlite
+  --enable-gui=all or --enable-gui=moblin
+  --enable-akonadi
+  --enable-kcalextended
+  --enable-qtcontacts (see TODO)
+  --enable-kwallet
+  --enable-buteo-tests
+  --enable-buteo
+  --enable-maemocal
+  ... probably more.
+- make -j and make -jX where X>2, because gcc is being killed by oom-killer).
+
+Partially tested:
+--enable-gnome-bluetooth-panel-plugin (installation not tested - plugin is not
+  installed under given prefix, but somewhere into /usr/lib...)
+
+Tested and passed:
+- flags of configure script:
+  --enable-unit-tests
+  --enable-integration-tests
+  --enable-maemo
+  --enable-libcurl
+  --enable-libsoup
+  --enable-bluetooth
+  --enable-gui=gtk
+  --enable-core
+  --enable-dbus-service
+  --enable-gnome-keyring
+  --enable-notify
+  --enable-doc
+  --enable-sqlite
+  --enable-dav
+  --enable-xmlrpc
+  --enable-qt-dbus
+  --enable-static
+  --disable-shared
+- make -jX
+- make V=0
+- make -j2 distcheck

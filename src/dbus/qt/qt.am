@@ -1,0 +1,76 @@
+if ENABLE_QT_DBUS
+
+src_dbus_qt_libsyncevolution_qt_dbus_libraries = \
+  src/dbus/qt/libsyncevolution-qt-dbus.la
+
+lib_LTLIBRARIES += $(src_dbus_qt_libsyncevolution_qt_dbus_libraries)
+
+src_dbus_qt_libsyncevolution_qt_dbus_headers = src/dbus/qt/dbustypes.h
+
+
+src_dbus_qt_libsyncevolution_qt_dbus_includedir = $(includedir)/syncevolution-qt-dbus
+nodist_src_dbus_qt_libsyncevolution_qt_dbus_include_HEADERS = \
+  $(src_dbus_qt_libsyncevolution_qt_dbus_headers) \
+  $(built_headers)
+
+dist_src_dbus_qt_libsyncevolution_qt_dbus_la_SOURCES = \
+  $(src_dbus_qt_libsyncevolution_qt_dbus_headers) \
+  src/dbus/qt/dbustypes.cpp
+
+nodist_src_dbus_qt_libsyncevolution_qt_dbus_la_SOURCES = \
+  $(src_dbus_qt_built_sources)
+
+src_dbus_qt_cppflags = \
+  $(SYNCEVOLUTION_CFLAGS) \
+  -I$(top_srcdir)/test \
+  $(BACKEND_CPPFLAGS)
+
+built_headers = \
+  src/dbus/qt/syncevo-server-full.h \
+  src/dbus/qt/syncevo-session-full.h \
+  src/dbus/qt/syncevo-connection-full.h
+
+src_dbus_qt_built_sources = \
+  src/dbus/qt/syncevo-server-full.cpp \
+  src/dbus/qt/syncevo-session-full.cpp \
+  src/dbus/qt/syncevo-connection-full.cpp \
+  src/dbus/qt/syncevo-server-full.moc.cpp \
+  src/dbus/qt/syncevo-session-full.moc.cpp \
+  src/dbus/qt/syncevo-connection-full.moc.cpp \
+  $(built_headers)
+
+BUILT_SOURCES += $(src_dbus_qt_built_sources)
+
+MOSTLYCLEANFILES += $(src_dbus_qt_libsyncevolution_qt_dbus_libraries)
+
+MAINTAINERCLEANFILES += src/dbus/qt/Makefile.in
+
+CLEANFILES += $(src_dbus_qt_built_sources) \
+  src/dbus/qt/stamp-server \
+  src/dbus/qt/stamp-session \
+  src/dbus/qt/stamp-connection
+
+DISTCLEANFILES += src/dbus/qt/syncevolution-qt-dbus.pc
+dist_noinst_DATA += \
+  src/dbus/qt/syncevolution-qt-dbus.pc.in
+#pkgconfigdir is defined in $(top_srcdir)/setup-variables.am
+pkgconfig_DATA += src/dbus/qt/syncevolution-qt-dbus.pc
+
+src_dbus_qt_libsyncevolution_qt_dbus_la_LIBADD = $(QT_DBUS_LIBS) $(QT_LIBS)
+src_dbus_qt_libsyncevolution_qt_dbus_la_CPPFLAGS = $(src_dbus_qt_cppflags) $(QT_CPPFLAGS)
+# Allow Qt to set some compile flags, but not the ones normally set via configure.
+# In particular -W is not compatible with the SyncEvolution header files (we have
+# unused parameters in some inline functions).
+src_dbus_qt_libsyncevolution_qt_dbus_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(filter-out -O2 -g -W -Wall, $(QT_CXXFLAGS)) $(SYNCEVO_WFLAGS)
+
+src/dbus/qt/syncevo-%-full.cpp src/dbus/qt/syncevo-%-full.h: src/dbus/qt/stamp-%
+	$(AM_V_GEN)
+	@true
+
+# work around #ifndef SYNCEVO-SERVER-FULL_H_1305547804 bug
+src/dbus/qt/stamp-%: $(top_srcdir)/src/dbus/interfaces/syncevo-%-full.xml
+	$(AM_V_at)@QDBUSXML_TO_CPP@ -p src/dbus/qt/syncevo-$*-full -i src/dbus/qt/dbustypes.h $< \
+	&& perl -pi -e 's/SYNCEVO-(\w*)-FULL_H/SYNCEVO_$$1_FULL_H/' src/dbus/qt/syncevo-$*-full.* \
+	&& echo 'timestamp' >$@
+
+endif # ENABLE_QT_DBUS

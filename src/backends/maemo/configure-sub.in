@@ -7,12 +7,13 @@ AC_SUBST(MCALB_CFLAGS)
 AC_SUBST(MCALB_LIBS)
 BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $MCALB_CFLAGS"
 
-AC_ARG_ENABLE_BACKEND(maemocal, maemo,
-                      AS_HELP_STRING([--enable-maemo-calendar],
-                                     [enable access to PIM data stored in Maemo 5 calendar application (default off)]),
-		      [enable_maemocal="$enableval"], [enable_maemocal="no"])
+SE_ARG_ENABLE_BACKEND(maemocal, maemo,
+                      [AS_HELP_STRING([--enable-maemocal],
+                                      [enable access to PIM data stored in Maemo 5 calendar application (default off)])],
+                      [enable_maemocal="$enableval"], [enable_maemocal="no"]
+                     )
 
 if test "$enable_maemocal" = "yes"; then
-        test "x${MCALBFOUND}" = "xyes" || AC_MSG_ERROR([--enable-maemo-calendar requires pkg-config information for calendar-backend, which was not found])
+        test "x${MCALBFOUND}" = "xyes" || AC_MSG_ERROR([--enable-maemocal requires pkg-config information for calendar-backend, which was not found])
         AC_DEFINE(ENABLE_MAEMO_CALENDAR, 1, [Maemo 5 calendar available])
 fi

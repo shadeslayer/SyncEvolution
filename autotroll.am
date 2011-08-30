@@ -1,0 +1,101 @@
+# Makerules.
+# This file is part of AutoTroll.
+# Copyright (C) 2006, 2007, 2009, 2010  Benoit Sigoure.
+#
+# AutoTroll is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
+# USA.
+#
+# In addition, as a special exception, the copyright holders of AutoTroll
+# give you unlimited permission to copy, distribute and modify the configure
+# scripts that are the output of Autoconf when processing the macros of
+# AutoTroll.  You need not follow the terms of the GNU General Public License
+# when using or distributing such scripts, even though portions of the text of
+# AutoTroll appear in them. The GNU General Public License (GPL) does govern
+# all other use of the material that constitutes AutoTroll.
+#
+# This special exception to the GPL applies to versions of AutoTroll
+# released by the copyright holders of AutoTroll.  Note that people who make
+# modified versions of AutoTroll are not obligated to grant this special
+# exception for their modified versions; it is their choice whether to do so.
+# The GNU General Public License gives permission to release a modified version
+# without this exception; this exception also makes it possible to release a
+# modified version which carries forward this exception.
+
+ # ------------- #
+ # DOCUMENTATION #
+ # ------------- #
+
+# See autotroll.m4 :)
+
+# --- #
+# MOC #
+# --- #
+
+%.moc.cpp: %.hpp
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.cpp: %.hh
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.cpp: %.h
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+
+%moc.cc: %.hpp
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.cc: %.hh
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.cc: %.h
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+
+%.moc.cxx: %.hpp
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.cxx: %.hh
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.cxx: %.h
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+
+%.moc.C: %.hpp
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.C: %.hh
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+%.moc.C: %.h
+	$(AM_V_GEN)$(MOC) $(QT_CPPFLAGS) $(EXTRA_CPPFLAGS) $< -o $@
+
+# --- #
+# UIC #
+# --- #
+
+%.ui.hpp: %.ui
+	$(AM_V_GEN)$(UIC) $< -o $@
+
+%.ui.hh: %.ui
+	$(AM_V_GEN)$(UIC) $< -o $@
+
+%.ui.h: %.ui
+	$(AM_V_GEN)$(UIC) $< -o $@
+
+# --- #
+# RCC #
+# --- #
+
+%.qrc.cpp: %.qrc
+	$(AM_V_GEN)$(RCC) -name `echo "$<" | sed 's|^.*/\(.*\)\.qrc$$|\1|'` $< -o $@
+
+%.qrc.cc: %.qrc
+	$(AM_V_GEN)$(RCC) -name `echo "$<" | sed 's|^.*/\(.*\)\.qrc$$|\1|'` $< -o $@
+
+%.qrc.cxx: %.qrc
+	$(AM_V_GEN)$(RCC) -name `echo "$<" | sed 's|^.*/\(.*\)\.qrc$$|\1|'` $< -o $@
+
+%.qrc.C: %.qrc
+	$(AM_V_GEN)$(RCC) -name `echo "$<" | sed 's|^.*/\(.*\)\.qrc$$|\1|'` $< -o $@

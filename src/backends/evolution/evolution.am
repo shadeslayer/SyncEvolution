@@ -1,0 +1,56 @@
+dist_noinst_DATA += src/backends/evolution/configure-sub.in
+
+src_backends_evolution_lib = src/backends/evolution/syncecal.la src/backends/evolution/syncebook.la
+MOSTLYCLEANFILES += $(src_backends_evolution_lib)
+if ENABLE_MODULES
+src_backends_evolution_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_evolution_backend_LTLIBRARIES = $(src_backends_evolution_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_evolution_lib)
+endif
+
+src_backends_evolution_syncecal_src = \
+  src/backends/evolution/EvolutionSyncSource.h \
+  src/backends/evolution/EvolutionSyncSource.cpp \
+  src/backends/evolution/EvolutionCalendarSource.h \
+  src/backends/evolution/EvolutionMemoSource.h \
+  src/backends/evolution/EvolutionCalendarSource.cpp \
+  src/backends/evolution/EvolutionMemoSource.cpp
+
+if ENABLE_ECAL
+src_backends_evolution_syncecal_src += \
+  src/backends/evolution/e-cal-check-timezones.c \
+  src/backends/evolution/e-cal-check-timezones.h
+endif
+
+src_backends_evolution_syncebook_src = \
+  src/backends/evolution/EvolutionSyncSource.h \
+  src/backends/evolution/EvolutionSyncSource.cpp \
+  src/backends/evolution/EvolutionContactSource.h \
+  src/backends/evolution/EvolutionContactSource.cpp
+
+src_backends_evolution_cppflags = \
+  $(SYNCEVOLUTION_CFLAGS) \
+  -I$(top_srcdir)/test \
+  $(BACKEND_CPPFLAGS) \
+  -I$(top_srcdir)/src/backends/evolution
+
+src_backends_evolution_syncecal_la_SOURCES = $(src_backends_evolution_syncecal_src)
+src_backends_evolution_syncecal_la_LIBADD = $(ECAL_LIBS) $(SYNCEVOLUTION_LIBS)
+# _GNU_SOURCE and -ldl for libical.c + dlsym():
+src_backends_evolution_syncecal_la_CPPFLAGS = -D_GNU_SOURCE \
+  -De_cal_check_timezones=syncevolution_check_timezones \
+  -De_cal_tzlookup_ecal=syncevolution_tzlookup_ecal \
+  -De_cal_tzlookup_icomp=syncevolution_tzlookup_icomp \
+  -De_cal_match_tzid=syncevolution_match_tzid \
+  $(src_backends_evolution_cppflags)
+src_backends_evolution_syncecal_la_LDFLAGS = -module -avoid-version -ldl
+src_backends_evolution_syncecal_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_evolution_syncecal_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)
+
+src_backends_evolution_syncebook_la_SOURCES = $(src_backends_evolution_syncebook_src)
+src_backends_evolution_syncebook_la_LIBADD = $(EBOOK_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_evolution_syncebook_la_LDFLAGS = -module -avoid-version
+src_backends_evolution_syncebook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_evolution_syncebook_la_CPPFLAGS = $(src_backends_evolution_cppflags)
+src_backends_evolution_syncebook_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

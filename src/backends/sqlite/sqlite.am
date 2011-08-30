@@ -1,0 +1,32 @@
+dist_noinst_DATA += \
+  src/backends/sqlite/configure-sub.in \
+  src/backends/sqlite/README
+
+src_backends_sqlite_lib = src/backends/sqlite/syncsqlite.la
+MOSTLYCLEANFILES += $(src_backends_sqlite_lib)
+if ENABLE_MODULES
+src_backends_sqlite_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_sqlite_backend_LTLIBRARIES = $(src_backends_sqlite_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_sqlite_lib)
+endif
+
+src_backends_sqlite_src = \
+  src/backends/sqlite/SQLiteUtil.h \
+  src/backends/sqlite/SQLiteUtil.cpp \
+  src/backends/sqlite/SQLiteContactSource.h \
+  src/backends/sqlite/SQLiteContactSource.cpp
+
+src_backends_sqlite_syncsqlite_la_SOURCES = $(src_backends_sqlite_src)
+src_backends_sqlite_syncsqlite_la_LIBADD = $(SQLITE_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_sqlite_syncsqlite_la_LDFLAGS = -module -avoid-version
+src_backends_sqlite_syncsqlite_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_sqlite_syncsqlite_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS) -I$(top_srcdir)/src/backends/sqlite
+src_backends_sqlite_syncsqlite_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)
+
+# SQLiteContactSource does not support all fields from Funambol vCard 2.1
+# test cases: filter them out before testing
+#../../testcases/sqlite_vcard21.vcf: $(FUNAMBOL_SUBDIR)/test/test/testcases/vcard21.vcf
+#	mkdir -p ${@D}
+#	perl -e '$$_ = join("", <>); s/^(ADR|TEL|EMAIL|PHOTO).*?(?=^\S)//msg; s/;X-EVOLUTION-UI-SLOT=\d+//g; print;' $< >$@
+# all: ../../testcases/sqlite_vcard21.vcf

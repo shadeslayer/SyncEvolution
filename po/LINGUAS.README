@@ -1,0 +1,6 @@
+For translators:
+
+LINGUAS file is generated, so putting .po file here is enough.
+
+To test translation please run ./autogen.sh in top level
+directory of the project.

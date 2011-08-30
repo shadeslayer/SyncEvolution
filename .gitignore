@@ -1,34 +1,129 @@
-*~
-/.dotest
-/Makefile.am
-aclocal.m4
-m4
-autom4te.cache
-config.guess
-config.h.in
-config.sub
-configure
-configure.in
-depcomp
-install-sh
-ltmain.sh
-missing
-Makefile.in
-mkinstalldirs
-intltool-*.in
-/*.patch
-*.o
-*.lo
+# general
 *.la
+*.lo
+*.o
+*~
 .deps
+.dirstamp
 .libs
-.*.swp
 Makefile
-*.gmo
-stamp-h1
-CONFIGURE.sh
-config.status
-config.log
-/libtool
+Makefile.in
+
+# top level
+/autom4te.cache
+/aclocal.m4
+/compile
+/config.guess
 /config.h
+/config.h.in
+/config.log
+/config.status
+/config.sub
+/configure
+/depcomp
+/install-sh
+/libtool
+/ltmain.sh
+/m4
+/missing
+/mkinstalldirs
 /README
+/README.html
+/stamp-h1
+/syncevolution.1
+/syncevolution-*.tar.gz
+
+# po
+/po/*.gmo
+/po/.intltool-merge-cache
+/po/LINGUAS
+/po/Makefile.in.in
+/po/POTFILES
+/po/stamp-it
+
+# src
+/src/autotroll.mk
+/src/Client_Source_*.log
+/src/Client_Sync_*.log
+/src/Client_Sync_*.A
+/src/client-test
+/src/LogDirTest
+/src/LogRedirectTest_glib.out
+/src/N7SyncEvo*.log
+/src/synccompare
+/src/syncevo-dbus-server
+/src/syncevo-http-server
+/src/syncevolution
+/src/testcases/
+
+# src/backends
+/src/backends/backends.am
+
+# src/backends/buteo
+/src/backends/buteo/autotroll.mk
+
+# src/backends/webdav
+/src/backends/webdav/syncevo-webdav-lookup
+
+# src/dbus/glib
+/src/dbus/glib/stamp-syncevo-connection-bindings.h
+/src/dbus/glib/stamp-syncevo-connection-glue.h
+/src/dbus/glib/stamp-syncevo-server-bindings.h
+/src/dbus/glib/stamp-syncevo-server-glue.h
+/src/dbus/glib/stamp-syncevo-session-bindings.h
+/src/dbus/glib/stamp-syncevo-session-glue.h
+/src/dbus/glib/syncevo-connection-glue.h
+/src/dbus/glib/syncevo-connection-bindings.h
+/src/dbus/glib/syncevo-connection.xml
+/src/dbus/glib/syncevo-dbus.pc
+/src/dbus/glib/syncevo-marshal.c
+/src/dbus/glib/syncevo-marshal.h
+/src/dbus/glib/syncevo-server-glue.h
+/src/dbus/glib/syncevo-server-bindings.h
+/src/dbus/glib/syncevo-server.xml
+/src/dbus/glib/syncevo-session-glue.h
+/src/dbus/glib/syncevo-session-bindings.h
+/src/dbus/glib/syncevo-session.xml
+/src/dbus/glib/test-syncevo-dbus
+
+# src/dbus/interfaces
+/src/dbus/interfaces/syncevo-connection-doc.xml
+/src/dbus/interfaces/syncevo-dbus-api-doc.html
+/src/dbus/interfaces/syncevo-dbus-api-doc.xml
+/src/dbus/interfaces/syncevo-server-doc.xml
+/src/dbus/interfaces/syncevo-session-doc.xml
+
+# src/dbus/qt
+/src/dbus/qt/autotroll.mk
+/src/dbus/qt/syncevolution-qt-dbus.pc
+/src/dbus/qt/stamp-connection
+/src/dbus/qt/stamp-server
+/src/dbus/qt/stamp-session
+/src/dbus/qt/syncevo-connection-full.cpp
+/src/dbus/qt/syncevo-connection-full.h
+/src/dbus/qt/syncevo-connection-full.moc.cpp
+/src/dbus/qt/syncevo-server-full.cpp
+/src/dbus/qt/syncevo-server-full.h
+/src/dbus/qt/syncevo-server-full.moc.cpp
+/src/dbus/qt/syncevo-session-full.cpp
+/src/dbus/qt/syncevo-session-full.h
+/src/dbus/qt/syncevo-session-full.moc.cpp
+
+# src/dbus/server
+/src/dbus/server/org.syncevolution.service
+/src/dbus/server/syncevo-dbus-server-startup.sh
+/src/dbus/server/syncevo-dbus-server.desktop
+
+# src/gdbus
+/src/gdbus/example
+
+# src/gtk-ui
+/src/gtk-ui/sync-ui
+/src/gtk-ui/sync.desktop
+/src/gtk-ui/ui.xml
+
+# src/syncevo
+/src/syncevo-phone-config
+/src/syncevo/CmdlineHelp.c
+/src/syncevo/SyncEvolutionXML.c
+/src/syncevo/syncevolution.pc

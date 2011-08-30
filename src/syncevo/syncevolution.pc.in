@@ -3,6 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 backenddir=@libdir@/syncevolution/backends
+datarootdir=@datarootdir@
 templatedir=@datadir@/syncevolution/templates
 
 Name: libsyncevolution

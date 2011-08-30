@@ -1,0 +1,10 @@
+src_gnome_bluetoothdir = $(GNOMEBLUETOOTH_DIR)/plugins/
+
+src_gnome_bluetooth_LTLIBRARIES = src/gnome-bluetooth/libgbtsyncevolution.la
+
+src_gnome_bluetooth_libgbtsyncevolution_la_SOURCES = src/gnome-bluetooth/syncevolution.c
+src_gnome_bluetooth_libgbtsyncevolution_la_LDFLAGS = -module -avoid-version
+src_gnome_bluetooth_libgbtsyncevolution_la_CPPFLAGS = \
+  $(GNOMEBLUETOOTH_CFLAGS) \
+  -DLOCALEDIR=\"$(SYNCEVOLUTION_LOCALEDIR)\"
+src_gnome_bluetooth_libgbtsyncevolution_la_CFLAGS = $(SYNCEVO_WFLAGS)

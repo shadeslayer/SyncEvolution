@@ -9,9 +9,11 @@ AC_SUBST(ADDRESSBOOK_CFLAGS)
 AC_SUBST(ADDRESSBOOK_LIBS)
 BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $ADDRESSBOOK_CFLAGS"
 
-AC_ARG_ENABLE_BACKEND(addressbook, addressbook,
-                      AS_HELP_STRING([--enable-addressbook], [enable access to Mac OS X address book (default off)]),
-		      [enable_addressbook="$enableval"], [enable_addressbook="no"])
+SE_ARG_ENABLE_BACKEND(addressbook, addressbook,
+                      [AS_HELP_STRING([--enable-addressbook],
+                                      [enable access to Mac OS X address book (default off)])],
+                      [enable_addressbook="$enableval"], [enable_addressbook="no"]
+                     )
 
 if test "$enable_addressbook" = "yes"; then
         AC_DEFINE(ENABLE_ADDRESSBOOK, 1, [addressbook available])

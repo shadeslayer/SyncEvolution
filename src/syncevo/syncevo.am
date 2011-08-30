@@ -1,0 +1,246 @@
+include $(top_srcdir)/src/syncevo/configs/configs.am
+
+# applies to sources in SyncEvolution repository, but not
+# the Funambol C++ client library
+src_syncevo_cxxflags = @SYNCEVOLUTION_CXXFLAGS@
+src_syncevo_cppflags = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(top_builddir)/src/syncevo -I$(top_srcdir)/src -DSYNCEVO_BACKEND=\"$(BACKENDS_SEARCH_DIRECTORY)\"
+src_syncevo_ldadd = @SYNCEVOLUTION_LDADD@
+
+if ENABLE_UNIT_TESTS
+src_syncevo_cxxflags += $(CPPUNIT_CXXFLAGS)
+src_syncevo_ldadd += $(CPPUNIT_LDFLAGS)
+endif
+
+lib_LTLIBRARIES += src/syncevo/libsyncevolution.la
+
+src_syncevo_sources = \
+  src/syncevo/ConfigTree.h \
+  src/syncevo/ConfigFilter.h \
+  src/syncevo/ConfigFilter.cpp \
+  src/syncevo/ConfigNode.h \
+  src/syncevo/ConfigNode.cpp \
+  src/syncevo/HashConfigNode.h \
+  src/syncevo/VolatileConfigNode.h \
+  src/syncevo/VolatileConfigTree.h \
+  src/syncevo/SmartPtr.h \
+  src/syncevo/eds_abi_wrapper.h \
+  src/syncevo/eds_abi_wrapper.cpp \
+  src/syncevo/GLibSupport.h \
+  src/syncevo/GLibSupport.cpp \
+  \
+  src/syncevo/SyncML.h \
+  src/syncevo/SyncML.cpp \
+  \
+  src/syncevo/SynthesisEngine.h \
+  src/syncevo/SynthesisEngine.cpp \
+  \
+  src/syncevo/Logging.h \
+  src/syncevo/Logging.cpp \
+  src/syncevo/LogStdout.h \
+  src/syncevo/LogStdout.cpp \
+  src/syncevo/LogRedirect.h \
+  src/syncevo/LogRedirect.cpp \
+  \
+  src/syncevo/TransportAgent.h \
+  src/syncevo/TransportAgent.cpp \
+  src/syncevo/CurlTransportAgent.h \
+  src/syncevo/CurlTransportAgent.cpp \
+  \
+  src/syncevo/SoupTransportAgent.h \
+  src/syncevo/SoupTransportAgent.cpp \
+  \
+  src/syncevo/LocalTransportAgent.h \
+  src/syncevo/LocalTransportAgent.cpp \
+  \
+  src/syncevo/util.cpp \
+  src/syncevo/util.h \
+  \
+  src/syncevo/lcs.h \
+  src/syncevo/lcs.cpp \
+  \
+  src/syncevo/Cmdline.cpp \
+  src/syncevo/Cmdline.h \
+  \
+  src/syncevo/SyncSource.h \
+  src/syncevo/SyncSource.cpp \
+  \
+  src/syncevo/SynthesisDBPlugin.cpp \
+  \
+  src/syncevo/SyncContext.h \
+  src/syncevo/SyncContext.cpp \
+  \
+  src/syncevo/SyncConfig.h \
+  src/syncevo/SyncConfig.cpp \
+  \
+  src/syncevo/DevNullConfigNode.h \
+  src/syncevo/MultiplexConfigNode.h \
+  src/syncevo/MultiplexConfigNode.cpp \
+  \
+  src/syncevo/FilterConfigNode.h \
+  src/syncevo/FilterConfigNode.cpp \
+  \
+  src/syncevo/SafeConfigNode.h \
+  src/syncevo/SafeConfigNode.cpp \
+  \
+  src/syncevo/PrefixConfigNode.h \
+  src/syncevo/PrefixConfigNode.cpp \
+  \
+  src/syncevo/FileConfigNode.h \
+  src/syncevo/FileConfigNode.cpp \
+  \
+  src/syncevo/IniConfigNode.h \
+  src/syncevo/IniConfigNode.cpp \
+  src/syncevo/SingleFileConfigTree.h \
+  src/syncevo/SingleFileConfigTree.cpp \
+  \
+  src/syncevo/DataBlob.h \
+  src/syncevo/FileDataBlob.h \
+  src/syncevo/FileDataBlob.cpp \
+  src/syncevo/StringDataBlob.h \
+  src/syncevo/StringDataBlob.cpp \
+  \
+  src/syncevo/SafeOstream.h \
+  src/syncevo/SafeOstream.cpp \
+  \
+  src/syncevo/FileConfigTree.h \
+  src/syncevo/FileConfigTree.cpp \
+  \
+  src/syncevo/MapSyncSource.h \
+  src/syncevo/MapSyncSource.cpp \
+  \
+  src/syncevo/TrackingSyncSource.h \
+  src/syncevo/TrackingSyncSource.cpp
+
+if ENABLE_ICAL
+src_syncevo_sources += \
+  src/syncevo/icalstrdup.c \
+  src/syncevo/icalstrdup.h
+endif
+
+
+src_syncevo_libsyncevolution_includedir= $(includedir)/syncevo
+src_syncevo_libsyncevolution_include_HEADERS = \
+  src/syncevo/declarations.h \
+  src/syncevo/Cmdline.h \
+  src/syncevo/ConfigFilter.h \
+  src/syncevo/GLibSupport.h \
+  src/syncevo/TrackingSyncSource.h  \
+  src/syncevo/MapSyncSource.h \
+  src/syncevo/LogRedirect.h \
+  src/syncevo/LogStdout.h \
+  src/syncevo/FileConfigNode.h \
+  \
+  src/syncevo/FilterConfigNode.h \
+  src/syncevo/PrefixConfigNode.h \
+  src/syncevo/SafeConfigNode.h \
+  src/syncevo/SyncConfig.h \
+  src/syncevo/SyncSource.h \
+  src/syncevo/util.h \
+  src/syncevo/SyncContext.h \
+  src/syncevo/SynthesisEngine.h \
+  src/syncevo/Logging.h \
+  src/syncevo/SyncML.h \
+  src/syncevo/eds_abi_wrapper.h \
+  src/syncevo/icalstrdup.h \
+  src/syncevo/SmartPtr.h \
+  src/syncevo/ConfigNode.h
+
+
+if ENABLE_OBEX
+src_syncevo_sources += \
+  src/syncevo/ObexTransportAgent.h \
+  src/syncevo/ObexTransportAgent.cpp
+
+src_syncevo_ldadd += $(LIBOPENOBEX_LIBS)
+src_syncevo_cxxflags += $(LIBOPENOBEX_CFLAGS)
+if ENABLE_BLUETOOTH
+src_syncevo_ldadd += $(BLUEZ_LIBS)
+src_syncevo_cxxflags += $(BLUEZ_CFLAGS)
+endif
+endif
+
+#pkgconfigdir is defined in $(top_srcdir)/setup-variables.am
+pkgconfig_DATA += src/syncevo/syncevolution.pc
+DISTCLEANFILES += src/syncevo/syncevolution.pc
+dist_noinst_DATA += src/syncevo/syncevolution.pc.in
+
+src_syncevo_libsyncevolution_la_SOURCES = $(src_syncevo_sources)
+nodist_src_syncevo_libsyncevolution_la_SOURCES = src/syncevo/SyncEvolutionXML.c
+CLEANFILES += src/syncevo/SyncEvolutionXML.c
+src_syncevo_libsyncevolution_la_LIBADD = \
+  @EPACKAGE_LIBS@ \
+  @GIO_LIBS@ \
+  @GTHREAD_LIBS@ \
+  @GLIB_LIBS@ \
+  $(SYNTHESIS_LIBS) \
+  $(TRANSPORT_LIBS) \
+  @LIBS@ \
+  $(src_syncevo_ldadd) \
+  $(NSS_LIBS)
+src_syncevo_libsyncevolution_la_CXXFLAGS = \
+  $(TRANSPORT_CFLAGS) \
+  $(src_syncevo_cxxflags) \
+  $(SYNTHESIS_CFLAGS) \
+  $(NSS_CFLAGS) \
+  $(SYNCEVO_WFLAGS)
+src_syncevo_libsyncevolution_la_CFLAGS = \
+  $(SYNCEVO_WFLAGS)
+src_syncevo_libsyncevolution_la_CPPFLAGS = \
+  $(src_syncevo_cppflags) \
+  -DDATA_DIR=\""$(pkgdatadir)"\" \
+  -DXML_CONFIG_DIR=\""$(datadir)/syncevolution/xml"\" \
+  -DTEMPLATE_DIR=\""$(datadir)/syncevolution/templates"\" \
+  -DLIBDIR=\""$(libdir)"\"
+src_syncevo_libsyncevolution_la_DEPENDENCIES = $(SYNTHESIS_DEP) @SYNCEVOLUTION_LDADD@
+
+if ENABLE_MODULES
+src_syncevo_libsyncevolution_la_LDFLAGS =
+else
+src_syncevo_libsyncevolution_la_LDFLAGS = -static
+endif
+
+# command which embeds its input lines into a C-style string that runs across multiple lines
+TO_C_STRING = sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\(.*\)/"\1\\n"/'
+
+# Don't depend on specific XML files. Instead recreate
+# SyncEvolutionXML.c each time make is invoked (allows including new
+# fragments in the binary without rerunning configure).
+src/syncevo/SyncEvolutionXML.c: src/syncevo/GenSyncEvolutionXML
+	$(AM_V_GEN)
+	@true
+all_phonies += src/syncevo/GenSyncEvolutionXML
+src/syncevo/GenSyncEvolutionXML:
+	$(AM_V_at)echo "const char *SyncEvolutionXMLClient =" >src/syncevo/SyncEvolutionXML.c.new \
+	&& (cd $(top_srcdir)/src/syncevo/configs && perl update-samples.pl syncevolution.xml client ) | \
+	  perl -p -e 's;</datatypes>;  <fieldlists/>\n    <profiles/>\n    <datatypedefs/>\n  </datatypes>;' | \
+	  $(TO_C_STRING) >>src/syncevo/SyncEvolutionXML.c.new \
+	&& echo ";" >>src/syncevo/SyncEvolutionXML.c.new \
+	&& echo "const char *SyncEvolutionXMLClientRules =" >>src/syncevo/SyncEvolutionXML.c.new \
+	&& (cd $(top_srcdir)/src/syncevo/configs && cat remoterules/*.xml remoterules/client/*.xml) | $(TO_C_STRING) >>src/syncevo/SyncEvolutionXML.c.new \
+	&& echo ";" >>src/syncevo/SyncEvolutionXML.c.new \
+	&& if cmp -s src/syncevo/SyncEvolutionXML.c src/syncevo/SyncEvolutionXML.c.new; \
+	then \
+	  rm src/syncevo/SyncEvolutionXML.c.new; \
+	else \
+	  mv src/syncevo/SyncEvolutionXML.c.new src/syncevo/SyncEvolutionXML.c; \
+	fi;
+
+# turn README.rst into a file with plain text strings for
+# "Synopsis" and "Usage"
+CLEANFILES += src/syncevo/CmdlineHelp.c
+BUILT_SOURCES += src/syncevo/CmdlineHelp.c
+dist_noinst_SCRIPTS += src/syncevo/readme2c.pl
+src/syncevo/CmdlineHelp.c: src/syncevo/readme2c.pl $(top_srcdir)/README.rst
+	$(AM_V_GEN)perl $+ >$@
+
+# include boost in distribution
+#dist-hook:
+#	cp -r $(srcdir)/boost $(distdir)
+#	find $(distdir) -name .libs -o -name "*~" -o -name ".*" -o -name "*.o" -o -name "*.lo" -o -name CVS -o -name autom4te.cache | xargs rm -rf
+
+# make sure that the installed development files are usable
+src_syncevo_install_check_local: $(top_srcdir)/src/syncevo/installcheck-local.sh
+	env PKG_CONFIG_PATH=$(DESTDIR)/$(pkgconfigdir):$$PKG_CONFIG_PATH $< "$(DESTDIR)/$(src_syncevo_libsyncevolution_includedir)" "$(DESTDIR)/$(includedir)" "$(DESTDIR)/$(libdir)"
+
+all_local_installchecks += src_syncevo_install_check_local
+dist_noinst_SCRIPTS += src/syncevo/installcheck-local.sh

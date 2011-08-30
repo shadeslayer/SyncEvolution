@@ -1,9 +1,0 @@
-/Makefile.am
-/syncevolution
-/synccompare
-/client-test
-/build-synthesis
-/syncevo-http-server
-/syncevo-dbus-server
-/syncevo-phone-config
-/testcases

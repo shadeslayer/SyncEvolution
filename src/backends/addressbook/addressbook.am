@@ -1,0 +1,24 @@
+dist_noinst_DATA += src/backends/addressbook/configure-sub.in
+
+src_backends_addressbook_lib = src/backends/addressbook/syncaddressbook.la
+MOSTLYCLEANFILES += $(src_backends_addressbook_lib)
+if ENABLE_MODULES
+src_backends_addressbook_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_addressbook_backend_LTLIBRARIES = $(src_backends_addressbook_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_addressbook_lib)
+endif
+
+MAINTAINERCLEANFILES += src/backends/addressbook/Makefile.in
+
+src_backends_addressbook_src = \
+  src/backends/addressbook/AddressBookSource.h \
+  src/backends/addressbook/AddressBookConstants.cpp \
+  src/backends/addressbook/AddressBookSource.cpp
+
+src_backends_addressbook_syncaddressbook_la_SOURCES = $(src_backends_addressbook_src)
+src_backends_addressbook_syncaddressbook_la_LIBADD = $(ADDRESSBOOK_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_addressbook_syncaddressbook_la_LDFLAGS = -module -avoid-version
+src_backends_addressbook_syncaddressbook_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
+src_backends_addressbook_syncaddressbook_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_addressbook_syncaddressbook_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

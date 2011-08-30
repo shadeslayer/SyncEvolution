@@ -1,0 +1,49 @@
+## This file just specifies all variables used in entire project.
+## If any of them was specified before this file is included then those ones
+## won't change the value.
+##
+## The reason for it is that many files are using BUILT_SOURCES, CLEANFILES and
+## other variables. This file allows them to harmlessly append stuff
+## to them without worrying whether the variable was defined earlier.
+
+# clean variables
+CLEANFILES =
+DISTCLEANFILES =
+MAINTAINERCLEANFILES =
+MOSTLYCLEANFILES =
+
+
+# standard arch dependent pkg-config dir
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA =
+
+
+# standard variables with standard prefixes
+dist_doc_DATA =
+dist_noinst_DATA =
+dist_pkgdata_DATA =
+doc_DATA =
+
+lib_LTLIBRARIES =
+noinst_LTLIBRARIES =
+
+bin_PROGRAMS =
+libexec_PROGRAMS =
+noinst_PROGRAMS =
+
+bin_SCRIPTS =
+dist_noinst_SCRIPTS =
+libexec_SCRIPTS =
+nodist_bin_SCRIPTS =
+
+
+# other
+all_dist_hooks =
+all_local_installchecks =
+all_phonies =
+BUILT_SOURCES =
+DIST_SUBDIRS =
+EXTRA_DIST =
+EXTRA_PROGRAMS =
+SUBDIRS =
+TESTS =

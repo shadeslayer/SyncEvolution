@@ -1,0 +1,35 @@
+# include_HEADERS = src/gdbus/gdbus.h
+
+dist_noinst_DATA += \
+  src/gdbus/README
+
+if ENABLE_MODULES
+# pkglibdir is defined to $(libdir)/$(PACKAGE). see:
+# http://www.gnu.org/software/automake/manual/automake.html#Uniform
+pkglib_LTLIBRARIES = src/gdbus/libgdbussyncevo.la
+src_gdbus_version_info = -version-info 0:0:0
+else
+noinst_LTLIBRARIES += src/gdbus/libgdbussyncevo.la
+endif
+
+src_gdbus_libgdbussyncevo_la_SOURCES = \
+  src/gdbus/debug.h \
+  src/gdbus/debug.c \
+  src/gdbus/mainloop.c \
+  src/gdbus/object.c \
+  src/gdbus/watch.c \
+  src/gdbus/gdbus.h \
+  src/gdbus/gdbus-cxx-bridge.h \
+  src/gdbus/gdbus-cxx-bridge.cpp \
+  src/gdbus/gdbus-cxx.h
+src_gdbus_libgdbussyncevo_la_LDFLAGS = $(src_gdbus_version_info) -export-symbols-regex b_dbus_.*
+src_gdbus_libgdbussyncevo_la_LIBADD = @GLIB_LIBS@ @DBUS_LIBS@
+src_gdbus_libgdbussyncevo_la_CFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@ $(SYNCEVO_WFLAGS)
+src_gdbus_libgdbussyncevo_la_CXXFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@ $(SYNCEVO_WFLAGS)
+
+# include_HEADERS = src/gdbus/gdbus-cxx-bridge.h src/gdbus/gdbus-cxx.h
+noinst_PROGRAMS += src/gdbus/example
+src_gdbus_example_SOURCES = src/gdbus/test/example.cpp
+src_gdbus_example_CXXFLAGS = @GLIB_CFLAGS@ @DBUS_CFLAGS@ $(SYNCEVO_WFLAGS)
+src_gdbus_example_LDADD = src/gdbus/libgdbussyncevo.la @GLIB_LIBS@ @DBUS_LIBS@
+src_gdbus_example_CPPFLAGS = -I$(top_srcdir)/src/gdbus

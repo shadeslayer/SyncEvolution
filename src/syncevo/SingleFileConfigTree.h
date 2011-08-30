@@ -20,9 +20,9 @@
 #ifndef INCL_EVOLUTION_SINGLE_FILE_CONFIG_TREE
 # define INCL_EVOLUTION_SINGLE_FILE_CONFIG_TREE
 
-#include <ConfigTree.h>
-#include <DataBlob.h>
-#include <util.h>
+#include <syncevo/ConfigTree.h>
+#include <syncevo/DataBlob.h>
+#include <syncevo/util.h>
 
 #include <string>
 #include <map>

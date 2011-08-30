@@ -22,13 +22,13 @@ dnl name of the directory,
 dnl help string,
 dnl --enable/disable chosen explicitly
 dnl default, may depend on availability of prerequisites in more complex backends
-AC_ARG_ENABLE_BACKEND(file,
+SE_ARG_ENABLE_BACKEND(file,
                       file,
-                      AS_HELP_STRING([--disable-file],
-                                     [disable file-based backend which stores items in separate files in a fixed directory (default on)]),
-		      [enable_file="$enableval"],
+                      [AS_HELP_STRING([--disable-file],
+                                      [disable file-based backend which stores items in separate files in a fixed directory (default on)])],
+                      [enable_file="$enableval"],
                       [enable_file="yes"]
-                      )
+                     )
 
 if test "$enable_file" = "yes"; then
         dnl It's good to check the prerequisites here, in case --enable-file was used.

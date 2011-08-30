@@ -16,22 +16,24 @@ dnl name of the directory,
 dnl help string,
 dnl --enable/disable chosen explicitly
 dnl default, may depend on availability of prerequisites in more complex backends
-AC_ARG_ENABLE_BACKEND(xmlrpc,
+SE_ARG_ENABLE_BACKEND(xmlrpc,
                       xmlrpc,
-                      AS_HELP_STRING([--enable-xmlrpc],
-                                     [enable XMLRPC-based backend which stores items on a central web service (default off)]),
-		                  [enable_xmlrpc="$enableval"],
+                      [AS_HELP_STRING([--enable-xmlrpc],
+                                      [enable XMLRPC-based backend which stores items on a central web service (default off)])],
+                      [enable_xmlrpc="$enableval"],
                       [enable_xmlrpc="no"]
-                      )
+                     )
 
 if test "$enable_xmlrpc" = "yes"; then
         dnl It's good to check the prerequisites here, in case --enable-xmlrpc was used.
         dnl test "x${SQLITEFOUND}" = "xyes" || AC_MSG_ERROR([--enable-sqlite requires pkg-config information for sqlite3, which was not found])
-        
-        test -e /usr/bin/xmlrpc-c-config || AC_MSG_ERROR([--enable-xmlrpc requires xmlrpc-c-config, which was not found])
-        
-        XMLRPC_CFLAGS=`/usr/bin/xmlrpc-c-config c++2 client --cflags`
-        XMLRPC_LIBS=`/usr/bin/xmlrpc-c-config c++2 client --libs`
+
+        AC_PATH_PROG([XMLRPC_C_CONFIG], [xmlrpc-c-config], [no])
+
+        test "x$XMLRPC_C_CONFIG" != 'xno' || AC_MSG_ERROR([--enable-xmlrpc requires xmlrpc-c-config, which was not found])
+
+        XMLRPC_CFLAGS=`$XMLRPC_C_CONFIG c++2 client --cflags`
+        XMLRPC_LIBS=`$XMLRPC_C_CONFIG c++2 client --libs`
         AC_SUBST(XMLRPC_CFLAGS)
         AC_SUBST(XMLRPC_LIBS)
 

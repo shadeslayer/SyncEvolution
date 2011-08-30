@@ -22,3 +22,6 @@ backends there are more subtle dependencies:
     http://lists.manyfish.co.uk/pipermail/neon/2010-November/001294.html)
   - ensure that one of the following commands is available at runtime:
     adnshost, host, nslookup
+- as of SyncEvolution >= 1.3 rst2html tool should be made as a build
+  requirement, because README.html is optionally generated during build instead
+  of being distributed.
