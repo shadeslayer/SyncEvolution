@@ -56,6 +56,12 @@ gboolean (*notify_notification_close)(NotifyNotification *notification,
                                       GError **error);
 gboolean (*notify_notification_show)(NotifyNotification *notification,
                                      GError **error);
+
+static bool NotFound(const char *func)
+{
+    SE_LOG_DEBUG(NULL, NULL, "%s: not found", func);
+    return false;
+}
 #endif
 
 NotificationBackendLibnotify::NotificationBackendLibnotify()
@@ -83,12 +89,6 @@ void NotificationBackendLibnotify::notifyAction(
         }
     }
     // if dismissed, ignore.
-}
-
-static bool NotFound(const char *func)
-{
-    SE_LOG_DEBUG(NULL, NULL, "%s: not found", func);
-    return false;
 }
 
 bool NotificationBackendLibnotify::init()
