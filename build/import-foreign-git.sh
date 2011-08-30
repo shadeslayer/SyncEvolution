@@ -52,7 +52,15 @@ while [ $i -le $count ]; do
     # get just the commit message
     (cd "$FOREIGN" && git log --max-count=1 --skip=`expr $count - $i` $revisions -- $SOURCE) >$MSG
     # apply patch to file: enter directory and skip pathname from patch
-    (cd $TARGET_DIR && patch -p`expr $SOURCE_LEVELS + 1` <$PATCH)
+    if ! (cd $TARGET_DIR && patch -p`expr $SOURCE_LEVELS + 1` <$PATCH); then
+        echo "patch failed in $TARGET_DIR: patch -p`expr $SOURCE_LEVELS + 1` <$PATCH"
+        echo "continue? yes/no [no]"
+        read yesno
+        if [ "$yesno" != "yes" ]; then
+            exit 1
+        fi
+    fi
+
     # now commit it (can't use commit because we want to preserve date):
     # - add to index
     for t in $TARGET; do
