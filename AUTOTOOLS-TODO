@@ -1,7 +1,7 @@
 REGRESSIONS:
 
 
-- None.
+- Port ActiveSync backend to non-recursive Automake.
 
 
 IMPROVEMENTS:
@@ -42,6 +42,11 @@ IMPROVEMENTS:
 
   There should have been at least one test being run. The same behavior exists
   in old build system.
+
+  This is because neither unit tests nor integration tests are enabled by
+  default. If we would want to enable them then we should add
+  --enable-unit-tests and --enable-integration-tests into
+  DISTCHECK_CONFIGURE_FLAGS in toplevel Makefile.am.
 
 
 - Check why there are so many failed tests when running `make check' explicitly.
