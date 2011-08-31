@@ -1,0 +1,25 @@
+dist_noinst_DATA += \
+  src/backends/activesync/configure-sub.in \
+  src/backends/activesync/README
+
+src_backends_activesync_lib = src/backends/activesync/syncactivesync.la
+MOSTLYCLEANFILES += $(src_backends_activesync_lib)
+if ENABLE_MODULES
+src_backends_activesync_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_activesync_backend_LTLIBRARIES = $(src_backends_activesync_lib)
+else
+noinst_LTLIBRARIES += $(src_backends_activesync_lib)
+endif
+
+src_backends_activesync_src = \
+  src/backends/activesync/ActiveSyncSource.h \
+  src/backends/activesync/ActiveSyncSource.cpp \
+  src/backends/activesync/ActiveSyncCalendarSource.h \
+  src/backends/activesync/ActiveSyncCalendarSource.cpp
+
+src_backends_activesync_syncactivesync_la_SOURCES = $(src_backends_activesync_src)
+src_backends_activesync_syncactivesync_la_LIBADD = $(EASSYNC_LIBS) $(SYNCEVOLUTION_LIBS)
+src_backends_activesync_syncactivesync_la_LDFLAGS = -no-undefined -module -avoid-version
+src_backends_activesync_syncactivesync_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_activesync_syncactivesync_la_CXXFLAGS = $(EASSYNC_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS)
+src_backends_activesync_syncactivesync_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)
