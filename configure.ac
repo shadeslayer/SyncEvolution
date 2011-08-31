@@ -61,10 +61,14 @@ dnl check for programs.
 AC_PROG_CXX
 AC_PROG_MAKE_SET
 
+# TODO: Fix code to pass with -pedantic -Wextra.
+# -Wno-unknown-pragmas needed because icalstrdup.h
+# currently uses the "#pragma }" trick. Should remove that.
+# Fix code to work without deprecated methods: G GDK GDK_PIXBUF CAIRO PANGO GTK
 DK_ARG_ENABLE_WARNINGS([SYNCEVO_WFLAGS],
                        [-Wall],
-                       [-pedantic -Wall -Wextra],
-                       [G GDK GDK_PIXBUF CAIRO PANGO GTK])
+                       [-Wall -Wno-unknown-pragmas],
+                       [])
 
 dnl default device type (see AC_DEFINE below)
 DEVICE_TYPE=workstation
