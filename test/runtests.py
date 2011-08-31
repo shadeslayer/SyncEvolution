@@ -440,6 +440,7 @@ class SyncEvolutionTest(Action):
         selected tests."""
         Action.__init__(self, name)
         self.isserver = True
+        self.build = build
         self.srcdir = os.path.join(build.builddir, "src")
         self.serverlogs = serverlogs
         self.runner = runner
@@ -457,20 +458,21 @@ class SyncEvolutionTest(Action):
 
     def execute(self):
         resdir = os.getcwd()
-        os.chdir(self.srcdir)
+        os.chdir(self.build.builddir)
         # clear previous test results
         context.runCommand("%s %s testclean" % (self.runner, context.make))
+        os.chdir(self.srcdir)
         try:
             # use installed backends if available
-            backenddir = os.path.join(compile.installdir, "usr/lib/syncevolution/backends")
+            backenddir = os.path.join(self.build.installdir, "usr/lib/syncevolution/backends")
             if not os.access(backenddir, os.F_OK):
                 # fallback: relative to client-test inside the current directory
                 backenddir = "backends"
             # same with configs and templates, except that they use the source as fallback
-            confdir = os.path.join(compile.installdir, "usr/lib/syncevolution/xml")
+            confdir = os.path.join(self.build.installdir, "usr/lib/syncevolution/xml")
             if not os.access(confdir, os.F_OK):
                 confdir = os.path.join(context.workdir, "syncevolution/src/syncevo/configs")
-            templatedir = os.path.join(compile.installdir, "usr/lib/syncevolution/templates")
+            templatedir = os.path.join(self.build.installdir, "usr/lib/syncevolution/templates")
             if not os.access(templatedir, os.F_OK):
                 templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
             installenv = \
@@ -707,8 +709,7 @@ class SynthesisCheckout(GitCheckout):
 class SyncEvolutionBuild(AutotoolsBuild):
     def execute(self):
         AutotoolsBuild.execute(self)
-        os.chdir("src")
-        context.runCommand("%s %s test CXXFLAGS=-O0" % (self.runner, context.make))
+        context.runCommand("%s %s src/client-test CXXFLAGS=-O0" % (self.runner, context.make))
 
 libsynthesis = SynthesisCheckout("libsynthesis", options.synthesistag)
 context.add(libsynthesis)
