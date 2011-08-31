@@ -21,5 +21,5 @@ src_backends_activesync_syncactivesync_la_SOURCES = $(src_backends_activesync_sr
 src_backends_activesync_syncactivesync_la_LIBADD = $(EASSYNC_LIBS) $(SYNCEVOLUTION_LIBS)
 src_backends_activesync_syncactivesync_la_LDFLAGS = -no-undefined -module -avoid-version
 src_backends_activesync_syncactivesync_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
-src_backends_activesync_syncactivesync_la_CXXFLAGS = $(EASSYNC_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS)
+src_backends_activesync_syncactivesync_la_CXXFLAGS = $(EASSYNC_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS)
 src_backends_activesync_syncactivesync_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

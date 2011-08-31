@@ -2,7 +2,7 @@ dnl -*- mode: Autoconf; -*-
 dnl Invoke autogen.sh to produce a configure script.
 
 SE_ARG_ENABLE_BACKEND(activesync, activesync,
-                      AS_HELP_STRING([--enable-activesync], [enable access to servers via ActiveSync (default off)]),
+                      [AS_HELP_STRING([--enable-activesync], [enable access to servers via ActiveSync (default off)])],
 		      [enable_activesync="$enableval"], [enable_activesync="no"])
 
 if test "$enable_activesync" = "yes"; then
