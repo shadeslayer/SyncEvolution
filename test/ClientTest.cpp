@@ -966,7 +966,7 @@ void LocalTests::testLinkedItemsParent() {
 
     // check that exactly the parent is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1013,7 +1013,7 @@ void LocalTests::testLinkedItemsChild() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1059,7 +1059,7 @@ void LocalTests::testLinkedItemsParentChild() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1107,7 +1107,7 @@ void LocalTests::testLinkedItemsChildParent() {
     CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1154,7 +1154,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1167,7 +1167,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     if (!config.sourceLUIDsAreVolatile) {
@@ -1220,7 +1220,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1234,7 +1234,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     // deleting the parent may or may not modify the child
@@ -1282,7 +1282,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1353,7 +1353,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1366,7 +1366,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1411,7 +1411,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1424,7 +1424,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1]));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1469,7 +1469,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1482,7 +1482,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, items[0], &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1528,7 +1528,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1541,7 +1541,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, items[1], &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1587,7 +1587,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1602,7 +1602,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
 
     // child has to be listed as modified, parent may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
@@ -1652,7 +1652,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1667,7 +1667,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
 
     // parent has to be listed as modified, child may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    compareDatabases(*copy, &parentData, &childData, NULL);
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
@@ -2192,7 +2192,7 @@ void SyncTests::testUpdate() {
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // test that a two-way sync copies updates from database to the other client,
@@ -2221,7 +2221,7 @@ void SyncTests::testComplexUpdate() {
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 
@@ -2302,14 +2302,14 @@ void SyncTests::testMerge() {
                        CheckSyncReport(-1,-1,-1, 0,0,0, true, SYNC_TWO_WAY)));
 
     // client A and B should have identical data now
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 
     // Furthermore, it should be identical with the server.
     // Be extra careful and pull that data anew and compare once more.
     doSync("check",
            SyncOptions(RefreshFromPeerMode(),
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true, RefreshFromPeerMode())));
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // test what the server does when it has to execute a slow sync
@@ -2339,7 +2339,7 @@ void SyncTests::testTwinning() {
     doSync("twinning", SyncOptions(SYNC_SLOW));
 
     // check
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // tests one-way sync from server:
@@ -2709,7 +2709,7 @@ void SyncTests::testItems() {
     doSync("send", SyncOptions(SYNC_TWO_WAY).setWBXML(true));
     accessClientB->refreshClient(SyncOptions().setWBXML(true));
 
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // creates several items, transmits them back and forth and
@@ -2728,7 +2728,7 @@ void SyncTests::testItemsXML() {
     doSync("send", SyncOptions(SYNC_TWO_WAY).setWBXML(false));
     accessClientB->refreshClient(SyncOptions().setWBXML(false));
 
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // imports test data, transmits it from client A to the server to
@@ -2832,7 +2832,7 @@ void SyncTests::testAddUpdate() {
                                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // compare the two databases
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 //
@@ -2884,7 +2884,7 @@ void SyncTests::testManyItems() {
                        true));
 
     // compare
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -2927,7 +2927,7 @@ void SyncTests::testManyDeletes() {
                        64 * 1024, 64 * 1024, true));
 
     // compare
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 
     // delete everything locally
     BOOST_FOREACH(source_array_t::value_type &source_pair, sources)  {
@@ -3144,7 +3144,7 @@ void SyncTests::testLinkedItemsParentChild()
                                       CheckSyncReport(1,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // final comparison
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -3179,7 +3179,7 @@ void SyncTests::testLinkedItemsChild()
                                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // final comparison
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 
@@ -3235,7 +3235,7 @@ void SyncTests::testLinkedItemsChildParent()
                                       CheckSyncReport(1,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // final comparison
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -3294,7 +3294,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
                     withLargeObject));
     }
     // compare
-    compareDatabases();
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
