@@ -976,6 +976,10 @@ void LocalTests::testLinkedItemsParent() {
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
+
     // delete all items
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
@@ -1018,6 +1022,10 @@ void LocalTests::testLinkedItemsChild() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
+
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
@@ -1062,6 +1070,10 @@ void LocalTests::testLinkedItemsParentChild() {
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
+
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1105,6 +1117,10 @@ void LocalTests::testLinkedItemsChildParent() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
+
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
@@ -1167,6 +1183,10 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
+
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1224,6 +1244,10 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
+
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
 
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
@@ -1352,6 +1376,10 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
+
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1405,6 +1433,10 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
+
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
 
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
@@ -1460,6 +1492,10 @@ void LocalTests::testLinkedItemsParentUpdate() {
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
+
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1514,6 +1550,10 @@ void LocalTests::testLinkedItemsUpdateChild() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
+
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
 
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
@@ -1572,6 +1612,10 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
+
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
 
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
@@ -1633,6 +1677,10 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
+
+    if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
+        return;
+    }
 
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
     CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
