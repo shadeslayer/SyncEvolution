@@ -450,6 +450,9 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
             *event.m_subids.begin() == subid) {
             // special case: no need to load old data, replace it outright
             event.m_calendar = newEvent->m_calendar;
+            if (easid != callerEasID) {
+                merged = true;
+            }
         } else {
             // populate event
             loadItem(event);
