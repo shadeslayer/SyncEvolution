@@ -79,6 +79,15 @@ static bool isServerMode()
     return serverMode && !strcmp(serverMode, "server");
 }
 
+/**
+ * CLIENT_TEST_SERVER env variable or "" if unset
+ */
+std::string currentServer()
+{
+    const char *tmp = getenv("CLIENT_TEST_SERVER");
+    return tmp ? tmp : "";
+}
+
 static SyncMode RefreshFromPeerMode()
 {
     return isServerMode() ? SYNC_REFRESH_FROM_CLIENT : SYNC_REFRESH_FROM_SERVER;
@@ -4220,7 +4229,7 @@ void ClientTest::getItems(const char *file, list<string> &items, std::string &te
     // import the file, trying a .tem file (base file plus patch)
     // first
     std::ifstream input;
-    string server = getenv("CLIENT_TEST_SERVER");
+    string server = currentServer();
     testcases = string(file) + '.' + server +".tem";
     input.open(testcases.c_str());
 
@@ -4302,7 +4311,7 @@ bool ClientTest::compare(ClientTest &client, const char *fileA, const char *file
     bool success = system(cmdstr.c_str()) == 0;
     if (!success) {
         printf("failed: env CLIENT_TEST_SERVER=%s PATH=.:$PATH synccompare %s %s\n",
-               getenv("CLIENT_TEST_SERVER") ? getenv("CLIENT_TEST_SERVER") : "",
+               currentServer().c_str(),
                fileA, fileB);
     }
     return success;
@@ -4642,11 +4651,7 @@ void ClientTest::getTestData(const char *type, Config &config)
 	// Must use different test cases for some servers to
 	// avoid having the linkedItems test cases fail
 	// because of that.
-	std::string server;
-	const char *tmp = getenv("CLIENT_TEST_SERVER");
-	if (tmp) {
-	    server = tmp;
-	}
+	std::string server = currentServer();
 	// default: time zones + UNTIL in UTC, with VALARM
         config.linkedItems = new std::vector<ClientTestConfig::LinkedItems_t>;
         config.linkedItems->resize(1);
