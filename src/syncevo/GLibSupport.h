@@ -257,12 +257,25 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
          * pointer value directly yields an rvalue, which can't be used to initialize
          * the reference return value.
          */
-        T * &operator -> () const { return *(T **)&m_entry->data; }
-        T * &operator * () const { return *(T **)&m_entry->data; }
+        T * &operator -> () const { return *getEntryPtr(); }
+        T * &operator * () const { return *getEntryPtr(); }
         iterator & operator ++ () { m_entry = m_entry->next; return *this; }
         iterator operator ++ (int) { return iterator(m_entry->next); }
         bool operator == (const iterator &other) { return m_entry == other.m_entry; }
         bool operator != (const iterator &other) { return m_entry != other.m_entry; }
+
+    private:
+        /**
+         * Used above, necessary to hide the fact that we do type
+         * casting tricks. Otherwise the compiler will complain about
+         * *(T **)&m_entry->data with "dereferencing type-punned
+         * pointer will break strict-aliasing rules".
+         *
+         * That warning is about breaking assumptions that the compiler
+         * uses for optimizations. The hope is that those optimzations
+         * aren't done here, and/or are disabled by using a function.
+         */
+        T** getEntryPtr() const { return (T **)&m_entry->data; }
     };
     iterator begin() { return iterator(m_list); }
     iterator end() { return iterator(NULL); }
@@ -274,12 +287,15 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
     public:
         const_iterator(L *list) : m_entry(list) {}
         const_iterator(const const_iterator &other) : m_entry(other.m_entry) {}
-        T * &operator -> () const { return *(T **)&m_entry->data; }
-        T * &operator * () const { return *(T **)&m_entry->data; }
+        T * &operator -> () const { return *getEntryPtr(); }
+        T * &operator * () const { return *getEntryPtr(); }
         const_iterator & operator ++ () { m_entry = m_entry->next; return *this; }
         const_iterator operator ++ (int) { return iterator(m_entry->next); }
         bool operator == (const const_iterator &other) { return m_entry == other.m_entry; }
         bool operator != (const const_iterator &other) { return m_entry != other.m_entry; }
+
+    private:
+        T** getEntryPtr() const { return (T **)&m_entry->data; }
     };
 
     const_iterator begin() const { return const_iterator(m_list); }
