@@ -211,6 +211,10 @@ static void updateConfigEAS(const RegisterSyncSourceTest */* me */,
 
         config.dump = DumpItems;
         config.sourceLUIDsAreVolatile = true;
+        // TODO: find out how ActiveSync/Exchange handle children without parent;
+        // at the moment, the child is stored as if it was a stand-alone event
+        // and the RECURRENCE-ID is lost (BMC #22831).
+        config.linkedItemsRelaxedSemantic = false;
 }
 
 static class ActiveSyncContactTest : public RegisterSyncSourceTest {
