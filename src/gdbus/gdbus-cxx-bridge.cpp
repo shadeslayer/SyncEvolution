@@ -19,13 +19,3 @@
 
 #include "gdbus-cxx-bridge.h"
 
-namespace boost
-{
-    void intrusive_ptr_add_ref(DBusConnection  *con)  { dbus_connection_ref(con); }
-    void intrusive_ptr_release(DBusConnection  *con)  { dbus_connection_unref(con); }
-    void intrusive_ptr_add_ref(DBusMessage     *msg)  { dbus_message_ref(msg); }
-    void intrusive_ptr_release(DBusMessage     *msg)  { dbus_message_unref(msg); }
-    void intrusive_ptr_add_ref(DBusPendingCall *call) { dbus_pending_call_ref (call); }
-    void intrusive_ptr_release(DBusPendingCall *call) { dbus_pending_call_unref (call); }
-}
-
