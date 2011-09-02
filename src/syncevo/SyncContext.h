@@ -452,7 +452,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * @TODO: roll SourceList into SyncContext and
      * make this non-static
      */
-    static SyncSource *findSource(const char *name);
+    static SyncSource *findSource(const std::string &name);
     static const char m_findSourceSeparator = '@';
 
     /**

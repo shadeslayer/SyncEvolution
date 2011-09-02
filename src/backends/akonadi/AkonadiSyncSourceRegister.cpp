@@ -348,7 +348,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "kde-calendar";
+        config.m_type = "kde-calendar";
     }
 } iCal20Test;
 
@@ -358,7 +358,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "kde-tasks";
+        config.m_type = "kde-tasks";
     }
 } iTodo20Test;
 
@@ -368,7 +368,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "KDE Memos"; // use an alias here to test that
+        config.m_type = "KDE Memos"; // use an alias here to test that
     }
 } memoTest;
 

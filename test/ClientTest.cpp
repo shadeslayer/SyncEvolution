@@ -55,6 +55,7 @@
 #include <netinet/in.h>
 
 #include <boost/bind.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <syncevo/declarations.h>
 
@@ -86,6 +87,15 @@ std::string currentServer()
 {
     const char *tmp = getenv("CLIENT_TEST_SERVER");
     return tmp ? tmp : "";
+}
+
+/**
+ * CLIENT_TEST_NUM_ITEMS env variable or 100
+ */
+int defNumItems()
+{
+    char *numitems = getenv("CLIENT_TEST_NUM_ITEMS");
+    return numitems ? atoi(numitems) : 100;
 }
 
 static SyncMode RefreshFromPeerMode()
@@ -209,7 +219,7 @@ static std::string importItem(TestingSyncSource *source, const ClientTestConfig 
     CPPUNIT_ASSERT(source);
     if (data.size()) {
         SyncSourceRaw::InsertItemResult res;
-        SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw("", config.mangleItem(data.c_str(), false).c_str()));
+        SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw("", config.m_mangleItem(data, false)));
         CPPUNIT_ASSERT(!res.m_luid.empty());
         return res.m_luid;
     } else {
@@ -237,61 +247,61 @@ static void backupStorage(const ClientTest::Config &config, ClientTest &client)
 
 /** adds the supported tests to the instance itself */
 void LocalTests::addTests() {
-    if (config.createSourceA) {
+    if (config.m_createSourceA) {
         ADD_TEST(LocalTests, testOpen);
         ADD_TEST(LocalTests, testIterateTwice);
-        if (config.insertItem) {
+        if (!config.m_insertItem.empty()) {
             ADD_TEST(LocalTests, testSimpleInsert);
             ADD_TEST(LocalTests, testLocalDeleteAll);
             ADD_TEST(LocalTests, testComplexInsert);
 
-            if (config.updateItem) {
+            if (!config.m_updateItem.empty()) {
                 ADD_TEST(LocalTests, testLocalUpdate);
 
-                if (config.createSourceB) {
+                if (config.m_createSourceB) {
                     ADD_TEST(LocalTests, testChanges);
                 }
             }
 
-            if (config.import &&
-                config.dump &&
-                config.compare &&
-                config.testcases) {
+            if (config.m_import &&
+                config.m_dump &&
+                config.m_compare &&
+                !config.m_testcases.empty()) {
                 ADD_TEST(LocalTests, testImport);
                 ADD_TEST(LocalTests, testImportDelete);
             }
 
-            if (config.templateItem &&
-                config.uniqueProperties) {
+            if (!config.m_templateItem.empty() &&
+                !config.m_uniqueProperties.empty()) {
                 ADD_TEST(LocalTests, testManyChanges);
             }
 
             // create a sub-suite for each set of linked items
-            for (int i = 0; config.linkedItems && i < (int)config.linkedItems->size(); i++) {
+            for (int i = 0; i < (int)config.m_linkedItems.size(); i++) {
                 CppUnit::TestSuite *linked = new CppUnit::TestSuite(getName() + StringPrintf("::LinkedItems_%d", i));
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParent);
-                if (config.linkedItemsRelaxedSemantic) {
+                if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChild);
                 }
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParentChild);
-                if (config.linkedItemsRelaxedSemantic) {
+                if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChildParent);
                 }
-                if (config.linkedItemsRelaxedSemantic) {
+                if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChildChangesParent);
                 }
-                if (config.linkedItemsRelaxedSemantic) {
+                if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsRemoveParentFirst);
                 }
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsRemoveNormal);
-                if (config.sourceKnowsItemSemantic) {
+                if (config.m_sourceKnowsItemSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertParentTwice);
-                    if (config.linkedItemsRelaxedSemantic) {
+                    if (config.m_linkedItemsRelaxedSemantic) {
                         ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertChildTwice);
                     }
                 }
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParentUpdate);
-                if (config.linkedItemsRelaxedSemantic) {
+                if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsUpdateChild);
                 }
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateChild);
@@ -313,7 +323,7 @@ std::string LocalTests::insert(CreateSource createSource, const std::string &dat
     int numItems = 0;
     CPPUNIT_ASSERT_NO_THROW(numItems = countItems(source.get()));
     SyncSourceRaw::InsertItemResult res;
-    std::string mangled = config.mangleItem(data, false);
+    std::string mangled = config.m_mangleItem(data, false);
     if (inserted) {
         *inserted = mangled;
     }
@@ -350,7 +360,7 @@ static std::string updateItem(CreateSource createSource, const ClientTestConfig 
 
     // insert item
     SyncSourceRaw::InsertItemResult res;
-    std::string mangled = config.mangleItem(data, true);
+    std::string mangled = config.m_mangleItem(data, true);
     if (updated) {
         *updated = mangled;
     }
@@ -385,7 +395,7 @@ void LocalTests::update(CreateSource createSource, const std::string &data, bool
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
     CPPUNIT_ASSERT(it != source->getAllItems().end());
     string luid = *it;
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data, true)));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.m_mangleItem(data, true)));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     if (!check) {
@@ -414,7 +424,7 @@ void LocalTests::update(CreateSource createSource, const std::string &data, cons
     TestingSyncSourcePtr source(createSource());
 
     // update it
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.mangleItem(data, true).c_str()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.m_mangleItem(data, true)));
 
     backupStorage(config, client);
 }
@@ -463,7 +473,7 @@ static void deleteItem(CreateSource createSource, const std::string &uid) {
  * @param raiseAssert  raise assertion if comparison yields differences (defaults to true)
  */
 bool LocalTests::compareDatabases(const char *refFile, TestingSyncSource &copy, bool raiseAssert) {
-    CPPUNIT_ASSERT(config.dump);
+    CPPUNIT_ASSERT(config.m_dump);
 
     std::string sourceFile, copyFile;
 
@@ -474,15 +484,15 @@ bool LocalTests::compareDatabases(const char *refFile, TestingSyncSource &copy, 
         simplifyFilename(sourceFile);
         TestingSyncSourcePtr source;
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
-        SOURCE_ASSERT_EQUAL(source.get(), 0, config.dump(client, *source.get(), sourceFile.c_str()));
+        SOURCE_ASSERT_EQUAL(source.get(), 0, config.m_dump(client, *source.get(), sourceFile));
         CPPUNIT_ASSERT_NO_THROW(source.reset());
     }
 
     copyFile = getCurrentTest() + ".B.test.dat";
     simplifyFilename(copyFile);
-    SOURCE_ASSERT_EQUAL(&copy, 0, config.dump(client, copy, copyFile.c_str()));
+    SOURCE_ASSERT_EQUAL(&copy, 0, config.m_dump(client, copy, copyFile));
 
-    bool equal = config.compare(client, sourceFile.c_str(), copyFile.c_str());
+    bool equal = config.m_compare(client, sourceFile, copyFile);
     CPPUNIT_ASSERT(!raiseAssert || equal);
 
     return equal;
@@ -510,24 +520,16 @@ void LocalTests::compareDatabases(TestingSyncSource &copy,
 
 std::string LocalTests::createItem(int item, const std::string &revision, int size)
 {
-    std::string data = config.mangleItem(config.templateItem, false);
+    std::string data = config.m_mangleItem(config.m_templateItem, false);
     std::stringstream prefix;
 
     // string to be inserted at start of unique properties;
     // avoid adding white space (not sure whether it is valid for UID)
     prefix << std::setfill('0') << std::setw(3) << item << "-";
 
-    const char *prop = config.uniqueProperties;
-    const char *nextProp;
-    while (*prop) {
-        std::string curProp;
-        nextProp = strchr(prop, ':');
-        if (!nextProp) {
-            curProp = prop;
-        } else {
-            curProp = std::string(prop, 0, nextProp - prop);
-        }
-
+    BOOST_FOREACH (std::string curProp,
+                   boost::tokenizer< boost::char_separator<char> >(config.m_uniqueProperties,
+                                                                   boost::char_separator<char>(":"))) {
         std::string property;
         // property is expected to not start directly at the
         // beginning
@@ -538,11 +540,6 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
         if (off != data.npos) {
             data.insert(off + property.size(), prefix.str());
         }
-
-        if (!nextProp) {
-            break;
-        }
-        prop = nextProp + 1;
     }
     boost::replace_all(data, "<<UNIQUE>>", prefix.str());
     boost::replace_all(data, "<<REVISION>>", revision);
@@ -554,10 +551,10 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
             data.find("VERSION:2.1") != data.npos;
         size_t toreplace = 1;
 
-        CPPUNIT_ASSERT(config.sizeProperty);
+        CPPUNIT_ASSERT(!config.m_sizeProperty.empty());
 
         /* stuff the item so that it reaches at least that size */
-        size_t off = data.find(config.sizeProperty);
+        size_t off = data.find(config.m_sizeProperty);
         CPPUNIT_ASSERT(off != data.npos);
         std::stringstream stuffing;
         if (quoted) {
@@ -603,7 +600,7 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
 
 
 /**
- * insert artificial items, number of them determined by config.numItems
+ * insert artificial items, number of them 100
  * unless passed explicitly
  *
  * @param createSource    a factory for the sync source that is to be used
@@ -615,8 +612,8 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
 std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, int startIndex, int numItems, int size) {
     std::list<std::string> luids;
 
-    CPPUNIT_ASSERT(config.templateItem);
-    CPPUNIT_ASSERT(config.uniqueProperties);
+    CPPUNIT_ASSERT(!config.m_templateItem.empty());
+    CPPUNIT_ASSERT(!config.m_uniqueProperties.empty());
 
     restoreStorage(config, client);
     TestingSyncSourcePtr source;
@@ -627,7 +624,7 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
     if (firstIndex < 0) {
         firstIndex = 1;
     }
-    int lastIndex = firstIndex + (numItems >= 1 ? numItems : config.numItems) - 1;
+    int lastIndex = firstIndex + (numItems >= 1 ? numItems : defNumItems()) - 1;
     for (int item = firstIndex; item <= lastIndex; item++) {
         std::string data = createItem(item, "", size);
         luids.push_back(importItem(source.get(), config, data));
@@ -640,15 +637,15 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
 std::list<std::string> LocalTests::insertManyItems(TestingSyncSource *source, int startIndex, int numItems, int size) {
     std::list<std::string> luids;
 
-    CPPUNIT_ASSERT(config.templateItem);
-    CPPUNIT_ASSERT(config.uniqueProperties);
+    CPPUNIT_ASSERT(!config.m_templateItem.empty());
+    CPPUNIT_ASSERT(!config.m_uniqueProperties.empty());
 
     CPPUNIT_ASSERT(startIndex > 1 || !countItems(source));
     int firstIndex = startIndex;
     if (firstIndex < 0) {
         firstIndex = 1;
     }
-    int lastIndex = firstIndex + (numItems >= 1 ? numItems : config.numItems) - 1;
+    int lastIndex = firstIndex + (numItems >= 1 ? numItems : defNumItems()) - 1;
     for (int item = firstIndex; item <= lastIndex; item++) {
         std::string data = createItem(item, "", size);
         luids.push_back(importItem(source, config, data));
@@ -660,14 +657,14 @@ std::list<std::string> LocalTests::insertManyItems(TestingSyncSource *source, in
 // update every single item in the database
 void LocalTests::updateData(CreateSource createSource) {
     // check additional requirements
-    CPPUNIT_ASSERT(config.update);
+    CPPUNIT_ASSERT(config.m_update);
 
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
     BOOST_FOREACH(const string &luid, source->getAllItems()) {
         string item;
         source->readItemRaw(luid, item);
-        config.update(item);
+        config.m_update(item);
         source->insertItemRaw(luid, item);
     }
     CPPUNIT_ASSERT_NO_THROW(source.reset());
@@ -677,7 +674,7 @@ void LocalTests::updateData(CreateSource createSource) {
 // creating sync source
 void LocalTests::testOpen() {
     // check requirements
-    CPPUNIT_ASSERT(config.createSourceA);
+    CPPUNIT_ASSERT(config.m_createSourceA);
 
     // Intentionally use the plain auto_ptr here and
     // call open directly. That way it is a bit more clear
@@ -694,7 +691,7 @@ void LocalTests::testOpen() {
 // restart scanning of items
 void LocalTests::testIterateTwice() {
     // check requirements
-    CPPUNIT_ASSERT(config.createSourceA);
+    CPPUNIT_ASSERT(config.m_createSourceA);
 
     // open source
     TestingSyncSourcePtr source(createSourceA());
@@ -707,20 +704,20 @@ void LocalTests::testIterateTwice() {
 // insert one contact without clearing the source first
 void LocalTests::testSimpleInsert() {
     // check requirements
-    CPPUNIT_ASSERT(config.insertItem);
-    CPPUNIT_ASSERT(config.createSourceA);
+    CPPUNIT_ASSERT(!config.m_insertItem.empty());
+    CPPUNIT_ASSERT(!config.m_createSourceA.empty());
 
-    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.insertItem));
+    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.m_insertItem));
 }
 
 // delete all items
 void LocalTests::testLocalDeleteAll() {
     // check requirements
-    CPPUNIT_ASSERT(config.insertItem);
-    CPPUNIT_ASSERT(config.createSourceA);
+    CPPUNIT_ASSERT(!config.m_insertItem.empty());
+    CPPUNIT_ASSERT(config.m_createSourceA);
 
     // make sure there is something to delete, then delete again
-    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.insertItem));
+    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.m_insertItem));
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 }
 
@@ -734,11 +731,11 @@ void LocalTests::testComplexInsert() {
 // clean database, insert item, update it
 void LocalTests::testLocalUpdate() {
     // check additional requirements
-    CPPUNIT_ASSERT(config.updateItem);
+    CPPUNIT_ASSERT(!config.m_updateItem.empty());
 
     testLocalDeleteAll();
     testSimpleInsert();
-    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.updateItem));
+    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
 }
 
 // complex sequence of changes
@@ -746,7 +743,7 @@ void LocalTests::testChanges() {
     SyncSourceChanges::Items_t::const_iterator it, it2;
 
     // check additional requirements
-    CPPUNIT_ASSERT(config.createSourceB);
+    CPPUNIT_ASSERT(config.m_createSourceB);
 
     testLocalDeleteAll();
     testSimpleInsert();
@@ -806,7 +803,7 @@ void LocalTests::testChanges() {
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
     // update item via sync source A
-    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.updateItem));
+    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
@@ -825,7 +822,7 @@ void LocalTests::testChanges() {
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
     testSimpleInsert();
-    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.updateItem));
+    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()) + countUpdatedItems(source.get()));
@@ -863,10 +860,10 @@ void LocalTests::testChanges() {
 // clean database, import file, then export again and compare
 void LocalTests::testImport() {
     // check additional requirements
-    CPPUNIT_ASSERT(config.import);
-    CPPUNIT_ASSERT(config.dump);
-    CPPUNIT_ASSERT(config.compare);
-    CPPUNIT_ASSERT(config.testcases);
+    CPPUNIT_ASSERT(config.m_import);
+    CPPUNIT_ASSERT(config.m_dump);
+    CPPUNIT_ASSERT(config.m_compare);
+    CPPUNIT_ASSERT(!config.m_testcases.empty());
 
     testLocalDeleteAll();
 
@@ -875,7 +872,7 @@ void LocalTests::testImport() {
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     restoreStorage(config, client);
     std::string testcases;
-    std::string importFailures = config.import(client, *source.get(), config, config.testcases, testcases);
+    std::string importFailures = config.m_import(client, *source.get(), config, config.m_testcases, testcases);
     backupStorage(config, client);
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
@@ -904,8 +901,8 @@ void LocalTests::testImportDelete() {
 // test change tracking with large number of items
 void LocalTests::testManyChanges() {
     // check additional requirements
-    CPPUNIT_ASSERT(config.templateItem);
-    CPPUNIT_ASSERT(config.uniqueProperties);
+    CPPUNIT_ASSERT(!config.m_templateItem.empty());
+    CPPUNIT_ASSERT(!config.m_uniqueProperties.empty());
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
@@ -962,7 +959,7 @@ void LocalTests::testLinkedItemsParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // now insert main item
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], config.itemType, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     // check that exactly the parent is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -971,7 +968,7 @@ void LocalTests::testLinkedItemsParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -989,7 +986,7 @@ void LocalTests::testLinkedItemsParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
 }
@@ -1010,7 +1007,7 @@ void LocalTests::testLinkedItemsChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // same as above for child item
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
@@ -1018,7 +1015,7 @@ void LocalTests::testLinkedItemsChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1034,7 +1031,7 @@ void LocalTests::testLinkedItemsChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
 }
@@ -1055,8 +1052,8 @@ void LocalTests::testLinkedItemsParentChild() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert parent first, then child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], config.itemType, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
@@ -1064,7 +1061,7 @@ void LocalTests::testLinkedItemsParentChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
@@ -1081,7 +1078,7 @@ void LocalTests::testLinkedItemsParentChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
@@ -1112,7 +1109,7 @@ void LocalTests::testLinkedItemsChildParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
@@ -1129,7 +1126,7 @@ void LocalTests::testLinkedItemsChildParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
@@ -1151,7 +1148,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, check changes, then insert the parent
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], config.itemType, &childData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
@@ -1159,7 +1156,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1170,14 +1167,14 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listNewItems(copy.get()), parent));
     }
     // relaxed semantic: the child item might be considered updated now if
     // it had to be modified when inserting the parent
     SOURCE_ASSERT(copy.get(), 1 >= countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
@@ -1194,7 +1191,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
@@ -1225,7 +1222,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
@@ -1240,7 +1237,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     // deleting the parent may or may not modify the child
     SOURCE_ASSERT(copy.get(), 1 >= countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1256,7 +1253,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1287,7 +1284,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
@@ -1320,7 +1317,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
         CPPUNIT_ASSERT_NO_THROW(updated = countUpdatedItems(copy.get()));
         SOURCE_ASSERT(copy.get(), 0 <= updated && updated <= 1);
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-        if (!config.sourceLUIDsAreVolatile) {
+        if (!config.m_sourceLUIDsAreVolatile) {
             SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
         }
         CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1336,7 +1333,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
                         // Exchange did not actually remove child above, done now.
                         currentServer() != "exchange" ? 1 : 2,
                         countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1366,7 +1363,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1379,7 +1376,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1395,7 +1392,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
 }
@@ -1424,7 +1421,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1437,7 +1434,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1453,7 +1450,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
 }
@@ -1482,7 +1479,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1495,7 +1492,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1511,7 +1508,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1541,7 +1538,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1554,7 +1551,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1570,7 +1567,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
 }
@@ -1600,7 +1597,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
@@ -1616,7 +1613,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
     SOURCE_ASSERT(copy.get(), 2 >= countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1633,7 +1630,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
@@ -1665,7 +1662,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
@@ -1681,7 +1678,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
     SOURCE_ASSERT(copy.get(), 2 >= countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     }
     CPPUNIT_ASSERT_NO_THROW(copy.reset());
@@ -1698,7 +1695,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countDeletedItems(copy.get()));
-    if (!config.sourceLUIDsAreVolatile) {
+    if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
@@ -1712,10 +1709,9 @@ ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()
     size_t off = test.find(testname);
     CPPUNIT_ASSERT(off != test.npos);
     int i = atoi(test.c_str() + off + testname.size());
-    CPPUNIT_ASSERT(config.linkedItems);
-    CPPUNIT_ASSERT(i >= 0 && i < (int)config.linkedItems->size());
-    CPPUNIT_ASSERT((*config.linkedItems)[i].size() >= 2);
-    return (*config.linkedItems)[i];
+    CPPUNIT_ASSERT(i >= 0 && i < (int)config.m_linkedItems.size());
+    CPPUNIT_ASSERT(config.m_linkedItems[i].size() >= 2);
+    return config.m_linkedItems[i];
 }
 
 SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> sourceIndices, bool isClientA) :
@@ -1729,11 +1725,11 @@ SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> s
         ClientTest::Config config;
         client.getSyncSourceConfig(*it, config);
 
-        if (config.sourceName) {
+        if (!config.m_sourceName.empty()) {
             sourceArray[sources.size()+offset] = *it;
-            if (config.subConfigs) {
+            if (!config.m_subConfigs.empty()) {
                 vector<string> subs;
-                boost::split (subs, config.subConfigs, boost::is_any_of(","));
+                boost::split (subs, config.m_subConfigs, boost::is_any_of(","));
                 offset++;
                 ClientTest::Config subConfig;
                 BOOST_FOREACH (string sub, subs) {
@@ -1742,7 +1738,7 @@ SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> s
                 offset--;
                 }
             } else {
-                sources.push_back(std::pair<int,LocalTests *>(*it, cl.createLocalTests(config.sourceName, client.getLocalSourcePosition(config.sourceName), config)));
+                sources.push_back(std::pair<int,LocalTests *>(*it, cl.createLocalTests(config.m_sourceName, client.getLocalSourcePosition(config.m_sourceName), config)));
             }
         }
     }
@@ -1777,8 +1773,8 @@ void SyncTests::addTests(bool isFirstSource) {
         // run this test first, even if it is more complex:
         // if it works, all the following tests will run with
         // the server in a deterministic state
-        if (config.createSourceA) {
-            if (config.insertItem) {
+        if (config.m_createSourceA) {
+            if (!config.m_insertItem.empty()) {
                 ADD_TEST(SyncTests, testDeleteAllRefresh);
             }
         }
@@ -1796,21 +1792,21 @@ void SyncTests::addTests(bool isFirstSource) {
             ADD_TEST(SyncTests, testTimeout);
         }
 
-        if (config.compare &&
-            config.testcases &&
+        if (config.m_compare &&
+            !config.m_testcases.empty() &&
             !isServerMode()) {
             ADD_TEST(SyncTests, testConversion);
         }
 
-        if (config.createSourceA) {
-            if (config.insertItem) {
+        if (config.m_createSourceA) {
+            if (!config.m_insertItem.empty()) {
                 ADD_TEST(SyncTests, testRefreshFromServerSemantic);
                 ADD_TEST(SyncTests, testRefreshFromClientSemantic);
                 ADD_TEST(SyncTests, testRefreshStatus);
 
                 if (accessClientB &&
-                    config.dump &&
-                    config.compare) {
+                    config.m_dump &&
+                    config.m_compare) {
                     ADD_TEST(SyncTests, testCopy);
                     ADD_TEST(SyncTests, testDelete);
                     ADD_TEST(SyncTests, testAddUpdate);
@@ -1823,34 +1819,34 @@ void SyncTests::addTests(bool isFirstSource) {
                     // only add when testing individual source,
                     // test data not guaranteed to be available for all sources
                     if (sources.size() == 1 &&
-                        config.linkedItems &&
-                        !config.linkedItems->empty()) {
+                        !config.m_linkedItems.empty()) {
                         ADD_TEST(SyncTests, testLinkedItemsParentChild);
 
-                        if (config.linkedItemsRelaxedSemantic) {
+                        if (config.m_linkedItemsRelaxedSemantic) {
                             ADD_TEST(SyncTests, testLinkedItemsChild);
                             ADD_TEST(SyncTests, testLinkedItemsChildParent);
                         }
                     }
 
-                    if (config.updateItem) {
+                    if (!config.m_updateItem.empty()) {
                         ADD_TEST(SyncTests, testUpdate);
                     }
-                    if (config.complexUpdateItem) {
+                    if (!config.m_complexUpdateItem.empty()) {
                         ADD_TEST(SyncTests, testComplexUpdate);
                     }
-                    if (config.mergeItem1 && config.mergeItem2) {
+                    if (!config.m_mergeItem1.empty() &&
+                        !config.m_mergeItem2.empty()) {
                         ADD_TEST(SyncTests, testMerge);
                     }
-                    if (config.import) {
+                    if (config.m_import) {
                         ADD_TEST(SyncTests, testTwinning);
                         ADD_TEST(SyncTests, testItems);
                         ADD_TEST(SyncTests, testItemsXML);
-                        if (config.update) {
+                        if (config.m_update) {
                             ADD_TEST(SyncTests, testExtensions);
                         }
                     }
-                    if (config.templateItem) {
+                    if (!config.m_templateItem.empty()) {
                         ADD_TEST(SyncTests, testMaxMsg);
                         ADD_TEST(SyncTests, testLargeObject);
                         ADD_TEST(SyncTests, testOneWayFromServer);
@@ -1860,12 +1856,12 @@ void SyncTests::addTests(bool isFirstSource) {
             }
         }
 
-        if (config.retrySync &&
-            config.insertItem &&
-            config.updateItem &&
+        if (config.m_retrySync &&
+            !config.m_insertItem.empty() &&
+            !config.m_updateItem.empty() &&
             accessClientB &&
-            config.dump &&
-            config.compare) {
+            config.m_dump &&
+            config.m_compare) {
             CppUnit::TestSuite *retryTests = new CppUnit::TestSuite(getName() + "::Retry");
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeClientAdd);
             ADD_TEST_TO_SUITE(retryTests, SyncTests, testInterruptResumeClientRemove);
@@ -1881,12 +1877,12 @@ void SyncTests::addTests(bool isFirstSource) {
             addTest(FilterTest(retryTests));
         }
 
-        if (config.suspendSync &&
-            config.insertItem &&
-            config.updateItem &&
+        if (config.m_suspendSync &&
+            !config.m_insertItem.empty() &&
+            !config.m_updateItem.empty() &&
             accessClientB &&
-            config.dump &&
-            config.compare) {
+            config.m_dump &&
+            config.m_compare) {
             CppUnit::TestSuite *suspendTests = new CppUnit::TestSuite(getName() + "::Suspend");
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendClientAdd);
             ADD_TEST_TO_SUITE(suspendTests, SyncTests, testUserSuspendClientRemove);
@@ -1902,12 +1898,12 @@ void SyncTests::addTests(bool isFirstSource) {
             addTest(FilterTest(suspendTests));
         }
 
-        if (config.resendSync &&
-                config.insertItem &&
-                config.updateItem &&
-                accessClientB &&
-                config.dump &&
-                config.compare) {
+        if (config.m_resendSync &&
+            !config.m_insertItem.empty() &&
+            !config.m_updateItem.empty() &&
+            accessClientB &&
+            config.m_dump &&
+            config.m_compare) {
             CppUnit::TestSuite *resendTests = new CppUnit::TestSuite(getName() + "::Resend");
             ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendClientAdd);
             ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendClientRemove);
@@ -1920,11 +1916,11 @@ void SyncTests::addTests(bool isFirstSource) {
         }
 
         if (getenv("CLIENT_TEST_RESEND_PROXY") &&
-            config.insertItem &&
-            config.updateItem &&
+            !config.m_insertItem.empty() &&
+            !config.m_updateItem.empty() &&
             accessClientB &&
-            config.dump &&
-            config.compare) {
+            config.m_dump &&
+            config.m_compare) {
             CppUnit::TestSuite *resendTests = new CppUnit::TestSuite(getName() + "::ResendProxy");
             ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyClientAdd);
             ADD_TEST_TO_SUITE(resendTests, SyncTests, testResendProxyClientRemove);
@@ -1951,7 +1947,7 @@ bool SyncTests::compareDatabases(const char *refFileBase, bool raiseAssert) {
         SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(it2->second->createSourceB()));
         if (refFileBase) {
             std::string refFile = refFileBase;
-            refFile += it1->second->config.sourceName;
+            refFile += it1->second->config.m_sourceName;
             refFile += ".dat";
             simplifyFilename(refFile);
             if (!it1->second->compareDatabases(refFile.c_str(), *copy.get(), raiseAssert)) {
@@ -2183,14 +2179,14 @@ void SyncTests::testRefreshStatus() {
 // using simple data commonly supported by servers
 void SyncTests::testUpdate() {
     CPPUNIT_ASSERT(sources.begin() != sources.end());
-    CPPUNIT_ASSERT(sources.begin()->second->config.updateItem);
+    CPPUNIT_ASSERT(!sources.begin()->second->config.m_updateItem.empty());
 
     // setup client A, B and server so that they all contain the same item
     doCopy();
 
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.updateItem);
+        it->second->update(it->second->createSourceA, it->second->config.m_updateItem);
     }
 
     doSync("update",
@@ -2216,9 +2212,9 @@ void SyncTests::testComplexUpdate() {
                            /* this test might get executed with some sources which have
                               a complex update item while others don't: use the normal update item
                               for them or even just the same item */
-                           it->second->config.complexUpdateItem ? it->second->config.complexUpdateItem :
-                           it->second->config.updateItem ? it->second->config.updateItem :
-                           it->second->config.insertItem
+                           !it->second->config.m_complexUpdateItem.empty() ? it->second->config.m_complexUpdateItem :
+                           !it->second->config.m_updateItem.empty() ? it->second->config.m_updateItem :
+                           it->second->config.m_insertItem
                            );
     }
 
@@ -2270,12 +2266,12 @@ void SyncTests::testMerge() {
     // update in client A
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.mergeItem1);
+        it->second->update(it->second->createSourceA, it->second->config.m_mergeItem1);
     }
 
     // update in client B
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.mergeItem2);
+        it->second->update(it->second->createSourceA, it->second->config.m_mergeItem2);
     }
 
     // send change to server from client A (no conflict)
@@ -2299,7 +2295,7 @@ void SyncTests::testMerge() {
         SOURCE_ASSERT_NO_FAILURE(copy.get(), numItems = countItems(copy.get()));
         CPPUNIT_ASSERT(numItems >= 1);
         CPPUNIT_ASSERT(numItems <= 2);
-        std::cerr << " \"" << it->second->config.sourceName << ": " << (numItems == 1 ? "conflicting items were merged" : "both of the conflicting items were preserved") << "\" ";
+        std::cerr << " \"" << it->second->config.m_sourceName << ": " << (numItems == 1 ? "conflicting items were merged" : "both of the conflicting items were preserved") << "\" ";
         std::cerr.flush();
         CPPUNIT_ASSERT_NO_THROW(copy.reset());        
     }
@@ -2368,7 +2364,7 @@ void SyncTests::testOneWayFromServer() {
     // in second sources of each client
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2376,7 +2372,7 @@ void SyncTests::testOneWayFromServer() {
         }
     }
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2392,7 +2388,7 @@ void SyncTests::testOneWayFromServer() {
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2408,7 +2404,7 @@ void SyncTests::testOneWayFromServer() {
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         it->second->insertManyItems(it->second->createSourceA, 2, 1);
 
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2422,7 +2418,7 @@ void SyncTests::testOneWayFromServer() {
                           SyncOptions(OneWayFromPeerMode(),
                                       CheckSyncReport(1,0,0, 0,0,0, true, OneWayFromPeerMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 2, countItems(source.get()));
@@ -2439,7 +2435,7 @@ void SyncTests::testOneWayFromServer() {
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2454,7 +2450,7 @@ void SyncTests::testOneWayFromServer() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->deleteAll(it->second->createSourceA);
 
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2468,7 +2464,7 @@ void SyncTests::testOneWayFromServer() {
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2485,7 +2481,7 @@ void SyncTests::testOneWayFromServer() {
                           SyncOptions(OneWayFromPeerMode(),
                                       CheckSyncReport(0,0,1, 0,0,0, true, OneWayFromPeerMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2515,7 +2511,7 @@ void SyncTests::testOneWayFromClient() {
     // in second sources of each client
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2523,7 +2519,7 @@ void SyncTests::testOneWayFromClient() {
         }
     }
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2539,7 +2535,7 @@ void SyncTests::testOneWayFromClient() {
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2555,7 +2551,7 @@ void SyncTests::testOneWayFromClient() {
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         it->second->insertManyItems(it->second->createSourceA, 2, 1);
 
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2569,7 +2565,7 @@ void SyncTests::testOneWayFromClient() {
                           SyncOptions(OneWayFromLocalMode(),
                                       CheckSyncReport(0,0,0, 1,0,0, true, OneWayFromLocalMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2586,7 +2582,7 @@ void SyncTests::testOneWayFromClient() {
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 2, countItems(source.get()));
@@ -2601,7 +2597,7 @@ void SyncTests::testOneWayFromClient() {
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         it->second->deleteAll(it->second->createSourceA);
 
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2615,7 +2611,7 @@ void SyncTests::testOneWayFromClient() {
                           SyncOptions(OneWayFromLocalMode(),
                                       CheckSyncReport(0,0,0, 0,0,1, true, OneWayFromLocalMode())));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -2632,7 +2628,7 @@ void SyncTests::testOneWayFromClient() {
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -2662,7 +2658,7 @@ bool SyncTests::doConversionCallback(bool *success,
 
     for (source_it it = sources.begin(); it != sources.end(); ++it) {
         const ClientTest::Config *config = &it->second->config;
-        TestingSyncSource *source = static_cast<TestingSyncSource *>(syncClient.findSource(config->sourceName));
+        TestingSyncSource *source = static_cast<TestingSyncSource *>(syncClient.findSource(config->m_sourceName));
         CPPUNIT_ASSERT(source);
 
         std::string type = source->getNativeDatatypeName();
@@ -2672,10 +2668,10 @@ bool SyncTests::doConversionCallback(bool *success,
 
         std::list<std::string> items;
         std::string testcases;
-        ClientTest::getItems(config->testcases, items, testcases);
+        ClientTest::getItems(config->m_testcases, items, testcases);
         std::string converted = getCurrentTest();
         converted += ".converted.";
-        converted += config->sourceName;
+        converted += config->m_sourceName;
         converted += ".dat";
         simplifyFilename(converted);
         std::ofstream out(converted.c_str());
@@ -2693,7 +2689,7 @@ bool SyncTests::doConversionCallback(bool *success,
             }
         }
         out.close();
-        CPPUNIT_ASSERT(config->compare(client, testcases.c_str(), converted.c_str()));
+        CPPUNIT_ASSERT(config->m_compare(client, testcases, converted));
     }
 
     // abort sync after completing the test successfully (no exception so far!)
@@ -2752,7 +2748,7 @@ void SyncTests::testExtensions() {
     for (it = sources.begin(); it != sources.end(); ++it) {
         it->second->testImport();
 
-        string refDir = getCurrentTest() + "." + it->second->config.sourceName + ".ref.dat";
+        string refDir = getCurrentTest() + "." + it->second->config.m_sourceName + ".ref.dat";
         simplifyFilename(refDir);
         rm_r(refDir);
         mkdir_p(refDir);
@@ -2763,7 +2759,7 @@ void SyncTests::testExtensions() {
         BOOST_FOREACH(const string &luid, source->getAllItems()) {
             string item;
             source->readItemRaw(luid, item);
-            it->second->config.update(item);
+            it->second->config.m_update(item);
             ofstream out(StringPrintf("%s/%d", refDir.c_str(), counter).c_str());
             out.write(item.c_str(), item.size());
             counter++;
@@ -2791,7 +2787,7 @@ void SyncTests::testExtensions() {
     ScopedEnvChange envProps("CLIENT_TEST_STRIP_PROPERTIES", "(PHOTO|FN)");
     bool equal = true;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        string refDir = getCurrentTest() + "." + it->second->config.sourceName + ".ref.dat";
+        string refDir = getCurrentTest() + "." + it->second->config.m_sourceName + ".ref.dat";
         simplifyFilename(refDir);
         TestingSyncSourcePtr source;
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
@@ -2820,7 +2816,7 @@ void SyncTests::testAddUpdate() {
     // add item
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insert(it->second->createSourceA, it->second->config.insertItem, it->second->config.itemType);
+        it->second->insert(it->second->createSourceA, it->second->config.m_insertItem, false);
     }
     doSync("add",
            SyncOptions(SYNC_TWO_WAY,
@@ -2828,7 +2824,7 @@ void SyncTests::testAddUpdate() {
 
     // update it
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceB, it->second->config.updateItem);
+        it->second->update(it->second->createSourceB, it->second->config.m_updateItem);
     }
     doSync("update",
            SyncOptions(SYNC_TWO_WAY,
@@ -2858,13 +2854,8 @@ void SyncTests::testManyItems() {
     // import artificial data: make them large to generate some
     // real traffic and test buffer handling
     source_it it;
-    int num_items = -1;
+    int num_items = defNumItems();
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (num_items == -1) {
-            num_items = it->second->config.numItems;
-        } else {
-            CPPUNIT_ASSERT_EQUAL(num_items, it->second->config.numItems);
-        }
         it->second->insertManyItems(it->second->createSourceA, 0, num_items, 2000);
     }
 
@@ -2905,13 +2896,8 @@ void SyncTests::testManyDeletes() {
     // import artificial data: make them small, we just want
     // many of them
     source_it it;
-    int num_items = -1;
+    int num_items = defNumItems();
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (num_items == -1) {
-            num_items = it->second->config.numItems;
-        } else {
-            CPPUNIT_ASSERT_EQUAL(num_items, it->second->config.numItems);
-        }
         it->second->insertManyItems(it->second->createSourceA, 0, num_items, 100);
     }
 
@@ -3066,7 +3052,7 @@ void SyncTests::testDeleteBothSides()
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -3081,7 +3067,7 @@ void SyncTests::testDeleteBothSides()
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_TWO_WAY)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        if (it->second->config.createSourceB) {
+        if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
@@ -3110,13 +3096,12 @@ void SyncTests::testLinkedItemsParentChild()
 
     // create and copy parent item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.linkedItems);
-        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
-        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
+        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   (*it->second->config.linkedItems)[0][0],
-                                                   it->second->config.itemType));
+                                                   it->second->config.m_linkedItems[0][0],
+                                                   false));
     }
     doSync("send-parent",
            SyncOptions(SYNC_TWO_WAY,
@@ -3125,8 +3110,8 @@ void SyncTests::testLinkedItemsParentChild()
     // create independent item, refresh client B and server
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.insertItem,
-                                                   it->second->config.itemType));
+                                                   it->second->config.m_insertItem,
+                                                   false));
     }
     accessClientB->doSync("recv-parent",
                           SyncOptions(SYNC_TWO_WAY,
@@ -3134,13 +3119,12 @@ void SyncTests::testLinkedItemsParentChild()
 
     // add child on client A
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.linkedItems);
-        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
-        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
+        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   (*it->second->config.linkedItems)[0][1],
-                                                   it->second->config.itemType));
+                                                   it->second->config.m_linkedItems[0][1],
+                                                   false));
     }
     // parent may or may not be considered updated
     doSync("send-child",
@@ -3171,13 +3155,12 @@ void SyncTests::testLinkedItemsChild()
 
     // create and copy child item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.linkedItems);
-        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
-        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
+        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   (*it->second->config.linkedItems)[0][1],
-                                                   it->second->config.itemType));
+                                                   it->second->config.m_linkedItems[0][1],
+                                                   false));
     }
     doSync("send",
            SyncOptions(SYNC_TWO_WAY,
@@ -3208,13 +3191,12 @@ void SyncTests::testLinkedItemsChildParent()
 
     // create and copy child item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.linkedItems);
-        CPPUNIT_ASSERT(!(*it->second->config.linkedItems)[0].empty());
-        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
+        CPPUNIT_ASSERT(!it->second->config.m_linkedItems[0].empty());
+        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   (*it->second->config.linkedItems)[0][1],
-                                                   it->second->config.itemType));
+                                                   it->second->config.m_linkedItems[0][1],
+                                                   false));
     }
     doSync("send-child",
            SyncOptions(SYNC_TWO_WAY,
@@ -3225,13 +3207,12 @@ void SyncTests::testLinkedItemsChildParent()
 
     // add parent on client A
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(it->second->config.linkedItems);
-        CPPUNIT_ASSERT(!it->second->config.linkedItems->empty());
-        CPPUNIT_ASSERT((*it->second->config.linkedItems)[0].size() >= 2);
+        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   (*it->second->config.linkedItems)[0][0],
-                                                   it->second->config.itemType));
+                                                   it->second->config.m_linkedItems[0][0],
+                                                   false));
     }
     // child may or may not be considered updated
     doSync("send-parent",
@@ -3271,7 +3252,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
         for (int i = 0; i < 2; i++ ) {
             int size = 1;
             while (size < 2 * maxMsgSize) {
-                it->second->insertManyItems(source.get(), item, 1, (int)strlen(it->second->config.templateItem) + 10 + size);
+                it->second->insertManyItems(source.get(), item, 1, it->second->config.m_templateItem.size() + 10 + size);
                 size *= 2;
                 item++;
             }
@@ -3755,12 +3736,12 @@ void SyncTests::doInterruptResume(int changes,
                  it != sources.end();
                  ++it) {
                 std::string refFile = refFileBase;
-                refFile += it->second->config.sourceName;
+                refFile += it->second->config.m_sourceName;
                 refFile += ".dat";
                 simplifyFilename(refFile);
                 TestingSyncSourcePtr source;
                 SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceA()));
-                SOURCE_ASSERT_EQUAL(source.get(), 0, it->second->config.dump(client, *source.get(), refFile.c_str()));
+                SOURCE_ASSERT_EQUAL(source.get(), 0, it->second->config.m_dump(client, *source.get(), refFile.c_str()));
                 CPPUNIT_ASSERT_NO_THROW(source.reset());
             }
         }
@@ -4148,9 +4129,9 @@ public:
         for (source=0; source < client.getNumLocalSources(); source++) {
             ClientTest::Config config;
             client.getLocalSourceConfig(source, config);
-            if (config.sourceName) {
+            if (!config.m_sourceName.empty()) {
                 LocalTests *sourcetests =
-                    client.createLocalTests(tests->getName() + "::" + config.sourceName, source, config);
+                    client.createLocalTests(tests->getName() + "::" + config.m_sourceName, source, config);
                 sourcetests->addTests();
                 tests->addTest(FilterTest(sourcetests));
             }
@@ -4163,11 +4144,11 @@ public:
         for (source=0; source < client.getNumSyncSources(); source++) {
             ClientTest::Config config;
             client.getSyncSourceConfig(source, config);
-            if (config.sourceName) {
+            if (!config.m_sourceName.empty()) {
                 std::vector<int> sources;
                 sources.push_back(source);
                 SyncTests *synctests =
-                    client.createSyncTests(tests->getName() + "::" + config.sourceName, sources);
+                    client.createSyncTests(tests->getName() + "::" + config.m_sourceName, sources);
                 synctests->addTests(source == 0);
                 tests->addTest(FilterTest(synctests));
             }
@@ -4180,14 +4161,14 @@ public:
         for (source=0; source < client.getNumSyncSources(); source++) {
             ClientTest::Config config;
             client.getSyncSourceConfig(source, config);
-            if (config.sourceName) {
+            if (!config.m_sourceName.empty()) {
                 sources.push_back(source);
                 if (name.size() > 0) {
                     name += "_";
                     name_reversed = std::string("_") + name_reversed;
                 }
-                name += config.sourceName;
-                name_reversed = config.sourceName + name_reversed;
+                name += config.m_sourceName;
+                name_reversed = config.m_sourceName + name_reversed;
             }
         }
         if (sources.size() > 1) {
@@ -4264,7 +4245,7 @@ SyncTests *ClientTest::createSyncTests(const std::string &name, std::vector<int>
     return new SyncTests(name, *this, sourceIndices, isClientA);
 }
 
-int ClientTest::dump(ClientTest &client, TestingSyncSource &source, const char *file)
+int ClientTest::dump(ClientTest &client, TestingSyncSource &source, const std::string &file)
 {
     BackupReport report;
     boost::shared_ptr<ConfigNode> node(new VolatileConfigNode);
@@ -4278,7 +4259,7 @@ int ClientTest::dump(ClientTest &client, TestingSyncSource &source, const char *
     return 0;
 }
 
-void ClientTest::getItems(const char *file, list<string> &items, std::string &testcases)
+void ClientTest::getItems(const std::string &file, list<string> &items, std::string &testcases)
 {
     items.clear();
 
@@ -4286,12 +4267,12 @@ void ClientTest::getItems(const char *file, list<string> &items, std::string &te
     // first
     std::ifstream input;
     string server = currentServer();
-    testcases = string(file) + '.' + server +".tem";
+    testcases = file + '.' + server +".tem";
     input.open(testcases.c_str());
 
     if (input.fail()) {
         // try server-specific file (like eds_event.ics.local)
-        testcases = string(file) + '.' + server;
+        testcases = file + '.' + server;
         input.open(testcases.c_str());
     }
 
@@ -4328,7 +4309,7 @@ void ClientTest::getItems(const char *file, list<string> &items, std::string &te
 }
 
 std::string ClientTest::import(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
-                               const char *file, std::string &realfile)
+                               const std::string &file, std::string &realfile)
 {
     list<string> items;
     getItems(file, items, realfile);
@@ -4349,12 +4330,12 @@ std::string ClientTest::import(ClientTest &client, TestingSyncSource &source, co
     return failures;
 }
 
-bool ClientTest::compare(ClientTest &client, const char *fileA, const char *fileB)
+bool ClientTest::compare(ClientTest &client, const std::string &fileA, const std::string &fileB)
 {
     std::string cmdstr = std::string("env PATH=.:$PATH synccompare ") + fileA + " " + fileB;
     setenv("CLIENT_TEST_HEADER", "\n\n", 1);
-    setenv("CLIENT_TEST_LEFT_NAME", fileA, 1);
-    setenv("CLIENT_TEST_RIGHT_NAME", fileB, 1);
+    setenv("CLIENT_TEST_LEFT_NAME", fileA.c_str(), 1);
+    setenv("CLIENT_TEST_RIGHT_NAME", fileB.c_str(), 1);
     setenv("CLIENT_TEST_REMOVED", "only in left file", 1);
     setenv("CLIENT_TEST_ADDED", "only in right file", 1);
     const char* compareLog = getenv("CLIENT_TEST_COMPARE_LOG");
@@ -4368,7 +4349,7 @@ bool ClientTest::compare(ClientTest &client, const char *fileA, const char *file
     if (!success) {
         printf("failed: env CLIENT_TEST_SERVER=%s PATH=.:$PATH synccompare %s %s\n",
                currentServer().c_str(),
-               fileA, fileB);
+               fileA.c_str(), fileB.c_str());
     }
     return success;
 }
@@ -4506,23 +4487,21 @@ static string mangleICalendar20(const std::string &data, bool update)
 void ClientTest::getTestData(const char *type, Config &config)
 {
     config = Config();
-    char *numitems = getenv("CLIENT_TEST_NUM_ITEMS");
-    config.numItems = numitems ? atoi(numitems) : 100;
     char *env = getenv("CLIENT_TEST_RETRY");
-    config.retrySync = (env && !strcmp (env, "t")) ?true :false;
+    config.m_retrySync = (env && !strcmp (env, "t")) ?true :false;
     env = getenv("CLIENT_TEST_RESEND");
-    config.resendSync = (env && !strcmp (env, "t")) ?true :false;
+    config.m_resendSync = (env && !strcmp (env, "t")) ?true :false;
     env = getenv("CLIENT_TEST_SUSPEND");
-    config.suspendSync = (env && !strcmp (env, "t")) ?true :false;
-    config.sourceKnowsItemSemantic = true;
-    config.linkedItemsRelaxedSemantic = true;
-    config.itemType = "";
-    config.import = import;
-    config.dump = dump;
-    config.compare = compare;
+    config.m_suspendSync = (env && !strcmp (env, "t")) ?true :false;
+    config.m_sourceKnowsItemSemantic = true;
+    config.m_linkedItemsRelaxedSemantic = true;
+    config.m_itemType = "";
+    config.m_import = import;
+    config.m_dump = dump;
+    config.m_compare = compare;
     // Sync::*::testExtensions not enabled by default.
-    config.update = 0;
-    config.genericUpdate = update;
+    config.m_update = 0;
+    config.m_genericUpdate = update;
 
     // redirect requests for "eds_event" towards "eds_event_noutc"?
     bool noutc = false;
@@ -4531,14 +4510,14 @@ void ClientTest::getTestData(const char *type, Config &config)
         noutc = true;
     }
 
-    config.mangleItem = mangleGeneric;
+    config.m_mangleItem = mangleGeneric;
 
     if (!strcmp(type, "eds_contact")) {
-        config.sourceName = "eds_contact";
-        config.sourceNameServerTemplate = "addressbook";
-        config.uri = "card3"; // ScheduleWorld
-        config.type = "text/vcard";
-        config.insertItem =
+        config.m_sourceName = "eds_contact";
+        config.m_sourceNameServerTemplate = "addressbook";
+        config.m_uri = "card3"; // ScheduleWorld
+        config.m_type = "text/vcard";
+        config.m_insertItem =
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:tester\n"
@@ -4548,7 +4527,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "X-EVOLUTION-FILE-AS:Doe\\, John\n"
             "X-MOZILLA-HTML:FALSE\n"
             "END:VCARD\n";
-        config.updateItem =
+        config.m_updateItem =
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:tester\n"
@@ -4560,7 +4539,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "X-MOZILLA-HTML:TRUE\n"
             "END:VCARD\n";
         /* adds a second phone number: */
-        config.complexUpdateItem =
+        config.m_complexUpdateItem =
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:tester\n"
@@ -4573,7 +4552,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "X-MOZILLA-HTML:TRUE\n"
             "END:VCARD\n";
         /* add a telephone number, email and X-AIM to initial item */
-        config.mergeItem1 =
+        config.m_mergeItem1 =
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:tester\n"
@@ -4585,7 +4564,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "EMAIL:john.doe@work.com\n"
             "X-AIM:AIM JOHN\n"
             "END:VCARD\n";
-        config.mergeItem2 =
+        config.m_mergeItem2 =
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:developer\n"
@@ -4597,7 +4576,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "BDAY:2006-01-08\n"
             "END:VCARD\n";
         // use NOTE and N to make the item unique
-        config.templateItem =
+        config.m_templateItem =
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
             "TITLE:tester\n"
@@ -4608,16 +4587,16 @@ void ClientTest::getTestData(const char *type, Config &config)
             "X-MOZILLA-HTML:FALSE\n"
             "NOTE:<<REVISION>>\n"
             "END:VCARD\n";  
-        config.uniqueProperties = "";
-        config.sizeProperty = "NOTE";
-        config.testcases = "testcases/eds_contact.vcf";
+        config.m_uniqueProperties = "";
+        config.m_sizeProperty = "NOTE";
+        config.m_testcases = "testcases/eds_contact.vcf";
     } else if (!strcmp(type, "eds_event") && !noutc) {
-        config.sourceName = "eds_event";
-        config.sourceNameServerTemplate = "calendar";
-        config.uri = "cal2"; // ScheduleWorld
-        config.type = "text/x-vcalendar";
-        config.mangleItem = mangleICalendar20;
-        config.insertItem =
+        config.m_sourceName = "eds_event";
+        config.m_sourceNameServerTemplate = "calendar";
+        config.m_uri = "cal2"; // ScheduleWorld
+        config.m_type = "text/x-vcalendar";
+        config.m_mangleItem = mangleICalendar20;
+        config.m_insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4636,7 +4615,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "SEQUENCE:XXX\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-        config.updateItem =
+        config.m_updateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4656,7 +4635,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location and description of insertItem in testMerge(), add alarm */
-        config.mergeItem1 =
+        config.m_mergeItem1 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4681,7 +4660,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location to something else, add category */
-        config.mergeItem2 =
+        config.m_mergeItem2 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4709,10 +4688,9 @@ void ClientTest::getTestData(const char *type, Config &config)
 	// because of that.
 	std::string server = currentServer();
 	// default: time zones + UNTIL in UTC, with VALARM
-        config.linkedItems = new std::vector<ClientTestConfig::LinkedItems_t>;
-        config.linkedItems->resize(1);
-        (*config.linkedItems)[0].resize(2);
-        (*config.linkedItems)[0][0] =
+        config.m_linkedItems.resize(1);
+        config.m_linkedItems[0].resize(2);
+        config.m_linkedItems[0][0] =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4749,7 +4727,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "LAST-MODIFIED:20080407T193241Z\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-        (*config.linkedItems)[0][1] =
+        config.m_linkedItems[0][1] =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -4789,7 +4767,7 @@ void ClientTest::getTestData(const char *type, Config &config)
 
 	if (server == "funambol") {
 	    // converts UNTIL into floating time - broken?!
-	    (*config.linkedItems)[0][0] =
+	    config.m_linkedItems[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4828,7 +4806,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:VCALENDAR\n";
 	} else if (server == "mobical") {
 	    // UTC time
-	    (*config.linkedItems)[0][0] =
+	    config.m_linkedItems[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4847,7 +4825,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "LAST-MODIFIED:20080407T193241Z\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-            (*config.linkedItems)[0][1] =
+            config.m_linkedItems[0][1] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4868,7 +4846,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:VCALENDAR\n";
 	} else if (server == "memotoo") {
 	    // local time, except for detached recurrence
-	    (*config.linkedItems)[0][0] =
+	    config.m_linkedItems[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4887,7 +4865,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "LAST-MODIFIED:20080407T193241Z\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-            (*config.linkedItems)[0][1] =
+            config.m_linkedItems[0][1] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4907,7 +4885,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
         } else if (server == "exchange") {
-            BOOST_FOREACH(std::string &item, (*config.linkedItems)[0]) {
+            BOOST_FOREACH(std::string &item, config.m_linkedItems[0]) {
                 // time zone name changes on server to "Standard Timezone",
                 // with some information stripped
                 boost::replace_all(item,
@@ -4920,9 +4898,9 @@ void ClientTest::getTestData(const char *type, Config &config)
             }
 
             // also test recurring all-day events with exceptions
-            config.linkedItems->resize(2);
-            (*config.linkedItems)[1].resize(2);
-            (*config.linkedItems)[1][0] =
+            config.m_linkedItems.resize(2);
+            config.m_linkedItems[1].resize(2);
+            config.m_linkedItems[1][0] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4941,7 +4919,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "LAST-MODIFIED:20080407T193241Z\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-            (*config.linkedItems)[1][1] =
+            config.m_linkedItems[1][1] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -4964,8 +4942,8 @@ void ClientTest::getTestData(const char *type, Config &config)
             // in particular for Google Calendar: also try with
             // VALARM, because testing showed that the server works
             // differently with and without VALARM data included
-            config.linkedItems->resize(2);
-            (*config.linkedItems)[1].resize(2);
+            config.m_linkedItems.resize(2);
+            config.m_linkedItems[1].resize(2);
             const std::string valarm =
                 "BEGIN:VALARM\n"
                 "ACTION:DISPLAY\n"
@@ -4973,24 +4951,24 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "TRIGGER;VALUE=DURATION;RELATED=START:-PT1H\n"
                 "X-EVOLUTION-ALARM-UID:foo@bar\n"
                 "END:VALARM\nEND:VEVENT";
-            (*config.linkedItems)[1][0] = (*config.linkedItems)[0][0];
-            boost::replace_first((*config.linkedItems)[1][0], "END:VEVENT", valarm);
-            (*config.linkedItems)[1][1] = (*config.linkedItems)[0][1];
-            boost::replace_first((*config.linkedItems)[1][1], "END:VEVENT", valarm);
+            config.m_linkedItems[1][0] = config.m_linkedItems[0][0];
+            boost::replace_first(config.m_linkedItems[1][0], "END:VEVENT", valarm);
+            config.m_linkedItems[1][1] = config.m_linkedItems[0][1];
+            boost::replace_first(config.m_linkedItems[1][1], "END:VEVENT", valarm);
         }
 
-        config.templateItem = config.insertItem;
-        config.uniqueProperties = "SUMMARY:UID:LOCATION";
-        config.sizeProperty = "DESCRIPTION";
-        config.testcases = "testcases/eds_event.ics";
+        config.m_templateItem = config.m_insertItem;
+        config.m_uniqueProperties = "SUMMARY:UID:LOCATION";
+        config.m_sizeProperty = "DESCRIPTION";
+        config.m_testcases = "testcases/eds_event.ics";
     } else if (!strcmp(type, "eds_event_noutc") ||
                (!strcmp(type, "eds_event") && noutc)) {
-        config.sourceName = "eds_event";
-        config.sourceNameServerTemplate = "calendar";
-        config.uri = "cal2"; // ScheduleWorld
-        config.type = "text/x-vcalendar";
-        config.mangleItem = mangleICalendar20;
-        config.insertItem =
+        config.m_sourceName = "eds_event";
+        config.m_sourceNameServerTemplate = "calendar";
+        config.m_uri = "cal2"; // ScheduleWorld
+        config.m_type = "text/x-vcalendar";
+        config.m_mangleItem = mangleICalendar20;
+        config.m_insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5027,7 +5005,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "SEQUENCE:XXX\n"
             "END:VEVENT\n"
             "END:VCALENDAR\n";
-        config.updateItem =
+        config.m_updateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5065,19 +5043,19 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
         /* change location and description of insertItem in testMerge(), add alarm */
-        config.mergeItem1 = "";
-        config.mergeItem2 = "";
-        config.templateItem = config.insertItem;
-        config.uniqueProperties = "SUMMARY:UID:LOCATION";
-        config.sizeProperty = "DESCRIPTION";
-        config.testcases = "testcases/eds_event.ics";
+        config.m_mergeItem1 = "";
+        config.m_mergeItem2 = "";
+        config.m_templateItem = config.m_insertItem;
+        config.m_uniqueProperties = "SUMMARY:UID:LOCATION";
+        config.m_sizeProperty = "DESCRIPTION";
+        config.m_testcases = "testcases/eds_event.ics";
     } else if(!strcmp(type, "eds_task")) {
-        config.sourceName = "eds_task";
-        config.sourceNameServerTemplate = "todo";
-        config.uri = "task2"; // ScheduleWorld
-        config.type = "text/x-vcalendar";
-        config.mangleItem = mangleICalendar20;
-        config.insertItem =
+        config.m_sourceName = "eds_task";
+        config.m_sourceNameServerTemplate = "todo";
+        config.m_uri = "task2"; // ScheduleWorld
+        config.m_type = "text/x-vcalendar";
+        config.m_mangleItem = mangleICalendar20;
+        config.m_insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5092,7 +5070,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "LAST-MODIFIED:20060417T173712Z\n"
             "END:VTODO\n"
             "END:VCALENDAR\n";
-        config.updateItem =
+        config.m_updateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5108,7 +5086,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VTODO\n"
             "END:VCALENDAR\n";
         /* change summary in insertItem in testMerge() */
-        config.mergeItem1 =
+        config.m_mergeItem1 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5123,7 +5101,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "LAST-MODIFIED:20060417T173712Z\n"
             "END:VTODO\n"
             "END:VCALENDAR\n";
-        config.mergeItem2 =
+        config.m_mergeItem2 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5138,10 +5116,10 @@ void ClientTest::getTestData(const char *type, Config &config)
             "LAST-MODIFIED:20060417T173712Z\n"
             "END:VTODO\n"
             "END:VCALENDAR\n";
-        config.templateItem = config.insertItem;
-        config.uniqueProperties = "SUMMARY:UID";
-        config.sizeProperty = "DESCRIPTION";
-        config.testcases = "testcases/eds_task.ics";
+        config.m_templateItem = config.m_insertItem;
+        config.m_uniqueProperties = "SUMMARY:UID";
+        config.m_sizeProperty = "DESCRIPTION";
+        config.m_testcases = "testcases/eds_task.ics";
     } else if(!strcmp(type, "eds_memo")) {
         // The "eds_memo" test uses iCalendar 2.0 VJOURNAL
         // as format because synccompare doesn't handle
@@ -5149,13 +5127,13 @@ void ClientTest::getTestData(const char *type, Config &config)
         // test data must support importing/exporting
         // the test data in that format, see EvolutionMemoSource
         // for an example.
-        config.uri = "note"; // ScheduleWorld
-        config.sourceName = "eds_memo";
-        config.sourceNameServerTemplate = "memo";
-        config.type = "memo";
-        config.itemType = "text/calendar";
-        config.mangleItem = mangleICalendar20;
-        config.insertItem =
+        config.m_uri = "note"; // ScheduleWorld
+        config.m_sourceName = "eds_memo";
+        config.m_sourceNameServerTemplate = "memo";
+        config.m_type = "memo";
+        config.m_itemType = "text/calendar";
+        config.m_mangleItem = mangleICalendar20;
+        config.m_insertItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5164,7 +5142,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DESCRIPTION:Summary\\nBody text\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";
-        config.updateItem =
+        config.m_updateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5174,8 +5152,8 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";
         /* change summary, as in updateItem, and the body in the other merge item */
-        config.mergeItem1 = config.updateItem;
-        config.mergeItem2 =
+        config.m_mergeItem1 = config.m_updateItem;
+        config.m_mergeItem2 =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5184,7 +5162,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DESCRIPTION:Summary\\nBody modified\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";                
-        config.templateItem =
+        config.m_templateItem =
             "BEGIN:VCALENDAR\n"
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
@@ -5193,12 +5171,12 @@ void ClientTest::getTestData(const char *type, Config &config)
             "DESCRIPTION:Summary\\nBody text <<REVISION>>\n"
             "END:VJOURNAL\n"
             "END:VCALENDAR\n";
-        config.uniqueProperties = "SUMMARY:DESCRIPTION";
-        config.sizeProperty = "DESCRIPTION";
-        config.testcases = "testcases/eds_memo.ics";
+        config.m_uniqueProperties = "SUMMARY:DESCRIPTION";
+        config.m_sizeProperty = "DESCRIPTION";
+        config.m_testcases = "testcases/eds_memo.ics";
     }else if (!strcmp (type, "calendar+todo")) {
-        config.uri="";
-        config.sourceNameServerTemplate = "calendar+todo";
+        config.m_uri="";
+        config.m_sourceNameServerTemplate = "calendar+todo";
     }
 }
 

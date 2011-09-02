@@ -99,8 +99,8 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "sqlite-contacts:text/x-vcard";
-        config.testcases = "testcases/sqlite_vcard21.vcf";
+        config.m_type = "sqlite-contacts:text/x-vcard";
+        config.m_testcases = "testcases/sqlite_vcard21.vcf";
     }
 } VCard21Test;
 

@@ -107,21 +107,6 @@ public:
     /** the run() call modified configurations (added, updated, removed) */
     bool configWasModified() const { return m_configModified; }
 
-    /**
-     * Acts like a boolean, but in addition, can also tell whether the
-     * value was explicitly set.
-     */
-    class Bool { 
-    public:
-    Bool(bool val = false) : m_value(val), m_wasSet(false) {}
-        operator bool () const { return m_value; }
-        Bool & operator = (bool val) { m_value = val; m_wasSet = true; return *this; }
-        bool wasSet() const { return m_wasSet; }
-    private:
-        bool m_value;
-        bool m_wasSet;
-    };
-
     Bool useDaemon() { return m_useDaemon; }
 
     /** whether '--monitor' is set */

@@ -101,7 +101,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "apple-contacts:text/x-vcard";
+        config.m_type = "apple-contacts:text/x-vcard";
     }
 } vCard21Test;
 
@@ -111,7 +111,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "apple-contacts:text/vcard";
+        config.m_type = "apple-contacts:text/vcard";
     }
 } vCard30Test;
 

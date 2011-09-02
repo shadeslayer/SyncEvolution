@@ -121,7 +121,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "file:text/vcard:3.0";
+        config.m_type = "file:text/vcard:3.0";
     }
 } VCard30Test;
 
@@ -131,7 +131,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "file:text/calendar:2.0";
+        config.m_type = "file:text/calendar:2.0";
 
         // A sync source which supports linked items (= recurring
         // event with detached exception) is expected to handle
@@ -143,7 +143,7 @@ public:
         // Client::Source::file_event::testLinkedItemsInsertChildTwice
         //
         // Disable linked item testing to avoid this.
-        config.sourceKnowsItemSemantic = false;
+        config.m_sourceKnowsItemSemantic = false;
     }
 } ICal20Test;
 
@@ -153,7 +153,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "file:text/calendar:2.0";
+        config.m_type = "file:text/calendar:2.0";
     }
 } ITodo20Test;
 
@@ -163,8 +163,8 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "virtual:text/x-vcalendar";
-        config.subConfigs = "file_event,file_task";
+        config.m_type = "virtual:text/x-vcalendar";
+        config.m_subConfigs = "file_event,file_task";
     }
 
 } superTest;

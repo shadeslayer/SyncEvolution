@@ -381,7 +381,21 @@ class Timespec : public timespec
     static Timespec monotonic() { Timespec res; clock_gettime(CLOCK_MONOTONIC, &res); return res; }
     static Timespec system() { Timespec res; clock_gettime(CLOCK_REALTIME, &res); return res; }
 };
- 
+
+/**
+ * Acts like a boolean, but in addition, can also tell whether the
+ * value was explicitly set. Defaults to false.
+ */
+class Bool { 
+ public:
+ Bool(bool val = false) : m_value(val), m_wasSet(false) {}
+    operator bool () const { return m_value; }
+    Bool & operator = (bool val) { m_value = val; m_wasSet = true; return *this; }
+    bool wasSet() const { return m_wasSet; }
+ private:
+    bool m_value;
+    bool m_wasSet;
+};
 
 /**
  * an exception which records the source file and line

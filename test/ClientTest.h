@@ -286,7 +286,7 @@ class ClientTest {
     /**
      * utility function for dumping items which are C strings with blank lines as separator
      */
-    static int dump(ClientTest &client, TestingSyncSource &source, const char *file);
+    static int dump(ClientTest &client, TestingSyncSource &source, const std::string &file);
 
     /**
      * utility function for splitting file into items with blank lines as separator
@@ -295,20 +295,20 @@ class ClientTest {
      *                        of the generic version. The caller gets the name of the
      *                        file that was opened here.
      */
-    static void getItems(const char *file, std::list<std::string> &items, std::string &realfile);
+    static void getItems(const std::string &file, std::list<std::string> &items, std::string &realfile);
 
     /**
      * utility function for importing items with blank lines as separator
      */
     static std::string import(ClientTest &client, TestingSyncSource &source,
                               const ClientTestConfig &config,
-                              const char *file, std::string &realfile);
+                              const std::string &file, std::string &realfile);
 
     /**
      * utility function for comparing vCard and iCal files with the external
      * synccompare.pl Perl script
      */
-    static bool compare(ClientTest &client, const char *fileA, const char *fileB);
+    static bool compare(ClientTest &client, const std::string &fileA, const std::string &fileB);
 
     /**
      * utility function: update a vCard or iCalendar item by inserting "MOD-" into
@@ -429,7 +429,7 @@ class ClientTest {
  */
 class CreateSource {
 public:
-    CreateSource(ClientTest::Config::createsource_t createSourceParam, ClientTest &clientParam, int sourceParam, bool isSourceAParam) :
+     CreateSource(const ClientTest::Config::createsource_t &createSourceParam, ClientTest &clientParam, int sourceParam, bool isSourceAParam) :
         createSource(createSourceParam),
         client(clientParam),
         source(sourceParam),
@@ -473,8 +473,8 @@ public:
         client(cl),
         source(sourceParam),
         config(co),
-        createSourceA(co.createSourceA, cl, sourceParam, true),
-        createSourceB(co.createSourceB, cl, sourceParam, false)
+        createSourceA(co.m_createSourceA, cl, sourceParam, true),
+        createSourceB(co.m_createSourceB, cl, sourceParam, false)
         {}
 
     /** set up before running a test */
