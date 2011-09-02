@@ -229,13 +229,13 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = m_type.c_str();
-        config.createSourceA = boost::bind(&WebDAVTest::createSource, this, _3);
-        config.createSourceB = boost::bind(&WebDAVTest::createSource, this, _3);
+        config.m_type = m_type.c_str();
+        config.m_createSourceA = boost::bind(&WebDAVTest::createSource, this, _3);
+        config.m_createSourceB = boost::bind(&WebDAVTest::createSource, this, _3);
         ConfigProps::const_iterator it = m_props.find(m_type + "/testcases");
         if (it != m_props.end() ||
             (it = m_props.find("testcases")) != m_props.end()) {
-            config.testcases = it->second.c_str();
+            config.m_testcases = it->second.c_str();
         }
     }
 

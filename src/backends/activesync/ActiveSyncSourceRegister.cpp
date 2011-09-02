@@ -142,10 +142,10 @@ namespace {
  * operation. Using the cached information implies that we won't find bugs in
  * the handling of that information.
  */
-static int DumpItems(ClientTest &client, TestingSyncSource &source, const char *file)
+static int DumpItems(ClientTest &client, TestingSyncSource &source, const std::string &file)
 {
     ActiveSyncSource &eassource = static_cast<ActiveSyncSource &>(source);
-    ofstream out(file);
+    ofstream out(file.c_str());
 
     // find all ActiveSync server IDs: in ActiveSyncCalendarSource,
     // each server ID might appear multiple times, once for each
@@ -204,17 +204,17 @@ static void updateConfigEAS(const RegisterSyncSourceTest */* me */,
         // cannot run tests involving a second database:
         // wrap orginal source creation, set default database for
         // database #0 and refuse to return a source for database #1
-        config.createSourceA = boost::bind(createEASSource, config.createSourceA,
-                                           _1, _2, _3);
-        config.createSourceB = boost::bind(createEASSource, config.createSourceB,
-                                           _1, _2, _3);
+        config.m_createSourceA = boost::bind(createEASSource, config.m_createSourceA,
+                                             _1, _2, _3);
+        config.m_createSourceB = boost::bind(createEASSource, config.m_createSourceB,
+                                             _1, _2, _3);
 
-        config.dump = DumpItems;
-        config.sourceLUIDsAreVolatile = true;
+        config.m_dump = DumpItems;
+        config.m_sourceLUIDsAreVolatile = true;
         // TODO: find out how ActiveSync/Exchange handle children without parent;
         // at the moment, the child is stored as if it was a stand-alone event
         // and the RECURRENCE-ID is lost (BMC #22831).
-        config.linkedItemsRelaxedSemantic = false;
+        config.m_linkedItemsRelaxedSemantic = false;
 }
 
 static class ActiveSyncContactTest : public RegisterSyncSourceTest {
@@ -227,7 +227,7 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         // override default eds_contact test config
-        config.type = "eas-contacts";
+        config.m_type = "eas-contacts";
         // TODO: provide comprehensive set of vCard 3.0 contacts as they are understood by the ActiveSync library
         // config.testcases = "testcases/eas_contact.vcf";
 
@@ -243,7 +243,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "eas-events";
+        config.m_type = "eas-events";
         updateConfigEAS(this, config);
     }
 } ActiveSyncEventTest;
@@ -256,7 +256,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "eas-todos";
+        config.m_type = "eas-todos";
         updateConfigEAS(this, config);
     }
 } ActiveSyncTodoTest;
@@ -269,7 +269,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "eas-memos";
+        config.m_type = "eas-memos";
         updateConfigEAS(this, config);
     }
 } ActiveSyncMemoTest;

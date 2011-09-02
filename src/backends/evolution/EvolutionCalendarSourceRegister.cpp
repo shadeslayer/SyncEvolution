@@ -317,7 +317,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "evolution-calendar";
+        config.m_type = "evolution-calendar";
     }
 } iCal20Test;
 
@@ -327,7 +327,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "evolution-tasks";
+        config.m_type = "evolution-tasks";
     }
 } iTodo20Test;
 
@@ -337,8 +337,8 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "virtual:text/x-vcalendar";
-        config.subConfigs = "eds_event,eds_task";
+        config.m_type = "virtual:text/x-vcalendar";
+        config.m_subConfigs = "eds_event,eds_task";
     }
 
 } superTest;
@@ -349,7 +349,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "Evolution Memos"; // use an alias here to test that
+        config.m_type = "Evolution Memos"; // use an alias here to test that
     }
 } memoTest;
 

@@ -508,7 +508,7 @@ int main( int argc, char **argv )
             return 0;
         }
 
-        Cmdline::Bool useDaemon = cmdline.useDaemon();
+        Bool useDaemon = cmdline.useDaemon();
 
         if(cmdline.monitor()) {
 

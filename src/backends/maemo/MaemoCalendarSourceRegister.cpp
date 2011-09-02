@@ -137,7 +137,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "maemo-events";
+        config.m_type = "maemo-events";
     }
 } iCal20Test;
 
@@ -147,7 +147,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "maemo-tasks";
+        config.m_type = "maemo-tasks";
     }
 } iTodo20Test;
 
@@ -157,7 +157,7 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "maemo-notes";
+        config.m_type = "maemo-notes";
     }
 } memoTest;
 

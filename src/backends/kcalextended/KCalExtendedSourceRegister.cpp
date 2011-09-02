@@ -93,10 +93,10 @@ public:
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
-        config.type = "KCalExtended:text/calendar";
+        config.m_type = "KCalExtended:text/calendar";
         // after fixing BMC #6061, mKCal is able to delete individual
         // VEVENTs, without enforcing the "each child must have parent" rule
-        config.linkedItemsRelaxedSemantic = true;
+        config.m_linkedItemsRelaxedSemantic = true;
     }
 } iCal20Test;
 
