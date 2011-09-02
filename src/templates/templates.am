@@ -4,13 +4,13 @@ src_templatesdir = $(datadir)/syncevolution/templates
 dist_src_templates_DATA = src/templates/README
 # ./clients
 src_templates_clientsdir = $(datadir)/syncevolution/templates/clients
-dist_src_templates_clients_DATA = $(wildcard src/templates/clients/*.ini)
+dist_src_templates_clients_DATA = $(subst $(srcdir)/,,$(wildcard $(srcdir)/src/templates/clients/*.ini))
 # ./clients/phone
 src_templates_clients_phonedir = $(datadir)/syncevolution/templates/clients/phone
-dist_src_templates_clients_phone_DATA = $(wildcard src/templates/clients/phone/*.ini)
+dist_src_templates_clients_phone_DATA = $(subst $(srcdir)/,,$(wildcard $(srcdir)/src/templates/clients/phone/*.ini))
 # ./contexts
 src_templates_contextsdir = $(datadir)/syncevolution/templates/contexts
-dist_src_templates_contexts_DATA = $(wildcard src/templates/contexts/*.ini)
+dist_src_templates_contexts_DATA = $(subst $(srcdir)/,,$(wildcard $(srcdir)/src/templates/contexts/*.ini))
 # ./servers
 src_templates_serversdir = $(datadir)/syncevolution/templates/servers
-dist_src_templates_servers_DATA = $(wildcard src/templates/servers/*.ini)
+dist_src_templates_servers_DATA = $(subst $(srcdir)/,,$(wildcard $(srcdir)/src/templates/servers/*.ini))
