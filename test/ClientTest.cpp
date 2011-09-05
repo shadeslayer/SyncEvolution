@@ -271,8 +271,7 @@ void LocalTests::addTests() {
                 ADD_TEST(LocalTests, testImportDelete);
             }
 
-            if (!config.m_templateItem.empty() &&
-                !config.m_uniqueProperties.empty()) {
+            if (!config.m_templateItem.empty()) {
                 ADD_TEST(LocalTests, testManyChanges);
             }
 
@@ -613,7 +612,6 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
     std::list<std::string> luids;
 
     CPPUNIT_ASSERT(!config.m_templateItem.empty());
-    CPPUNIT_ASSERT(!config.m_uniqueProperties.empty());
 
     restoreStorage(config, client);
     TestingSyncSourcePtr source;
@@ -638,7 +636,6 @@ std::list<std::string> LocalTests::insertManyItems(TestingSyncSource *source, in
     std::list<std::string> luids;
 
     CPPUNIT_ASSERT(!config.m_templateItem.empty());
-    CPPUNIT_ASSERT(!config.m_uniqueProperties.empty());
 
     CPPUNIT_ASSERT(startIndex > 1 || !countItems(source));
     int firstIndex = startIndex;
@@ -902,7 +899,6 @@ void LocalTests::testImportDelete() {
 void LocalTests::testManyChanges() {
     // check additional requirements
     CPPUNIT_ASSERT(!config.m_templateItem.empty());
-    CPPUNIT_ASSERT(!config.m_uniqueProperties.empty());
 
     CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
