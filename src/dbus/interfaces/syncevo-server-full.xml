@@ -251,8 +251,10 @@
         and values matching those in the SyncEvolution server 
         configuration files.</doc:para>
 
-        <doc:para>In addition, some special keys for read-only
-        values are added:
+        <doc:para>In addition, some special keys for read-only values
+        are added. These entries may be set when reading a config or
+        template and can be sent when writing it, but will not
+        actually be stored.
         <doc:list>
           <doc:item>
             <doc:term>configName</doc:term>
@@ -279,7 +281,7 @@
           <doc:item>
             <doc:term>deviceName</doc:term>
             <doc:definition>device template: the device name that the template is for
-            (copied verbatim from that device)</doc:definition>
+            (copied verbatim from that device, typically chosen by the user of the device)</doc:definition>
           </doc:item>
           <doc:item>
             <doc:term>templateName</doc:term>
@@ -287,6 +289,14 @@
             the templates works for, like "Nokia S40"; meant to be
             shown to users; optional, fall back to first entry in
             fingerPrint if not set</doc:definition>
+          </doc:item>
+          <doc:item>
+            <doc:term>hardwareName</doc:term>
+            <doc:definition>device template: "<vendor>[ <model>]" string extracted
+            from a device database, unset if neither vendor nor model are known. The
+            deviceName above is probably a better way to present the device to the user,
+            because if a user has multiple identical devices, he hopefully chose
+            unique names for them.</doc:definition>
           </doc:item>
           <doc:item>
             <doc:term>fingerPrint</doc:term>

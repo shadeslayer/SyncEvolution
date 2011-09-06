@@ -1036,7 +1036,7 @@ class SyncConfig {
         // name, or product name (vendor + model). This depends on
         // whether the device supports the Bluetooth Device ID profile
         // and, if so, whether we have the model in the lookup table.
-        std::string m_peerName;
+        std::string m_hardwareName;
 
         //a unique identity of the device that the template is for, used by caller
         std::string m_deviceId;
@@ -1056,13 +1056,13 @@ class SyncConfig {
         std::string m_templateName;
 
         TemplateDescription (const std::string &templateId, const std::string &description,
-                             const int rank, const std::string &peerName, const std::string &deviceId,
+                             const int rank, const std::string &hardwareName, const std::string &deviceId,
                              const std::string &fingerprint, const std::string &path,
                              const std::string &model, const std::string &templateName)
             :   m_templateId (templateId),
                 m_description (description),
                 m_rank (rank),
-                m_peerName (peerName),
+                m_hardwareName (hardwareName),
                 m_deviceId (deviceId),
                 m_deviceName (fingerprint),
                 m_path (path),

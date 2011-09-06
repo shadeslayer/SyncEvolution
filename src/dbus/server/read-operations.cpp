@@ -122,7 +122,9 @@ void ReadOperations::getConfig(bool getTemplate,
             localConfigs.insert(pair<string, string>("deviceName", peerTemplate->m_deviceName));
             // This is the reliable device info obtained from the bluetooth
             // device id profile (DIP) or emtpy if DIP not supported.
-            localConfigs.insert(pair<string, string>("peerName", peerTemplate->m_peerName));
+            if (!peerTemplate->m_hardwareName.empty()) {
+                localConfigs.insert(pair<string, string>("hardwareName", peerTemplate->m_hardwareName));
+            }
             // This is the fingerprint of the template
             localConfigs.insert(pair<string, string>("fingerPrint", peerTemplate->m_matchedModel));
             // This is the template name presented to UI (or device class)

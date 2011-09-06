@@ -91,6 +91,7 @@ static void setSyncFilters(const ReadOperations::Config_t &config,FilterConfigNo
                     "description",
                     "score",
                     "deviceName",
+                    "hardwareName",
                     "templateName",
                     "fingerprint"
                 };
