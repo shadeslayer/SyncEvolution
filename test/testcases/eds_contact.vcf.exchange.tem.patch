@@ -1,0 +1,230 @@
+@@ -2,7 +2,6 @@
+ VERSION:3.0
+ NICKNAME:user17
+ NOTE:triggers parser bug in Funambol 3.0: trailing = is mistaken for soft line break=
+-FN:parserbug=
+ N:parserbug=
+ X-EVOLUTION-FILE-AS:parserbug=
+ END:VCARD
+@@ -11,7 +10,6 @@
+ VERSION:3.0
+ NICKNAME:user16
+ NOTE:test case with empty email
+-FN:incomplete
+ N:incomplete
+ EMAIL:
+ X-EVOLUTION-FILE-AS:incomplete
+@@ -24,7 +22,6 @@
+  example that should require folding in vcards. Does folding insert a crlf
+   before a space or does it insert crlf _plus_ a space? vCard 2.1 inserts 
+  before a space\, 3.0 inserts line break plus space.
+-FN:long line
+ N:line;long;;;
+ X-EVOLUTION-FILE-AS:line\, long
+ END:VCARD
+@@ -33,7 +30,6 @@
+ VERSION:3.0
+ NICKNAME:user12
+ NOTE:ampersand entity &amp\; less-than entity &lt\;
+-FN:xml entities
+ N:xml;entities;;;
+ X-EVOLUTION-FILE-AS:xml\, entities
+ END:VCARD
+@@ -42,7 +38,6 @@
+ VERSION:3.0
+ NICKNAME:user13
+ NOTE:a colon is not a special character so here it comes : and not quoting necessary
+-FN:colon
+ N:colon;unquoted;;;
+ X-EVOLUTION-FILE-AS:colon\, unquoted
+ END:VCARD
+@@ -51,7 +46,6 @@
+ VERSION:3.0
+ NICKNAME:user14
+ NOTE:here are some quotation marks: single ' double " back ` - none of them is special
+-FN:quotation marks
+ N:marks;quotation;;;
+ X-EVOLUTION-FILE-AS:marks\, quotation
+ END:VCARD
+@@ -59,17 +53,15 @@
+ BEGIN:VCARD
+ VERSION:3.0
+ NICKNAME:user15
+-NOTE:Spouse's Name: foobar
+-FN:spouse name
+-N:name;spouse;;;
+-X-EVOLUTION-FILE-AS:spouse\, name
++NOTE:Special BDAY with UTC
++BDAY:2006-01-09T23:59:59Z
++N:bday;special UTC offset;;;
+ END:VCARD
+ 
+ BEGIN:VCARD
+ VERSION:3.0
+ NICKNAME:user9
+ NOTE;CHARSET="UTF-8":Tests charset specification with quotation marks.
+-FN:charset
+ N:set;char;;;
+ X-EVOLUTION-FILE-AS:set\, char
+ END:VCARD
+@@ -92,8 +84,7 @@
+  \\\n\nThe same\, in the middle of a line:\ncomma \, comma\ncolon : col
+  on\nsemicolon \; semicolon\nbackslash \\ backslash\n\nA tab 	tab done\n	
+  line starts with tab
+-FN:Umlaut Ä Ö Ü ß
+-N:Ü;Ä;Ö;Umlaut;ß
++N:Ü;Ä;Ö;;ß
+ X-EVOLUTION-FILE-AS:Ü\, Ä
+ CATEGORIES:Business
+ X-EVOLUTION-BLOG-URL:
+@@ -101,7 +92,7 @@
+ FBURL:
+ X-EVOLUTION-VIDEO-URL:
+ X-MOZILLA-HTML:FALSE
+-ADR;TYPE=HOME:test 5;Line 2;Umlaut Ä in Line 1;test 1;test 3;test 2;test 4
++ADR;TYPE=HOME:;;Umlaut Ä in Line 1;test 1;test 3;test 2;test 4
+ LABEL;TYPE=HOME:Umlaut Ä in Line 1\nLine 2\n\ntest 1\, test 3\ntest 2\ntest 5\ntest 4
+ UID:pas-id-43C0EF0A00000002
+ END:VCARD
+@@ -116,7 +107,6 @@
+ NICKNAME:user8
+ X-EVOLUTION-SPOUSE:
+ NOTE:Here are some special characters: comma \, colon : semicolon \;
+-FN:special characters
+ N:characters;special;;;
+ X-EVOLUTION-FILE-AS:characters\, special
+ X-EVOLUTION-BLOG-URL:
+@@ -139,7 +129,6 @@
+ NOTE:This test case uses line breaks. This is line 1.\nLine 2.\n\nLine brea
+  ks in vcard 2.1 are encoded as =0D=0A.\nThat means the = has to be encod
+  ed itself...
+-FN:line breaks
+ N:breaks;line;;;
+ X-EVOLUTION-FILE-AS:breaks\, line
+ X-EVOLUTION-BLOG-URL:
+@@ -147,7 +136,7 @@
+ FBURL:
+ X-EVOLUTION-VIDEO-URL:
+ X-MOZILLA-HTML:FALSE
+-ADR;TYPE=HOME:;Address Line 2\nAddress Line 3;Address Line 1;;;;
++ADR;TYPE=HOME:;;Address Line 1\nAddress Line 2;;;;
+ LABEL;TYPE=HOME:Address Line 1\nAddress Line 2\nAddress Line 3
+ UID:pas-id-43C15DFB000001AB
+ END:VCARD
+@@ -164,51 +153,35 @@
+ BDAY:2006-01-08
+ X-FOOBAR-EXTENSION;X-FOOBAR-PARAMETER=foobar:has to be stored internally by engine and preserved in testExtensions test; never sent to a peer
+ X-TEST;PARAMETER1=nonquoted;PARAMETER2="quoted because of spaces":Content with\nMultiple\nText lines\nand national chars: äöü
+-X-EVOLUTION-ANNIVERSARY:2006-01-09
+-X-EVOLUTION-SPOUSE:Joan Doe
+ NOTE:This is a test case which uses almost all Evolution fields.
+-FN:John Doe
+ N:Doe;John;;;
+ X-EVOLUTION-FILE-AS:Doe\, John
+ CATEGORIES:TEST
+-X-EVOLUTION-BLOG-URL:web log
+-CALURI:calender
+-FBURL:free/busy
+-X-EVOLUTION-VIDEO-URL:chat
+-X-MOZILLA-HTML:TRUE
+-ADR;TYPE=WORK:Test Box #2;;Test Drive 2;Test Town;Upper Test County;12346;O
++ADR;TYPE=WORK:;;Test Drive 2;Test Town;Upper Test County;12346;O
+  ld Testovia
+ LABEL;TYPE=WORK:Test Drive 2\nTest Town\, Upper Test County\n12346\nTest Bo
+  x #2\nOld Testovia
+-ADR;TYPE=HOME:Test Box #1;;Test Drive 1;Test Village;Lower Test County;1234
++ADR;TYPE=HOME:;;Test Drive 1;Test Village;Lower Test County;1234
+  5;Testovia
+ LABEL;TYPE=HOME:Test Drive 1\nTest Village\, Lower Test County\n12345\nTest
+   Box #1\nTestovia
+-ADR:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
++ADR;TYPE=OTHER:;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
+ LABEL;TYPE=OTHER:Test Drive 3\nTest Megacity\, Test County\n12347\nTest Box
+   #3\nNew Testonia
+ UID:pas-id-43C0ED3900000001
+-EMAIL;TYPE=WORK;X-EVOLUTION-UI-SLOT=1:john.doe@work.com
+-EMAIL;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:john.doe@home.priv
+-EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=3:john.doe@other.world
+-EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=4:john.doe@yet.another.world
+-TEL;TYPE=work;TYPE=Voice;X-EVOLUTION-UI-SLOT=1:business 1
+-TEL;TYPE=homE;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:home 2
+-TEL;TYPE=CELL;X-EVOLUTION-UI-SLOT=3:mobile 3
+-TEL;TYPE=WORK;TYPE=FAX;X-EVOLUTION-UI-SLOT=4:businessfax 4
+-TEL;TYPE=HOME;TYPE=FAX;X-EVOLUTION-UI-SLOT=5:homefax 5
+-TEL;TYPE=PAGER;X-EVOLUTION-UI-SLOT=6:pager 6
+-TEL;TYPE=CAR;X-EVOLUTION-UI-SLOT=7:car 7
+-TEL;TYPE=PREF;X-EVOLUTION-UI-SLOT=8:primary 8
+-X-AIM;X-EVOLUTION-UI-SLOT=1:AIM JOHN
+-X-YAHOO;X-EVOLUTION-UI-SLOT=2:YAHOO JDOE
+-X-ICQ;X-EVOLUTION-UI-SLOT=3:ICQ JD
+-X-GROUPWISE;X-EVOLUTION-UI-SLOT=4:GROUPWISE DOE
+-X-GADUGADU:GADUGADU DOE
+-X-JABBER:JABBER DOE
+-X-MSN:MSN DOE
+-X-SKYPE:SKYPE DOE
+-X-SIP:SIP DOE
++EMAIL:john.doe@work.com
++EMAIL:john.doe@home.priv
++EMAIL:john.doe@other.world
++TEL;TYPE=work;TYPE=Voice:business 1
++TEL;TYPE=homE;TYPE=VOICE:home 2
++TEL;TYPE=CELL:mobile 3
++TEL;TYPE=WORK;TYPE=FAX:businessfax 4
++TEL;TYPE=HOME;TYPE=FAX:homefax 5
++TEL;TYPE=PAGER:pager 6
++TEL;TYPE=CAR:car 7
++TEL;TYPE=RADIO:radio 8
++TEL;TYPE=work:business 9
++TEL;HOME:home 10
+ END:VCARD
+ 
+ BEGIN:VCARD
+@@ -221,8 +194,7 @@
+ NICKNAME:user5
+ X-EVOLUTION-SPOUSE:
+ NOTE:image in JPG format
+-FN:Ms. JPG
+-N:;JPG;;Ms.;
++N:;JPG;;;
+ X-EVOLUTION-FILE-AS:JPG
+ X-EVOLUTION-BLOG-URL:
+ CALURI:
+@@ -257,8 +229,7 @@
+ NICKNAME:user4
+ X-EVOLUTION-SPOUSE:
+ NOTE:image in PNG format
+-FN:Mrs. PNG
+-N:;PNG;;Mrs.;
++N:;PNG;;;
+ X-EVOLUTION-FILE-AS:PNG
+ X-EVOLUTION-BLOG-URL:
+ CALURI:
+@@ -288,8 +259,7 @@
+ NICKNAME:user6
+ X-EVOLUTION-SPOUSE:
+ NOTE:The first name is "First \; special \;".
+-FN:Mr. First \; special \; middle Last
+-N:Last;First \; special \;;middle;Mr.;
++N:Last;First \; special \;;middle;;
+ X-EVOLUTION-FILE-AS:Last\, First \; special \;
+ X-EVOLUTION-BLOG-URL:
+ CALURI:
+@@ -309,8 +279,7 @@
+ NICKNAME:user3
+ X-EVOLUTION-SPOUSE:
+ NOTE:image in GIF format
+-FN:Mr. GIF
+-N:;GIF;;Mr.;
++N:;GIF;;;
+ X-EVOLUTION-FILE-AS:GIF
+ X-EVOLUTION-BLOG-URL:
+ CALURI:
+@@ -429,7 +398,6 @@
+   & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+   & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+   & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & < & <
+-FN:large vcard
+-N:;vcard;;large;
++N:;vcard;large;;
+ X-EVOLUTION-FILE-AS:large
+ END:VCARD
