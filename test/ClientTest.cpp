@@ -3206,9 +3206,10 @@ void SyncTests::testLinkedItemsChildParent()
         CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
         CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
+        // relaxed change checks because child event is also modified
         CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
                                                    it->second->config.m_linkedItems[0][0],
-                                                   false));
+                                                   true));
     }
     // child may or may not be considered updated
     doSync("send-parent",
