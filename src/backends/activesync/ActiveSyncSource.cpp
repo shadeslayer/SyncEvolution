@@ -81,8 +81,10 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
     m_startSyncKey = lastToken;
     if (lastToken.empty()) {
         // slow sync: wipe out cached list of IDs, will be filled anew below
-        SE_LOG_DEBUG(this, NULL, "starting slow sync");
+        SE_LOG_DEBUG(this, NULL, "sync key empty, starting slow sync");
         m_ids->clear();
+    } else {
+        SE_LOG_DEBUG(this, NULL, "sync key %s, starting incremental sync", lastToken.c_str());
     }
 
     GErrorCXX gerror;
@@ -184,7 +186,9 @@ std::string ActiveSyncSource::endSync(bool success)
 
     // let engine do incremental sync next time or start from scratch
     // in case of failure
-    return success ? m_currentSyncKey : "";
+    std::string newSyncKey = success ? m_currentSyncKey : "";
+    SE_LOG_DEBUG(this, NULL, "next sync key %s", newSyncKey.empty() ? "empty" : newSyncKey.c_str());
+    return newSyncKey;
 }
 
 void ActiveSyncSource::deleteItem(const string &luid)

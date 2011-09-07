@@ -45,9 +45,11 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
     setStartSyncKey(lastToken);
     if (lastToken.empty()) {
         // slow sync: wipe out cached list of IDs, will be filled anew below
-        SE_LOG_DEBUG(this, NULL, "starting slow sync");
+        SE_LOG_DEBUG(this, NULL, "sync key empty, starting slow sync");
         m_trackingNode->clear();
     } else {
+        SE_LOG_DEBUG(this, NULL, "sync key %s, starting incremental sync", lastToken.c_str());
+
         // re-populate cache from storage, without any item data
         ConfigProps props;
         m_trackingNode->readProperties(props);
@@ -216,7 +218,9 @@ std::string ActiveSyncCalendarSource::endSync(bool success)
     // end up in the same file and only get flushed once
     m_trackingNode->flush();
 
-    return getCurrentSyncKey();
+    std::string newSyncKey = getCurrentSyncKey();
+    SE_LOG_DEBUG(this, NULL, "next sync key %s", newSyncKey.empty() ? "empty" : newSyncKey.c_str());
+    return newSyncKey;
 }
 
 std::string ActiveSyncCalendarSource::getDescription(const string &luid)
