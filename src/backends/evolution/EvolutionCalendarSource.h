@@ -179,7 +179,15 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
      * implemented without the troublesome querying of the EDS
      * backend.
      */
-    set<string> m_allLUIDs;
+    class LUIDs : public map< string, set<string> > {
+    public:
+        bool containsUID(const std::string &uid) const { return findUID(uid) != end(); }
+        const_iterator findUID(const std::string &uid) const { return find(uid); }
+
+        bool containsLUID(const ItemID &id) const;
+        void insertLUID(const ItemID &id);
+        void eraseLUID(const ItemID &id);
+    } m_allLUIDs;
 
     /**
      * A list of ref-counted smart pointers to icalcomponents.
