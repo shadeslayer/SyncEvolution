@@ -134,8 +134,8 @@
  CREATED:20060416T205003Z
  LAST-MODIFIED:20060416T205003Z
  END:VEVENT
-@@ -262,37 +147,3 @@
- DESCRIPTION:second instance modified
+@@ -357,37 +242,3 @@
+ DESCRIPTION:third instance modified\, different time
  END:VEVENT
  END:VCALENDAR
 -
