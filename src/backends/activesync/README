@@ -48,6 +48,15 @@ $ syncevolution exchange
 Sync only events:
 $ syncevolution exchange calendar
 
+Note that it is not possible to share the same username in the target
+config between different sync configs, because change tracking is tied
+to the account, not the config using it. For the same reason, listing
+items will affect syncing if the same username (= account) is used in
+both.
+
+As a workaround it is possible to set up different accounts for the
+same server, see below.
+
 
 Backend Testing
 ===============
@@ -100,19 +109,34 @@ the file can be put into:
 Sync Testing
 ============
 
-- Configure target-config@exchange with source 'calendar'.
+- Configure target-config@exchange with source 'calendar' and 'addressbook'.
 - Create two sync configs:
-  syncevolution --configure username= password= \
-                syncURL=local://@exchange uri=calendar \
+  syncevolution --configure \
+                syncURL=local://@exchange \
+                username=<EAS account ID> \
                 backend=evolution-calendar \
-                --template SyncEvolution_Client exchange_1@client-test-1 eds_event
-  syncevolution --configure username= password= \
-                syncURL=local://@exchange uri=calendar \
-                backend=evolution-calendar \
-                --template SyncEvolution_Client exchange_2@client-test-2 eds_event
+                eds_event/backend=evolution-calendar \
+                eds_event/uri=calendar \
+                eds_contact/backend=evolution-contacts \
+                eds_contact/uri=addressbook \
+                --template SyncEvolution_Client exchange_1@client-test-1 eds_event eds_contact
+  syncevolution --configure \
+                syncURL=local://@exchange \
+                username=<EAS account ID>_B \
+                eds_event/backend=evolution-calendar \
+                eds_event/uri=calendar \
+                eds_contact/backend=evolution-contacts \
+                eds_contact/uri=addressbook \
+                --template SyncEvolution_Client exchange_2@client-test-2 eds_event eds_contact
 - Create calendars named as follows in Evolution:
   SyncEvolution_Test_eds_event_1
   SyncEvolution_Test_eds_event_2
 - run test (see above for invoking client-test and setting up "testcases"):
   CLIENT_TEST_UNIQUE_UID=1 CLIENT_TEST_SERVER=exchange \
   client-test Client::Sync::eds_event::testCopy
+
+This setup depends on overriding the username in
+target-config@exchange with different usernames in each sync
+config. This is necessary because change tracking depends on that
+username.
+
