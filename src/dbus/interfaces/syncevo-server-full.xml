@@ -292,7 +292,7 @@
           </doc:item>
           <doc:item>
             <doc:term>hardwareName</doc:term>
-            <doc:definition>device template: "<vendor>[ <model>]" string extracted
+            <doc:definition>device template: "vendor[ model]" string extracted
             from a device database, unset if neither vendor nor model are known. The
             deviceName above is probably a better way to present the device to the user,
             because if a user has multiple identical devices, he hopefully chose
