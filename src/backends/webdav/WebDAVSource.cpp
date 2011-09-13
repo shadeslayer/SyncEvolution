@@ -1020,7 +1020,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
 {
     std::string new_uid;
     std::string rev;
-    bool update = false;  /* true if adding item was turned into update */
+    InsertItemResultState state = ITEM_OKAY;
 
     Timespec deadline = createDeadline(); // no resending if left empty
     m_session->startOperation("PUT", deadline);
@@ -1087,7 +1087,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
             SE_LOG_DEBUG(NULL, NULL, "new item mapped to %s", real_luid.c_str());
             new_uid = real_luid;
             // TODO: find a better way of detecting unexpected updates.
-            // update = true;
+            // state = ...
         } else if (!rev.empty()) {
             // Yahoo Contacts returns an etag, but no href. For items
             // that were really created as requested, that's okay. But
@@ -1114,7 +1114,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
                              new_uid.c_str(),
                              revisions.begin()->first.c_str());
                 new_uid = revisions.begin()->first;
-                update = true;
+                state = ITEM_REPLACED;
             }
         }
     } else {
@@ -1182,7 +1182,7 @@ TrackingSyncSource::InsertItemResult WebDAVSource::insertItem(const string &uid,
         }
     }
 
-    return InsertItemResult(new_uid, rev, update);
+    return InsertItemResult(new_uid, rev, state);
 }
 
 std::string WebDAVSource::ETag2Rev(const std::string &etag)

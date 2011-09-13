@@ -67,7 +67,7 @@ class SubSyncSource : virtual public SyncSourceBase
     class SubItemResult {
     public:
         SubItemResult() :
-            m_merged(false)
+            m_state(ITEM_OKAY)
         {}
         
         /**
@@ -79,25 +79,25 @@ class SubSyncSource : virtual public SyncSourceBase
          * @param uid       an arbitrary string, stored, but not used by MapSyncSource;
          *                  used in the CalDAV backend to associate mainid (= resource path)
          *                  with UID (= part of the item content, but with special semantic)
-         * @param merged    set this to true if an existing sub item was updated instead of adding it
+         * @param state     report about what was done with the data
          */
         SubItemResult(const string &mainid,
                       const string &subid,
                       const string &revision,
                       const string &uid,
-                      bool merged) :
+                      InsertItemResultState state) :
             m_mainid(mainid),
             m_subid(subid),
             m_revision(revision),
             m_uid(uid),
-            m_merged(merged)
+            m_state(state)
         {}
 
         string m_mainid;
         string m_subid;
         string m_revision;
         string m_uid;
-        bool m_merged;
+        InsertItemResultState m_state;
     };
 
     SubSyncSource() : m_parent(NULL) {}

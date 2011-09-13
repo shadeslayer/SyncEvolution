@@ -433,8 +433,9 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             Event &event = loadItem(*it->second);
             event.m_etag = res.m_revision;
             if (event.m_subids.find(subid) != event.m_subids.end()) {
-                // was already in that item but caller didn't seem to know
-                subres.m_merged = true;
+                // was already in that item but caller didn't seem to know,
+                // and now we replaced the data on the CalDAV server
+                subres.m_state = ITEM_REPLACED;
             } else {
                 // add to merged item
                 event.m_subids.insert(subid);                
@@ -548,14 +549,11 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
             }
         }
         if (davLUID != luid) {
-            // caller didn't know final UID: if found, the tell him that
-            // we merged the item for him, if not, then don't complain about
-            // it not being found (like we do when the item should exist
-            // but doesn't)
+            // caller didn't know final UID: if found, then tell him to
+            // merge the data and try again
             if (removeme) {
-                subres.m_merged = true;
-                icalcomponent_remove_component(event.m_calendar, removeme);
-                icalcomponent_free(removeme);
+                subres.m_state = ITEM_NEEDS_MERGE;
+                goto done;
             } else {
                 event.m_subids.insert(subid);
             }
@@ -586,7 +584,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         try {
             SE_LOG_DEBUG(this, NULL, "updating VEVENT");
             InsertItemResult res = insertItem(event.m_DAVluid, data, true);
-            if (res.m_merged ||
+            if (res.m_state != ITEM_OKAY ||
                 res.m_luid != event.m_DAVluid) {
                 // should not merge with anything, if so, our cache was invalid
                 SE_THROW("CalDAV item not updated as expected");
@@ -654,7 +652,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
                 eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
                 std::string data = icalstr.get();
                 InsertItemResult res = insertItem(event.m_DAVluid, data, true);
-                if (res.m_merged ||
+                if (res.m_state != ITEM_OKAY ||
                     res.m_luid != event.m_DAVluid) {
                     // should not merge with anything, if so, our cache was invalid
                     SE_THROW("CalDAV item not updated as expected");
@@ -667,6 +665,7 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
         }
     }
 
+ done:
     return subres;
 }
 
@@ -850,7 +849,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
         } else {
             res = insertItem(davLUID, icalstr.get(), true);
         }
-        if (res.m_merged ||
+        if (res.m_state != ITEM_OKAY ||
             res.m_luid != davLUID) {
             SE_THROW("unexpected result of removing sub event");
         }

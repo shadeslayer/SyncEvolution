@@ -1420,6 +1420,53 @@ class SyncSourceDelete : virtual public SyncSourceBase {
     sysync::TSyError deleteItemSynthesis(sysync::cItemID aID);
 };
 
+enum InsertItemResultState {
+    /**
+     * item added or updated as requested
+     */
+    ITEM_OKAY,
+
+    /**
+     * When a backend is asked to add an item and recognizes
+     * that the item matches an already existing item, it may
+     * replace that item instead of creating a duplicate. In this
+     * case it must return ITEM_REPLACED and set the luid/revision
+     * of that updated item.
+     *
+     * This can happen when such an item was added concurrently to
+     * the running sync or, more likely, was reported as new by
+     * the backend and the engine failed to find the match because
+     * it doesn't know about some special semantic, like iCalendar
+     * 2.0 UID).
+     *
+     * Note that depending on the age of the items, the older data
+     * will replace the more recent one when always using item
+     * replacement.
+     */
+    ITEM_REPLACED,
+
+    /**
+     * Same as ITEM_REPLACED, except that the backend did some
+     * modifications to the data that was sent to it before
+     * storing it, like merging it with the existing item. The
+     * engine will treat the updated item as modified and send
+     * back the update to the peer as soon as possible. In server
+     * mode that will be in the same sync session, in a client in
+     * the next session (client cannot send changes after having
+     * received data from the server).
+     */
+    ITEM_MERGED,
+
+    /**
+     * As before, a match against an existing item was detected.
+     * By returning this state and the luid of the matched item
+     * (revision not needed) the engine is instructed to do the
+     * necessary data comparison and merging itself. Useful when a
+     * backend can't do the necessary merging itself.
+     */
+    ITEM_NEEDS_MERGE
+};
+
 /**
  * an interface for reading and writing items in the internal
  * format; see SyncSourceSerialize for an explanation
@@ -1429,26 +1476,26 @@ class SyncSourceRaw : virtual public SyncSourceBase {
     class InsertItemResult {
     public:
         InsertItemResult() :
-            m_merged(false)
+            m_state(ITEM_OKAY)
             {}
         
         /**
          * @param luid      the LUID after the operation; during an update the LUID must
          *                  not be changed, so return the original one here
          * @param revision  the revision string after the operation; leave empty if not used
-         * @param merged    set this to true if an existing item was updated instead of adding it
+         * @param state     report about what was done with the data
          */
         InsertItemResult(const string &luid,
                          const string &revision,
-                         bool merged) :
+                         InsertItemResultState state) :
         m_luid(luid),
             m_revision(revision),
-            m_merged(merged)
+            m_state(state)
             {}
 
         string m_luid;
         string m_revision;
-        bool m_merged;
+        InsertItemResultState m_state;
     };
 
     /** same as SyncSourceSerialize::insertItem(), but with internal format */

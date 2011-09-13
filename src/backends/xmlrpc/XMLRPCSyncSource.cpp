@@ -141,7 +141,7 @@ TrackingSyncSource::InsertItemResult XMLRPCSyncSource::insertItem(const string &
 
     return InsertItemResult((*it).first,
                             xmlrpc_c::value_string((*it).second),
-                            false);
+                            ITEM_OKAY);
 }
 
 

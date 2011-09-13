@@ -668,8 +668,18 @@ sysync::TSyError SyncSourceSerialize::insertItemAsKey(sysync::KeyH aItemKey, sys
         InsertItemResult inserted =
             insertItem(!aID ? "" : aID->item, data.get());
         newID->item = StrAlloc(inserted.m_luid.c_str());
-        if (inserted.m_merged) {
+        switch (inserted.m_state) {
+        case ITEM_OKAY:
+            break;
+        case ITEM_REPLACED:
+            res = sysync::DB_DataReplaced;
+            break;
+        case ITEM_MERGED:
             res = sysync::DB_DataMerged;
+            break;
+        case ITEM_NEEDS_MERGE:
+            res = sysync::DB_Conflict;
+            break;
         }
     }
 

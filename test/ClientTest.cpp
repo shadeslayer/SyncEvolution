@@ -329,6 +329,16 @@ std::string LocalTests::insert(CreateSource createSource, const std::string &dat
     SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw("", mangled));
     CPPUNIT_ASSERT(!res.m_luid.empty());
 
+    bool updated = false;
+    if (res.m_state == ITEM_NEEDS_MERGE) {
+        // conflict detected, overwrite existing item as done in the past
+        std::string luid = res.m_luid;
+        SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw(luid, mangled));
+        CPPUNIT_ASSERT_EQUAL(luid, res.m_luid);
+        CPPUNIT_ASSERT(res.m_state == ITEM_OKAY);
+        updated = true;
+    }
+
     // delete source again
     CPPUNIT_ASSERT_NO_THROW(source.reset());
 
@@ -337,7 +347,7 @@ std::string LocalTests::insert(CreateSource createSource, const std::string &dat
         // - a new item was added
         // - the item was matched against an existing one
         CPPUNIT_ASSERT_NO_THROW(source.reset(createSource()));
-        CPPUNIT_ASSERT_EQUAL(numItems + (res.m_merged ? 0 : 1),
+        CPPUNIT_ASSERT_EQUAL(numItems + ((res.m_state == ITEM_REPLACED || res.m_state == ITEM_MERGED || updated) ? 0 : 1),
                              countItems(source.get()));
         CPPUNIT_ASSERT(countNewItems(source.get()) == 0);
         CPPUNIT_ASSERT(countUpdatedItems(source.get()) == 0);
@@ -394,8 +404,11 @@ void LocalTests::update(CreateSource createSource, const std::string &data, bool
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
     CPPUNIT_ASSERT(it != source->getAllItems().end());
     string luid = *it;
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.m_mangleItem(data, true)));
+    SyncSourceRaw::InsertItemResult res;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw(luid, config.m_mangleItem(data, true)));
     CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CPPUNIT_ASSERT_EQUAL(luid, res.m_luid);
+    CPPUNIT_ASSERT_EQUAL(ITEM_OKAY, res.m_state);
 
     if (!check) {
         return;

@@ -274,7 +274,7 @@ void EvolutionCalendarSource::readItem(const string &luid, std::string &item, bo
 EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(const string &luid, const std::string &item, bool raw)
 {
     bool update = !luid.empty();
-    bool merged = false;
+    InsertItemResultState state = ITEM_OKAY;
     bool detached = false;
     string newluid = luid;
     string data = item;
@@ -390,7 +390,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         // which should never happen.
         newluid = id.getLUID();
         if (m_allLUIDs.find(newluid) != m_allLUIDs.end()) {
-            merged = true;
+            state = ITEM_NEEDS_MERGE;
         } else {
             // if this is a detached recurrence, then we
             // must use e_cal_modify_object() below if
@@ -438,7 +438,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         }
     }
 
-    if (update || merged || detached) {
+    if (update || state != ITEM_NEEDS_MERGE || detached) {
         ItemID id(newluid);
         bool isParent = id.m_rid.empty();
 
@@ -526,7 +526,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         modTime = getItemModTime(newid);
     }
 
-    return InsertItemResult(newluid, modTime, merged);
+    return InsertItemResult(newluid, modTime, state);
 }
 
 EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const string &uid, bool returnOnlyChildren)

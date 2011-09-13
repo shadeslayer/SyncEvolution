@@ -233,7 +233,7 @@ TrackingSyncSource::InsertItemResult FileSyncSource::insertItem(const string &ui
 
     return InsertItemResult(newuid,
                             getATimeString(filename),
-                            false /* true if adding item was turned into update */);
+                            ITEM_OKAY);
 }
 
 
