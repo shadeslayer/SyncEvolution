@@ -1815,6 +1815,7 @@ void SyncTests::addTests(bool isFirstSource) {
                         config.m_updateItem.find("LAST-MODIFIED:") != std::string::npos &&
                         sources.size() == 1) {
                         ADD_TEST(SyncTests, testAddBothSides);
+                        ADD_TEST(SyncTests, testAddBothSidesRefresh);
                     }
 
                     // only add when testing individual source,
@@ -3128,6 +3129,57 @@ void SyncTests::testAddBothSides()
 
     // nothing necessary for client B
     accessClientB->doSync("nop",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
+
+    // now compare client A against reference data
+    TestingSyncSourcePtr copy;
+    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(sources[0].second->createSourceB()));
+    sources[0].second->compareDatabases(*copy, &data, (void *)NULL);
+    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+}
+
+/**
+ * compared to testAddBothSides the age of the items is reversed now;
+ * a server which always copies the client's data passes testAddBothSides
+ * but fails here
+ */
+void SyncTests::testAddBothSidesRefresh()
+{
+    deleteAll();
+    accessClientB->deleteAll();
+
+    // insert initial item data on B
+    CPPUNIT_ASSERT_NO_THROW(accessClientB->sources[0].second->insert(accessClientB->sources[0].second->createSourceA,
+                                                                     accessClientB->sources[0].second->config.m_insertItem));
+
+    // sleep one second to ensure that it's mangled LAST-MODIFIED is older than
+    // the one from the next item, inserted on A
+    sleep(1);
+
+    // more recent data sent to server first
+    std::string data;
+    CPPUNIT_ASSERT_NO_THROW(sources[0].second->insert(sources[0].second->createSourceA,
+                                                      sources[0].second->config.m_updateItem,
+                                                      false,
+                                                      &data));
+    doSync("send-new",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
+
+    // as far as the client knows, it is adding an item;
+    // server expected to send back an update (it's data was out-dated)
+    accessClientB->doSync("send-old",
+                          SyncOptions(SYNC_TWO_WAY,
+                                      CheckSyncReport(0,1,0, 1,0,0, true, SYNC_TWO_WAY)));
+
+    // update sent to client A (result of merge)
+    doSync("nopA",
+           SyncOptions(SYNC_TWO_WAY,
+                       CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY)));
+
+    // nothing necessary for client B (already synchronized completely above in one sync)
+    accessClientB->doSync("nopB",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
