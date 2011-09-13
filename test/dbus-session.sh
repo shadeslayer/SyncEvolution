@@ -19,17 +19,22 @@ KEYRING_PID=$!
 trap "kill $KEYRING_PID; kill $DBUS_SESSION_BUS_PID" EXIT
 
 # If DBUS_SESSION_SH_EDS_BASE is set and our main program runs
-# under valgrind, then also check EDS. DBUS_SESSION_SH_EDS_BASE
-# must be the directory which contains e-addressbook/calendar-factory.
+# under valgrind, then also check EDS. Otherwise start EDS only
+# for certain known operations which need EDS (syncevolution, client-test)
+# but not others (make, configure).
+#
+# DBUS_SESSION_SH_EDS_BASE must be the directory which contains
+# e-addressbook/calendar-factory.
 E_CAL_PID=
 E_BOOK_PID=
 case "$@" in *valgrind*) prefix=`echo $@ | perl -p -e 's;.*?(\S*/?valgrind\S*).*;$1;'`;;
-             *) prefix=;;
+             *syncevolution\ *|*client-test\ *|*test-dbus.py\ *) prefix=env;;
+             *) prefix=;; # don't start EDS
 esac
 if [ "$DBUS_SESSION_SH_EDS_BASE" ] && [ "$prefix" ]; then
-    $prefix $DBUS_SESSION_SH_EDS_BASE/e-calendar-factory &
+    $prefix $DBUS_SESSION_SH_EDS_BASE/e-calendar-factory --keep-running &
     E_CAL_PID=$!
-    $prefix $DBUS_SESSION_SH_EDS_BASE/e-addressbook-factory &
+    $prefix $DBUS_SESSION_SH_EDS_BASE/e-addressbook-factory --keep-running &
     E_BOOK_PID=$!
 
     # give daemons some time to start and register with D-Bus
@@ -60,7 +65,7 @@ shutdown () {
     fi
     wait "$pid"
     subres=$?
-    case $subres in 0|130|143) true;; # 130 and 143 indicate that it was killed, probably by us
+    case $subres in 0|130|137|143) true;; # 130 and 143 indicate that it was killed, probably by us
                     *) echo $program failed with return code $subres >&2
 	               if [ $res -eq 0 ]; then
                            res=$subres
