@@ -66,8 +66,8 @@ AC_PROG_MAKE_SET
 # currently uses the "#pragma }" trick. Should remove that.
 # Fix code to work without deprecated methods: G GDK GDK_PIXBUF CAIRO PANGO GTK
 DK_ARG_ENABLE_WARNINGS([SYNCEVO_WFLAGS],
-                       [-Wall],
-                       [-Wall -Wno-unknown-pragmas],
+                       [-Wall -Wno-unknown-pragmas -Wno-unused-but-set-variable],
+                       [-Wall -Wno-unknown-pragmas -Wno-unused-but-set-variable],
                        [])
 
 dnl default device type (see AC_DEFINE below)
