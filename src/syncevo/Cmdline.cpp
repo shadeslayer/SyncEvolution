@@ -1165,6 +1165,22 @@ bool Cmdline::run() {
         sysync::TSyError err;
 #define CHECK_ERROR(_op) if (err) { SE_THROW_EXCEPTION_STATUS(StatusException, string(source->getName()) + ": " + (_op), SyncMLStatus(err)); }
 
+        // acquire passwords before doing anything (interactive password
+        // access not supported for the command line)
+        {
+            ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
+            BOOST_FOREACH(const ConfigProperty *prop, registry) {
+                prop->checkPassword(*context, m_server, *context->getProperties());
+            }
+        }
+        {
+            ConfigPropertyRegistry &registry = SyncSourceConfig::getRegistry();
+            BOOST_FOREACH(const ConfigProperty *prop, registry) {
+                prop->checkPassword(*context, m_server, *context->getProperties(),
+                                    source->getName(), sourceNodes.getProperties());
+            }
+        }
+
         source->open();
         const SyncSource::Operations &ops = source->getOperations();
         if (m_printItems) {
@@ -1172,11 +1188,6 @@ bool Cmdline::run() {
             if (!ops.m_startDataRead ||
                 !ops.m_readNextItem) {
                 source->throwError("reading items not supported");
-            }
-
-            ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
-            BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*context, m_server, *context->getProperties());
             }
 
             err = ops.m_startDataRead("", "");
