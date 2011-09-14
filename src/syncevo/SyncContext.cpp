@@ -1950,11 +1950,11 @@ void SyncContext::initSources(SourceList &sourceList)
     BOOST_FOREACH(const string &name, configuredSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
         SyncSourceNodes source = getSyncSourceNodes (name);
-        SourceType sourceType = SyncSource::getSourceType(source);
         // is the source enabled?
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
         if (enabled) {
+            SourceType sourceType = SyncSource::getSourceType(source);
             if (sourceType.m_backend == "virtual") {
                 //This is a virtual sync source, check and enable the referenced
                 //sub syncsources here
@@ -1995,12 +1995,12 @@ void SyncContext::initSources(SourceList &sourceList)
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
 
         SyncSourceNodes source = getSyncSourceNodes (name);
-        SourceType sourceType = SyncSource::getSourceType(source);
 
         // is the source enabled?
         string sync = sc->getSync();
         bool enabled = sync != "disabled";
         if (enabled) {
+            SourceType sourceType = SyncSource::getSourceType(source);
             if (sourceType.m_backend != "virtual") {
                 SyncSourceParams params(name,
                                         source,
