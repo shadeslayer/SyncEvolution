@@ -2558,7 +2558,11 @@ ConfigPasswordKey DatabasePasswordConfigProperty::getPasswordKey(const string &d
 {
     ConfigPasswordKey key;
     key.user = sourcePropUser.getProperty(*sourceConfigNode);
-    key.object = serverName;
+    std::string configName = SyncConfig::normalizeConfigString(serverName, SyncConfig::NORMALIZE_LONG_FORMAT);
+    std::string peer, context;
+    SyncConfig::splitConfigString(configName, peer, context);
+    key.object = "@";
+    key.object += context;
     key.object += " ";
     key.object += sourceName;
     key.object += " backend";
