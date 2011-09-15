@@ -1,3 +1,126 @@
+SyncEvolution 1.1.99.6 -> 1.1.99.7, 15.09.2011
+==============================================
+
+Mostly bug fixes again. Some are a bit more intrusive, thus another
+pre-release.
+
+* syncevolution.org binaries: now compatible with Debian Testing/libnotify.so.4 (BMC #22668)
+
+  libnotify is not linked directly into syncevo-dbus-server in the
+  syncevolution.org binaries. Instead libnotify.so.1 till .so.4
+  (current Debian Testing) are opened opened dynamically and the
+  necessary functions are looked up via dlsym(). Not finding the
+  libraries or the functions silently disables this notification
+  mechanism.
+
+* calendar sync: better handling for add<->add conflicts (partly fixes BMC #22783)
+
+  When both sides of a sync have added the same event, the sync must
+  determine which one is more recent instead of blindly overwriting
+  always the same side.  Such conflicts are typically rare except for
+  enterprise scenarios where meeting invitiations are processed
+  automatically by a groupware (Exchange, Google Calendar/Mail, ...)
+  and then the attendee status is updated on one side.
+
+  SyncEvolution now does the necessary age comparison and preserves the more
+  recent data for most properties. In some properties the data from both
+  sides is preserved by concatenating the text (description, location, ...).
+  It remains to be seen whether that is really desirable. Also, sync statistics
+  are slightly off: the incoming item is counted as "added" even though it
+  gets turned into an update.
+
+* item operations: authentication problem for WebDAV when using keyring (BMC #21311)
+
+  The password still wasn't looked up in the keyring when using
+  --import/export/delete-items.
+
+* "databasePassword" source property: lookup failure in keyring (BMC #22937)
+
+  The databasePassword also wasn't looked up at all when doing item operations
+  via the command line.
+
+  When configuring sources for an HTTP server, the config name typically
+  is just the context (@foo). When using the config in the HTTP server,
+  the config name is the peer inside that context (client@foo). Because
+  the GNOME keyring lookup keys for the "databasePassword" (more
+  specifically, the object name) contained the full config name which
+  was different in both cases, looking up the saved password failed.
+
+  The solution is to normalize the config name (to accomodate for
+  different ways of spelling it) and use only the context, with @ as
+  before. This will break existing setups where the object name in the
+  keyring (incorrectly) includes the full config name. In that case just
+  configure the source again to set the password anew.
+
+* Evolution Calendar: fixed detached recurrence support (BMC #22940)
+
+  When manipulating a meeting series with more than one detached
+  recurrence certain sequences of operations could incorrectly fail
+  with "UID already exists".
+
+* iCalendar 2.0: must set VALUE in EXDATE (part of BMC #22940)
+
+  EXDATE has a VALUE parameter, which wasn't defined in the XML
+  profile. Didn't seem to matter at all in practice, but wasn't
+  standard-compliant.
+
+* GTK sync-ui: wrap sync service descriptions (BMC #7199)
+
+  Descriptions of different sync services are not fully visible unless
+  word-wrapping gets enabled.
+
+* source configs: don't check "backend" unless it is needed
+
+  When using a config which has sources with a backend type set which is
+  not currently available, an error was thrown even if those sources
+  weren't even part of the current operation (for example, syncing
+  another source which is currently supported).
+
+* config migration: avoid name conflicts and auto syncing of old configs (BMC #22691)
+
+  When (auto-)migrating a config, it was possible that a name for the
+  peer, say foo.old, was chosen for the renamed config although there
+  was already such a config, for example foo.old in ~/.sync4j. Besides
+  being confusing for users, this also led to a bug in the code where it
+  copied from the older config with the foo.old name.
+
+  The main problem fixed is the disabling of auto syncing
+  in the old config. Otherwise it was still used by syncevo-dbus-server
+  for syncing, which triggered another auto-migration, ad infinitum...
+
+* auto syncing: must check whether enabled when looking at unknown URLs (part of BMC #22691)
+
+  "syncURL = insert your URL here" with "autoSync = 0" did lead to auto
+  sync attempts although it wasn't enabled. A check for "auto syncing
+  enabled" was missing for the "unknown transport" case.
+
+* CalDAV/CardDAV + local storage: avoid empty properties
+
+  The main motivation for this change is that a recent Apple Calendar
+  server rejects vCards with empty BDAY property. Another reason is that
+  keeping the data as small as possible is desirable by itself.
+
+  Sending an empty property serves as a hint for the peer that the
+  property is supported. This is not necessary when storing an item in a
+  backend. Therefore this commit disables empty properties for all
+  backends which do not themselves set the m_backendRule Synthesis info
+  value.
+
+* Apple CardDAV: apply PHOTO import/export scripts by default
+
+  A recent Apple Calendar server (correctly) rejects the invalid
+  PHOTO;TYPE=unknown: property in a vCard. This internal representation
+  must be cleared before serializing the field list.
+
+* for developers: modified backend API
+  - ClientTestConfig modernized
+  - InsertItemResult::m_merged turned from boolean to enum
+
+* testing and compilation changes; for example, the minimum version of
+  libsynthesis is now checked at configure time instead of failing at
+  runtime due to missing features in the Synthesis engine
+
+
 SyncEvolution 1.1.99.5 -> 1.1.99.6, 17.08.2011
 ==============================================
 
