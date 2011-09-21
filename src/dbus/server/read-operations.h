@@ -23,7 +23,7 @@
 #include <syncevo/SyncSource.h>
 #include <syncevo/SmartPtr.h>
 
-#include "gdbus/gdbus-cxx-bridge.h"
+#include "gdbus-cxx-bridge.h"
 
 SE_BEGIN_CXX
 

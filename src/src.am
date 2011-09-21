@@ -5,6 +5,11 @@ include $(top_srcdir)/src/gnome-bluetooth/gnome-bluetooth.am
 src_cppflags += -I$(top_srcdir)/src/gnome-bluetooth
 endif
 
+if COND_GIO_GDBUS
+GDBUS_DIR = gdbusxx
+else
+GDBUS_DIR = gdbus
+endif
 
 if COND_CORE
 include $(top_srcdir)/src/syncevo/syncevo.am
@@ -19,8 +24,13 @@ src_cppflags += -I$(top_srcdir)/$(SYNTHESIS_SUBDIR_INCLUDES)
 endif
 
 if COND_DBUS
+if COND_GIO_GDBUS
+include $(top_srcdir)/src/gdbusxx/gdbusxx.am
+src_cppflags += -I$(top_srcdir)/src/gdbusxx
+else
 include $(top_srcdir)/src/gdbus/gdbus.am
 src_cppflags += -I$(top_srcdir)/src/gdbus
+endif
 endif
 include $(top_srcdir)/src/dbus/dbus.am
 src_cppflags += -I$(top_srcdir)/src/dbus
@@ -112,12 +122,12 @@ endif
 # either way this does not lead to a dependency on those libs - done explicitly
 src_syncevolution_LDADD = $(CORE_LDADD) $(KEYRING_LIBS) $(KDE_KWALLET_LIBS)
 if COND_DBUS
-src_syncevolution_LDADD += src/gdbus/libgdbussyncevo.la
+src_syncevolution_LDADD += $(builddir)/src/$(GDBUS_DIR)/libgdbussyncevo.la
 endif
 src_syncevolution_LDFLAGS = $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(DBUS_LIBS)
-src_syncevolution_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) -I$(top_srcdir)/src/gdbus $(DBUS_CFLAGS) $(KDE_KWALLET_CFLAGS) $(SYNCEVO_WFLAGS)
+src_syncevolution_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) -I$(srcdir)/$(GDBUS_DIR) $(DBUS_CFLAGS) $(KDE_KWALLET_CFLAGS) $(SYNCEVO_WFLAGS)
 src_syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
-src_syncevolution_CPPFLAGS = $(src_cppflags)
+src_syncevolution_CPPFLAGS = $(src_cppflags) -I$(top_srcdir)/src/$(GDBUS_DIR)
 
 # rule which is only relevant when compiling Synthesis in subdirectory
 #$(SYNTHESIS_LIB) : $(SYNTHESIS_SUBDIR)/all
@@ -176,11 +186,11 @@ if ENABLE_UNIT_TESTS
 nodist_src_syncevo_dbus_server_SOURCES = test/test.cpp
 endif
 
-src_syncevo_dbus_server_LDADD = src/dbus/server/libsyncevodbusserver.la src/gdbus/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS)
-src_syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(top_srcdir)/src/gdbus $(src_cppflags) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
+src_syncevo_dbus_server_LDADD = $(builddir)/src/dbus/server/libsyncevodbusserver.la $(builddir)/src/$(GDBUS_DIR)/libgdbussyncevo.la $(CORE_LDADD) $(KEYRING_LIBS) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(KDE_KWALLET_LIBS) $(DBUS_LIBS)
+src_syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(srcdir)/$(GDBUS_DIR) $(src_cppflags) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
 src_syncevo_dbus_server_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(KEYRING_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(KDE_KWALLET_CFLAGS) $(SYNCEVO_WFLAGS)
 src_syncevo_dbus_server_LDFLAGS = $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(LIBSOUP_LIBS)
-src_syncevo_dbus_server_DEPENDENCIES = src/dbus/server/libsyncevodbusserver.la src/gdbus/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+src_syncevo_dbus_server_DEPENDENCIES = $(builddir)/src/dbus/server/libsyncevodbusserver.la $(builddir)/src/$(GDBUS_DIR)/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
 endif
 
 # With --disable-shared autotools links against libfunambol.a which does not

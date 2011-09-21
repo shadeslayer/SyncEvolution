@@ -22,7 +22,7 @@
 
 #include <list>
 
-#include "gdbus/gdbus-cxx-bridge.h"
+#include "gdbus-cxx-bridge.h"
 
 #include <syncevo/declarations.h>
 

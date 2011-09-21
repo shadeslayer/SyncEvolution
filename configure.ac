@@ -440,6 +440,17 @@ AC_ARG_ENABLE(dbus-service,
                fi])
 AM_CONDITIONAL([COND_DBUS], [test "$enable_dbus_service" = "yes"])
 
+AC_ARG_WITH(gio-gdbus,
+            AS_HELP_STRING([--with-gio-gdbus],
+                           [enables use of GIO's GDBus instead of the in-tree, Bluez gdbus.]),
+            with_gio_gdbus="$withval",
+            PKG_CHECK_EXISTS([gio-2.0 >= 2.26],
+                             [with_gio_gdbus="yes"],
+                             [with_gio_gdbus="no"]))
+AM_CONDITIONAL([COND_GIO_GDBUS], [test "x$with_gio_gdbus" = "xyes"])
+AS_IF([test "x$with_gio_gdbus" = "xyes"], [need_glib=yes
+                                           PKG_CHECK_MODULES([GIO_GDBUS], [gio-2.0 >= 2.26])] )
+
 PKG_CHECK_MODULES(KEYRING, [gnome-keyring-1], HAVE_KEYRING=yes, HAVE_KEYRING=no)
 AC_ARG_ENABLE(gnome-keyring,
               AS_HELP_STRING([--enable-gnome-keyring],
@@ -1070,6 +1081,7 @@ for backend in $BACKENDS; do
     eval echo $backend: \${enable_${backend}}
 done
 echo "DBus service: $enable_dbus_service"
+echo "GIO GDBus: $with_gio_gdbus"
 echo "GNOME keyring: $enable_gnome_keyring"
 echo "UI (DBus client): $enable_gui"
 echo "Bluetooth transport: $have_bluetooth"

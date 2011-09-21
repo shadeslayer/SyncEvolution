@@ -28,7 +28,7 @@ DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 SE_END_CXX
 // This needs to be defined before including gdbus-cxx-bridge.h!
 #define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
-#include "gdbus/gdbus-cxx-bridge.h"
+#include "gdbus-cxx-bridge.h"
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX

@@ -1,0 +1,14 @@
+This is a C++ wrapper for the GLib GDBus d-bus implementation.
+
+SyncEvolution also includes a wrapper for another library named gdbus
+which originated in the Bluez project. This implementation has been
+included in-tree and getting and sending patches is a somewhat
+automated process.
+
+The plan is to drop the in-tree, Bluez gdbus as soon as Debian stable
+and Ubuntu LTS both support a GLib >= 2.26 (the version first to
+include GDBus). Until this happens we'll have to keep the in-tree one
+around.
+
+In order to make our lives easier, both implementation should have the
+same interface.

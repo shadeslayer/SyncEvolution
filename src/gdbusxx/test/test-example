@@ -1,0 +1,50 @@
+#!/usr/bin/python
+
+import dbus
+from dbus.mainloop.glib import DBusGMainLoop
+import gobject
+
+DBusGMainLoop(set_as_default=True)
+
+bus = dbus.SessionBus()
+
+dummy = dbus.Interface(bus.get_object('org.example', '/test'),
+				'org.freedesktop.DBus.Introspectable')
+
+print dummy.Introspect()
+
+
+object = dbus.Interface(bus.get_object('org.example', '/test'),
+						'org.example.Secondary')
+object.Hello()
+
+object = dbus.Interface(bus.get_object('org.example', '/test'),
+						'org.example.Test')
+
+print object.Test()
+print object.Method2(1)
+print object.Method3(1)
+print object.Hash({1: 1, 2: 2, 3: 3})
+print object.Array([1, 2, 3, 4])
+print object.ArgTest((1, 'hello', {'foo': 'bar'}))
+
+loop = gobject.MainLoop()
+
+def AsyncFinished(x=None):
+    print "TestAsync:", x
+    loop.quit()
+
+print object.TestAsync(2,
+                       reply_handler=AsyncFinished,
+                       error_handler=AsyncFinished)
+
+# This will trigger the "caller has disconnect"
+# because our client-side time out will get us
+# out of the loop and then we quit.
+object.TestAsync(600,
+                 reply_handler=AsyncFinished,
+                 error_handler=AsyncFinished,
+                 timeout=5)
+loop.run()
+
+object.Error()

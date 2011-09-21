@@ -20,7 +20,7 @@
 #ifndef SOURCE_PROGRESS_H
 #define SOURCE_PROGRESS_H
 
-#include "gdbus/gdbus-cxx-bridge.h"
+#include "gdbus-cxx-bridge.h"
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
