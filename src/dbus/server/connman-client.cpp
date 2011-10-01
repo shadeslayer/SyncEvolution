@@ -27,7 +27,7 @@ ConnmanClient::ConnmanClient(Server &server):
     m_propertyChanged(*this, "PropertyChanged")
 {
     const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
-    m_connmanConn = b_dbus_setup_bus (connmanTest ? DBUS_BUS_SESSION: DBUS_BUS_SYSTEM, NULL, true, NULL);
+    m_connmanConn = GDBusCXX::dbus_get_bus_connection(connmanTest ? "SESSION": "SYSTEM", NULL, true, NULL);
     if (m_connmanConn){
         typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
         GDBusCXX::DBusClientCall1<PropDict>  getProp(*this,"GetProperties");

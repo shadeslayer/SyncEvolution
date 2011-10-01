@@ -69,7 +69,7 @@ public:
     virtual const char *getInterface() const {
         return "org.freedesktop.NetworkManager";
     }
-    virtual DBusConnection *getConnection() const {
+    virtual DBUS_CONNECTION_TYPE *getConnection() const {
         return m_networkManagerConn.get();
     }
 
@@ -94,7 +94,7 @@ private:
         virtual const char *getInterface() const {
             return "org.freedesktop.DBus.Properties";
         }
-        virtual DBusConnection* getConnection() const {
+        virtual DBUS_CONNECTION_TYPE* getConnection() const {
             return m_manager.getConnection();
         }
         void get();

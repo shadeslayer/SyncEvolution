@@ -63,18 +63,28 @@
 #include <map>
 #include <vector>
 
-static inline void intrusive_ptr_add_ref(DBusConnection  *con)  { dbus_connection_ref(con); }
-static inline void intrusive_ptr_release(DBusConnection  *con)  { dbus_connection_unref(con); }
-static inline void intrusive_ptr_add_ref(DBusMessage     *msg)  { dbus_message_ref(msg); }
-static inline void intrusive_ptr_release(DBusMessage     *msg)  { dbus_message_unref(msg); }
-static inline void intrusive_ptr_add_ref(DBusPendingCall *call) { dbus_pending_call_ref (call); }
-static inline void intrusive_ptr_release(DBusPendingCall *call) { dbus_pending_call_unref (call); }
+namespace boost {
+    void intrusive_ptr_add_ref(DBusConnection  *con);
+    void intrusive_ptr_release(DBusConnection  *con);
+    void intrusive_ptr_add_ref(DBusMessage     *msg);
+    void intrusive_ptr_release(DBusMessage     *msg);
+    void intrusive_ptr_add_ref(DBusPendingCall *call);
+    void intrusive_ptr_release(DBusPendingCall *call);
+}
 
 #include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
+
+/* The connection is the only client-exposed type from the C API. To
+ * keep changes to a minimum while supporting both dbus
+ * implementations, this is made to be a define. The intention is to
+ * remove the define once the in-tree gdbus is dropped. */
+#define DBUS_CONNECTION_TYPE DBusConnection
+#define DBUS_MESSAGE_TYPE    DBusMessage
+#define DBUS_NEW_ERROR_MSG   b_dbus_create_error
 
 namespace GDBusCXX {
 
@@ -152,6 +162,11 @@ class DBusErrorCXX : public DBusError
         return dbus_error_is_set(this);
     }
 };
+
+DBusConnection *dbus_get_bus_connection(const char *busType,
+                                        const char *interface,
+                                        bool unshared,
+                                        DBusErrorCXX *err);
 
 /**
  * Special type for object paths. A string in practice.

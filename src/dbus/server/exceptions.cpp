@@ -25,20 +25,20 @@ SE_BEGIN_CXX
  * implement syncevolution exception handler
  * to cover its default implementation
  */
-DBusMessage* SyncEvoHandleException(DBusMessage *msg)
+DBUS_MESSAGE_TYPE* SyncEvoHandleException(DBUS_MESSAGE_TYPE *msg)
 {
     /** give an opportunity to let syncevolution handle exception */
     Exception::handle();
     try {
         throw;
     } catch (const GDBusCXX::dbus_error &ex) {
-        return b_dbus_create_error(msg, ex.dbusName().c_str(), "%s", ex.what());
+        return DBUS_NEW_ERROR_MSG(msg, ex.dbusName().c_str(), "%s", ex.what());
     } catch (const GDBusCXX::DBusCXXException &ex) {
-        return b_dbus_create_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
+        return DBUS_NEW_ERROR_MSG(msg, ex.getName().c_str(), "%s", ex.getMessage());
     } catch (const std::runtime_error &ex) {
-        return b_dbus_create_error(msg, "org.syncevolution.Exception", "%s", ex.what());
+        return DBUS_NEW_ERROR_MSG(msg, "org.syncevolution.Exception", "%s", ex.what());
     } catch (...) {
-        return b_dbus_create_error(msg, "org.syncevolution.Exception", "unknown");
+        return DBUS_NEW_ERROR_MSG(msg, "org.syncevolution.Exception", "unknown");
     }
 }
 

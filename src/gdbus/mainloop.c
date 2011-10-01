@@ -141,17 +141,21 @@ static void finalize_watch(gpointer memory)
 
 static void free_watch(void *memory)
 {
-	WatchData *watch_data = memory;
+	DBG("watch data %p", memory);
 
-	DBG("watch data %p", watch_data);
-
-	if (watch_data->source == NULL)
+	if (memory == NULL)
 		return;
 
-	watches = g_slist_remove(watches, watch_data);
+	watches = g_slist_remove(watches, memory);
 
-	g_source_destroy(watch_data->source);
-	g_source_unref(watch_data->source);
+	WatchData *watch_data = (WatchData*)memory;
+	GSource* source = watch_data->source;
+
+	if (source != NULL) {
+		g_source_destroy(source);
+		g_source_unref(source);
+		watch_data->source = NULL;
+	}
 }
 
 static dbus_bool_t add_watch(DBusWatch *watch, void *user_data)
@@ -219,8 +223,11 @@ static void remove_watch(DBusWatch *watch, void *user_data)
 
 	watches = g_slist_remove(watches, watch_data);
 
-	g_source_destroy(watch_data->source);
-	g_source_unref(watch_data->source);
+	if (watch_data->source != NULL) {
+		g_source_destroy(watch_data->source);
+		g_source_unref(watch_data->source);
+		watch_data->source = NULL;
+	}
 }
 
 static void watch_toggled(DBusWatch *watch, void *user_data)

@@ -102,12 +102,12 @@ int main(int argc, char **argv, char **envp)
                                         LoggerBase::INFO);
 
         DBusErrorCXX err;
-        DBusConnectionPtr conn = b_dbus_setup_bus(DBUS_BUS_SESSION,
-                                                  "org.syncevolution",
-                                                  true,
-                                                  &err);
+        DBusConnectionPtr conn = dbus_get_bus_connection("SESSION",
+                                                         "org.syncevolution",
+                                                         true,
+                                                         &err);
         if (!conn) {
-            err.throwFailure("b_dbus_setup_bus()", " failed - server already running?");
+            err.throwFailure("dbus_get_bus_connection()", " failed - server already running?");
         }
 
         SyncEvo::Server server(loop, shutdownRequested, restart, conn, duration);

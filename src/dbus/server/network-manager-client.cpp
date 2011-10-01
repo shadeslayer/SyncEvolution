@@ -28,7 +28,7 @@ NetworkManagerClient::NetworkManagerClient(Server &server) :
     m_stateChanged(*this, "StateChanged"),
     m_properties(*this)
 {
-    m_networkManagerConn = b_dbus_setup_bus(DBUS_BUS_SYSTEM, NULL, true, NULL);
+    m_networkManagerConn = GDBusCXX::dbus_get_bus_connection("SYSTEM", NULL, true, NULL);
     if(m_networkManagerConn) {
         m_properties.get();
         m_stateChanged.activate(boost::bind(

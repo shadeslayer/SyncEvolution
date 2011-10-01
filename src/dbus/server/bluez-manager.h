@@ -56,7 +56,7 @@ public:
     virtual const char *getDestination() const {return "org.bluez";}
     virtual const char *getPath() const {return "/";}
     virtual const char *getInterface() const {return "org.bluez.Manager";}
-    virtual DBusConnection *getConnection() const {return m_bluezConn.get();}
+    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_bluezConn.get();}
     bool isDone() { return m_done; }
 
 private:
@@ -75,7 +75,7 @@ private:
         virtual const char *getDestination() const {return "org.bluez";}
         virtual const char *getPath() const {return m_path.c_str();}
         virtual const char *getInterface() const {return "org.bluez.Adapter";}
-        virtual DBusConnection *getConnection() const {return m_manager.getConnection();}
+        virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_manager.getConnection();}
         void checkDone(bool forceDone = false)
         {
             if(forceDone || m_devReplies >= m_devNo) {
@@ -133,7 +133,7 @@ private:
         virtual const char *getDestination() const {return "org.bluez";}
         virtual const char *getPath() const {return m_path.c_str();}
         virtual const char *getInterface() const {return "org.bluez.Device";}
-        virtual DBusConnection *getConnection() const {return m_adapter.m_manager.getConnection();}
+        virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_adapter.m_manager.getConnection();}
         std::string getMac() { return m_mac; }
 
         /**

@@ -245,7 +245,7 @@ using namespace GDBusCXX;
 int main(int argc, char *argv[])
 {
     DBusConnection *conn;
-    DBusError err;
+    DBusErrorCXX err;
     struct sigaction sa;
 
     memset(&sa, 0, sizeof(sa));
@@ -259,9 +259,7 @@ int main(int argc, char *argv[])
 
     main_loop = g_main_loop_new(NULL, FALSE);
 
-    dbus_error_init(&err);
-
-    conn = b_dbus_setup_bus(DBUS_BUS_SESSION, "org.example", false, &err);
+    conn = dbus_get_bus_connection("SESSION", "org.example", false, &err);
     if (conn == NULL) {
         if (dbus_error_is_set(&err) == TRUE) {
             fprintf(stderr, "%s\n", err.message);
@@ -281,8 +279,6 @@ int main(int argc, char *argv[])
     g_main_loop_run(main_loop);
 
     test.reset();
-
-    b_dbus_cleanup_connection(conn);
 
     g_main_loop_unref(main_loop);
 

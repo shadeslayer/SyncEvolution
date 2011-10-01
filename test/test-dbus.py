@@ -1062,10 +1062,12 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         "http://http-only-1"}})
         self.session.Detach()
         def cb_http_presence(server, status, transport):
-            self.assertEqual (status, "")
-            self.assertEqual (server, "foo")
-            self.assertEqual (transport, "http://http-only-1")
-            loop.quit()
+            try:
+                self.assertEqual (status, "")
+                self.assertEqual (server, "foo")
+                self.assertEqual (transport, "http://http-only-1")
+            finally:
+                loop.quit()
 
         match = bus.add_signal_receiver(cb_http_presence,
                                 'Presence',
@@ -1074,6 +1076,9 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
                                 None,
                                 byte_arrays=True,
                                 utf8_strings=True)
+        # this loop is quit by connman GetProperties
+        loop.run()
+        # this loop is quit by cb_http_presence
         loop.run()
         time.sleep(1)
         self.setUpSession("foo")

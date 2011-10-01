@@ -125,7 +125,7 @@ public:
     virtual const char *getDestination() const {return "org.syncevolution";}
     virtual const char *getPath() const {return "/org/syncevolution/Server";}
     virtual const char *getInterface() const {return "org.syncevolution.Server";}
-    virtual DBusConnection *getConnection() const {return m_conn.get();}
+    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_conn.get();}
     GMainLoop *getLoop() { return m_loop; }
 
     /** 
@@ -288,7 +288,7 @@ public:
     virtual const char *getDestination() const {return "org.syncevolution";}
     virtual const char *getPath() const {return m_path.c_str();}
     virtual const char *getInterface() const {return "org.syncevolution.Session";}
-    virtual DBusConnection *getConnection() const {return m_server.getConnection();}
+    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_server.getConnection();}
     RemoteDBusServer &getServer() { return m_server; }
 
     /**
@@ -599,7 +599,7 @@ RemoteDBusServer::RemoteDBusServer()
      m_infoReq(*this, "InfoRequest")
 {
     m_loop = g_main_loop_new (NULL, FALSE);
-    m_conn = b_dbus_setup_bus(DBUS_BUS_SESSION, NULL, true, NULL);
+    m_conn = dbus_get_bus_connection("SESSION", NULL, true, NULL);
 
     if(m_conn) {
         //check whether we can attach to the daemon

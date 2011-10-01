@@ -41,7 +41,7 @@ public:
     virtual const char *getDestination() const {return "net.connman";}
     virtual const char *getPath() const {return "/";}
     virtual const char *getInterface() const {return "net.connman.Manager";}
-    virtual DBusConnection *getConnection() const {return m_connmanConn.get();}
+    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_connmanConn.get();}
 
     void propertyChanged(const std::string &name,
                          const boost::variant<std::vector<std::string>, std::string> &prop);

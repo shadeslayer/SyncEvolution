@@ -21,10 +21,23 @@
 #define SYNCEVO_EXCEPTIONS_H
 
 #include <syncevo/util.h>
+#include "config.h"
 
+// Can't use the DBUS_MESSAGE_TYPE define here because it's not
+// defined till we include gdbus-cxx-bridge.h below.
+#ifdef WITH_GIO_GDBUS
+// Forward decleration can't be used here due to later typedef _GDBusMessage GDBusMessage.
+#include <gio/gio.h>
+#else
 struct DBusMessage;
+#endif
+
 SE_BEGIN_CXX
-DBusMessage *SyncEvoHandleException(DBusMessage *msg);
+#ifdef WITH_GIO_GDBUS
+GDBusMessage *SyncEvoHandleException(GDBusMessage *msg);
+#else
+DBusMessage  *SyncEvoHandleException(DBusMessage *msg);
+#endif
 SE_END_CXX
 // This needs to be defined before including gdbus-cxx-bridge.h!
 #define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
