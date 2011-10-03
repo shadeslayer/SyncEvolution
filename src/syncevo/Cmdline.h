@@ -143,6 +143,7 @@ protected:
     Bool m_remove;
     Bool m_run;
     Bool m_migrate;
+    Bool m_printDatabases;
     Bool m_printServers;
     Bool m_printTemplates;
     Bool m_printConfig;

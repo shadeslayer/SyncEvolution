@@ -44,6 +44,7 @@ using namespace std;
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/range.hpp>
 #include <fstream>
@@ -193,6 +194,9 @@ bool Cmdline::parse(vector<string> &parsed)
                 m_dontrun = true;
                 m_template = temp.substr (1);
             }
+        } else if(boost::iequals(m_argv[opt], "--print-databases")) {
+            operations.push_back(m_argv[opt]);
+            m_printDatabases = true;
         } else if(boost::iequals(m_argv[opt], "--print-servers") ||
                   boost::iequals(m_argv[opt], "--print-peers") ||
                   boost::iequals(m_argv[opt], "--print-configs")) {
@@ -396,6 +400,7 @@ bool Cmdline::isSync()
         m_printServers || boost::trim_copy(m_server) == "?" ||
         m_printTemplates || m_dontrun ||
         m_argc == 1 || (m_useDaemon.wasSet() && m_argc == 2) ||
+        m_printDatabases ||
         m_printConfig || m_remove ||
         (m_server == "" && m_argc > 1) ||
         m_configure || m_migrate ||
@@ -661,33 +666,73 @@ bool Cmdline::run() {
         }
     } else if (m_dontrun) {
         // user asked for information
-    } else if (m_argc == 1 || (m_useDaemon.wasSet() && m_argc == 2)) {
-        // no parameters: list databases and short usage
+    } else if (m_printDatabases) {
+        // list databases
         const SourceRegistry &registry(SyncSource::getSourceRegistry());
-        boost::shared_ptr<FilterConfigNode> sharedNode(new VolatileConfigNode());
-        boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
-        boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
-        boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
-        boost::shared_ptr<FilterConfigNode> serverNode(new VolatileConfigNode());
-        SyncSourceNodes nodes(true, sharedNode, configNode, hiddenNode, trackingNode, serverNode, "");
-        SyncSourceParams params("list", nodes, boost::shared_ptr<SyncConfig>());
-        
-        BOOST_FOREACH(const RegisterSyncSource *source, registry) {
-            BOOST_FOREACH(const Values::value_type &alias, source->m_typeValues) {
-                if (!alias.empty() && source->m_enabled) {
-                    SourceType type(*alias.begin());
-                    sharedNode->setProperty("backend", type.m_backend);
-                    sharedNode->setProperty("databaseFormat", type.m_localFormat);
-                    auto_ptr<SyncSource> source(SyncSource::createSource(params, false));
-                    if (source.get() != NULL) {
-                        listSources(*source, boost::join(alias, " = "));
-                        m_out << "\n";
+        boost::shared_ptr<SyncSourceNodes> nodes;
+        std::string header;
+        boost::shared_ptr<SyncContext> context;
+        FilterConfigNode::ConfigFilter sourceFilter = m_props.createSourceFilter(m_server, "");
+        FilterConfigNode::ConfigFilter::const_iterator backend = sourceFilter.find("backend");
+
+        if (!m_server.empty()) {
+            // list for specific backend chosen via config
+            if (m_sources.size() != 1) {
+                SE_THROW(StringPrintf("must specify exactly one source after the config name '%s'",
+                                      m_server.c_str()));
+            }
+            context.reset(new SyncContext(m_server));
+            if (!context->exists()) {
+                SE_THROW(StringPrintf("config '%s' does not exist", m_server.c_str()));
+            }
+            nodes.reset(new SyncSourceNodes(context->getSyncSourceNodesNoTracking(*m_sources.begin())));
+            header = StringPrintf("%s/%s", m_server.c_str(), m_sources.begin()->c_str());
+            if (!nodes->dataConfigExists()) {
+                SE_THROW(StringPrintf("%s does not exist",
+                                      header.c_str()));
+            }
+        } else {
+            context.reset(new SyncContext);
+            boost::shared_ptr<FilterConfigNode> sharedNode(new VolatileConfigNode());
+            boost::shared_ptr<FilterConfigNode> configNode(new VolatileConfigNode());
+            boost::shared_ptr<FilterConfigNode> hiddenNode(new VolatileConfigNode());
+            boost::shared_ptr<FilterConfigNode> trackingNode(new VolatileConfigNode());
+            boost::shared_ptr<FilterConfigNode> serverNode(new VolatileConfigNode());
+            nodes.reset(new SyncSourceNodes(true, sharedNode, configNode, hiddenNode, trackingNode, serverNode, ""));
+            header = backend != sourceFilter.end() ?
+                backend->second :
+                "???";
+        }
+        nodes->getProperties()->setFilter(sourceFilter);
+        FilterConfigNode::ConfigFilter syncFilter = m_props.createSyncFilter(m_server);
+        context->setConfigFilter(true, "", syncFilter);
+
+        SyncSourceParams params("list", *nodes, context);
+        if (!m_server.empty() || backend != sourceFilter.end()) {
+            // list for specific backend
+            auto_ptr<SyncSource> source(SyncSource::createSource(params, false, NULL));
+            if (source.get() != NULL) {
+                listSources(*source, header);
+                m_out << "\n";
+            } else {
+                m_out << header << "\n   cannot list databases" << std::endl;
+            }
+        } else {
+            // list for all backends
+            BOOST_FOREACH(const RegisterSyncSource *source, registry) {
+                BOOST_FOREACH(const Values::value_type &alias, source->m_typeValues) {
+                    if (!alias.empty() && source->m_enabled) {
+                        SourceType type(*alias.begin());
+                        nodes->getProperties()->setProperty("backend", type.m_backend);
+                        auto_ptr<SyncSource> source(SyncSource::createSource(params, false));
+                        if (source.get() != NULL) {
+                            listSources(*source, boost::join(alias, " = "));
+                            m_out << "\n";
+                        }
                     }
                 }
             }
         }
-
-        usage(false);
     } else if (m_printConfig) {
         boost::shared_ptr<SyncConfig> config;
         ConfigProps syncFilter;
@@ -2276,7 +2321,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testConfigureTemplates);
     CPPUNIT_TEST(testConfigureSources);
     CPPUNIT_TEST(testOldConfigure);
-    CPPUNIT_TEST(testListSources);
+    CPPUNIT_TEST(testPrintDatabases);
     CPPUNIT_TEST(testMigrate);
     CPPUNIT_TEST(testMigrateContext);
     CPPUNIT_TEST(testMigrateAutoSync);
@@ -3858,12 +3903,61 @@ protected:
         return expected;
     }
 
-    void testListSources() {
-        // pick the varargs constructor; NULL alone is ambiguous
-        TestCmdline cmdline(NULL, NULL);
-        cmdline.doit();
-        CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
-        // exact output varies, do not test
+    void testPrintDatabases() {
+        {
+            // full output
+            TestCmdline cmdline("--print-databases", (char *)0);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            // exact output varies, do not test
+        }
+        bool haveEDS;
+        {
+            // limit output to one specific backend
+            TestCmdline cmdline("--print-databases", "backend=evolution-contacts", (char *)0);
+            cmdline.doit();
+            if (cmdline.m_err.str().find("not one of the valid values") != std::string::npos) {
+                // not enabled, only this error messages expected
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            } else {
+                // enabled, no error, one entry
+                haveEDS = true;
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "evolution-contacts:\n"));
+                int entries = 0;
+                BOOST_FOREACH(const std::string &line,
+                              boost::tokenizer< boost::char_separator<char> >(cmdline.m_out.str(),
+                                                                              boost::char_separator<char>("\n"))) {
+                    if (!boost::starts_with(line, " ")) {
+                        entries++;
+                    }
+                }
+                CPPUNIT_ASSERT_EQUAL(1, entries);
+            }
+        }
+        if (haveEDS) {
+            // limit output to one specific backend, chosen via config
+            {
+                TestCmdline cmdline("--configure", "backend=evolution-contacts", "@foo-config", "bar-source", (char *)0);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+            }
+            {
+                TestCmdline cmdline("--print-databases", "@foo-config", "bar-source", (char *)0);
+                cmdline.doit();
+                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+                CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "@foo-config/bar-source:\n"));
+                int entries = 0;
+                BOOST_FOREACH(const std::string &line,
+                              boost::tokenizer< boost::char_separator<char> >(cmdline.m_out.str(),
+                                                                              boost::char_separator<char>("\n"))) {
+                    if (!boost::starts_with(line, " ")) {
+                        entries++;
+                    }
+                }
+                CPPUNIT_ASSERT_EQUAL(1, entries);
+            }
+        }
     }
 
     void testMigrate() {
