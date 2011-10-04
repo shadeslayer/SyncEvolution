@@ -733,7 +733,8 @@ void LocalTests::testLocalDeleteAll() {
 
 // clean database, then insert
 void LocalTests::testComplexInsert() {
-    testLocalDeleteAll();
+    CPPUNIT_ASSERT(config.m_createSourceA);
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     testSimpleInsert();
     testIterateTwice();
 }
@@ -742,8 +743,10 @@ void LocalTests::testComplexInsert() {
 void LocalTests::testLocalUpdate() {
     // check additional requirements
     CPPUNIT_ASSERT(!config.m_updateItem.empty());
+    CPPUNIT_ASSERT(config.m_createSourceA);
 
-    testLocalDeleteAll();
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+
     testSimpleInsert();
     CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
 }
@@ -754,8 +757,9 @@ void LocalTests::testChanges() {
 
     // check additional requirements
     CPPUNIT_ASSERT(config.m_createSourceB);
+    CPPUNIT_ASSERT(config.m_createSourceA);
 
-    testLocalDeleteAll();
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
     testSimpleInsert();
 
     // clean changes in sync source B by creating and closing it
@@ -874,8 +878,9 @@ void LocalTests::testImport() {
     CPPUNIT_ASSERT(config.m_dump);
     CPPUNIT_ASSERT(config.m_compare);
     CPPUNIT_ASSERT(!config.m_testcases.empty());
+    CPPUNIT_ASSERT(config.m_createSourceA);
 
-    testLocalDeleteAll();
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // import via sync source A
     TestingSyncSourcePtr source;
@@ -905,7 +910,7 @@ void LocalTests::testImportDelete() {
 
     // delete again, because it was observed that this did not
     // work right with calendars in SyncEvolution
-    testLocalDeleteAll();
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
 }
 
 // test change tracking with large number of items
