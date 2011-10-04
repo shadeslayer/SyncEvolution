@@ -500,7 +500,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
     // TODO: support more than one calendar. Instead of stopping at the first one,
     // scan more throroughly, then decide deterministically.
     int counter = 0;
-    const int limit = 10;
+    const int limit = 1000;
     std::set<std::string> tried;
     std::list<std::string> candidates;
     std::string path = m_session->getURI().m_path;
