@@ -770,6 +770,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                     };
                     m_davProps.clear();
                     m_session->propfindProp(path, 1, props, callback, finalDeadline);
+                    std::set<std::string> subs;
                     BOOST_FOREACH(Props_t::value_type &entry, m_davProps) {
                         const std::string &sub = entry.first;
                         const std::string &subType = entry.second["DAV::resourcetype"];
@@ -789,16 +790,20 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                             std::find(candidates.begin(), candidates.end(), sub) == candidates.end() &&
                             subType.find("<DAV:collection></DAV:collection>") != subType.npos &&
                             subType.find("<urn:ietf:params:xml:ns:caldavschedule-") == subType.npos &&
-                            subType.find("<http://calendarserver.org/ns/shared") == subType.npos) {
-                            // insert before other candidates (depth-first search)
-                            candidates.push_front(sub);
-                            if (next.empty() && typeMatches(entry.second)) {
-                                // try this one before or all other candidates
-                                next = sub;
-                            }
+                            subType.find("<http://calendarserver.org/ns/shared") == subType.npos &&
+                            (typeMatches(entry.second) || !ignoreCollection(entry.second))) {
+                            subs.insert(sub);
                             SE_LOG_DEBUG(NULL, NULL, "new candidate: %s", sub.c_str());
+                        } else {
+                            SE_LOG_DEBUG(NULL, NULL, "skipping: %s", sub.c_str());
                         }
                     }
+
+                    // insert before other candidates, sorted
+                    // alphabetically
+                    candidates.insert(candidates.begin(),
+                                      subs.begin(),
+                                      subs.end());
                 }
             }
         }
@@ -1283,6 +1288,26 @@ std::string WebDAVSource::getLUID(Neon::Request &req)
     } else {
         return path2luid(Neon::URI::parse(location).m_path);
     }
+}
+
+bool WebDAVSource::ignoreCollection(const StringMap &props) const
+{
+    // CardDAV and CalDAV both promise to not contain anything
+    // unrelated to them
+    StringMap::const_iterator it = props.find("DAV::resourcetype");
+    if (it != props.end()) {
+        const std::string &type = it->second;
+        // allow parameters (no closing bracket)
+        // and allow also "carddavaddressbook" (caused by invalid Neon 
+        // string concatenation?!)
+        if (type.find("<urn:ietf:params:xml:ns:caldav:calendar") != type.npos ||
+            type.find("<urn:ietf:params:xml:ns:caldavcalendar") != type.npos ||
+            type.find("<urn:ietf:params:xml:ns:carddav:addressbook") != type.npos ||
+            type.find("<urn:ietf:params:xml:ns:carddavaddressbook") != type.npos) {
+            return true;
+        }
+    }
+    return false;
 }
 
 Timespec WebDAVSource::createDeadline() const
