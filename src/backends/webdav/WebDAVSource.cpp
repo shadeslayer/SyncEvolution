@@ -754,11 +754,18 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
 
             // find next path:
             // prefer CardDAV:calendar-home-set or CalDAV:addressbook-home-set
-            std::string home = extractHREF(props[homeSetProp()]);
-            if (!home.empty() &&
-                tried.find(home) == tried.end()) {
-                next = home;
-                SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", next.c_str());
+            std::list<std::string> homes = extractHREFs(props[homeSetProp()]);
+            BOOST_FOREACH(const std::string &home, homes) {
+                if (!home.empty() &&
+                    tried.find(home) == tried.end()) {
+                    if (next.empty()) {
+                        SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", home.c_str());
+                        next = home;
+                    } else {
+                        SE_LOG_DEBUG(NULL, NULL, "new candidate from home-set property %s", home.c_str());
+                        candidates.push_front(home);
+                    }
+                }
             }
             // alternatively, follow principal URL
             if (next.empty()) {
@@ -872,6 +879,33 @@ std::string WebDAVSource::extractHREF(const std::string &propval)
         }
     }
     return "";
+}
+
+std::list<std::string> WebDAVSource::extractHREFs(const std::string &propval)
+{
+    std::list<std::string> res;
+
+    // all additional parameters after opening resp. closing tag
+    static const std::string hrefStart = "<DAV:href";
+    static const std::string hrefEnd = "</DAV:href";
+    size_t current = 0;
+    while (current < propval.size()) {
+        size_t start = propval.find(hrefStart, current);
+        start = propval.find('>', start);
+        if (start != propval.npos) {
+            start++;
+            size_t end = propval.find(hrefEnd, start);
+            if (end != propval.npos) {
+                res.push_back(propval.substr(start, end - start));
+                current = end;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    return res;
 }
 
 void WebDAVSource::openPropCallback(const Neon::URI &uri,
