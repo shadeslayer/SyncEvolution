@@ -654,6 +654,16 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
             // follow to new location
             Neon::URI next = Neon::URI::parse(ex.getLocation());
             Neon::URI old = m_session->getURI();
+            // keep old host + scheme + port if not set in next location
+            if (next.m_scheme.empty()) {
+                next.m_scheme = old.m_scheme;
+            }
+            if (next.m_host.empty()) {
+                next.m_host = old.m_host;
+            }
+            if (!next.m_port) {
+                next.m_port = old.m_port;
+            }
             if (next.m_scheme != old.m_scheme ||
                 next.m_host != old.m_host ||
                 next.m_port != old.m_port) {
