@@ -78,7 +78,7 @@ const std::string *CardDAVSource::createResourceName(const std::string &item, st
         size_t start = buffer.find(END_VCARD);
         if (start != buffer.npos) {
             start++;
-            buffer.insert(start, StringPrintf("UID:%s\n", luid.c_str()));
+            buffer.insert(start, StringPrintf("UID:%s\r\n", luid.c_str()));
         }
         luid += SUFFIX;
         return &buffer;
