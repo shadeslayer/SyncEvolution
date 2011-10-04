@@ -1191,7 +1191,9 @@ std::string WebDAVSource::ETag2Rev(const std::string &etag)
     if (boost::starts_with(res, "W/")) {
         res.erase(0, 2);
     }
-    if (res.size() >= 2) {
+    if (res.size() >= 2 &&
+        res[0] == '"' &&
+        res[res.size() - 1] == '"') {
         res = res.substr(1, res.size() - 2);
     }
     return res;
