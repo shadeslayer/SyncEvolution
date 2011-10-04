@@ -820,12 +820,20 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
         }
 
         if (next.empty()) {
-            // use next candidate
-            if (candidates.empty() ) {
+            // use next untried candidate
+            next = "";
+            while (!candidates.empty() ) {
+                std::string candidate = candidates.front();
+                candidates.pop_front();
+                if (tried.find(candidate) == tried.end()) {
+                    next = candidate;
+                    break;
+                }
+            }
+            if (next.empty()) {
+                // done searching
                 break;
             }
-            next = candidates.front();
-            candidates.pop_front();
             SE_LOG_DEBUG(NULL, NULL, "follow candidate %s", next.c_str());
         }
 
