@@ -73,6 +73,8 @@ class CalDAVSource : public WebDAVSource,
     virtual std::string serviceType() const { return "caldav"; }
     virtual bool typeMatches(const StringMap &props) const;
     virtual std::string homeSetProp() const { return "urn:ietf:params:xml:ns:caldav:calendar-home-set"; }
+    virtual std::string wellKnownURL() const { return "/.well-known/caldav"; }
+
     virtual std::string contentType() const { return "text/calendar; charset=utf-8"; }
     virtual std::string suffix() const { return ".ics"; }
 

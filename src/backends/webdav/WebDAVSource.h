@@ -153,6 +153,12 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     virtual std::string homeSetProp() const = 0;
 
     /**
+     * well-known URL, including full path (/.well-known/caldav),
+     * empty if none
+     */
+    virtual std::string wellKnownURL() const = 0;
+
+    /**
      * HTTP content type for PUT
      */
     virtual std::string contentType() const = 0;

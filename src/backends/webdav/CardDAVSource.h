@@ -41,6 +41,7 @@ class CardDAVSource : public WebDAVSource,
     virtual std::string serviceType() const { return "carddav"; }
     virtual bool typeMatches(const StringMap &props) const;
     virtual std::string homeSetProp() const { return "urn:ietf:params:xml:ns:carddav:addressbook-home-set"; }
+    virtual std::string wellKnownURL() const { return "/.well-known/carddav"; }
     virtual std::string contentType() const { return "text/vcard; charset=utf-8"; }
     virtual const std::string *createResourceName(const std::string &item, std::string &buffer, std::string &luid);
     virtual const std::string *setResourceName(const std::string &item, std::string &buffer, const std::string &luid);

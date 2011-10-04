@@ -520,6 +520,17 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
     // Therefore resending is okay.
     Timespec finalDeadline = createDeadline(); // no resending if left empty
 
+    // Add well-known URL as fallback to be tried if configured
+    // path was empty. eGroupware also replies with a redirect for the
+    // empty path, but relying on that alone is risky because it isn't
+    // specified.
+    if (path.empty() || path == "/") {
+        std::string wellknown = wellKnownURL();
+        if (!wellknown.empty()) {
+            candidates.push_back(wellknown);
+        }
+    }
+
     while (true) {
         bool usernameInserted = false;
         std::string next;
