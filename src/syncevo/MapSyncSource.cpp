@@ -351,4 +351,13 @@ std::pair<std::string, std::string> MapSyncSource::splitLUID(const std::string &
 
 StringEscape MapSyncSource::m_escape('%', "/");
 
+void MapSyncSource::removeAllItems()
+{
+    BOOST_FOREACH(const SubRevisionMap_t::value_type &entry,
+                  m_revisions) {
+        m_sub->removeMergedItem(entry.first);
+    }
+    m_revisions.clear();
+}
+
 SE_END_CXX

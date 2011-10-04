@@ -42,6 +42,7 @@ class CalDAVSource : public WebDAVSource,
                                         const std::string &item);
     virtual void readSubItem(const std::string &uid, const std::string &subid, std::string &item);
     virtual std::string removeSubItem(const string &uid, const std::string &subid);
+    virtual void removeMergedItem(const std::string &luid);
     virtual void flushItem(const string &uid);
     virtual std::string getSubDescription(const string &uid, const string &subid);
 

@@ -167,6 +167,11 @@ class SubSyncSource : virtual public SyncSourceBase
     virtual std::string removeSubItem(const string &mainid, const std::string &subid) = 0;
 
     /**
+     * Remove all sub-items belonging to mainid.
+     */
+    virtual void removeMergedItem(const std::string &mainid) = 0;
+
+    /**
      * Called whenever this class thinks that the item may no longer be
      * needed. Might be wrong...
      */
@@ -264,6 +269,9 @@ class MapSyncSource :
     virtual std::string getMimeVersion() const { return dynamic_cast<SyncSourceSerialize &>(*m_sub).getMimeVersion(); }
     virtual std::string getDescription(sysync::KeyH aItemKey) { return dynamic_cast<SyncSourceLogging &>(*m_sub).getDescription(aItemKey); }
     virtual std::string getDescription(const string &luid);
+
+    /* TestingSyncSource */
+    virtual void removeAllItems();
 
  private:
     boost::shared_ptr<SubSyncSource> m_sub;

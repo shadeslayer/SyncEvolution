@@ -858,6 +858,48 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
     }
 }
 
+void CalDAVSource::removeMergedItem(const std::string &davLUID)
+{
+    EventCache::iterator it = m_cache.find(davLUID);
+    if (it == m_cache.end()) {
+        // gone already, no need to do anything
+        SE_LOG_DEBUG(this, NULL, "%s: ignoring request to delete non-existent item",
+                     davLUID.c_str());
+        return;
+    }
+    // use item as it is, load only if it is not going to be removed entirely
+    Event &event = *it->second;
+
+    // remove entire merged item, nothing will be left after removal
+    try {
+        removeItem(event.m_DAVluid);
+    } catch (const TransportStatusException &ex) {
+        if (ex.syncMLStatus() == 404) {
+            // Someone must have created a detached recurrence on
+            // the server without the master event - or the 
+            // item was already removed while the sync ran.
+            // Let's log the problem and ignore it.
+            Exception::log();
+        } else if (ex.syncMLStatus() == 409 &&
+                   strstr(ex.what(), "Can't delete a recurring event")) {
+            // Google CalDAV:
+            // HTTP/1.1 409 Can't delete a recurring event except on its organizer's calendar
+            //
+            // Workaround: use the workarounds from removeSubItem()
+            std::set<std::string> subids = event.m_subids;
+            for (std::set<std::string>::reverse_iterator it = subids.rbegin();
+                 it != subids.rend();
+                 ++it) {
+                removeSubItem(davLUID, *it);
+            }
+        } else {
+            throw;
+        }
+    }
+
+    m_cache.erase(davLUID);
+}
+
 void CalDAVSource::flushItem(const string &davLUID)
 {
     // TODO: currently we always flush immediately, so no need to send data here

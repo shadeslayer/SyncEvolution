@@ -2081,11 +2081,7 @@ class TestingSyncSource : public SyncSource,
 
     virtual SourceType getSourceType() const { return SyncSourceConfig::getSourceType(); }
 
-    void removeAllItems() {
-        BOOST_FOREACH(const string &luid, getAllItems()) {
-            deleteItem(luid);
-        }
-    }
+    virtual void removeAllItems();
 };
 
 

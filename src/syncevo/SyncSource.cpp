@@ -1388,5 +1388,20 @@ void SyncSourceBlob::init(SyncSource::Operations &ops,
                                    _1, _2);
 }
 
+void TestingSyncSource::removeAllItems()
+{
+    // remove longest luids first:
+    // for luid=UID[+RECURRENCE-ID] that will
+    // remove children from a merged event first,
+    // which is better supported by certain servers
+    Items_t items = getAllItems();
+    for (Items_t::reverse_iterator it = items.rbegin();
+         it != items.rend();
+         ++it) {
+        deleteItem(*it);
+    }
+}
+
+
 SE_END_CXX
 
