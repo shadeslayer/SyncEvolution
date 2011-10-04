@@ -749,6 +749,8 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                 if (!res) {
                     // done
                     break;
+                } else {
+                    goto next;
                 }
             }
 
@@ -836,6 +838,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
             }
         }
 
+        next:
         if (next.empty()) {
             // use next untried candidate
             next = "";
