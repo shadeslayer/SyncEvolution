@@ -678,8 +678,15 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                         throw;
                     }
                 }
-            } else {
+            } else if (tried.find(next.m_path) == tried.end()) {
+                SE_LOG_DEBUG(NULL, NULL, "new candidate from %s -> %s redirect",
+                             old.m_path.c_str(),
+                             next.m_path.c_str());
                 candidates.push_front(next.m_path);
+            } else {
+                SE_LOG_DEBUG(NULL, NULL, "already known candidate from %s -> %s redirect",
+                             old.m_path.c_str(),
+                             next.m_path.c_str());
             }
         } catch (const TransportStatusException &ex) {
             SE_LOG_DEBUG(NULL, NULL, "TransportStatusException: %s", ex.what());
@@ -742,9 +749,14 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                 it = props.find("DAV::displayname");
                 Neon::URI uri = m_session->getURI();
                 uri.m_path = path;
-                res = storeResult(it == props.end() ?
-                                  std::string("<no name>") :
-                                  it->second,
+                std::string name;
+                if (it != props.end()) {
+                    name = it->second;
+                }
+                SE_LOG_DEBUG(NULL, NULL, "found %s = %s",
+                             name.c_str(),
+                             uri.toURL().c_str());
+                res = storeResult(name,
                                   uri);
                 if (!res) {
                     // done
