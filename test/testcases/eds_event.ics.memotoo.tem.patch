@@ -124,7 +124,7 @@
  CREATED:20060416T204808Z
  LAST-MODIFIED:20060416T204808Z
  END:VEVENT
-@@ -189,7 +169,7 @@
+@@ -211,7 +191,7 @@
   characters:\na-umlaut ä\nexclamation mark !\nampersand disabled\nhash 
   #\nleft angle bracket disabled\nright angle bracket disabled\nleft square 
   bracket [\nright square bracket ]\nleft bracket (\nright bracket 
@@ -133,7 +133,7 @@
   ^\npercent %\ntilde ~\ntick `\nbacktick `\ndouble quotation - not tested 
   because Evolution encodes it incorrectly\nsingle quotation '\ncolon :\n
   semicolon \;\ncomma \,\n
-@@ -212,7 +192,7 @@
+@@ -234,7 +214,7 @@
  DTEND:20060406T200000Z
  TRANSP:OPAQUE
  SEQUENCE:2
@@ -142,7 +142,7 @@
  SUMMARY:meeting invitation
  CLASS:PUBLIC
  ORGANIZER;CN=Patrick Ohly:MAILTO:Patrick.Ohly@gmx.de
-@@ -231,14 +211,16 @@
+@@ -253,14 +233,16 @@
  BEGIN:VEVENT
  UID:20080407T193125Z-19554-727-1-50@gollum
  DTSTAMP:20080407T193125Z
@@ -162,7 +162,7 @@
  CREATED:20080407T193241Z
  LAST-MODIFIED:20080407T193241
  END:VEVENT
-@@ -258,7 +240,7 @@
+@@ -280,7 +262,7 @@
  CLASS:PUBLIC
  CREATED:20080407T193241Z
  LAST-MODIFIED:20080407T193647
@@ -171,7 +171,7 @@
  DESCRIPTION:second instance modified
  END:VEVENT
  END:VCALENDAR
-@@ -277,7 +259,7 @@
+@@ -299,7 +281,7 @@
  CLASS:PUBLIC
  CREATED:20080407T193241Z
  LAST-MODIFIED:20080407T193647
@@ -180,7 +180,7 @@
  DESCRIPTION:third instance modified\, different time
  END:VEVENT
  END:VCALENDAR
-@@ -288,14 +270,15 @@
+@@ -310,14 +292,15 @@
  BEGIN:VEVENT
  UID:20080407T193125Z-19554-727-1-50-XX@gollum
  DTSTAMP:20080407T193125Z
@@ -199,7 +199,7 @@
  CREATED:20080407T193241Z
  LAST-MODIFIED:20080407T193241
  END:VEVENT
-@@ -361,28 +344,11 @@
+@@ -383,28 +366,11 @@
  BEGIN:VCALENDAR
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0

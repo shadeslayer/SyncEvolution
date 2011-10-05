@@ -94,7 +94,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -193,12 +121,6 @@
+@@ -215,12 +143,6 @@
   ^\npercent %\ntilde ~\ntick `\nbacktick `\ndouble quotation - not tested 
   because Evolution encodes it incorrectly\nsingle quotation '\ncolon :\n
   semicolon \;\ncomma \,\n
@@ -107,7 +107,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -361,28 +283,11 @@
+@@ -383,28 +305,11 @@
  BEGIN:VCALENDAR
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0
