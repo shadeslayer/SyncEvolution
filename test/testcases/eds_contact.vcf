@@ -3,7 +3,7 @@ VERSION:3.0
 NICKNAME:user17
 NOTE:triggers parser bug in Funambol 3.0: trailing = is mistaken for soft line break=
 FN:parserbug=
-N:parserbug=
+N:parserbug=;;;;
 X-EVOLUTION-FILE-AS:parserbug=
 END:VCARD
 
@@ -12,7 +12,7 @@ VERSION:3.0
 NICKNAME:user16
 NOTE:test case with empty email
 FN:incomplete
-N:incomplete
+N:incomplete;;;;
 EMAIL:
 X-EVOLUTION-FILE-AS:incomplete
 END:VCARD
