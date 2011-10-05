@@ -680,6 +680,7 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const ItemID &id)
     if (!comp) {
         throwError(string("retrieving item: ") + id.getLUID());
     }
+    eptr<icalcomponent> ptr(comp);
 
     /*
      * EDS bug: if a parent doesn't exist while a child does, and we ask
@@ -693,7 +694,7 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const ItemID &id)
         }
     }
 
-    return comp;
+    return ptr.release();
 }
 
 string EvolutionCalendarSource::retrieveItemAsString(const ItemID &id)
