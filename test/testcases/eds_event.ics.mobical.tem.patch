@@ -94,16 +94,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -161,8 +89,6 @@
-  Saturday
- CLASS:PUBLIC
- RRULE:FREQ=DAILY;INTERVAL=1;UNTIL=20060412T183000Z
--EXDATE;VALUE=DATE:20060408
--EXDATE;VALUE=DATE:20060407
- CREATED:20060416T204808Z
- LAST-MODIFIED:20060416T204808Z
- END:VEVENT
-@@ -193,12 +119,6 @@
+@@ -193,12 +121,6 @@
   ^\npercent %\ntilde ~\ntick `\nbacktick `\ndouble quotation - not tested 
   because Evolution encodes it incorrectly\nsingle quotation '\ncolon :\n
   semicolon \;\ncomma \,\n
@@ -116,7 +107,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -361,28 +281,11 @@
+@@ -361,28 +283,11 @@
  BEGIN:VCALENDAR
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0
