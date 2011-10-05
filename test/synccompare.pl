@@ -87,6 +87,7 @@ my $google_valarm = $ENV{CLIENT_TEST_GOOGLE_VALARM};
 my $yahoo = $server =~ /yahoo/;
 my $davical = $server =~ /davical/;
 my $apple = $server =~ /apple/;
+my $oracle = $server =~ /oracle/;
 my $evolution = $client =~ /evolution/;
 my $addressbook = $client =~ /addressbook/;
 
@@ -391,6 +392,11 @@ sub NormalizeItem {
 
         # X- properties are stored, but not X- parameters
         s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
+    }
+
+    if ($oracle) {
+        # remove extensions added by server
+        s/^(X-S1CS-RECURRENCE-COUNT)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     if ($google || $yahoo) {

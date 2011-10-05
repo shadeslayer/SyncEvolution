@@ -1,0 +1,9 @@
+@@ -211,7 +211,7 @@
+  characters:\na-umlaut ä\nexclamation mark !\nampersand disabled\nhash 
+  #\nleft angle bracket disabled\nright angle bracket disabled\nleft square 
+  bracket [\nright square bracket ]\nleft bracket (\nright bracket 
+- )\nbackslash \\\nbackslash lf \\n\nbackslash cr \\r\nstar *\ncarret 
++ )\nbackslash \\ \nbackslash lf \\n\nbackslash cr \\r\nstar *\ncarret 
+  ^\npercent %\ntilde ~\ntick `\nbacktick `\ndouble quotation - not tested 
+  because Evolution encodes it incorrectly\nsingle quotation '\ncolon :\n
+  semicolon \;\ncomma \,\n
