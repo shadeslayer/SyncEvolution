@@ -501,7 +501,17 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
     // scan more throroughly, then decide deterministically.
     int counter = 0;
     const int limit = 1000;
-    std::set<std::string> tried;
+    class Tried : public std::set<std::string> {
+    public:
+        bool isNew(const std::string &path) {
+            return find(Neon::URI::normalizePath(path, true)) == end();
+        }
+        std::string insert(const std::string &path) {
+            std::string normal = Neon::URI::normalizePath(path, true);
+            std::set<std::string>::insert(normal);
+            return normal;
+        }
+    } tried;
     std::list<std::string> candidates;
     std::string path = m_session->getURI().m_path;
     Neon::Session::PropfindPropCallback_t callback =
@@ -545,9 +555,8 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
         }
 
         // must normalize so that we can compare against results from server
-        path = Neon::URI::normalizePath(path, true);
+        path = tried.insert(path);
         SE_LOG_DEBUG(NULL, NULL, "testing %s", path.c_str());
-        tried.insert(path);
 
         // Accessing the well-known URIs should lead to a redirect, but
         // with Yahoo! Calendar all I got was a 502 "connection refused".
@@ -678,7 +687,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                         throw;
                     }
                 }
-            } else if (tried.find(next.m_path) == tried.end()) {
+            } else if (tried.isNew(next.m_path)) {
                 SE_LOG_DEBUG(NULL, NULL, "new candidate from %s -> %s redirect",
                              old.m_path.c_str(),
                              next.m_path.c_str());
@@ -771,7 +780,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
             std::list<std::string> homes = extractHREFs(props[homeSetProp()]);
             BOOST_FOREACH(const std::string &home, homes) {
                 if (!home.empty() &&
-                    tried.find(home) == tried.end()) {
+                    tried.isNew(home)) {
                     if (next.empty()) {
                         SE_LOG_DEBUG(NULL, NULL, "follow home-set property to %s", home.c_str());
                         next = home;
@@ -785,7 +794,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
             if (next.empty()) {
                 std::string principal = extractHREF(props["DAV::current-user-principal"]);
                 if (!principal.empty() &&
-                    tried.find(principal) == tried.end()) {
+                    tried.isNew(principal)) {
                     next = principal;
                     SE_LOG_DEBUG(NULL, NULL, "follow current-user-prinicipal to %s", next.c_str());
                 }
@@ -828,8 +837,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                         // type (example: Apple Calendar Server "inbox" under
                         // calendar-home-set URL with type "CALDAV:schedule-inbox") requires
                         // knowledge not current provided by derived classes. TODO (?).
-                        if (tried.find(sub) == tried.end() &&
-                            std::find(candidates.begin(), candidates.end(), sub) == candidates.end() &&
+                        if (tried.isNew(sub) &&
                             subType.find("<DAV:collection></DAV:collection>") != subType.npos &&
                             subType.find("<urn:ietf:params:xml:ns:caldavschedule-") == subType.npos &&
                             subType.find("<http://calendarserver.org/ns/shared") == subType.npos &&
@@ -857,7 +865,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
             while (!candidates.empty() ) {
                 std::string candidate = candidates.front();
                 candidates.pop_front();
-                if (tried.find(candidate) == tried.end()) {
+                if (tried.isNew(candidate)) {
                     next = candidate;
                     break;
                 }
