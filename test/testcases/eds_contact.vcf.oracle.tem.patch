@@ -1,0 +1,28 @@
+@@ -279,27 +279,6 @@
+ END:VCARD
+ 
+ BEGIN:VCARD
+-VERSION:3.0
+-URL:
+-TITLE:
+-ROLE:
+-X-EVOLUTION-MANAGER:
+-X-EVOLUTION-ASSISTANT:
+-NICKNAME:user6
+-X-EVOLUTION-SPOUSE:
+-NOTE:The first name is "First \; special \;".
+-FN:Mr. First \; special \; middle Last
+-N:Last;First \; special \;;middle;Mr.;
+-X-EVOLUTION-FILE-AS:Last\, First \; special \;
+-X-EVOLUTION-BLOG-URL:
+-CALURI:
+-FBURL:
+-X-EVOLUTION-VIDEO-URL:
+-X-MOZILLA-HTML:FALSE
+-UID:pas-id-43C15D55000001AA
+-END:VCARD
+-
+-BEGIN:VCARD
+ VERSION:3.0
+ URL:
+ TITLE:
