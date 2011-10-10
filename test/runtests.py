@@ -855,7 +855,6 @@ test = SyncEvolutionTest("apple", compile,
                          "CLIENT_TEST_WEBDAV='apple caldav carddav' "
                          "CLIENT_TEST_NUM_ITEMS=250 " # test is local, so we can afford a higher number
                          "CLIENT_TEST_ALARM=2400 " # but even with a local server does the test run a long time
-                         "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
                          testPrefix=options.testprefix)
