@@ -54,6 +54,17 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
      */
     void contactServer();
 
+    /**
+     * Scan server based on username/password/syncURL. Callback is
+     * passed name and URL of each collection (in this order), may
+     * return false to stop scanning gracefully or throw errors to
+     * abort.
+     *
+     * @return true if scanning completed, false if callback requested stop
+     */
+    bool findCollections(const boost::function<bool (const std::string &,
+                                                     const Neon::URI &)> &callback);
+
     /** store resource URL permanently after successful sync */
     void storeServerInfos();
 
