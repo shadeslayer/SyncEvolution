@@ -174,6 +174,8 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                      'davical',
                      'googlecalendar',
                      'apple',
+                     'egroupware-dav',
+                     'oracle',
                      'dbus']
     sourceServersRun = 0
     haveSource = False

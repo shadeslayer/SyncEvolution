@@ -841,6 +841,28 @@ test = SyncEvolutionTest("yahoo", compile,
                          testPrefix=options.testprefix)
 context.add(test)
 
+test = SyncEvolutionTest("oracle", compile,
+                         "", options.shell,
+                         "Client::Sync::eds_contact::testItems Client::Sync::eds_event::testItems Client::Source::oracle_caldav Client::Source::oracle_carddav",
+                         [ "oracle_caldav", "oracle_carddav", "eds_event", "eds_contact" ],
+                         "CLIENT_TEST_WEBDAV='oracle caldav carddav' "
+                         "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
+                         "CLIENT_TEST_MODE=server " # for Client::Sync
+                         ,
+                         testPrefix=options.testprefix)
+context.add(test)
+
+test = SyncEvolutionTest("egroupware-dav", compile,
+                         "", options.shell,
+                         "Client::Sync::eds_contact::testItems Client::Sync::eds_event::testItems Client::Source::egroupware-dav_caldav Client::Source::egroupware-dav_carddav",
+                         [ "egroupware-dav_caldav", "egroupware-dav_carddav", "eds_event", "eds_contact" ],
+                         "CLIENT_TEST_WEBDAV='egroupware-dav caldav carddav' "
+                         "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
+                         "CLIENT_TEST_MODE=server " # for Client::Sync
+                         ,
+                         testPrefix=options.testprefix)
+context.add(test)
+
 test = SyncEvolutionTest("davical", compile,
                          "", options.shell,
                          "Client::Sync::eds_contact Client::Sync::eds_event Client::Source::davical_caldav Client::Source::davical_carddav",
