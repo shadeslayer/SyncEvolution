@@ -6,8 +6,8 @@ SE_ARG_ENABLE_BACKEND(activesync, activesync,
 		      [enable_activesync="$enableval"], [enable_activesync="no"])
 
 if test "$enable_activesync" = "yes"; then
-        PKG_CHECK_MODULES(EASSYNC, libeassync)
+        PKG_CHECK_MODULES(EASCLIENT, libeasclient)
         AC_DEFINE(ENABLE_ACTIVESYNC, 1, [ActiveSync available])
 fi
 
-BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $EASSYNC_CFLAGS"
+BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $EASCLIENT_CFLAGS"
