@@ -1000,6 +1000,12 @@ class FunambolTest(SyncEvolutionTest):
                                      "eds_task",
                                      "eds_memo" ],
                                    "CLIENT_TEST_SKIP="
+                                   # server duplicates items in add<->add conflict because it
+                                   # does not check UID
+                                   "Client::Sync::eds_event::testAddBothSides,"
+                                   "Client::Sync::eds_event::testAddBothSidesRefresh,"
+                                   "Client::Sync::eds_task::testAddBothSides,"
+                                   "Client::Sync::eds_task::testAddBothSidesRefresh,"
                                    # test cannot pass because we don't have CtCap info about
                                    # the Funambol server
                                    "Client::Sync::eds_contact::testExtensions,"
@@ -1099,6 +1105,12 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "CLIENT_TEST_NOCHECK_SYNCMODE=1 "
                                 "CLIENT_TEST_MAX_ITEMSIZE=2048 "
                                 "CLIENT_TEST_SKIP="
+                                # server duplicates items in add<->add conflict because it
+                                # does not check UID
+                                "Client::Sync::eds_event::testAddBothSides,"
+                                "Client::Sync::eds_event::testAddBothSidesRefresh,"
+                                "Client::Sync::eds_task::testAddBothSides,"
+                                "Client::Sync::eds_task::testAddBothSidesRefresh,"
                                 "Client::Sync::eds_contact::Retry,"
                                 "Client::Sync::eds_contact::Suspend,"
                                 "Client::Sync::eds_contact::Resend,"
@@ -1176,6 +1188,12 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 "CLIENT_TEST_NOCHECK_SYNCMODE=1 "
                                 "CLIENT_TEST_NUM_ITEMS=10 "
                                 "CLIENT_TEST_SKIP="
+                                # server duplicates items in add<->add conflict because it
+                                # does not check UID
+                                "Client::Sync::eds_event::testAddBothSides,"
+                                "Client::Sync::eds_event::testAddBothSidesRefresh,"
+                                "Client::Sync::eds_task::testAddBothSides,"
+                                "Client::Sync::eds_task::testAddBothSidesRefresh,"
                                 "Client::Sync::eds_contact::Retry,"
                                 "Client::Sync::eds_contact::Suspend,"
                                 # "Client::Sync::eds_contact::testRefreshFromClientSync,"
