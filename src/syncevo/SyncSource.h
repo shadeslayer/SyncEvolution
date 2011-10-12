@@ -1322,7 +1322,12 @@ class SyncSourceSession : virtual public SyncSourceBase {
     /**
      * called before Synthesis engine starts to ask for changes and item data
      *
-     * See BeingDataRead for details.
+     * May throw a STATUS_SLOW_SYNC_508 StatusException if an
+     * incremental sync is not possible. In that case, preparations
+     * for a slow sync must have completed successfully inside the
+     * beginSync() call. It is not going to get called again.
+     *
+     * See StartDataRead for details.
      *
      * @param lastToken     identifies the last completed sync
      * @param resumeToken   identifies a more recent sync which needs to be resumed;

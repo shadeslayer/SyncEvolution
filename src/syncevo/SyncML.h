@@ -120,6 +120,8 @@ enum SyncMLStatus {
     STATUS_ALREADY_EXISTS = 418,
     /** command failed / fatal DB error */
     STATUS_FATAL = 500,
+    /** in Synthesis StartDataRead: slow sync forced by backend */
+    STATUS_SLOW_SYNC_508 = 508,
     /** general DB error */
     STATUS_DATASTORE_FAILURE = 510,
     /** database / memory full error */
