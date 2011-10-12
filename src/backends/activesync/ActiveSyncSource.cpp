@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+/* #include <eas-connection-errors.h> */
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -92,7 +93,10 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
 
     m_currentSyncKey = m_startSyncKey;
 
-    while (moreAvailable) {
+    bool slowSync = false;
+    for (bool firstIteration = true;
+         moreAvailable;
+         firstIteration = false) {
         gchar *buffer = NULL;
         EASItemsCXX created, updated;
         EASIdsCXX deleted;
@@ -105,6 +109,20 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
                                         created, updated, deleted,
                                         &moreAvailable,
                                         gerror)) {
+            if (gerror.m_gerror &&
+                /*
+                gerror.m_gerror->domain == EAS_TYPE_CONNECTION_ERROR &&
+                gerror.m_gerror->code == EAS_CONNECTION_SYNC_ERROR_INVALIDSYNCKEY && */
+                gerror.m_gerror->message &&
+                !strcmp(gerror.m_gerror->message, "Sync error: Invalid synchronization key") &&
+                firstIteration) {
+                // fall back to slow sync
+                slowSync = true;
+                m_currentSyncKey = "";
+                m_ids->clear();
+                continue;
+            }
+
             gerror.throwError("reading ActiveSync changes");
         }
         if (!buffer) {
@@ -173,6 +191,13 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
         const std::string &luid = entry.first;
         SE_LOG_DEBUG(this, NULL, "existing item %s", luid.c_str());
         addItem(luid, ANY);
+    }
+
+    if (slowSync) {
+        // tell engine that we need a slow sync
+        SE_THROW_EXCEPTION_STATUS(StatusException,
+                                  "ActiveSync error: Invalid synchronization key",
+                                  STATUS_SLOW_SYNC_508);
     }
 }
 
