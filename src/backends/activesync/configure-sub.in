@@ -8,6 +8,8 @@ SE_ARG_ENABLE_BACKEND(activesync, activesync,
 if test "$enable_activesync" = "yes"; then
         PKG_CHECK_MODULES(EASCLIENT, libeasclient)
         AC_DEFINE(ENABLE_ACTIVESYNC, 1, [ActiveSync available])
+        need_ical="yes"
+        need_glib="yes"
 fi
 
 BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $EASCLIENT_CFLAGS"

@@ -929,6 +929,16 @@ if test "$need_glib" = "yes"; then
         BACKEND_CPPFLAGS="$BACKEND_CPPFLAGS $GLIB_CFLAGS $GTHREAD_CFLAGS $GOBJECT_CFLAGS"
 fi
 
+dnl use libical if and only if required by some backend
+if test "$need_ical" = "yes"; then
+   PKG_CHECK_MODULES(LIBICAL, libical,
+                     [true],
+                     [PKG_CHECK_MODULES(LIBICAL, libecal-1.2)])
+   AC_DEFINE(ENABLE_ICAL, 1, [libical in use])
+fi
+AM_CONDITIONAL([ENABLE_ICAL], [test "$need_ical" = "yes"])
+
+
 # Check for Qt if some backend needs it.
 if test "$need_qt_modules"; then
    AT_WITH_QT([-gui $need_qt_modules],
