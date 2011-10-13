@@ -42,7 +42,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
             enabled = true;
         }
     }
-#else
+#elif defined(ENABLE_DAV)
     static bool enabled = true;
 #endif
 
