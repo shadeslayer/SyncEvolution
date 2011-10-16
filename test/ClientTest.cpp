@@ -133,12 +133,21 @@ class TestingSyncSourcePtr : public std::auto_ptr<TestingSyncSource>
     typedef std::auto_ptr<TestingSyncSource> base_t;
 
     static StringMap m_anchors;
+    static std::string m_testName;
 
 public:
     TestingSyncSourcePtr() {}
     TestingSyncSourcePtr(TestingSyncSource *source) :
         base_t(source)
     {
+        // reset anchors each time a new test starts,
+        // because it avoids interactions between tests
+        std::string testName = getCurrentTest();
+        if (testName != m_testName) {
+            m_anchors.clear();
+            m_testName = testName;
+        }
+
         CPPUNIT_ASSERT(source);
         source->open();
         string node = source->getTrackingNode()->getName();
@@ -180,6 +189,7 @@ public:
 };
 
 StringMap TestingSyncSourcePtr::m_anchors;
+std::string TestingSyncSourcePtr::m_testName;
 
 bool SyncOptions::defaultWBXML()
 {
