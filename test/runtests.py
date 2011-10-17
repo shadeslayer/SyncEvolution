@@ -820,6 +820,10 @@ test = SyncEvolutionTest("googlecalendar", compile,
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_UNIQUE_UID=1 " # server keeps backups and restores old data unless UID is unieque
                          "CLIENT_TEST_MODE=server " # for Client::Sync
+                         "CLIENT_TEST_FAILURES="
+                         # http://code.google.com/p/google-caldav-issues/issues/detail?id=61 "cannot remove detached recurrence"
+                         "Client::Source::google_caldav::LinkedItems_0::testLinkedItemsRemoveNormal,"
+                         "Client::Source::google_caldav::LinkedItems_1::testLinkedItemsRemoveNormal,"
                          ,
                          testPrefix=options.testprefix)
 context.add(test)
