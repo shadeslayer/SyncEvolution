@@ -116,7 +116,7 @@
  END:VEVENT
  END:VCALENDAR
  
-@@ -265,28 +186,11 @@
+@@ -361,28 +281,11 @@
  BEGIN:VCALENDAR
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0

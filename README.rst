@@ -274,6 +274,15 @@ a list of valid values.
   for a `refresh-from-server` or `refresh-from-client` sync which
   clears all data at one end and copies all items from the other.
 
+  **Warning:** in local sync (CalDAV/CardDAV/ActiveSync, ...) and
+  direct sync with a phone, the sync is started by the side which acts
+  as server. Therefore the ``from-server`` variants
+  (``one-way-from-server``, ``refresh-from-server``) transfer data
+  from the sync config into the target config (see "Synchronization
+  beyond SyncML" below) resp. to a phone. The ``from-client`` variants
+  transfer in the other direction, even if the target config happens
+  to access data on a remote server.
+
 --print-servers|--print-configs|--print-peers
   Prints the names of all configured peers to stdout. There is no
   difference between these options, the are just aliases.
@@ -660,13 +669,6 @@ source in the sync config must be set to the name of the corresponding
 source in the target config.  The ``sync`` property in the sync config
 defines the direction of the data flow. It can be set temporarily when
 starting a synchronzation with the sync config.
-
-  **Warning:** in local sync, the sync config side acts as
-  server. Therefore the ``from-server`` variants
-  (``one-way-from-server``, ``refresh-from-server``) transfer data
-  from the sync config into the target config. The ``from-client``
-  variants transfer in the other direction, even if the target config
-  happens to access data on a remote server.
 
   **Warning:** because the client in the local sync starts the sync,
   ``preventSlowSync=0`` must be set in the target config to have an effect.

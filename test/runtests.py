@@ -821,6 +821,10 @@ test = SyncEvolutionTest("googlecalendar", compile,
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_UNIQUE_UID=1 " # server keeps backups and restores old data unless UID is unieque
                          "CLIENT_TEST_MODE=server " # for Client::Sync
+                         "CLIENT_TEST_FAILURES="
+                         # http://code.google.com/p/google-caldav-issues/issues/detail?id=61 "cannot remove detached recurrence"
+                         "Client::Source::google_caldav::LinkedItems_0::testLinkedItemsRemoveNormal,"
+                         "Client::Source::google_caldav::LinkedItems_1::testLinkedItemsRemoveNormal,"
                          ,
                          testPrefix=options.testprefix)
 context.add(test)
@@ -856,7 +860,6 @@ test = SyncEvolutionTest("apple", compile,
                          "CLIENT_TEST_WEBDAV='apple caldav carddav' "
                          "CLIENT_TEST_NUM_ITEMS=250 " # test is local, so we can afford a higher number
                          "CLIENT_TEST_ALARM=2400 " # but even with a local server does the test run a long time
-                         "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
                          testPrefix=options.testprefix)
@@ -1002,6 +1005,12 @@ class FunambolTest(SyncEvolutionTest):
                                      "eds_task",
                                      "eds_memo" ],
                                    "CLIENT_TEST_SKIP="
+                                   # server duplicates items in add<->add conflict because it
+                                   # does not check UID
+                                   "Client::Sync::eds_event::testAddBothSides,"
+                                   "Client::Sync::eds_event::testAddBothSidesRefresh,"
+                                   "Client::Sync::eds_task::testAddBothSides,"
+                                   "Client::Sync::eds_task::testAddBothSidesRefresh,"
                                    # test cannot pass because we don't have CtCap info about
                                    # the Funambol server
                                    "Client::Sync::eds_contact::testExtensions,"
@@ -1101,6 +1110,12 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "CLIENT_TEST_NOCHECK_SYNCMODE=1 "
                                 "CLIENT_TEST_MAX_ITEMSIZE=2048 "
                                 "CLIENT_TEST_SKIP="
+                                # server duplicates items in add<->add conflict because it
+                                # does not check UID
+                                "Client::Sync::eds_event::testAddBothSides,"
+                                "Client::Sync::eds_event::testAddBothSidesRefresh,"
+                                "Client::Sync::eds_task::testAddBothSides,"
+                                "Client::Sync::eds_task::testAddBothSidesRefresh,"
                                 "Client::Sync::eds_contact::Retry,"
                                 "Client::Sync::eds_contact::Suspend,"
                                 "Client::Sync::eds_contact::Resend,"
@@ -1178,6 +1193,12 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 "CLIENT_TEST_NOCHECK_SYNCMODE=1 "
                                 "CLIENT_TEST_NUM_ITEMS=10 "
                                 "CLIENT_TEST_SKIP="
+                                # server duplicates items in add<->add conflict because it
+                                # does not check UID
+                                "Client::Sync::eds_event::testAddBothSides,"
+                                "Client::Sync::eds_event::testAddBothSidesRefresh,"
+                                "Client::Sync::eds_task::testAddBothSides,"
+                                "Client::Sync::eds_task::testAddBothSidesRefresh,"
                                 "Client::Sync::eds_contact::Retry,"
                                 "Client::Sync::eds_contact::Suspend,"
                                 # "Client::Sync::eds_contact::testRefreshFromClientSync,"

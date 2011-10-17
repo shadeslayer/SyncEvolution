@@ -612,3 +612,17 @@
    ...
    obj:*libgiognutls.so
 }
+{
+   gnutls + libneon: ASN buffer
+   Memcheck:Addr4
+   fun:asn1_der_coding
+   ...
+   obj:*libneon*
+}
+{
+   gnutls certificate: ASN buffer
+   Memcheck:Addr4
+   fun:asn1_der_coding
+   ...
+   fun:gnutls_certificate_set_x509_trust_file
+}

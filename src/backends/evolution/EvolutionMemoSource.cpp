@@ -122,7 +122,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     }
     
     bool update = !luid.empty();
-    bool merged = false;
+    InsertItemResultState state = ITEM_OKAY;
     string newluid = luid;
     string modTime;
 
@@ -170,28 +170,31 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
     }
 
     GError *gerror = NULL;
-    char *uid = NULL;
-
     if (!update) {
-        if(!e_cal_create_object(m_calendar, subcomp, &uid, &gerror)) {
+        const char *uid = NULL;
+
+        if(!e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
             if (gerror->domain == E_CALENDAR_ERROR &&
                 gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
                 // Deal with error due to adding already existing item.
                 // Should never happen for plain text journal entries because
                 // they have no embedded ID, but who knows...
-                merged = true;
+                state = ITEM_NEEDS_MERGE;
+                uid = icalcomponent_get_uid(subcomp);
+                if (!uid) {
+                    throwError("storing new memo item, no UID set", gerror);
+                }
                 g_clear_error(&gerror);
             } else {
                 throwError( "storing new memo item", gerror );
             }
-        } else {
-            ItemID id(uid, "");
-            newluid = id.getLUID();
+        }
+        ItemID id(uid, "");
+        newluid = id.getLUID();
+        if (state != ITEM_NEEDS_MERGE) {
             modTime = getItemModTime(id);
         }
-    }
-
-    if (update || merged) {
+    } else {
         ItemID id(newluid);
 
         // ensure that the component has the right UID
@@ -207,7 +210,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
         modTime = getItemModTime(newid);
     }
 
-    return InsertItemResult(newluid, modTime, merged);
+    return InsertItemResult(newluid, modTime, state);
 }
 
 bool EvolutionMemoSource::isNativeType(const char *type)

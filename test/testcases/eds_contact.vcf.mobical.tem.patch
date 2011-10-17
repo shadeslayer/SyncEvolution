@@ -1,14 +1,14 @@
 @@ -4,6 +4,7 @@
  NOTE:triggers parser bug in Funambol 3.0: trailing = is mistaken for soft line break=
  FN:parserbug=
- N:parserbug=
+ N:parserbug=;;;;
 +URL:http://john.doe.com
  X-EVOLUTION-FILE-AS:parserbug=
  END:VCARD
  
 @@ -14,6 +15,7 @@
  FN:incomplete
- N:incomplete
+ N:incomplete;;;;
  EMAIL:
 +URL:http://john.doe.com
  X-EVOLUTION-FILE-AS:incomplete
@@ -82,7 +82,7 @@
  NICKNAME:user1
 -BDAY:2006-01-08
 +BDAY:2007-03-01
- X-FOOBAR-EXTENSION;X-FOOBAR-PARAMETER=foobar:has to be stored internally by engine and preserved in testExtensions test; never sent to a peer
+ X-FOOBAR-EXTENSION;X-FOOBAR-PARAMETER=foobar:has to be stored internally by engine and preserved in testExtensions test\; never sent to a peer
  X-TEST;PARAMETER1=nonquoted;PARAMETER2="quoted because of spaces":Content with\nMultiple\nText lines\nand national chars: äöü
  X-EVOLUTION-ANNIVERSARY:2006-01-09
 @@ -184,7 +193,6 @@

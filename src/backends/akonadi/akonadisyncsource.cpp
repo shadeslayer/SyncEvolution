@@ -198,7 +198,7 @@ TrackingSyncSource::InsertItemResult AkonadiSyncSource::insertItem(const std::st
         ItemCreateJob *createJob = new ItemCreateJob(item, m_collection);
         if (!createJob->exec()) {
             throwError(string("storing new item ") + luid);
-            return InsertItemResult("", "", false);
+            return InsertItemResult("", "", ITEM_OKAY);
         }
         item = createJob->item();
     } else {
@@ -215,7 +215,7 @@ TrackingSyncSource::InsertItemResult AkonadiSyncSource::insertItem(const std::st
         // TODO: check that the item has not been updated in the meantime
         if (!modifyJob->exec()) {
             throwError(string("updating item ") + luid);
-            return InsertItemResult("", "", false);
+            return InsertItemResult("", "", ITEM_OKAY);
         }
         item = modifyJob->item();
     }
@@ -225,7 +225,7 @@ TrackingSyncSource::InsertItemResult AkonadiSyncSource::insertItem(const std::st
     // above will take care of this
     return InsertItemResult(QByteArray::number(item.id()).constData(),
                             QByteArray::number(item.revision()).constData(),
-                            false);
+                            ITEM_OKAY);
 }
 
 void AkonadiSyncSource::removeItem(const string &luid)

@@ -384,6 +384,9 @@
             <parameter name="TZID" default="no" show="yes">
               <value field="EXDATES" conversion="TZID"/>
             </parameter>
+            <parameter name="VALUE" default="no" show="yes">
+              <value field="EXDATES" conversion="VALUETYPE"/>
+            </parameter>
           </property>
 
           <property name="EXDATE" values="list" suppressempty="yes" onlyformode="old" delayedparsing="1" valueseparator=";" altvalueseparator=",">

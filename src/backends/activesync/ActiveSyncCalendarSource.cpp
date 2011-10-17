@@ -417,7 +417,7 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
         }
     }
 
-    bool merged = false;
+    InsertItemResultState state;
     if (easid.empty()) {
         // New VEVENT; should not be part of an existing merged item
         // ("meeting series").
@@ -430,7 +430,7 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
             Event &event = loadItem(*it->second);
             if (event.m_subids.find(subid) != event.m_subids.end()) {
                 // was already in that item but caller didn't seem to know
-                merged = true;
+                state = ITEM_MERGED;
             } else {
                 // add to merged item
                 event.m_subids.insert(subid);
@@ -452,10 +452,11 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
         Event &event = findItem(easid);
         if (event.m_subids.size() == 1 &&
             *event.m_subids.begin() == subid) {
-            // special case: no need to load old data, replace it outright
+            // special case: no need to load old data, replace or request merge immediately
             event.m_calendar = newEvent->m_calendar;
             if (easid != callerEasID) {
-                merged = true;
+                state = ITEM_NEEDS_MERGE;
+                goto done;
             }
         } else {
             // populate event
@@ -472,13 +473,13 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
                 }
             }
             if (easid != callerEasID) {
-                // caller didn't know final UID: if found, then tell him that
-                // we merged the item for him, if not, then don't complain about
+                // caller didn't know final UID: if found, then tell him to
+                // merge the items, if not, then don't complain about
                 // it not being found (like we do when the item should exist
                 // but doesn't)
                 if (removeme) {
-                    merged = true;
-                    icalcomponent_remove_component(event.m_calendar, removeme);
+                    state = ITEM_NEEDS_MERGE;
+                    goto done;
                 } else {
                     event.m_subids.insert(subid);
                 }
@@ -501,15 +502,16 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
 
         // TODO: avoid updating item on server immediately?
         InsertItemResult res = ActiveSyncSource::insertItem(event.m_easid, data);
-        if (res.m_merged ||
+        if (res.m_state == ITEM_MERGED ||
             res.m_luid != event.m_easid) {
             // should not merge with anything, if so, our cache was invalid
             SE_THROW("CalDAV item not updated as expected");
         }
     }
 
+ done:
     return SyncSourceRaw::InsertItemResult(createLUID(easid, subid),
-                                           "", merged);
+                                           "", state);
 }
 
 void ActiveSyncCalendarSource::readItem(const std::string &luid, std::string &item)
@@ -599,7 +601,7 @@ void ActiveSyncCalendarSource::deleteItem(const string &luid)
         // TODO: avoid updating the item immediately
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
         InsertItemResult res = ActiveSyncSource::insertItem(easid, icalstr.get());
-        if (res.m_merged ||
+        if (res.m_state != ITEM_OKAY ||
             res.m_luid != easid) {
             SE_THROW("unexpected result of removing sub event");
         }

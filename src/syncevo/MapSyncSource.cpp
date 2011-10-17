@@ -288,12 +288,15 @@ SyncSourceRaw::InsertItemResult MapSyncSource::insertItem(const std::string &lui
 {
     StringPair ids = splitLUID(luid);
     SubSyncSource::SubItemResult res = m_sub->insertSubItem(ids.first, ids.second, item);
-    SubRevisionEntry &entry = m_revisions[res.m_mainid];
-    entry.m_uid = res.m_uid;
-    entry.m_revision = res.m_revision;
-    entry.m_subids.insert(res.m_subid);
+    // anything changed?
+    if (res.m_state != ITEM_NEEDS_MERGE) {
+        SubRevisionEntry &entry = m_revisions[res.m_mainid];
+        entry.m_uid = res.m_uid;
+        entry.m_revision = res.m_revision;
+        entry.m_subids.insert(res.m_subid);
+    }
     return SyncSourceRaw::InsertItemResult(createLUID(res.m_mainid, res.m_subid),
-                                           res.m_revision, res.m_merged);
+                                           res.m_revision, res.m_state);
 }
 
 void MapSyncSource::readItem(const std::string &luid, std::string &item)

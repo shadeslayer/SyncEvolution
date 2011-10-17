@@ -140,14 +140,18 @@ std::string TrackingSyncSource::endSync(bool success)
 TrackingSyncSource::InsertItemResult TrackingSyncSource::insertItem(const std::string &luid, const std::string &item)
 {
     InsertItemResult res = insertItem(luid, item, false);
-    updateRevision(*m_trackingNode, luid, res.m_luid, res.m_revision);
+    if (res.m_state != ITEM_NEEDS_MERGE) {
+        updateRevision(*m_trackingNode, luid, res.m_luid, res.m_revision);
+    }
     return res;
 }
 
 TrackingSyncSource::InsertItemResult TrackingSyncSource::insertItemRaw(const std::string &luid, const std::string &item)
 {
     InsertItemResult res = insertItem(luid, item, true);
-    updateRevision(*m_trackingNode, luid, res.m_luid, res.m_revision);
+    if (res.m_state != ITEM_NEEDS_MERGE) {
+        updateRevision(*m_trackingNode, luid, res.m_luid, res.m_revision);
+    }
     return res;
 }
 

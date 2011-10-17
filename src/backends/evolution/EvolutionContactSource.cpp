@@ -330,7 +330,7 @@ EvolutionContactSource::insertItem(const string &uid, const std::string &item, b
                 throwError("no UID for contact");
             }
             string newrev = getRevision(newuid);
-            return InsertItemResult(newuid, newrev, false);
+            return InsertItemResult(newuid, newrev, ITEM_OKAY);
         } else {
             throwError(uid.empty() ?
                        "storing new contact" :
@@ -341,7 +341,7 @@ EvolutionContactSource::insertItem(const string &uid, const std::string &item, b
         throwError(string("failure parsing vcard " ) + item);
     }
     // not reached!
-    return InsertItemResult("", "", false);
+    return InsertItemResult("", "", ITEM_OKAY);
 }
 
 void EvolutionContactSource::removeItem(const string &uid)
