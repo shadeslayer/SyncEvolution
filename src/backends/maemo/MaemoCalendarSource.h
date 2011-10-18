@@ -56,6 +56,8 @@ class MaemoCalendarSource : public TrackingSyncSource, private boost::noncopyabl
     virtual Databases getDatabases();
     virtual const char *getMimeType() const;
     virtual const char *getMimeVersion() const;
+    virtual void getSynthesisInfo(SynthesisInfo &info,
+                                  XMLConfigFragments &fragments);
 
     /* implementation of TrackingSyncSource interface */
     virtual void listAllItems(RevisionMap_t &revisions);
