@@ -73,6 +73,7 @@ vector<string> Server::getCapabilities()
 
     capabilities.push_back("ConfigChanged");
     capabilities.push_back("GetConfigName");
+    capabilities.push_back("NamedConfig");
     capabilities.push_back("Notifications");
     capabilities.push_back("Version");
     capabilities.push_back("SessionFlags");

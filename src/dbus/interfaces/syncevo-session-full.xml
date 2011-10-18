@@ -48,9 +48,9 @@
     </method>  
 
     <method name="GetConfig">
-      <doc:doc><doc:description>Get the configuration of the server</doc:description></doc:doc>
+      <doc:doc><doc:description>Get the configuration identified by the name given to StartSession()</doc:description></doc:doc>
       <arg type="b" name="tmplate" direction="in">
-        <doc:doc><doc:summary>if TRUE, will return a matching template configuration, otherwise will return a matching server configuration</doc:summary></doc:doc>
+        <doc:doc><doc:summary>if TRUE, will return a matching template configuration, otherwise will return the stored configuration</doc:summary></doc:doc>
       </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="out">
         <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
@@ -104,6 +104,32 @@
         <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
         <doc:doc><doc:description>See Server.GetConfig() for dictionary description.</doc:description></doc:doc>
       </arg>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="QStringMultiMap"/>
+    </method>
+
+    <method name="GetNamedConfig">
+      <doc:doc><doc:description>Get the configuration identified by
+      the name given in the first argument; same as
+      Server.GetConfig(), provided again in Session for the sake of
+      completeness</doc:description></doc:doc>
+      <arg type="s" name="name" direction="in">
+        <doc:doc><doc:summary>configuration name</doc:summary></doc:doc>
+      </arg>
+      <arg type="b" name="tmplate" direction="in"/>
+      <arg type="a{sa{ss}}" name="configuration" direction="out"/>
+      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
+    </method>
+
+    <method name="SetNamedConfig">
+      <doc:doc><doc:description>Same as SetConfig() except that the modified configuration is named explicitly</doc:description></doc:doc>
+      <arg type="s" name="name" direction="in">
+        <doc:doc><doc:summary>configuration name; if exactly the same as in StartSession() or StartSessionWithFlags(), then SetNamedConfig() behaves exactly like SetConfig() and none of the constraints for SetNamedConfig() apply</doc:summary></doc:doc>
+      </arg>
+      <arg type="b" name="update" direction="in"/>
+      <arg type="b" name="temporary" direction="in">
+        <doc:doc><doc:summary>temporary changes of the configuration are currently only supported for the configuration chosen when creating the session</doc:summary></doc:doc>
+      </arg>
+      <arg type="a{sa{ss}}" name="configuration" direction="in"/>
       <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="QStringMultiMap"/>
     </method>
 

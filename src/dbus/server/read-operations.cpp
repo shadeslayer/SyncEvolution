@@ -97,6 +97,13 @@ boost::shared_ptr<DBusUserInterface> ReadOperations::getLocalConfig(const string
 void ReadOperations::getConfig(bool getTemplate,
                                Config_t &config)
 {
+    getNamedConfig(m_configName, getTemplate, config);
+}
+
+void ReadOperations::getNamedConfig(const std::string &configName,
+                                    bool getTemplate,
+                                    Config_t &config)
+{
     map<string, string> localConfigs;
     boost::shared_ptr<SyncConfig> dbusConfig;
     boost::shared_ptr<DBusUserInterface> dbusUI;
@@ -107,7 +114,7 @@ void ReadOperations::getConfig(bool getTemplate,
         string peer, context;
 
         boost::shared_ptr<SyncConfig::TemplateDescription> peerTemplate =
-            m_server.getPeerTempl(m_configName);
+            m_server.getPeerTempl(configName);
         if(peerTemplate) {
             SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(peerTemplate->m_templateId),
                     peer, context);
@@ -137,13 +144,13 @@ void ReadOperations::getConfig(bool getTemplate,
             syncURL = "obex-bt://";
             syncURL += peerTemplate->m_deviceId;
         } else {
-            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(m_configName),
+            SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configName),
                     peer, context);
             dbusConfig = SyncConfig::createPeerTemplate(peer);
         }
 
         if(!dbusConfig.get()) {
-            SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + m_configName + "' found");
+            SE_THROW_EXCEPTION(NoSuchConfig, "No template '" + configName + "' found");
         }
 
         // use the shared properties from the right context as filter
@@ -166,11 +173,11 @@ void ReadOperations::getConfig(bool getTemplate,
         }
         syncConfig = dbusConfig.get();
     } else {
-        dbusUI = getLocalConfig(m_configName);
+        dbusUI = getLocalConfig(configName);
         //try to check password and read password from gnome keyring if possible
         ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*dbusUI, m_configName, *dbusUI->getProperties());
+            prop->checkPassword(*dbusUI, configName, *dbusUI->getProperties());
         }
         list<string> configuredSources = dbusUI->getSyncSources();
         BOOST_FOREACH(const string &sourceName, configuredSources) {
@@ -178,7 +185,7 @@ void ReadOperations::getConfig(bool getTemplate,
             SyncSourceNodes sourceNodes = dbusUI->getSyncSourceNodes(sourceName);
 
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*dbusUI, m_configName, *dbusUI->getProperties(),
+                prop->checkPassword(*dbusUI, configName, *dbusUI->getProperties(),
                         sourceName, sourceNodes.getProperties());
             }
         }
@@ -212,7 +219,7 @@ void ReadOperations::getConfig(bool getTemplate,
         localConfigs.insert(make_pair("ConsumerReady", "1"));
     }
 
-    // insert 'configName' of the chosen config (m_configName is not normalized)
+    // insert 'configName' of the chosen config (configName is not normalized)
     localConfigs.insert(pair<string, string>("configName", syncConfig->getConfigName()));
 
     config.insert(pair<string,map<string, string> >("", localConfigs));

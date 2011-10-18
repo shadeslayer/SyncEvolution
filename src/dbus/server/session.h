@@ -367,6 +367,11 @@ public:
     void setConfig(bool update, bool temporary,
                    const ReadOperations::Config_t &config);
 
+    /** Session.SetNamedConfig() */
+    void setNamedConfig(const std::string &configName,
+                        bool update, bool temporary,
+                        const ReadOperations::Config_t &config);
+
     typedef StringMap SourceModes_t;
     /** Session.Sync() */
     void sync(const std::string &mode, const SourceModes_t &source_modes);

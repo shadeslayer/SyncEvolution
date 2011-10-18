@@ -28,6 +28,8 @@
 #include "client.h"
 #include "dbus-sync.h"
 
+#include <boost/foreach.hpp>
+
 using namespace GDBusCXX;
 
 SE_BEGIN_CXX
@@ -114,8 +116,16 @@ static void setSyncFilters(const ReadOperations::Config_t &config,FilterConfigNo
         }
     }
 }
+
 void Session::setConfig(bool update, bool temporary,
                         const ReadOperations::Config_t &config)
+{
+    setNamedConfig(m_configName, update, temporary, config);
+}
+
+void Session::setNamedConfig(const std::string &configName,
+                             bool update, bool temporary,
+                             const ReadOperations::Config_t &config)
 {
     if (!m_active) {
         SE_THROW_EXCEPTION(InvalidCall, "session is not active, call not allowed at this time");
@@ -124,11 +134,30 @@ void Session::setConfig(bool update, bool temporary,
         string msg = StringPrintf("%s started, cannot change configuration at this time", runOpToString(m_runOperation).c_str());
         SE_THROW_EXCEPTION(InvalidCall, msg);
     }
+    // avoid the check if effect is the same as setConfig()
+    if (m_configName != configName) {
+        bool found = false;
+        BOOST_FOREACH(const std::string &flag, m_flags) {
+            if (boost::iequals(flag, "all-configs")) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            SE_THROW_EXCEPTION(InvalidCall,
+                               "SetNameConfig() only allowed in 'all-configs' sessions");
+        }
 
-    m_server.getPresenceStatus().updateConfigPeers (m_configName, config);
+        if (temporary) {
+            SE_THROW_EXCEPTION(InvalidCall,
+                               "SetNameConfig() with temporary config change only supported for config named when starting the session");
+        }
+    }
+
+    m_server.getPresenceStatus().updateConfigPeers (configName, config);
     /** check whether we need remove the entire configuration */
     if(!update && !temporary && config.empty()) {
-        boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(getConfigName()));
+        boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(configName));
         if(syncConfig.get()) {
             syncConfig->remove();
             m_setConfig = true;
@@ -166,10 +195,10 @@ void Session::setConfig(bool update, bool temporary,
         m_tempConfig = true;
     } else {
         /* need to save configurations */
-        boost::shared_ptr<SyncConfig> from(new SyncConfig(getConfigName()));
+        boost::shared_ptr<SyncConfig> from(new SyncConfig(configName));
         /* if it is not clear mode and config does not exist, an error throws */
         if(update && !from->exists()) {
-            SE_THROW_EXCEPTION(NoSuchConfig, "The configuration '" + getConfigName() + "' doesn't exist" );
+            SE_THROW_EXCEPTION(NoSuchConfig, "The configuration '" + configName + "' doesn't exist" );
         }
         if(!update) {
             list<string> sources = from->getSyncSources();
@@ -202,7 +231,7 @@ void Session::setConfig(bool update, bool temporary,
         for ( it = sourceFilters.begin(); it != sourceFilters.end(); it++ ) {
             from->setConfigFilter(false, it->first, it->second);
         }
-        boost::shared_ptr<DBusSync> syncConfig(new DBusSync(getConfigName(), *this));
+        boost::shared_ptr<DBusSync> syncConfig(new DBusSync(configName, *this));
         syncConfig->prepareConfigForWrite();
         syncConfig->copy(*from, NULL);
 
@@ -432,7 +461,9 @@ Session::Session(Server &server,
     add(this, &Session::getNormalConfigName, "GetConfigName");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getConfigs, "GetConfigs");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getConfig, "GetConfig");
+    add(static_cast<ReadOperations *>(this), &ReadOperations::getNamedConfig, "GetNamedConfig");
     add(this, &Session::setConfig, "SetConfig");
+    add(this, &Session::setNamedConfig, "SetNamedConfig");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getReports, "GetReports");
     add(static_cast<ReadOperations *>(this), &ReadOperations::checkSource, "CheckSource");
     add(static_cast<ReadOperations *>(this), &ReadOperations::getDatabases, "GetDatabases");

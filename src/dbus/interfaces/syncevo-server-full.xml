@@ -96,6 +96,13 @@
                   "evolutionuser", "evolutionpassword"; semantic is unchanged
                 </doc:definition>
               </doc:item>
+
+              <doc:item><doc:term>NamedConfig</doc:term>
+                <doc:definition>Session.Get/SetNamedConfig()
+                  are implemented
+                </doc:definition>
+              </doc:item>
+
             </doc:list>
           </doc:para>
         </doc:description>
@@ -485,10 +492,13 @@
           <doc:item><doc:term>no-sync</doc:term>
             <doc:definition>session will not be used for running a synchronization</doc:definition>
           </doc:item>
+          <doc:item><doc:term>all-configs</doc:term>
+            <doc:definition>session will provide read/write access to all configurations, via Get/SetNamedConfig()</doc:definition>
+          </doc:item>
         </doc:list>
       </doc:description></doc:doc>
       <arg type="s" name="config" direction="in">
-        <doc:doc><doc:summary>name of configuration to be created or used in session</doc:summary></doc:doc>
+        <doc:doc><doc:summary>name of configuration to be created or used in session; typically this will be empty when used in combination with 'all-configs' and Get/SetNamedConfig()</doc:summary></doc:doc>
       </arg>
       <arg type="as" name="flags" direction="in">
         <doc:doc><doc:summary>optional flags</doc:summary></doc:doc>

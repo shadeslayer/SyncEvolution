@@ -593,9 +593,9 @@ class DBusUtil(Timeout):
         DBusUtil.quit_events = []
         return (sessionpath, session)
 
-    def setUpSession(self, config):
+    def setUpSession(self, config, flags=[]):
         """stores ready session in self.sessionpath and self.session"""
-        self.sessionpath, self.session = self.createSession(config, True)
+        self.sessionpath, self.session = self.createSession(config, True, flags)
 
     def progressChanged(self, *args):
         '''subclasses override this method to write specified callbacks for ProgressChanged signals
@@ -796,7 +796,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         """TestDBusServer.testCapabilities - Server.Capabilities()"""
         capabilities = self.server.GetCapabilities()
         capabilities.sort()
-        self.assertEqual(capabilities, ['ConfigChanged', 'DatabaseProperties', 'GetConfigName', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
+        self.assertEqual(capabilities, ['ConfigChanged', 'DatabaseProperties', 'GetConfigName', 'NamedConfig', 'Notifications', 'SessionAttach', 'SessionFlags', 'Version'])
 
     def testVersions(self):
         """TestDBusServer.testVersions - Server.GetVersions()"""
@@ -1007,6 +1007,57 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
             pass
         else:
             self.fail("no exception thrown")
+
+class TestNamedConfig(unittest.TestCase, DBusUtil):
+    """Tests for Set/GetNamedConfig"""
+
+    def setUp(self):
+        self.setUpServer()
+
+    def run(self, result):
+        self.runTest(result)
+
+    def testSetNamedConfigError(self):
+        """TestDBusSession.testSetNamedConfigError - SetNamedConfig() only allowed in 'all-configs' sessions"""
+        self.setUpSession("")
+        try:
+            self.session.SetNamedConfig("foobar", False, False, {})
+        except dbus.DBusException, ex:
+            self.assertEqual(str(ex),
+                             "org.syncevolution.InvalidCall: SetNameConfig() only allowed in 'all-configs' sessions")
+        else:
+            self.fail("no exception thrown")
+
+    def testSetNamedConfigErrorTemporary(self):
+        """TestDBusSession.testSetNamedConfigErrorTemporary - SetNamedConfig() only implemented for session config"""
+        self.setUpSession("foo", [ "all-configs" ])
+        try:
+            self.session.SetNamedConfig("foobar", False, True, {})
+        except dbus.DBusException, ex:
+            self.assertEqual(str(ex),
+                             "org.syncevolution.InvalidCall: SetNameConfig() with temporary config change only supported for config named when starting the session")
+        else:
+            self.fail("no exception thrown")
+        self.session.Detach()
+
+        self.setUpSession("")
+        self.session.SetNamedConfig("", False, True, {})
+
+    def testSetNamedConfig(self):
+        """TestDBusSession.testSetNamedConfig - create two different configs in one session"""
+        self.setUpSession("", [ "all-configs" ])
+
+        fooConfig = {"": {"username": "foo", "configName": "foo"}}
+        barConfig = {"": {"username": "bar", "configName": "bar"}}
+
+        self.session.SetNamedConfig("foo", False, False, fooConfig)
+        self.session.SetNamedConfig("bar", False, False, barConfig)
+
+        self.assertEqual(fooConfig, self.server.GetConfig("foo", False))
+        self.assertEqual(barConfig, self.server.GetConfig("bar", False))
+
+        self.assertEqual(fooConfig, self.session.GetNamedConfig("foo", False))
+        self.assertEqual(barConfig, self.session.GetNamedConfig("bar", False))
 
 
 class Connman (dbus.service.Object):

@@ -61,6 +61,11 @@ public:
     void getConfig(bool getTemplate,
                    Config_t &config);
 
+    /** implementation of D-Bus GetNamedConfig() for configuration named in parameter */
+    void getNamedConfig(const std::string &configName,
+                        bool getTemplate,
+                        Config_t &config);
+
     /** implementation of D-Bus GetReports() for m_configName as server configuration */
     void getReports(uint32_t start, uint32_t count,
                     Reports_t &reports);
