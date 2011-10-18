@@ -394,6 +394,23 @@
             <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
           </property>
 
+          <!-- parse X-SYNCEVOLUTION-EXDATE-DETACHED, but never encode it like this except internally -->
+          <property name="X-SYNCEVOLUTION-EXDATE-DETACHED" delayedparsing="1" mandatory="no"
+                    show="no" rule="HAVE-SYNCEVOLUTION-EXDATE-DETACHED">
+            <value field="EXDATES_DETACHED"/>
+            <parameter name="TZID" default="no" show="yes">
+              <value field="EXDATES_DETACHED" conversion="TZID"/>
+            </parameter>
+            <position field="EXDATES_DETACHED" repeat="array" increment="1" minshow="0"/>
+          </property>
+          <!-- encode as normal EXDATE when backend asks for it -->
+          <property name="EXDATE" show="no" rule="HAVE-EXDATE-DETACHED" mandatory="no">
+            <value field="EXDATES_DETACHED"/>
+            <parameter name="TZID" default="no" show="yes">
+              <value field="EXDATES_DETACHED" conversion="TZID"/>
+            </parameter>
+            <position field="EXDATES_DETACHED" repeat="array" increment="1" minshow="0"/>
+          </property>
 
           <property name="DTEND" suppressempty="yes" delayedparsing="1">
             <value field="DTEND" conversion="autoenddate"/>

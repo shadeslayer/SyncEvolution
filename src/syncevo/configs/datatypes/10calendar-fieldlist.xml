@@ -56,6 +56,20 @@
       <!-- for events -->
       <field name="EXDATES" array="yes" type="timestamp" compare="never"/>
 
+      <!-- EXDATEs for detached recurrences: meant to be used for the
+           RECURRENCE-IDs of all detached recurrences.
+
+           Can be ignored when dealing with only iCalendar 2.0 aware
+           peers, because these EXDATEs are implied for detached
+           recurrences and don't have to be specified explicitly. Can
+           be used to create additional EXDATEs for non-iCalendar 2.0
+           peers. For that, EXDATES_DETACHED must be populated by the
+           backend creating the parent event, because the engine
+           itself doesn't have the necessary
+           information. X-SYNCEVOLUTION-EXDATE-DETACHED can be used
+           for that in serialized calendar events. -->
+      <field name="EXDATES_DETACHED" array="yes" type="timestamp" compare="never"/>
+
       <field name="ORIGSTART" array="no" type="timestamp" compare="never"/>
       <field name="SEQNO" array="no" type="integer" compare="never"/>
 

@@ -2,6 +2,8 @@
       <manufacturer>Patrick Ohly</manufacturer>
       <model>SyncEvolution</model>
 
+      <include rule="HAVE-SYNCEVOLUTION-EXDATE-DETACHED"/>
+
       <include rule="HAVE-EVOLUTION-UI-SLOT"/>
       <!-- Merging between SyncEvolution instances is expected to work
            well, so allow the engine to update items on both
