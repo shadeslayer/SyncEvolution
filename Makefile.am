@@ -232,22 +232,37 @@ installcheck-local:
 	done
 endif
 
-# patch README.rst properties on-the-fly with sed expressions
-PATCH_README = -e "s/^:Version: .*/:Version: $(VERSION)/" -e "s/:Date: .*/:Date: `date +%Y-%m-%d`/"
+
+# patch README.rst properties on-the-fly
+README.patched.rst: README.rst src/syncevolution
+	perl -e '$$syncfound=0; $$sourcefound=0; $$res=0;' \
+	                -e 'sub run { $$cmd = shift; $$buffer = `$$cmd`; die if $$?; return $$buffer; }' \
+	                -e 'while (<>) {' \
+	                -e 's/^:Version: .*/:Version: $(VERSION)/;' \
+	                -e 's/:Date: .*/":Date: " . `date +%Y-%m-%d`/e;' \
+	                -e 'if (s;<<insert sync-property>>\n;run("src/syncevolution --daemon=no --sync-property ?");e) { $$syncfound=1; }' \
+	                -e 'if (s;<<insert source-property>>\n;run("src/syncevolution --daemon=no --source-property ?");e) { $$sourcefound=1; }' \
+	                -e 'print;' \
+	                -e '}' \
+	                -e 'die "<<insert sync-property>> not in README.rst?!" unless $$syncfound;' \
+	                -e 'die "<<insert source-property>> not in README.rst?!" unless $$sourcefound;' \
+	                -e 'exit $$res;' \
+	                $< >$@
+CLEANFILES += README.patched.rst
 
 # produce man pages
-syncevolution.1: README.rst
-	sed $(PATCH_README) $< | $(RST2MAN) --exit-status=3 - >$@
+syncevolution.1: README.patched.rst
+	$(RST2MAN) --exit-status=3 $< >$@
 CLEANFILES += syncevolution.1
 
 # README is the traditional name in the distribution,
 # continue using it instead of README.rst.
-README: README.rst
-	sed $(PATCH_README) $< >$@
+README: README.patched.rst
+	cp $< $@
 CLEANFILES += README
 
 # The README.html is also used on syncevolution.org as "Usage" page,
 # therefore we must use <h3> headers and lower to fit into the page.
-README.html: README.rst
-	sed $(PATCH_README) $< | $(RST2HTML) --initial-header-level=3 --exit-status=3 - >$@
+README.html: README.patched.rst
+	$(RST2HTML) --initial-header-level=3 --exit-status=3 $< >$@
 CLEANFILES += README.html
