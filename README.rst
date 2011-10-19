@@ -39,6 +39,7 @@ Restore data from the automatic backups:
 
 Create, update or remove a configuration:
   syncevolution --configure <options> [--] <config> [<source> ...]
+
   syncevolution --remove|--migrate <options> [--] <config>
 
 List items:
@@ -50,12 +51,15 @@ Export item(s):
 Add item(s):
   syncevolution [--delimiter <string>|none] --import <dir>|<file>|- [--] <config> <source>
 
-Update item(s)
+Update item(s):
   syncevolution --update <dir> [--] <config> <source>
+
   syncevolution [--delimiter <string>|none] --update <file>|- [--] <config> <source> <luid> ...
 
+
 Remove item(s):
-  syncevolution --delete-items [--] <config> <source> (<luid> ... | \*)
+  syncevolution --delete-items [--] <config> <source> (<luid> ... | '*')
+
 
 DESCRIPTION
 ===========
@@ -76,44 +80,212 @@ development), for MeeGo (formerly Moblin) and for Maemo 5/Nokia
 N900. The source code can be compiled for Unix-like systems and
 provides a framework to build custom SyncML clients or servers.
 
+TERMINOLOGY
+===========
+
+peer
+  A peer is the entity that data is synchronized with. This can be
+  another device (like a phone), a server (like Google) or
+  even the host itself (useful for synchronizing two different
+  databases).
+
+host
+  The device or computer that SyncEvolution runs on.
+
+database
+  Each peer has one or more databases that get synchronized (Google Calendar,
+  Google Contacts). Conceptually a database is a set of items where each
+  item is independent of the others.
+
+data source
+  A name for something that provides access to data. Primarily used for
+  the configuration which combines backend and database settings, sometimes
+  also instead of these two terms.
+
+local/remote
+  Synchronization always happens between a pair of databases and thus
+  has two sides. One database or side of a sync is remote (the one
+  of the peer) or local (SyncEvolution). For the sake of consistency (and
+  lack of better terms), these terms are used even if the peer is another
+  instance of SyncEvolution and/or all data resides on the same storage.
+
+sync config
+  A sync configuration defines how to access a peer: the protocol
+  which is to be used, how to find the peer, credentials, etc. Peers
+  might support more than one protocol, in which case multiple
+  sync configs have to be created.
+
+  Sync configs can be used to initiate a sync (like contacting a
+  SyncML server) or to handle an incoming sync request (when acting
+  as SyncML server which is contacted by the peer).
+
+source config
+  Each data source corresponds to a local database. A source config
+  defines how to access that database, like a sync config does for
+  peers. This information about a local database is independent
+  of the peers that the database might be synchronized with.
+
+  Sync configs use these shared source configs and add additional,
+  per-peer settings to each of them that define how that local
+  database maps to a remote database in the peer. By default a source
+  config is inactive inside a sync config and thus ignored. It must be
+  activated by setting the unshared `sync` property to something other
+  than `none` (aka `disabled`).
+
+  In SyncEvolution's predefined configuration templates, the following
+  names for sources are used. Different names can be chosen for sources
+  that are defined manually.
+
+  * addressbook: a list of contacts
+  * calendar: calendar *events*
+  * memo: plain text notes
+  * todo: task list
+  * calendar+todo: a virtual source combining one local "calendar" and
+    one "todo" source (required for synchronizing with some phones)
+
+backend
+  Access to databases is provided by SyncEvolution backends. It does
+  not matter where that data is stored. Some backends provide access
+  to data outside of the host itself (`CalDAV and CardDAV`_, ActiveSync).
+
+configuration property
+  Sync and source configs contain configuration properties. Each
+  property is a name/value pair. Sync properties are used in sync configs,
+  source properties in source configs. The names were chosen so that
+  they are unique, i.e., no sync property has the same name as a source
+  property.
+
+  A property can be *unshared* (has separate values for each peer, therefore
+  sometimes also called *per-peer*; for example the `uri` property which
+  defines the remote database), *shared* (same value for all peers; for
+  example the `database` property for selecting the local database) or
+  *global* (exactly one value).
+
+context
+  Sync and source configs are defined inside a configuration context.
+  Typically each context represents a certain set of sources. The values
+  of shared properties are only shared inside their context. That way
+  it is possible to define a second `work` context with a `work calendar`
+  source using one database and use the implicit `default` context for
+  a private `calendar` source with a different database.
+
+context config
+  The shared and global properties of a certain context.
+
+configuration template
+  Templates define the settings for specific peers. Some templates
+  are packaged together with SyncEvolution, others may be added by
+  packagers or users. Settings from templates are copied once into
+  the sync config when creating it. There is no permanent link back
+  to the template, so updating a template has no effect on configs
+  created from it earlier.
+
+  A template only contains unshared properties. Therefore it is
+  possible to first set shared properties (for example, choosing
+  which databases to synchronize in the default context), then
+  add sync configs for different peers to that context without
+  reseting the existing settings.
+
+local sync
+  Traditionally, a sync config specifies SyncML as the synchronization
+  protocol. The peer must support SyncML for this to work. When the
+  peer acts as SyncML server, conflict resolution happens on the
+  peer, outside of the control of SyncEvolution.
+
+  In a so called `local sync`_, SyncEvolution connects two of its own
+  backends and runs all of the synchronization logic itself on the host.
+
+target config
+  In addition to the normal sync config, a local sync also uses a target
+  config. This target config is a special kind of sync config. It defines
+  sync properties that are necessary to access databases on the other
+  side of the local sync. Sync configs can have arbitrary names while
+  a target config must be named `target-config`.
+
+
+COMMAND LINE CONVENTIONS
+========================
+
+The ``<config>`` and the ``<source>`` strings in the command line synopsis are
+used to find the sync resp. source configs. Depending on which
+other parameters are given, different operations are executed.
+
+A config name has the format ``[<peer>][@<context>]``. When the context
+is not specified explicitly, SyncEvolution first searches for an
+existing configuration with the given name. If not found, it uses the
+``@default`` context as fallback. Thus the empty config name is an alias
+for ``@default``.
+
+The ``<peer>`` part identifies a specific sync or target config inside
+the context. It is optional and does not have to be specified when not
+needed, for example when configuring the shared settings of sources
+(``--configure @default addressbook``) or accessing items inside a
+source (``--print-items @work calendar``).
+
+Listing sources on the command line limits the operation to those
+sources (called *active sources* below). If not given, all sources
+defined for the config are active. Some operations require
+the name of exactly one source.
+
+Properties are set with key/value assignments and/or the
+``--sync/source-property`` keywords. Those keywords are only needed for
+the hypothetical situation that a sync and source property share the
+same name (not normally the case). Without them, SyncEvolution
+automatically identifies which kind of property is meant based on the
+name.
+
+A ``<property>`` assignment has the following format::
+
+  [<source>/]<name>[@<context>|@<peer>@<context>]=<value>
+
+The optional ``<context>`` or ``<peer>@<context>`` suffix limits the scope
+of the value to that particular configuration. This is useful when
+running a local sync, which involves a sync and a target
+configuration. For example, the log level can be specified separately
+for both sides::
+
+  --run loglevel@default=1 loglevel@google-calendar=4 google-calendar@default
+
+A string without a second @ sign inside is always interpreted as a
+context name, so in contrast to the ``<config>`` string, ``foo`` cannot be
+used to reference the ``foo@default`` configuration. Use the full name
+including the context for that.
+
+When no config or context is specified explicitly, a value is
+changed in all active configs, typically the one given with
+``<config>``.  The priority of multiple values for the same config
+is `more specific definition wins`, so ``<peer>@<context>``
+overrides ``@<context>``, which overrides `no suffix given`.
+Specifying some suffix which does not apply to the current operation
+does not trigger an error, so beware of typos.
+
+Source properties can be specified with a ``<source>/`` prefix. This
+allows limiting the value to the selected source. For example::
+
+  --configure "addressbook/database=My Addressbook" \
+              "calendar/database=My Calendar" \
+              @default addressbook calendar
+
+Another way to achieve the same effect is to run the ``--configure``
+operation twice, once for ``addressbook`` and once for ``calendar``::
+
+  --configure "database=My Addressbook" @default addressbook
+  --configure "calendar/database=My Calendar" @default calendar
+
+If the same property is set both with and without a ``<source>/`` prefix,
+then the more specific value with that prefix is used for that source,
+regardless of the order on the command line. The following command
+enables all sources except for the addressbook::
+
+    --configure --source-property addressbook/sync=none \
+                --source-property sync=two-way \
+                <sync config>
+
+
 USAGE
 =====
 
-The <config> and the <source> strings are used to find the
-configuration files which determine how synchronization is going to
-proceed. Each source corresponds to one local address book, calendar,
-task list or set of memos and the corresponding database on the
-peer. Depending on which parameters are given, different operations
-are executed.
-
-Starting with SyncEvolution 1.0, <config> strings can have different
-meanings. Typically, a simple string like `memotoo` refers to
-the configuration for that peer, as it did in previous releases. A
-peer is either a SyncML server (the traditional usage of
-SyncEvolution) or a client (the new feature in 1.0).
-
-Each peer configuration exists inside a specific context, typically
-the `@default` context. All peers in the same context share some parts
-of their configuration, for example, which local databases are to be
-synchronized.  In that sense, a configuration context can be seen as a
-set of local databases plus the peer configurations that are
-synchronized against those databases.
-
-The peer-independent properties of a source can be configured by
-giving the context name as <config> parameter ("@default
-addressbook"). Operations manipulating the local data also accept
-the context name.
-
-When different peers are meant to synchronize different local
-databases, then different contexts have to be used when setting up the
-peers by appending a context name after the `at` sign, as in
-`memotoo2@other-context`. Later on, if `memotoo2` is
-unique, the `@other-context` suffix becomes optional.
-
-Sometimes it is also useful to change configuration options of a
-context, without modifying a specific peer. This can be done by using
-`@default` (or some other context name) without anything before the
-`at` sign. The empty string "" is the same as `@default`. ::
+::
 
    syncevolution
 
@@ -136,27 +308,16 @@ synchronization: if the synchronization mode of a source is set to
 `disabled`, the source will be ignored. Explicitly listing such a
 source will synchronize it in `two-way` mode once.
 
-In SyncEvolution's predefined configuration templates, the following
-names for sources are used. Different names can be chosen for sources
-that are defined manually.
-
- * addressbook: a list of contacts
- * calendar: calendar *events*
- * memo: plain text notes
- * todo: task list
- * calendar+todo: a virtual source combining one local "calendar" and
-   one "todo" source (required for synchronizing with some phones)
-
 Progress and error messages are written into a log file that is
 preserved for each synchronization run. Details about that is found in
 the `Automatic Backups and Logging` section below. All errors and
 warnings are printed directly to the console in addition to writing
 them into the log file. Before quitting SyncEvolution will print a
 summary of how the local data was modified.  This is done with the
-`synccompare` utility script described in the `Exchanging Data`
+`synccompare` utility script described in the `Exchanging Data`_
 section.
 
-When the `logdir` option is enabled (since v0.9 done by default for
+When the ``logdir`` property is enabled (since v0.9 done by default for
 new configurations), then the same comparison is also done before the
 synchronization starts.
 
@@ -205,8 +366,8 @@ on the command line. ::
    syncevolution --status <config> [<source> ...]
 
 Prints what changes were made locally since the last synchronization.
-Depends on access to database dumps from the last run, so using the
-`logdir` option is recommended. ::
+Depends on access to database dumps from the last run, so enabling the
+``logdir`` property is recommended. ::
 
    syncevolution --print-servers|--print-configs|--print-peers
    syncevolution --print-config [--quiet] <config> [main|<source> ...]
@@ -255,11 +416,11 @@ only alphanumeric characters, dash and underscore. A star * in
 
 <config> and <source> must be given, but they do not have to refer to
 existing configurations. In that case, the desired backend and must be
-give via "--source-property type=<backend>", like this::
+give via the ``backend`` property, like this::
 
-  syncevolution --print-items --source-property type=evolution-contacts dummy-config dummy-source
+  syncevolution --print-items backend=evolution-contacts dummy-config dummy-source
 
-The desired backend database can be chosen via "--source-property database".
+The desired backend database can be chosen via ``database=<identifier>``.
 
 OPTIONS
 =======
@@ -274,7 +435,7 @@ a list of valid values.
   for a `refresh-from-server` or `refresh-from-client` sync which
   clears all data at one end and copies all items from the other.
 
-  **Warning:** in local sync (CalDAV/CardDAV/ActiveSync, ...) and
+  **Warning:** in local sync (`CalDAV and CardDAV`_/ActiveSync, ...) and
   direct sync with a phone, the sync is started by the side which acts
   as server. Therefore the ``from-server`` variants
   (``one-way-from-server``, ``refresh-from-server``) transfer data
@@ -302,8 +463,8 @@ a list of valid values.
 
 \--print-sessions
   Prints information about previous synchronization sessions for the
-  selected peer or context are printed. This depends on the `logdir`
-  option.  The information includes the log directory name (useful for
+  selected peer or context are printed. This depends on the ``logdir``
+  property.  The information includes the log directory name (useful for
   --restore) and the synchronization report. In combination with
   --quiet, only the paths are listed.
 
@@ -409,70 +570,9 @@ a list of valid values.
   to update the configuration. Can be used multiple times.  Specifying
   an unused property will trigger an error message.
 
-  The <property> has the following format: ``<name>[@<context>|@<peer>@<context>]``
-
-  The optional <context> or <peer>@<context> suffix limits the scope
-  of the value to that particular configuration. This is currently
-  only useful for a local sync, which involves a source and a target
-  configuration.
-
-  A string without a second @ sign inside is always interpreted as a
-  context name, so in contrast to the <server> string, "foo" cannot be
-  used to reference the "foo@default" configuration. Use the full name
-  including the context for that.
-
-  When no config or context is specified explicitly, a value is
-  changed in all active configs, typically the one given with
-  ``<server>``.  The priority of multiple values for the same config
-  is `more specific definition wins`, so ``<peer>@<context>``
-  overrides ``@<context>``, which overrides `no suffix given`.
-  Specifying some suffix which does not apply to the current operation
-  does not trigger an error, so beware of typos.
-
-  When using the configuration layout introduced with 1.0, some of the
-  sync properties are shared between peers, for example the directory
-  where sessions are logged. Permanently changing such a shared
-  property for one peer will automatically update the property for all
-  other peers in the same context because the property is stored in a
-  shared config file. When printing a config in verbose mode, a summary
-  comment shows which properties are shared in which way.
-
 --source-property|-z <property>=<value>|<property>=?|?
   Same as --sync-property, but applies to the configuration of all active
   sources. `--sync <mode>` is a shortcut for `--source-property sync=<mode>`.
-
-  The <property> has the following format: ``[<source>/]<name>[@<context>|@<peer>@<context>]``
-
-  In it's simplest form without <source>, <context> or <config>,
-  the name specifies one of the know properties.
-  When combined with `--configure`, the configuration of all sources
-  is modified. The value is applied to all sources unless sources are
-  listed explicitly on the command line. So if you want to change a
-  source property of just one specific sync source, then use
-  `--configure --source-property ... <server> <source>`.
-
-  Adding the <source>/ prefix makes it possible to set the same
-  property differently for different sources in one command::
-
-    --configure --source-property addressbook/sync=two-way \
-                --source-property calendar/sync=one-way-from-server \
-                <server>
-
-  If the same property is set both with and without a <source>/ prefix,
-  then the more specific value with that prefix is used for that source,
-  regardless of the order on the command line. The following command
-  disables all sources except for the addressbook::
-
-    --configure --source-property addressbook/sync=none \
-                --source-property sync=two-way \
-                <server>
-
-  As with sync properties, some properties are shared between peers,
-  in particular the selection of which local data to synchronize.  The
-  optional configuration suffix in ``<property>`` also has the same
-  meaning as for sync properties. That suffix is checked first, so
-  "sync@foo@default" overrides "addressbook/sync", even though
-  "addressbook/sync" normally overrides "sync".
 
 --template|-l <peer name>|default|?<device>
   Can be used to select from one of the built-in default configurations
@@ -539,6 +639,35 @@ a list of valid values.
 
 \--version
   Prints the SyncEvolution version.
+
+
+CONFIGURATION PROPERTIES
+========================
+
+This section lists predefined properties. Backends can add their own
+properties at runtime if none of the predefined properties are
+suitable for a certain setting. Those additional properties are not
+listed here. Use ``--sync/source-property ?`` to get an up-to-date
+list.
+
+The predefined properties may also be interpreted slightly differently
+by each backend and sync protocol. Sometimes this is documented in the
+comment for each property, sometimes in the documentation of the
+backend or sync protocol.
+
+Properties are listed together with all recognized aliases (in those
+cases where a property was renamed at some point), its default value,
+sharing state (unshared/shared/global). Some properties must be
+defined, which is marked with the word `required`.
+
+Sync properties
+---------------
+<<insert sync-property>>
+
+Source properties
+-----------------
+<<insert source-property>>
+
 
 EXAMPLES
 ========
@@ -625,6 +754,8 @@ created anew with the current syncevolution::
 
   syncevolution --migrate memotoo
 
+
+.. _local sync:
 
 Synchronization beyond SyncML
 =============================
@@ -742,7 +873,7 @@ Exchanging Data
 ---------------
 
 SyncEvolution transmits address book entries as vCard 2.1 or 3.0
-depending on the type chosen in the configuration. Evolution uses
+depending on the sync format chosen in the configuration. Evolution uses
 3.0 internally, so SyncEvolution converts between the two formats as
 needed. Calendar items and tasks can be sent and received in iCalendar
 2.0 as well as vCalendar 1.0, but vCalendar 1.0 should be avoided if
@@ -835,7 +966,7 @@ can create the following files during a synchronization:
   automatic comparison of the before/after state with
   `synccompare`
 
-If the server configuration option "logdir" is set, then
+If the sync configuration property ``logdir`` is set, then
 a new directory will be created for each synchronization
 in that directory, using the format `<peer>-<yyyy>-<mm>-<dd>-<hh>-<mm>[-<seq>]`
 with the various fields filled in with the time when the
@@ -845,7 +976,7 @@ SyncEvolution will never delete any data in that log
 directory unless explicitly asked to keep only a limited
 number of previous log directories.
 
-This is done by setting the "maxlogdirs" limit to something
+This is done by setting the ``maxlogdirs`` limit to something
 different than the empty string and 0. If a limit is set,
 then SyncEvolution will only keep that many log directories
 and start removing the "less interesting" ones when it reaches
@@ -853,8 +984,8 @@ the limit. Less interesting are those where no data changed
 and no error occurred.
 
 To avoid writing any additional log file or database dumps during
-a synchronization, the "logdir" can be set to "none". To reduce
-the verbosity of the log, set "loglevel". If not set or 0, then
+a synchronization, the ``logdir`` can be set to ``none``. To reduce
+the verbosity of the log, set ``loglevel``. If not set or 0, then
 the verbosity is set to 3 = DEBUG when writing to a log file and
 2 = INFO when writing to the console directly. To debug issues
 involving data conversion, level 4 also dumps the content of

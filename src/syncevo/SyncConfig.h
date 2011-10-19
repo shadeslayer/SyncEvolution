@@ -342,6 +342,8 @@ class ConfigProperty {
                                    logdir property */
         NO_SHARING              /**< each peer has his own values */
     };
+    /** "global", "shared", "unshared" */
+    static std::string sharing2str(Sharing sharing);
     Sharing getSharing() const { return m_sharing; }
     void setSharing(Sharing sharing) { m_sharing = sharing; }
 
