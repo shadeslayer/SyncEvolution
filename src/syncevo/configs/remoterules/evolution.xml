@@ -1,4 +1,6 @@
     <remoterule name="EVOLUTION">
       <deviceid>none - this rule is activated via its name in MAKE/PARSETEXTWITHPROFILE() macro calls</deviceid>
       <include rule="HAVE-EVOLUTION-UI-SLOT"/>
+      <!-- storing empty properties only wastes space and causes overhead, suppress them -->
+      <noemptyproperties>yes</noemptyproperties>
     </remoterule>
