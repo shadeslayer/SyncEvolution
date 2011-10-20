@@ -3174,15 +3174,6 @@ class TestBluetooth(unittest.TestCase, DBusUtil):
 
     @property("ENV", "DBUS_TEST_BLUETOOTH=session")
     @timeout(100)
-    def testBluetoothProductId(self):
-        """TestBluetooth.testBluetoothProductId - check that fingerprint was properly matched using productId"""
-        # This needs to be called before we can fetch the single config.
-        configs = self.server.GetConfigs(True, utf8_strings=True)
-        config  = self.server.GetConfig(bt_template, True, utf8_strings=True)
-        self.failIf(string.find(config['']["fingerPrint"], bt_fingerprint) < 0)
-
-    @property("ENV", "DBUS_TEST_BLUETOOTH=session")
-    @timeout(100)
     def testBluetoothTemplates(self):
         """TestBluetooth.testBluetoothTemplates - check for the bluetooth device's template"""
         configs = self.server.GetConfigs(True, utf8_strings=True)
@@ -3191,12 +3182,19 @@ class TestBluetooth(unittest.TestCase, DBusUtil):
 
     @property("ENV", "DBUS_TEST_BLUETOOTH=session")
     @timeout(100)
-    def testBluetoothUserModifiableDeviceName(self):
-        """TestBluetooth.testBluetoothUserModifiableDeviceName - check that peerName equals """
+    def testBluetoothNames(self):
+        """TestBluetooth.testBluetoothNames - check that fingerPrint/peerName/deviceName/hardwareName are set correctly"""
         # This needs to be called before we can fetch the single config.
         configs = self.server.GetConfigs(True, utf8_strings=True)
         config  = self.server.GetConfig(bt_template, True, utf8_strings=True)
-        self.failUnlessEqual(config['']["peerName"], bt_name)
+        # user-configurable name
+        self.failUnlessEqual(config['']["deviceName"], bt_name)
+        # must not be set
+        self.failIf("peerName" in config[''])
+        # all of the possible strings in the template, must include the hardware name of this example device
+        self.failIf(string.find(config['']["fingerPrint"], bt_fingerprint) < 0)
+        # real hardware information
+        self.failUnlessEqual(config['']["hardwareName"], bt_fingerprint)
 
 if __name__ == '__main__':
     unittest.main()
