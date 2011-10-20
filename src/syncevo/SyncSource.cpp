@@ -96,8 +96,12 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
     getSynthesisInfo(info, fragments);
 
     xmlstream <<
-        "      <plugin_module>SyncEvolution</plugin_module>\n"
-        "      <plugin_earlystartdataread>yes</plugin_earlystartdataread>\n"
+        "      <plugin_module>SyncEvolution</plugin_module>\n";
+    if (info.m_earlyStartDataRead) {
+        xmlstream <<
+            "      <plugin_earlystartdataread>yes</plugin_earlystartdataread>\n";
+    }
+    xmlstream <<
         "      <plugin_datastoreadmin>" <<
         (serverModeEnabled() ? "yes" : "no") <<
         "</plugin_datastoreadmin>\n"

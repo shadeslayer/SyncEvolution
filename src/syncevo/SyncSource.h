@@ -1022,6 +1022,15 @@ class SyncSourceBase : public Logger {
          * vCard 3.0 strings) from the engine.
          */
         std::string m_datastoreOptions;
+
+        /**
+         * If true, then the StartDataRead call (aka SyncSourceSession::beginSync)
+         * is invoked before the first message exchange with the peer. Otherwise
+         * it is invoked only if the peer could be reached and accepts the credentials.
+         *
+         * See SyncSourceSession::beginSync for further comments.
+         */
+        Bool m_earlyStartDataRead;
     };
 
     /**
@@ -1322,10 +1331,19 @@ class SyncSourceSession : virtual public SyncSourceBase {
     /**
      * called before Synthesis engine starts to ask for changes and item data
      *
-     * May throw a STATUS_SLOW_SYNC_508 StatusException if an
+     * If SynthesisInfo::m_earlyStartDataRead is true, then this call is
+     * invoked before the first message exchange with a peer and it
+     * may throw a STATUS_SLOW_SYNC_508 StatusException if an
      * incremental sync is not possible. In that case, preparations
      * for a slow sync must have completed successfully inside the
      * beginSync() call. It is not going to get called again.
+     *
+     * If SynthesisInfo::m_earlyStartDataRead is false (the default),
+     * then this is called only if the peer was reachable and accepted
+     * the credentials. This mode of operation is preferred if a fallback
+     * to slow sync is not needed, because it allows deferring expensive
+     * operations until really needed. For example, the engine does
+     * database dumps at the time when StartDataRead is called.
      *
      * See StartDataRead for details.
      *

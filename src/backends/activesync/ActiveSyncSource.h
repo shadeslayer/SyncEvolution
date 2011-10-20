@@ -171,6 +171,26 @@ class ActiveSyncSource :
     virtual EasItemType getEasType() const = 0;
 
  protected:
+
+    virtual void getSynthesisInfo(SynthesisInfo &info,
+                                  XMLConfigFragments &fragments)
+    {
+        TestingSyncSource::getSynthesisInfo(info, fragments);
+
+        /**
+         * no ActiveSync specific rules yet, use condensed format as
+         * if we were storing locally, with all extensions enabled
+         */
+        info.m_backendRule = "LOCALSTORAGE";
+
+        /**
+         * access to data must be done early so that a slow sync can be
+         * enforced when the ActiveSync sync key turns out to be
+         * invalid
+         */
+        info.m_earlyStartDataRead = true;
+    }
+
     EasSyncHandler *getHandler() { return m_handler.get(); }
     std::string getFolder() { return m_folder; }
     std::string getStartSyncKey() { return m_startSyncKey; }
@@ -225,26 +245,6 @@ class ActiveSyncContactSource : public ActiveSyncSource
     virtual std::string getMimeVersion() const { return "3.0"; }
 
     EasItemType getEasType() const { return EAS_ITEM_CONTACT; }
-
-#if 0 // currently disabled, and thus using the same conversion as the Evolution backend
-    void getSynthesisInfo(SynthesisInfo &info,
-                          XMLConfigFragments &fragments)
-    {
-        TrackingSyncSource::getSynthesisInfo(info, fragments);
-
-        /** enable the ActiveSync X- extensions in the Synthesis<->backend conversion */
-        info.m_backendRule = "ACTIVESYNC";
-
-        /*
-         * Disable the default VCARD_BEFOREWRITE_SCRIPT_EVOLUTION.
-         * If any KDE-specific transformations via such a script
-         * are needed, it can be named here and then defined by appending
-         * to the fragments.
-         */
-        info.m_beforeWriteScript = ""; // "$VCARD_BEFOREWRITE_SCRIPT_KDE;";
-        // fragments.m_datatypes["VCARD_BEFOREWRITE_SCRIPT_KDE"] = "<macro name=\"VCARD_BEFOREWRITE_SCRIPT_KDE\"><![DATA[ ... ]]></macro>";
-    }
-#endif
 };
 
 /**
