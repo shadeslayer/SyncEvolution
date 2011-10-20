@@ -24,6 +24,9 @@
           // - convert start to user zone (or floating) so it represents midnight
           DTSTART = CONVERTTOUSERZONE(DTSTART);
           MAKEALLDAY(DTSTART,DTEND,i);
+          if (RR_END != EMPTY) {
+             RR_END = DATEONLY(CONVERTTOUSERZONE(RR_END));
+          }
         }
         else {
           // iCalendar 2.0 - only if DTSTART is a date-only value this really is an allday
@@ -52,14 +55,15 @@
             i=i+1;
           }
         }
-        // If vcalendar1.0, rrule is not secondly, minutely, or hourly, we strip time information
-        // and only reserve date information
-        if (ITEMDATATYPE()=="vCalendar10" && RR_FREQ!="h" && RR_FREQ!="m" && RR_FREQ!="s") {
+        // vCalendar1.0 has no VALUE=DATE EXDATEs, so convert back to that if
+        // the event is all-day.
+        if (ITEMDATATYPE()=="vCalendar10" && ISDATEONLY(DTSTART)) {
           timestamp exdate;
           i = 0;
           while (i<SIZE(EXDATES)) {
             exdate = EXDATES[i];
             if (!ISDATEONLY(exdate)) {
+              exdate = CONVERTTOUSERZONE(exdate);
               EXDATES[i] = DATEONLY(exdate);
             }
             i=i+1;

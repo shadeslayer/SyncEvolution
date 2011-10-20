@@ -390,7 +390,7 @@
           </property>
 
           <property name="EXDATE" values="list" suppressempty="yes" onlyformode="old" delayedparsing="1" valueseparator=";" altvalueseparator=",">
-            <value field="EXDATES"/>
+            <value field="EXDATES" conversion="autodate"/>
             <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
           </property>
 
