@@ -44,6 +44,10 @@
 #include <fstream>
 #include <iostream>
 
+#ifdef ENABLE_UNIT_TESTS
+#include "test.h"
+#endif
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -1406,6 +1410,29 @@ void TestingSyncSource::removeAllItems()
         deleteItem(*it);
     }
 }
+
+
+
+#ifdef ENABLE_UNIT_TESTS
+
+class SyncSourceTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(SyncSourceTest);
+    CPPUNIT_TEST(backendsAvailable);
+    CPPUNIT_TEST_SUITE_END();
+
+    void backendsAvailable()
+    {
+        //We expect backendsInfo() to be empty if !ENABLE_MODULES
+        //Otherwise, there should be at least some backends.
+#ifdef ENABLE_MODULES
+        CPPUNIT_ASSERT( !SyncSource::backendsInfo().empty() );
+#endif
+    }
+};
+
+SYNCEVOLUTION_TEST_SUITE_REGISTRATION(SyncSourceTest);
+
+#endif // ENABLE_UNIT_TESTS
 
 
 SE_END_CXX
