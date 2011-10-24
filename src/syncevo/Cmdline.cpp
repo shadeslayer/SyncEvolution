@@ -1464,7 +1464,7 @@ bool Cmdline::run() {
                           context->getSyncSources()) {
                 boost::shared_ptr<PersistentSyncSourceConfig> source_config =
                     context->getSyncSourceConfig(source);
-                if (source_config->getSync() != "disabled") {
+                if (!source_config->isDisabled()) {
                     context->setConfigFilter(false, source, m_props.createSourceFilter(m_server, source));
                 }
             }
@@ -3159,7 +3159,7 @@ protected:
         TestCmdline failure2("--sync", "foo", NULL);
         CPPUNIT_ASSERT(!failure2.m_cmdline->parse());
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure2.m_out.str());
-        CPPUNIT_ASSERT_EQUAL(string("ERROR: '--sync foo': not one of the valid values (two-way, slow, refresh-from-client = refresh-client, refresh-from-server = refresh-server = refresh, one-way-from-client = one-way-client, one-way-from-server = one-way-server = one-way, disabled = none)\n"), lastLine(failure2.m_err.str()));
+        CPPUNIT_ASSERT_EQUAL(string("ERROR: '--sync foo': not one of the valid values (two-way, slow, refresh-from-local, refresh-from-remote = refresh, one-way-from-local, one-way-from-remote = one-way, refresh-from-client = refresh-client, refresh-from-server = refresh-server, one-way-from-client = one-way-client, one-way-from-server = one-way-server, disabled = none)\n"), lastLine(failure2.m_err.str()));
 
         TestCmdline help("--sync", " ?", NULL);
         help.doit();
@@ -3170,19 +3170,23 @@ protected:
                                   "       only send/receive changes since last sync\n"
                                   "     slow\n"
                                   "       exchange all items\n"
-                                  "     refresh-from-client\n"
-                                  "       discard all remote items and replace with the items on the client\n"
-                                  "     refresh-from-server\n"
-                                  "       discard all local items and replace with the items on the server\n"
-                                  "     one-way-from-client\n"
-                                  "       transmit changes from client\n"
-                                  "     one-way-from-server\n"
-                                  "       transmit changes from server\n"
+                                  "     refresh-from-remote\n"
+                                  "       discard all local items and replace with\n"
+                                  "       the items on the peer\n"
+                                  "     refresh-from-local\n"
+                                  "       discard all items on the peer and replace\n"
+                                  "       with the local items\n"
+                                  "     one-way-from-remote\n"
+                                  "       transmit changes from peer\n"
+                                  "     one-way-from-local\n"
+                                  "       transmit local changes\n"
                                   "     disabled (or none)\n"
                                   "       synchronization disabled\n"
                                   "   \n"
-                                  "   **WARNING**: which side is `client` and which is `server` depends on\n"
-                                  "   the value of the ``peerIsClient`` property in the configuration.\n"
+                                  "   refresh/one-way-from-server/client are also supported. Their use is\n"
+                                  "   discouraged because the direction of the data transfer depends\n"
+                                  "   on the role of the local side (can be server or client), which is\n"
+                                  "   not always obvious.\n"
                                   "   \n"
                                   "   When accepting a sync session in a SyncML server (HTTP server), only\n"
                                   "   sources with sync != disabled are made available to the client,\n"

@@ -284,7 +284,7 @@ void LocalTransportAgent::run()
         BOOST_FOREACH(const string &sourceName, m_server->getSyncSources()) {
             SyncSourceNodes nodes = m_server->getSyncSourceNodesNoTracking(sourceName);
             SyncSourceConfig source(sourceName, nodes);
-            string sync = source.getSync();
+            std::string sync = source.getSync();
             if (sync != "disabled") {
                 string targetName = source.getURINonEmpty();
                 SyncSourceNodes targetNodes = m_client->getSyncSourceNodes(targetName);
@@ -304,13 +304,23 @@ void LocalTransportAgent::run()
                 // so none of the regular config nodes have to
                 // be written. If a sync mode was set, it must have been
                 // done before in this loop => error in original config.
-                if (string(targetSource.getSync()) != "disabled") {
+                if (!targetSource.isDisabled()) {
                     m_client->throwError(StringPrintf("%s: source targetted twice by %s",
                                                       fullTargetName.c_str(),
                                                       m_clientContext.c_str()));
                 }
-                targetSource.setSync(sync.c_str(), true);
-                targetSource.setURI(sourceName.c_str(), true);
+                // invert data direction
+                if (sync == "refresh-from-local") {
+                    sync = "refresh-from-remote";
+                } else if (sync == "refresh-from-remote") {
+                    sync = "refresh-from-local";
+                } else if (sync == "one-way-from-local") {
+                    sync = "one-way-from-remote";
+                } else if (sync == "one-way-from-remote") {
+                    sync = "one-way-from-local";
+                }
+                targetSource.setSync(sync, true);
+                targetSource.setURI(sourceName, true);
             }
         }
 

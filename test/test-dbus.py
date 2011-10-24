@@ -1545,9 +1545,10 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
             self.assertEqual(str(ex),
                                  "org.syncevolution.InvalidCall: invalid value 'invalid-value' for "
                                  "property 'sync': 'not one of the valid values (two-way, slow, "
-                                 "refresh-from-client = refresh-client, refresh-from-server = "
-                                 "refresh-server = refresh, one-way-from-client = one-way-client, "
-                                 "one-way-from-server = one-way-server = one-way, disabled = none)'")
+                                 "refresh-from-local, refresh-from-remote = refresh, one-way-from-local, "
+                                 "one-way-from-remote = one-way, refresh-from-client = refresh-client, "
+                                 "refresh-from-server = refresh-server, one-way-from-client = one-way-client, "
+                                 "one-way-from-server = one-way-server, disabled = none)'")
         else:
             self.fail("no exception thrown")
 

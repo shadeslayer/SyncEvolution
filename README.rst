@@ -415,9 +415,9 @@ the right database dumps for the selected sources.
 A restore tries to minimize the number of item changes (see section
 `Item Changes and Data Changes`_). This means that items that are
 identical before and after the change will not be transmitted anew to
-the server during the next synchronization. If the server somehow
-needs to get a clean copy of all items on the client then, use "--sync
-refresh-from-client" in the next run. ::
+the peer during the next synchronization. If the peer somehow
+needs to get a clean copy of all local items, then use ``--sync
+refresh-from-local`` in the next run. ::
 
   syncevolution --print-items <config> <source>
   syncevolution [--delimiter <string>] --export <dir>|<file>|- <config> <source> [<luid> ...]
@@ -451,17 +451,12 @@ a list of valid values.
 
 --sync|-s <mode>|?
   Temporarily synchronize the active sources in that mode. Useful
-  for a `refresh-from-server` or `refresh-from-client` sync which
+  for a `refresh-from-local` or `refresh-from-remote` sync which
   clears all data at one end and copies all items from the other.
 
-  **Warning:** in local sync (`CalDAV and CardDAV`_/ActiveSync, ...) and
-  direct sync with a phone, the sync is started by the side which acts
-  as server. Therefore the ``from-server`` variants
-  (``one-way-from-server``, ``refresh-from-server``) transfer data
-  from the sync config into the target config (see "Synchronization
-  beyond SyncML" below) resp. to a phone. The ``from-client`` variants
-  transfer in the other direction, even if the target config happens
-  to access data on a remote server.
+  **Warning:** `local` is the data accessed via the sync config
+  directly and `remote` is the data on the peer, regardless
+  where the data is actually stored physically.
 
 --print-servers|--print-configs|--print-peers
   Prints the names of all configured peers to stdout. There is no

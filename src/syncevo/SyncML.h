@@ -31,7 +31,43 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-/** alert Codes used at the synchronization initialization */
+/**
+ * only the codes which are valid for a server alerted sync (SAN) message
+ */
+enum SANSyncMode {
+    SA_SLOW = 201,
+    SA_FIRST = SA_SLOW,
+    SA_TWO_WAY = 206,
+    SA_ONE_WAY_FROM_CLIENT = 207,
+    SA_REFRESH_FROM_CLIENT = 208,
+    SA_ONE_WAY_FROM_SERVER = 209,
+    SA_REFRESH_FROM_SERVER = 210,
+    SA_LAST = SA_REFRESH_FROM_SERVER,
+
+    SA_INVALID = 255
+};
+
+/**
+ * unambiguous sync modes:
+ * - data direction is independent of client/server role
+ * - no server alerted variants
+ */
+enum SimpleSyncMode {
+    SIMPLE_SYNC_NONE,
+    SIMPLE_SYNC_TWO_WAY = 200,
+    SIMPLE_SYNC_SLOW = 201,
+
+    SIMPLE_SYNC_RESTORE_FROM_BACKUP = 211,
+
+    SIMPLE_SYNC_ONE_WAY_FROM_LOCAL = 212,
+    SIMPLE_SYNC_REFRESH_FROM_LOCAL = 213,
+    SIMPLE_SYNC_ONE_WAY_FROM_REMOTE = 214,
+    SIMPLE_SYNC_REFRESH_FROM_REMOTE = 215,
+
+    SIMPLE_SYNC_INVALID = 255
+};
+
+/** all kinds of sync modes */
 enum SyncMode {
     /** unset or disabled */
     SYNC_NONE,
@@ -44,7 +80,7 @@ enum SyncMode {
     SYNC_ONE_WAY_FROM_SERVER = 204,
     SYNC_REFRESH_FROM_SERVER = 205,
 
-    /** used by Server Alerted Sync **/
+    // used by Server Alerted Sync, same as SA_ in SANSyncMode
     SA_SYNC_TWO_WAY = 206,
     SA_SYNC_ONE_WAY_FROM_CLIENT = 207,
     SA_SYNC_REFRESH_FROM_CLIENT = 208,
@@ -54,10 +90,28 @@ enum SyncMode {
     // used by restore backend with backup data, a pseudo mode
     SYNC_RESTORE_FROM_BACKUP = 211,
 
+    // modes which always transfer in the same direction,
+    // regardless which side acts as client or server
+    SYNC_ONE_WAY_FROM_LOCAL = 212,
+    SYNC_REFRESH_FROM_LOCAL = 213,
+    SYNC_ONE_WAY_FROM_REMOTE = 214,
+    SYNC_REFRESH_FROM_REMOTE = 215,
+
     SYNC_LAST = 220,
     /** error situation (in contrast to SYNC_NONE) */
     SYNC_INVALID = 255
 };
+
+/**
+ * maps to normal SYNC_ variants (no SA_*) and unambiguous direction
+ * (LOCAL/REMOTE instead of CLIENT/SERVER)
+ */
+SimpleSyncMode SimplifySyncMode(SyncMode mode, bool peerIsClient);
+
+/**
+ * maps to the server alerted variants
+ */
+SANSyncMode AlertSyncMode(SyncMode mode, bool peerIsClient);
 
 /* According to OMNA WSP Content Type Numbers*/
 enum ContentType {

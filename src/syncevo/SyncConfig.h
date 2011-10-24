@@ -1985,6 +1985,9 @@ class SyncSourceConfig {
     virtual std::string getSync() const;
     virtual void setSync(const std::string &value, bool temporarily = false);
 
+    /** shortcut for checking sync mode against "disabled" */
+    bool isDisabled() { return getSync() == "disabled"; }
+
  private:
     std::string m_name;
     SyncSourceNodes m_nodes;

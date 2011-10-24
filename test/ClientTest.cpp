@@ -1939,6 +1939,8 @@ void SyncTests::addTests(bool isFirstSource) {
         ADD_TEST(SyncTests, testSlowSync);
         ADD_TEST(SyncTests, testRefreshFromServerSync);
         ADD_TEST(SyncTests, testRefreshFromClientSync);
+        ADD_TEST(SyncTests, testRefreshFromRemoteSync);
+        ADD_TEST(SyncTests, testRefreshFromLocalSync);
         // testTimeout is independent of the actual peer; all it needs
         // is a SyncML client config. Can't test for that explicitly
         // here, so only rule out the test if we run in server mode.
@@ -2013,6 +2015,8 @@ void SyncTests::addTests(bool isFirstSource) {
                         ADD_TEST(SyncTests, testLargeObject);
                         ADD_TEST(SyncTests, testOneWayFromServer);
                         ADD_TEST(SyncTests, testOneWayFromClient);
+                        ADD_TEST(SyncTests, testOneWayFromRemote);
+                        ADD_TEST(SyncTests, testOneWayFromLocal);
                     }
                 }
             }
@@ -2161,7 +2165,7 @@ void SyncTests::deleteAll(DeleteAllMode mode) {
         }
         doSync("refreshserver",
                SyncOptions(RefreshFromLocalMode(),
-                           CheckSyncReport(0,0,0, 0,0,-1, true, RefreshFromLocalMode())));
+                           CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_REFRESH_FROM_LOCAL)));
         break;
     }
 }
@@ -2250,6 +2254,37 @@ void SyncTests::testDeleteAllRefresh() {
     }
 }
 
+// refresh-from-server sync, regardless of peer's role
+void SyncTests::testRefreshFromServerSync()
+{
+    doSync(SyncOptions(SYNC_REFRESH_FROM_SERVER,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true,
+                                       isServerMode() ? SYNC_REFRESH_FROM_LOCAL : SYNC_REFRESH_FROM_REMOTE)));
+}
+
+// do a refresh-from-client sync, regardless of peer's role
+void SyncTests::testRefreshFromClientSync()
+{
+    doSync(SyncOptions(SYNC_REFRESH_FROM_CLIENT,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true,
+                                       isServerMode() ? SYNC_REFRESH_FROM_REMOTE : SYNC_REFRESH_FROM_LOCAL)));
+}
+
+// do a refresh-from-remote sync, regardless of peer's role
+void SyncTests::testRefreshFromRemoteSync()
+{
+    doSync(SyncOptions(SYNC_REFRESH_FROM_REMOTE,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_REMOTE)));
+}
+
+// do a refresh-from-local sync, regardless of peer's role
+void SyncTests::testRefreshFromLocalSync()
+{
+    doSync(SyncOptions(SYNC_REFRESH_FROM_LOCAL,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_LOCAL)));
+}
+
+
 // test that a refresh sync from an empty server leads to an empty datatbase
 // and no changes are sent to server during next two-way sync
 void SyncTests::testRefreshFromServerSemantic() {
@@ -2264,7 +2299,7 @@ void SyncTests::testRefreshFromServerSemantic() {
     }
     doSync("refresh",
            SyncOptions(RefreshFromPeerMode(),
-                       CheckSyncReport(0,0,-1, 0,0,0, true, RefreshFromPeerMode())));
+                       CheckSyncReport(0,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
 
     // check
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2302,12 +2337,12 @@ void SyncTests::testRefreshFromClientSemantic() {
     // refresh from client
     doSync("refresh",
            SyncOptions(RefreshFromLocalMode(),
-                       CheckSyncReport(0,0,0, 0,0,0, true, RefreshFromLocalMode())));
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_LOCAL)));
 
     // check
     doSync("check",
            SyncOptions(RefreshFromPeerMode(),
-                       CheckSyncReport(0,0,0, 0,0,0, true, RefreshFromPeerMode())));
+                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
 }
 
 // tests the following sequence of events:
@@ -2331,7 +2366,7 @@ void SyncTests::testRefreshStatus() {
     doSync("refresh-from-client",
            SyncOptions(RefreshFromLocalMode(),
                        CheckSyncReport(0,0,0, -1,-1,-1, /* strictly speaking 1,0,0, but not sure exactly what the server will be told */
-                                       true, RefreshFromLocalMode())));
+                                       true, SYNC_REFRESH_FROM_LOCAL)));
     doSync("two-way",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
@@ -2474,7 +2509,7 @@ void SyncTests::testMerge() {
     // Be extra careful and pull that data anew and compare once more.
     doSync("check",
            SyncOptions(RefreshFromPeerMode(),
-                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, RefreshFromPeerMode())));
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_REMOTE)));
     CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
@@ -2508,7 +2543,7 @@ void SyncTests::testTwinning() {
     CPPUNIT_ASSERT_NO_THROW(compareDatabases());
 }
 
-// tests one-way sync from server:
+// tests one-way sync from peer:
 // - get both clients and server in sync with no items anywhere
 // - add one item on first client, copy to server
 // - add a different item on second client, one-way-from-server
@@ -2517,7 +2552,7 @@ void SyncTests::testTwinning() {
 // - delete on first client, sync that to second client
 //   via two-way sync + one-way-from-server
 // => one item left on second client (the one inserted locally)
-void SyncTests::testOneWayFromServer() {
+void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
     // no items anywhere
     deleteAll();
     accessClientB->refreshClient();
@@ -2577,8 +2612,8 @@ void SyncTests::testOneWayFromServer() {
         }
     }
     accessClientB->doSync("recv",
-                          SyncOptions(OneWayFromPeerMode(),
-                                      CheckSyncReport(1,0,0, 0,0,0, true, OneWayFromPeerMode())));
+                          SyncOptions(oneWayFromRemote,
+                                      CheckSyncReport(1,0,0, 0,0,0, true, SYNC_ONE_WAY_FROM_REMOTE)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2640,8 +2675,8 @@ void SyncTests::testOneWayFromServer() {
     // sync the same change to second client
     // => one item left (the one inserted locally)
     accessClientB->doSync("delete",
-                          SyncOptions(OneWayFromPeerMode(),
-                                      CheckSyncReport(0,0,1, 0,0,0, true, OneWayFromPeerMode())));
+                          SyncOptions(oneWayFromRemote,
+                                      CheckSyncReport(0,0,1, 0,0,0, true, SYNC_ONE_WAY_FROM_REMOTE)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2655,7 +2690,19 @@ void SyncTests::testOneWayFromServer() {
     }
 }
 
-// tests one-way sync from client:
+// one-way-from-remote test with one-way-from-client/server, depending
+// on role of remote side
+void SyncTests::testOneWayFromServer()
+{
+    doOneWayFromRemote(OneWayFromPeerMode());
+}
+
+void SyncTests::testOneWayFromRemote()
+{
+    doOneWayFromRemote(SYNC_ONE_WAY_FROM_REMOTE);
+}
+
+// tests one-way sync from local side:
 // - get both clients and server in sync with no items anywhere
 // - add one item on first client, copy to server
 // - add a different item on second client, one-way-from-client
@@ -2664,7 +2711,7 @@ void SyncTests::testOneWayFromServer() {
 // - delete on second client, sync that to first client
 //   via one-way-from-client, two-way
 // => one item left on first client (the one inserted locally)
-void SyncTests::testOneWayFromClient() {
+void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
     // no items anywhere
     deleteAll();
     accessClientB->deleteAll();
@@ -2724,8 +2771,8 @@ void SyncTests::testOneWayFromClient() {
         }
     }
     accessClientB->doSync("send",
-                          SyncOptions(OneWayFromLocalMode(),
-                                      CheckSyncReport(0,0,0, 1,0,0, true, OneWayFromLocalMode())));
+                          SyncOptions(oneWayFromLocal,
+                                      CheckSyncReport(0,0,0, 1,0,0, true, SYNC_ONE_WAY_FROM_LOCAL)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2770,8 +2817,8 @@ void SyncTests::testOneWayFromClient() {
         }
     }
     accessClientB->doSync("delete",
-                          SyncOptions(OneWayFromLocalMode(),
-                                      CheckSyncReport(0,0,0, 0,0,1, true, OneWayFromLocalMode())));
+                          SyncOptions(oneWayFromLocal,
+                                      CheckSyncReport(0,0,0, 0,0,1, true, SYNC_ONE_WAY_FROM_LOCAL)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2800,6 +2847,18 @@ void SyncTests::testOneWayFromClient() {
             CPPUNIT_ASSERT_NO_THROW(source.reset());
         }
     }
+}
+
+// one-way-from-local test with one-way-from-client/server, depending
+// on role of local side
+void SyncTests::testOneWayFromClient()
+{
+    doOneWayFromLocal(OneWayFromLocalMode());
+}
+
+void SyncTests::testOneWayFromLocal()
+{
+    doOneWayFromLocal(SYNC_ONE_WAY_FROM_LOCAL);
 }
 
 // get engine ready, then use it to convert our test items
@@ -3102,7 +3161,7 @@ void SyncTests::testManyDeletes() {
     accessClientB->doSync("delete-client",
                           SyncOptions(RefreshFromPeerMode(),
                                       checkSyncModeStr ? CheckSyncReport() :
-                                      CheckSyncReport(0,0,num_items, 0,0,0, true, RefreshFromPeerMode()),
+                                      CheckSyncReport(0,0,num_items, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE),
                                       10 * 1024));
 }
 
@@ -3136,7 +3195,7 @@ void SyncTests::testSlowSyncSemantic()
                                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     accessClientB->doSync("check",
                           SyncOptions(RefreshFromPeerMode(),
-                                      CheckSyncReport(0,0,0, 0,0,0, true, RefreshFromPeerMode())));
+                                      CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
 
     // now the item should also be deleted on A
     doSync("delete",
@@ -3169,7 +3228,7 @@ void SyncTests::testComplexRefreshFromServerSemantic()
         accessClientB->doSync("refresh-one",
                               SyncOptions(RefreshFromPeerMode(),
                                           checkSyncModeStr ? CheckSyncReport() :
-                                          CheckSyncReport(1,0,1, 0,0,0, true, RefreshFromPeerMode())));
+                                          CheckSyncReport(1,0,1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
     }
 
     // delete that item via A, check again
@@ -3185,7 +3244,7 @@ void SyncTests::testComplexRefreshFromServerSemantic()
         accessClientB->doSync("refresh-none",
                               SyncOptions(RefreshFromPeerMode(),
                                           checkSyncModeStr ? CheckSyncReport() :
-                                          CheckSyncReport(0,0,1, 0,0,0, true, RefreshFromPeerMode())));
+                                          CheckSyncReport(0,0,1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
     }
 }
 
@@ -3641,7 +3700,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     } else {
         accessClientB->doSync("recv",
                 SyncOptions(RefreshFromPeerMode(),
-                    CheckSyncReport(-1,0,-1, 0,0,0, true, RefreshFromPeerMode()), // number of items received from server depends on source
+                    CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE), // number of items received from server depends on source
                     withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
                     withMaxMsgSize ? maxMsgSize * 100 : 0,
                     withLargeObject));

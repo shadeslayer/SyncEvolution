@@ -2153,20 +2153,24 @@ StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            "    only send/receive changes since last sync\n"
                                            "  slow\n"
                                            "    exchange all items\n"
-                                           "  refresh-from-client\n"
-                                           "    discard all remote items and replace with the items on the client\n"
-                                           "  refresh-from-server\n"
-                                           "    discard all local items and replace with the items on the server\n"
-                                           "  one-way-from-client\n"
-                                           "    transmit changes from client\n"
-                                           "  one-way-from-server\n"
-                                           "    transmit changes from server\n"
+                                           "  refresh-from-remote\n"
+                                           "    discard all local items and replace with\n"
+                                           "    the items on the peer\n"
+                                           "  refresh-from-local\n"
+                                           "    discard all items on the peer and replace\n"
+                                           "    with the local items\n"
+                                           "  one-way-from-remote\n"
+                                           "    transmit changes from peer\n"
+                                           "  one-way-from-local\n"
+                                           "    transmit local changes\n"
                                            "  disabled (or none)\n"
-                                           "    synchronization disabled\n\n"
-
-                                           "**WARNING**: which side is `client` and which is `server` depends on\n"
-                                           "the value of the ``peerIsClient`` property in the configuration.\n\n"
-
+                                           "    synchronization disabled\n"
+                                           "\n"
+                                           "refresh/one-way-from-server/client are also supported. Their use is\n"
+                                           "discouraged because the direction of the data transfer depends\n"
+                                           "on the role of the local side (can be server or client), which is\n"
+                                           "not always obvious.\n"
+                                           "\n"
                                            "When accepting a sync session in a SyncML server (HTTP server), only\n"
                                            "sources with sync != disabled are made available to the client,\n"
                                            "which chooses the final sync mode based on its own configuration.\n"
@@ -2178,10 +2182,16 @@ StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
                                            Values() +
                                            (Aliases("two-way")) +
                                            (Aliases("slow")) +
+
+                                           (Aliases("refresh-from-local")) +
+                                           (Aliases("refresh-from-remote") + "refresh") +
+                                           (Aliases("one-way-from-local")) +
+                                           (Aliases("one-way-from-remote") + "one-way") +
+
                                            (Aliases("refresh-from-client") + "refresh-client") +
-                                           (Aliases("refresh-from-server") + "refresh-server" + "refresh") +
+                                           (Aliases("refresh-from-server") + "refresh-server") +
                                            (Aliases("one-way-from-client") + "one-way-client") +
-                                           (Aliases("one-way-from-server") + "one-way-server" + "one-way") +
+                                           (Aliases("one-way-from-server") + "one-way-server") +
                                            (Aliases("disabled") + "none"));
 
 static class SourceBackendConfigProperty : public StringConfigProperty {

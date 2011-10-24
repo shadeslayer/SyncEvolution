@@ -1577,8 +1577,9 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
            extra2=1 for resumed session,
            extra3 0=twoway, 1=fromserver, 2=fromclient */
         // -1 is used for alerting a restore from backup. Synthesis won't use this
+        bool peerIsClient = getPeerIsClient();
         if (extra1 != -1) {
-            SE_LOG_INFO(NULL, NULL, "%s: %s %s sync%s",
+            SE_LOG_INFO(NULL, NULL, "%s: %s %s sync%s (%s)",
                         source.getDisplayName().c_str(),
                         extra2 ? "resuming" : "starting",
                         extra1 == 0 ? "normal" :
@@ -1588,31 +1589,34 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                         extra3 == 0 ? ", two-way" :
                         extra3 == 1 ? " from server" :
                         extra3 == 2 ? " from client" :
-                        ", unknown direction");
+                        ", unknown direction",
+                        peerIsClient ? "peer is client" : "peer is server");
          
-            SyncMode mode = SYNC_NONE;
+            SimpleSyncMode mode = SIMPLE_SYNC_NONE;
+            std::string sync = source.getSync();
             switch (extra1) {
             case 0:
                 switch (extra3) {
                 case 0:
-                    mode = SYNC_TWO_WAY;
+                    mode = SIMPLE_SYNC_TWO_WAY;
                     if (m_serverMode &&
                         m_serverAlerted &&
-                        source.getSync() == "one-way-from-server") {
+                        (sync == "one-way-from-server" ||
+                         sync == "one-way-from-local")) {
                         // As in the slow/refresh-from-server case below,
                         // pretending to do a two-way incremental sync
                         // is a correct way of executing the requested
                         // one-way sync, as long as the client doesn't
                         // send any of its own changes. The Synthesis
                         // engine does that.
-                        mode = SYNC_ONE_WAY_FROM_SERVER;
+                        mode = SIMPLE_SYNC_ONE_WAY_FROM_LOCAL;
                     }
                     break;
                 case 1:
-                    mode = SYNC_ONE_WAY_FROM_SERVER;
+                    mode = peerIsClient ? SIMPLE_SYNC_ONE_WAY_FROM_LOCAL : SIMPLE_SYNC_ONE_WAY_FROM_REMOTE;
                     break;
                 case 2:
-                    mode = SYNC_ONE_WAY_FROM_CLIENT;
+                    mode = peerIsClient ? SIMPLE_SYNC_ONE_WAY_FROM_REMOTE : SIMPLE_SYNC_ONE_WAY_FROM_LOCAL;
                     break;
                 }
                 break;
@@ -1620,28 +1624,29 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
             case 2:
                 switch (extra3) {
                 case 0:
-                    mode = SYNC_SLOW;
+                    mode = SIMPLE_SYNC_SLOW;
                     if (m_serverMode &&
                         m_serverAlerted &&
-                        source.getSync() == "refresh-from-server") {
+                        (sync == "refresh-from-server" ||
+                         sync == "refresh-from-local")) {
                         // We run as server and told the client to refresh
                         // its data. A slow sync is how some clients (the
                         // Synthesis engine included) execute that sync mode;
                         // let's be optimistic and assume that the client
                         // did as it was told and deleted its data.
-                        mode = SYNC_REFRESH_FROM_SERVER;
+                        mode = SIMPLE_SYNC_REFRESH_FROM_LOCAL;
                     }
                     break;
                 case 1:
-                    mode = SYNC_REFRESH_FROM_SERVER;
+                    mode = peerIsClient ? SIMPLE_SYNC_REFRESH_FROM_LOCAL : SIMPLE_SYNC_REFRESH_FROM_REMOTE;
                     break;
                 case 2:
-                    mode = SYNC_REFRESH_FROM_CLIENT;
+                    mode = peerIsClient ? SIMPLE_SYNC_REFRESH_FROM_REMOTE : SIMPLE_SYNC_REFRESH_FROM_LOCAL;
                     break;
                 }
                 break;
             }
-            source.recordFinalSyncMode(mode);
+            source.recordFinalSyncMode(SyncMode(mode));
             source.recordFirstSync(extra1 == 2);
             source.recordResumeSync(extra2 == 1);
         } else {
@@ -1759,7 +1764,8 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                            // refresh-from-server/client. That's a matter of
                            // taste. In SyncEvolution we'd like these
                            // items to show up, so add it here.
-                           source.getFinalSyncMode() == (m_serverMode ? SYNC_REFRESH_FROM_CLIENT : SYNC_REFRESH_FROM_SERVER) ? 
+                           (source.getFinalSyncMode() == (m_serverMode ? SYNC_REFRESH_FROM_CLIENT : SYNC_REFRESH_FROM_SERVER) ||
+                            source.getFinalSyncMode() == SYNC_REFRESH_FROM_REMOTE) ?
                            source.getNumDeleted() :
                            extra3);
         break;
@@ -1950,10 +1956,8 @@ void SyncContext::initSources(SourceList &sourceList)
     BOOST_FOREACH(const string &name, configuredSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
         SyncSourceNodes source = getSyncSourceNodes (name);
-        // is the source enabled?
-        string sync = sc->getSync();
-        bool enabled = sync != "disabled";
-        if (enabled) {
+        std::string sync = sc->getSync();
+        if (sync != "disabled") {
             SourceType sourceType = SyncSource::getSourceType(source);
             if (sourceType.m_backend == "virtual") {
                 //This is a virtual sync source, check and enable the referenced
@@ -1995,11 +1999,7 @@ void SyncContext::initSources(SourceList &sourceList)
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
 
         SyncSourceNodes source = getSyncSourceNodes (name);
-
-        // is the source enabled?
-        string sync = sc->getSync();
-        bool enabled = sync != "disabled";
-        if (enabled) {
+        if (!sc->isDisabled()) {
             SourceType sourceType = SyncSource::getSourceType(source);
             if (sourceType.m_backend != "virtual") {
                 SyncSourceParams params(name,
@@ -2430,9 +2430,13 @@ void SyncContext::getConfigXML(string &xml, string &configname)
                 // we *want* a slow sync, but couldn't tell the client -> force it server-side
                 datastores << "      <alertscript> FORCESLOWSYNC(); </alertscript>\n";
             } else if (mode != "slow" &&
-                       mode != "refresh-from-server" && // is implemented as "delete local data" + "slow sync",
-                                                        // so a slow sync is acceptable in this case
+                       // slow-sync detection not implemented when running as server,
+                       // not even when initiating the sync (direct sync with phone)
                        !m_serverMode &&
+                       // is implemented as "delete local data" + "slow sync",
+                       // so a slow sync is acceptable in this case
+                       mode != "refresh-from-server" &&
+                       mode != "refresh-from-remote" &&
                        // The forceSlow should be disabled if the sync session is
                        // initiated by a remote peer (eg. Server Alerted Sync)
                        !m_remoteInitiated &&
@@ -3012,11 +3016,11 @@ bool SyncContext::sendSAN(uint16_t version)
     BOOST_FOREACH (boost::shared_ptr<VirtualSyncSource> vSource, m_sourceListPtr->getVirtualSources()) {
             std::string evoSyncSource = vSource->getDatabaseID();
             std::string sync = vSource->getSync();
-            int mode = StringToSyncMode (sync, true);
+            SANSyncMode mode = AlertSyncMode(StringToSyncMode(sync, true), getPeerIsClient());
             std::vector<std::string> mappedSources = unescapeJoinedString (evoSyncSource, ',');
             BOOST_FOREACH (std::string source, mappedSources) {
                 dataSources.erase (source);
-                if (mode == SYNC_SLOW) {
+                if (mode == SA_SLOW) {
                     // We force a source which the client is not expected to use into slow mode.
                     // Shouldn't we rather reject attempts to synchronize it?
                     (*m_sourceListPtr)[source]->setForceSlowSync(true);
@@ -3025,19 +3029,19 @@ bool SyncContext::sendSAN(uint16_t version)
             dataSources.insert (vSource->getName());
     }
 
-    int syncMode = 0;
+    SANSyncMode syncMode = SA_INVALID;
     vector<pair <string, string> > alertedSources;
 
     /* For each source to be notified do the following: */
     BOOST_FOREACH (string name, dataSources) {
         boost::shared_ptr<PersistentSyncSourceConfig> sc(getSyncSourceConfig(name));
         string sync = sc->getSync();
-        int mode = StringToSyncMode (sync, true);
-        if (mode == SYNC_SLOW) {
+        SANSyncMode mode = AlertSyncMode(StringToSyncMode(sync, true), getPeerIsClient());
+        if (mode == SA_SLOW) {
             (*m_sourceListPtr)[name]->setForceSlowSync(true);
-            mode = SA_SYNC_TWO_WAY;
+            mode = SA_TWO_WAY;
         }
-        if (mode <SYNC_FIRST || mode >SYNC_LAST) {
+        if (mode < SA_FIRST || mode > SA_LAST) {
             SE_LOG_DEV (NULL, NULL, "Ignoring data source %s with an invalid sync mode", name.c_str());
             continue;
         }
@@ -3274,27 +3278,30 @@ SyncMLStatus SyncContext::doSync()
                 m_engine.SetInt32Value(target, "enabled", 1);
                 int slow = 0;
                 int direction = 0;
-                string mode = source->getSync();
-                if (!strcasecmp(mode.c_str(), "slow")) {
+                string sync = source->getSync();
+                // this code only runs when we are the client,
+                // take that into account for the "from-local/remote" modes
+                SimpleSyncMode mode = SimplifySyncMode(StringToSyncMode(sync), false);
+                if (mode == SIMPLE_SYNC_SLOW) {
                     slow = 1;
                     direction = 0;
-                } else if (!strcasecmp(mode.c_str(), "two-way")) {
+                } else if (mode == SIMPLE_SYNC_TWO_WAY) {
                     slow = 0;
                     direction = 0;
-                } else if (!strcasecmp(mode.c_str(), "refresh-from-server")) {
+                } else if (mode == SIMPLE_SYNC_REFRESH_FROM_REMOTE) {
                     slow = 1;
                     direction = 1;
-                } else if (!strcasecmp(mode.c_str(), "refresh-from-client")) {
+                } else if (mode == SIMPLE_SYNC_REFRESH_FROM_LOCAL) {
                     slow = 1;
                     direction = 2;
-                } else if (!strcasecmp(mode.c_str(), "one-way-from-server")) {
+                } else if (mode == SIMPLE_SYNC_ONE_WAY_FROM_REMOTE) {
                     slow = 0;
                     direction = 1;
-                } else if (!strcasecmp(mode.c_str(), "one-way-from-client")) {
+                } else if (mode == SIMPLE_SYNC_ONE_WAY_FROM_LOCAL) {
                     slow = 0;
                     direction = 2;
                 } else {
-                    source->throwError(string("invalid sync mode: ") + mode);
+                    source->throwError(string("invalid sync mode: ") + sync);
                 }
                 m_engine.SetInt32Value(target, "forceslow", slow);
                 m_engine.SetInt32Value(target, "syncmode", direction);

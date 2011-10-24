@@ -38,6 +38,95 @@
 using namespace std;
 SE_BEGIN_CXX
 
+SimpleSyncMode SimplifySyncMode(SyncMode mode, bool peerIsClient)
+{
+    switch (mode) {
+    case SYNC_NONE:
+    case SYNC_TWO_WAY:
+    case SYNC_SLOW:
+    case SYNC_RESTORE_FROM_BACKUP:
+    case SYNC_ONE_WAY_FROM_LOCAL:
+    case SYNC_REFRESH_FROM_LOCAL:
+    case SYNC_ONE_WAY_FROM_REMOTE:
+    case SYNC_REFRESH_FROM_REMOTE:
+        return static_cast<SimpleSyncMode>(mode);
+
+    case SA_SYNC_ONE_WAY_FROM_CLIENT:
+    case SYNC_ONE_WAY_FROM_CLIENT:
+        return peerIsClient ? SIMPLE_SYNC_ONE_WAY_FROM_REMOTE : SIMPLE_SYNC_ONE_WAY_FROM_LOCAL;
+
+    case SA_SYNC_REFRESH_FROM_CLIENT:
+    case SYNC_REFRESH_FROM_CLIENT:
+        return peerIsClient ? SIMPLE_SYNC_REFRESH_FROM_REMOTE : SIMPLE_SYNC_REFRESH_FROM_LOCAL;
+
+    case SA_SYNC_ONE_WAY_FROM_SERVER:
+    case SYNC_ONE_WAY_FROM_SERVER:
+        return peerIsClient ? SIMPLE_SYNC_ONE_WAY_FROM_LOCAL : SIMPLE_SYNC_ONE_WAY_FROM_REMOTE;
+
+    case SA_SYNC_REFRESH_FROM_SERVER:
+    case SYNC_REFRESH_FROM_SERVER:
+        return peerIsClient ? SIMPLE_SYNC_REFRESH_FROM_LOCAL : SIMPLE_SYNC_REFRESH_FROM_REMOTE;
+
+    case SA_SYNC_TWO_WAY:
+        return SIMPLE_SYNC_TWO_WAY;
+
+    case SYNC_LAST:
+    case SYNC_INVALID:
+        return SIMPLE_SYNC_INVALID;
+    }
+
+    return SIMPLE_SYNC_INVALID;
+}
+
+SANSyncMode AlertSyncMode(SyncMode mode, bool peerIsClient)
+{
+    switch(mode) {
+    case SYNC_RESTORE_FROM_BACKUP:
+    case SYNC_NONE:
+    case SYNC_LAST:
+    case SYNC_INVALID:
+        return SA_INVALID;
+
+    case SYNC_SLOW:
+        return SA_SLOW;
+
+    case SYNC_TWO_WAY:
+    case SA_SYNC_TWO_WAY:
+        return SA_TWO_WAY;
+
+    case SYNC_ONE_WAY_FROM_CLIENT:
+    case SA_SYNC_ONE_WAY_FROM_CLIENT:
+        return SA_ONE_WAY_FROM_CLIENT;
+
+    case SYNC_REFRESH_FROM_CLIENT:
+    case SA_SYNC_REFRESH_FROM_CLIENT:
+        return SA_REFRESH_FROM_CLIENT;
+
+    case SYNC_ONE_WAY_FROM_SERVER:
+    case SA_SYNC_ONE_WAY_FROM_SERVER:
+        return SA_ONE_WAY_FROM_SERVER;
+
+    case SYNC_REFRESH_FROM_SERVER:
+    case SA_SYNC_REFRESH_FROM_SERVER:
+        return SA_REFRESH_FROM_SERVER;
+
+    case SYNC_ONE_WAY_FROM_LOCAL:
+        return peerIsClient ? SA_ONE_WAY_FROM_SERVER : SA_ONE_WAY_FROM_CLIENT;
+
+    case SYNC_REFRESH_FROM_LOCAL:
+        return peerIsClient ? SA_REFRESH_FROM_SERVER : SA_REFRESH_FROM_CLIENT;
+
+    case SYNC_ONE_WAY_FROM_REMOTE:
+        return peerIsClient ? SA_ONE_WAY_FROM_CLIENT : SA_ONE_WAY_FROM_SERVER;
+
+    case SYNC_REFRESH_FROM_REMOTE:
+        return peerIsClient ? SA_REFRESH_FROM_CLIENT : SA_REFRESH_FROM_SERVER;
+    }
+
+    return SA_INVALID;
+}
+
+
 std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
 {
     switch (mode) {
@@ -62,6 +151,14 @@ std::string PrettyPrintSyncMode(SyncMode mode, bool userVisible)
         return userVisible ? "refresh-from-server" : "SYNC_REFRESH_FROM_SERVER";
     case SYNC_RESTORE_FROM_BACKUP:
         return userVisible ? "restore-from-backup" : "SYNC_RESTORE_FROM_BACKUP";
+    case SYNC_ONE_WAY_FROM_LOCAL:
+        return userVisible ? "one-way-from-local" : "SYNC_REFRESH_FROM_LOCAL";
+    case SYNC_REFRESH_FROM_LOCAL:
+        return userVisible ? "refresh-from-local" : "SYNC_REFRESH_FROM_LOCAL";
+    case SYNC_ONE_WAY_FROM_REMOTE:
+        return userVisible ? "one-way-from-remote" : "SYNC_ONE_WAY_FROM_REMOTE";
+    case SYNC_REFRESH_FROM_REMOTE:
+        return userVisible ? "refresh-from-remote" : "SYNC_REFRESH_FROM_REMOTE";
     default:
         std::stringstream res;
 
@@ -84,6 +181,14 @@ SyncMode StringToSyncMode(const std::string &mode, bool serverAlerted)
         return serverAlerted? SA_SYNC_ONE_WAY_FROM_SERVER: SYNC_ONE_WAY_FROM_SERVER;
     } else if (boost::iequals(mode, "one-way-from-client") || boost::iequals(mode, "SYNC_ONE_WAY_FROM_CLIENT")) {
         return serverAlerted? SA_SYNC_ONE_WAY_FROM_CLIENT: SYNC_ONE_WAY_FROM_CLIENT;
+    } else if (boost::iequals(mode, "refresh-from-remote") || boost::iequals(mode, "SYNC_REFRESH_FROM_REMOTE")) {
+        return SYNC_REFRESH_FROM_REMOTE;
+    } else if (boost::iequals(mode, "refresh-from-local") || boost::iequals(mode, "SYNC_REFRESH_FROM_LOCAL")) {
+        return SYNC_REFRESH_FROM_LOCAL;
+    } else if (boost::iequals(mode, "one-way-from-remote") || boost::iequals(mode, "SYNC_ONE_WAY_FROM_REMOTE")) {
+        return SYNC_ONE_WAY_FROM_REMOTE;
+    } else if (boost::iequals(mode, "one-way-from-local") || boost::iequals(mode, "SYNC_ONE_WAY_FROM_LOCAL")) {
+        return SYNC_ONE_WAY_FROM_LOCAL;
     } else if (boost::iequals(mode, "disabled") || boost::iequals(mode, "SYNC_NONE")) {
         return SYNC_NONE;
     } else {

@@ -697,17 +697,11 @@ protected:
         doSync(SyncOptions(SYNC_SLOW,
                            CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW)));
     }
-    // do a refresh from server sync without additional checks
-    virtual void testRefreshFromServerSync() {
-        doSync(SyncOptions(SYNC_REFRESH_FROM_SERVER,
-                           CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_SERVER)));
-    }
 
-    // do a refresh from client sync without additional checks
-    virtual void testRefreshFromClientSync() {
-        doSync(SyncOptions(SYNC_REFRESH_FROM_CLIENT,
-                           CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_CLIENT)));
-    }
+    virtual void testRefreshFromServerSync();
+    virtual void testRefreshFromClientSync();
+    virtual void testRefreshFromRemoteSync();
+    virtual void testRefreshFromLocalSync();
 
     // delete all items, locally and on server using two-way sync
     virtual void testDeleteAllSync() {
@@ -730,8 +724,12 @@ protected:
     virtual void testDelete();
     virtual void testMerge();
     virtual void testTwinning();
-    virtual void testOneWayFromServer();
-    virtual void testOneWayFromClient();
+    void doOneWayFromRemote(SyncMode oneWayFromRemote);
+    void testOneWayFromServer();
+    void testOneWayFromRemote();
+    void doOneWayFromLocal(SyncMode oneWayFromLocal);
+    void testOneWayFromClient();
+    void testOneWayFromLocal();
     bool doConversionCallback(bool *success,
                               SyncContext &client,
                               SyncOptions &options);
