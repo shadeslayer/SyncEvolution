@@ -1767,20 +1767,37 @@ bool Cmdline::listProperties(const ConfigPropertyRegistry &validProps,
     // Remember that comment and print it as late as possible,
     // that way related properties preceed their comment.
     string comment;
+    bool needComma = false;
     BOOST_FOREACH(const ConfigProperty *prop, validProps) {
         if (!prop->isHidden()) {
             string newComment = prop->getComment();
 
             if (newComment != "") {
                 if (!comment.empty()) {
+                    m_out << endl;
                     dumpComment(m_out, "   ", comment);
                     m_out << endl;
+                    needComma = false;
                 }
                 comment = newComment;
             }
-            m_out << prop->getMainName() << ":" << endl;
+            std::string def = prop->getDefValue();
+            if (def.empty()) {
+                def = "no default";
+            }
+            ConfigProperty::Sharing sharing = prop->getSharing();
+            if (needComma) {
+                m_out << ", ";
+            }
+            m_out << boost::join(prop->getNames(), " = ")
+                  << " (" << def << ", "
+                  << ConfigProperty::sharing2str(sharing)
+                  << (prop->isObligatory() ? ", required" : "")
+                  << ")";
+            needComma = true;
         }
     }
+    m_out << endl;
     dumpComment(m_out, "   ", comment);
     return true;
 }

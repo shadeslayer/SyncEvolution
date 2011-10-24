@@ -168,6 +168,22 @@ void ConfigProperty::throwValueError(const ConfigNode &node, const string &name,
     SyncContext::throwError(node.getName() + ": " + name + " = " + value + ": " + error);
 }
 
+std::string ConfigProperty::sharing2str(Sharing sharing)
+{
+    switch (sharing) {
+    case GLOBAL_SHARING:
+        return "global";
+        break;
+    case SOURCE_SET_SHARING:
+        return "shared";
+        break;
+    case NO_SHARING:
+        return "unshared";
+        break;
+    }
+    return "???";
+}
+
 string SyncConfig::normalizeConfigString(const string &config, NormalizeFlags flags)
 {
     string normal = config;
@@ -1119,20 +1135,20 @@ SyncSourceNodes SyncConfig::getSyncSourceNodesNoTracking(const string &name)
 
 static ConfigProperty syncPropSyncURL("syncURL",
                                       "Identifies how to contact the peer,\n"
-                                      "best explained with some examples:\n"
-                                      "HTTP(S) SyncML servers:\n"
+                                      "best explained with some examples.\n\n"
+                                      "HTTP(S) SyncML servers::\n\n"
                                       "  http://my.funambol.com/sync\n"
                                       "  http://sync.scheduleworld.com/funambol/ds\n"
-                                      "  https://m.google.com/syncml\n"
+                                      "  https://m.google.com/syncml\n\n"
                                       "OBEX over Bluetooth uses the MAC address, with\n"
-                                      "the channel chosen automatically:\n"
-                                      "  obex-bt://00:0A:94:03:F3:7E\n"
-                                      "If the automatism fails, the channel can also be specified:\n"
-                                      "  obex-bt://00:0A:94:03:F3:7E+16\n"
+                                      "the channel chosen automatically::\n\n"
+                                      "  obex-bt://00:0A:94:03:F3:7E\n\n"
+                                      "If the automatism fails, the channel can also be specified::\n\n"
+                                      "  obex-bt://00:0A:94:03:F3:7E+16\n\n"
                                       "For peers contacting us via Bluetooth, the MAC address is\n"
                                       "used to identify it before the sync starts. Multiple\n"
-                                      "urls can be specified in one syncURL property:\n"
-                                      "  obex-bt://00:0A:94:03:F3:7E obex-bt://00:01:02:03:04:05\n"
+                                      "urls can be specified in one syncURL property::\n\n"
+                                      "  obex-bt://00:0A:94:03:F3:7E obex-bt://00:01:02:03:04:05\n\n"
                                       "In the future this might be used to contact the peer\n"
                                       "via one of several transports; right now, only the first\n"
                                       "one is tried." // MB #9446
@@ -1152,10 +1168,10 @@ static PasswordConfigProperty syncPropPassword("password",
                                                "password used for authorization with the peer;\n"
                                                "in addition to specifying it directly as plain text, it can\n"
                                                "also be read from the standard input or from an environment\n"
-                                               "variable of your choice:\n"
-                                               "  plain text: password = <insert your password here>\n"
-                                               "         ask: password = -\n"
-                                               "env variable: password = ${<name of environment variable>}\n");
+                                               "variable of your choice::\n\n"
+                                               "  plain text  : password = <insert your password here>\n"
+                                               "  ask         : password = -\n"
+                                               "  env variable: password = ${<name of environment variable>}\n");
 static BoolConfigProperty syncPropPreventSlowSync("preventSlowSync",
                                                   "During a slow sync, the SyncML server must match all items\n"
                                                   "of the client with its own items and detect which ones it\n"
@@ -1169,7 +1185,7 @@ static BoolConfigProperty syncPropPreventSlowSync("preventSlowSync",
                                                   "are not allowed to proceed. Instead, the affected sources are\n"
                                                   "skipped, allowing the user to choose a suitable sync mode in\n"
                                                   "the next run (slow sync selected explicitly, refresh sync).\n"
-                                                  "The following situations are handled:\n"
+                                                  "The following situations are handled:\n\n"
                                                   "- running as client with no local data => unproblematic,\n"
                                                   "  slow sync is allowed to proceed automatically\n"
                                                   "- running as client with local data => client has no\n"
@@ -1179,15 +1195,15 @@ static BoolConfigProperty syncPropPreventSlowSync("preventSlowSync",
                                                   "  was deleted (done by Memotoo and Mobical, because they treat\n"
                                                   "  this as 'user wants to start from scratch') => the sync would\n"
                                                   "  recreate all the client's data, even if the user really wanted\n"
-                                                  "  to have it deleted, therefore slow sync is prevented\n"
-                                                  "Slow syncs are not yet detected when running as server.\n",
-                                                  "1");
+                                                  "  to have it deleted, therefore slow sync is prevented\n",
+                                                  "TRUE");
 static BoolConfigProperty syncPropUseProxy("useProxy",
                                            "set to T to choose an HTTP proxy explicitly; otherwise the default\n"
                                            "proxy settings of the underlying HTTP transport mechanism are used;\n"
-                                           "only relevant when contacting the peer via HTTP");
+                                           "only relevant when contacting the peer via HTTP",
+                                           "FALSE");
 static ConfigProperty syncPropProxyHost("proxyHost",
-                                        "proxy URL (http://<host>:<port>)");
+                                        "proxy URL (``http://<host>:<port>``)");
 static ConfigProperty syncPropProxyUsername("proxyUsername",
                                             "authentication for proxy: username");
 static ProxyPasswordConfigProperty syncPropProxyPassword("proxyPassword",
@@ -1218,7 +1234,7 @@ static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
                                               "150000");
 static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "4000000");
 
-static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)");
+static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)", "FALSE");
 static BoolConfigProperty syncPropWBXML("enableWBXML",
                                         "use the more compact binary XML (WBXML) for messages between client and server;\n"
                                         "not applicable when the peer is a SyncML client, because then the client\n"
@@ -1248,11 +1264,11 @@ static UIntConfigProperty syncPropLogLevel("loglevel",
 static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
-                                               "1");
+                                               "TRUE");
 static BoolConfigProperty syncPropDumpData("dumpData",
                                            "enables or disables the automatic backup of database content\n"
                                            "before and after a sync session (always enabled if printChanges is enabled)",
-                                           "1");
+                                           "TRUE");
 static SecondsConfigProperty syncPropRetryDuration("RetryDuration",
                                           "The total amount of time in seconds in which the SyncML\n"
                                           "client tries to get a response from the server.\n"
@@ -1287,7 +1303,7 @@ static SecondsConfigProperty syncPropRetryInterval("RetryInterval",
 static BoolConfigProperty syncPropPeerIsClient("PeerIsClient",
                                           "Indicates whether this configuration is about a\n"
                                           "client peer or server peer.\n",
-                                          "0");
+                                          "FALSE");
 static SafeConfigProperty syncPropPeerName("PeerName",
                                            "An arbitrary name for the peer referenced by this config.\n"
                                            "Might be used by a GUI. The command line tool always uses the\n"
@@ -1326,13 +1342,13 @@ static BoolConfigProperty syncPropSSLVerifyServer("SSLVerifyServer",
                                                   "option considerably reduces the security of SSL\n"
                                                   "(man-in-the-middle attacks become possible) and is not\n"
                                                   "recommended.\n",
-                                                  "1");
+                                                  "TRUE");
 static BoolConfigProperty syncPropSSLVerifyHost("SSLVerifyHost",
                                                 "The client refuses to establish the connection unless the\n"
                                                 "server's certificate matches its host name. In cases where\n"
                                                 "the certificate still seems to be valid it might make sense\n"
                                                 "to disable this option and allow such connections.\n",
-                                                "1");
+                                                "TRUE");
 
 static ConfigProperty syncPropWebURL("WebURL",
                                      "The URL of a web page with further information about the server.\n"
@@ -1350,7 +1366,7 @@ static BoolConfigProperty syncPropConsumerReady("ConsumerReady",
                                                 "for normal users. Used by the GUI to limit the choice\n"
                                                 "of configurations offered to users.\n"
                                                 "Has no effect in a user's server configuration.\n",
-                                                "0");
+                                                "FALSE");
 
 /**
  * Some guidelines for peerType = WebDAV:
@@ -1408,13 +1424,13 @@ static StringConfigProperty syncPropAutoSync("autoSync",
                                              "Because a peer might be reachable via different\n"
                                              "transports at some point, this option provides\n"
                                              "detailed control over which transports may\n"
-                                             "be used for automatic synchronization:\n"
-                                             "0 - don't do auto sync\n"
-                                             "1 - do automatic sync, using whatever transport\n"
+                                             "be used for automatic synchronization:\n\n"
+                                             "0\n  don't do auto sync\n"
+                                             "1\n  do automatic sync, using whatever transport\n"
                                              "    is available\n"
-                                             "http - only via HTTP transport\n"
-                                             "obex-bt - only via Bluetooth transport\n"
-                                             "http,obex-bt - pick one of these\n",
+                                             "http\n  only via HTTP transport\n"
+                                             "obex-bt\n  only via Bluetooth transport\n"
+                                             "http,obex-bt\n  pick one of these\n",
                                              "0");
 
 static SecondsConfigProperty syncPropAutoSyncInterval("autoSyncInterval",
@@ -2132,16 +2148,25 @@ SyncSourceConfig::SyncSourceConfig(const string &name, const SyncSourceNodes &no
 }
 
 StringConfigProperty SyncSourceConfig::m_sourcePropSync("sync",
-                                           "Requests a certain synchronization mode when initiating a sync:\n"
-                                           "  two-way             = only send/receive changes since last sync\n"
-                                           "  slow                = exchange all items\n"
-                                           "  refresh-from-client = discard all remote items and replace with\n"
-                                           "                        the items on the client\n"
-                                           "  refresh-from-server = discard all local items and replace with\n"
-                                           "                        the items on the server\n"
-                                           "  one-way-from-client = transmit changes from client\n"
-                                           "  one-way-from-server = transmit changes from server\n"
-                                           "  disabled (or none)  = synchronization disabled\n"
+                                           "Requests a certain synchronization mode when initiating a sync:\n\n"
+                                           "  two-way\n"
+                                           "    only send/receive changes since last sync\n"
+                                           "  slow\n"
+                                           "    exchange all items\n"
+                                           "  refresh-from-client\n"
+                                           "    discard all remote items and replace with the items on the client\n"
+                                           "  refresh-from-server\n"
+                                           "    discard all local items and replace with the items on the server\n"
+                                           "  one-way-from-client\n"
+                                           "    transmit changes from client\n"
+                                           "  one-way-from-server\n"
+                                           "    transmit changes from server\n"
+                                           "  disabled (or none)\n"
+                                           "    synchronization disabled\n\n"
+
+                                           "**WARNING**: which side is `client` and which is `server` depends on\n"
+                                           "the value of the ``peerIsClient`` property in the configuration.\n\n"
+
                                            "When accepting a sync session in a SyncML server (HTTP server), only\n"
                                            "sources with sync != disabled are made available to the client,\n"
                                            "which chooses the final sync mode based on its own configuration.\n"
@@ -2179,8 +2204,8 @@ public:
                              "Right now such a virtual backend is limited to\n"
                              "combining one calendar source with events and one\n"
                              "task source. They have to be specified in the\n"
-                             "'database' property, typically like this:\n"
-                             "  calendar,todo\n"
+                             "``database`` property, typically like this:\n"
+                             "``calendar,todo``\n"
                              "\n"
                              "Different sources combined in one virtual source must\n"
                              "have a common format. As with other backends,\n"
@@ -2210,20 +2235,19 @@ public:
 
         SourceRegistry &registry(SyncSource::getSourceRegistry());
         BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
-            const string &comment = sourceInfos->m_typeDescr;
+            string comment = boost::trim_right_copy_if(sourceInfos->m_typeDescr,
+                                                       boost::is_any_of(" \t\n"));
             stringstream *curr = sourceInfos->m_enabled ? &enabled : &disabled;
-            *curr << comment;
-            if (comment.size() && comment[comment.size() - 1] != '\n') {
-                *curr << '\n';
-            }
+            boost::replace_all(comment, "\n", "\n ");
+            *curr << " " << comment << "\n";
         }
 
         res << StringConfigProperty::getComment();
         if (enabled.str().size()) {
-            res << "\nCurrently active:\n" << enabled.str();
+            res << "\n\nCurrently active::\n\n" << enabled.str();
         }
         if (disabled.str().size()) {
-            res << "\nCurrently inactive:\n" << disabled.str();
+            res << "\n\nCurrently inactive::\n\n" << disabled.str();
         }
 
         return boost::trim_right_copy(res.str());
@@ -2265,30 +2289,31 @@ static BoolConfigProperty sourcePropForceSyncFormat("forceSyncFormat",
                                                     "In such a case, setting this property enforces that the\n"
                                                     "preferred format specified with 'syncFormat' is\n"
                                                     "really used.",
-                                                    "0");
+                                                    "FALSE");
 
 static ConfigProperty sourcePropDatabaseID(Aliases("database") + "evolutionsource",
-                                           "Picks one of backend data sources:\n"
-                                           "enter either the name or the full URL.\n"
-                                           "Most backends have a default data source,\n"
+                                           "Picks one of the backend's databases:\n"
+                                           "depending on the backend, one can set the name\n"
+                                           "and/or a unique identifier.\n\n"
+                                           "Most backends have a default database,\n"
                                            "like for example the system address book.\n"
                                            "Not setting this property selects that default\n"
-                                           "data source.\n"
+                                           "database.\n\n"
                                            "If the backend is a virtual data source,\n"
                                            "this field must contain comma seperated list of\n"
                                            "sub datasources actually used to store data.\n"
                                            "If your sub datastore has a comma in name, you\n"
                                            "must prevent taht comma from being mistaken as the\n"
                                            "separator by preceding it with a backslash, like this:\n"
-                                           "  database=Source1PartA\\,PartB,Source2\\\\Backslash\n"
+                                           "``database=Source1PartA\\,PartB,Source2\\\\Backslash``\n"
                                            "\n"
-                                           "To get a full list of available data sources,\n"
-                                           "run syncevolution without parameters. The name\n"
+                                           "To get a full list of available databases,\n"
+                                           "run ``syncevolution --print-databases``. The name\n"
                                            "is printed in front of the colon, followed by\n"
-                                           "the URL. Usually the name is unique and can be\n"
+                                           "an identifier in brackets. Usually the name is unique and can be\n"
                                            "used to reference the data source. The default\n"
-                                           "data source is marked with <default> after the\n"
-                                           "URL, if there is a default.\n");
+                                           "data source is marked with <default> at the end\n"
+                                           "of the line, if there is a default.\n");
 
 static StringConfigProperty sourcePropDatabaseFormat("databaseFormat",
                                                      "Defines the data format to be used by the backend for its\n"
