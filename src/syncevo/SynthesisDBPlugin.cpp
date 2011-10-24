@@ -867,7 +867,7 @@ TSyError SyncEvolution_DeleteItem( CContext aContext, cItemID aID )
         try {
             res = source->getOperations().m_deleteItem (aID);
         } catch (...) {
-            res = source->handleException();
+            res = source->handleException(HANDLE_EXCEPTION_404_IS_OKAY);
         }
     }
 

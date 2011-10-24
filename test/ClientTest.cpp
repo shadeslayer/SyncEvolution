@@ -324,6 +324,8 @@ void LocalTests::addTests() {
     if (config.m_createSourceA) {
         ADD_TEST(LocalTests, testOpen);
         ADD_TEST(LocalTests, testIterateTwice);
+        ADD_TEST(LocalTests, testDelete404);
+        ADD_TEST(LocalTests, testReadItem404);
         if (!config.m_insertItem.empty()) {
             ADD_TEST(LocalTests, testSimpleInsert);
             ADD_TEST(LocalTests, testLocalDeleteAll);
@@ -387,6 +389,11 @@ void LocalTests::addTests() {
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateChild);
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateParent);
 
+                // tests independent of data, only add to default item set
+                if (i == 0) {
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsSingle404);
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsMany404);
+                }
                 addTest(linked);
             }
         }
@@ -801,6 +808,41 @@ void LocalTests::testIterateTwice() {
         "iterating twice should produce identical results",
         source.get(),
         countItems(source.get()) == countItems(source.get()));
+}
+
+// deleteItem() must raise 404 for unknown item
+void LocalTests::testDelete404() {
+    // check requirements
+    CT_ASSERT(config.m_createSourceA);
+
+    // open source
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+    SyncMLStatus status = STATUS_OK;
+    try {
+        source->deleteItem("no-such-item");
+    } catch (const StatusException &ex) {
+        status = ex.syncMLStatus();
+    }
+    CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
+}
+
+// deleteItem() must raise 404 for unknown item
+void LocalTests::testReadItem404() {
+    // check requirements
+    CT_ASSERT(config.m_createSourceA);
+
+    // open source
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+    SyncMLStatus status = STATUS_OK;
+    try {
+        std::string data;
+        source->readItem("no-such-item", data);
+    } catch (const StatusException &ex) {
+        status = ex.syncMLStatus();
+    }
+    CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
 }
 
 // insert one contact without clearing the source first
@@ -1432,7 +1474,10 @@ void LocalTests::testLinkedItemsRemoveNormal() {
         if (getCurrentTest().find("::eds_event::") != std::string::npos) {
             // hack: ignore EDS side effect of adding EXDATE to parent, see http://bugs.meego.com/show_bug.cgi?id=10906
             size_t pos = parentData.rfind("DTSTART");
-            parentData.insert(pos, "EXDATE:20080413T090000\n");
+            parentData.insert(pos,
+                              getCurrentTest().find("LinkedItemsAllDay") == std::string::npos ?
+                              "EXDATE:20080413T090000\n" :
+                              "EXDATE:20080413\n");
         }
         CT_ASSERT_NO_THROW(compareDatabases(*source, &parentData, NULL));
         SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
@@ -1889,6 +1934,83 @@ void LocalTests::testLinkedItemsUpdateChildNoIDs() {
     CT_ASSERT_NO_THROW(insertProperty(childData, uid, "END:VEVENT"));
     CT_ASSERT_NO_THROW(insertProperty(childData, rid, "END:VEVENT"));
     CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+}
+
+// insert parent, try to delete or retrieve non-existent child:
+// must report 404
+void LocalTests::testLinkedItemsSingle404() {
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
+
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    std::string parent, child;
+
+    // now insert main item
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false));
+
+    // fake subid: works for CalDAV and EDS
+    child = parent + "no-such-subitem";
+
+    // read
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset((createSourceA())));
+    SyncMLStatus status = STATUS_OK;
+    CT_ASSERT_NO_THROW(try {
+            std::string data;
+            source->readItem(child, data);
+        } catch (const StatusException &ex) {
+            status = ex.syncMLStatus();
+        }
+    );
+    CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
+
+    // delete
+    status = STATUS_OK;
+    CT_ASSERT_NO_THROW(try {
+            source->deleteItem(child);
+        } catch (const StatusException &ex) {
+            status = ex.syncMLStatus();
+        }
+    );
+    CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
+}
+
+// insert parent and child, try to delete or retrieve non-existent child:
+// must report 404
+void LocalTests::testLinkedItemsMany404() {
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
+
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    std::string parent, child;
+
+    // now insert two items
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false));
+
+    // fake subid: works for CalDAV and EDS
+    child = parent + "no-such-subitem";
+
+    // read
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+    SyncMLStatus status = STATUS_OK;
+    CT_ASSERT_NO_THROW(try {
+            std::string data;
+            source->readItem(child, data);
+        } catch (const StatusException &ex) {
+            status = ex.syncMLStatus();
+        }
+    );
+    CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
+
+    // delete
+    status = STATUS_OK;
+    CT_ASSERT_NO_THROW(try {
+            source->deleteItem(child);
+        } catch (const StatusException &ex) {
+            status = ex.syncMLStatus();
+        }
+    );
+    CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
 }
 
 ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()

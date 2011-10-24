@@ -241,7 +241,7 @@ sysync::TSyError SQLiteContactSource::readItemAsKey(sysync::cItemID aID, sysync:
 
     sqliteptr contact(m_sqlite.prepareSQL("SELECT * FROM ABPerson WHERE ROWID = '%s';", uid.c_str()));
     if (m_sqlite.checkSQL(sqlite3_step(contact)) != SQLITE_ROW) {
-        throwError("contact not found: " + uid);
+        throwError(STATUS_NOT_FOUND, string("contact not found: ") + uid);
     }
 
     for (int i = 0; i<LAST_COL; i++) {
@@ -357,6 +357,7 @@ void SQLiteContactSource::deleteItem(const string& uid)
                                 "ABPerson.ROWID = ?;"));
     m_sqlite.checkSQL(sqlite3_bind_text(del, 1, uid.c_str(), -1, SQLITE_TRANSIENT));
     m_sqlite.checkSQL(sqlite3_step(del));
+    // TODO: throw STATUS_NOT_FOUND exception when nothing was deleted
     deleteRevision(*m_trackingNode, uid);
 }
 

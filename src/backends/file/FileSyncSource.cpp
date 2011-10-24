@@ -241,8 +241,7 @@ void FileSyncSource::removeItem(const string &uid)
 {
     string filename = createFilename(uid);
 
-    if (unlink(filename.c_str()) &&
-        errno != ENOENT) {
+    if (unlink(filename.c_str())) {
         throwError(filename, errno);
     }
 }

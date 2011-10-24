@@ -279,8 +279,13 @@ string EvolutionContactSource::getRevision(const string &luid)
                             luid.c_str(),
                             &contact,
                             &gerror)) {
-        throwError(string("reading contact ") + luid,
-                   gerror);
+        if (gerror && gerror->domain == E_BOOK_ERROR && gerror->code == E_BOOK_ERROR_CONTACT_NOT_FOUND) {
+            g_clear_error(&gerror);
+            throwError(STATUS_NOT_FOUND, string("retrieving item: ") + luid);
+        } else {
+            throwError(string("reading contact ") + luid,
+                       gerror);
+        }
     }
     eptr<EContact, GObject> contactptr(contact, "contact");
     const char *rev = (const char *)e_contact_get_const(contact,
@@ -299,8 +304,15 @@ void EvolutionContactSource::readItem(const string &luid, std::string &item, boo
                             luid.c_str(),
                             &contact,
                             &gerror)) {
-        throwError(string("reading contact ") + luid,
-                   gerror);
+        if (gerror &&
+            gerror->domain == E_BOOK_ERROR &&
+            gerror->code == E_BOOK_ERROR_CONTACT_NOT_FOUND) {
+            g_clear_error(&gerror);
+            throwError(STATUS_NOT_FOUND, string("reading contact: ") + luid);
+        } else {
+            throwError(string("reading contact ") + luid,
+                       gerror);
+        }
     }
     eptr<EContact, GObject> contactptr(contact, "contact");
     eptr<char> vcardstr(e_vcard_to_string(&contactptr->parent,
@@ -348,11 +360,11 @@ void EvolutionContactSource::removeItem(const string &uid)
 {
     GError *gerror = NULL;
     if (!e_book_remove_contact(m_addressbook, uid.c_str(), &gerror)) {
-        if (gerror->domain == E_BOOK_ERROR &&
+        if (gerror &&
+            gerror->domain == E_BOOK_ERROR &&
             gerror->code == E_BOOK_ERROR_CONTACT_NOT_FOUND) {
-            SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant contact ignored",
-                         uid.c_str());
             g_clear_error(&gerror);
+            throwError(STATUS_NOT_FOUND, string("deleting contact: ") + uid);
         } else {
             throwError( string( "deleting contact " ) + uid,
                         gerror );
