@@ -557,7 +557,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
     return InsertItemResult(newluid, modTime, state);
 }
 
-EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const string &uid, bool returnOnlyChildren)
+EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const string &uid, bool returnOnlyChildren, bool ignoreNotFound)
 {
     ICalComps_t events;
 
@@ -586,6 +586,9 @@ EvolutionCalendarSource::ICalComps_t EvolutionCalendarSource::removeEvents(const
             SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant item ignored",
                          uid.c_str());
             g_clear_error(&gerror);
+            if (!ignoreNotFound) {
+                throwError(STATUS_NOT_FOUND, string("delete item: ") + uid);
+            }
         } else {
             throwError(string("deleting item " ) + uid, gerror);
         }
@@ -607,7 +610,7 @@ void EvolutionCalendarSource::removeItem(const string &luid)
          * remove all items with the given uid and if we only wanted to
          * delete the parent, then recreate the children.
          */
-        ICalComps_t children = removeEvents(id.m_uid, true);
+        ICalComps_t children = removeEvents(id.m_uid, true, false);
 
         // recreate children
         bool first = true;
@@ -627,17 +630,26 @@ void EvolutionCalendarSource::removeItem(const string &luid)
                 }
             }
         }
-    } else if(!e_cal_remove_object_with_mod(m_calendar,
-                                            id.m_uid.c_str(),
-                                            id.m_rid.c_str(),
-                                            CALOBJ_MOD_THIS,
-                                            &gerror)) {
-        if (gerror->domain == E_CALENDAR_ERROR &&
-            gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
-            SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant item ignored",
+    } else {
+        // workaround for EDS 2.32 API semantic: succeeds even if
+        // detached recurrence doesn't exist and adds EXDATE,
+        // therefore we have to check for existence first
+        eptr<icalcomponent> item(retrieveItem(id));
+        gboolean success = !item ? false :
+            e_cal_remove_object_with_mod(m_calendar,
+                                         id.m_uid.c_str(),
+                                         id.m_rid.c_str(),
+                                         CALOBJ_MOD_THIS,
+                                         &gerror);
+        if (!item ||
+            (!success && gerror &&
+             gerror->domain == E_CALENDAR_ERROR &&
+             gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND)) {
+            SE_LOG_DEBUG(this, NULL, "%s: request to delete non-existant item",
                          luid.c_str());
             g_clear_error(&gerror);
-        } else {
+            throwError(STATUS_NOT_FOUND, string("delete item: ") + id.getLUID());
+        } else if (!success) {
             throwError(string("deleting item " ) + luid, gerror);
         }
     }
@@ -675,7 +687,12 @@ icalcomponent *EvolutionCalendarSource::retrieveItem(const ItemID &id)
                           !id.m_rid.empty() ? id.m_rid.c_str() : NULL,
                           &comp,
                           &gerror)) {
-        throwError(string("retrieving item: ") + id.getLUID(), gerror);
+        if (gerror && gerror->domain == E_CALENDAR_ERROR && gerror->code == E_CALENDAR_STATUS_OBJECT_NOT_FOUND) {
+            g_clear_error(&gerror);
+            throwError(STATUS_NOT_FOUND, string("retrieving item: ") + id.getLUID());
+        } else {
+            throwError(string("retrieving item: ") + id.getLUID(), gerror);
+        }
     }
     if (!comp) {
         throwError(string("retrieving item: ") + id.getLUID());

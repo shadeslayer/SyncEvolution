@@ -568,6 +568,8 @@ public:
 
     virtual void testOpen();
     virtual void testIterateTwice();
+    virtual void testDelete404();
+    virtual void testReadItem404();
     virtual void testSimpleInsert();
     virtual void testLocalDeleteAll();
     virtual void testComplexInsert();
@@ -589,6 +591,8 @@ public:
     virtual void testLinkedItemsUpdateChild();
     virtual void testLinkedItemsInsertBothUpdateChild();
     virtual void testLinkedItemsInsertBothUpdateParent();
+    virtual void testLinkedItemsSingle404();
+    virtual void testLinkedItemsMany404();
 
     /** retrieve right set of items for running test */
     ClientTestConfig::LinkedItems_t getParentChildData();

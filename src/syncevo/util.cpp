@@ -731,7 +731,11 @@ void Sleep(double seconds)
 }
 
 
-SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger, std::string *explanation, Logger::Level level)
+SyncMLStatus Exception::handle(SyncMLStatus *status,
+                               Logger *logger,
+                               std::string *explanation,
+                               Logger::Level level,
+                               HandleExceptionFlags flags)
 {
     // any problem here is a fatal local problem, unless set otherwise
     // by the specific exception
@@ -755,6 +759,10 @@ SyncMLStatus Exception::handle(SyncMLStatus *status, Logger *logger, std::string
                      ex.m_file.c_str(), ex.m_line);
         error = StringPrintf("error code from SyncEvolution %s: %s",
                              Status2String(new_status).c_str(), ex.what());
+        if (new_status == STATUS_NOT_FOUND &&
+            (flags & HANDLE_EXCEPTION_404_IS_OKAY)) {
+            level = Logger::DEBUG;
+        }
     } catch (const Exception &ex) {
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);

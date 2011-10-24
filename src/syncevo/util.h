@@ -397,6 +397,16 @@ class Bool {
     bool m_wasSet;
 };
 
+enum HandleExceptionFlags {
+    HANDLE_EXCEPTION_FLAGS_NONE = 0,
+
+    /**
+     * a 404 status error is possible and must not be logged as ERROR
+     */
+    HANDLE_EXCEPTION_404_IS_OKAY = 1 << 0,
+    HANDLE_EXCEPTION_MAX = 1 << 1
+};
+
 /**
  * an exception which records the source file and line
  * where it was thrown
@@ -431,9 +441,9 @@ class Exception : public std::runtime_error
      * @retval explanation   set to explanation for problem, if non-NULL
      * @param level     level to be used for logging
      */
-    static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL, std::string *explanation = NULL, Logger::Level = Logger::ERROR);
-    static SyncMLStatus handle(Logger *logger) { return handle(NULL, logger); }
-    static SyncMLStatus handle(std::string &explanation) { return handle(NULL, NULL, &explanation); }
+    static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL, std::string *explanation = NULL, Logger::Level = Logger::ERROR, HandleExceptionFlags flags = HANDLE_EXCEPTION_FLAGS_NONE);
+    static SyncMLStatus handle(Logger *logger, HandleExceptionFlags flags = HANDLE_EXCEPTION_FLAGS_NONE) { return handle(NULL, logger, NULL, Logger::ERROR, flags); }
+    static SyncMLStatus handle(std::string &explanation, HandleExceptionFlags flags = HANDLE_EXCEPTION_FLAGS_NONE) { return handle(NULL, NULL, &explanation, Logger::ERROR, flags); }
     static void log() { handle(NULL, NULL, NULL, Logger::DEBUG); }
 };
 

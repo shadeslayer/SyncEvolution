@@ -208,8 +208,10 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
      * ensure that the calendar remains in a consistent state.
      *
      * @param returnOnlyChildren    only return children in list, even if parent is also removed
+     * @param ignoreNotFound        don't throw a STATUS_NOT_FOUND error when deleting fails with
+     *                              a NOT_FOUND error
      */
-    ICalComps_t removeEvents(const string &uid, bool returnOnlyChildren);
+    ICalComps_t removeEvents(const string &uid, bool returnOnlyChildren, bool ignoreNotFound = true);
 };
 
 #else

@@ -200,6 +200,9 @@ class TrackingSyncSource : public TestingSyncSource,
     /**
      * Return item data in engine format.
      *
+     * Must throw a STATUS_NOT_FOUND (= 404) StatusException when the
+     * item does not exist.
+     *
      * @param luid     identifies the item
      * @param raw      return item in internal format instead of engine format
      * @retval item    item data
@@ -208,6 +211,9 @@ class TrackingSyncSource : public TestingSyncSource,
 
     /**
      * delete the item (renamed so that it can be wrapped by deleteItem())
+     *
+     * Must throw a STATUS_NOT_FOUND (= 404) StatusException when the
+     * item does not exist.
      */
     virtual void removeItem(const string &luid) = 0;
 

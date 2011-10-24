@@ -628,8 +628,10 @@ class SyncSourceBase : public Logger {
      * Rethrows the exception to determine what it is, then logs it
      * as an error and returns a suitable error code (usually a general
      * STATUS_DATASTORE_FAILURE).
+     *
+     * @param flags     influence behavior of the method
      */
-    SyncMLStatus handleException();
+    SyncMLStatus handleException(HandleExceptionFlags flags = HANDLE_EXCEPTION_FLAGS_NONE);
 
     /**
      * throw an exception after an operation failed

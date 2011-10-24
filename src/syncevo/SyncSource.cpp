@@ -49,7 +49,15 @@ SE_BEGIN_CXX
 
 void SyncSourceBase::throwError(const string &action, int error)
 {
-    throwError(action + ": " + strerror(error));
+    std::string what = action + ": " + strerror(error);
+    // be as specific if we can be: relevant for the file backend,
+    // which is expected to return STATUS_NOT_FOUND == 404 for "file
+    // not found"
+    if (error == ENOENT) {
+        throwError(STATUS_NOT_FOUND, what);
+    } else {
+        throwError(what);
+    }
 }
 
 void SyncSourceBase::throwError(const string &failure)
@@ -62,9 +70,9 @@ void SyncSourceBase::throwError(SyncMLStatus status, const string &failure)
     SyncContext::throwError(status, getDisplayName() + ": " + failure);
 }
 
-SyncMLStatus SyncSourceBase::handleException()
+SyncMLStatus SyncSourceBase::handleException(HandleExceptionFlags flags)
 {
-    SyncMLStatus res = Exception::handle(this);
+    SyncMLStatus res = Exception::handle(this, flags);
     return res == STATUS_FATAL ?
         STATUS_DATASTORE_FAILURE :
         res;

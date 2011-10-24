@@ -1243,10 +1243,6 @@ void WebDAVSource::removeItem(const string &uid)
     case 204:
         // the expected outcome
         break;
-    case 404:
-        // possibly already removed, ignore
-        SE_LOG_DEBUG(this, NULL, "404 - already removed?");
-        break;
     default:
         SE_THROW_EXCEPTION_STATUS(TransportStatusException,
                                   std::string("unexpected status for removal: ") +

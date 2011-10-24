@@ -727,9 +727,8 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
 {
     EventCache::iterator it = m_cache.find(davLUID);
     if (it == m_cache.end()) {
-        // gone already, no need to do anything
-        SE_LOG_DEBUG(this, NULL, "%s: ignoring request to delete %s recurrence in non-existent item",
-                     davLUID.c_str(), SubIDName(subid).c_str());
+        // gone already
+        throwError(STATUS_NOT_FOUND, "deleting item: " + davLUID);
         return "";
     }
     // use item as it is, load only if it is not going to be removed entirely
@@ -738,23 +737,18 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
     if (event.m_subids.size() == 1) {
         // remove entire merged item, nothing will be left after removal
         if (*event.m_subids.begin() != subid) {
-            SE_LOG_DEBUG(this, NULL, "%s: ignoring request to remove the %s recurrence because only the %s recurrence exists",
+            SE_LOG_DEBUG(this, NULL, "%s: request to remove the %s recurrence: only the %s recurrence exists",
                          davLUID.c_str(),
                          SubIDName(subid).c_str(),
                          SubIDName(*event.m_subids.begin()).c_str());
+            throwError(STATUS_NOT_FOUND, "remove sub-item: " + SubIDName(subid) + " in " + davLUID);
             return event.m_etag;
         } else {
             try {
                 removeItem(event.m_DAVluid);
             } catch (const TransportStatusException &ex) {
-                if (ex.syncMLStatus() == 404) {
-                    // Someone must have created a detached recurrence on
-                    // the server without the master event - or the 
-                    // item was already removed while the sync ran.
-                    // Let's log the problem and ignore it.
-                    Exception::log();
-                } else if (ex.syncMLStatus() == 409 &&
-                           strstr(ex.what(), "Can't delete a recurring event")) {
+                if (ex.syncMLStatus() == 409 &&
+                    strstr(ex.what(), "Can't delete a recurring event")) {
                     // Google CalDAV:
                     // HTTP/1.1 409 Can't delete a recurring event except on its organizer's calendar
                     //
@@ -827,9 +821,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
             }
         }
         if (!found) {
-            SE_LOG_DEBUG(this, NULL, "%s: ignoring request to remove the %s recurrence because it does not exist",
-                         davLUID.c_str(),
-                         SubIDName(subid).c_str());
+            throwError(STATUS_NOT_FOUND, "remove sub-item: " + SubIDName(subid) + " in " + davLUID);
             return event.m_etag;
         }
         event.m_subids.erase(subid);
@@ -922,7 +914,7 @@ CalDAVSource::Event &CalDAVSource::findItem(const std::string &davLUID)
 {
     EventCache::iterator it = m_cache.find(davLUID);
     if (it == m_cache.end()) {
-        throwError("event not found");
+        throwError(STATUS_NOT_FOUND, "finding item: " + davLUID);
     }
     return *it->second;
 }
