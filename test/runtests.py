@@ -1129,6 +1129,12 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                   "eds_event",
                                   "eds_task",
                                   "eds_memo" ],
+                                # all-day detection in vCalendar 1.0
+                                # only works if client and server
+                                # agree on the time zone (otherwise the start/end times
+                                # do not align with midnight); the nightly test account
+                                # happens to use Europe/Berlin
+                                "TZ=Europe/Berlin "
                                 "CLIENT_TEST_NOCHECK_SYNCMODE=1 "
                                 "CLIENT_TEST_MAX_ITEMSIZE=2048 "
                                 "CLIENT_TEST_SKIP="
