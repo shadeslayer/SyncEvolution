@@ -475,11 +475,16 @@ class SyncEvolutionTest(Action):
             templatedir = os.path.join(self.build.installdir, "usr/lib/syncevolution/templates")
             if not os.access(templatedir, os.F_OK):
                 templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
+            datadir = os.path.join(self.build.installdir, "usr/share/syncevolution")
+            if not os.access(datadir, os.F_OK):
+                # fallback works for bluetooth_products.ini but will fail for other files
+                datadir = os.path.join(context.workdir, "syncevolution/src/dbus/server")
             installenv = \
+                "SYNCEVOLUTION_DATA_DIR=%s "\
                 "SYNCEVOLUTION_TEMPLATE_DIR=%s " \
                 "SYNCEVOLUTION_XML_CONFIG_DIR=%s " \
                 "SYNCEVOLUTION_BACKEND_DIR=%s " \
-                % ( templatedir, confdir, backenddir )
+                % ( datadir, templatedir, confdir, backenddir )
 
             cmd = "%s %s %s %s %s ./syncevolution" % (self.testenv, installenv, self.runner, context.setupcmd, self.name)
             context.runCommand(cmd)
