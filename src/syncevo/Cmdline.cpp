@@ -3942,8 +3942,9 @@ protected:
                 CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
                 CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "evolution-contacts:\n"));
                 int entries = 0;
+		std::string out = cmdline.m_out.str();
                 BOOST_FOREACH(const std::string &line,
-                              boost::tokenizer< boost::char_separator<char> >(cmdline.m_out.str(),
+                              boost::tokenizer< boost::char_separator<char> >(out,
                                                                               boost::char_separator<char>("\n"))) {
                     if (!boost::starts_with(line, " ")) {
                         entries++;
@@ -3965,8 +3966,9 @@ protected:
                 CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
                 CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "@foo-config/bar-source:\n"));
                 int entries = 0;
+		std::string out = cmdline.m_out.str();
                 BOOST_FOREACH(const std::string &line,
-                              boost::tokenizer< boost::char_separator<char> >(cmdline.m_out.str(),
+                              boost::tokenizer< boost::char_separator<char> >(out,
                                                                               boost::char_separator<char>("\n"))) {
                     if (!boost::starts_with(line, " ")) {
                         entries++;
