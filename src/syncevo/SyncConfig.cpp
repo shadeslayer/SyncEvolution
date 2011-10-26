@@ -2235,8 +2235,9 @@ public:
 
         SourceRegistry &registry(SyncSource::getSourceRegistry());
         BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
+            static const std::string whitespace(" \t\n");
             string comment = boost::trim_right_copy_if(sourceInfos->m_typeDescr,
-                                                       boost::is_any_of(" \t\n"));
+                                                       boost::is_any_of(whitespace));
             stringstream *curr = sourceInfos->m_enabled ? &enabled : &disabled;
             boost::replace_all(comment, "\n", "\n ");
             *curr << " " << comment << "\n";
