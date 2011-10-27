@@ -7,6 +7,15 @@
  FN:xml entities
  N:xml;entities;;;
  X-EVOLUTION-FILE-AS:xml\, entities
+@@ -101,7 +101,7 @@
+ FBURL:
+ X-EVOLUTION-VIDEO-URL:
+ X-MOZILLA-HTML:FALSE
+-ADR;TYPE=HOME:test 5;Line 2;Umlaut Ä in Line 1;test 1;test 3;test 2;test 4
++ADR;TYPE=HOME:test 5;Line 2;Umlaut Ä in Line 1;test 1;test 3;test 2
+ LABEL;TYPE=HOME:Umlaut Ä in Line 1\nLine 2\n\ntest 1\, test 3\ntest 2\ntest 5\ntest 4
+ UID:pas-id-43C0EF0A00000002
+ END:VCARD
 @@ -137,7 +137,7 @@
  NICKNAME:user7
  X-EVOLUTION-SPOUSE:
@@ -16,7 +25,37 @@
   ed itself...
  FN:line breaks
  N:breaks;line;;;
-@@ -191,7 +191,6 @@
+@@ -154,9 +154,9 @@
+ 
+ BEGIN:VCARD
+ VERSION:3.0
+-URL:http://john.doe.com
++URL;TYPE=HOME:http://john.doe.com
+ TITLE:Senior Tester
+-ORG:Test Inc.;Testing;test#1
++ORG:Test Inc.;Testing
+ ROLE:professional test case
+ X-EVOLUTION-MANAGER:John Doe Senior
+ X-EVOLUTION-ASSISTANT:John Doe Junior
+@@ -176,22 +176,14 @@
+ FBURL:free/busy
+ X-EVOLUTION-VIDEO-URL:chat
+ X-MOZILLA-HTML:TRUE
+-ADR;TYPE=WORK:Test Box #2;;Test Drive 2;Test Town;Upper Test County;12346;O
+- ld Testovia
+-LABEL;TYPE=WORK:Test Drive 2\nTest Town\, Upper Test County\n12346\nTest Bo
+- x #2\nOld Testovia
++ADR;TYPE=WORK:Test Box #2;;Test Drive 2;Test Town;Upper Test County;12346;Germany
+ ADR;TYPE=HOME:Test Box #1;;Test Drive 1;Test Village;Lower Test County;1234
+- 5;Testovia
+-LABEL;TYPE=HOME:Test Drive 1\nTest Village\, Lower Test County\n12345\nTest
+-  Box #1\nTestovia
+-ADR:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;New Testonia
+-LABEL;TYPE=OTHER:Test Drive 3\nTest Megacity\, Test County\n12347\nTest Box
+-  #3\nNew Testonia
++ 5;France
++ADR:Test Box #3;;Test Drive 3;Test Megacity;Test County;12347;Estonia
+ UID:pas-id-43C0ED3900000001
  EMAIL;TYPE=WORK;X-EVOLUTION-UI-SLOT=1:john.doe@work.com
  EMAIL;TYPE=HOME;X-EVOLUTION-UI-SLOT=2:john.doe@home.priv
  EMAIL;TYPE=OTHER;X-EVOLUTION-UI-SLOT=3:john.doe@other.world
@@ -24,7 +63,7 @@
  TEL;TYPE=work;TYPE=Voice;X-EVOLUTION-UI-SLOT=1:business 1
  TEL;TYPE=homE;TYPE=VOICE;X-EVOLUTION-UI-SLOT=2:home 2
  TEL;TYPE=CELL;X-EVOLUTION-UI-SLOT=3:mobile 3
-@@ -199,7 +198,6 @@
+@@ -199,7 +191,6 @@
  TEL;TYPE=HOME;TYPE=FAX;X-EVOLUTION-UI-SLOT=5:homefax 5
  TEL;TYPE=PAGER;X-EVOLUTION-UI-SLOT=6:pager 6
  TEL;TYPE=CAR;X-EVOLUTION-UI-SLOT=7:car 7
@@ -32,7 +71,7 @@
  X-AIM;X-EVOLUTION-UI-SLOT=1:AIM JOHN
  X-YAHOO;X-EVOLUTION-UI-SLOT=2:YAHOO JDOE
  X-ICQ;X-EVOLUTION-UI-SLOT=3:ICQ JD
-@@ -289,7 +287,7 @@
+@@ -289,7 +280,7 @@
  X-EVOLUTION-SPOUSE:
  NOTE:The first name is "First \; special \;".
  FN:Mr. First \; special \; middle Last
