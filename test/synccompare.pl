@@ -557,11 +557,8 @@ sub NormalizeItem {
     }
     if ($memotoo) {
       if (/^BEGIN:VCARD/m ) {
-        s/^(FN|FBURL|CALURI|CATEGORIES|ROLE|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-GROUPWISE)(;[^:;\n]*)*:.*\r?\n?//gm;
-        # only preserves ORG "Company", but loses "Department" and "Office"
-        s/^ORG:([^;:\n]+)(;[^;:\n]+)(;[^\n]*)/ORG:$1$2/mg;
-        # only preserves first 6 fields of 'ADR'
-        s/^ADR((;[^;:\n]*)*:)([^;:\n]*)((;[^;:\n]*){5})(;[^;:\n]*)/ADR$1$3$4/mg;
+        s/^(FN|FBURL|CALURI|ROLE|X-MOZILLA-HTML|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-GROUPWISE)(;[^:;\n]*)*:.*\r?\n?//gm;
+        # s/^(FN|FBURL|CALURI|CATEGORIES|ROLE|X-MOZILLA-HTML|X-EVOLUTION-FILE-AS|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-GROUPWISE)(;[^:;\n]*)*:.*\r?\n?//gm;
         # strip 'TYPE=HOME' 
         s/^URL([^\n:]*);TYPE=HOME/URL$1/mg;
         s/^EMAIL([^\n:]*);TYPE=HOME/EMAIL$1/mg;
