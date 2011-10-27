@@ -17,6 +17,7 @@ the result of each action:
 import os, sys, popen2, traceback, re, time, smtplib, optparse, stat, shutil, StringIO, MimeWriter
 import shlex
 import subprocess
+import fnmatch
 
 try:
     import gzip
@@ -179,7 +180,7 @@ class Context:
         self.lastresultdir = lastresultdir
         self.datadir = datadir
 
-    def runCommand(self, cmdstr):
+    def runCommand(self, cmdstr, dumpCommands=False):
         """Log and run the given command, throwing an exception if it fails."""
         cmd = shlex.split(cmdstr)
         if "valgrindcheck.sh" in cmdstr:
@@ -199,6 +200,8 @@ class Context:
             del cmd[command + 1]
 
         cmdstr = " ".join(map(lambda x: (' ' in x or x == '') and ("'" in x and '"%s"' or "'%s'") % x or x, cmd))
+        if dumpCommands:
+            cmdstr = "set -x; " + cmdstr
         print "*** ( cd %s; export %s; %s )" % (os.getcwd(),
                                                 " ".join(map(lambda x: "'%s=%s'" % (x, os.getenv(x, "")), [ "LD_LIBRARY_PATH" ])),
                                                 cmdstr)
@@ -223,11 +226,12 @@ class Context:
 
     def execute(self):
         cd(self.resultdir)
-        s = file("output.txt", "w+")
+        s = open("output.txt", "w+")
         status = Action.DONE
 
         step = 0
         run_servers=[];
+
         while len(self.todo) > 0:
             try:
                 step = step + 1
@@ -281,7 +285,17 @@ class Context:
         s.write("%s\n" % ("\n".join(self.summary)))
         s.close()
 
-        # run testresult checker 
+        # copy information about sources
+        for source in self.actions.keys():
+            action = self.actions[source]
+            basedir = getattr(action, 'basedir', None)
+            if basedir and os.path.isdir(basedir):
+                for file in os.listdir(os.path.join(basedir, "..")):
+                    if fnmatch.fnmatch(file, source + '[.-]*'):
+                        shutil.copyfile(os.path.join(basedir, "..", file),
+                                        os.path.join(self.resultdir, file))
+
+        # run testresult checker
         #calculate the src dir where client-test can be located
         srcdir = os.path.join(compile.builddir, "src")
         backenddir = os.path.join(compile.installdir, "usr/lib/syncevolution/backends")
@@ -385,19 +399,25 @@ class SVNCheckout(Action):
         if os.access("autogen.sh", os.F_OK):
             context.runCommand("%s ./autogen.sh" % (self.runner))
 
-class GitCheckout(Action):
+class GitCheckoutBase:
+    """Just sets some common properties for all Git checkout classes: workdir, basedir"""
+
+    def __init__(self, name, workdir):
+        self.workdir = workdir
+        self.basedir = os.path.join(abspath(workdir), name)
+
+class GitCheckout(GitCheckoutBase, Action):
     """Does a git clone (if directory does not exist yet) or a fetch+checkout (if it does)."""
-    
+
     def __init__(self, name, workdir, runner, url, revision):
         """workdir defines the directory to do the checkout in with 'name' as name of the sub directory,
         URL the server and repository,
         revision the desired branch or tag"""
-        Action.__init__(self,name)
-        self.workdir = workdir
+        Action.__init__(self, name)
+        GitCheckoutBase.__init__(self, name)
         self.runner = runner
         self.url = url
         self.revision = revision
-        self.basedir = os.path.join(abspath(workdir), name)
 
     def execute(self):
         if os.access(self.basedir, os.F_OK):
@@ -411,6 +431,66 @@ class GitCheckout(Action):
                            {"dir": self.basedir,
                             "rev": self.revision})
         os.chdir(self.basedir)
+        if os.access("autogen.sh", os.F_OK):
+            context.runCommand("%s ./autogen.sh" % (self.runner))
+
+class GitCopy(GitCheckoutBase, Action):
+    """Copy existing git repository and update it to the requested
+    branch, with local changes stashed before updating and restored
+    again afterwards. Automatically merges all branches with <branch>/
+    as prefix, skips those which do not apply cleanly."""
+
+    def __init__(self, name, workdir, runner, sourcedir, revision):
+        """workdir defines the directory to create/update the repo in with 'name' as name of the sub directory,
+        sourcedir a directory which must contain such a repo already,
+        revision the desired branch or tag"""
+        Action.__init__(self, name)
+        GitCheckoutBase.__init__(self, name, workdir)
+        self.runner = runner
+        self.sourcedir = sourcedir
+        self.revision = revision
+        self.patchlog = os.path.join(abspath(workdir), name + "-source.log")
+
+        self.__getitem__ = lambda x: getattr(self, x)
+
+    def execute(self):
+        if not os.access(self.basedir, os.F_OK):
+            context.runCommand("(mkdir -p %s && cp -a -l %s/%s %s) || ( rm -rf %s && false )" %
+                               (self.workdir, self.sourcedir, self.name, self.workdir, self.basedir))
+        os.chdir(self.basedir)
+        context.runCommand("git fetch && git fetch --tags")
+        cmd = " && ".join([
+                'rm -f %(patchlog)s',
+                'echo "save local changes with stash under a fixed name <rev>-nightly"',
+                'rev=$(git stash create)',
+                'git branch -f %(revision)s-nightly ${rev:-HEAD}',
+                'echo "check out branch as "nightly" and integrate all proposed patches (= <revision>/... branches)"',
+                # switch to detached head, to allow removal of branches
+                'git checkout -q $( git show-ref --head --hash | head -1 )',
+                'if git branch | grep -q -w "^..%(revision)s$"; then git branch -D %(revision)s; fi',
+                'if git branch | grep -q -w "^..nightly$"; then git branch -D nightly; fi',
+                # pick tag or remote branch
+                'if git tag | grep -q -w %(revision)s; then base=%(revision)s; git checkout -f -b nightly %(revision)s; ' \
+                    'else base=origin/%(revision)s; git checkout -f -b nightly origin/%(revision)s; fi',
+                # integrate remote branches first, followed by local ones;
+                # the hope is that local branches apply cleanly on top of the remote ones
+                'for patch in $( (git branch -r; git branch) | sed -e "s/^..//" | grep -e "^for-%(revision)s/" -e "/for-%(revision)s/" ); do ' \
+                    'if git merge $patch; then echo >>%(patchlog)s $patch: okay; ' \
+                    'else echo >>%(patchlog)s $patch: failed to apply; git reset --hard; fi; done',
+                'echo "restore <rev>-nightly and create permanent branch <rev>-nightly-before-<date>-<time> if that fails or new tree is different"',
+                # only apply stash when really a stash
+                'if ( git log -n 1 --oneline %(revision)s-nightly | grep -q " WIP on" && ! git stash apply %(revision)s-nightly ) || ! git diff --quiet %(revision)s-nightly..nightly; then ' \
+                    'git branch %(revision)s-nightly-before-$(date +%%Y-%%m-%%d-%%H-%%M) %(revision)s-nightly; '
+                    'fi',
+                'echo "document local patches"',
+                'rm -f ../%(name)s-*.patch',
+                'git format-patch -o .. $base..nightly',
+                '(cd ..; for i in [0-9]*.patch; do [ ! -f "$i" ] || mv $i %(name)s-$i; done)',
+                'git describe --tags --always nightly | sed -e "s/\(.*\)-\([0-9][0-9]*\)-g\(.*\)/\\1 + \\2 commit(s) = \\3/" >>%(patchlog)s',
+                '( git status | grep -q "working directory clean" && echo "working directory clean" || echo "working directory dirty" ) >>%(patchlog)s'
+                ]) % self
+
+        context.runCommand(cmd, dumpCommands=True)
         if os.access("autogen.sh", os.F_OK):
             context.runCommand("%s ./autogen.sh" % (self.runner))
 
@@ -550,7 +630,7 @@ parser.add_option("", "--tmp",
                   type="string", dest="tmpdir", default="",
                   help="temporary directory for intermediate files")
 parser.add_option("", "--workdir",
-                  type="string", dest="workdir", default="",
+                  type="string", dest="workdir", default=None,
                   help="directory for files which might be reused between runs")
 parser.add_option("", "--database-prefix",
                   type="string", dest="databasePrefix", default="Test_",
@@ -573,6 +653,15 @@ parser.add_option("", "--shell",
 parser.add_option("", "--test-prefix",
                   type="string", dest="testprefix", default="",
                   help="a prefix which is put in front of client-test (e.g. valgrind)")
+parser.add_option("", "--sourcedir",
+                  type="string", dest="sourcedir", default=None,
+                  help="directory which contains 'syncevolution' and 'libsynthesis' code repositories; if given, those repositories will be used as starting point for testing instead of checking out directly")
+parser.add_option("", "--no-sourcedir-copy",
+                  action="store_true", dest="nosourcedircopy", default=False,
+                  help="instead of copying the content of --sourcedir and integrating patches automatically, use the content directly")
+parser.add_option("", "--sourcedir-copy",
+                  action="store_false", dest="nosourcedircopy",
+                  help="reverts a previous --no-sourcedir-copy")
 parser.add_option("", "--syncevo-tag",
                   type="string", dest="syncevotag", default="master",
                   help="the tag of SyncEvolution (e.g. syncevolution-0.7, default is 'master'")
@@ -710,9 +799,41 @@ class SyncEvolutionBuild(AutotoolsBuild):
         os.chdir("src")
         context.runCommand("%s %s test CXXFLAGS=-O0" % (self.runner, context.make))
 
-libsynthesis = SynthesisCheckout("libsynthesis", options.synthesistag)
+class NopAction(Action):
+    def __init__(self, name):
+        Action.__init__(self, name)
+        self.status = Action.DONE
+        self.execute = self.nop
+
+class NopSource(GitCheckoutBase, NopAction):
+    def __init__(self, name, sourcedir):
+        NopAction.__init__(self, name)
+        GitCheckoutBase.__init__(self, name, sourcedir)
+
+if options.sourcedir:
+    if options.nosourcedircopy:
+        libsynthesis = NopSource("libsynthesis", options.sourcedir)
+    else:
+        libsynthesis = GitCopy("libsynthesis",
+                               options.workdir,
+                               options.shell,
+                               options.sourcedir,
+                               options.synthesistag)
+else:
+    libsynthesis = SynthesisCheckout("libsynthesis", options.synthesistag)
 context.add(libsynthesis)
-sync = SyncEvolutionCheckout("syncevolution", options.syncevotag)
+
+if options.sourcedir:
+    if options.nosourcedircopy:
+        sync = NopSource("syncevolution", options.sourcedir)
+    else:
+        sync = GitCopy("syncevolution",
+                       options.workdir,
+                       "env SYNTHESISSRC=%s %s" % (libsynthesis.basedir, options.shell),
+                       options.sourcedir,
+                       options.syncevotag)
+else:
+    sync = SyncEvolutionCheckout("syncevolution", options.syncevotag)
 context.add(sync)
 if options.synthesistag:
     synthesis_source = "--with-synthesis-src=%s" % libsynthesis.basedir
@@ -722,11 +843,9 @@ else:
 # determine where binaries come from:
 # either compile anew or prebuilt
 if options.prebuilt:
-    compile = Action("compile")
+    compile = NopAction("compile")
     compile.builddir = options.prebuilt
     compile.installdir = os.path.join(options.prebuilt, "../install")
-    compile.status = compile.DONE
-    compile.execute = compile.nop
 else:
     compile = SyncEvolutionBuild("compile",
                                  sync.basedir,
