@@ -58,6 +58,9 @@
         <xsl:param name="cmp_result_tree"/>
         <body>
             <xsl:variable name="log-dir-uri" select="nightly-test/log-info/uri"/>
+            <xsl:call-template name="generate-source-info">
+                <xsl:with-param name="sourceinfo" select="nightly-test/source-info"/>
+            </xsl:call-template>
             <xsl:call-template name="generate-platform-info">
                 <xsl:with-param name="platform" select="nightly-test/platform-info"/>
             </xsl:call-template>
@@ -169,6 +172,30 @@
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
             <title>SyncEvolution NightlyTest</title>
         </head>
+    </xsl:template>
+
+    <xsl:template name="generate-source-info">
+        <xsl:param name="sourceinfo"/>
+        <xsl:variable name="list" select="$sourceinfo/*"/>
+        <xsl:comment>
+            Generate source information in a table
+        </xsl:comment>
+        <h1><font color="Olive"> Source Information </font> </h1>
+        <xsl:choose>
+            <xsl:when test="count($list)">
+              <xsl:for-each select="$sourceinfo/*">
+                <h3><xsl:value-of select="./@name"/></h3>
+                <pre><xsl:value-of select="./description"/></pre>
+                <xsl:choose><xsl:when test="count(./patches/*)">Patches:<br/></xsl:when></xsl:choose>
+                <xsl:for-each select="./patches/*">
+                  <a href="{./path}"><xsl:value-of select="./summary"/></a><br/>
+                </xsl:for-each>
+              </xsl:for-each>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:text> No source information!</xsl:text>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
     <xsl:template name="generate-platform-info">
