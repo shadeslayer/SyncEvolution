@@ -73,6 +73,8 @@ class Unref {
 #endif // HAVE_GLIB
 #ifdef ENABLE_ICAL
     static void unref(icalcomponent *pointer) { icalcomponent_free(pointer); }
+    static void unref(icalproperty *pointer) { icalproperty_free(pointer); }
+    static void unref(icalparameter *pointer) { icalparameter_free(pointer); }
     static void unref(icaltimezone *pointer) { icaltimezone_free(pointer, 1); }
 #endif // ENABLE_ICAL
 };
