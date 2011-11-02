@@ -589,6 +589,8 @@ public:
     virtual void testLinkedItemsUpdateChild();
     virtual void testLinkedItemsInsertBothUpdateChild();
     virtual void testLinkedItemsInsertBothUpdateParent();
+    virtual void testLinkedItemsInsertBothUpdateChildNoIDs();
+    virtual void testLinkedItemsUpdateChildNoIDs();
 
     /** retrieve right set of items for running test */
     ClientTestConfig::LinkedItems_t getParentChildData();

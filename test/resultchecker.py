@@ -387,8 +387,8 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                     casename = m.group(3)
                     # special case grouping of some tests: include group inside casename instead of
                     # format, example:
-                    # <path>/Client_Source_apple_caldav_LinkedItems_1_testLinkedItemsParent
-                    m = re.match(r'(.*)_(LinkedItems_\d+)', format)
+                    # <path>/Client_Source_apple_caldav_LinkedItemsDefault_testLinkedItemsParent
+                    m = re.match(r'(.*)_(LinkedItems\w+)', format)
                     if m:
                         format = m.group(1)
                         casename = m.group(2) + '::' + casename
@@ -411,9 +411,6 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                     indents.append(indent)
                     # must avoid :: in XML
                     tag = casename.replace('::', '__')
-                    # special case LinkedItems_1::testLinkedItems...: shorten it
-                    # if tag.startswith('LinkedItems_'):
-                    #    tag = tag.split('_', 1)[1]
                     result.write(indent+'<'+tag+'>')
                     match=format+'::'+casename
                     matchOk=match+": okay \*\*\*"

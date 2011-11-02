@@ -297,6 +297,21 @@ sub NormalizeItem {
         while (s/^(\w+)([^:\n]*);$strip=\d+/$1$2/mg) {}
     }
 
+    # strip redundant VTIMEZONE definitions (happen to be
+    # added by Google CalDAV server when storing an all-day event
+    # which doesn't need any time zone definition)
+    # http://code.google.com/p/google-caldav-issues/issues/detail?id=63
+    while (m/(BEGIN:VTIMEZONE.*?TZID:([^\n]*)\n.*?END:VTIMEZONE\n)/gs) {
+        my $def = $1;
+        my $tzid = $2;
+        # used as parameter?
+        if (! m/;TZID=$tzid/) {
+            # no, remove definition
+            $def =~ s/([.*?!+{}])/\\$1/g;
+            s!$def!!s;
+        }
+    }
+
     if (!$full_timezones) {
         # Strip trailing digits from TZID. They are appended by
         # Evolution and SyncEvolution to distinguish VTIMEZONE

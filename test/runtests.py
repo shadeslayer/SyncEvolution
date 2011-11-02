@@ -923,6 +923,15 @@ evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
                                   "Client::Source SyncEvolution",
                                   [],
+                                  "CLIENT_TEST_SKIP="
+                                  "Client::Source::file_event::LinkedItemsDefault::testLinkedItemsInsertBothUpdateChildNoIDs,"
+                                  "Client::Source::file_event::LinkedItemsDefault::testLinkedItemsUpdateChildNoIDs,"
+                                  "Client::Source::file_event::LinkedItemsWithVALARM::testLinkedItemsInsertBothUpdateChildNoIDs,"
+                                  "Client::Source::file_event::LinkedItemsWithVALARM::testLinkedItemsUpdateChildNoIDs,"
+                                  "Client::Source::file_event::LinkedItemsAllDay::testLinkedItemsInsertBothUpdateChildNoIDs,"
+                                  "Client::Source::file_event::LinkedItemsAllDay::testLinkedItemsUpdateChildNoIDs,"
+                                  "Client::Source::file_event::LinkedItemsNoTZ::testLinkedItemsInsertBothUpdateChildNoIDs,"
+                                  "Client::Source::file_event::LinkedItemsNoTZ::testLinkedItemsUpdateChildNoIDs",
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
@@ -950,8 +959,10 @@ test = SyncEvolutionTest("googlecalendar", compile,
                          "CLIENT_TEST_MODE=server " # for Client::Sync
                          "CLIENT_TEST_FAILURES="
                          # http://code.google.com/p/google-caldav-issues/issues/detail?id=61 "cannot remove detached recurrence"
-                         "Client::Source::google_caldav::LinkedItems_0::testLinkedItemsRemoveNormal,"
-                         "Client::Source::google_caldav::LinkedItems_1::testLinkedItemsRemoveNormal,"
+                         "Client::Source::google_caldav::LinkedItemsDefault::testLinkedItemsRemoveNormal,"
+                         "Client::Source::google_caldav::LinkedItemsNoTZ::testLinkedItemsRemoveNormal,"
+                         "Client::Source::google_caldav::LinkedItemsWithVALARM::testLinkedItemsRemoveNormal,"
+                         "Client::Source::google_caldav::LinkedItemsAllDayGoogle::testLinkedItemsRemoveNormal,"
                          ,
                          testPrefix=options.testprefix)
 context.add(test)

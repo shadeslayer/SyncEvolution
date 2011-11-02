@@ -324,7 +324,10 @@ struct ClientTestConfig {
      * One example for main and subordinate items are a recurring
      * iCalendar 2.0 event and a detached recurrence.
      */
-    typedef std::vector<std::string> LinkedItems_t;
+    typedef class LinkedItems : public std::vector<std::string> {
+    public:
+        std::string m_name; /**< used as Client::Source::LinkedItems<m_name> */
+    } LinkedItems_t;
 
     /**
      * The linked items may exist in different variations (outer vector).

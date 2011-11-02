@@ -119,6 +119,71 @@ static SyncMode OneWayFromLocalMode()
 }
 
 /**
+ * remove a certain property from buffer, return removed line
+ */
+static string stripProperty(std::string &data, const std::string &prop)
+{
+    std::string res;
+
+    size_t start = data.find(prop);
+    if (start != data.npos) {
+        size_t end = data.find('\n', start);
+        if (end != data.npos) {
+            size_t len = end + 1 - start;
+            res = data.substr(start, len);
+            data.erase(start, len);
+        }
+    }
+
+    return res;
+}
+
+/**
+ * insert a property (must include line end) before the end of an item
+ */
+static void insertProperty(std::string &data,
+                           const std::string &prop,
+                           const std::string &endProp = "END:VEVENT")
+{
+    size_t pos = data.find(endProp);
+    data.insert(pos, prop);
+}
+
+/**
+ * remove parameter in all properties
+ */
+static void stripParameters(std::string &data,
+                            const std::string &param)
+{
+    while (true) {
+        size_t start = data.find(";" + param + "=");
+        if (start == data.npos) {
+            break;
+        }
+        size_t end = data.find_first_of(";:", start + 1);
+        if (end == data.npos) {
+            break;
+        }
+        data.erase(start, end - start);
+    }
+}
+
+static void stripComponent(std::string &data,
+                           const std::string &comp)
+{
+    size_t start = data.find("BEGIN:" + comp);
+    if (start != data.npos) {
+        size_t end = data.find("END:" + comp);
+        if (end != data.npos) {
+            end = data.find('\n', end);
+            if (end != data.npos) {
+                data.erase(start, end + 1 - start);
+            }
+        }
+    }
+}
+
+/**
  * Using this pointer automates the open()/beginSync()/endSync()/close()
  * life cycle: it automatically calls these functions when a new
  * pointer is assigned or deleted.
@@ -287,12 +352,16 @@ void LocalTests::addTests() {
 
             // create a sub-suite for each set of linked items
             for (int i = 0; i < (int)config.m_linkedItems.size(); i++) {
-                CppUnit::TestSuite *linked = new CppUnit::TestSuite(getName() + StringPrintf("::LinkedItems_%d", i));
+                const ClientTestConfig::LinkedItems_t &items = config.m_linkedItems[i];
+                CppUnit::TestSuite *linked = new CppUnit::TestSuite(getName() + "::LinkedItems" + items.m_name);
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParent);
                 if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChild);
                 }
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParentChild);
+                if (items[1].find("RECURRENCE-ID") != items[1].npos) {
+                    ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateChildNoIDs);
+                }
                 if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsChildParent);
                 }
@@ -312,6 +381,9 @@ void LocalTests::addTests() {
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsParentUpdate);
                 if (config.m_linkedItemsRelaxedSemantic) {
                     ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsUpdateChild);
+                    if (items[1].find("RECURRENCE-ID") != items[1].npos) {
+                        ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsUpdateChildNoIDs);
+                    }
                 }
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateChild);
                 ADD_TEST_TO_SUITE(linked, LocalTests, testLinkedItemsInsertBothUpdateParent);
@@ -1725,17 +1797,77 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     }
 }
 
+// - insert parent and child
+// - update child *without* UID and RECURRENCE-ID: source expected to  re-insert them
+void LocalTests::testLinkedItemsInsertBothUpdateChildNoIDs() {
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
+
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    std::string parent, child;
+    std::string parentData, childData;
+    TestingSyncSourcePtr copy;
+
+    // add parent and child, then update child
+    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+
+    // remove UID and RECURRENCE-ID before updating
+    std::string reducedChildData = items[1];
+    std::string uid = stripProperty(reducedChildData, "UID");
+    std::string rid = stripProperty(reducedChildData, "RECURRENCE-ID");
+    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, reducedChildData, &childData));
+
+    // compare
+    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
+    insertProperty(childData, uid, "END:VEVENT");
+    insertProperty(childData, rid, "END:VEVENT");
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+}
+
+// - insert child
+// - update child *without* UID and RECURRENCE-ID: source expected to re-insert them
+void LocalTests::testLinkedItemsUpdateChildNoIDs() {
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
+
+    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    std::string child;
+    std::string childData;
+    TestingSyncSourcePtr copy;
+
+    // add child, then update child
+    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+
+    // remove UID and RECURRENCE-ID before updating
+    std::string reducedChildData = items[1];
+    std::string uid = stripProperty(reducedChildData, "UID");
+    std::string rid = stripProperty(reducedChildData, "RECURRENCE-ID");
+    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, reducedChildData, &childData));
+
+    // compare
+    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
+    insertProperty(childData, uid, "END:VEVENT");
+    insertProperty(childData, rid, "END:VEVENT");
+    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+}
+
 ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()
 {
-    // extract _%d suffix and use it as index for our config
+    // extract suffix and use it as index for our config
     std::string test = getCurrentTest();
-    const std::string testname = "LinkedItems_";
+    const std::string testname = "LinkedItems";
     size_t off = test.find(testname);
     CPPUNIT_ASSERT(off != test.npos);
-    int i = atoi(test.c_str() + off + testname.size());
-    CPPUNIT_ASSERT(i >= 0 && i < (int)config.m_linkedItems.size());
-    CPPUNIT_ASSERT(config.m_linkedItems[i].size() >= 2);
-    return config.m_linkedItems[i];
+    off += testname.size();
+    size_t end = test.find(':', off);
+    CPPUNIT_ASSERT(end != test.npos);
+    std::string name = test.substr(off, end - off);
+    BOOST_FOREACH(const ClientTestConfig::LinkedItems_t &items, config.m_linkedItems) {
+        if (items.m_name == name) {
+            return items;
+        }
+    }
+    CPPUNIT_ASSERT_MESSAGE("linked items test data not found", false);
+    return ClientTestConfig::LinkedItems_t();
 }
 
 SyncTests::SyncTests(const std::string &name, ClientTest &cl, std::vector<int> sourceIndices, bool isClientA) :
@@ -4909,6 +5041,7 @@ void ClientTest::getTestData(const char *type, Config &config)
 	std::string server = currentServer();
 	// default: time zones + UNTIL in UTC, with VALARM
         config.m_linkedItems.resize(1);
+        config.m_linkedItems[0].m_name = "Default";
         config.m_linkedItems[0].resize(2);
         config.m_linkedItems[0][0] =
             "BEGIN:VCALENDAR\n"
@@ -4985,8 +5118,12 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:VEVENT\n"
             "END:VCALENDAR\n";
 
+        bool recurringAllDay = false;
+        bool recurringNoTZ = false;
+
 	if (server == "funambol") {
 	    // converts UNTIL into floating time - broken?!
+            config.m_linkedItems[0].m_name = "UntilFloatTime";
 	    config.m_linkedItems[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -5024,8 +5161,9 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "LAST-MODIFIED:20080407T193241Z\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-	} else if (server == "mobical") {
+        } else if (server == "mobical") {
 	    // UTC time
+            config.m_linkedItems[0].m_name = "UTC";
 	    config.m_linkedItems[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -5064,8 +5202,9 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "DESCRIPTION:second instance modified\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-	} else if (server == "memotoo") {
+        } else if (server == "memotoo") {
 	    // local time, except for detached recurrence
+            config.m_linkedItems[0].m_name = "LocalTime";
 	    config.m_linkedItems[0][0] =
 	        "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
@@ -5105,6 +5244,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
         } else if (server == "exchange") {
+            config.m_linkedItems[0].m_name = "StandardTZ";
             BOOST_FOREACH(std::string &item, config.m_linkedItems[0]) {
                 // time zone name changes on server to "Standard Timezone",
                 // with some information stripped
@@ -5117,10 +5257,44 @@ void ClientTest::getTestData(const char *type, Config &config)
                 boost::replace_all(item, "X-LIC-LOCATION:Europe/Berlin\n", "");
             }
 
-            // also test recurring all-day events with exceptions
+            recurringAllDay = true;
+        } else {
+            // in particular for Google Calendar: also try with
+            // VALARM, because testing showed that the server works
+            // differently with and without VALARM data included
             config.m_linkedItems.resize(2);
+            config.m_linkedItems[1].m_name = "WithVALARM";
             config.m_linkedItems[1].resize(2);
-            config.m_linkedItems[1][0] =
+            const std::string valarm =
+                "BEGIN:VALARM\n"
+                "ACTION:DISPLAY\n"
+                "DESCRIPTION:This is an event reminder\n"
+                "TRIGGER;VALUE=DURATION;RELATED=START:-PT1H\n"
+                "X-EVOLUTION-ALARM-UID:foo@bar\n"
+                "END:VALARM\nEND:VEVENT";
+            config.m_linkedItems[1][0] = config.m_linkedItems[0][0];
+            boost::replace_first(config.m_linkedItems[1][0], "END:VEVENT", valarm);
+            config.m_linkedItems[1][1] = config.m_linkedItems[0][1];
+            boost::replace_first(config.m_linkedItems[1][1], "END:VEVENT", valarm);
+
+            // also enable other linked item variants
+            recurringAllDay = true;
+            recurringNoTZ = true;
+        }
+
+        if (boost::starts_with(server, "google")) {
+            // converts local time into time zone of the user,
+            // which breaks the test
+            recurringNoTZ = false;
+        }
+
+        if (recurringAllDay) {
+            // also test recurring all-day events with exceptions
+            size_t index = config.m_linkedItems.size();
+            config.m_linkedItems.resize(index + 1);
+            config.m_linkedItems[index].m_name = "AllDay";
+            config.m_linkedItems[index].resize(2);
+            config.m_linkedItems[index][0] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -5139,7 +5313,18 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "LAST-MODIFIED:20080407T193241Z\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-            config.m_linkedItems[1][1] =
+
+            // workaround for http://code.google.com/p/google-caldav-issues/issues/detail?id=63
+            // Google CalDAV inserts a time into the UNTIL clause, do the same in the
+            // reference data.
+            if (boost::starts_with(server, "google")) {
+                config.m_linkedItems[index].m_name = "AllDayGoogle";
+                boost::replace_first(config.m_linkedItems[index][0],
+                                     "UNTIL=20080420",
+                                     "UNTIL=20080420T070000Z");
+            }
+
+            config.m_linkedItems[index][1] =
                 "BEGIN:VCALENDAR\n"
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
@@ -5158,23 +5343,20 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "DESCRIPTION:second instance modified\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
-	} else {
-            // in particular for Google Calendar: also try with
-            // VALARM, because testing showed that the server works
-            // differently with and without VALARM data included
-            config.m_linkedItems.resize(2);
-            config.m_linkedItems[1].resize(2);
-            const std::string valarm =
-                "BEGIN:VALARM\n"
-                "ACTION:DISPLAY\n"
-                "DESCRIPTION:This is an event reminder\n"
-                "TRIGGER;VALUE=DURATION;RELATED=START:-PT1H\n"
-                "X-EVOLUTION-ALARM-UID:foo@bar\n"
-                "END:VALARM\nEND:VEVENT";
-            config.m_linkedItems[1][0] = config.m_linkedItems[0][0];
-            boost::replace_first(config.m_linkedItems[1][0], "END:VEVENT", valarm);
-            config.m_linkedItems[1][1] = config.m_linkedItems[0][1];
-            boost::replace_first(config.m_linkedItems[1][1], "END:VEVENT", valarm);
+	}
+
+        if (recurringNoTZ) {
+            // also test recurring event with no timezone
+            size_t index = config.m_linkedItems.size();
+            config.m_linkedItems.resize(index + 1);
+            config.m_linkedItems[index].m_name = "NoTZ";
+            config.m_linkedItems[index].resize(2);
+            config.m_linkedItems[index][0] = config.m_linkedItems[0][0];
+            config.m_linkedItems[index][1] = config.m_linkedItems[0][1];
+            stripComponent(config.m_linkedItems[index][0], "VTIMEZONE");
+            stripParameters(config.m_linkedItems[index][0], "TZID");
+            stripComponent(config.m_linkedItems[index][1], "VTIMEZONE");
+            stripParameters(config.m_linkedItems[index][1], "TZID");
         }
 
         config.m_templateItem = config.m_insertItem;
