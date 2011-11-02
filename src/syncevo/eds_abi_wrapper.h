@@ -180,6 +180,7 @@ struct EDSAbiWrapper {
     const char* (*icalparameter_get_tzid) (const icalparameter* value);
     void (*icalparameter_set_tzid) (icalparameter* value, const char* v);
     icalparameter *(*icalparameter_new_from_value_string)(icalparameter_kind kind, const char *value);
+    icalparameter *(*icalparameter_new_clone)(icalparameter *param);
     icalproperty *(*icalproperty_new_clone)(icalproperty *prop);
     void (*icalproperty_free)(icalproperty *prop);
     const char* (*icalproperty_get_description) (const icalproperty* prop);
@@ -197,6 +198,7 @@ struct EDSAbiWrapper {
     icalproperty* (*icalproperty_new_summary) (const char* v);
     icalproperty* (*icalproperty_new_sequence) (int v);
     icalproperty* (*icalproperty_new_uid) (const char* v);
+    icalproperty* (*icalproperty_new_recurrenceid) (icaltimetype v);
     void (*icalproperty_set_value_from_string) (icalproperty* prop,const char* value, const char* kind);
     void (*icalproperty_set_dtstamp) (icalproperty* prop, struct icaltimetype v);
     void (*icalproperty_set_lastmodified) (icalproperty* prop, struct icaltimetype v);
@@ -347,6 +349,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalparameter_get_tzid EDSAbiWrapperSingleton.icalparameter_get_tzid
 #   define icalparameter_set_tzid EDSAbiWrapperSingleton.icalparameter_set_tzid
 #   define icalparameter_new_from_value_string EDSAbiWrapperSingleton.icalparameter_new_from_value_string
+#   define icalparameter_new_clone EDSAbiWrapperSingleton.icalparameter_new_clone
 #   define icalproperty_new_clone EDSAbiWrapperSingleton.icalproperty_new_clone
 #   define icalproperty_free EDSAbiWrapperSingleton.icalproperty_free
 #   define icalproperty_get_description EDSAbiWrapperSingleton.icalproperty_get_description
@@ -364,6 +367,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalproperty_new_summary EDSAbiWrapperSingleton.icalproperty_new_summary
 #   define icalproperty_new_uid EDSAbiWrapperSingleton.icalproperty_new_uid
 #   define icalproperty_new_sequence EDSAbiWrapperSingleton.icalproperty_new_sequence
+#   define icalproperty_new_recurrenceid EDSAbiWrapperSingleton.icalproperty_new_recurrenceid
 #   define icalproperty_set_value_from_string EDSAbiWrapperSingleton.icalproperty_set_value_from_string
 #   define icalproperty_set_dtstamp EDSAbiWrapperSingleton.icalproperty_set_dtstamp
 #   define icalproperty_set_lastmodified EDSAbiWrapperSingleton.icalproperty_set_lastmodified
