@@ -212,6 +212,7 @@ public:
             m_anchors.clear();
             m_testName = testName;
         }
+        sleep(atoi(getEnv("CLIENT_TEST_SOURCE_DELAY", "0")));
 
         CPPUNIT_ASSERT(source);
         source->open();
