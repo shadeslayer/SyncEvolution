@@ -546,13 +546,16 @@ class SyncEvolutionTest(Action):
             if not os.access(backenddir, os.F_OK):
                 # fallback: relative to client-test inside the current directory
                 backenddir = "backends"
+
             # same with configs and templates, except that they use the source as fallback
             confdir = os.path.join(compile.installdir, "usr/lib/syncevolution/xml")
             if not os.access(confdir, os.F_OK):
-                confdir = os.path.join(context.workdir, "syncevolution/src/syncevo/configs")
+                confdir = os.path.join(sync.basedir, "src/syncevo/configs")
+
             templatedir = os.path.join(compile.installdir, "usr/lib/syncevolution/templates")
             if not os.access(templatedir, os.F_OK):
-                templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
+                templatedir = os.path.join(sync.basedir, "src/templates")
+
             installenv = \
                 "SYNCEVOLUTION_TEMPLATE_DIR=%s " \
                 "SYNCEVOLUTION_XML_CONFIG_DIR=%s " \
@@ -924,8 +927,7 @@ dbustest = SyncEvolutionTest("dbus", compile,
                              "",
                              [],
                              testPrefix=testprefix,
-                             testBinary=os.path.join(abspath(context.workdir),
-                                                     "syncevolution",
+                             testBinary=os.path.join(sync.basedir,
                                                      "test",
                                                      "test-dbus.py -v"))
 context.add(dbustest)
