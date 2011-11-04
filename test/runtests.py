@@ -548,17 +548,21 @@ class SyncEvolutionTest(Action):
             if not os.access(backenddir, os.F_OK):
                 # fallback: relative to client-test inside the current directory
                 backenddir = "backends"
+
             # same with configs and templates, except that they use the source as fallback
-            confdir = os.path.join(self.build.installdir, "usr/lib/syncevolution/xml")
+            confdir = os.path.join(self.build.installdir, "usr/share/syncevolution/xml")
             if not os.access(confdir, os.F_OK):
-                confdir = os.path.join(context.workdir, "syncevolution/src/syncevo/configs")
-            templatedir = os.path.join(self.build.installdir, "usr/lib/syncevolution/templates")
+                confdir = os.path.join(sync.basedir, "src/syncevo/configs")
+
+            templatedir = os.path.join(self.build.installdir, "usr/share/syncevolution/templates")
             if not os.access(templatedir, os.F_OK):
-                templatedir = os.path.join(context.workdir, "syncevolution/src/templates")
+                templatedir = os.path.join(sync.basedir, "src/templates")
+
             datadir = os.path.join(self.build.installdir, "usr/share/syncevolution")
             if not os.access(datadir, os.F_OK):
                 # fallback works for bluetooth_products.ini but will fail for other files
-                datadir = os.path.join(context.workdir, "syncevolution/src/dbus/server")
+                datadir = os.path.join(sync.basedir, "src/dbus/server")
+
             installenv = \
                 "SYNCEVOLUTION_DATA_DIR=%s "\
                 "SYNCEVOLUTION_TEMPLATE_DIR=%s " \
@@ -930,8 +934,7 @@ dbustest = SyncEvolutionTest("dbus", compile,
                              "",
                              [],
                              testPrefix=testprefix,
-                             testBinary=os.path.join(abspath(context.workdir),
-                                                     "syncevolution",
+                             testBinary=os.path.join(sync.basedir,
                                                      "test",
                                                      "test-dbus.py -v"))
 context.add(dbustest)
