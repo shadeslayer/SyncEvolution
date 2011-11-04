@@ -93,6 +93,8 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
 
     m_currentSyncKey = m_startSyncKey;
 
+    // same logic as in ActiveSyncCalendarSource::beginSync()
+
     bool slowSync = false;
     for (bool firstIteration = true;
          moreAvailable;
@@ -100,6 +102,7 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
         gchar *buffer = NULL;
         EASItemsCXX created, updated;
         EASIdsCXX deleted;
+        bool wasSlowSync = m_currentSyncKey.empty();
 
         if (!eas_sync_handler_get_items(m_handler,
                                         m_currentSyncKey.c_str(),
@@ -181,6 +184,17 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
 
         // update key
         m_currentSyncKey = buffer;
+
+        // Google  hack: if we started with an empty sync key (= slow sync)
+        // and got no results (= existing items), then try one more time,
+        // because Google only seems to report results when asked with
+        // a valid sync key. As an additional sanity check make sure that
+        // we have a valid sync key now.
+        if (wasSlowSync &&
+            created.empty() &&
+            !m_currentSyncKey.empty()) {
+            moreAvailable = true;
+        }
     }
 
     // now also generate full list of all current items:

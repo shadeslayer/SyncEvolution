@@ -94,10 +94,16 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
 
     setCurrentSyncKey(getStartSyncKey());
 
-    while (moreAvailable) {
+    // same logic as in ActiveSyncSource::beginSync()
+
+    bool slowSync = false;
+    for (bool firstIteration = true;
+         moreAvailable;
+         firstIteration = false) {
         gchar *buffer = NULL;
         EASItemsCXX created, updated;
         EASIdsCXX deleted;
+        bool wasSlowSync = getCurrentSyncKey().empty();
 
         if (!eas_sync_handler_get_items(getHandler(),
                                         getCurrentSyncKey().c_str(),
@@ -107,6 +113,20 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
                                         created, updated, deleted,
                                         &moreAvailable,
                                         gerror)) {
+            if (gerror.m_gerror &&
+                /*
+                gerror.m_gerror->domain == EAS_TYPE_CONNECTION_ERROR &&
+                gerror.m_gerror->code == EAS_CONNECTION_SYNC_ERROR_INVALIDSYNCKEY && */
+                gerror.m_gerror->message &&
+                !strcmp(gerror.m_gerror->message, "Sync error: Invalid synchronization key") &&
+                firstIteration) {
+                // fall back to slow sync
+                slowSync = true;
+                setCurrentSyncKey("");
+                m_trackingNode->clear();
+                continue;
+            }
+
             gerror.throwError("reading ActiveSync changes");
         }
         if (!buffer) {
@@ -180,6 +200,17 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
 
         // update key
         setCurrentSyncKey(buffer);
+
+        // Google  hack: if we started with an empty sync key (= slow sync)
+        // and got no results (= existing items), then try one more time,
+        // because Google only seems to report results when asked with
+        // a valid sync key. As an additional sanity check make sure that
+        // we have a valid sync key now.
+        if (wasSlowSync &&
+            created.empty() &&
+            !getCurrentSyncKey().empty()) {
+            moreAvailable = true;
+        }
     }
 
     // now also generate full list of all current items:
