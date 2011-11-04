@@ -167,6 +167,9 @@ struct GErrorCXX {
     /** clear error if any is set */
     void clear() { g_clear_error(&m_gerror); }
 
+    /** checks whether the current error is the one passed as parameters */
+    bool matches(GQuark domain, gint code) { return g_error_matches(m_gerror, domain, code); }
+
     /**
      * Use this when passing GErrorCXX instance to C functions which need to set it.
      * Make sure the pointer isn't set yet (new GErrorCXX instance, reset if
@@ -216,6 +219,8 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
 
     /** free list */
     ~GListCXX() { clear(); }
+
+    bool empty() { return m_list == NULL; }
 
     /** clear error if any is set */
     void clear() {
