@@ -482,10 +482,14 @@ class TransportStatusException : public StatusException
  */
 std::string SubstEnvironment(const std::string &str);
 
-inline std::string getHome() {
-    const char *homestr = getenv("HOME");
-    return homestr ? homestr : ".";
+/** getenv() with default value */
+inline const char *getEnv(const char *var, const char *def)
+{
+    const char *res = getenv(var);
+    return res ? res : def;
 }
+
+inline std::string getHome() { return getEnv("HOME", "."); }
 
 /**
  * Parse a separator splitted set of strings src, the separator itself is
