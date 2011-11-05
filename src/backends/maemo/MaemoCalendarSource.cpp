@@ -78,6 +78,7 @@ void MaemoCalendarSource::getSynthesisInfo(SynthesisInfo &info,
 {
     TrackingSyncSource::getSynthesisInfo(info, fragments);
     info.m_backendRule = "MAEMO-CALENDAR";
+    info.m_afterReadScript += "$FIX_EXDATE_SCRIPT;\n";
 }
 
 void MaemoCalendarSource::open()

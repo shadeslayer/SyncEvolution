@@ -192,6 +192,26 @@
       }
     ]]></macro>
 
+    <macro name="FIX_EXDATE_SCRIPT"><![CDATA[
+      // Add time zone information to EXDATEs: necessary for
+      // the Maemo calendar storages because it uses EXDATE
+      // without TZID.
+      if (!ISFLOATING(DTSTART)) {
+        STRING tz;
+        tz = TIMEZONE(DTSTART);
+        if (tz != "UTC") {
+          INTEGER i;
+          i = 0;
+          while (i<SIZE(EXDATES)) {
+            if (ISFLOATING(EXDATES[i])) {
+              SETTIMEZONE(EXDATES[i], tz);
+            }
+            i=i+1;
+          }
+        }
+      }
+    ]]></macro>
+
     <!-- Uses the UID/RECURRENCE-ID fields as the only criteria for
          comparing calendar data if the VCALENDAR_COMPARE_UID session
          variable is true, else does a normal comparison of the
