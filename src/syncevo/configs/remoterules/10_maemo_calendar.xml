@@ -1,0 +1,5 @@
+    <remoterule name="MAEMO-CALENDAR">
+      <deviceid>none - this rule is activated via its name in MAKE/PARSETEXTWITHPROFILE() macro calls</deviceid>
+      <include rule="HAVE-EXDATE-DETACHED-NO-TZID"/>
+      <include rule="SIMPLE-EXDATE"/>
+    </remoterule>

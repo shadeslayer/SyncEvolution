@@ -1,1 +1,2 @@
     <subrule name="HAVE-EXDATE-DETACHED"/>
+    <subrule name="HAVE-EXDATE-DETACHED-NO-TZID"/>

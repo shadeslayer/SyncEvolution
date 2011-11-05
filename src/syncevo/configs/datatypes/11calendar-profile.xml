@@ -378,7 +378,13 @@
                with the EXDATE:value1,value2 format (correct in iCalendar 2.0):
                as a workaround, accept all valid formats plus ; but
                generate separate properties with one value each. -->
-          <property name="EXDATE" values="expandedlist" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";">
+          <!-- The simplified version of EXDATE is needed by the Maemo Calendar backend
+               because the calendar storage doesn't parse EXDATE;TZID=...: -->
+          <property name="EXDATE" values="expandedlist" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";" rule="SIMPLE-EXDATE">
+            <value field="EXDATES"/>
+            <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
+          </property>
+          <property name="EXDATE" values="expandedlist" suppressempty="yes" onlyformode="standard" delayedparsing="1" valueseparator="," altvalueseparator=";" rule="other">
             <value field="EXDATES"/>
             <position field="EXDATES" repeat="array" increment="1" minshow="0"/>
             <parameter name="TZID" default="no" show="yes">
@@ -409,6 +415,11 @@
             <parameter name="TZID" default="no" show="yes">
               <value field="EXDATES_DETACHED" conversion="TZID"/>
             </parameter>
+            <position field="EXDATES_DETACHED" repeat="array" increment="1" minshow="0"/>
+          </property>
+          <!-- encode as EXDATE without TZID when backend asks for it -->
+          <property name="EXDATE" show="no" rule="HAVE-EXDATE-DETACHED-NO-TZID" mandatory="no">
+            <value field="EXDATES_DETACHED"/>
             <position field="EXDATES_DETACHED" repeat="array" increment="1" minshow="0"/>
           </property>
 

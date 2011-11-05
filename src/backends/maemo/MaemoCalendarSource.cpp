@@ -77,7 +77,7 @@ void MaemoCalendarSource::getSynthesisInfo(SynthesisInfo &info,
                                            XMLConfigFragments &fragments)
 {
     TrackingSyncSource::getSynthesisInfo(info, fragments);
-    info.m_backendRule = "HAVE-EXDATE-DETACHED";
+    info.m_backendRule = "MAEMO-CALENDAR";
 }
 
 void MaemoCalendarSource::open()
