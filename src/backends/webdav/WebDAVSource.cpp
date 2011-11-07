@@ -33,16 +33,18 @@ BoolConfigProperty &WebDAVCredentialsOkay()
 class ContextSettings : public Neon::Settings {
     boost::shared_ptr<SyncConfig> m_context;
     std::string m_url;
+    /** do change tracking without relying on CTag */
+    bool m_noCTag;
     bool m_googleUpdateHack;
     bool m_googleChildHack;
     bool m_googleAlarmHack;
     // credentials were valid in the past: stored persistently in tracking node
     bool m_credentialsOkay;
 
-
 public:
     ContextSettings(const boost::shared_ptr<SyncConfig> &context) :
         m_context(context),
+        m_noCTag(false),
         m_googleUpdateHack(false),
         m_googleChildHack(false),
         m_googleAlarmHack(false),
@@ -81,6 +83,8 @@ public:
                             m_googleUpdateHack =
                                 m_googleChildHack =
                                 m_googleAlarmHack = true;
+                        } else if (boost::iequals(*flag, "NoCTag")) {
+                            m_noCTag = true;
                         } else {
                             SE_THROW(StringPrintf("unknown SyncEvolution flag %s in URL %s",
                                                   std::string(flag->begin(), flag->end()).c_str(),
@@ -121,6 +125,7 @@ public:
         }
     }
 
+    bool noCTag() const { return m_noCTag; }
     virtual bool googleUpdateHack() const { return m_googleUpdateHack; }
     virtual bool googleChildHack() const { return m_googleChildHack; }
     virtual bool googleAlarmHack() const { return m_googleChildHack; }
@@ -1076,6 +1081,11 @@ static const ne_propname getctag[] = {
 
 std::string WebDAVSource::databaseRevision()
 {
+    if (m_contextSettings && m_contextSettings->noCTag()) {
+        // return empty string to disable usage of CTag
+        return "";
+    }
+
     Timespec deadline = createDeadline();
     Neon::Session::PropfindPropCallback_t callback =
         boost::bind(&WebDAVSource::openPropCallback,
