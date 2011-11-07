@@ -34,12 +34,16 @@
 #include <SyncSource.h>
 
 #include "test.h"
+#include "ClientTestAssert.h"
 
 #ifdef ENABLE_INTEGRATION_TESTS
 
 #include <cppunit/TestSuite.h>
 #include <cppunit/TestAssert.h>
 #include <cppunit/TestFixture.h>
+
+#include <syncevo/Logging.h>
+#include <syncevo/util.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -840,6 +844,15 @@ protected:
         SyncPrefix prefix(logPrefix, *this);
         doSync(options);
     }
+    void doSync(const char *file, int line,
+                const char *logPrefix,
+                const SyncOptions &options) {
+        CT_WRAP_ASSERT(file, line, doSync(logPrefix, options));
+    }
+    void doSync(const char *file, int line,
+                const SyncOptions &options) {
+        CT_WRAP_ASSERT(file, line, doSync(options));
+    }
     virtual void postSync(int res, const std::string &logname);
 };
 
@@ -895,40 +908,46 @@ public:
     virtual void setTimeout(int seconds) { m_wrappedAgent->setTimeout(seconds); }
 };
 
+/** write log message into *.log file of a test */
+#define CLIENT_TEST_LOG(_format, _args...) \
+    SE_LOG_DEBUG(NULL, NULL, "\n%s:%d *** " _format, \
+                 getBasename(__FILE__).c_str(), __LINE__, \
+                 ##_args)
+
 /** assert equality, include string in message if unequal */
 #define CLIENT_TEST_EQUAL( _prefix, \
                            _expected, \
                            _actual ) \
-    CPPUNIT_ASSERT_EQUAL_MESSAGE( std::string(_prefix) + ": " + #_expected + " == " + #_actual, \
-                                  _expected, \
-                                  _actual )
+    CT_ASSERT_EQUAL_MESSAGE( std::string(_prefix) + ": " + #_expected + " == " + #_actual, \
+                             _expected, \
+                             _actual )
 
 /** execute _x and then check the status of the _source pointer */
 #define SOURCE_ASSERT_NO_FAILURE(_source, _x) \
 { \
-    CPPUNIT_ASSERT_NO_THROW(_x); \
-    CPPUNIT_ASSERT((_source)); \
+    CT_ASSERT_NO_THROW(_x); \
+    CT_ASSERT((_source)); \
 }
 
 /** check _x for true and then the status of the _source pointer */
 #define SOURCE_ASSERT(_source, _x) \
 { \
-    CPPUNIT_ASSERT(_x); \
-    CPPUNIT_ASSERT((_source)); \
+    CT_ASSERT(_x); \
+    CT_ASSERT((_source)); \
 }
 
 /** check that _x evaluates to a specific value and then the status of the _source pointer */
 #define SOURCE_ASSERT_EQUAL(_source, _value, _x) \
 { \
-    CPPUNIT_ASSERT_EQUAL(_value, _x); \
-    CPPUNIT_ASSERT((_source)); \
+    CT_ASSERT_EQUAL(_value, _x); \
+    CT_ASSERT((_source)); \
 }
 
 /** same as SOURCE_ASSERT() with a specific failure message */
 #define SOURCE_ASSERT_MESSAGE(_message, _source, _x)     \
 { \
-    CPPUNIT_ASSERT_MESSAGE((_message), (_x)); \
-    CPPUNIT_ASSERT((_source)); \
+    CT_ASSERT_MESSAGE((_message), (_x)); \
+    CT_ASSERT((_source)); \
 }
 
 /**

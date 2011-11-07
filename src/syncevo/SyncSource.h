@@ -1213,6 +1213,7 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
     /* implementation of SyncSourceBase */
     virtual std::string getName() const { return SyncSourceConfig::getName(); }
     virtual std::string getDisplayName() const { return m_name.c_str(); }
+    virtual void setDisplayName(const std::string &name) { m_name = name; }
     virtual long getNumDeleted() const { return m_numDeleted; }
     virtual void setNumDeleted(long num) { m_numDeleted = num; }
     virtual void incrementNumDeleted() { m_numDeleted++; }

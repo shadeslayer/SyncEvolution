@@ -31,6 +31,7 @@
 
 #include "ClientTest.h"
 #include "test.h"
+#include "ClientTestAssert.h"
 #include <SyncSource.h>
 #include <TransportAgent.h>
 #include <Logging.h>
@@ -212,19 +213,24 @@ public:
             m_anchors.clear();
             m_testName = testName;
         }
-        sleep(atoi(getEnv("CLIENT_TEST_SOURCE_DELAY", "0")));
 
-        CPPUNIT_ASSERT(source);
-        source->open();
+        int delay = atoi(getEnv("CLIENT_TEST_SOURCE_DELAY", "0"));
+        if (delay) {
+            CLIENT_TEST_LOG("CLIENT_TEST_SOURCE_DELAY: sleep for %d seconds", delay);
+            sleep(delay);
+        }
+
+        CT_ASSERT(source);
+        CT_ASSERT_NO_THROW(source->open());
         string node = source->getTrackingNode()->getName();
-        source->beginSync(m_anchors[node], "");
+        CT_ASSERT_NO_THROW(source->beginSync(m_anchors[node], ""));
         if (isServerMode()) {
-            source->enableServerMode();
+            CT_ASSERT_NO_THROW(source->enableServerMode());
         }
     }
     ~TestingSyncSourcePtr()
     {
-        reset(NULL);
+        CT_ASSERT_NO_THROW(reset(NULL));
     }
 
     void reset(TestingSyncSource *source = NULL)
@@ -232,23 +238,28 @@ public:
         if (this->get()) {
             BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
                           get()->getOperations().m_endSession) {
-                callback();
+                CT_ASSERT_NO_THROW(callback());
             }
             string node = get()->getTrackingNode()->getName();
-            m_anchors[node] = get()->endSync(true);
-            get()->close();
+            CT_ASSERT_NO_THROW(m_anchors[node] = get()->endSync(true));
+            CT_ASSERT_NO_THROW(get()->close());
         }
         base_t::reset(source);
         if (source) {
-            source->open();
+            int delay = atoi(getEnv("CLIENT_TEST_SOURCE_DELAY", "0"));
+            if (delay) {
+                CLIENT_TEST_LOG("CLIENT_TEST_SOURCE_DELAY: sleep for %d seconds", delay);
+                sleep(delay);
+            }
+            CT_ASSERT_NO_THROW(source->open());
             string node = source->getTrackingNode()->getName();
             source->beginSync(m_anchors[node], "");
             if (isServerMode()) {
-                source->enableServerMode();
+                CT_ASSERT_NO_THROW(source->enableServerMode());
             }
             BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
                           source->getOperations().m_endSession) {
-                callback();
+                CT_ASSERT_NO_THROW(callback());
             }
         }
     }
@@ -292,11 +303,11 @@ static int countItems(TestingSyncSource *source) { return countItemsOfType(sourc
 /** insert new item, return LUID */
 static std::string importItem(TestingSyncSource *source, const ClientTestConfig &config, std::string &data)
 {
-    CPPUNIT_ASSERT(source);
+    CT_ASSERT(source);
     if (data.size()) {
         SyncSourceRaw::InsertItemResult res;
         SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw("", config.m_mangleItem(data, false)));
-        CPPUNIT_ASSERT(!res.m_luid.empty());
+        CT_ASSERT(!res.m_luid.empty());
         return res.m_luid;
     } else {
         return "";
@@ -403,38 +414,38 @@ std::string LocalTests::insert(CreateSource createSource, const std::string &dat
 
     // count number of already existing items
     int numItems = 0;
-    CPPUNIT_ASSERT_NO_THROW(numItems = countItems(source.get()));
+    CT_ASSERT_NO_THROW(numItems = countItems(source.get()));
     SyncSourceRaw::InsertItemResult res;
     std::string mangled = config.m_mangleItem(data, false);
     if (inserted) {
         *inserted = mangled;
     }
     SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw("", mangled));
-    CPPUNIT_ASSERT(!res.m_luid.empty());
+    CT_ASSERT(!res.m_luid.empty());
 
     bool updated = false;
     if (res.m_state == ITEM_NEEDS_MERGE) {
         // conflict detected, overwrite existing item as done in the past
         std::string luid = res.m_luid;
         SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw(luid, mangled));
-        CPPUNIT_ASSERT_EQUAL(luid, res.m_luid);
-        CPPUNIT_ASSERT(res.m_state == ITEM_OKAY);
+        CT_ASSERT_EQUAL(luid, res.m_luid);
+        CT_ASSERT(res.m_state == ITEM_OKAY);
         updated = true;
     }
 
     // delete source again
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 
     if (!relaxed) {
         // two possible results:
         // - a new item was added
         // - the item was matched against an existing one
-        CPPUNIT_ASSERT_NO_THROW(source.reset(createSource()));
-        CPPUNIT_ASSERT_EQUAL(numItems + ((res.m_state == ITEM_REPLACED || res.m_state == ITEM_MERGED || updated) ? 0 : 1),
-                             countItems(source.get()));
-        CPPUNIT_ASSERT(countNewItems(source.get()) == 0);
-        CPPUNIT_ASSERT(countUpdatedItems(source.get()) == 0);
-        CPPUNIT_ASSERT(countDeletedItems(source.get()) == 0);
+        SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
+        CT_ASSERT_EQUAL(numItems + ((res.m_state == ITEM_REPLACED || res.m_state == ITEM_MERGED || updated) ? 0 : 1),
+                        countItems(source.get()));
+        CT_ASSERT_EQUAL(0, countNewItems(source.get()));
+        CT_ASSERT_EQUAL(0, countUpdatedItems(source.get()));
+        CT_ASSERT_EQUAL(0, countDeletedItems(source.get()));
     }
     backupStorage(config, client);
 
@@ -445,14 +456,16 @@ std::string LocalTests::insert(CreateSource createSource, const std::string &dat
 static std::string updateItem(CreateSource createSource, const ClientTestConfig &config, const std::string &uid, const std::string &data, std::string *updated = NULL) {
     std::string newuid;
 
-    CPPUNIT_ASSERT(createSource.createSource);
+    CT_ASSERT(createSource.createSource);
 
     // create source
-    TestingSyncSourcePtr source(createSource());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
 
     // insert item
     SyncSourceRaw::InsertItemResult res;
-    std::string mangled = config.m_mangleItem(data, true);
+    std::string mangled;
+    CT_ASSERT_NO_THROW(mangled = config.m_mangleItem(data, true));
     if (updated) {
         *updated = mangled;
     }
@@ -465,33 +478,35 @@ static std::string updateItem(CreateSource createSource, const ClientTestConfig 
 /** updates specific item locally via sync source */
 static void removeItem(CreateSource createSource, const std::string &luid)
 {
-    CPPUNIT_ASSERT(createSource.createSource);
+    CT_ASSERT(createSource.createSource);
 
     // create source
-    TestingSyncSourcePtr source(createSource());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
 
     // remove item
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->deleteItem(luid));
 }
 
 void LocalTests::update(CreateSource createSource, const std::string &data, bool check) {
-    CPPUNIT_ASSERT(createSource.createSource);
+    CT_ASSERT(createSource.createSource);
 
     restoreStorage(config, client);
 
     // create source
-    TestingSyncSourcePtr source(createSource());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
 
     // get existing item, then update it
     SyncSourceChanges::Items_t::const_iterator it;
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
-    CPPUNIT_ASSERT(it != source->getAllItems().end());
+    CT_ASSERT(it != source->getAllItems().end());
     string luid = *it;
     SyncSourceRaw::InsertItemResult res;
     SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw(luid, config.m_mangleItem(data, true)));
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
-    CPPUNIT_ASSERT_EQUAL(luid, res.m_luid);
-    CPPUNIT_ASSERT_EQUAL(ITEM_OKAY, res.m_state);
+    CT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_EQUAL(luid, res.m_luid);
+    CT_ASSERT_EQUAL(ITEM_OKAY, res.m_state);
 
     if (!check) {
         return;
@@ -499,20 +514,20 @@ void LocalTests::update(CreateSource createSource, const std::string &data, bool
 
     // check that the right changes are reported when reopening the source
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
-    CPPUNIT_ASSERT_EQUAL(1, countItems(source.get()));
-    CPPUNIT_ASSERT_EQUAL(0, countNewItems(source.get()));
-    CPPUNIT_ASSERT_EQUAL(0, countUpdatedItems(source.get()));
-    CPPUNIT_ASSERT_EQUAL(0, countDeletedItems(source.get()));
+    CT_ASSERT_EQUAL(1, countItems(source.get()));
+    CT_ASSERT_EQUAL(0, countNewItems(source.get()));
+    CT_ASSERT_EQUAL(0, countUpdatedItems(source.get()));
+    CT_ASSERT_EQUAL(0, countDeletedItems(source.get()));
     
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
-    CPPUNIT_ASSERT(it != source->getAllItems().end());
-    CPPUNIT_ASSERT_EQUAL(luid, *it);
+    CT_ASSERT(it != source->getAllItems().end());
+    CT_ASSERT_EQUAL(luid, *it);
 
     backupStorage(config, client);
 }
 
 void LocalTests::update(CreateSource createSource, const std::string &data, const std::string &luid) {
-    CPPUNIT_ASSERT(createSource.createSource);
+    CT_ASSERT(createSource.createSource);
 
     restoreStorage(config, client);
     // create source
@@ -526,15 +541,16 @@ void LocalTests::update(CreateSource createSource, const std::string &data, cons
 
 /** deletes all items locally via sync source */
 void LocalTests::deleteAll(CreateSource createSource) {
-    CPPUNIT_ASSERT(createSource.createSource);
+    CT_ASSERT(createSource.createSource);
 
     restoreStorage(config, client);
     // create source
-    TestingSyncSourcePtr source(createSource());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
 
     // delete all items
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->removeAllItems());
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 
     // check that all items are gone
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
@@ -542,18 +558,19 @@ void LocalTests::deleteAll(CreateSource createSource) {
         "should be empty now",
         source.get(),
         countItems(source.get()) == 0);
-    CPPUNIT_ASSERT_EQUAL( 0, countNewItems(source.get()) );
-    CPPUNIT_ASSERT_EQUAL( 0, countUpdatedItems(source.get()) );
-    CPPUNIT_ASSERT_EQUAL( 0, countDeletedItems(source.get()) );
+    CT_ASSERT_EQUAL( 0, countNewItems(source.get()) );
+    CT_ASSERT_EQUAL( 0, countUpdatedItems(source.get()) );
+    CT_ASSERT_EQUAL( 0, countDeletedItems(source.get()) );
     backupStorage(config, client);
 }
 
 /** deletes specific item locally via sync source */
 static void deleteItem(CreateSource createSource, const std::string &uid) {
-    CPPUNIT_ASSERT(createSource.createSource);
+    CT_ASSERT(createSource.createSource);
 
     // create source
-    TestingSyncSourcePtr source(createSource());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
 
     // delete item
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->deleteItem(uid));
@@ -568,7 +585,7 @@ static void deleteItem(CreateSource createSource, const std::string &uid) {
  * @param raiseAssert  raise assertion if comparison yields differences (defaults to true)
  */
 bool LocalTests::compareDatabases(const char *refFile, TestingSyncSource &copy, bool raiseAssert) {
-    CPPUNIT_ASSERT(config.m_dump);
+    CT_ASSERT(config.m_dump);
 
     std::string sourceFile, copyFile;
 
@@ -580,15 +597,16 @@ bool LocalTests::compareDatabases(const char *refFile, TestingSyncSource &copy, 
         TestingSyncSourcePtr source;
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, config.m_dump(client, *source.get(), sourceFile));
-        CPPUNIT_ASSERT_NO_THROW(source.reset());
+        CT_ASSERT_NO_THROW(source.reset());
     }
 
     copyFile = getCurrentTest() + ".B.test.dat";
     simplifyFilename(copyFile);
     SOURCE_ASSERT_EQUAL(&copy, 0, config.m_dump(client, copy, copyFile));
 
-    bool equal = config.m_compare(client, sourceFile, copyFile);
-    CPPUNIT_ASSERT(!raiseAssert || equal);
+    bool equal;
+    CT_ASSERT_NO_THROW(equal = config.m_compare(client, sourceFile, copyFile));
+    CT_ASSERT(!raiseAssert || equal);
 
     return equal;
 }
@@ -646,11 +664,11 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
             data.find("VERSION:2.1") != data.npos;
         size_t toreplace = 1;
 
-        CPPUNIT_ASSERT(!config.m_sizeProperty.empty());
+        CT_ASSERT(!config.m_sizeProperty.empty());
 
         /* stuff the item so that it reaches at least that size */
         size_t off = data.find(config.m_sizeProperty);
-        CPPUNIT_ASSERT(off != data.npos);
+        CT_ASSERT(off != data.npos);
         std::stringstream stuffing;
         if (quoted) {
             stuffing << ";ENCODING=QUOTED-PRINTABLE:";
@@ -661,9 +679,9 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
         // insert after the first line, it often acts as the summary
         if (data.find("BEGIN:VJOURNAL") != data.npos) {
             size_t start = data.find(":", off);
-            CPPUNIT_ASSERT( start != data.npos );
+            CT_ASSERT( start != data.npos );
             size_t eol = data.find("\\n", off);
-            CPPUNIT_ASSERT( eol != data.npos );
+            CT_ASSERT( eol != data.npos );
             stuffing << data.substr(start + 1, eol - start + 1);
             toreplace += eol - start + 1;
         }
@@ -707,12 +725,12 @@ std::string LocalTests::createItem(int item, const std::string &revision, int si
 std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, int startIndex, int numItems, int size) {
     std::list<std::string> luids;
 
-    CPPUNIT_ASSERT(!config.m_templateItem.empty());
+    CT_ASSERT(!config.m_templateItem.empty());
 
     restoreStorage(config, client);
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
-    CPPUNIT_ASSERT(startIndex > 1 || !countItems(source.get()));
+    CT_ASSERT(startIndex > 1 || !countItems(source.get()));
 
     int firstIndex = startIndex;
     if (firstIndex < 0) {
@@ -731,9 +749,9 @@ std::list<std::string> LocalTests::insertManyItems(CreateSource createSource, in
 std::list<std::string> LocalTests::insertManyItems(TestingSyncSource *source, int startIndex, int numItems, int size) {
     std::list<std::string> luids;
 
-    CPPUNIT_ASSERT(!config.m_templateItem.empty());
+    CT_ASSERT(!config.m_templateItem.empty());
 
-    CPPUNIT_ASSERT(startIndex > 1 || !countItems(source));
+    CT_ASSERT(startIndex > 1 || !countItems(source));
     int firstIndex = startIndex;
     if (firstIndex < 0) {
         firstIndex = 1;
@@ -750,41 +768,42 @@ std::list<std::string> LocalTests::insertManyItems(TestingSyncSource *source, in
 // update every single item in the database
 void LocalTests::updateData(CreateSource createSource) {
     // check additional requirements
-    CPPUNIT_ASSERT(config.m_update);
+    CT_ASSERT(config.m_update);
 
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
     BOOST_FOREACH(const string &luid, source->getAllItems()) {
         string item;
-        source->readItemRaw(luid, item);
-        config.m_update(item);
-        source->insertItemRaw(luid, item);
+        CT_ASSERT_NO_THROW(source->readItemRaw(luid, item));
+        CT_ASSERT_NO_THROW(config.m_update(item));
+        CT_ASSERT_NO_THROW(source->insertItemRaw(luid, item));
     }
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 }
 
 
 // creating sync source
 void LocalTests::testOpen() {
     // check requirements
-    CPPUNIT_ASSERT(config.m_createSourceA);
+    CT_ASSERT(config.m_createSourceA);
 
     // Intentionally use the plain auto_ptr here and
     // call open directly. That way it is a bit more clear
     // what happens and where it fails, if it fails.
-    std::auto_ptr<TestingSyncSource> source(createSourceA());
+    std::auto_ptr<TestingSyncSource> source;
+    CT_ASSERT_NO_THROW(source.reset(createSourceA()));
     // got a sync source?
-    CPPUNIT_ASSERT(source.get() != 0);
+    CT_ASSERT(source.get() != 0);
     // can it be opened?
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->open());
     // delete it
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 }
 
 // restart scanning of items
 void LocalTests::testIterateTwice() {
     // check requirements
-    CPPUNIT_ASSERT(config.m_createSourceA);
+    CT_ASSERT(config.m_createSourceA);
 
     // open source
     TestingSyncSourcePtr source(createSourceA());
@@ -797,41 +816,41 @@ void LocalTests::testIterateTwice() {
 // insert one contact without clearing the source first
 void LocalTests::testSimpleInsert() {
     // check requirements
-    CPPUNIT_ASSERT(!config.m_insertItem.empty());
-    CPPUNIT_ASSERT(!config.m_createSourceA.empty());
+    CT_ASSERT(!config.m_insertItem.empty());
+    CT_ASSERT(!config.m_createSourceA.empty());
 
-    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.m_insertItem));
+    CT_ASSERT_NO_THROW(insert(createSourceA, config.m_insertItem));
 }
 
 // delete all items
 void LocalTests::testLocalDeleteAll() {
     // check requirements
-    CPPUNIT_ASSERT(!config.m_insertItem.empty());
-    CPPUNIT_ASSERT(config.m_createSourceA);
+    CT_ASSERT(!config.m_insertItem.empty());
+    CT_ASSERT(config.m_createSourceA);
 
     // make sure there is something to delete, then delete again
-    CPPUNIT_ASSERT_NO_THROW(insert(createSourceA, config.m_insertItem));
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(insert(createSourceA, config.m_insertItem));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 }
 
 // clean database, then insert
 void LocalTests::testComplexInsert() {
-    CPPUNIT_ASSERT(config.m_createSourceA);
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
-    testSimpleInsert();
-    testIterateTwice();
+    CT_ASSERT(config.m_createSourceA);
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(testSimpleInsert());
+    CT_ASSERT_NO_THROW(testIterateTwice());
 }
 
 // clean database, insert item, update it
 void LocalTests::testLocalUpdate() {
     // check additional requirements
-    CPPUNIT_ASSERT(!config.m_updateItem.empty());
-    CPPUNIT_ASSERT(config.m_createSourceA);
+    CT_ASSERT(!config.m_updateItem.empty());
+    CT_ASSERT(config.m_createSourceA);
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
-    testSimpleInsert();
-    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
+    CT_ASSERT_NO_THROW(testSimpleInsert());
+    CT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
 }
 
 // complex sequence of changes
@@ -839,18 +858,21 @@ void LocalTests::testChanges() {
     SyncSourceChanges::Items_t::const_iterator it, it2;
 
     // check additional requirements
-    CPPUNIT_ASSERT(config.m_createSourceB);
-    CPPUNIT_ASSERT(config.m_createSourceA);
+    CT_ASSERT(config.m_createSourceB);
+    CT_ASSERT(config.m_createSourceA);
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
-    testSimpleInsert();
+    CLIENT_TEST_LOG("clean via source A");
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
-    // clean changes in sync source B by creating and closing it
+    CLIENT_TEST_LOG("insert item via source A");
+    CT_ASSERT_NO_THROW(testSimpleInsert());
+
+    CLIENT_TEST_LOG("clean changes in sync source B by creating and closing it");
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 
-    // no new changes now
+    CLIENT_TEST_LOG("no new changes now in source B");
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
@@ -859,48 +881,51 @@ void LocalTests::testChanges() {
     string item;
     string luid;
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
-    CPPUNIT_ASSERT(it != source->getAllItems().end());
+    CT_ASSERT(it != source->getAllItems().end());
     luid = *it;
     // It is not required for incremental syncing that sources must be
     // able to return unchanged items. For example, ActiveSyncSource doesn't support
     // it because it gets only IDs and data of added or updated items.
     // Don't test it.
     // SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, item));
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 
-    // delete item again via sync source A
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CLIENT_TEST_LOG("delete item again via sync source A");
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CLIENT_TEST_LOG("check for deleted item via source B");
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countDeletedItems(source.get()));
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getDeletedItems().begin());
-    CPPUNIT_ASSERT(it != source->getDeletedItems().end());
-    CPPUNIT_ASSERT(!it->empty());
-    CPPUNIT_ASSERT_EQUAL(luid, *it);
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT(it != source->getDeletedItems().end());
+    CT_ASSERT(!it->empty());
+    CT_ASSERT_EQUAL(luid, *it);
+    CT_ASSERT_NO_THROW(source.reset());
 
-    // insert another item via sync source A
-    testSimpleInsert();
+    CLIENT_TEST_LOG("insert another item via source A");
+    CT_ASSERT_NO_THROW(testSimpleInsert());
+    CLIENT_TEST_LOG("check for new item via source B");
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getAllItems().begin());
-    CPPUNIT_ASSERT(it != source->getAllItems().end());
+    CT_ASSERT(it != source->getAllItems().end());
     luid = *it;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, item));
     string newItem;
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getNewItems().begin());
-    CPPUNIT_ASSERT(it != source->getNewItems().end());
+    CT_ASSERT(it != source->getNewItems().end());
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, item));
-    CPPUNIT_ASSERT_EQUAL(luid, *it);
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_EQUAL(luid, *it);
+    CT_ASSERT_NO_THROW(source.reset());
 
-    // update item via sync source A
-    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
+    CLIENT_TEST_LOG("update item via source A");
+    CT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
+    CLIENT_TEST_LOG("check for updated item via source B");
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
@@ -908,32 +933,35 @@ void LocalTests::testChanges() {
     SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
     string updatedItem;
     SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getUpdatedItems().begin());
-    CPPUNIT_ASSERT(it != source->getUpdatedItems().end());
+    CT_ASSERT(it != source->getUpdatedItems().end());
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, updatedItem));
-    CPPUNIT_ASSERT_EQUAL(luid, *it);
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_EQUAL(luid, *it);
+    CT_ASSERT_NO_THROW(source.reset());
 
-    // start anew, then create and update an item -> should only be listed as new
-    // or updated, but not both
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CLIENT_TEST_LOG("start anew in both sources");
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
-    testSimpleInsert();
-    CPPUNIT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
+    CT_ASSERT_NO_THROW(source.reset());
+    CLIENT_TEST_LOG("create and update an item in source A");
+    CT_ASSERT_NO_THROW(testSimpleInsert());
+    CT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
+    CLIENT_TEST_LOG("should only be listed as new or updated in source B, but not both");
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()) + countUpdatedItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 
-    // start anew, then create, delete and recreate an item -> should only be listed as new or updated,
-    // even if (as for calendar with UID) the same LUID gets reused
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CLIENT_TEST_LOG("start anew once more in both sources");
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
-    testSimpleInsert();
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
-    testSimpleInsert();
+    CT_ASSERT_NO_THROW(source.reset());
+    CLIENT_TEST_LOG("create, delete and recreate an item in source A");
+    CT_ASSERT_NO_THROW(testSimpleInsert());
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(testSimpleInsert());
+    CLIENT_TEST_LOG("should only be listed as new or updated in source B, even if\n "
+                    "(as for calendar with UID) the same LUID gets reused");
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()) + countUpdatedItems(source.get()));
@@ -942,13 +970,13 @@ void LocalTests::testChanges() {
         // server which has never seen that LUID. The LUID must not be the same as
         // the one we list as new or updated, though.
         SOURCE_ASSERT_NO_FAILURE(source.get(), it = source->getDeletedItems().begin());
-        CPPUNIT_ASSERT(it != source->getDeletedItems().end());
+        CT_ASSERT(it != source->getDeletedItems().end());
         SOURCE_ASSERT_NO_FAILURE(source.get(), it2 = source->getNewItems().begin());
         if (it2 == source->getNewItems().end()) {
             SOURCE_ASSERT_NO_FAILURE(source.get(), it2 = source->getUpdatedItems().begin());
-            CPPUNIT_ASSERT(it2 != source->getUpdatedItems().end());
+            CT_ASSERT(it2 != source->getUpdatedItems().end());
         }
-        CPPUNIT_ASSERT(*it != *it2);
+        CT_ASSERT(*it != *it2);
     } else {
         SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
     }
@@ -957,13 +985,13 @@ void LocalTests::testChanges() {
 // clean database, import file, then export again and compare
 void LocalTests::testImport() {
     // check additional requirements
-    CPPUNIT_ASSERT(config.m_import);
-    CPPUNIT_ASSERT(config.m_dump);
-    CPPUNIT_ASSERT(config.m_compare);
-    CPPUNIT_ASSERT(!config.m_testcases.empty());
-    CPPUNIT_ASSERT(config.m_createSourceA);
+    CT_ASSERT(config.m_import);
+    CT_ASSERT(config.m_dump);
+    CT_ASSERT(config.m_compare);
+    CT_ASSERT(!config.m_testcases.empty());
+    CT_ASSERT(config.m_createSourceA);
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // import via sync source A
     TestingSyncSourcePtr source;
@@ -972,46 +1000,46 @@ void LocalTests::testImport() {
     std::string testcases;
     std::string importFailures = config.m_import(client, *source.get(), config, config.m_testcases, testcases);
     backupStorage(config, client);
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 
     // export again and compare against original file
     TestingSyncSourcePtr copy;
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
     bool equal = compareDatabases(testcases.c_str(), *copy.get(), false);
-    CPPUNIT_ASSERT_NO_THROW(source.reset());
+    CT_ASSERT_NO_THROW(source.reset());
 
     if (importFailures.empty()) {
-        CPPUNIT_ASSERT_MESSAGE("imported and exported data equal", equal);
+        CT_ASSERT_MESSAGE("imported and exported data equal", equal);
     } else {
-        CPPUNIT_ASSERT_EQUAL(std::string(""), importFailures);
+        CT_ASSERT_EQUAL(std::string(""), importFailures);
     }
 }
 
 // same as testImport() with immediate delete
 void LocalTests::testImportDelete() {
-    testImport();
+    CT_ASSERT_NO_THROW(testImport());
 
     // delete again, because it was observed that this did not
     // work right with calendars in SyncEvolution
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 }
 
 // test change tracking with large number of items
 void LocalTests::testManyChanges() {
     // check additional requirements
-    CPPUNIT_ASSERT(!config.m_templateItem.empty());
+    CT_ASSERT(!config.m_templateItem.empty());
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // check that everything is empty, also resets change counter of sync source B
     TestingSyncSourcePtr copy;
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // now insert plenty of items
     int numItems;
-    CPPUNIT_ASSERT_NO_THROW(numItems = insertManyItems(createSourceA).size());
+    CT_ASSERT_NO_THROW(numItems = insertManyItems(createSourceA).size());
 
     // check that exactly this number of items is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1019,10 +1047,10 @@ void LocalTests::testManyChanges() {
     SOURCE_ASSERT_EQUAL(copy.get(), numItems, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countDeletedItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // delete all items
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // verify again
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1030,7 +1058,7 @@ void LocalTests::testManyChanges() {
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), numItems, countDeletedItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 }
 
 template<class T, class V> int countEqual(const T &container,
@@ -1045,7 +1073,7 @@ template<class T, class V> int countEqual(const T &container,
 void LocalTests::testLinkedItemsParent() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData;
     TestingSyncSourcePtr copy;
@@ -1053,14 +1081,14 @@ void LocalTests::testLinkedItemsParent() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // now insert main item
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     // check that exactly the parent is listed as new
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1068,14 +1096,14 @@ void LocalTests::testLinkedItemsParent() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
     // delete all items
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     // verify again
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
@@ -1093,7 +1121,7 @@ void LocalTests::testLinkedItemsParent() {
 void LocalTests::testLinkedItemsChild() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string childData;
     TestingSyncSourcePtr copy;
@@ -1101,13 +1129,13 @@ void LocalTests::testLinkedItemsChild() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // same as above for child item
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1115,13 +1143,13 @@ void LocalTests::testLinkedItemsChild() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1138,7 +1166,7 @@ void LocalTests::testLinkedItemsChild() {
 void LocalTests::testLinkedItemsParentChild() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1146,14 +1174,14 @@ void LocalTests::testLinkedItemsParentChild() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // insert parent first, then child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1162,13 +1190,13 @@ void LocalTests::testLinkedItemsParentChild() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1186,7 +1214,7 @@ void LocalTests::testLinkedItemsParentChild() {
 void LocalTests::testLinkedItemsChildParent() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1194,14 +1222,14 @@ void LocalTests::testLinkedItemsChildParent() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, then parent
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &childData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &parentData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1210,13 +1238,13 @@ void LocalTests::testLinkedItemsChildParent() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1234,7 +1262,7 @@ void LocalTests::testLinkedItemsChildParent() {
 void LocalTests::testLinkedItemsChildChangesParent() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1242,13 +1270,13 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // insert child first, check changes, then insert the parent
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1256,12 +1284,12 @@ void LocalTests::testLinkedItemsChildChangesParent() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &parentData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], true, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     if (!config.m_sourceLUIDsAreVolatile) {
@@ -1275,13 +1303,13 @@ void LocalTests::testLinkedItemsChildChangesParent() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1299,7 +1327,7 @@ void LocalTests::testLinkedItemsChildChangesParent() {
 void LocalTests::testLinkedItemsRemoveParentFirst() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1307,14 +1335,14 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove parent, then child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1323,12 +1351,12 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     // deleting the parent may or may not modify the child
@@ -1337,13 +1365,13 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1353,7 +1381,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -1361,7 +1389,7 @@ void LocalTests::testLinkedItemsRemoveParentFirst() {
 void LocalTests::testLinkedItemsRemoveNormal() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr source, copy;
@@ -1369,14 +1397,14 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // insert both items, remove child, then parent
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1385,9 +1413,9 @@ void LocalTests::testLinkedItemsRemoveNormal() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     // The removal of the child fails with Exchange (BMC #22849).
     // Skip the testing, proceed to full removal.
@@ -1398,29 +1426,29 @@ void LocalTests::testLinkedItemsRemoveNormal() {
             size_t pos = parentData.rfind("DTSTART");
             parentData.insert(pos, "EXDATE:20080413T090000\n");
         }
-        CPPUNIT_ASSERT_NO_THROW(compareDatabases(*source, &parentData, NULL));
+        CT_ASSERT_NO_THROW(compareDatabases(*source, &parentData, NULL));
         SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
 
-        CPPUNIT_ASSERT_NO_THROW(source.reset());
+        CT_ASSERT_NO_THROW(source.reset());
 
         SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
         SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
         // parent might have been updated
         int updated;
-        CPPUNIT_ASSERT_NO_THROW(updated = countUpdatedItems(copy.get()));
+        CT_ASSERT_NO_THROW(updated = countUpdatedItems(copy.get()));
         SOURCE_ASSERT(copy.get(), 0 <= updated && updated <= 1);
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countDeletedItems(copy.get()));
         if (!config.m_sourceLUIDsAreVolatile) {
             SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
         }
-        CPPUNIT_ASSERT_NO_THROW(copy.reset());
+        CT_ASSERT_NO_THROW(copy.reset());
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1433,7 +1461,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -1441,7 +1469,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
 void LocalTests::testLinkedItemsInsertParentTwice() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1449,13 +1477,13 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // add parent twice (should be turned into update)
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1463,12 +1491,12 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1476,13 +1504,13 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1499,7 +1527,7 @@ void LocalTests::testLinkedItemsInsertParentTwice() {
 void LocalTests::testLinkedItemsInsertChildTwice() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1507,13 +1535,13 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // add child twice (should be turned into update)
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1521,12 +1549,12 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1]));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1]));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1534,13 +1562,13 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1557,7 +1585,7 @@ void LocalTests::testLinkedItemsInsertChildTwice() {
 void LocalTests::testLinkedItemsParentUpdate() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1565,13 +1593,13 @@ void LocalTests::testLinkedItemsParentUpdate() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // add parent, then update it
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1579,12 +1607,12 @@ void LocalTests::testLinkedItemsParentUpdate() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, items[0], &parentData));
+    CT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, items[0], &parentData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1592,13 +1620,13 @@ void LocalTests::testLinkedItemsParentUpdate() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1608,7 +1636,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -1616,7 +1644,7 @@ void LocalTests::testLinkedItemsParentUpdate() {
 void LocalTests::testLinkedItemsUpdateChild() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1624,13 +1652,13 @@ void LocalTests::testLinkedItemsUpdateChild() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // add child, then update it
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1638,12 +1666,12 @@ void LocalTests::testLinkedItemsUpdateChild() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, items[1], &childData));
+    CT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, items[1], &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 1, countUpdatedItems(copy.get()));
@@ -1651,13 +1679,13 @@ void LocalTests::testLinkedItemsUpdateChild() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1674,7 +1702,7 @@ void LocalTests::testLinkedItemsUpdateChild() {
 void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1682,14 +1710,14 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1698,13 +1726,13 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, items[1], &childData));
+    CT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, items[1], &childData));
 
     // child has to be listed as modified, parent may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
@@ -1713,14 +1741,14 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1731,7 +1759,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), parent));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listDeletedItems(copy.get()), child));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 }
 
 // test inserting, removing and updating of parent + child item in
@@ -1739,7 +1767,7 @@ void LocalTests::testLinkedItemsInsertBothUpdateChild() {
 void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
@@ -1747,14 +1775,14 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     // check that everything is empty, also resets change counter of sync source B
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     // add parent and child, then update parent
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countNewItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countUpdatedItems(copy.get()));
@@ -1763,13 +1791,13 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), child));
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
-    CPPUNIT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, items[0], &parentData));
+    CT_ASSERT_NO_THROW(parent = updateItem(createSourceA, config, parent, items[0], &parentData));
 
     // parent has to be listed as modified, child may be
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
     SOURCE_ASSERT_EQUAL(copy.get(), 2, countItems(copy.get()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countNewItems(copy.get()));
     SOURCE_ASSERT(copy.get(), 1 <= countUpdatedItems(copy.get()));
@@ -1778,14 +1806,14 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
     if (!config.m_sourceLUIDsAreVolatile) {
         SOURCE_ASSERT_EQUAL(copy.get(), 1, countEqual(listUpdatedItems(copy.get()), parent));
     }
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
 
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
-    CPPUNIT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, parent));
+    CT_ASSERT_NO_THROW(deleteItem(createSourceA, child));
 
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
@@ -1803,26 +1831,28 @@ void LocalTests::testLinkedItemsInsertBothUpdateParent() {
 void LocalTests::testLinkedItemsInsertBothUpdateChildNoIDs() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string parent, child;
     std::string parentData, childData;
     TestingSyncSourcePtr copy;
 
     // add parent and child, then update child
-    CPPUNIT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(parent = insert(createSourceA, items[0], false, &parentData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     // remove UID and RECURRENCE-ID before updating
     std::string reducedChildData = items[1];
-    std::string uid = stripProperty(reducedChildData, "UID");
-    std::string rid = stripProperty(reducedChildData, "RECURRENCE-ID");
-    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, reducedChildData, &childData));
+    std::string uid;
+    CT_ASSERT_NO_THROW(uid = stripProperty(reducedChildData, "UID"));
+    std::string rid;
+    CT_ASSERT_NO_THROW(rid = stripProperty(reducedChildData, "RECURRENCE-ID"));
+    CT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, reducedChildData, &childData));
 
     // compare
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
-    insertProperty(childData, uid, "END:VEVENT");
-    insertProperty(childData, rid, "END:VEVENT");
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
+    CT_ASSERT_NO_THROW(insertProperty(childData, uid, "END:VEVENT"));
+    CT_ASSERT_NO_THROW(insertProperty(childData, rid, "END:VEVENT"));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &parentData, &childData, NULL));
 }
 
 // - insert child
@@ -1830,25 +1860,27 @@ void LocalTests::testLinkedItemsInsertBothUpdateChildNoIDs() {
 void LocalTests::testLinkedItemsUpdateChildNoIDs() {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
 
-    CPPUNIT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     std::string child;
     std::string childData;
     TestingSyncSourcePtr copy;
 
     // add child, then update child
-    CPPUNIT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
+    CT_ASSERT_NO_THROW(child = insert(createSourceA, items[1], false, &childData));
 
     // remove UID and RECURRENCE-ID before updating
     std::string reducedChildData = items[1];
-    std::string uid = stripProperty(reducedChildData, "UID");
-    std::string rid = stripProperty(reducedChildData, "RECURRENCE-ID");
-    CPPUNIT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, reducedChildData, &childData));
+    std::string uid;
+    CT_ASSERT_NO_THROW(uid = stripProperty(reducedChildData, "UID"));
+    std::string rid;
+    CT_ASSERT_NO_THROW(rid = stripProperty(reducedChildData, "RECURRENCE-ID"));
+    CT_ASSERT_NO_THROW(child = updateItem(createSourceA, config, child, reducedChildData, &childData));
 
     // compare
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
-    insertProperty(childData, uid, "END:VEVENT");
-    insertProperty(childData, rid, "END:VEVENT");
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
+    CT_ASSERT_NO_THROW(insertProperty(childData, uid, "END:VEVENT"));
+    CT_ASSERT_NO_THROW(insertProperty(childData, rid, "END:VEVENT"));
+    CT_ASSERT_NO_THROW(compareDatabases(*copy, &childData, NULL));
 }
 
 ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()
@@ -1857,17 +1889,17 @@ ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()
     std::string test = getCurrentTest();
     const std::string testname = "LinkedItems";
     size_t off = test.find(testname);
-    CPPUNIT_ASSERT(off != test.npos);
+    CT_ASSERT(off != test.npos);
     off += testname.size();
     size_t end = test.find(':', off);
-    CPPUNIT_ASSERT(end != test.npos);
+    CT_ASSERT(end != test.npos);
     std::string name = test.substr(off, end - off);
     BOOST_FOREACH(const ClientTestConfig::LinkedItems_t &items, config.m_linkedItems) {
         if (items.m_name == name) {
             return items;
         }
     }
-    CPPUNIT_ASSERT_MESSAGE("linked items test data not found", false);
+    CT_ASSERT_MESSAGE("linked items test data not found", false);
     return ClientTestConfig::LinkedItems_t();
 }
 
@@ -2106,7 +2138,7 @@ bool SyncTests::compareDatabases(const char *refFileBase, bool raiseAssert) {
     source_it it2;
     bool equal = true;
 
-    CPPUNIT_ASSERT(accessClientB);
+    CT_ASSERT(accessClientB);
     for (it1 = sources.begin(), it2 = accessClientB->sources.begin();
          it1 != sources.end() && it2 != accessClientB->sources.end();
          ++it1, ++it2) {
@@ -2125,12 +2157,12 @@ bool SyncTests::compareDatabases(const char *refFileBase, bool raiseAssert) {
                 equal = false;
             }
         }
-        CPPUNIT_ASSERT_NO_THROW(copy.reset());
+        CT_ASSERT_NO_THROW(copy.reset());
     }
-    CPPUNIT_ASSERT(it1 == sources.end());
-    CPPUNIT_ASSERT(it2 == accessClientB->sources.end());
+    CT_ASSERT(it1 == sources.end());
+    CT_ASSERT(it2 == accessClientB->sources.end());
 
-    CPPUNIT_ASSERT(!raiseAssert || equal);
+    CT_ASSERT(!raiseAssert || equal);
     return equal;
 }
 
@@ -2148,23 +2180,25 @@ void SyncTests::deleteAll(DeleteAllMode mode) {
      case DELETE_ALL_SYNC:
         // a refresh from server would slightly reduce the amount of data exchanged, but not all servers support it
         for (it = sources.begin(); it != sources.end(); ++it) {
-            it->second->deleteAll(it->second->createSourceA);
+            CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
         }
-        doSync("init", SyncOptions(SYNC_SLOW));
+        doSync(__FILE__, __LINE__, "init", SyncOptions(SYNC_SLOW));
         // now that client and server are in sync, delete locally and sync again
         for (it = sources.begin(); it != sources.end(); ++it) {
-            it->second->deleteAll(it->second->createSourceA);
+            CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
         }
-        doSync("twoway",
+        doSync(__FILE__, __LINE__,
+               "twoway",
                SyncOptions(SYNC_TWO_WAY,
                            CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_TWO_WAY)));
         break;
      case DELETE_ALL_REFRESH:
         // delete locally and then tell the server to "copy" the empty databases
         for (it = sources.begin(); it != sources.end(); ++it) {
-            it->second->deleteAll(it->second->createSourceA);
+            CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
         }
-        doSync("refreshserver",
+        doSync(__FILE__, __LINE__,
+               "refreshserver",
                SyncOptions(RefreshFromLocalMode(),
                            CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_REFRESH_FROM_LOCAL)));
         break;
@@ -2176,26 +2210,28 @@ void SyncTests::doCopy() {
     SyncPrefix("copy", *this);
 
     // check requirements
-    CPPUNIT_ASSERT(accessClientB);
+    CT_ASSERT(accessClientB);
 
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
     accessClientB->deleteAll();
 
     // insert into first database, copy to server
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testSimpleInsert();
+        CT_ASSERT_NO_THROW(it->second->testSimpleInsert());
     }
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // copy into second database
-    accessClientB->doSync("recv",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
-    compareDatabases();
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -2206,10 +2242,11 @@ void SyncTests::doCopy() {
 void SyncTests::refreshClient(SyncOptions options) {
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
     }
 
-    doSync("refresh",
+    doSync(__FILE__, __LINE__,
+           "refresh",
            options
            .setSyncMode(SYNC_SLOW)
            .setCheckReport(CheckSyncReport(-1,0,0, 0,0,0, true, SYNC_SLOW)));
@@ -2222,15 +2259,15 @@ void SyncTests::testDeleteAllRefresh() {
 
     // start with clean local data
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
     }
 
     // copy something to server first; doesn't matter whether it has the
     // item already or not, as long as it exists there afterwards
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testSimpleInsert();
+        CT_ASSERT_NO_THROW(it->second->testSimpleInsert());
     }
-    doSync("insert", SyncOptions(SYNC_SLOW));
+    doSync(__FILE__, __LINE__, "insert", SyncOptions(SYNC_SLOW));
 
     // now ensure we can delete it
     deleteAll(DELETE_ALL_REFRESH);
@@ -2240,18 +2277,19 @@ void SyncTests::testDeleteAllRefresh() {
         TestingSyncSourcePtr source;
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceA()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-        CPPUNIT_ASSERT_NO_THROW(source.reset());
+        CT_ASSERT_NO_THROW(source.reset());
     }
 
     // make sure server really deleted everything
-    doSync("check",
+    doSync(__FILE__, __LINE__,
+           "check",
            SyncOptions(SYNC_SLOW,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_SLOW)));
     for (it = sources.begin(); it != sources.end(); ++it) {
         TestingSyncSourcePtr source;
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceA()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-        CPPUNIT_ASSERT_NO_THROW(source.reset());
+        CT_ASSERT_NO_THROW(source.reset());
     }
 }
 
@@ -2292,13 +2330,14 @@ void SyncTests::testRefreshFromServerSemantic() {
     source_it it;
 
     // clean client and server
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // insert item, then refresh from empty server
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testSimpleInsert();
+        CT_ASSERT_NO_THROW(it->second->testSimpleInsert());
     }
-    doSync("refresh",
+    doSync(__FILE__, __LINE__,
+           "refresh",
            SyncOptions(RefreshFromPeerMode(),
                        CheckSyncReport(0,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
 
@@ -2307,9 +2346,10 @@ void SyncTests::testRefreshFromServerSemantic() {
         TestingSyncSourcePtr source;
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceA()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-        CPPUNIT_ASSERT_NO_THROW(source.reset());
+        CT_ASSERT_NO_THROW(source.reset());
     }
-    doSync("two-way",
+    doSync(__FILE__, __LINE__,
+           "two-way",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 }
@@ -2320,28 +2360,31 @@ void SyncTests::testRefreshFromClientSemantic() {
     source_it it;
 
     // clean client and server
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // insert item, send to server
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testSimpleInsert();
+        CT_ASSERT_NO_THROW(it->second->testSimpleInsert());
     }
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // delete locally
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
     }
 
     // refresh from client
-    doSync("refresh",
+    doSync(__FILE__, __LINE__,
+           "refresh",
            SyncOptions(RefreshFromLocalMode(),
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_LOCAL)));
 
     // check
-    doSync("check",
+    doSync(__FILE__, __LINE__,
+           "check",
            SyncOptions(RefreshFromPeerMode(),
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
 }
@@ -2356,19 +2399,21 @@ void SyncTests::testRefreshStatus() {
     source_it it;
 
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testSimpleInsert();
+        CT_ASSERT_NO_THROW(it->second->testSimpleInsert());
     }
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
     }
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testSimpleInsert();
+        CT_ASSERT_NO_THROW(it->second->testSimpleInsert());
     }
-    doSync("refresh-from-client",
+    doSync(__FILE__, __LINE__,
+           "refresh-from-client",
            SyncOptions(RefreshFromLocalMode(),
                        CheckSyncReport(0,0,0, -1,-1,-1, /* strictly speaking 1,0,0, but not sure exactly what the server will be told */
                                        true, SYNC_REFRESH_FROM_LOCAL)));
-    doSync("two-way",
+    doSync(__FILE__, __LINE__,
+           "two-way",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 }
@@ -2376,25 +2421,27 @@ void SyncTests::testRefreshStatus() {
 // test that a two-way sync copies updates from database to the other client,
 // using simple data commonly supported by servers
 void SyncTests::testUpdate() {
-    CPPUNIT_ASSERT(sources.begin() != sources.end());
-    CPPUNIT_ASSERT(!sources.begin()->second->config.m_updateItem.empty());
+    CT_ASSERT(sources.begin() != sources.end());
+    CT_ASSERT(!sources.begin()->second->config.m_updateItem.empty());
 
     // setup client A, B and server so that they all contain the same item
-    doCopy();
+    CT_ASSERT_NO_THROW(doCopy());
 
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.m_updateItem);
+        CT_ASSERT_NO_THROW(it->second->update(it->second->createSourceA, it->second->config.m_updateItem));
     }
 
-    doSync("update",
+    doSync(__FILE__, __LINE__,
+           "update",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
-    accessClientB->doSync("update",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "update",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // test that a two-way sync copies updates from database to the other client,
@@ -2402,7 +2449,7 @@ void SyncTests::testUpdate() {
 // phone number to a contact
 void SyncTests::testComplexUpdate() {
     // setup client A, B and server so that they all contain the same item
-    doCopy();
+    CT_ASSERT_NO_THROW(doCopy());
 
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2416,33 +2463,37 @@ void SyncTests::testComplexUpdate() {
                            );
     }
 
-    doSync("update",
+    doSync(__FILE__, __LINE__,
+           "update",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
-    accessClientB->doSync("update",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "update",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 
 // test that a two-way sync deletes the copy of an item in the other database
 void SyncTests::testDelete() {
     // setup client A, B and server so that they all contain the same item
-    doCopy();
+    CT_ASSERT_NO_THROW(doCopy());
 
     // delete it on A
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
     }
 
     // transfer change from A to server to B
-    doSync("delete",
+    doSync(__FILE__, __LINE__,
+           "delete",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
-    accessClientB->doSync("delete",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "delete",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
 
@@ -2451,7 +2502,7 @@ void SyncTests::testDelete() {
         TestingSyncSourcePtr copy;
         SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(it->second->createSourceA()));
         SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
-        CPPUNIT_ASSERT_NO_THROW(copy.reset());
+        CT_ASSERT_NO_THROW(copy.reset());
     }
 }
 
@@ -2459,21 +2510,22 @@ void SyncTests::testDelete() {
 // fields of the same item have been modified
 void SyncTests::testMerge() {
     // setup client A, B and server so that they all contain the same item
-    doCopy();
+    CT_ASSERT_NO_THROW(doCopy());
 
     // update in client A
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.m_mergeItem1);
+        CT_ASSERT_NO_THROW(it->second->update(it->second->createSourceA, it->second->config.m_mergeItem1));
     }
 
     // update in client B
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->update(it->second->createSourceA, it->second->config.m_mergeItem2);
+        CT_ASSERT_NO_THROW(it->second->update(it->second->createSourceA, it->second->config.m_mergeItem2));
     }
 
     // send change to server from client A (no conflict)
-    doSync("update",
+    doSync(__FILE__, __LINE__,
+           "update",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
     // Now the changes from client B (conflict!).
@@ -2481,7 +2533,8 @@ void SyncTests::testMerge() {
     // - client item completely replaces server item
     // - server item completely replaces client item (update on client)
     // - server merges and updates client
-    accessClientB->doSync("conflict",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "conflict",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_TWO_WAY)));
 
@@ -2491,27 +2544,29 @@ void SyncTests::testMerge() {
         SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(it->second->createSourceA()));
         int numItems = 0;
         SOURCE_ASSERT_NO_FAILURE(copy.get(), numItems = countItems(copy.get()));
-        CPPUNIT_ASSERT(numItems >= 1);
-        CPPUNIT_ASSERT(numItems <= 2);
+        CT_ASSERT(numItems >= 1);
+        CT_ASSERT(numItems <= 2);
         std::cerr << " \"" << it->second->config.m_sourceName << ": " << (numItems == 1 ? "conflicting items were merged" : "both of the conflicting items were preserved") << "\" ";
         std::cerr.flush();
-        CPPUNIT_ASSERT_NO_THROW(copy.reset());        
+        CT_ASSERT_NO_THROW(copy.reset());        
     }
 
     // now pull the same changes into client A
-    doSync("refresh",
+    doSync(__FILE__, __LINE__,
+           "refresh",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(-1,-1,-1, 0,0,0, true, SYNC_TWO_WAY)));
 
     // client A and B should have identical data now
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 
     // Furthermore, it should be identical with the server.
     // Be extra careful and pull that data anew and compare once more.
-    doSync("check",
+    doSync(__FILE__, __LINE__,
+           "check",
            SyncOptions(RefreshFromPeerMode(),
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_REMOTE)));
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // test what the server does when it has to execute a slow sync
@@ -2519,29 +2574,29 @@ void SyncTests::testMerge() {
 // expected behaviour is that nothing changes
 void SyncTests::testTwinning() {
     // clean server and client A
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // import test data
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testImport();
+        CT_ASSERT_NO_THROW(it->second->testImport());
     }
 
     // send to server
-    doSync("send", SyncOptions(SYNC_TWO_WAY));
+    doSync(__FILE__, __LINE__, "send", SyncOptions(SYNC_TWO_WAY));
 
     // ensure that client has the same data, thus ignoring data conversion
     // issues (those are covered by testItems())
-    refreshClient();
+    CT_ASSERT_NO_THROW(refreshClient());
 
     // copy to client B to have another copy
-    accessClientB->refreshClient();
+    CT_ASSERT_NO_THROW(accessClientB->refreshClient());
 
     // slow sync should not change anything
-    doSync("twinning", SyncOptions(SYNC_SLOW));
+    doSync(__FILE__, __LINE__, "twinning", SyncOptions(SYNC_SLOW));
 
     // check
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // tests one-way sync from peer:
@@ -2555,8 +2610,8 @@ void SyncTests::testTwinning() {
 // => one item left on second client (the one inserted locally)
 void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
     // no items anywhere
-    deleteAll();
-    accessClientB->refreshClient();
+    CT_ASSERT_NO_THROW(deleteAll());
+    CT_ASSERT_NO_THROW(accessClientB->refreshClient());
 
     // check that everything is empty, also resets change tracking
     // in second sources of each client
@@ -2566,7 +2621,7 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -2574,15 +2629,16 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // add one item on first client, copy to server, and check change tracking via second source
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 200, 1);
+        CT_ASSERT_NO_THROW(it->second->insertManyItems(it->second->createSourceA, 200, 1));
     }
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2593,14 +2649,14 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // add a different item on second client, one-way-from-server
     // => one item added locally, none sent to server
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 2, 1);
+        CT_ASSERT_NO_THROW(it->second->insertManyItems(it->second->createSourceA, 2, 1));
 
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2609,10 +2665,11 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
-    accessClientB->doSync("recv",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv",
                           SyncOptions(oneWayFromRemote,
                                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_ONE_WAY_FROM_REMOTE)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -2623,13 +2680,14 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // two-way sync with first client for verification
     // => no changes
-    doSync("check",
+    doSync(__FILE__, __LINE__,
+           "check",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2640,13 +2698,13 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // delete items on clientA, sync to server
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
 
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2655,10 +2713,11 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
-    doSync("delete",
+    doSync(__FILE__, __LINE__,
+           "delete",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2669,13 +2728,14 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // sync the same change to second client
     // => one item left (the one inserted locally)
-    accessClientB->doSync("delete",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "delete",
                           SyncOptions(oneWayFromRemote,
                                       CheckSyncReport(0,0,1, 0,0,0, true, SYNC_ONE_WAY_FROM_REMOTE)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -2686,7 +2746,7 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 }
@@ -2695,12 +2755,12 @@ void SyncTests::doOneWayFromRemote(SyncMode oneWayFromRemote) {
 // on role of remote side
 void SyncTests::testOneWayFromServer()
 {
-    doOneWayFromRemote(OneWayFromPeerMode());
+    CT_ASSERT_NO_THROW(doOneWayFromRemote(OneWayFromPeerMode()));
 }
 
 void SyncTests::testOneWayFromRemote()
 {
-    doOneWayFromRemote(SYNC_ONE_WAY_FROM_REMOTE);
+    CT_ASSERT_NO_THROW(doOneWayFromRemote(SYNC_ONE_WAY_FROM_REMOTE));
 }
 
 // tests one-way sync from local side:
@@ -2714,8 +2774,8 @@ void SyncTests::testOneWayFromRemote()
 // => one item left on first client (the one inserted locally)
 void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
     // no items anywhere
-    deleteAll();
-    accessClientB->deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
+    CT_ASSERT_NO_THROW(accessClientB->deleteAll());
 
     // check that everything is empty, also resets change tracking
     // in second sources of each client
@@ -2725,7 +2785,7 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -2733,15 +2793,16 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // add one item on first client, copy to server, and check change tracking via second source
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 1, 1);
+        CT_ASSERT_NO_THROW(it->second->insertManyItems(it->second->createSourceA, 1, 1));
     }
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2752,14 +2813,14 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // add a different item on second client, one-way-from-client
     // => no item added locally, one sent to server
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 2, 1);
+        CT_ASSERT_NO_THROW(it->second->insertManyItems(it->second->createSourceA, 2, 1));
 
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2768,10 +2829,11 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
-    accessClientB->doSync("send",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "send",
                           SyncOptions(oneWayFromLocal,
                                       CheckSyncReport(0,0,0, 1,0,0, true, SYNC_ONE_WAY_FROM_LOCAL)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -2782,13 +2844,14 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // two-way sync with client A for verification
     // => receive one item
-    doSync("check",
+    doSync(__FILE__, __LINE__,
+           "check",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2799,13 +2862,13 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // delete items on client B, sync to server
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
 
         if (it->second->config.m_createSourceB) {
             TestingSyncSourcePtr source;
@@ -2814,10 +2877,11 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
-    accessClientB->doSync("delete",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "delete",
                           SyncOptions(oneWayFromLocal,
                                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_ONE_WAY_FROM_LOCAL)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -2828,13 +2892,14 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
     // sync the same change to client A
     // => one item left (the one inserted locally)
-    doSync("delete",
+    doSync(__FILE__, __LINE__,
+           "delete",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -2845,7 +2910,7 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
             SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 1, countDeletedItems(source.get()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 }
@@ -2854,12 +2919,12 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
 // on role of local side
 void SyncTests::testOneWayFromClient()
 {
-    doOneWayFromLocal(OneWayFromLocalMode());
+    CT_ASSERT_NO_THROW(doOneWayFromLocal(OneWayFromLocalMode()));
 }
 
 void SyncTests::testOneWayFromLocal()
 {
-    doOneWayFromLocal(SYNC_ONE_WAY_FROM_LOCAL);
+    CT_ASSERT_NO_THROW(doOneWayFromLocal(SYNC_ONE_WAY_FROM_LOCAL));
 }
 
 // get engine ready, then use it to convert our test items
@@ -2870,7 +2935,7 @@ void SyncTests::testConversion() {
 
     doSync(SyncOptions(SYNC_TWO_WAY, CheckSyncReport(-1,-1,-1, -1,-1,-1, false))
            .setStartCallback(callback));
-    CPPUNIT_ASSERT(success);
+    CT_ASSERT(success);
 }
 
 bool SyncTests::doConversionCallback(bool *success,
@@ -2881,7 +2946,7 @@ bool SyncTests::doConversionCallback(bool *success,
     for (source_it it = sources.begin(); it != sources.end(); ++it) {
         const ClientTest::Config *config = &it->second->config;
         TestingSyncSource *source = static_cast<TestingSyncSource *>(syncClient.findSource(config->m_sourceName));
-        CPPUNIT_ASSERT(source);
+        CT_ASSERT(source);
 
         std::string type = source->getNativeDatatypeName();
         if (type.empty()) {
@@ -2911,7 +2976,7 @@ bool SyncTests::doConversionCallback(bool *success,
             }
         }
         out.close();
-        CPPUNIT_ASSERT(config->m_compare(client, testcases, converted));
+        CT_ASSERT(config->m_compare(client, testcases, converted));
     }
 
     // abort sync after completing the test successfully (no exception so far!)
@@ -2923,38 +2988,38 @@ bool SyncTests::doConversionCallback(bool *success,
 // client B and then compares which of the data has been transmitted
 void SyncTests::testItems() {
     // clean server and first test database
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // import data
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testImport();
+        CT_ASSERT_NO_THROW(it->second->testImport());
     }
 
     // transfer from client A to server to client B
-    doSync("send", SyncOptions(SYNC_TWO_WAY).setWBXML(true));
-    accessClientB->refreshClient(SyncOptions().setWBXML(true));
+    doSync(__FILE__, __LINE__, "send", SyncOptions(SYNC_TWO_WAY).setWBXML(true));
+    CT_ASSERT_NO_THROW(accessClientB->refreshClient(SyncOptions().setWBXML(true)));
 
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // creates several items, transmits them back and forth and
 // then compares which of them have been preserved
 void SyncTests::testItemsXML() {
     // clean server and first test database
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // import data
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testImport();
+        CT_ASSERT_NO_THROW(it->second->testImport());
     }
 
     // transfer from client A to server to client B using the non-default XML format
-    doSync("send", SyncOptions(SYNC_TWO_WAY).setWBXML(false));
-    accessClientB->refreshClient(SyncOptions().setWBXML(false));
+    doSync(__FILE__, __LINE__, "send", SyncOptions(SYNC_TWO_WAY).setWBXML(false));
+    CT_ASSERT_NO_THROW(accessClientB->refreshClient(SyncOptions().setWBXML(false)));
 
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // imports test data, transmits it from client A to the server to
@@ -2963,12 +3028,12 @@ void SyncTests::testItemsXML() {
 // applied on A
 void SyncTests::testExtensions() {
     // clean server and first test database
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // import data and create reference data
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->testImport();
+        CT_ASSERT_NO_THROW(it->second->testImport());
 
         string refDir = getCurrentTest() + "." + it->second->config.m_sourceName + ".ref.dat";
         simplifyFilename(refDir);
@@ -2981,26 +3046,26 @@ void SyncTests::testExtensions() {
         BOOST_FOREACH(const string &luid, source->getAllItems()) {
             string item;
             source->readItemRaw(luid, item);
-            it->second->config.m_update(item);
+            CT_ASSERT_NO_THROW(it->second->config.m_update(item));
             ofstream out(StringPrintf("%s/%d", refDir.c_str(), counter).c_str());
             out.write(item.c_str(), item.size());
             counter++;
         }
-        CPPUNIT_ASSERT_NO_THROW(source.reset());
+        CT_ASSERT_NO_THROW(source.reset());
     }
 
     // transfer from client A to server to client B
-    doSync("send", SyncOptions(SYNC_TWO_WAY));
-    accessClientB->refreshClient(SyncOptions());
+    doSync(__FILE__, __LINE__, "send", SyncOptions(SYNC_TWO_WAY));
+    CT_ASSERT_NO_THROW(accessClientB->refreshClient(SyncOptions()));
 
     // update on client B
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->updateData(it->second->createSourceB);
+        CT_ASSERT_NO_THROW(it->second->updateData(it->second->createSourceB));
     }
 
     // send back
-    accessClientB->doSync("update", SyncOptions(SYNC_TWO_WAY));
-    doSync("patch", SyncOptions(SYNC_TWO_WAY));
+    accessClientB->doSync(__FILE__, __LINE__, "update", SyncOptions(SYNC_TWO_WAY));
+    doSync(__FILE__, __LINE__, "patch", SyncOptions(SYNC_TWO_WAY));
 
     // compare data in source A against reference data *without* telling synccompare
     // to ignore known data loss for the server
@@ -3017,7 +3082,7 @@ void SyncTests::testExtensions() {
             equal = false;
         }
     }
-    CPPUNIT_ASSERT(equal);
+    CT_ASSERT(equal);
 }
 
 // tests the following sequence of events:
@@ -3032,33 +3097,36 @@ void SyncTests::testExtensions() {
 // http://forge.objectweb.org/tracker/?func=detail&atid=100096&aid=305018&group_id=96
 void SyncTests::testAddUpdate() {
     // clean server and both test databases
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
     accessClientB->refreshClient();
 
     // add item
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insert(it->second->createSourceA, it->second->config.m_insertItem, false);
+        CT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA, it->second->config.m_insertItem, false));
     }
-    doSync("add",
+    doSync(__FILE__, __LINE__,
+           "add",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // update it
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->update(it->second->createSourceB, it->second->config.m_updateItem);
+        CT_ASSERT_NO_THROW(it->second->update(it->second->createSourceB, it->second->config.m_updateItem));
     }
-    doSync("update",
+    doSync(__FILE__, __LINE__,
+           "update",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,1,0, true, SYNC_TWO_WAY)));
 
     // now download the updated item into the second client
-    accessClientB->doSync("recv",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // compare the two databases
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 //
@@ -3071,18 +3139,19 @@ void SyncTests::testAddUpdate() {
 // via second client
 void SyncTests::testManyItems() {
     // clean server and client A
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // import artificial data: make them large to generate some
     // real traffic and test buffer handling
     source_it it;
     int num_items = defNumItems();
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 0, num_items, 2000);
+        CT_ASSERT_NO_THROW(it->second->insertManyItems(it->second->createSourceA, 0, num_items, 2000));
     }
 
     // send data to server
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, num_items,0,0, true, SYNC_TWO_WAY),
                        SyncOptions::DEFAULT_MAX_MSG_SIZE,
@@ -3091,13 +3160,14 @@ void SyncTests::testManyItems() {
 
     // ensure that client has the same data, ignoring data conversion
     // issues (those are covered by testItems())
-    refreshClient();
+    CT_ASSERT_NO_THROW(refreshClient());
 
     // also copy to second client
     accessClientB->refreshClient();
 
     // slow sync now should not change anything
-    doSync("twinning",
+    doSync(__FILE__, __LINE__,
+           "twinning",
            SyncOptions(SYNC_SLOW,
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW),
                        SyncOptions::DEFAULT_MAX_MSG_SIZE,
@@ -3105,7 +3175,7 @@ void SyncTests::testManyItems() {
                        true));
 
     // compare
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -3113,43 +3183,46 @@ void SyncTests::testManyItems() {
  */
 void SyncTests::testManyDeletes() {
     // clean server and client A
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // import artificial data: make them small, we just want
     // many of them
     source_it it;
     int num_items = defNumItems();
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->insertManyItems(it->second->createSourceA, 0, num_items, 100);
+        CT_ASSERT_NO_THROW(it->second->insertManyItems(it->second->createSourceA, 0, num_items, 100));
     }
 
     // send data to server
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, num_items,0,0, true, SYNC_TWO_WAY),
                        64 * 1024, 64 * 1024, true));
 
     // ensure that client has the same data, ignoring data conversion
     // issues (those are covered by testItems())
-    refreshClient();
+    CT_ASSERT_NO_THROW(refreshClient());
 
     // also copy to second client
     accessClientB->refreshClient();
 
     // slow sync now should not change anything
-    doSync("twinning",
+    doSync(__FILE__, __LINE__,
+           "twinning",
            SyncOptions(SYNC_SLOW,
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW),
                        64 * 1024, 64 * 1024, true));
 
     // compare
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 
     // delete everything locally
     BOOST_FOREACH(source_array_t::value_type &source_pair, sources)  {
         source_pair.second->deleteAll(source_pair.second->createSourceA);
     }
-    doSync("delete-server",
+    doSync(__FILE__, __LINE__,
+           "delete-server",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,num_items, true, SYNC_TWO_WAY),
                        10 * 1024));
@@ -3159,7 +3232,8 @@ void SyncTests::testManyDeletes() {
     const char* checkSyncModeStr = getenv("CLIENT_TEST_NOCHECK_SYNCMODE");    
 
     // update second client
-    accessClientB->doSync("delete-client",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "delete-client",
                           SyncOptions(RefreshFromPeerMode(),
                                       checkSyncModeStr ? CheckSyncReport() :
                                       CheckSyncReport(0,0,num_items, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE),
@@ -3177,29 +3251,34 @@ void SyncTests::testManyDeletes() {
 void SyncTests::testSlowSyncSemantic()
 {
     // set up one item everywhere
-    doCopy();
+    CT_ASSERT_NO_THROW(doCopy());
 
     // slow in A
-    doSync("slow",
+    doSync(__FILE__, __LINE__,
+           "slow",
            SyncOptions(SYNC_SLOW,
                        CheckSyncReport(0,-1,0, -1,-1,0, true, SYNC_SLOW)));
 
     // refresh B, delete item
-    accessClientB->doSync("refresh",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "refresh",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
     BOOST_FOREACH(source_array_t::value_type &source_pair, accessClientB->sources)  {
         source_pair.second->deleteAll(source_pair.second->createSourceA);
     }
-    accessClientB->doSync("delete",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "delete",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
-    accessClientB->doSync("check",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "check",
                           SyncOptions(RefreshFromPeerMode(),
                                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
 
     // now the item should also be deleted on A
-    doSync("delete",
+    doSync(__FILE__, __LINE__,
+           "delete",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,1, 0,0,0, true, SYNC_TWO_WAY)));
 }
@@ -3213,7 +3292,7 @@ void SyncTests::testSlowSyncSemantic()
  */
 void SyncTests::testComplexRefreshFromServerSemantic()
 {
-    testCopy();
+    CT_ASSERT_NO_THROW(testCopy());
 
     // Reporting locally deleted items depends on sync mode
     // recognition, see SyncContext.cpp.
@@ -3226,7 +3305,8 @@ void SyncTests::testComplexRefreshFromServerSemantic()
     if (value) {
         accessClientB->refreshClient();
     } else {
-        accessClientB->doSync("refresh-one",
+        accessClientB->doSync(__FILE__, __LINE__,
+                              "refresh-one",
                               SyncOptions(RefreshFromPeerMode(),
                                           checkSyncModeStr ? CheckSyncReport() :
                                           CheckSyncReport(1,0,1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
@@ -3236,13 +3316,15 @@ void SyncTests::testComplexRefreshFromServerSemantic()
     BOOST_FOREACH(source_array_t::value_type &source_pair, sources)  {
         source_pair.second->deleteAll(source_pair.second->createSourceA);
     }
-    doSync("delete-item",
+    doSync(__FILE__, __LINE__,
+           "delete-item",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     if (value) {
         accessClientB->refreshClient();
     } else {
-        accessClientB->doSync("refresh-none",
+        accessClientB->doSync(__FILE__, __LINE__,
+                              "refresh-none",
                               SyncOptions(RefreshFromPeerMode(),
                                           checkSyncModeStr ? CheckSyncReport() :
                                           CheckSyncReport(0,0,1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
@@ -3260,17 +3342,18 @@ void SyncTests::testComplexRefreshFromServerSemantic()
  */
 void SyncTests::testDeleteBothSides()
 {
-    testCopy();
+    CT_ASSERT_NO_THROW(testCopy());
 
     source_it it;
     for (it = sources.begin(); it != sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
     }
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        it->second->deleteAll(it->second->createSourceA);
+        CT_ASSERT_NO_THROW(it->second->deleteAll(it->second->createSourceA));
     }
 
-    doSync("delete-item-A",
+    doSync(__FILE__, __LINE__,
+           "delete-item-A",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,1, true, SYNC_TWO_WAY)));
     for (it = sources.begin(); it != sources.end(); ++it) {
@@ -3278,14 +3361,15 @@ void SyncTests::testDeleteBothSides()
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 
 
     // it is undefined whether the item is meant to be reported as deleted again here:
     // a SyncML client test will mark it as deleted, local sync as server won't
-    accessClientB->doSync("delete-item-B",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "delete-item-B",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,0, 0,0,-1, true, SYNC_TWO_WAY)));
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
@@ -3293,7 +3377,7 @@ void SyncTests::testDeleteBothSides()
             TestingSyncSourcePtr source;
             SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceB()));
             SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
-            CPPUNIT_ASSERT_NO_THROW(source.reset());
+            CT_ASSERT_NO_THROW(source.reset());
         }
     }
 }
@@ -3345,7 +3429,7 @@ bool addBothSidesAddStatsBroken = false;
 
 void SyncTests::testAddBothSides()
 {
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
     accessClientB->deleteAll();
 
     std::string insertItem = sources[0].second->config.m_insertItem;
@@ -3356,28 +3440,30 @@ void SyncTests::testAddBothSides()
         boost::replace_all(updateItem, "DESCRIPTION:nice to see you", "DESCRIPTION:let's talk<<REVISION>>");
     }
 
-    CPPUNIT_ASSERT_NO_THROW(sources[0].second->insert(sources[0].second->createSourceA,
+    CT_ASSERT_NO_THROW(sources[0].second->insert(sources[0].second->createSourceA,
                                                       insertItem));
 
-    doSync("send-old",
+    doSync(__FILE__, __LINE__,
+           "send-old",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // insert updated item data on B
     std::string data;
-    CPPUNIT_ASSERT_NO_THROW(accessClientB->sources[0].second->insert(accessClientB->sources[0].second->createSourceA,
-                                                                     addBothSidesUsesUpdateItem ?
-                                                                     updateItem:
-                                                                     insertItem,
-                                                                     false,
-                                                                     &data));
+    CT_ASSERT_NO_THROW(accessClientB->sources[0].second->insert(accessClientB->sources[0].second->createSourceA,
+                                                                addBothSidesUsesUpdateItem ?
+                                                                updateItem:
+                                                                insertItem,
+                                                                false,
+                                                                &data));
 
     // As far as the client knows, it is adding an item;
     // server not expected to send back an update (our data was more recent
     // and completely overwrites the server's data).
     // When acting as server, we do the duplicate detection and thus know
     // more about the actual outcome.
-    accessClientB->doSync("send-update",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "send-update",
                           SyncOptions(SYNC_TWO_WAY,
                                       isServerMode() ?
                                       CheckSyncReport(addBothSidesAddStatsBroken ? -1 : 0,0,0,
@@ -3397,7 +3483,8 @@ void SyncTests::testAddBothSides()
                                                       1,0,0, true, SYNC_TWO_WAY)));
 
     // update sent to client A
-    doSync("update",
+    doSync(__FILE__, __LINE__,
+           "update",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,
                                        addBothSidesMayUpdate ? -1 :
@@ -3407,7 +3494,8 @@ void SyncTests::testAddBothSides()
                                        0,0,0, true, SYNC_TWO_WAY)));
 
     // nothing necessary for client B
-    accessClientB->doSync("nop",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "nop",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
@@ -3415,7 +3503,7 @@ void SyncTests::testAddBothSides()
     TestingSyncSourcePtr copy;
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(sources[0].second->createSourceB()));
     sources[0].second->compareDatabases(*copy, &data, (void *)NULL);
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 }
 
 /**
@@ -3425,7 +3513,7 @@ void SyncTests::testAddBothSides()
  */
 void SyncTests::testAddBothSidesRefresh()
 {
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
     accessClientB->deleteAll();
 
     std::string insertItem = sources[0].second->config.m_insertItem;
@@ -3437,7 +3525,7 @@ void SyncTests::testAddBothSidesRefresh()
     }
 
     // insert initial item data on B
-    CPPUNIT_ASSERT_NO_THROW(accessClientB->sources[0].second->insert(accessClientB->sources[0].second->createSourceA,
+    CT_ASSERT_NO_THROW(accessClientB->sources[0].second->insert(accessClientB->sources[0].second->createSourceA,
                                                                      insertItem));
 
     // sleep one second to ensure that it's mangled LAST-MODIFIED is older than
@@ -3446,13 +3534,14 @@ void SyncTests::testAddBothSidesRefresh()
 
     // more recent data sent to server first
     std::string data;
-    CPPUNIT_ASSERT_NO_THROW(sources[0].second->insert(sources[0].second->createSourceA,
+    CT_ASSERT_NO_THROW(sources[0].second->insert(sources[0].second->createSourceA,
                                                       addBothSidesUsesUpdateItem ?
                                                       updateItem :
                                                       insertItem,
                                                       false,
                                                       &data));
-    doSync("send-new",
+    doSync(__FILE__, __LINE__,
+           "send-new",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
@@ -3460,7 +3549,8 @@ void SyncTests::testAddBothSidesRefresh()
     // server expected to send back an update (client's data was out-dated);
     // When acting as server, we do the duplicate detection and thus
     // know more about the actual outcome.
-    accessClientB->doSync("send-old",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "send-old",
                           SyncOptions(SYNC_TWO_WAY,
                                       isServerMode() ?
                                       CheckSyncReport(addBothSidesAddStatsBroken ? -1 : 0,
@@ -3483,12 +3573,14 @@ void SyncTests::testAddBothSidesRefresh()
                                                       1,0,0, true, SYNC_TWO_WAY)));
 
     // update sent to client A (result of merge)
-    doSync("nopA",
+    doSync(__FILE__, __LINE__,
+           "nopA",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,addBothSidesMayUpdate ? -1 : 0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // nothing necessary for client B (already synchronized completely above in one sync)
-    accessClientB->doSync("nopB",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "nopB",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
@@ -3496,7 +3588,7 @@ void SyncTests::testAddBothSidesRefresh()
     TestingSyncSourcePtr copy;
     SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(sources[0].second->createSourceB()));
     sources[0].second->compareDatabases(*copy, &data, (void *)NULL);
-    CPPUNIT_ASSERT_NO_THROW(copy.reset());
+    CT_ASSERT_NO_THROW(copy.reset());
 }
 
 /**
@@ -3514,52 +3606,56 @@ void SyncTests::testLinkedItemsParentChild()
     source_it it;
 
     // clean server, client A and client B
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
     accessClientB->refreshClient();
 
     // create and copy parent item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
-        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
+        CT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
-        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.m_linkedItems[0][0],
-                                                   false));
+        CT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                              it->second->config.m_linkedItems[0][0],
+                                              false));
     }
-    doSync("send-parent",
+    doSync(__FILE__, __LINE__,
+           "send-parent",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // create independent item, refresh client B and server
     for (it = accessClientB->sources.begin(); it != accessClientB->sources.end(); ++it) {
-        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.m_insertItem,
-                                                   false));
+        CT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                              it->second->config.m_insertItem,
+                                              false));
     }
-    accessClientB->doSync("recv-parent",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv-parent",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(1,0,0, 1,0,0, true, SYNC_TWO_WAY)));
 
     // add child on client A
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
-        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
+        CT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
-        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.m_linkedItems[0][1],
-                                                   false));
+        CT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                              it->second->config.m_linkedItems[0][1],
+                                              false));
     }
     // parent may or may not be considered updated
-    doSync("send-child",
+    doSync(__FILE__, __LINE__,
+           "send-child",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(1,0,0, 1,-1,0, true, SYNC_TWO_WAY)));
     // parent may or may not be considered updated here
-    accessClientB->doSync("recv-child",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv-child",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(1,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // final comparison
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -3573,27 +3669,29 @@ void SyncTests::testLinkedItemsChild()
     source_it it;
 
     // clean server, client A and client B
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
     accessClientB->refreshClient();
 
     // create and copy child item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
-        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
+        CT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
-        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.m_linkedItems[0][1],
-                                                   false));
+        CT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                              it->second->config.m_linkedItems[0][1],
+                                              false));
     }
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
-    accessClientB->doSync("recv",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // final comparison
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 
@@ -3609,46 +3707,50 @@ void SyncTests::testLinkedItemsChildParent()
     source_it it;
 
     // clean server, client A and client B
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
     accessClientB->refreshClient();
 
     // create and copy child item
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(!it->second->config.m_linkedItems[0].empty());
-        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
+        CT_ASSERT(!it->second->config.m_linkedItems[0].empty());
+        CT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
-        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.m_linkedItems[0][1],
-                                                   false));
+        CT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                              it->second->config.m_linkedItems[0][1],
+                                              false));
     }
-    doSync("send-child",
+    doSync(__FILE__, __LINE__,
+           "send-child",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,0,0, true, SYNC_TWO_WAY)));
-    accessClientB->doSync("recv-child",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv-child",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(1,0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // add parent on client A
     for (it = sources.begin(); it != sources.end(); ++it) {
-        CPPUNIT_ASSERT(!it->second->config.m_linkedItems.empty());
-        CPPUNIT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
+        CT_ASSERT(!it->second->config.m_linkedItems.empty());
+        CT_ASSERT(it->second->config.m_linkedItems[0].size() >= 2);
         TestingSyncSourcePtr source;
         // relaxed change checks because child event is also modified
-        CPPUNIT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
-                                                   it->second->config.m_linkedItems[0][0],
-                                                   true));
+        CT_ASSERT_NO_THROW(it->second->insert(it->second->createSourceA,
+                                              it->second->config.m_linkedItems[0][0],
+                                              true));
     }
     // child may or may not be considered updated
-    doSync("send-parent",
+    doSync(__FILE__, __LINE__,
+           "send-parent",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 1,-1,0, true, SYNC_TWO_WAY)));
     // child may or may not be considered updated here
-    accessClientB->doSync("recv-parent",
+    accessClientB->doSync(__FILE__, __LINE__,
+                          "recv-parent",
                           SyncOptions(SYNC_TWO_WAY,
                                       CheckSyncReport(1,-1,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // final comparison
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -3664,7 +3766,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
         maxMsgSize = tmpSize;
 
     // clean server and client A
-    deleteAll();
+    CT_ASSERT_NO_THROW(deleteAll());
 
     // insert items, doubling their size, then restart with small size
     source_it it;
@@ -3676,7 +3778,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
         for (int i = 0; i < 2; i++ ) {
             int size = 1;
             while (size < 2 * maxMsgSize) {
-                it->second->insertManyItems(source.get(), item, 1, it->second->config.m_templateItem.size() + 10 + size);
+                CT_ASSERT_NO_THROW(it->second->insertManyItems(source.get(), item, 1, it->second->config.m_templateItem.size() + 10 + size));
                 size *= 2;
                 item++;
             }
@@ -3685,7 +3787,8 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     }
 
     // transfer to server
-    doSync("send",
+    doSync(__FILE__, __LINE__,
+           "send",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, -1,0,0, true, SYNC_TWO_WAY), // number of items sent to server depends on source
                        withMaxMsgSize ? SyncOptions::DEFAULT_MAX_MSG_SIZE: 0,
@@ -3699,7 +3802,8 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
     if (value) {
         accessClientB->refreshClient();
     } else {
-        accessClientB->doSync("recv",
+        accessClientB->doSync(__FILE__, __LINE__,
+                "recv",
                 SyncOptions(RefreshFromPeerMode(),
                     CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE), // number of items received from server depends on source
                     withLargeObject ? maxMsgSize : withMaxMsgSize ? maxMsgSize * 100 /* large enough so that server can sent the largest item */ : 0,
@@ -3707,7 +3811,7 @@ void SyncTests::doVarSizes(bool withMaxMsgSize,
                     withLargeObject));
     }
     // compare
-    CPPUNIT_ASSERT_NO_THROW(compareDatabases());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 /**
@@ -3853,7 +3957,7 @@ public:
     virtual void send(const char *data, size_t len)
     {
         HTTPTransportAgent *agent = dynamic_cast<HTTPTransportAgent *>(m_wrappedAgent.get());
-        CPPUNIT_ASSERT(agent);
+        CT_ASSERT(agent);
 
         m_messageCount += 3;
         if (m_interruptAtMessage >= 0 &&
@@ -4017,18 +4121,18 @@ void SyncTests::doInterruptResume(int changes,
                 sources[i].second->insertManyItems(sources[i].second->createSourceA,
                                                    1, 3, 0);
         }
-        doSync("fromA", SyncOptions(RefreshFromLocalMode()));
+        doSync(__FILE__, __LINE__, "fromA", SyncOptions(RefreshFromLocalMode()));
 
         // init client B and add its items to server and client A
-        accessClientB->doSync("initB", SyncOptions(RefreshFromPeerMode()));
+        accessClientB->doSync(__FILE__, __LINE__, "initB", SyncOptions(RefreshFromPeerMode()));
         clientBluids.resize(sources.size());
         for (i = 0; i < sources.size(); i++) {
             clientBluids[i] =
                 accessClientB->sources[i].second->insertManyItems(accessClientB->sources[i].second->createSourceA,
                                                                   11, 3, 0);
         }
-        accessClientB->doSync("fromB", SyncOptions(SYNC_TWO_WAY));
-        doSync("updateA", SyncOptions(SYNC_TWO_WAY));
+        accessClientB->doSync(__FILE__, __LINE__, "fromB", SyncOptions(SYNC_TWO_WAY));
+        doSync(__FILE__, __LINE__, "updateA", SyncOptions(SYNC_TWO_WAY));
 
         // => client A, B and server in sync with a total of six items
 
@@ -4049,13 +4153,12 @@ void SyncTests::doInterruptResume(int changes,
                            sources[i].second->config,
                            *(++ ++clientAluids[i].begin()),
                            sources[i].second->createItem(3, "updated", changedItemSize).c_str());
-                                              
             }
         }
 
         // send using the same mode as in the interrupted sync with client B
         if (changes & (SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE)) {
-            doSync("changesFromA", SyncOptions(SYNC_TWO_WAY).setMaxMsgSize(maxMsgSize));
+            doSync(__FILE__, __LINE__, "changesFromA", SyncOptions(SYNC_TWO_WAY).setMaxMsgSize(maxMsgSize));
         }
 
         // make changes as requested on client B
@@ -4096,7 +4199,7 @@ void SyncTests::doInterruptResume(int changes,
             // interval to speed up testing
             options.setRetryInterval(resend ? 10 : 0);
             wrapper->setInterruptAtMessage(interruptAtMessage);
-            accessClientB->doSync("changesFromB", options);
+            accessClientB->doSync(__FILE__, __LINE__, "changesFromB", options);
             wasInterrupted = interruptAtMessage != -1 &&
                 wrapper->getMessageCount() <= interruptAtMessage;
             if (!maxMsgNum) {
@@ -4118,7 +4221,8 @@ void SyncTests::doInterruptResume(int changes,
             // no need for resend tests, unless they were interrupted at the first message
             if (!resend || interruptAtMessage <= wrapper->getResendFailureThreshold()) {
                 SyncReport report;
-                accessClientB->doSync("retryB",
+                accessClientB->doSync(__FILE__, __LINE__,
+                                      "retryB",
                                       SyncOptions(SYNC_TWO_WAY,
                                                   CheckSyncReport().setMode(SYNC_TWO_WAY).setReport(&report)));
                 // Suspending at first and last message doesn't need a
@@ -4130,14 +4234,14 @@ void SyncTests::doInterruptResume(int changes,
                     interruptAtMessage + 1 != maxMsgNum &&
                     report.size() == 1) {
                     BOOST_FOREACH(const SyncReport::SourceReport_t &sourceReport, report) {
-                        CPPUNIT_ASSERT(sourceReport.second.isResumeSync());
+                        CT_ASSERT(sourceReport.second.isResumeSync());
                     }
                 }
             }
         }
 
         // copy changes to client A
-        doSync("toA", SyncOptions(SYNC_TWO_WAY));
+        doSync(__FILE__, __LINE__, "toA", SyncOptions(SYNC_TWO_WAY));
 
         // compare client A and B
         if (interruptAtMessage != -1 &&
@@ -4166,7 +4270,7 @@ void SyncTests::doInterruptResume(int changes,
                 TestingSyncSourcePtr source;
                 SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(it->second->createSourceA()));
                 SOURCE_ASSERT_EQUAL(source.get(), 0, it->second->config.m_dump(client, *source.get(), refFile.c_str()));
-                CPPUNIT_ASSERT_NO_THROW(source.reset());
+                CT_ASSERT_NO_THROW(source.reset());
             }
         }
 
@@ -4200,193 +4304,193 @@ void SyncTests::doInterruptResume(int changes,
         }
     }
 
-    CPPUNIT_ASSERT(equal);
+    CT_ASSERT(equal);
 }
 
 void SyncTests::testInterruptResumeClientAdd()
 {
-    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeClientRemove()
 {
-    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeClientUpdate()
 {
-    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeServerAdd()
 {
-    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeServerRemove()
 {
-    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeServerUpdate()
 {
-    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeClientAddBig()
 {
-    doInterruptResume(CLIENT_ADD|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeClientUpdateBig()
 {
-    doInterruptResume(CLIENT_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeServerAddBig()
 {
-    doInterruptResume(SERVER_ADD|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_ADD|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeServerUpdateBig()
 {
-    doInterruptResume(SERVER_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testInterruptResumeFull()
 {
-    doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
-                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
+                                         SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportFaultInjector())));
 }
 
 void SyncTests::testUserSuspendClientAdd()
 {
-    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendClientRemove()
 {
-    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendClientUpdate()
 {
-    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendServerAdd()
 {
-    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendServerRemove()
 {
-    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendServerUpdate()
 {
-    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendClientAddBig()
 {
-    doInterruptResume(CLIENT_ADD|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendClientUpdateBig()
 {
-    doInterruptResume(CLIENT_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendServerAddBig()
 {
-    doInterruptResume(SERVER_ADD|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_ADD|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendServerUpdateBig()
 {
-    doInterruptResume(SERVER_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_UPDATE|BIG, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testUserSuspendFull()
 {
-    doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
-                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
+                                         SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new UserSuspendInjector())));
 }
 
 void SyncTests::testResendClientAdd()
 {
-    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendInjector())));
 }
 
 void SyncTests::testResendClientRemove()
 {
-    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector())));
 }
 
 void SyncTests::testResendClientUpdate()
 {
-    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector())));
 }
 
 void SyncTests::testResendServerAdd()
 {
-    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendInjector())));
 }
 
 void SyncTests::testResendServerRemove()
 {
-    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector())));
 }
 
 void SyncTests::testResendServerUpdate()
 {
-    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendInjector())));
 }
 
 void SyncTests::testResendFull()
 {
-    doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
-                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, 
-                      boost::shared_ptr<TransportWrapper> (new TransportResendInjector()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
+                                         SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, 
+                                         boost::shared_ptr<TransportWrapper> (new TransportResendInjector())));
 }
 
 void SyncTests::testResendProxyClientAdd()
 {
-    doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendProxy())));
 }
 
 void SyncTests::testResendProxyClientRemove()
 {
-    doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy())));
 }
 
 void SyncTests::testResendProxyClientUpdate()
 {
-    doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy())));
 }
 
 void SyncTests::testResendProxyServerAdd()
 {
-    doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_ADD, boost::shared_ptr<TransportWrapper> (new TransportResendProxy())));
 }
 
 void SyncTests::testResendProxyServerRemove()
 {
-    doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_REMOVE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy())));
 }
 
 void SyncTests::testResendProxyServerUpdate()
 {
-    doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+    CT_ASSERT_NO_THROW(doInterruptResume(SERVER_UPDATE, boost::shared_ptr<TransportWrapper> (new TransportResendProxy())));
 }
 
 void SyncTests::testResendProxyFull()
 {
-    doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
-                      SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, 
-                      boost::shared_ptr<TransportWrapper> (new TransportResendProxy()));
+    CT_ASSERT_NO_THROW(doInterruptResume(CLIENT_ADD|CLIENT_REMOVE|CLIENT_UPDATE|
+                                         SERVER_ADD|SERVER_REMOVE|SERVER_UPDATE, 
+                                         boost::shared_ptr<TransportWrapper> (new TransportResendProxy())));
 }
 
 static bool setDeadSyncURL(SyncContext &context,
@@ -4431,21 +4535,22 @@ void SyncTests::testTimeout()
     // expectation is that the transmission timeout strikes.
     time_t start = time(NULL);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    CPPUNIT_ASSERT(fd != -1);
+    CT_ASSERT(fd != -1);
     struct sockaddr_in servaddr;
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     int res = bind(fd, (sockaddr *)&servaddr, sizeof(servaddr));
-    CPPUNIT_ASSERT(res == 0);
+    CT_ASSERT_EQUAL(0, res);
     socklen_t len = sizeof(servaddr);
     res = getsockname(fd, (sockaddr *)&servaddr, &len);
-    CPPUNIT_ASSERT(res == 0);
+    CT_ASSERT_EQUAL(0, res);
     res = listen(fd, 10);
-    CPPUNIT_ASSERT(res == 0);
+    CT_ASSERT_EQUAL(0, res);
     bool skipped = false;
     SyncReport report;
-    doSync("timeout",
+    doSync(__FILE__, __LINE__,
+           "timeout",
            SyncOptions(SYNC_SLOW,
                        CheckSyncReport(-1, -1, -1, -1, -1, -1,
                                        false).setReport(&report))
@@ -4455,10 +4560,10 @@ void SyncTests::testTimeout()
     time_t end = time(NULL);
     close(fd);
     if (!skipped) {
-        CPPUNIT_ASSERT_EQUAL(STATUS_TRANSPORT_FAILURE, report.getStatus());
-        CPPUNIT_ASSERT(end - start >= 19);
-        CPPUNIT_ASSERT(end - start < 40); // needs to be sufficiently larger than 20s timeout
-                                          // because under valgrind the startup time is considerable
+        CT_ASSERT_EQUAL(STATUS_TRANSPORT_FAILURE, report.getStatus());
+        CT_ASSERT(end - start >= 19);
+        CT_ASSERT(end - start < 40); // needs to be sufficiently larger than 20s timeout
+                                     // because under valgrind the startup time is considerable
     }
 }
 
@@ -4498,26 +4603,11 @@ void SyncTests::doSync(const SyncOptions &options)
     SE_LOG_DEBUG(NULL, NULL, "%d. starting %s with sync mode %s",
                  syncCounter, logname.c_str(), PrettyPrintSyncMode(options.m_syncMode).c_str());
 
-    try {
-        res = client.doSync(sourceArray,
-                            logname,
-                            options);
+    CT_ASSERT_NO_THROW(res = client.doSync(sourceArray,
+                                           logname,
+                                           options));
 
-        postSync(res, logname);
-    } catch (CppUnit::Exception &ex) {
-        res = 1;
-        postSync(res, logname);
-
-        // report the original exception without altering the source line
-        throw;
-    } catch (...) {
-        res = 1;
-        postSync(res, logname);
-
-        // this logs the original exception using CPPUnit mechanisms,
-        // with current line as source
-        CPPUNIT_ASSERT_NO_THROW(throw);
-    }
+    CT_ASSERT_NO_THROW(postSync(res, logname));
 }
 
 void SyncTests::postSync(int res, const std::string &logname)
@@ -4643,7 +4733,7 @@ void ClientTest::registerCleanup(Cleanup_t cleanup)
 void ClientTest::shutdown()
 {
     BOOST_FOREACH(Cleanup_t cleanup, cleanupSet) {
-        cleanup();
+        CT_ASSERT_NO_THROW(cleanup());
     }
 }
 
@@ -4664,7 +4754,7 @@ int ClientTest::dump(ClientTest &client, TestingSyncSource &source, const std::s
 
     rm_r(file);
     mkdir_p(file);
-    CPPUNIT_ASSERT(source.getOperations().m_backupData);
+    CT_ASSERT(source.getOperations().m_backupData);
     source.getOperations().m_backupData(SyncSource::Operations::ConstBackupInfo(),
                                         SyncSource::Operations::BackupInfo(SyncSource::Operations::BackupInfo::BACKUP_OTHER, file, node),
                                         report);
@@ -4693,14 +4783,14 @@ void ClientTest::getItems(const std::string &file, list<string> &items, std::str
         testcases = file;
         input.open(testcases.c_str());
     }
-    CPPUNIT_ASSERT(!input.bad());
-    CPPUNIT_ASSERT(input.is_open());
+    CT_ASSERT(!input.bad());
+    CT_ASSERT(input.is_open());
     std::string data, line;
     while (input) {
         bool wasend = false;
         do {
             getline(input, line);
-            CPPUNIT_ASSERT(!input.bad());
+            CT_ASSERT(!input.bad());
             // empty lines directly after line which starts with END mark end of record;
             // check for END necessary becayse vCard 2.1 ENCODING=BASE64 may have empty lines in body of VCARD!
             if ((line != "\r" && line.size() > 0) || !wasend) {
@@ -5664,8 +5754,8 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
         // both STATUS_OK and STATUS_HTTP_OK map to the same
         // string, so check the formatted status first, then
         // the numerical one
-        CPPUNIT_ASSERT_EQUAL(string("no error (remote, status 0)"), Status2String(status));
-        CPPUNIT_ASSERT_EQUAL(STATUS_OK, status);
+        CT_ASSERT_EQUAL(string("no error (remote, status 0)"), Status2String(status));
+        CT_ASSERT_EQUAL(STATUS_OK, status);
     }
 
     // this code is intentionally duplicated to produce nicer CPPUNIT asserts

@@ -266,6 +266,8 @@ public:
                                 nodes,
                                 context);
         SyncSource *ss = SyncSource::createSource(params);
+        ss->setDisplayName(ss->getDisplayName() +
+                           (isSourceA ? " #A" : " #B"));
         return static_cast<TestingSyncSource *>(ss);
     }
 };

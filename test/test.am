@@ -1,6 +1,7 @@
 dist_noinst_DATA += \
   test/abort-redirect.cpp \
   test/ClientTest.h \
+  test/ClientTestAssert.h \
   test/ClientTest.cpp \
   test/client-test-main.cpp \
   test/test.h \

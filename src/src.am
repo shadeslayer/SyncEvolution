@@ -186,6 +186,7 @@ src_client_test_SOURCES = \
   src/CmdlineSyncClient.cpp \
   test/ClientTest.cpp \
   test/ClientTest.h \
+  test/ClientTestAssert.h \
   test/client-test-main.cpp \
   $(CORE_SOURCES)
 nodist_src_client_test_SOURCES = test/test.cpp
