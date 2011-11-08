@@ -50,7 +50,7 @@ class CTException : public CppUnit::Exception
         if (currentSourceLine.isValid()) {
             CppUnit::Message extendedMessage = message;
             extendedMessage.addDetail(StringPrintf("%s:%d",
-                                                   currentSourceLine.fileName().c_str(),
+                                                   getBasename(currentSourceLine.fileName()).c_str(),
                                                    currentSourceLine.lineNumber()));
             setMessage(extendedMessage);
         }
@@ -91,9 +91,9 @@ static void inline ClientTestExceptionHandle(const char *file, int line)
 #define CT_WRAP_ASSERT(_file, _line, _assert) \
     do { \
        try { \
-           SE_LOG_DEBUG(NULL, NULL, "%s:%d: starting %s", _file, _line, #_assert); \
+           SE_LOG_DEBUG(NULL, NULL, "%s:%d: starting %s", getBasename(_file).c_str(), _line, #_assert); \
            _assert; \
-           SE_LOG_DEBUG(NULL, NULL, "%s:%d: ending %s", _file, _line, #_assert); \
+           SE_LOG_DEBUG(NULL, NULL, "%s:%d: ending %s", getBasename(_file).c_str(), _line, #_assert); \
        } catch (...) { \
            ClientTestExceptionHandle(_file, _line); \
        } \
