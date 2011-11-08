@@ -65,6 +65,12 @@ src/synccompare : $(top_srcdir)/test/Algorithm/Diff.pm $(top_srcdir)/test/syncco
 	$(AM_V_GEN)perl -e '$$diff = shift; open(DIFF, "<$$diff"); ($$_) = split(/__END__/, join("", <DIFF>)); s/\*import.*//m; s/require +Exporter;//; s/^#.*\n//mg; s/ +#.*\n//mg; $$diff = $$_;' -e 'while(<>) {' @MODIFY_SYNCCOMPARE@ -e 's/use +Algorithm::Diff;/"# embedded version of Algorithm::Diff follows, copyright by the original authors\n" . $$diff . "# end of embedded Algorithm::Diff\n"/e; print;}' $+ >$@ \
 	&&chmod u+x $@
 
+# helper script for testing
+bin_SCRIPTS += src/synclog2html
+CLEANFILES += src/synclog2html
+src/synclog2html: $(top_srcdir)/test/log2html.py
+	$(AM_V_GEN)cp $< $@ && chmod u+x $@
+
 CORE_SOURCES =
 
 # The files which register backends have to be compiled into
@@ -153,7 +159,7 @@ clean-local: testclean
 
 # files created during testing
 testclean:
-	rm -rf src/*.test.vcf src/*.log src/*.tests src/*.diff src/*.dat src/*Client_Sync_*client.*
+	rm -rf src/*.test.vcf src/*.log src/*.tests src/*.diff src/*.dat src/*Client_Sync_*client.* src/*Client_Source*
 
 distclean-local:
 	rm -rf $(SYNTHESIS_SUBDIR)
@@ -294,6 +300,13 @@ testcase2patch: $(TEST_FILES_GENERATED)
 	  fi; \
 	done
 
+# generate syntax-highlighted version of ClientTest.cpp for HTML
+# version of .log test results
+nodist_noinst_DATA += src/ClientTest.cpp.html
+CLEANFILES += src/ClientTest.cpp.html
+src/ClientTest.cpp.html: build/source2html.py test/ClientTest.cpp
+	$(AM_V_GEN)python $+ >$@
+
 # copy base test files
 $(filter-out %.tem, $(filter src/testcases/%, $(subst $(top_srcdir)/test/,src/,$(CLIENT_LIB_TEST_FILES)))) : src/% : $(top_srcdir)/test/%
 	$(AM_V_at)mkdir -p '$(dir $@)'; \
@@ -302,7 +315,7 @@ $(filter-out %.tem, $(filter src/testcases/%, $(subst $(top_srcdir)/test/,src/,$
 # The binary does not really depend on the test cases, only running it does.
 # Listing the dependencies here is done to ensure that one doesn't accidentally
 # runs the binary with out-dated auxiliary files.
-src_client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch src/synccompare src/templates
+src_client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch src/synccompare src/synclog2html src/templates
 
 CLEANFILES += $(src_client_test_buteo_moc_files)
 

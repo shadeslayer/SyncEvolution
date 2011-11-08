@@ -612,7 +612,7 @@ class SyncEvolutionTest(Action):
             else:
                 context.runCommand(basecmd)
         finally:
-            tocopy = re.compile(r'.*\.log|.*\.client.[AB]')
+            tocopy = re.compile(r'.*\.log|.*\.client.[AB]|.*\.(cpp|h|c)\.html|.*\.log\.html')
             htaccess = file(os.path.join(resdir, ".htaccess"), "a")
             for f in os.listdir(self.srcdir):
                 if tocopy.match(f):

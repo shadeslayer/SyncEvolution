@@ -199,6 +199,11 @@ public:
             }
         }
 
+        std::string htmllog = logfile + ".html";
+        system(StringPrintf("synclog2html %s >%s",
+                            logfile.c_str(),
+                            htmllog.c_str()).c_str());
+
         std::cout << " " << result << "\n";
         if (!failure.empty()) {
             std::cout << failure << "\n";

@@ -23,6 +23,7 @@ dist_doc_DATA =
 dist_noinst_DATA =
 dist_pkgdata_DATA =
 doc_DATA =
+nodist_noinst_DATA =
 
 lib_LTLIBRARIES =
 noinst_LTLIBRARIES =

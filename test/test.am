@@ -12,6 +12,7 @@ dist_noinst_SCRIPTS += \
   test/syncevo-http-server.py \
   test/syncevo-phone-config.py \
   test/synccompare.pl \
+  test/log2html.py \
   test/run_src_client_test.sh
 
 dist_noinst_DATA += \
