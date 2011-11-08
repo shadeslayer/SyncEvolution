@@ -2296,7 +2296,8 @@ void SyncTests::testDeleteAllRefresh() {
 // refresh-from-server sync, regardless of peer's role
 void SyncTests::testRefreshFromServerSync()
 {
-    doSync(SyncOptions(SYNC_REFRESH_FROM_SERVER,
+    doSync(__FILE__, __LINE__,
+           SyncOptions(SYNC_REFRESH_FROM_SERVER,
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true,
                                        isServerMode() ? SYNC_REFRESH_FROM_LOCAL : SYNC_REFRESH_FROM_REMOTE)));
 }
@@ -2304,7 +2305,8 @@ void SyncTests::testRefreshFromServerSync()
 // do a refresh-from-client sync, regardless of peer's role
 void SyncTests::testRefreshFromClientSync()
 {
-    doSync(SyncOptions(SYNC_REFRESH_FROM_CLIENT,
+    doSync(__FILE__, __LINE__,
+           SyncOptions(SYNC_REFRESH_FROM_CLIENT,
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true,
                                        isServerMode() ? SYNC_REFRESH_FROM_REMOTE : SYNC_REFRESH_FROM_LOCAL)));
 }
@@ -2312,17 +2314,24 @@ void SyncTests::testRefreshFromClientSync()
 // do a refresh-from-remote sync, regardless of peer's role
 void SyncTests::testRefreshFromRemoteSync()
 {
-    doSync(SyncOptions(SYNC_REFRESH_FROM_REMOTE,
+    doSync(__FILE__, __LINE__,
+           SyncOptions(SYNC_REFRESH_FROM_REMOTE,
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_REMOTE)));
 }
 
 // do a refresh-from-local sync, regardless of peer's role
 void SyncTests::testRefreshFromLocalSync()
 {
-    doSync(SyncOptions(SYNC_REFRESH_FROM_LOCAL,
+    doSync(__FILE__, __LINE__,
+           SyncOptions(SYNC_REFRESH_FROM_LOCAL,
                        CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_REFRESH_FROM_LOCAL)));
 }
 
+// delete all items, locally and on server using two-way sync
+void SyncTests::testDeleteAllSync()
+{
+    CT_ASSERT_NO_THROW(deleteAll(DELETE_ALL_SYNC));
+}
 
 // test that a refresh sync from an empty server leads to an empty datatbase
 // and no changes are sent to server during next two-way sync
@@ -2416,6 +2425,13 @@ void SyncTests::testRefreshStatus() {
            "two-way",
            SyncOptions(SYNC_TWO_WAY,
                        CheckSyncReport(0,0,0, 0,0,0, true, SYNC_TWO_WAY)));
+}
+
+// test that a two-way sync copies an item from one address book into the other
+void SyncTests::testCopy()
+{
+    CT_ASSERT_NO_THROW(doCopy());
+    CT_ASSERT_NO_THROW(compareDatabases());
 }
 
 // test that a two-way sync copies updates from database to the other client,
@@ -2915,6 +2931,20 @@ void SyncTests::doOneWayFromLocal(SyncMode oneWayFromLocal) {
     }
 }
 
+// do a two-way sync without additional checks,
+// may or may not actually be done in two-way mode
+void SyncTests::testTwoWaySync()
+{
+    doSync(__FILE__, __LINE__, SyncOptions(SYNC_TWO_WAY));
+}
+
+void SyncTests::testSlowSync()
+{
+    doSync(__FILE__, __LINE__,
+           SyncOptions(SYNC_SLOW,
+                       CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW)));
+}
+
 // one-way-from-local test with one-way-from-client/server, depending
 // on role of local side
 void SyncTests::testOneWayFromClient()
@@ -2922,6 +2952,7 @@ void SyncTests::testOneWayFromClient()
     CT_ASSERT_NO_THROW(doOneWayFromLocal(OneWayFromLocalMode()));
 }
 
+// do a slow sync without additional checks
 void SyncTests::testOneWayFromLocal()
 {
     CT_ASSERT_NO_THROW(doOneWayFromLocal(SYNC_ONE_WAY_FROM_LOCAL));
@@ -2933,7 +2964,8 @@ void SyncTests::testConversion() {
     bool success = false;
     SyncOptions::Callback_t callback = boost::bind(&SyncTests::doConversionCallback, this, &success, _1, _2);
 
-    doSync(SyncOptions(SYNC_TWO_WAY, CheckSyncReport(-1,-1,-1, -1,-1,-1, false))
+    doSync(__FILE__, __LINE__,
+           SyncOptions(SYNC_TWO_WAY, CheckSyncReport(-1,-1,-1, -1,-1,-1, false))
            .setStartCallback(callback));
     CT_ASSERT(success);
 }
@@ -3127,6 +3159,18 @@ void SyncTests::testAddUpdate() {
 
     // compare the two databases
     CT_ASSERT_NO_THROW(compareDatabases());
+}
+
+// test copying with maxMsg and no large object support
+void SyncTests::testMaxMsg()
+{
+    CT_ASSERT_NO_THROW(doVarSizes(true, false));
+}
+
+// test copying with maxMsg and large object support
+void SyncTests::testLargeObject()
+{
+    CT_ASSERT_NO_THROW(doVarSizes(true, true));
 }
 
 //
@@ -4733,7 +4777,7 @@ void ClientTest::registerCleanup(Cleanup_t cleanup)
 void ClientTest::shutdown()
 {
     BOOST_FOREACH(Cleanup_t cleanup, cleanupSet) {
-        CT_ASSERT_NO_THROW(cleanup());
+        cleanup();
     }
 }
 

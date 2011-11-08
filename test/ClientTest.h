@@ -690,38 +690,21 @@ protected:
 
     /* for more information on the different tests see their implementation */
 
-    // do a two-way sync without additional checks,
-    // may or may not actually be done in two-way mode
-    virtual void testTwoWaySync() {
-        doSync(SyncOptions(SYNC_TWO_WAY));
-    }
-
-    // do a slow sync without additional checks
-    virtual void testSlowSync() {
-        doSync(SyncOptions(SYNC_SLOW,
-                           CheckSyncReport(-1,-1,-1, -1,-1,-1, true, SYNC_SLOW)));
-    }
-
+    virtual void testTwoWaySync();
+    virtual void testSlowSync();
     virtual void testRefreshFromServerSync();
     virtual void testRefreshFromClientSync();
     virtual void testRefreshFromRemoteSync();
     virtual void testRefreshFromLocalSync();
 
-    // delete all items, locally and on server using two-way sync
-    virtual void testDeleteAllSync() {
-        deleteAll(DELETE_ALL_SYNC);
-    }
+    virtual void testDeleteAllSync();
 
     virtual void testDeleteAllRefresh();
     virtual void testRefreshFromClientSemantic();
     virtual void testRefreshFromServerSemantic();
     virtual void testRefreshStatus();
 
-    // test that a two-way sync copies an item from one address book into the other
-    void testCopy() {
-        doCopy();
-        compareDatabases();
-    }
+    void testCopy();
 
     virtual void testUpdate();
     virtual void testComplexUpdate();
@@ -743,14 +726,8 @@ protected:
     virtual void testExtensions();
     virtual void testAddUpdate();
 
-    // test copying with maxMsg and no large object support
-    void testMaxMsg() {
-        doVarSizes(true, false);
-    }
-    // test copying with maxMsg and large object support
-    void testLargeObject() {
-        doVarSizes(true, true);
-    }
+    void testMaxMsg();
+    void testLargeObject();
 
     virtual void testManyItems();
     virtual void testManyDeletes();
