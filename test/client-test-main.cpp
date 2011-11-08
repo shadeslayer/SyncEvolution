@@ -177,7 +177,7 @@ public:
 
         SE_LOG_DEBUG(NULL, NULL, "*** ending %s: %s ***", m_currentTest.c_str(), result.c_str());
         if (!failure.empty()) {
-            SE_LOG_DEBUG(NULL, NULL, "%s", failure.c_str());
+            SE_LOG_ERROR(NULL, NULL, "%s", failure.c_str());
         }
         if (&LoggerBase::instance() == m_logger.get()) {
             LoggerBase::popLogger();
