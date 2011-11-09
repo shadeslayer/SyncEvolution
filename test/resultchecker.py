@@ -68,7 +68,7 @@ def extractPatchSummary(patchfile):
             m = patchsummary.match(line)
             if m:
                 return author + m.group(1)
-    return os.path.filename(patchfile)
+    return os.path.basename(patchfile)
 
 def step1(resultdir, result, indents, dir, resulturi, shellprefix, srcdir):
     '''Step1 of the result checking, collect system information and 
@@ -81,6 +81,7 @@ def step1(resultdir, result, indents, dir, resulturi, shellprefix, srcdir):
     # include information prepared by GitCopy in runtests.py
     result.write(indent+'<source-info>\n')
     files = os.listdir(resultdir)
+    files.sort()
     for source in files:
         m = re.match('(.*)-source.log', source)
         if m:
