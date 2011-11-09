@@ -23,8 +23,9 @@
     <!-- TODO: Add more checkings to avoid generate un-welformed html files -->
     <xsl:strip-space elements="*"/>
     <xsl:param name="cmp_result_file" select="''"/> <!-- comparsion result file, necessary -->
+    <xsl:param name="url" select="''"/> <!-- root URL, at least pass . for relative URLs -->
 	<xsl:output method="html" indent="yes" encoding="UTF-8"/>
-    
+
     <!-- comparison result strings -->
     <xsl:variable name="equal" select="'equal'"/> 
     <xsl:variable name="equal-in-semantics" select="'equal-in-semantics'"/>
@@ -34,7 +35,7 @@
     <xsl:variable name="invalid-value" select="'invalid-value'"/>
 
     <!-- log file suffix name -->
-    <xsl:variable name="log-file-suffix" select="'.html'"/>
+    <xsl:variable name="log-file-suffix" select="'.log.html'"/>
 	
     <xsl:template match="/">
         <xsl:choose>
@@ -57,7 +58,8 @@
     <xsl:template name="generate-html-body">
         <xsl:param name="cmp_result_tree"/>
         <body>
-            <xsl:variable name="log-dir-uri" select="nightly-test/log-info/uri"/>
+            <!-- xsl:variable name="log-dir-uri" select="nightly-test/log-info/uri"/ -->
+            <xsl:variable name="log-dir-uri" select="$url"/>
             <xsl:call-template name="generate-source-info">
                 <xsl:with-param name="sourceinfo" select="nightly-test/source-info"/>
             </xsl:call-template>

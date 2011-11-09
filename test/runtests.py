@@ -35,6 +35,17 @@ def abspath(path):
     """Absolute path after expanding vars and user."""
     return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
 
+def findInPaths(name, dirs):
+    """find existing item  in one of the directories, return None if
+    no directories give, absolute path to existing item or (as fallbac)
+    last dir + name"""
+    fullname = None
+    for dir in dirs:
+        fullname = os.path.join(abspath(dir), name)
+        if os.access(fullname, os.F_OK):
+            break
+    return fullname
+
 def del_dir(path):
     if not os.access(path, os.F_OK):
         return
@@ -180,6 +191,11 @@ class Context:
         self.lastresultdir = lastresultdir
         self.datadir = datadir
 
+    def findTestFile(self, name):
+        """find item in SyncEvolution test directory, first using the
+        generated source of the current test, then the bootstrapping code"""
+        return findInPaths(name, (os.path.join(sync.basedir, "test"), self.datadir))
+
     def runCommand(self, cmdstr, dumpCommands=False):
         """Log and run the given command, throwing an exception if it fails."""
         cmd = shlex.split(cmdstr)
@@ -303,23 +319,27 @@ class Context:
         shell = re.sub(r'\S*valgrind\S*', '', options.shell)
         prefix = re.sub(r'\S*valgrind\S*', '', options.testprefix)
         uri = self.uri or ("file:///" + self.resultdir)
-        self.runCommand("resultchecker.py " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+uri +" "+srcdir + " '" + shell + " " + testprefix +" '"+" '" +backenddir +"'");
+        resultchecker = self.findTestFile("resultchecker.py")
+        compare = self.findTestFile("compare.xsl")
+        generateHTML = self.findTestFile("generate-html.xsl")
+        self.runCommand(resultchecker + " " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+uri +" "+srcdir + " '" + shell + " " + testprefix +" '"+" '" +backenddir +"'");
         # transform to html
-        self.runCommand("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + self.lastresultdir +"/nightly.xml "+self.datadir +"/compare.xsl "+ self.resultdir+"/nightly.xml")
-        self.runCommand("xsltproc -o " + self.resultdir + "/nightly.html --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + self.datadir +"/generate-html.xsl "+ self.resultdir+"/nightly.xml")
+        self.runCommand("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + self.lastresultdir +"/nightly.xml "+compare+" "+ self.resultdir+"/nightly.xml")
+        # produce HTML with URLs relative to current directory of the nightly.html
+        self.runCommand("xsltproc -o " + self.resultdir + "/nightly.html --stringparam url . --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + generateHTML + " "+ self.resultdir+"/nightly.xml")
         # report result by email
         if self.recipients:
             server = smtplib.SMTP(self.mailhost)
             msg=''
             try:
-                resulthtml = open (self.resultdir + "/nightly.html")
-                line=resulthtml.readline()
-                while(line!=''):
-                    msg=msg+line
-                    line=resulthtml.readline()
-                resulthtml.close()
+                msg = open(self.resultdir + "/nightly.html").read()
             except IOError:
                 msg = '''<html><body><h1>Error: No HTML report generated!</h1></body></html>\n'''
+            # insert absolute URL into hrefs so that links can be opened directly in
+            # the mail reader
+            msg = re.sub(r'href="([a-zA-Z0-9./])',
+                         'href="' + uri + r'/\1',
+                         msg)
             body = StringIO.StringIO()
             writer = MimeWriter.MimeWriter (body)
             writer.addheader("From", self.sender)
@@ -458,7 +478,6 @@ class GitCopy(GitCheckoutBase, Action):
             context.runCommand("(mkdir -p %s && cp -a -l %s/%s %s) || ( rm -rf %s && false )" %
                                (self.workdir, self.sourcedir, self.name, self.workdir, self.basedir))
         os.chdir(self.basedir)
-        context.runCommand("git fetch && git fetch --tags")
         cmd = " && ".join([
                 'rm -f %(patchlog)s',
                 'echo "save local changes with stash under a fixed name <rev>-nightly"',
@@ -469,12 +488,18 @@ class GitCopy(GitCheckoutBase, Action):
                 'git checkout -q $( git show-ref --head --hash | head -1 )',
                 'if git branch | grep -q -w "^..%(revision)s$"; then git branch -D %(revision)s; fi',
                 'if git branch | grep -q -w "^..nightly$"; then git branch -D nightly; fi',
+                # fetch
+                'echo "remove stale merge branches and fetch anew"',
+                'git branch -r -D $( git branch -r | grep -e "/for-%(revision)s/" ) ',
+                'git branch -D $( git branch | grep -e "^  for-%(revision)s/" ) ',
+                'git fetch',
+                'git fetch --tags',
                 # pick tag or remote branch
                 'if git tag | grep -q -w %(revision)s; then base=%(revision)s; git checkout -f -b nightly %(revision)s; ' \
                     'else base=origin/%(revision)s; git checkout -f -b nightly origin/%(revision)s; fi',
                 # integrate remote branches first, followed by local ones;
                 # the hope is that local branches apply cleanly on top of the remote ones
-                'for patch in $( (git branch -r; git branch) | sed -e "s/^..//" | grep -e "^for-%(revision)s/" -e "/for-%(revision)s/" ); do ' \
+                'for patch in $( (git branch -r --no-merged origin/%(revision)s; git branch --no-merged origin/%(revision)s) | sed -e "s/^..//" | grep -e "^for-%(revision)s/" -e "/for-%(revision)s/" ); do ' \
                     'if git merge $patch; then echo >>%(patchlog)s $patch: okay; ' \
                     'else echo >>%(patchlog)s $patch: failed to apply; git reset --hard; fi; done',
                 'echo "restore <rev>-nightly and create permanent branch <rev>-nightly-before-<date>-<time> if that fails or new tree is different"',
@@ -487,7 +512,7 @@ class GitCopy(GitCheckoutBase, Action):
                 'git format-patch -o .. $base..nightly',
                 '(cd ..; for i in [0-9]*.patch; do [ ! -f "$i" ] || mv $i %(name)s-$i; done)',
                 'git describe --tags --always nightly | sed -e "s/\(.*\)-\([0-9][0-9]*\)-g\(.*\)/\\1 + \\2 commit(s) = \\3/" >>%(patchlog)s',
-                '( git status | grep -q "working directory clean" && echo "working directory clean" || echo "working directory dirty" ) >>%(patchlog)s'
+                '( git status | grep -q "working directory clean" && echo "working directory clean" || ( echo "working directory dirty" && ( echo From: nightly testing ; echo Subject: [PATCH 1/1] uncommitted changes ; echo ; git status; echo; git diff HEAD ) >../%(name)s-1000-unstaged.patch ) ) >>%(patchlog)s'
                 ]) % self
 
         context.runCommand(cmd, dumpCommands=True)
