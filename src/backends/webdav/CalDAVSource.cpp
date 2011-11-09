@@ -1222,8 +1222,8 @@ void CalDAVSource::Event::fixIncomingCalendar(icalcomponent *calendar)
              comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
             icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_RECURRENCEID_PROPERTY);
             if (prop) {
-                const char *rid = icalproperty_get_value_as_string(prop);
-                icalproperty *exdate = icalproperty_new_from_string(StringPrintf("X-SYNCEVOLUTION-EXDATE-DETACHED:%s", rid).c_str());
+                eptr<char> rid(ical_strdup(icalproperty_get_value_as_string(prop)));
+                icalproperty *exdate = icalproperty_new_from_string(StringPrintf("X-SYNCEVOLUTION-EXDATE-DETACHED:%s", rid.get()).c_str());
                 if (exdate) {
                     icalparameter *tzid = icalproperty_get_first_parameter(prop, ICAL_TZID_PARAMETER);
                     if (tzid) {

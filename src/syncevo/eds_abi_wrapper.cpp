@@ -307,6 +307,10 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.icalproperty_set_sequence, "icalproperty_set_sequence",
                 &EDSAbiWrapperSingleton.icalproperty_set_uid, "icalproperty_set_uid",
                 &EDSAbiWrapperSingleton.icalproperty_remove_parameter_by_kind, "icalproperty_remove_parameter_by_kind",
+                &EDSAbiWrapperSingleton.icalproperty_add_parameter, "icalproperty_add_parameter",
+                &EDSAbiWrapperSingleton.icalproperty_get_value_as_string, "icalproperty_get_value_as_string",
+                &EDSAbiWrapperSingleton.icalproperty_get_x_name, "icalproperty_get_x_name",
+                &EDSAbiWrapperSingleton.icalproperty_new_from_string, "icalproperty_new_from_string",
                 &EDSAbiWrapperSingleton.icaltime_is_null_time, "icaltime_is_null_time",
                 &EDSAbiWrapperSingleton.icaltime_is_utc, "icaltime_is_utc",
                 &EDSAbiWrapperSingleton.icaltime_as_ical_string, "icaltime_as_ical_string",
@@ -331,6 +335,7 @@ extern "C" void EDSAbiWrapperInit()
                 FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.icalcomponent_as_ical_string_r, "icalcomponent_as_ical_string_r",
                 &EDSAbiWrapperSingleton.icaltime_as_ical_string_r, "icaltime_as_ical_string_r",
+                &EDSAbiWrapperSingleton.icalproperty_get_value_as_string_r, "icalproperty_get_value_as_string_r",
                 (void *)0);
 # endif // ENABLE_ECAL
 

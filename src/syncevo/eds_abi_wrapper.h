@@ -206,6 +206,11 @@ struct EDSAbiWrapper {
     void (*icalproperty_set_uid) (icalproperty* prop, const char *v);
     void (*icalproperty_remove_parameter_by_kind)(icalproperty* prop,
                                                   icalparameter_kind kind);
+    void (*icalproperty_add_parameter)(icalproperty* prop,icalparameter* parameter);
+    const char* (*icalproperty_get_value_as_string)(const icalproperty* prop);
+    const char* (*icalproperty_get_x_name)(icalproperty* prop);
+    icalproperty* (*icalproperty_new_from_string)(const char* str);
+
     int (*icaltime_is_null_time)(const struct icaltimetype t);
     int (*icaltime_is_utc)(const struct icaltimetype t);
     const char* (*icaltime_as_ical_string) (const struct icaltimetype tt);
@@ -228,6 +233,7 @@ struct EDSAbiWrapper {
     // optional variants which allocate the returned string for us
     const char* (*icaltime_as_ical_string_r) (const struct icaltimetype tt);
     char* (*icalcomponent_as_ical_string_r) (icalcomponent* component);
+    char* (*icalproperty_get_value_as_string_r) (const icalproperty* prop);
 # endif /* ENABLE_ICAL */
 
 # ifdef ENABLE_BLUETOOTH
@@ -374,6 +380,10 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define icalproperty_set_sequence EDSAbiWrapperSingleton.icalproperty_set_sequence
 #   define icalproperty_set_uid EDSAbiWrapperSingleton.icalproperty_set_uid
 #   define icalproperty_remove_parameter_by_kind EDSAbiWrapperSingleton.icalproperty_remove_parameter_by_kind
+#   define icalproperty_add_parameter EDSAbiWrapperSingleton.icalproperty_add_parameter
+#   define icalproperty_get_value_as_string (EDSAbiWrapperSingleton.icalproperty_get_value_as_string_r ? EDSAbiWrapperSingleton.icalproperty_get_value_as_string_r : (char *(*)(const icalproperty*))EDSAbiWrapperSingleton.icalproperty_get_value_as_string)
+#   define icalproperty_get_x_name EDSAbiWrapperSingleton.icalproperty_get_x_name
+#   define icalproperty_new_from_string EDSAbiWrapperSingleton.icalproperty_new_from_string
 #   define icaltime_is_null_time EDSAbiWrapperSingleton.icaltime_is_null_time
 #   define icaltime_is_utc EDSAbiWrapperSingleton.icaltime_is_utc
 #   define icaltime_as_ical_string (EDSAbiWrapperSingleton.icaltime_as_ical_string_r ? EDSAbiWrapperSingleton.icaltime_as_ical_string_r : EDSAbiWrapperSingleton.icaltime_as_ical_string)
@@ -422,6 +432,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #    define LIBICAL_MEMFIXES 1
 #    define icaltime_as_ical_string icaltime_as_ical_string_r
 #    define icalcomponent_as_ical_string icalcomponent_as_ical_string_r
+#    define icalproperty_get_value_as_string icalproperty_get_value_as_string_r
 #   endif /* LIBICAL_MEMFIXES */
 #  endif /* ENABLE_ICAL */
 # endif /* EDS_ABI_WRAPPER_NO_REDEFINE */
