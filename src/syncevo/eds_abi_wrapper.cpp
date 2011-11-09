@@ -231,8 +231,10 @@ extern "C" void EDSAbiWrapperInit()
 # endif // ENABLE_EBOOK
 
 # ifdef ENABLE_ECAL
+    static const int libecalMinVersion = 3,
+        libecalMaxVersion = 8;
     ecalhandle =
-    findSymbols("libecal-1.2.so", 3, 8,
+    findSymbols("libecal-1.2.so", libecalMinVersion, libecalMaxVersion,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_cal_add_timezone, "e_cal_add_timezone",
                 &EDSAbiWrapperSingleton.e_cal_component_get_icalcomponent, "e_cal_component_get_icalcomponent",
@@ -331,7 +333,7 @@ extern "C" void EDSAbiWrapperInit()
                 (void *)0);
     EDSAbiHaveEcal = EDSAbiWrapperSingleton.e_cal_new != 0;
     ecalhandle =
-    findSymbols("libecal-1.2.so", 3, 7,
+        findSymbols("libecal-1.2.so", libecalMinVersion, libecalMaxVersion,
                 FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.icalcomponent_as_ical_string_r, "icalcomponent_as_ical_string_r",
                 &EDSAbiWrapperSingleton.icaltime_as_ical_string_r, "icaltime_as_ical_string_r",
