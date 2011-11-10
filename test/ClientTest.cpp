@@ -203,31 +203,6 @@ class TestingSyncSourcePtr : public std::auto_ptr<TestingSyncSource>
 
 public:
     TestingSyncSourcePtr() {}
-    TestingSyncSourcePtr(TestingSyncSource *source) :
-        base_t(source)
-    {
-        // reset anchors each time a new test starts,
-        // because it avoids interactions between tests
-        std::string testName = getCurrentTest();
-        if (testName != m_testName) {
-            m_anchors.clear();
-            m_testName = testName;
-        }
-
-        int delay = atoi(getEnv("CLIENT_TEST_SOURCE_DELAY", "0"));
-        if (delay) {
-            CLIENT_TEST_LOG("CLIENT_TEST_SOURCE_DELAY: sleep for %d seconds", delay);
-            sleep(delay);
-        }
-
-        CT_ASSERT(source);
-        CT_ASSERT_NO_THROW(source->open());
-        string node = source->getTrackingNode()->getName();
-        CT_ASSERT_NO_THROW(source->beginSync(m_anchors[node], ""));
-        if (isServerMode()) {
-            CT_ASSERT_NO_THROW(source->enableServerMode());
-        }
-    }
     ~TestingSyncSourcePtr()
     {
         CT_ASSERT_NO_THROW(reset(NULL));
@@ -410,7 +385,8 @@ std::string LocalTests::insert(CreateSource createSource, const std::string &dat
     restoreStorage(config, client);
 
     // create source
-    TestingSyncSourcePtr source(createSource());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
 
     // count number of already existing items
     int numItems = 0;
@@ -531,7 +507,8 @@ void LocalTests::update(CreateSource createSource, const std::string &data, cons
 
     restoreStorage(config, client);
     // create source
-    TestingSyncSourcePtr source(createSource());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSource()));
 
     // update it
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->insertItemRaw(luid, config.m_mangleItem(data, true)));
@@ -806,7 +783,8 @@ void LocalTests::testIterateTwice() {
     CT_ASSERT(config.m_createSourceA);
 
     // open source
-    TestingSyncSourcePtr source(createSourceA());
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     SOURCE_ASSERT_MESSAGE(
         "iterating twice should produce identical results",
         source.get(),
