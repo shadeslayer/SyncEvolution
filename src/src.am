@@ -159,7 +159,7 @@ clean-local: testclean
 
 # files created during testing
 testclean:
-	rm -rf src/*.test.vcf src/*.log src/*.tests src/*.diff src/*.dat src/*Client_Sync_*client.* src/*Client_Source*
+	rm -rf src/*.test.vcf src/*.log src/*.log.html src/*.tests src/*.diff src/*.dat src/*Client_Sync_*client.* src/*Client_Source*
 
 distclean-local:
 	rm -rf $(SYNTHESIS_SUBDIR)
