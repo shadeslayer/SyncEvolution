@@ -216,7 +216,9 @@ public:
                 CT_ASSERT_NO_THROW(callback());
             }
             string node = get()->getTrackingNode()->getName();
-            CT_ASSERT_NO_THROW(m_anchors[node] = get()->endSync(true));
+            string anchor;
+            CT_ASSERT_NO_THROW(anchor = get()->endSync(true));
+            m_anchors[node] = anchor;
             CT_ASSERT_NO_THROW(get()->close());
         }
         base_t::reset(source);
@@ -228,7 +230,8 @@ public:
             }
             CT_ASSERT_NO_THROW(source->open());
             string node = source->getTrackingNode()->getName();
-            source->beginSync(m_anchors[node], "");
+            string anchor = m_anchors[node];
+            source->beginSync(anchor, "");
             if (isServerMode()) {
                 CT_ASSERT_NO_THROW(source->enableServerMode());
             }
