@@ -158,7 +158,16 @@ public:
     }
     ~TestingSyncSourcePtr()
     {
-        reset(NULL);
+        // We can skip the full cleanup if the test has already failed.
+        // Also avoids letting an exception escape from the
+        // destructor during exception handling (= program aborted!)
+        // when the endSync() call invoked by reset() needs to
+        // report a proble. CPPUNIT_ASSERT_NO_THROW() itself catches that
+        // exception, but then forwards it, and thus does not
+        // prevent the exception from escaping.
+        if (!std::uncaught_exception()) {
+            CPPUNIT_ASSERT_NO_THROW(reset(NULL));
+        }
     }
 
     void reset(TestingSyncSource *source = NULL)
