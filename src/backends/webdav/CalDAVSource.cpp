@@ -736,19 +736,66 @@ void CalDAVSource::readSubItem(const std::string &davLUID, const std::string &su
             icalcomponent_add_component(calendar, clone.release());
         }
         bool found = false;
+        icalcomponent *parent = NULL;
         for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
              comp;
              comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
             if (Event::getSubID(comp) == subid) {
                 eptr<icalcomponent> clone(icalcomponent_new_clone(comp), "VEVENT");
+                if (subid.empty()) {
+                    parent = clone.get();
+                }
                 icalcomponent_add_component(calendar, clone.release());
                 found = true;
                 break;
             }
         }
+
         if (!found) {
             SE_THROW("event not found");
         }
+
+        // tell engine and peers about EXDATEs implied by
+        // RECURRENCE-IDs in detached recurrences by creating
+        // X-SYNCEVOLUTION-EXDATE-DETACHED in the parent
+        if (parent && event.m_subids.size() > 1) {
+            // remove all old X-SYNCEVOLUTION-EXDATE-DETACHED
+            icalproperty *prop = icalcomponent_get_first_property(parent, ICAL_ANY_PROPERTY);
+            while (prop) {
+                icalproperty *next = icalcomponent_get_next_property(parent, ICAL_ANY_PROPERTY);
+                const char *xname = icalproperty_get_x_name(prop);
+                if (xname &&
+                    !strcmp(xname, "X-SYNCEVOLUTION-EXDATE-DETACHED")) {
+                    icalcomponent_remove_property(parent, prop);
+                    icalproperty_free(prop);
+                }
+                prop = next;
+            }
+            // now populate with RECURRENCE-IDs of detached recurrences
+            for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
+                 comp;
+                 comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
+                icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_RECURRENCEID_PROPERTY);
+                if (prop) {
+                    eptr<char> rid(ical_strdup(icalproperty_get_value_as_string(prop)));
+                    icalproperty *exdate = icalproperty_new_from_string(StringPrintf("X-SYNCEVOLUTION-EXDATE-DETACHED:%s", rid.get()).c_str());
+                    if (exdate) {
+                        icalparameter *tzid = icalproperty_get_first_parameter(prop, ICAL_TZID_PARAMETER);
+                        if (tzid) {
+                            icalproperty_add_parameter(exdate, icalparameter_new_clone(tzid));
+                        }
+#if 0
+                        // not needed
+                        if (icalproperty_get_recurrenceid(exdate).is_date) {
+                            icalproperty_add_parameter(exdate, icalparameter_new_value(ICAL_VALUE_DATE));
+                        }
+#endif
+                        icalcomponent_add_property(parent, exdate);
+                    }
+                }
+            }
+        }
+
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(calendar)));
         item = icalstr.get();
     }
@@ -1195,41 +1242,6 @@ void CalDAVSource::Event::fixIncomingCalendar(icalcomponent *calendar)
                     icalparameter *param = icalparameter_new_from_value_string(ICAL_TZID_PARAMETER,
                                                                                icaltimezone_get_tzid(const_cast<icaltimezone *>(zone)));
                     icalproperty_set_parameter(prop, param);
-                }
-            }
-        }
-    }
-
-    // tell engine and peers about EXDATEs implied by RECURRENCE-IDs
-    // in detached recurrences by creating
-    // X-SYNCEVOLUTION-EXDATE-DETACHED in the parent
-    if (parent) {
-        // remove all old X-SYNCEVOLUTION-EXDATE-DETACHED
-        icalproperty *prop = icalcomponent_get_first_property(parent, ICAL_ANY_PROPERTY);
-        while (prop) {
-            icalproperty *next = icalcomponent_get_next_property(parent, ICAL_ANY_PROPERTY);
-            const char *xname = icalproperty_get_x_name(prop);
-            if (xname &&
-                !strcmp(xname, "X-SYNCEVOLUTION-EXDATE-DETACHED")) {
-                icalcomponent_remove_property(parent, prop);
-                icalproperty_free(prop);
-            }
-            prop = next;
-        }
-        // now populate with RECURRENCE-IDs of detached recurrences
-        for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
-             comp;
-             comp = icalcomponent_get_next_component(calendar, ICAL_VEVENT_COMPONENT)) {
-            icalproperty *prop = icalcomponent_get_first_property(comp, ICAL_RECURRENCEID_PROPERTY);
-            if (prop) {
-                eptr<char> rid(ical_strdup(icalproperty_get_value_as_string(prop)));
-                icalproperty *exdate = icalproperty_new_from_string(StringPrintf("X-SYNCEVOLUTION-EXDATE-DETACHED:%s", rid.get()).c_str());
-                if (exdate) {
-                    icalparameter *tzid = icalproperty_get_first_parameter(prop, ICAL_TZID_PARAMETER);
-                    if (tzid) {
-                        icalproperty_add_parameter(exdate, icalparameter_new_clone(tzid));
-                    }
-                    icalcomponent_add_property(parent, exdate);
                 }
             }
         }

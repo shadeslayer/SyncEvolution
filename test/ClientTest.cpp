@@ -1182,6 +1182,24 @@ void LocalTests::testLinkedItemsParentChild() {
     }
     CT_ASSERT_NO_THROW(copy.reset());
 
+    if (config.m_supportsReccurenceEXDates) {
+        TestingSyncSourcePtr source;
+        SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+        CLIENT_TEST_LOG("retrieve parent as reported to the Synthesis engine, check for X-SYNCEVOLUTION-EXDATE-DETACHED");
+        std::string parentDataEngine;
+        CT_ASSERT_NO_THROW(source->readItem(parent, parentDataEngine));
+        size_t pos = childData.find("RECURRENCE-ID");
+        CT_ASSERT(pos != childData.npos);
+        size_t end = childData.find_first_of("\r\n", pos);
+        CT_ASSERT(end != childData.npos);
+        std::string exdate = childData.substr(pos, end - pos);
+        boost::replace_first(exdate, "RECURRENCE-ID", "X-SYNCEVOLUTION-EXDATE-DETACHED");
+        // not generated because not needed by Synthesis engine
+        boost::replace_first(exdate, ";VALUE=DATE", "");
+        pos = parentDataEngine.find(exdate);
+        CT_ASSERT_MESSAGE(exdate + " not found in:\n" + parentDataEngine, pos != parentDataEngine.npos);
+    }
+
     if (getenv("CLIENT_TEST_LINKED_ITEMS_NO_DELETE")) {
         return;
     }
