@@ -25,6 +25,22 @@ static std::string SubIDName(const std::string &subid)
     return subid.empty() ? "<master>" : subid;
 }
 
+/** remove X-SYNCEVOLUTION-EXDATE-DETACHED from VEVENT */
+static void removeSyncEvolutionExdateDetached(icalcomponent *parent)
+{
+    icalproperty *prop = icalcomponent_get_first_property(parent, ICAL_ANY_PROPERTY);
+    while (prop) {
+        icalproperty *next = icalcomponent_get_next_property(parent, ICAL_ANY_PROPERTY);
+        const char *xname = icalproperty_get_x_name(prop);
+        if (xname &&
+            !strcmp(xname, "X-SYNCEVOLUTION-EXDATE-DETACHED")) {
+            icalcomponent_remove_property(parent, prop);
+            icalproperty_free(prop);
+        }
+        prop = next;
+    }
+}
+
 CalDAVSource::CalDAVSource(const SyncSourceParams &params,
                            const boost::shared_ptr<Neon::Settings> &settings) :
     WebDAVSource(params, settings)
@@ -328,6 +344,10 @@ SubSyncSource::SubItemResult CalDAVSource::insertSubItem(const std::string &luid
          comp = icalcomponent_get_next_component(newEvent->m_calendar, ICAL_VEVENT_COMPONENT)) {
         std::string subid = Event::getSubID(comp);
         EventCache::iterator it;
+        // remove X-SYNCEVOLUTION-EXDATE-DETACHED, could be added by
+        // the engine's read/modify/write cycle when resolving a
+        // conflict
+        removeSyncEvolutionExdateDetached(comp);
         if (!luid.empty() &&
             (it = m_cache.find(luid)) != m_cache.end()) {
             // Additional sanity check: ensure that the expected UID is set.
@@ -759,18 +779,9 @@ void CalDAVSource::readSubItem(const std::string &davLUID, const std::string &su
         // RECURRENCE-IDs in detached recurrences by creating
         // X-SYNCEVOLUTION-EXDATE-DETACHED in the parent
         if (parent && event.m_subids.size() > 1) {
-            // remove all old X-SYNCEVOLUTION-EXDATE-DETACHED
-            icalproperty *prop = icalcomponent_get_first_property(parent, ICAL_ANY_PROPERTY);
-            while (prop) {
-                icalproperty *next = icalcomponent_get_next_property(parent, ICAL_ANY_PROPERTY);
-                const char *xname = icalproperty_get_x_name(prop);
-                if (xname &&
-                    !strcmp(xname, "X-SYNCEVOLUTION-EXDATE-DETACHED")) {
-                    icalcomponent_remove_property(parent, prop);
-                    icalproperty_free(prop);
-                }
-                prop = next;
-            }
+            // remove all old X-SYNCEVOLUTION-EXDATE-DETACHED (just in case)
+            removeSyncEvolutionExdateDetached(parent);
+
             // now populate with RECURRENCE-IDs of detached recurrences
             for (icalcomponent *comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
                  comp;
