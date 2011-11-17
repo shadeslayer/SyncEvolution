@@ -639,6 +639,14 @@ void ActiveSyncCalendarSource::deleteItem(const string &luid)
     }
 }
 
+void ActiveSyncCalendarSource::removeAllItems()
+{
+    BOOST_FOREACH(const EventCache::value_type &entry, m_cache) {
+        ActiveSyncSource::deleteItem(entry.first);
+    }
+    m_cache.clear();
+}
+
 std::string ActiveSyncCalendarSource::createLUID(const std::string &uid, const std::string &subid)
 {
     std::string luid = m_escape.escape(uid);

@@ -69,6 +69,9 @@ class ActiveSyncCalendarSource : public ActiveSyncCalFormatSource
     /** split luid into uid (first) and rid (second) */
     static StringPair splitLUID(const std::string &luid);
 
+    // more efficient implementation than in TestingSyncSource
+    virtual void removeAllItems();
+
  private:
     /** compose luid from mainid and subid */
     static std::string createLUID(const std::string &uid, const std::string &rid);
