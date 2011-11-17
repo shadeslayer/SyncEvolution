@@ -614,6 +614,7 @@ void LocalTests::compareDatabases(TestingSyncSource &copy,
                                   ...)
 {
     std::string sourceFile = getCurrentTest() + ".ref.test.dat";
+    simplifyFilename(sourceFile);
     ofstream out(sourceFile.c_str());
     va_list ap;
     va_start(ap, copy);
