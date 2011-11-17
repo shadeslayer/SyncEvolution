@@ -1,0 +1,10 @@
+[Desktop Entry]
+_Name=Sync
+_Comment=Up to date
+Version=1.0
+Type=Application
+Exec=sync-ui
+Icon=sync
+Categories=Network;GTK;
+Terminal=false
+StartupNotify=true

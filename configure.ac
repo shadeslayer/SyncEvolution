@@ -397,6 +397,26 @@ fi
 # for dbus interface file mangling
 AC_PATH_PROG(XSLT, xsltproc)
 
+
+# Changes in GTK3 mean that supporting both GTK3 and GTK2 in the same codebase
+# is difficult. We want to support GTK2 for the time being so the code is forked.
+AC_ARG_ENABLE(gtk,
+              AS_HELP_STRING([--enable-gtk=major version],
+                             [Selects the gtk+ version ("2" or "3") to use for the UI.
+                              If this option is used, --enable-gui should be used as well.
+                              "3" is the default option.]),
+              [ if test "$enableval" = "3" ; then
+                    gtk_version=gtk+-3.0
+                elif test "$enableval" = "2" ; then
+                    gtk_version=gtk+-2.0
+                else
+                    AC_MSG_ERROR([Unknown gtk version: '$enableval'])
+                fi
+              ],
+              [ gtk_version=gtk+-3.0 ])
+
+AM_CONDITIONAL([COND_GTK2], [test "$gtk_version" = "gtk+-2.0"])
+
 AC_ARG_ENABLE(gui,
               AS_HELP_STRING([--enable-gui[=gui type]],
                              [enables building the GTK+ UI that uses the SyncEvolution DBus API.
@@ -544,19 +564,30 @@ fi
 
 # decide which sync-ui(s) we are building:
 # sync-ui (in either GTK or Moblin mode) or both (in separate binaries)
+
+if test $gtk_version = "gtk+-3.0"; then
+    gtk_dir=src/gtk3-ui
+else
+    gtk_dir=src/gtk-ui
+fi
+echo ${gtk_dir}
+
 case $enable_gui in
-     all) GUI_PROGRAMS='src/gtk-ui/sync-ui-gtk${EXEEXT} src/gtk-ui/sync-ui-moblin${EXEEXT}'; GUI_DESKTOP_FILES="src/gtk-ui/sync-gtk.desktop src/gtk-ui/sync-moblin.desktop";;
-     gtk|moblin) GUI_PROGRAMS='src/gtk-ui/sync-ui${EXEEXT}'; GUI_DESKTOP_FILES="src/gtk-ui/sync.desktop";;
+     all) GUI_PROGRAMS=${gtk_dir}'/sync-ui-gtk${EXEEXT} '${gtk_dir}'/sync-ui-moblin${EXEEXT}'; GUI_DESKTOP_FILES="${gtk_dir}/sync-gtk.desktop ${gtk_dir}/sync-moblin.desktop";;
+     gtk|moblin) GUI_PROGRAMS=${gtk_dir}'/sync-ui${EXEEXT}'; GUI_DESKTOP_FILES="${gtk_dir}/sync.desktop";;
      no) GUI_PROGRAMS=; GUI_DESKTOP_FILES=;;
      *) AC_MSG_ERROR([Unknown enable_gui type: '$enable_gui'])
 esac
+echo ${GUI_PROGRAMS}
+echo ${GUI_DESKTOP_FILES}
 
 if test $enable_gui != "no"; then
     PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1 glib-2.0)
     AC_PATH_PROG(DBUS_BINDING_TOOL, dbus-binding-tool)
     AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 
-    gui_modules="glib-2.0 dbus-glib-1 >= 0.60 gtk+-2.0 libglade-2.0 gio-2.0"
+    gui_modules="$gtk_version glib-2.0 dbus-glib-1 >= 0.60 libglade-2.0 gio-2.0"
+
     if test $enable_gui = "moblin"; then
         AC_DEFINE(USE_MOBLIN_UX, 1, [Use Moblin UI widgets])
     fi
@@ -1018,7 +1049,11 @@ echo "DBus service: $enable_dbus_service"
 echo "Notifications: $enable_notify"
 echo "GIO GDBus: $with_gio_gdbus"
 echo "GNOME keyring: $enable_gnome_keyring"
-echo "UI (DBus client): $enable_gui"
+if test "$enable_gui" = "no"; then
+    echo "UI (DBus client): no"
+else
+    echo "UI (DBus client): $enable_gui (using $gtk_version)"
+fi
 echo "Bluetooth transport: $have_bluetooth"
 echo "GNOME Bluetooth panel plugin: $enable_gnome_bluetooth_panel"
 echo "SHA-256: $have_sha"

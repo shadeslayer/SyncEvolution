@@ -6,8 +6,3 @@ SyncEvolution Graphical User Interface for Moblin
  properly (so DBus autostart works). the client itself must be installed
  so glade ui file and rc style file get found.  
  
- * Support
- 
- This is the GTK+-2.0 version of the client. It is supported but sohuld be
- considered to be in maintenance mode: Please consider the version in 
- src/gtk3-ui.

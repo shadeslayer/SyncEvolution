@@ -1,0 +1,97 @@
+dist_noinst_DATA += \
+  src/gtk3-ui/README
+
+src_gtk3_ui_applicationsdir = $(datadir)/applications
+src_gtk3_ui_applications_in_files = \
+  src/gtk3-ui/sync.desktop.in \
+  src/gtk3-ui/sync-gtk.desktop.in
+src_gtk3_ui_applications_generated = $(src_gtk3_ui_applications_in_files:.desktop.in=.desktop)
+src_gtk3_ui_applications_DATA = @GUI_DESKTOP_FILES@
+
+# if this will pose a problem then see the link below, probably the solution
+# here will need to be used.
+# http://mail.gnome.org/archives/commits-list/2010-October/msg05148.html
+@INTLTOOL_DESKTOP_RULE@
+
+# When installing both the plain GTK and the Moblin-themed version,
+# the Moblin version uses the normal "Sync - Up to date" name/comment
+# and the GTK version uses "Sync (GTK)" as name with the same
+# comment. This is a somewhat arbitrary choice, with the rationale
+# being that a Moblin user is less likely to care about the
+# distinction while a GTK user might understand what "(GTK)" means.
+src/gtk3-ui/sync-moblin.desktop: src/gtk3-ui/sync.desktop
+	$(AM_V_GEN)cp $< $@
+
+src_gtk3_ui_gladedir = $(datadir)/syncevolution/
+src_gtk3_ui_glade_DATA = src/gtk3-ui/ui.xml
+
+src_gtk3_ui_icondir = $(datadir)/icons/hicolor/48x48/apps
+dist_src_gtk3_ui_icon_DATA = src/gtk3-ui/sync.png
+
+src_gtk3_ui_themercfiles = \
+  src/gtk3-ui/sync-generic.png \
+  src/gtk3-ui/sync-spinner.gif \
+  src/gtk3-ui/sync-ui.rc
+
+src_gtk3_ui_themercdir = $(datadir)/syncevolution/
+dist_src_gtk3_ui_themerc_DATA = $(src_gtk3_ui_themercfiles)
+
+src_gtk3_ui_desktopdir = $(datadir)/applications
+
+dist_noinst_DATA += \
+  $(src_gtk3_ui_applications_in_files)
+
+# sync-ui: default GUI, could be plain GTK or Moblin UX
+# sync-ui-gtk: GTK GUI
+# sync-ui-moblin: Moblin UX
+#
+# The later two are built when --enable-gui=all was used.
+EXTRA_PROGRAMS += \
+  src/gtk3-ui/sync-ui \
+  src/gtk3-ui/sync-ui-gtk \
+  src/gtk3-ui/sync-ui-moblin
+bin_PROGRAMS += @GUI_PROGRAMS@
+
+src_gtk3_ui_sync_ui_SOURCES = \
+  src/gtk3-ui/main.c \
+  src/gtk3-ui/sync-ui.c \
+  src/gtk3-ui/sync-ui.h \
+  src/gtk3-ui/sync-ui-config.c \
+  src/gtk3-ui/sync-ui-config.h \
+  src/gtk3-ui/mux-frame.c \
+  src/gtk3-ui/mux-frame.h \
+  src/gtk3-ui/sync-config-widget.c \
+  src/gtk3-ui/sync-config-widget.h
+
+src_gtk3_ui_sync_ui_LDADD = \
+  $(GUI_LIBS) \
+  $(DBUS_GLIB_LIBS) \
+  $(top_builddir)/src/dbus/glib/libsyncevo-dbus.la
+src_gtk3_ui_sync_ui_CFLAGS = \
+  $(GUI_CFLAGS) \
+  $(DBUS_GLIB_CFLAGS) \
+  -DGLADEDIR=\""$(src_gtk3_ui_gladedir)"\" \
+  -DTHEMEDIR=\""$(src_gtk3_ui_themercdir)"\" \
+  -DLIBEXECDIR=\"@libexecdir@\" \
+  -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\" \
+  $(SYNCEVO_WFLAGS)
+src_gtk3_ui_sync_ui_CPPFLAGS = \
+  -I$(top_builddir) \
+  -I$(top_srcdir) \
+  -I$(top_builddir)/src/dbus/glib \
+  -I$(top_srcdir)/src/dbus/glib \
+  $(SYNTHESIS_CFLAGS)
+
+src_gtk3_ui_sync_ui_gtk_SOURCES = $(src_gtk3_ui_sync_ui_SOURCES)
+src_gtk3_ui_sync_ui_gtk_LDADD = $(src_gtk3_ui_sync_ui_LDADD)
+src_gtk3_ui_sync_ui_gtk_CFLAGS = $(src_gtk3_ui_sync_ui_CFLAGS)
+src_gtk3_ui_sync_ui_gtk_CPPFLAGS = $(src_gtk3_ui_sync_ui_CPPFLAGS)
+
+src_gtk3_ui_sync_ui_moblin_SOURCES = $(src_gtk3_ui_sync_ui_SOURCES)
+src_gtk3_ui_sync_ui_moblin_LDADD = $(src_gtk3_ui_sync_ui_LDADD)
+src_gtk3_ui_sync_ui_moblin_CFLAGS = $(src_gtk3_ui_sync_ui_CFLAGS)
+src_gtk3_ui_sync_ui_moblin_CPPFLAGS = $(src_gtk3_ui_sync_ui_CPPFLAGS) -DUSE_MOBLIN_UX
+
+CLEANFILES += \
+  src/gtk3-ui/sync-moblin.desktop \
+  $(src_gtk3_ui_applications_generated)

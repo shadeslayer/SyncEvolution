@@ -1,0 +1,10 @@
+[Desktop Entry]
+_Name=SyncEvolution (GTK)
+_Comment=Synchronize PIM data
+Version=1.0
+Type=Application
+Exec=sync-ui
+Icon=sync
+Categories=Office;PDA;GTK;
+Terminal=false
+StartupNotify=true

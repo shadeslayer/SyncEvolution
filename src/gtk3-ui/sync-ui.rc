@@ -1,0 +1,49 @@
+# generic rules for MuxWidgets
+
+style "mux-frame" {
+    bg[NORMAL] = "#ffffff"
+    bg[INSENSITIVE] = "#ffffff"
+    MuxFrame::border-color = "#dee2e5"
+    MuxFrame::bullet-color = "#aaaaaa"
+    MuxFrame::title-font = "Bold 12"
+}
+class "MuxFrame" style "mux-frame"
+
+# sync-ui specific rules
+
+style "meego-win" {
+    bg[NORMAL] = "#4a535a"
+}
+widget "meego_win" style "meego-win"
+
+style "data-box" {
+    bg[NORMAL] = "#ececec"
+    bg[INSENSITIVE] = "#ececec"
+}
+widget "*.sync_data_and_type_box" style "data-box"
+
+style "insensitive-frame" {
+    bg[INSENSITIVE] = "#d2d6d9"
+}
+widget "*.log_frame*" style "insensitive-frame"
+widget "*.backup_frame*" style "insensitive-frame"
+widget "*.services_frame*" style "insensitive-frame"
+
+style "service-title" {
+    font_name = "Bold 14"
+}
+widget "*.sync_service_label" style "service-title"
+widget "*.sync_status_label" style "service-title"
+widget "*.no_server_label" style "service-title"
+widget "*.sync_failure_label" style "service-title"
+
+style "big-button" {
+    GtkButton::inner-border = { 10,10,10,10 }
+    font_name = "Bold 11"
+}
+widget "*.sync_btn*" style "big-button"
+
+style "bread-crumb-button" {
+    GtkButton::inner-border = { 5,5,0,0 }
+}
+widget "*.mux_window_bread_crumbs.*GtkButton*" style "bread-crumb-button"
