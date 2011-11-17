@@ -2617,9 +2617,9 @@ protected:
                             NULL);
         cmdline.doit();
         string res = scanFiles(root, "some-other-server");
-        string expected = ScheduleWorldConfig();
+        string expected = DefaultConfig();
         sortConfig(expected);
-        boost::replace_all(expected, "/scheduleworld/", "/some-other-server/");
+        boost::replace_all(expected, "/syncevolution/", "/some-other-server/");
         CPPUNIT_ASSERT_EQUAL_DIFF(expected, res);
     }
 
@@ -2867,7 +2867,7 @@ protected:
             CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
             string actual = injectValues(filterConfig(cmdline.m_out.str()));
             CPPUNIT_ASSERT(boost::contains(actual, "deviceId = fixed-devid"));
-            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(ScheduleWorldConfig())),
+            CPPUNIT_ASSERT_EQUAL_DIFF(filterConfig(internalToIni(DefaultConfig())),
                                       actual);
         }
 
@@ -4325,6 +4325,24 @@ private:
         vector<string> m_argvstr;
         boost::scoped_array<const char *> m_argv;
     };
+
+    string DefaultConfig() {
+        string config = ScheduleWorldConfig();
+        boost::replace_first(config,
+                             "syncURL = http://sync.scheduleworld.com/funambol/ds",
+                             "syncURL = http://yourserver:port");
+        boost::replace_first(config, "http://www.scheduleworld.com", "http://www.syncevolution.org");
+        boost::replace_all(config, "ScheduleWorld", "SyncEvolution");
+        boost::replace_all(config, "scheduleworld", "syncevolution");
+        boost::replace_first(config, "PeerName = SyncEvolution", "# PeerName = ");
+        boost::replace_first(config, "# ConsumerReady = 0", "ConsumerReady = 1");
+        boost::replace_first(config, "uri = card3", "uri = addressbook");
+        boost::replace_first(config, "uri = cal2", "uri = calendar");
+        boost::replace_first(config, "uri = task2", "uri = todo");
+        boost::replace_first(config, "uri = note", "uri = memo");
+        boost::replace_first(config, "syncFormat = text/vcard", "# syncFormat = ");
+        return config;
+    }
 
     string ScheduleWorldConfig(int contextMinVersion = CONFIG_CONTEXT_MIN_VERSION,
                                int contextCurVersion = CONFIG_CONTEXT_CUR_VERSION,
