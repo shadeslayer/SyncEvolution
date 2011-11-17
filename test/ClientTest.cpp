@@ -57,6 +57,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/assign.hpp>
 
 #include <syncevo/declarations.h>
 
@@ -396,6 +397,32 @@ void LocalTests::addTests() {
                 }
                 addTest(linked);
             }
+
+            // Create a sub-suite for each set of linked items.
+            // items.size() can be fairly large for these tests,
+            // so avoid testing all possible combinations.
+            BOOST_FOREACH(const ClientTestConfig::LinkedItems_t &items,
+                          config.m_linkedItemsSubset) {
+                CppUnit::TestSuite *linked = new CppUnit::TestSuite(getName() + "::LinkedItems" + items.m_name);
+                int stride = (items.size() + 4) / 5;
+                for (int start = 0;
+                     (size_t)start < items.size();
+                     start += stride ) {
+                    for (int skip = 0;
+                         !skip || (size_t)(start + skip + 1) < items.size();
+                         skip++) {
+                        ADD_TEST_TO_SUITE_SUFFIX(linked, LocalTests, testLinkedItemsSubset,
+                                                 StringPrintf("_%d_%d", start, skip));
+                    }
+                    // add a test which uses start, start + 1 and last item
+                    // if that leads to a gap (EXDATE)
+                    if (start > 0 && items.size() - start > 3) {
+                        ADD_TEST_TO_SUITE_SUFFIX(linked, LocalTests, testLinkedItemsSubset,
+                                                 StringPrintf("_%d_e", start));
+                    }
+                }
+                addTest(linked);
+            }
         }
     }
 }
@@ -623,6 +650,19 @@ void LocalTests::compareDatabases(TestingSyncSource &copy,
         out << *item;
     }
     va_end(ap);
+    out.close();
+    compareDatabases(sourceFile.c_str(), copy);
+}
+
+void LocalTests::compareDatabasesRef(TestingSyncSource &copy,
+                                     const std::list<std::string> &items)
+{
+    std::string sourceFile = getCurrentTest() + ".ref.test.dat";
+    simplifyFilename(sourceFile);
+    ofstream out(sourceFile.c_str());
+    BOOST_FOREACH(const std::string &item, items) {
+        out << item;
+    }
     out.close();
     compareDatabases(sourceFile.c_str(), copy);
 }
@@ -2014,6 +2054,84 @@ void LocalTests::testLinkedItemsMany404() {
     CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
 }
 
+// Is run as Client::Source::LinkedItems<testdata>::testLinkedItemsSubset_<start>_<skip>
+// where start = first detached recurrence to send and skip = detached recurrences
+// to skip before adding the next one (=> 0 = send all).
+//
+// <skip>=e (for EXDATE) is special: it picks the <start>, <start> + 1 and last
+// item, which typically leads to an irregular pattern and requires adding EXDATEs
+// in the activesyncd.
+void LocalTests::testLinkedItemsSubset()
+{
+    ClientTestConfig::LinkedItems_t items = getParentChildData();
+    int start, skip;
+    std::string test = getCurrentTest();
+    const std::string testname = "testLinkedItemsSubset_";
+    size_t off = test.find(testname);
+    CT_ASSERT(off != test.npos);
+    off += testname.size();
+    start = atoi(test.c_str() + off);
+    off = test.find('_', off);
+    CT_ASSERT(off != test.npos);
+    if (test.c_str()[off + 1] == 'e') {
+        // EXDATE case
+        skip = -1;
+    } else {
+        skip = atoi(test.c_str() + off + 1);
+    }
+    CT_ASSERT(items.size() > (size_t)start);
+    CT_ASSERT(skip >= -1);
+
+    // check that everything is empty, also resets change counter of sync source B
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+    TestingSyncSourcePtr copy;
+    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
+    SOURCE_ASSERT_EQUAL(copy.get(), 0, countItems(copy.get()));
+    CT_ASSERT_NO_THROW(copy.reset());
+
+    // insert parent first, then child
+    std::list<std::string> sent;
+    int i = start;
+    while ((size_t)i < items.size() &&
+           ((start == 0 && skip == 0) || /* _0_0 really uses all items (stress test) */
+            skip == -1 ||                /* _x_e already is limited to 3 items */
+            i - start < 5)) {            /* avoid huge number of items per test */
+        std::string data;
+        std::string message = StringPrintf("start %d, skip %d, at %d of %d",
+                                           start, skip, i, (int)items.size());
+        CT_ASSERT_NO_THROW_MESSAGE(message, insert(createSourceA, items[i], false, &data));
+        sent.push_back(data);
+
+        SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
+        StringMap::const_iterator it = items.m_options.find(skip == -1 ?
+                                                            StringPrintf("%d_e_%d",
+                                                                         start, i) :
+                                                            StringPrintf("%d_%d_%d",
+                                                                         start, skip, i));
+        std::list<std::string> actual(sent);
+        if (it != items.m_options.end()) {
+            actual.push_back(it->second);
+        }
+        CT_ASSERT_NO_THROW_MESSAGE(message, compareDatabasesRef(*copy, actual));
+
+        if (skip >= 0) {
+            // skip intermediate items
+            i += skip + 1;
+        } else if (i == start) {
+            // go to second item
+            i++;
+        } else if (i == start + 1) {
+            // go to last item
+            CT_ASSERT((size_t)i != items.size() - 1);
+            i = items.size() - 1;
+        } else {
+            // done with first, second and last item
+            break;
+        }
+    }
+}
+
+
 ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()
 {
     // extract suffix and use it as index for our config
@@ -2026,6 +2144,11 @@ ClientTestConfig::LinkedItems_t LocalTests::getParentChildData()
     CT_ASSERT(end != test.npos);
     std::string name = test.substr(off, end - off);
     BOOST_FOREACH(const ClientTestConfig::LinkedItems_t &items, config.m_linkedItems) {
+        if (items.m_name == name) {
+            return items;
+        }
+    }
+    BOOST_FOREACH(const ClientTestConfig::LinkedItems_t &items, config.m_linkedItemsSubset) {
         if (items.m_name == name) {
             return items;
         }
@@ -5161,6 +5284,119 @@ static string mangleICalendar20(const std::string &data, bool update)
     return item;
 }
 
+static void addMonthly(size_t &index, ClientTestConfig::MultipleLinkedItems_t &subset,
+                       const std::string &pre, const std::string &post,
+                       const char *suffix, int day, int months)
+{
+    index++;
+    subset.resize(index + 1);
+    ClientTestConfig::LinkedItems_t *items = &subset[index];
+    items->m_name = std::string("Monthly") + suffix;
+
+    /* month varies */
+    std::string parent =
+        pre +
+        "BEGIN:VEVENT\n"
+        "UID:monthly\n"
+        "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
+        "DTEND;TZID=Standard Timezone:2012"  "%1$02d" "%2$02d" "T121000\n"
+        "SUMMARY:monthly " + suffix + " Berlin\n"
+        "RRULE:BYMONTHDAY=1;COUNT=12;FREQ=MONTHLY\n"
+        "TRANSP:TRANSPARENT\n"
+        "END:VEVENT\n" +
+        post;
+    std::string child =
+        pre +
+        "BEGIN:VEVENT\n"
+        "UID:monthly\n"
+        "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
+        "DTEND;TZID=Standard Timezone:2012"  "%1$02d" "%2$02d" "T121000\n"
+        "SUMMARY:%1$04d monthly " + suffix + " Berlin\n"
+        "RECURRENCE-ID;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
+        "TRANSP:TRANSPARENT\n"
+        "END:VEVENT\n" +
+        post;
+    items->push_back(StringPrintf(parent.c_str(), 1, day));
+    for (int month = 1; month <= months; month++) {
+        items->push_back(StringPrintf(child.c_str(), month, day));
+    }
+
+    if (currentServer() == "exchange") {
+        /* month of event varies and UTC time of UNTIL clause (11 during winter time, 10 during summer) */
+        std::string single =
+            pre +
+            "BEGIN:VEVENT\n"
+            "SUMMARY:[[activesyncd pseudo event - ignore me]]\n"
+            "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
+            "DTEND;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
+            "RRULE:FREQ=YEARLY;UNTIL=2012" "%1$02d" "%2$02d" "T" "%3$02d" "0000Z;BYMONTHDAY=1;BYMONTH=%1$d\n"
+            "UID:monthly\n"
+            "TRANSP:TRANSPARENT\n"
+            "END:VEVENT\n" +
+            post;
+        /* first month, last month, UTC time, INTERVAL and sometimes EXDATE varies */
+        std::string many =
+            pre +
+            "BEGIN:VEVENT\n"
+            "SUMMARY:[[activesyncd pseudo event - ignore me]]\n"
+            "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
+            "DTEND;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
+            "RRULE:BYMONTHDAY=1;FREQ=MONTHLY;INTERVAL=%5$d;UNTIL=2012" "%3$02d" "%2$02d" "T" "%4$02d" "0000Z\n"
+            "%6$s"
+            "UID:monthly\n"
+            "TRANSP:TRANSPARENT\n"
+            "END:VEVENT\n" +
+            post;
+
+        for (int start = 1;
+             (size_t)start < items->size();
+             start++) {
+            for (int skip = -1;
+                 skip <= 0 || (size_t)(start + skip + 1) < items->size();
+                 skip++) {
+                for (int index = start;
+                     (size_t)index < items->size();
+                     index++) {
+                    std::string key = skip == -1 ?
+                        StringPrintf("%d_e_%d", start, index) :
+                        StringPrintf("%d_%d_%d", start, skip, index);
+                    int startMonth = 1 + start - 1;
+                    std::string event;
+                    int endMonth = startMonth + index - start;
+                    int time = (endMonth >= 4 && endMonth <= 10) ? 10 : 11;
+
+                    if (start == index) {
+                        event = StringPrintf(single.c_str(), startMonth, day, time);
+                    } else {
+                        // Monthly recurrence uses INTERVAL instead of
+                        // EXDATEs, in contrast to yearly recurrence
+                        // (where Exchange somehow didn't grok the
+                        // INTERVAL). So EXDATEs are only necessary
+                        // for the first, second, last case.
+                        if (skip == -1 ) {
+                            std::string exdates;
+                            for (int month = startMonth; month <= endMonth; month++) {
+                                int step = month - startMonth;
+                                // a gap?
+                                if (step > 1 && (size_t)step < items->size() - start - 1) {
+                                    exdates +=
+                                        StringPrintf("EXDATE;TZID=Standard Timezone:2012%02d01T120000\n",
+                                                     month);
+                                }
+                            }
+                            event = StringPrintf(many.c_str(), startMonth, day, endMonth, time, 1, exdates.c_str());
+                        } else {
+                            event = StringPrintf(many.c_str(), startMonth, day, endMonth, time, skip + 1, "");
+                        }
+                    }
+                    items->m_options.insert(StringPair(key, event));
+                }
+            }
+        }
+    }
+}
+
+
 void ClientTest::getTestData(const char *type, Config &config)
 {
     config = Config();
@@ -5445,6 +5681,7 @@ void ClientTest::getTestData(const char *type, Config &config)
 
         bool recurringAllDay = false;
         bool recurringNoTZ = false;
+        bool subsets = false;
 
 	if (server == "funambol") {
 	    // converts UNTIL into floating time - broken?!
@@ -5583,6 +5820,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             }
 
             recurringAllDay = true;
+            subsets = true;
         } else {
             // in particular for Google Calendar: also try with
             // VALARM, because testing showed that the server works
@@ -5611,6 +5849,11 @@ void ClientTest::getTestData(const char *type, Config &config)
             // converts local time into time zone of the user,
             // which breaks the test
             recurringNoTZ = false;
+        }
+
+        // test is fairly slow, only test with some CalDAV servers
+        if (boost::starts_with(server, "apple")) {
+            subsets = true;
         }
 
         if (recurringAllDay) {
@@ -5682,6 +5925,332 @@ void ClientTest::getTestData(const char *type, Config &config)
             stripParameters(config.m_linkedItems[index][0], "TZID");
             stripComponent(config.m_linkedItems[index][1], "VTIMEZONE");
             stripParameters(config.m_linkedItems[index][1], "TZID");
+        }
+
+        if (subsets) {
+            static const std::string pre =
+                "BEGIN:VCALENDAR\n"
+                "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
+                "VERSION:2.0\n"
+                "BEGIN:VTIMEZONE\n"
+                // Actually, this is Europe/Berlin.
+                // Was renamed to fit the simplified activesyncd naming
+                // and DTSTART was adapted.
+                "TZID:Standard Timezone\n"
+                "BEGIN:STANDARD\n"
+                "DTSTART:19701025T030000\n"
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10\n"
+                "TZOFFSETFROM:+0200\n"
+                "TZOFFSETTO:+0100\n"
+                "END:STANDARD\n"
+                "BEGIN:DAYLIGHT\n"
+                "DTSTART:19700329T020000\n"
+                "RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=3\n"
+                "TZOFFSETFROM:+0100\n"
+                "TZOFFSETTO:+0200\n"
+                "END:DAYLIGHT\n"
+                "END:VTIMEZONE\n";
+            static const std::string post =
+                "END:VCALENDAR\n";
+
+            size_t index = config.m_linkedItemsSubset.size();
+            config.m_linkedItemsSubset.resize(index + 1);
+            ClientTestConfig::LinkedItems_t *items = &config.m_linkedItemsSubset[index];
+            items->m_name = "Yearly";
+            /* year varies */
+            std::string parent =
+                pre +
+                "BEGIN:VEVENT\n"
+                "UID:yearly\n"
+                "DTSTART;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
+                "DTEND;TZID=Standard Timezone:"  "%1$04d" "0101T121000\n"
+                "SUMMARY:yearly Berlin\n"
+                "RRULE:BYMONTH=1;BYMONTHDAY=1;UNTIL=20140101T110000Z;FREQ=YEARLY\n"
+                "TRANSP:TRANSPARENT\n"
+                "END:VEVENT\n" +
+                post;
+            std::string child =
+                pre +
+                "BEGIN:VEVENT\n"
+                "UID:yearly\n"
+                "DTSTART;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
+                "DTEND;TZID=Standard Timezone:"  "%1$04d" "0101T121000\n"
+                "SUMMARY:" "%1$04d" "yearly Berlin\n"
+                "RECURRENCE-ID;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
+                "TRANSP:TRANSPARENT\n"
+                "END:VEVENT\n" +
+                post;
+            boost::assign::push_back(config.m_linkedItemsSubset[index])
+                (StringPrintf(parent.c_str(), 2012))
+                (StringPrintf(child.c_str(), 2012))
+                (StringPrintf(child.c_str(), 2013))
+                (StringPrintf(child.c_str(), 2014))
+                ;
+            if (server == "exchange") {
+                /* only year of event varies */
+                std::string single =
+                    pre +
+                    "BEGIN:VEVENT\n"
+                    "SUMMARY:[[activesyncd pseudo event - ignore me]]\n"
+                    "DTSTART;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
+                    "DTEND;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
+                    "RRULE:FREQ=YEARLY;UNTIL=" "%1$04d" "0101T110000Z;BYMONTHDAY=1;BYMONTH=1\n"
+                    "UID:yearly\n"
+                    "TRANSP:TRANSPARENT\n"
+                    "END:VEVENT\n" +
+                    post;
+                /* first year, last year and EXDATE varies */
+                std::string many =
+                    pre +
+                    "BEGIN:VEVENT\n"
+                    "SUMMARY:[[activesyncd pseudo event - ignore me]]\n"
+                    "DTSTART;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
+                    "DTEND;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
+                    "RRULE:FREQ=YEARLY;UNTIL=" "%2$04d" "0101T110000Z;BYMONTHDAY=1;BYMONTH=1\n"
+                    "%3$s"
+                    "UID:yearly\n"
+                    "TRANSP:TRANSPARENT\n"
+                    "END:VEVENT\n" +
+                    post;
+
+                // expands to the insert calls below: doing it programmatically is
+                // longer for a small number of test items, but has the advantage
+                // that it works for an arbitrary number of them
+                for (int start = 1;
+                     (size_t)start < items->size();
+                     start++) {
+                    for (int skip = 0;
+                         !skip || (size_t)(start + skip + 1) < items->size();
+                         skip++) {
+                        for (int index = start;
+                             (size_t)index < items->size();
+                             index++) {
+                            std::string key = StringPrintf("%d_%d_%d",
+                                                           start, skip, index);
+                            int startYear = 2012 + start - 1;
+                            std::string event;
+                            if (start == index) {
+                                event = StringPrintf(single.c_str(), startYear);
+                            } else {
+                                int endYear = startYear + index - start;
+                                std::string exdates;
+                                for (int year = startYear; year <= endYear; year++) {
+                                    // a gap?
+                                    if ((year - startYear) % (skip + 1)) {
+                                        exdates +=
+                                            StringPrintf("EXDATE;TZID=Standard Timezone:%04d0101T120000\n",
+                                                         year);
+                                    }
+                                }
+                                event = StringPrintf(many.c_str(), startYear, endYear, exdates.c_str());
+                            }
+                            items->m_options.insert(StringPair(key, event));
+                        }
+                    }
+                }
+
+#if 0
+                boost::assign::insert(items->m_options)
+                    ("1_0_1", StringPrintf(single.c_str(), 2012))
+                    ("1_0_2", StringPrintf(many.c_str(), 2012, 2013, ""))
+                    ("1_0_3", StringPrintf(many.c_str(), 2012, 2014, ""))
+
+                    ("1_1_1", StringPrintf(single.c_str(), 2012))
+                    ("1_1_3", StringPrintf(many.c_str(), 2012, 2014, "EXDATE;TZID=Standard Timezone:20130101T120000\n"))
+
+                    ("2_0_2", StringPrintf(single.c_str(), 2013))
+                    ("2_0_3", StringPrintf(many.c_str(), 2013, 2014, ""))
+
+                    ("3_0_3", StringPrintf(single.c_str(), 2014))
+                    ;
+#endif
+            }
+
+            addMonthly(index, config.m_linkedItemsSubset, pre, post, "First", 1, 12);
+            addMonthly(index, config.m_linkedItemsSubset, pre, post, "Middle", 1, 6);
+
+            index++;
+            config.m_linkedItemsSubset.resize(index + 1);
+            items = &config.m_linkedItemsSubset[index];
+            items->m_name = "Weekly";
+            items->push_back(pre +
+                             "BEGIN:VEVENT\n"
+                             "UID:weekly\n"
+                             "DTSTART;TZID=Standard Timezone:20120101T140000\n"
+                             "DTEND;TZID=Standard Timezone:20120101T141000\n"
+                             "SUMMARY:weekly Sunday Berlin\n"
+                             "RRULE:FREQ=WEEKLY;COUNT=54;BYDAY=SU\n"
+                             "TRANSP:TRANSPARENT\n"
+                             "END:VEVENT\n" +
+                             post);
+            // instead of trying to determine the dates of all Sundays in 2012
+            // algorithmically, hard-code them...
+            struct {
+                int m_month, m_day;
+            } sundays[] = {
+                { 1, 1 },
+                { 1, 8 },
+                { 1, 15 },
+                { 1, 22 },
+                { 1, 29 },
+                { 2, 5 },
+                { 2, 12 },
+                { 2, 19 },
+                { 2, 26 },
+                { 3, 4 },
+                { 3, 11 },
+                { 3, 18 },
+// winter time ends on March 25th, week 12 (counting from zero)
+#define SUNDAYS_2012_WINTER_TIME_ENDS 12
+                { 3, 25 },
+                { 4, 1 },
+                { 4, 8 },
+                { 4, 15 },
+                { 4, 22 },
+                { 4, 29 },
+                { 5, 6 },
+                { 5, 13 },
+                { 5, 20 },
+                { 5, 27 },
+                { 6, 3 },
+                { 6, 10 },
+                { 6, 17 },
+                { 6, 24 },
+                { 7, 1 },
+                { 7, 8 },
+                { 7, 15 },
+                { 7, 22 },
+                { 7, 29 },
+                { 8, 5 },
+                { 8, 12 },
+                { 8, 19 },
+                { 8, 26 },
+                { 9, 2 },
+                { 9, 9 },
+                { 9, 16 },
+                { 9, 23 },
+                { 9, 30 },
+                { 10, 7 },
+                { 10, 14 },
+                { 10, 21 },
+// winter time start on October 28th, week 43 (counting from zero)
+#define SUNDAYS_2012_WINTER_TIME_STARTS 43
+                { 10, 28 },
+                { 11, 4 },
+                { 11, 11 },
+                { 11, 18 },
+                { 11, 25 },
+                { 12, 2 },
+                { 12, 9 },
+                { 12, 16 },
+                { 12, 23 },
+                { 12, 30 },
+                { 0, 0 }
+            };
+            for (int i = 0; sundays[i].m_month; i++) {
+                items->push_back(StringPrintf((pre +
+                                               "BEGIN:VEVENT\n"
+                                               "UID:weekly\n"
+                                               "DTSTART;TZID=Standard Timezone:2012" "%1$02d%2$02d" "T140000\n"
+                                               "DTEND;TZID=Standard Timezone:2012" "%1$02d%2$02d" "T141000\n"
+                                               "SUMMARY:2012-%1$02d-%2$02d %3$d. weekly Sunday Berlin\n"
+                                               "RECURRENCE-ID;TZID=Standard Timezone:2012" "%1$02d%2$02d" "T140000\n"
+                                               "TRANSP:TRANSPARENT\n"
+                                               "END:VEVENT\n" +
+                                               post).c_str(),
+                                              sundays[i].m_month,
+                                              sundays[i].m_day,
+                                              i + 1));
+            }
+
+            if (server == "exchange") {
+                /* date varies and UTC time of UNTIL clause (11 during winter time, 10 during summer) */
+                std::string single =
+                    pre +
+                    "BEGIN:VEVENT\n"
+                    "SUMMARY:[[activesyncd pseudo event - ignore me]]\n"
+                    "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T140000\n"
+                    "DTEND;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T140000\n"
+                    "RRULE:FREQ=YEARLY;UNTIL=2012" "%1$02d" "%2$02d" "T" "%3$02d" "0000Z;BYMONTHDAY=%2$d;BYMONTH=%1$d\n"
+                    "UID:weekly\n"
+                    "TRANSP:TRANSPARENT\n"
+                    "END:VEVENT\n" +
+                    post;
+                /* first month, last month, UTC time, INTERVAL and sometimes EXDATE varies */
+                std::string many =
+                    pre +
+                    "BEGIN:VEVENT\n"
+                    "SUMMARY:[[activesyncd pseudo event - ignore me]]\n"
+                    "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T140000\n"
+                    "DTEND;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T140000\n"
+                    "RRULE:BYDAY=SU;FREQ=WEEKLY;INTERVAL=%6$d;UNTIL=2012" "%3$02d" "%4$02d" "T" "%5$02d" "0000Z\n"
+                    "%7$s"
+                    "UID:weekly\n"
+                    "TRANSP:TRANSPARENT\n"
+                    "END:VEVENT\n" +
+                    post;
+
+                for (int start = 1;
+                     (size_t)start < items->size();
+                     start++) {
+                    for (int skip = -1;
+                         skip <= 0 || (size_t)(start + skip + 1) < items->size();
+                         skip++) {
+                        for (int index = start;
+                             (size_t)index < items->size();
+                             index++) {
+                            std::string key = skip == -1 ?
+                                StringPrintf("%d_e_%d", start, index) :
+                                StringPrintf("%d_%d_%d", start, skip, index);
+                            int startWeek = start - 1; // numbered from zero in "sundays" array
+                            if (startWeek < 0) {
+                                startWeek = 0;
+                            }
+                            std::string event;
+                            int endWeek = startWeek + index - start;
+                            int time = (endWeek >= SUNDAYS_2012_WINTER_TIME_ENDS &&
+                                        endWeek < SUNDAYS_2012_WINTER_TIME_STARTS) ? 12 : 13;
+                            int startMonth = sundays[startWeek].m_month;
+                            int startDay = sundays[startWeek].m_day;
+                            if (start == index) {
+                                event = StringPrintf(single.c_str(), startMonth, startDay, time);
+                            } else {
+                                int endMonth = sundays[endWeek].m_month;
+                                int endDay = sundays[endWeek].m_day;
+
+                                // Weekly recurrence uses INTERVAL instead of
+                                // EXDATEs, in contrast to yearly recurrence
+                                // (where Exchange somehow didn't grok the
+                                // INTERVAL). So EXDATEs are only necessary
+                                // for the first, second, last case.
+                                std::string exdates;
+                                if (skip == -1 ) {
+                                    for (int week = startWeek; week <= endWeek; week++) {
+                                        int step = week - startWeek;
+                                        // a gap?
+                                        if (step > 1 && (size_t)step < items->size() - start - 1) {
+                                            exdates +=
+                                                StringPrintf("EXDATE;TZID=Standard Timezone:2012%02d%02dT140000\n",
+                                                             sundays[week].m_month,
+                                                             sundays[week].m_day);
+                                        }
+                                    }
+                                    event = StringPrintf(many.c_str(),
+                                                         startMonth, startDay,
+                                                         endMonth, endDay,
+                                                         time, 1, exdates.c_str());
+                                } else {
+                                    event = StringPrintf(many.c_str(),
+                                                         startMonth, startDay,
+                                                         endMonth, endDay,
+                                                         time, skip + 1, "");
+                                }
+                            }
+                            items->m_options.insert(StringPair(key, event));
+                        }
+                    }
+                }
+            }
         }
 
         config.m_templateItem = config.m_insertItem;

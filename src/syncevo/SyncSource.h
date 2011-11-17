@@ -327,6 +327,8 @@ struct ClientTestConfig {
     typedef class LinkedItems : public std::vector<std::string> {
     public:
         std::string m_name; /**< used as Client::Source::LinkedItems<m_name> */
+        StringMap m_options; /**< used to pass additional parameters to the test,
+                                for example testLinkedItemsSubset */
     } LinkedItems_t;
 
     /**
@@ -335,6 +337,11 @@ struct ClientTestConfig {
     typedef std::vector<LinkedItems_t> MultipleLinkedItems_t;
 
     MultipleLinkedItems_t m_linkedItems;
+
+    /**
+     * Another set of linked items for the LinkedItems*::testItemsAll/Second/Third/... tests.
+     */
+    MultipleLinkedItems_t m_linkedItemsSubset;
 
     /**
      * Backends atomic modification tests

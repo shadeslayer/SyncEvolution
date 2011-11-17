@@ -530,6 +530,12 @@ public:
     virtual bool compareDatabases(const char *refFile, TestingSyncSource &copy, bool raiseAssert = true);
 
     /**
+     * compare data in source with set of items
+     */
+    void compareDatabasesRef(TestingSyncSource &copy,
+                             const std::list<std::string> &items);
+
+    /**
      * compare data in source with vararg list of std::string pointers, NULL terminated
      */
     void compareDatabases(TestingSyncSource &copy, ...);
@@ -599,6 +605,8 @@ public:
     virtual void testLinkedItemsUpdateChildNoIDs();
     virtual void testLinkedItemsSingle404();
     virtual void testLinkedItemsMany404();
+
+    virtual void testLinkedItemsSubset();
 
     /** retrieve right set of items for running test */
     ClientTestConfig::LinkedItems_t getParentChildData();
@@ -943,6 +951,9 @@ public:
 
 #define ADD_TEST_TO_SUITE(_suite, _class, _function) \
     _suite->addTest(FilterTest(new CppUnit::TestCaller<_class>(_suite->getName() + "::" #_function, &_class::_function, *this)))
+
+#define ADD_TEST_TO_SUITE_SUFFIX(_suite, _class, _function, _suffix) \
+    _suite->addTest(FilterTest(new CppUnit::TestCaller<_class>(_suite->getName() + "::" #_function + _suffix, &_class::_function, *this)))
 
 SE_END_CXX
 
