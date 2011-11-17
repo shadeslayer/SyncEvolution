@@ -43,27 +43,32 @@ class CTException : public CppUnit::Exception
 
  public:
     CTException(const CppUnit::Message &message = CppUnit::Message(),
+                const std::string &currentMessage = "",
                 const CppUnit::SourceLine &currentSourceLine = CppUnit::SourceLine(),
                 const CppUnit::SourceLine &previousSourceLine = CppUnit::SourceLine()) :
     CppUnit::Exception(message, previousSourceLine)
     {
+        CppUnit::Message extendedMessage = message;
+        if (!currentMessage.empty()) {
+            extendedMessage.addDetail(currentMessage);
+        }
         if (currentSourceLine.isValid()) {
-            CppUnit::Message extendedMessage = message;
             extendedMessage.addDetail(StringPrintf("%s:%d",
                                                    getBasename(currentSourceLine.fileName()).c_str(),
                                                    currentSourceLine.lineNumber()));
-            setMessage(extendedMessage);
         }
+        setMessage(extendedMessage);
     }
 };
 
-static void inline ClientTestExceptionHandle(const char *file, int line)
+static void inline ClientTestExceptionHandle(const char *file, int line, const std::string &message = "")
 {
     CppUnit::SourceLine here(file, line);
     try {
         throw;
     }  catch (const CTException &ex) {
         throw(CTException(ex.message(),
+                          message,
                           here,
                           ex.sourceLine()));
     } catch (const CppUnit::Exception &ex) {
@@ -72,11 +77,13 @@ static void inline ClientTestExceptionHandle(const char *file, int line)
             throw;
         } else {
             throw(CTException(ex.message(),
+                              message,
                               here,
                               ex.sourceLine()));
         }
     } catch (const Exception &ex) {
         throw(CTException(CppUnit::Message(ex.what()),
+                          message,
                           here,
                           CppUnit::SourceLine(ex.m_file, ex.m_line)));
     } catch (const std::exception &ex) {
@@ -84,6 +91,7 @@ static void inline ClientTestExceptionHandle(const char *file, int line)
                                                              "std::exception or derived"));
         msg.addDetail(std::string("What(): ") + ex.what());
         throw(CTException(msg,
+                          message,
                           here));
     }
 }
@@ -99,8 +107,23 @@ static void inline ClientTestExceptionHandle(const char *file, int line)
        } \
     } while (false)
 
+#define CT_WRAP_ASSERT_MESSAGE(_file, _line, _message, _assert)  \
+    do { \
+       try { \
+           SE_LOG_DEBUG(NULL, NULL, "%s:%d: starting %s %s", \
+                        getBasename(_file).c_str(), _line, \
+                        std::string(_message).c_str(), \
+                        #_assert); \
+           _assert; \
+           SE_LOG_DEBUG(NULL, NULL, "%s:%d: ending %s", getBasename(_file).c_str(), _line, #_assert); \
+       } catch (...) { \
+           ClientTestExceptionHandle(_file, _line, _message); \
+       } \
+    } while (false)
+
 #define CT_ASSERT(condition) CT_WRAP_ASSERT(__FILE__, __LINE__, CPPUNIT_ASSERT(condition))
 #define CT_ASSERT_NO_THROW(expression) CT_WRAP_ASSERT(__FILE__, __LINE__, expression)
+#define CT_ASSERT_NO_THROW_MESSAGE(message, expression) CT_WRAP_ASSERT_MESSAGE(__FILE__, __LINE__, message, expression)
 #define CT_ASSERT_MESSAGE(message,condition) CT_WRAP_ASSERT(__FILE__, __LINE__, CPPUNIT_ASSERT_MESSAGE(message,condition))
 #define CT_FAIL(message) CPPUNIT_FAIL(message)
 #define CT_ASSERT_EQUAL(expected,actual) CT_WRAP_ASSERT(__FILE__, __LINE__, CPPUNIT_ASSERT_EQUAL(expected,actual))
