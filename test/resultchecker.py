@@ -310,11 +310,17 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 #======================================================================
                 # FAIL: TestDBusServer.testGetConfigsTemplates - Server.GetConfigsTemplates()
                 # ---------------------------------------------------------------------
+                #
+                # More recent Python 2.7 produces:
+                # FAIL: testSyncSecondSession (__main__.TestSessionAPIsReal)
 
                 # first build list of all tests, assuming that they pass
                 dbustests = {}
                 test_start = re.compile(r'''^Test(?P<cl>.*)\.test(?P<func>[^ ]*)''')
+                # FAIL/ERROR + description of test (old Python)
                 test_fail = re.compile(r'''(?P<type>FAIL|ERROR): Test(?P<cl>.*)\.test(?P<func>[^ ]*)''')
+                # FAIL/ERROR + function name of test (Python 2.7)
+                test_fail_27 = re.compile(r'''(?P<type>FAIL|ERROR): test(?P<func>[^ ]*) \(.*\.(?:Test(?P<cl>.*))\)''')
                 logfile = None
                 sepcount = 0
                 for line in open(rserver + "/output.txt"):
@@ -322,7 +328,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                     if m:
                         is_okay = True
                     else:
-                        m = test_fail.search(line)
+                        m = test_fail.search(line) or test_fail_27.search(line)
                         is_okay = False
                     if m:
                         # create log file
