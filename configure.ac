@@ -494,8 +494,7 @@ if test $enable_dbus_service = "yes"; then
     fi
     # Recent libnotify releases work with gtk+-2.0 and gtk+-3.0. We
     # pick gtk+-2.0 here, to be compatible with old libnotify releases
-    # which had that hard-cored and because sync-ui also depends on
-    # gtk+-2.0.
+    # which had that hard-cored
     AC_ARG_ENABLE([notify],
         AS_HELP_STRING([--enable-notify],
                        [send notifications for automatic sync events, using libnotify]),
@@ -570,7 +569,6 @@ if test $gtk_version = "gtk+-3.0"; then
 else
     gtk_dir=src/gtk-ui
 fi
-echo ${gtk_dir}
 
 case $enable_gui in
      all) GUI_PROGRAMS=${gtk_dir}'/sync-ui-gtk${EXEEXT} '${gtk_dir}'/sync-ui-moblin${EXEEXT}'; GUI_DESKTOP_FILES="${gtk_dir}/sync-gtk.desktop ${gtk_dir}/sync-moblin.desktop";;
@@ -578,21 +576,21 @@ case $enable_gui in
      no) GUI_PROGRAMS=; GUI_DESKTOP_FILES=;;
      *) AC_MSG_ERROR([Unknown enable_gui type: '$enable_gui'])
 esac
-echo ${GUI_PROGRAMS}
-echo ${GUI_DESKTOP_FILES}
 
 if test $enable_gui != "no"; then
     PKG_CHECK_MODULES(DBUS_GLIB, dbus-glib-1 glib-2.0)
     AC_PATH_PROG(DBUS_BINDING_TOOL, dbus-binding-tool)
     AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 
-    gui_modules="$gtk_version glib-2.0 dbus-glib-1 >= 0.60 libglade-2.0 gio-2.0"
-
+    gui_modules="$gtk_version glib-2.0 dbus-glib-1 >= 0.60 gio-2.0"
     if test $enable_gui = "moblin"; then
         AC_DEFINE(USE_MOBLIN_UX, 1, [Use Moblin UI widgets])
     fi
-    if test $enable_gui = "moblin" -o $enable_gui = "all"; then
-        gui_modules="$guimodules mx-gtk-1.0"
+
+    # gtk3 provides a switch widget, otherwise we need mx-gtk
+    if test $gtk_version != "gtk+-3.0" &&
+       test $enable_gui = "moblin" -o $enable_gui = "all"; then
+        gui_modules="$gui_modules mx-gtk-1.0"
 
         PKG_CHECK_MODULES(MX_GTK_0_99_1, mx-gtk-1.0 >= 0.99.1,
                           have_mx_gtk_0_99_1="yes",
@@ -632,7 +630,6 @@ AC_SUBST(GUI_CFLAGS)
 AC_SUBST(GUI_LIBS)
 AC_SUBST(GUI_PROGRAMS)
 AC_SUBST(GUI_DESKTOP_FILES)
-
 
 # Boost headers: boost/foreach.hpp is needed (1.33/Debian Etch
 # doesn't have it, 1.34/Ubuntu 8.10 Hardy does). 1.35 is available

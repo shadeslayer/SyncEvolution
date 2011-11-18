@@ -5,14 +5,6 @@
 #include <glib/gi18n.h>
 #include <dbus/dbus-glib.h>
 
-#ifdef USE_MOBLIN_UX
-#ifdef MX_GTK_0_99_1
-#include <mx-gtk/mx-gtk.h>
-#else
-#include <mx/mx-gtk.h>
-#endif
-#endif
-
 #include "sync-ui.h"
 #include "sync-config-widget.h"
 
@@ -171,7 +163,7 @@ check_source_cb (SyncevoSession *session,
             gtk_widget_show (widgets->check);
         } else {
             /* next save should disable this source */
-            toggle_set_active (widgets->check, FALSE);
+            gtk_switch_set_active (GTK_SWITCH (widgets->check), FALSE);
         }
     }
     source_widgets_unref (widgets);
@@ -385,8 +377,8 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
         char *name;
         gboolean client = peer_is_client (self->config);
 
-        send = toggle_get_active (self->send_check);
-        receive = toggle_get_active (self->receive_check);
+        send = gtk_switch_get_active (GTK_SWITCH (self->send_check));
+        receive = gtk_switch_get_active (GTK_SWITCH (self->receive_check));
 
         if (send && receive) {
             mode = SYNCEVO_SYNC_TWO_WAY;
@@ -407,8 +399,8 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
             const char *mode_str;
             gboolean active;
 
-            active = toggle_get_active (widgets->check) &&
-                     GTK_WIDGET_SENSITIVE (widgets->check);
+            active = gtk_switch_get_active (GTK_SWITCH (widgets->check)) &&
+                     gtk_widget_get_sensitive (widgets->check);
             if (active) {
                 mode_str = syncevo_sync_mode_to_string (mode);
             } else {
@@ -579,10 +571,10 @@ source_entry_notify_text_cb (GObject *gobject,
 
     text = gtk_entry_get_text (GTK_ENTRY (widgets->entry));
     new_editable = (strlen (text) > 0);
-    old_editable = GTK_WIDGET_SENSITIVE (widgets->check);
+    old_editable = gtk_widget_get_sensitive (widgets->check);
     if (new_editable != old_editable) {
         gtk_widget_set_sensitive (widgets->check, new_editable);
-        toggle_set_active (widgets->check, new_editable);
+        gtk_switch_set_active (GTK_SWITCH (widgets->check), new_editable);
     }
 }
 
@@ -594,11 +586,10 @@ add_toggle_widget (SyncConfigWidget *self,
 {
     GtkWidget *toggle;
     int padding;
+    GtkWidget *label;
 
     padding = (col == 1) ? 0 : 32;
 
-#ifdef USE_MOBLIN_UX
-    GtkWidget *label;
 
     col = col * 2;
     label = gtk_label_new (title);
@@ -608,21 +599,14 @@ add_toggle_widget (SyncConfigWidget *self,
     gtk_table_attach (GTK_TABLE (self->mode_table), label,
                       col, col + 1, row, row + 1,
                       GTK_FILL, GTK_FILL, 0, 0);
-    toggle = mx_gtk_light_switch_new ();
+    toggle = gtk_switch_new ();
     g_signal_connect_swapped (toggle, "hide",
                               G_CALLBACK (gtk_widget_hide), label);
     g_signal_connect_swapped (toggle, "show",
                               G_CALLBACK (gtk_widget_show), label);
-    toggle_set_active (toggle, active);
-    g_signal_connect (toggle, "switch-flipped",
-                      G_CALLBACK (mode_widget_notify_active_cb), self);
-#else
-    toggle = gtk_check_button_new_with_label (title);
-    gtk_widget_set_size_request (toggle, 260, -1);
-    toggle_set_active (toggle, active);
+    gtk_switch_set_active (GTK_SWITCH (toggle), active);
     g_signal_connect (toggle, "notify::active",
                       G_CALLBACK (mode_widget_notify_active_cb), self);
-#endif
 
     gtk_table_attach (GTK_TABLE (self->mode_table), toggle,
                       col + 1, col + 2, row, row + 1,
@@ -1423,16 +1407,18 @@ init_default_config (SyncConfigWidget *self)
 }
 
 static gboolean
-label_button_expose_cb (GtkWidget      *widget,
-                        GdkEventExpose *event,
-                        SyncConfigWidget *self)
+label_button_draw_cb (GtkWidget        *widget,
+                      cairo_t          *cr,
+                      SyncConfigWidget *self)
 {
     GtkExpanderStyle style;
     gint indicator_x, indicator_y;
+    GtkAllocation alloc;
 
-    indicator_x = widget->style->xthickness + INDICATOR_SIZE / 2;
-    indicator_y = widget->style->ythickness +
-                  widget->allocation.height / 2;
+    gtk_widget_get_allocation (widget, &alloc);
+    indicator_x = gtk_widget_get_style (widget)->xthickness + INDICATOR_SIZE / 2;
+    indicator_y = gtk_widget_get_style (widget)->ythickness +
+                  alloc.height / 2;
 
     if (self->expanded) {
         style = GTK_EXPANDER_EXPANDED;
@@ -1440,10 +1426,9 @@ label_button_expose_cb (GtkWidget      *widget,
         style = GTK_EXPANDER_COLLAPSED;
     }
 
-    gtk_paint_expander (widget->style,
-                        widget->window,
-                        widget->state,
-                        NULL,
+    gtk_paint_expander (gtk_widget_get_style (widget),
+                        cr,
+                        gtk_widget_get_state (widget),
                         GTK_WIDGET (self),
                         NULL,
                         indicator_x,
@@ -1454,33 +1439,28 @@ label_button_expose_cb (GtkWidget      *widget,
 }
 
 static gboolean
-sync_config_widget_expose_event (GtkWidget      *widget,
-                                 GdkEventExpose *event)
+sync_config_widget_draw (GtkWidget *widget,
+                         cairo_t   *cr)
 {
-    GdkRectangle rect;
     SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
+    GtkAllocation alloc;
 
-    rect.x = widget->allocation.x;
-    rect.y = widget->allocation.y;
-    rect.height = widget->allocation.height;
-    rect.width = widget->allocation.width;
+    gtk_widget_get_allocation (widget, &alloc);
 
-    gtk_paint_box (widget->style,
-                   widget->window,
-                   widget->state,
+    /* should really use _render_frame() ... */
+    gtk_paint_box (gtk_widget_get_style (widget),
+                   cr,
+                   gtk_widget_get_state (widget),
                    GTK_SHADOW_OUT,
-                   &rect,
                    widget,
                    NULL,
-                   rect.x,
-                   rect.y,
-                   rect.width,
-                   rect.height);
+                   0, 0,
+                   alloc.width, alloc.height);
 
-    gtk_container_propagate_expose (GTK_CONTAINER (self),
-                                    self->label_box, event);
-    gtk_container_propagate_expose (GTK_CONTAINER (self),
-                                    self->expando_box, event);
+    gtk_container_propagate_draw (GTK_CONTAINER (self),
+                                    self->label_box, cr);
+    gtk_container_propagate_draw (GTK_CONTAINER (self),
+                                    self->expando_box, cr);
 
     return FALSE;
 }
@@ -1499,9 +1479,9 @@ sync_config_widget_size_allocate (GtkWidget     *widget,
 
     gtk_widget_size_request (self->label_box, &req);
 
-    alloc.x = allocation->x + widget->style->xthickness;
-    alloc.y = allocation->y + widget->style->ythickness;
-    alloc.width = allocation->width - 2 * widget->style->xthickness;
+    alloc.x = allocation->x + gtk_widget_get_style (widget)->xthickness;
+    alloc.y = allocation->y + gtk_widget_get_style (widget)->ythickness;
+    alloc.width = allocation->width - 2 * gtk_widget_get_style (widget)->xthickness;
     alloc.height = req.height;
 
     gtk_widget_size_allocate (self->label_box, &alloc);
@@ -1510,10 +1490,10 @@ sync_config_widget_size_allocate (GtkWidget     *widget,
     if (self->expanded) {
         gtk_widget_size_request (self->expando_box, &req);
 
-        alloc.x = allocation->x + 2 * widget->style->xthickness;
-        alloc.y = allocation->y + widget->style->ythickness +
+        alloc.x = allocation->x + 2 * gtk_widget_get_style (widget)->xthickness;
+        alloc.y = allocation->y + gtk_widget_get_style (widget)->ythickness +
                   alloc.height + CHILD_PADDING;
-        alloc.width = allocation->width - 4 * widget->style->xthickness;
+        alloc.width = allocation->width - 4 * gtk_widget_get_style (widget)->xthickness;
         alloc.height = req.height;
 
         gtk_widget_size_allocate (self->expando_box, &alloc);
@@ -1527,23 +1507,46 @@ sync_config_widget_size_request (GtkWidget      *widget,
     SyncConfigWidget *self = SYNC_CONFIG_WIDGET (widget);
     GtkRequisition req;
 
-    requisition->width = widget->style->xthickness * 2;
-    requisition->height = widget->style->ythickness * 2;
+    requisition->width = gtk_widget_get_style (widget)->xthickness * 2;
+    requisition->height = gtk_widget_get_style (widget)->ythickness * 2;
 
     gtk_widget_size_request (self->label_box, &req);
 
     requisition->width += req.width;
     requisition->height = MAX (req.height, INDICATOR_SIZE) +
-                          widget->style->ythickness * 2;
+                          gtk_widget_get_style (widget)->ythickness * 2;
 
     if (self->expanded) {
 
         gtk_widget_size_request (self->expando_box, &req);
         requisition->width = MAX (requisition->width,
-                                  req.width + widget->style->xthickness * 4);
-        requisition->height += req.height + 2 * widget->style->ythickness;
+                                  req.width + gtk_widget_get_style (widget)->xthickness * 4);
+        requisition->height += req.height + 2 * gtk_widget_get_style (widget)->ythickness;
     }
 }
+
+static void
+sync_config_widget_get_preferred_width (GtkWidget *widget,
+                                        gint      *minimal_width,
+                                        gint      *natural_width)
+{
+  GtkRequisition requisition;
+
+  sync_config_widget_size_request (widget, &requisition);
+  *minimal_width = *natural_width = requisition.width;
+}
+
+static void
+sync_config_widget_get_preferred_height (GtkWidget *widget,
+                                         gint      *minimal_height,
+                                         gint      *natural_height)
+{
+  GtkRequisition requisition;
+
+  sync_config_widget_size_request (widget, &requisition);
+  *minimal_height = *natural_height = requisition.height;
+}
+
 
 static GObject *
 sync_config_widget_constructor (GType                  gtype,
@@ -1683,8 +1686,9 @@ sync_config_widget_class_init (SyncConfigWidgetClass *klass)
     object_class->dispose = sync_config_widget_dispose;
     object_class->constructor = sync_config_widget_constructor;
 
-    w_class->expose_event = sync_config_widget_expose_event;
-    w_class->size_request = sync_config_widget_size_request;
+    w_class->draw = sync_config_widget_draw;
+    w_class->get_preferred_width = sync_config_widget_get_preferred_width;
+    w_class->get_preferred_height = sync_config_widget_get_preferred_height;
     w_class->size_allocate = sync_config_widget_size_allocate;
     w_class->map = sync_config_widget_map;
     w_class->unmap = sync_config_widget_unmap;
@@ -1837,8 +1841,8 @@ sync_config_widget_init (SyncConfigWidget *self)
                       G_CALLBACK (label_leave_notify_cb), self);
     g_signal_connect (self->label_box, "button-release-event",
                       G_CALLBACK (label_button_release_cb), self);
-    g_signal_connect (self->label_box, "expose-event",
-                      G_CALLBACK (label_button_expose_cb), self);
+    g_signal_connect (self->label_box, "draw",
+                      G_CALLBACK (label_button_draw_cb), self);
 
     hbox = gtk_hbox_new (FALSE, 0);
     gtk_widget_show (hbox);

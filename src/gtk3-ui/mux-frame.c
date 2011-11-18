@@ -50,7 +50,6 @@ static void
 label_changed_cb (MuxFrame *frame)
 {
     char *font = NULL;
-    GtkFrame *gtk_frame = GTK_FRAME (frame);
     GtkWidget *label = gtk_frame_get_label_widget (GTK_FRAME (frame));
 
     if (!label)
@@ -75,7 +74,6 @@ static void
 mux_frame_update_style (MuxFrame *frame)
 {
     GdkColor *border_color, *bullet_color;
-    char *font = NULL;
 
     gtk_widget_style_get (GTK_WIDGET (frame),
                           "border-color", &border_color, 
@@ -116,50 +114,40 @@ rounded_rectangle (cairo_t * cr,
 }
 
 static void
-mux_frame_paint (GtkWidget *widget, GdkRectangle *area)
+mux_frame_paint (GtkWidget *widget, cairo_t *cairo)
 {
     MuxFrame *frame = MUX_FRAME (widget);
-    cairo_t *cairo;
     GtkStyle *style;
     guint width;
+    GtkAllocation allocation;
 
     g_return_if_fail (widget != NULL);
     g_return_if_fail (MUX_IS_FRAME (widget));
-    g_return_if_fail (area != NULL);
 
     style = gtk_widget_get_style (widget);
-    cairo = gdk_cairo_create (widget->window);
     width = gtk_container_get_border_width (GTK_CONTAINER (widget));
+    gtk_widget_get_allocation (widget, &allocation);
 
     /* draw border */
     if (width != 0) {
         gdk_cairo_set_source_color (cairo, &frame->border_color);
-
+        
         rounded_rectangle (cairo,
-                           widget->allocation.x,
-                           widget->allocation.y,
-                           widget->allocation.width,
-                           widget->allocation.height,
+                           0, 0,
+                           allocation.width, allocation.height,
                            width);
-        cairo_clip (cairo);
-
-        gdk_cairo_rectangle (cairo, area);
         cairo_clip (cairo);
 
         cairo_paint (cairo);
     }
 
     /* draw background */
-    gdk_cairo_set_source_color (cairo, &style->bg[GTK_WIDGET_STATE(widget)]);
+    gdk_cairo_set_source_color (cairo, &style->bg[gtk_widget_get_state (widget)]);
     rounded_rectangle (cairo,
-                     widget->allocation.x + width,
-                     widget->allocation.y + width,
-                     widget->allocation.width - 2 * width,
-                     widget->allocation.height- 2 * width,
-                     width);
-    cairo_clip (cairo);
-
-    gdk_cairo_rectangle (cairo, area);
+                       width, width,
+                       allocation.width - 2 * width,
+                       allocation.height - 2 * width,
+                       width);
     cairo_clip (cairo);
 
     cairo_paint (cairo);
@@ -169,32 +157,27 @@ mux_frame_paint (GtkWidget *widget, GdkRectangle *area)
         gdk_cairo_set_source_color (cairo, &frame->bullet_color);
 
         rounded_rectangle (cairo,
-                           frame->bullet_allocation.x,
-                           frame->bullet_allocation.y,
-                           frame->bullet_allocation.height,
+                           0, 0,
+                           frame->bullet_allocation.width,
                            frame->bullet_allocation.height,
                            4);
-        cairo_clip (cairo);
-
-        gdk_cairo_rectangle (cairo, area);
         cairo_clip (cairo);
 
         cairo_paint (cairo);
         
     }
-    cairo_destroy (cairo);
 }
 
 static gboolean
-mux_frame_expose(GtkWidget *widget,
-                 GdkEventExpose *event)
+mux_frame_draw(GtkWidget *widget,
+               cairo_t   *cr)
 {
     GtkWidgetClass *grand_parent;
     if (gtk_widget_is_drawable (widget)) {
-        mux_frame_paint (widget, &event->area);
+        mux_frame_paint (widget, cr);
 
         grand_parent = GTK_WIDGET_CLASS (g_type_class_peek_parent (mux_frame_parent_class));
-        grand_parent->expose_event (widget, event);
+        grand_parent->draw (widget, cr);
     }
     return FALSE;
 }
@@ -223,13 +206,34 @@ mux_frame_size_request (GtkWidget *widget,
     }
 
     requisition->width = MAX (child_req.width, title_req.width) +
-                         2 * (GTK_CONTAINER (widget)->border_width +
-                              GTK_WIDGET (widget)->style->xthickness);
+                         2 * (gtk_container_get_border_width (GTK_CONTAINER (widget)) +
+                              gtk_widget_get_style (widget)->xthickness);
     requisition->height = title_req.height + child_req.height +
-                          2 * (GTK_CONTAINER (widget)->border_width +
-                               GTK_WIDGET (widget)->style->ythickness);
+                          2 * (gtk_container_get_border_width (GTK_CONTAINER (widget)) +
+                               gtk_widget_get_style (widget)->ythickness);
 }
 
+static void
+mux_frame_get_preferred_width (GtkWidget *widget,
+                               gint      *minimal_width,
+                               gint      *natural_width)
+{
+  GtkRequisition requisition;
+
+  mux_frame_size_request (widget, &requisition);
+  *minimal_width = *natural_width = requisition.width;
+}
+
+static void
+mux_frame_get_preferred_height (GtkWidget *widget,
+                                gint      *minimal_height,
+                                gint      *natural_height)
+{
+  GtkRequisition requisition;
+
+  mux_frame_size_request (widget, &requisition);
+  *minimal_height = *natural_height = requisition.height;
+}
 
 
 static void
@@ -240,19 +244,20 @@ mux_frame_size_allocate (GtkWidget *widget,
     MuxFrame *mux_frame = MUX_FRAME (widget);
     GtkFrame *frame = GTK_FRAME (widget);
     GtkAllocation child_allocation;
+    GtkWidget *child;
     int xmargin, ymargin, title_height;
 
-    widget->allocation = *allocation;
-    xmargin = GTK_CONTAINER (widget)->border_width +
-              widget->style->xthickness;
-    ymargin = GTK_CONTAINER (widget)->border_width +
-              widget->style->ythickness;
+    gtk_widget_set_allocation (widget, allocation);
+    xmargin = gtk_container_get_border_width (GTK_CONTAINER (widget)) +
+              gtk_widget_get_style (widget)->xthickness;
+    ymargin = gtk_container_get_border_width (GTK_CONTAINER (widget)) +
+              gtk_widget_get_style (widget)->ythickness;
 
     title_height = 0;
-    if (frame->label_widget) {
+    if (gtk_frame_get_label_widget (frame)) {
         GtkAllocation title_allocation;
         GtkRequisition title_req;
-        gtk_widget_get_child_requisition (frame->label_widget, &title_req);
+        gtk_widget_get_child_requisition (gtk_frame_get_label_widget (frame), &title_req);
 
         /* the bullet is bigger than the text */
         title_height = title_req.height * mux_frame_bullet_size_factor + 
@@ -264,7 +269,7 @@ mux_frame_size_allocate (GtkWidget *widget,
         title_allocation.width = MIN (title_req.width,
                                       allocation->width - 2 * xmargin - title_height);
         title_allocation.height = title_height - 2 * MUX_FRAME_BULLET_PADDING;
-        gtk_widget_size_allocate (frame->label_widget, &title_allocation);
+        gtk_widget_size_allocate (gtk_frame_get_label_widget (frame), &title_allocation);
 
         mux_frame->bullet_allocation.x = allocation->x + xmargin + MUX_FRAME_BULLET_PADDING;
         mux_frame->bullet_allocation.y = allocation->y + ymargin + MUX_FRAME_BULLET_PADDING;
@@ -277,19 +282,14 @@ mux_frame_size_allocate (GtkWidget *widget,
     child_allocation.width = allocation->width - 2 * xmargin;
     child_allocation.height = allocation->height - 2 * ymargin - title_height;
 
-    if (GTK_WIDGET_MAPPED (widget) &&
-        (child_allocation.x != frame->child_allocation.x ||
-         child_allocation.y != frame->child_allocation.y ||
-         child_allocation.width != frame->child_allocation.width ||
-         child_allocation.height != frame->child_allocation.height)) {
-        gdk_window_invalidate_rect (widget->window, &widget->allocation, FALSE);
+    if (gtk_widget_get_mapped (widget)) {
+        gdk_window_invalidate_rect (gtk_widget_get_window (widget),
+                                    allocation, FALSE);
     }
-
-    if (bin->child && GTK_WIDGET_VISIBLE (bin->child)) {
-        gtk_widget_size_allocate (bin->child, &child_allocation);
+    child = gtk_bin_get_child (bin);
+    if (child && gtk_widget_get_visible (child)) {
+        gtk_widget_size_allocate (child, &child_allocation);
     }
-
-    frame->child_allocation = child_allocation;
 }
 
 static void mux_frame_style_set (GtkWidget *widget,
@@ -312,8 +312,9 @@ mux_frame_class_init (MuxFrameClass *klass)
     object_class->dispose = mux_frame_dispose;
     object_class->finalize = mux_frame_finalize;
 
-    widget_class->expose_event = mux_frame_expose;
-    widget_class->size_request = mux_frame_size_request;
+    widget_class->draw = mux_frame_draw;
+    widget_class->get_preferred_width = mux_frame_get_preferred_width;
+    widget_class->get_preferred_height = mux_frame_get_preferred_height;
     widget_class->size_allocate = mux_frame_size_allocate;
     widget_class->style_set = mux_frame_style_set;
 

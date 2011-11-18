@@ -27,6 +27,8 @@
 #include <gio/gio.h>
 #include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-bindings.h>
+#include <gio/gdesktopappinfo.h>
+#include <gdk/gdk.h>
 
 #include "syncevo-server.h"
 #include "syncevo-session.h"
@@ -42,13 +44,6 @@
 
 #ifdef USE_MOBLIN_UX
 #include "mux-frame.h"
-
-#ifdef MX_GTK_0_99_1
-#include <mx-gtk/mx-gtk.h>
-#else
-#include <mx/mx-gtk.h>
-#endif
-
 #endif
 
 static gboolean support_canceling = FALSE;
@@ -194,30 +189,6 @@ static void start_session_cb (SyncevoServer *server, char *path,
 static void get_config_for_main_win_cb (SyncevoServer *server, SyncevoConfig *config,
                                         GError *error, app_data *data);
 
-
-void
-toggle_set_active (GtkWidget *toggle, gboolean active)
-{
-#ifdef USE_MOBLIN_UX
-    /* MxGtkLightSwitch does not have "active" property yet */
-    mx_gtk_light_switch_set_active (MX_GTK_LIGHT_SWITCH (toggle), active);
-#else
-    g_object_set (toggle, "active", active, NULL);
-#endif
-}
-
-gboolean
-toggle_get_active (GtkWidget *toggle)
-{
-#ifdef USE_MOBLIN_UX
-    /* MxGtkLightSwitch does not have "active" property yet */
-    return mx_gtk_light_switch_get_active (MX_GTK_LIGHT_SWITCH (toggle));
-#else
-    gboolean active;
-    g_object_get (toggle, "active", &active, NULL);
-    return active;
-#endif
-}
 
 void
 show_error_dialog (GtkWidget *widget, const char* message)
@@ -1114,8 +1085,9 @@ new_device_clicked_cb (GtkButton *btn, app_data *data)
 {
     DBusGProxy *proxy;
     DBusGConnection *bus;
-    char *argv[2] = {"bluetooth-wizard", NULL};
     GError *error = NULL;
+    GAppInfo *info;
+    GAppLaunchContext *context;
 
     switch (data->bluetooth_wizard) {
     case SYNC_BLUETOOTH_MOBLIN:
@@ -1135,19 +1107,17 @@ new_device_clicked_cb (GtkButton *btn, app_data *data)
         break;
 
     case SYNC_BLUETOOTH_GNOME:
-        if (!gdk_spawn_on_screen (gtk_window_get_screen (GTK_WINDOW (data->sync_win)),
-                                  NULL,
-                                  argv,
-                                  NULL,
-                                  G_SPAWN_SEARCH_PATH,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  &error)) {
+        info = (GAppInfo*) g_desktop_app_info_new ("bluetooth-wizard.desktop");
+        context = (GAppLaunchContext*) gdk_display_get_app_launch_context (
+                        gtk_widget_get_display (data->sync_win));
+        g_app_info_launch (info, NULL, context, &error);
+        if (error) {
             g_warning ("Failed to spawn bluetooth-wizard: %s", error->message);
             g_error_free (error);
             return;
         }
+        g_object_unref (info);
+        g_object_unref (context);
         break;
     default:
         ;
@@ -1204,7 +1174,7 @@ autosync_toggle_cb (GtkWidget *widget, gpointer x, app_data *data)
         gboolean new_active, old_active = FALSE;
         char *autosync = NULL;
 
-        new_active = toggle_get_active (widget);
+        new_active = gtk_switch_get_active (GTK_SWITCH (widget));
         syncevo_config_get_value (data->current_service->config, NULL,
                                   "autoSync", &autosync);
         old_active = (g_strcmp0 (autosync, "1") == 0);
@@ -1233,37 +1203,24 @@ static void
 build_autosync_ui (app_data *data)
 {
     char *txt;
+    GtkWidget *lbl;
 
     /* TRANSLATORS: label for checkbutton/toggle in main view.
      * Please stick to similar length strings or break the line with
      * "\n" if absolutely needed */
     txt = _("Automatic sync");
 
-#ifdef USE_MOBLIN_UX
-    GtkWidget *lbl;
 
     lbl = gtk_label_new (txt);
     gtk_widget_show (lbl);
     gtk_box_pack_end (GTK_BOX (data->autosync_box), lbl, FALSE, FALSE, 0);
 
-    data->autosync_toggle = mx_gtk_light_switch_new ();
+    data->autosync_toggle = gtk_switch_new ();
     gtk_widget_show (data->autosync_toggle);
     gtk_box_pack_end (GTK_BOX (data->autosync_box), data->autosync_toggle,
                       FALSE, FALSE, 0);
-    g_signal_connect (data->autosync_toggle, "switch-flipped",
-                      G_CALLBACK (autosync_toggle_cb), data);
-#else
-    GtkWidget *align;
-
-    align = gtk_alignment_new (0.5, 1.0, 1.0, 0.0);
-    gtk_widget_show (align);
-    gtk_box_pack_start (GTK_BOX (data->autosync_box), align, TRUE, TRUE, 0);
-
-    data->autosync_toggle = gtk_check_button_new_with_label (txt);
-    gtk_container_add (GTK_CONTAINER (align), data->autosync_toggle);
     g_signal_connect (data->autosync_toggle, "notify::active",
                       G_CALLBACK (autosync_toggle_cb), data);
-#endif
     gtk_widget_show (data->autosync_toggle);
 }
 
@@ -1457,15 +1414,13 @@ emergency_toggle_notify_active_cb (GtkWidget *widget,
                                    gpointer p,
                                    app_data *data)
 {
-    gboolean active;
     char *source;
 
-    active = toggle_get_active (widget);
     source = g_object_get_data (G_OBJECT (widget), "source");
 
     g_return_if_fail (source);
 
-    if (active) {
+    if (gtk_switch_get_active (GTK_SWITCH (widget))) {
         g_hash_table_insert (data->emergency_sources, g_strdup (source), "");
     } else {
         g_hash_table_remove (data->emergency_sources, source);
@@ -1481,7 +1436,6 @@ add_emergency_toggle_widget (app_data *data,
 {
     GtkWidget *toggle;
 
-#ifdef USE_MOBLIN_UX
     GtkWidget *label;
     col = col * 2;
     label = gtk_label_new (title);
@@ -1490,16 +1444,10 @@ add_emergency_toggle_widget (app_data *data,
     gtk_table_attach (GTK_TABLE (data->emergency_source_table), label,
                       col, col + 1, row, row + 1,
                       GTK_FILL, GTK_FILL, 16, 0);
-    toggle = mx_gtk_light_switch_new ();
-    toggle_set_active (toggle, active);
-    g_signal_connect (toggle, "switch-flipped",
-                      G_CALLBACK (emergency_toggle_notify_active_cb), data);
-#else
-    toggle = gtk_check_button_new_with_label (title);
-    toggle_set_active (toggle, active);
+    toggle = gtk_switch_new ();
+    gtk_switch_set_active (GTK_SWITCH (toggle), active);
     g_signal_connect (toggle, "notify::active",
                       G_CALLBACK (emergency_toggle_notify_active_cb), data);
-#endif
     gtk_widget_show (toggle);
     gtk_table_attach (GTK_TABLE (data->emergency_source_table), toggle,
                       col + 1, col + 2, row, row + 1,
@@ -1941,8 +1889,8 @@ update_service_ui (app_data *data)
                GTK_BOX (data->server_icon_box),
                SYNC_UI_ICON_SIZE);
 
-    toggle_set_active (data->autosync_toggle,
-                       g_strcmp0 (autosync, "1") == 0);
+    gtk_switch_set_active (GTK_SWITCH (data->autosync_toggle),
+                           g_strcmp0 (autosync, "1") == 0);
 
     refresh_last_synced_label (data);
 
