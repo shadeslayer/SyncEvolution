@@ -2574,8 +2574,8 @@ void SyncContext::getConfigXML(string &xml, string &configname)
     // abuse (?) the firmware version to store the SyncEvolution version number
     substTag(xml, "firmwareversion", getSwv());
     substTag(xml, "devicetype", getDevType());
-    substTag(xml, "maxmsgsize", std::max(getMaxMsgSize(), 10000ul));
-    substTag(xml, "maxobjsize", std::max(getMaxObjSize(), 1024u));
+    substTag(xml, "maxmsgsize", std::max(getMaxMsgSize().get(), 10000ul));
+    substTag(xml, "maxobjsize", std::max(getMaxObjSize().get(), 1024u));
     if (m_serverMode) {
         const string user = getSyncUsername();
         const string password = getSyncPassword();
@@ -4113,7 +4113,7 @@ public:
 private:
 
     string getLogData() { return "LogDirTest/data"; }
-    virtual std::string getLogDir() const { return "LogDirTest/cache/syncevolution"; }
+    virtual InitStateString getLogDir() const { return "LogDirTest/cache/syncevolution"; }
     int m_maxLogDirs;
 
     ostringstream m_out;

@@ -188,11 +188,10 @@ void ReadOperations::getConfig(bool getTemplate,
     /** get sync properties and their values */
     ConfigPropertyRegistry &syncRegistry = SyncConfig::getRegistry();
     BOOST_FOREACH(const ConfigProperty *prop, syncRegistry) {
-        bool isDefault = false;
-        string value = prop->getProperty(*syncConfig->getProperties(), &isDefault);
-        if(boost::iequals(prop->getMainName(), "syncURL") && !syncURL.empty() ) {
+        InitStateString value = prop->getProperty(*syncConfig->getProperties());
+        if (boost::iequals(prop->getMainName(), "syncURL") && !syncURL.empty() ) {
             localConfigs.insert(pair<string, string>(prop->getMainName(), syncURL));
-        } else if(!isDefault) {
+        } else if (value.wasSet()) {
             localConfigs.insert(pair<string, string>(prop->getMainName(), value));
         }
     }
@@ -225,9 +224,8 @@ void ReadOperations::getConfig(bool getTemplate,
         SyncSourceNodes sourceNodes = syncConfig->getSyncSourceNodes(name);
         ConfigPropertyRegistry &sourceRegistry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, sourceRegistry) {
-            bool isDefault = false;
-            string value = prop->getProperty(*sourceNodes.getProperties(), &isDefault);
-            if(!isDefault) {
+            InitStateString value = prop->getProperty(*sourceNodes.getProperties());
+            if (value.wasSet()) {
                 localConfigs.insert(pair<string, string>(prop->getMainName(), value));
             }
         }

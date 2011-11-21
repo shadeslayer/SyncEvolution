@@ -367,27 +367,20 @@ class ConfigProperty {
      * String representation of property value. getPropertyValue() in
      * some derived classes returns the value in some other, class specific
      * representation.
-     *
-     * @retval isDefault    return true if the node had no value set and
-     *                      the default was returned instead
      */
-    virtual std::string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
+    virtual InitStateString getProperty(const ConfigNode &node) const {
         std::string name = getName(node);
         std::string value = node.readProperty(name);
         if (!value.empty()) {
+            // value was set
             std::string error;
             if (!checkValue(value, error)) {
                 throwValueError(node, name, value, error);
             }
-            if (isDefault) {
-                *isDefault = false;
-            }
-            return value;
+            return InitStateString(value, true);
         } else {
-            if (isDefault) {
-                *isDefault = true;
-            }
-            return getDefValue();
+            // default
+            return InitStateString(getDefValue(), false);
         }
     }
 
@@ -487,8 +480,8 @@ class StringConfigProperty : public ConfigProperty {
         return false;
     }
 
-    virtual std::string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
-        std::string res = ConfigProperty::getProperty(node, isDefault);
+    virtual InitStateString getProperty(const ConfigNode &node) const {
+        InitStateString res = ConfigProperty::getProperty(node);
         normalizeValue(res);
         return res;
     }
@@ -544,26 +537,22 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
         }
     }
 
-    T getPropertyValue(const ConfigNode &node, bool *isDefault = NULL) const {
+    InitState<T> getPropertyValue(const ConfigNode &node) const {
         std::string name = getName(node);
         std::string value = node.readProperty(name);
         std::istringstream in(value);
         T res;
         if (value.empty()) {
+            // use default
             std::istringstream defStream(getDefValue());
             defStream >> res;
-            if (isDefault) {
-                *isDefault = true;
-            }
-            return res;
+            return InitState<T>(res, false);
         } else {
+            // use explicitly set value
             if (!(in >> res)) {
                 throwValueError(node, name, value, "cannot parse value");
             }
-            if (isDefault) {
-                *isDefault = false;
-            }
-            return res;
+            return InitState<T>(res, true);
         }
     }
 };
@@ -676,7 +665,7 @@ class SecondsConfigProperty : public UIntConfigProperty
         {}
 
     virtual bool checkValue(const std::string &value, std::string &error) const;
-    unsigned int getPropertyValue(const ConfigNode &node, bool *isDefault = NULL) const;
+    InitState<unsigned int> getPropertyValue(const ConfigNode &node) const;
 
     static bool parseDuration(const std::string &value, std::string &error, unsigned int &seconds);
 };
@@ -790,8 +779,8 @@ class PasswordConfigProperty : public ConfigProperty {
     /**
      * return the cached value if necessary and possible
      */
-    virtual std::string getCachedProperty(const ConfigNode &node,
-                                     const std::string &cachedPassword);
+    virtual InitStateString getCachedProperty(const ConfigNode &node,
+                                              const std::string &cachedPassword);
 };
 
 /**
@@ -862,12 +851,13 @@ class BoolConfigProperty : public StringConfigProperty {
     void setProperty(FilterConfigNode &node, bool value, bool temporarily = false) {
         StringConfigProperty::setProperty(node, value ? "1" : "0", temporarily);
     }
-    int getPropertyValue(const ConfigNode &node, bool *isDefault = NULL) const {
-        std::string res = ConfigProperty::getProperty(node, isDefault);
+    InitState<bool> getPropertyValue(const ConfigNode &node) const {
+        InitStateString res = ConfigProperty::getProperty(node);
 
-        return boost::iequals(res, "T") ||
-            boost::iequals(res, "TRUE") ||
-            atoi(res.c_str()) != 0;
+        return InitState<bool>(boost::iequals(res, "T") ||
+                               boost::iequals(res, "TRUE") ||
+                               atoi(res.c_str()) != 0,
+                               res.wasSet());
     }
 };
 
@@ -883,10 +873,10 @@ class SafeConfigProperty : public ConfigProperty {
     void setProperty(ConfigNode &node, const std::string &value) {
         ConfigProperty::setProperty(node, StringEscape::escape(value, '!', StringEscape::INI_WORD));
     }
-    virtual std::string getProperty(const ConfigNode &node, bool *isDefault = NULL) const {
-        std::string res = ConfigProperty::getProperty(node, isDefault);
-        res = StringEscape::unescape(res, '!');
-        return res;
+    virtual InitStateString getProperty(const ConfigNode &node) const {
+        InitStateString res = ConfigProperty::getProperty(node);
+        return InitStateString(StringEscape::unescape(res, '!'),
+                               res.wasSet());
     }
 };
 
@@ -1442,28 +1432,28 @@ class SyncConfig {
      */
     /**@{*/
 
-    virtual std::string getDefaultPeer() const;
+    virtual InitStateString getDefaultPeer() const;
     virtual void setDefaultPeer(const std::string &value);
 
-    virtual std::string getLogDir() const;
+    virtual InitStateString getLogDir() const;
     virtual void setLogDir(const std::string &value, bool temporarily = false);
 
-    virtual int getMaxLogDirs() const;
-    virtual void setMaxLogDirs(int value, bool temporarily = false);
+    virtual InitState<unsigned int> getMaxLogDirs() const;
+    virtual void setMaxLogDirs(unsigned int value, bool temporarily = false);
 
-    virtual int getLogLevel() const;
-    virtual void setLogLevel(int value, bool temporarily = false);
+    virtual InitState<unsigned int> getLogLevel() const;
+    virtual void setLogLevel(unsigned int value, bool temporarily = false);
 
-    virtual bool getPrintChanges() const;
+    virtual InitState<bool> getPrintChanges() const;
     virtual void setPrintChanges(bool value, bool temporarily = false);
 
-    virtual bool getDumpData() const;
+    virtual InitState<bool> getDumpData() const;
     virtual void setDumpData(bool value, bool temporarily = false);
 
-    virtual std::string getWebURL() const;
+    virtual InitStateString getWebURL() const;
     virtual void setWebURL(const std::string &url, bool temporarily = false);
 
-    virtual std::string getIconURI() const;
+    virtual InitStateString getIconURI() const;
     virtual void setIconURI(const std::string &uri, bool temporarily = false);
 
     /**
@@ -1472,13 +1462,13 @@ class SyncConfig {
      * and some kind of support, we have tested the server well
      * enough, ...).
      */
-    virtual bool getConsumerReady() const;
+    virtual InitState<bool> getConsumerReady() const;
     virtual void setConsumerReady(bool ready);
 
-    virtual unsigned long getHashCode() const;
+    virtual InitState<unsigned long> getHashCode() const;
     virtual void setHashCode(unsigned long hashCode);
 
-    virtual std::string getConfigDate() const;
+    virtual InitStateString getConfigDate() const;
     virtual void setConfigDate(); /* set current time always */
 
     /**@}*/
@@ -1492,33 +1482,31 @@ class SyncConfig {
      */
     /**@{*/
 
-    virtual std::string getSyncUsername() const;
+    virtual InitStateString getSyncUsername() const;
     virtual void setSyncUsername(const std::string &value, bool temporarily = false);
-    virtual std::string getSyncPassword() const;
+    virtual InitStateString getSyncPassword() const;
     virtual void setSyncPassword(const std::string &value, bool temporarily = false);
 
-    virtual bool getPreventSlowSync() const;
+    virtual InitState<bool> getPreventSlowSync() const;
     virtual void setPreventSlowSync(bool value, bool temporarily = false);
-    virtual bool getUseProxy() const;
+    virtual InitState<bool> getUseProxy() const;
     virtual void setUseProxy(bool value, bool temporarily = false);
-    virtual std::string getProxyHost() const;
+    virtual InitStateString getProxyHost() const;
     virtual void setProxyHost(const std::string &value, bool temporarily = false);
-    virtual int getProxyPort() const { return 0; }
-    virtual std::string getProxyUsername() const;
+    virtual InitStateString getProxyUsername() const;
     virtual void setProxyUsername(const std::string &value, bool temporarily = false);
-    virtual std::string getProxyPassword() const;
+    virtual InitStateString getProxyPassword() const;
     virtual void setProxyPassword(const std::string &value, bool temporarily = false);
-    virtual std::vector<std::string>  getSyncURL() const;
+    virtual InitStateClass< std::vector<std::string> > getSyncURL() const;
     virtual void setSyncURL(const std::string &value, bool temporarily = false);
     virtual void setSyncURL(const std::vector<std::string> &value, bool temporarily = false);
-    virtual std::string getClientAuthType() const;
+    virtual InitStateString getClientAuthType() const;
     virtual void setClientAuthType(const std::string &value, bool temporarily = false);
-    virtual unsigned long getMaxMsgSize() const;
+    virtual InitState<unsigned long> getMaxMsgSize() const;
     virtual void setMaxMsgSize(unsigned long value, bool temporarily = false);
-    virtual unsigned int getMaxObjSize() const;
+    virtual InitState<unsigned int> getMaxObjSize() const;
     virtual void setMaxObjSize(unsigned int value, bool temporarily = false);
-    virtual unsigned long getReadBufferSize() const { return 0; }
-    virtual std::string getSSLServerCertificates() const;
+    virtual InitStateString getSSLServerCertificates() const;
 
     /**
      * iterate over files mentioned in getSSLServerCertificates()
@@ -1528,26 +1516,23 @@ class SyncConfig {
     std::string findSSLServerCertificate();
 
     virtual void setSSLServerCertificates(const std::string &value, bool temporarily = false);
-    virtual bool getSSLVerifyServer() const;
+    virtual InitState<bool> getSSLVerifyServer() const;
     virtual void setSSLVerifyServer(bool value, bool temporarily = false);
-    virtual bool getSSLVerifyHost() const;
+    virtual InitState<bool> getSSLVerifyHost() const;
     virtual void setSSLVerifyHost(bool value, bool temporarily = false);
-    virtual int getRetryInterval() const;
-    virtual void setRetryInterval(int value, bool temporarily = false);
-    virtual int getRetryDuration() const;
-    virtual void setRetryDuration(int value, bool temporarily = false);
-    virtual bool  getCompression() const;
-    virtual void setCompression(bool value, bool temporarily = false);
-    virtual unsigned int getResponseTimeout() const { return 0; }
-    virtual std::string getDevID() const;
+    virtual InitState<unsigned int> getRetryInterval() const;
+    virtual void setRetryInterval(unsigned int value, bool temporarily = false);
+    virtual InitState<unsigned int> getRetryDuration() const;
+    virtual void setRetryDuration(unsigned int value, bool temporarily = false);
+    virtual InitStateString getDevID() const;
     virtual void setDevID(const std::string &value, bool temporarily = false);
 
     /*Used for Server Alerted Sync*/
-    virtual std::string getRemoteIdentifier() const;
+    virtual InitStateString getRemoteIdentifier() const;
     virtual void setRemoteIdentifier (const std::string &value, bool temporaritly = false);
-    virtual bool getPeerIsClient () const;
+    virtual InitState<bool> getPeerIsClient () const;
     virtual void setPeerIsClient (bool value, bool temporarily = false);
-    virtual std::string getSyncMLVersion() const;
+    virtual InitStateString getSyncMLVersion() const;
     virtual void setSyncMLVersion (const std::string &value, bool temporarily = false);
 
     /**
@@ -1555,7 +1540,7 @@ class SyncConfig {
      * not necessarily unique. Can be used by a GUI instead
      * of the config name.
      */
-    virtual std::string getUserPeerName() const;
+    virtual InitStateString getUserPeerName() const;
     virtual void setUserPeerName(const std::string &name);
 
     /**
@@ -1563,47 +1548,47 @@ class SyncConfig {
      * peer is a client. Servers don't have a Device ID, just some
      * unique way of contacting them.
      */
-    virtual std::string getRemoteDevID() const;
+    virtual InitStateString getRemoteDevID() const;
     virtual void setRemoteDevID(const std::string &value);
 
     /**
      * The opaque nonce value stored for a peer, required for MD5
      * authentication. Only used when acting as server.
      */
-    virtual std::string getNonce() const;
+    virtual InitStateString getNonce() const;
     virtual void setNonce(const std::string &value);
 
     /**
      * The opaque per-peer admin data managed by the Synthesis
      * engine. Only used when acting as server.
      */
-    virtual std::string getDeviceData() const;
+    virtual InitStateString getDeviceData() const;
     virtual void setDeviceData(const std::string &value);
 
     /**
      * Automatic sync related properties, used to control its behaviors
      */
-    virtual std::string getAutoSync() const;
+    virtual InitStateString getAutoSync() const;
     virtual void setAutoSync(const std::string &value, bool temporarily = false);
-    virtual unsigned int getAutoSyncInterval() const;
+    virtual InitState<unsigned int> getAutoSyncInterval() const;
     virtual void setAutoSyncInterval(unsigned int value, bool temporarily = false);
-    virtual unsigned int getAutoSyncDelay() const;
+    virtual InitState<unsigned int> getAutoSyncDelay() const;
     virtual void setAutoSyncDelay(unsigned int value, bool temporarily = false);
 
     /**
      * Specifies whether WBXML is to be used (default).
      * Otherwise XML is used.
      */
-    virtual bool getWBXML() const;
+    virtual InitState<bool> getWBXML() const;
     virtual void setWBXML(bool isWBXML, bool temporarily = false);
 
-    virtual std::string getUserAgent() const { return "SyncEvolution"; }
-    virtual std::string getMan() const { return "Patrick Ohly"; }
-    virtual std::string getMod() const { return "SyncEvolution"; }
-    virtual std::string getOem() const { return "Open Source"; }
-    virtual std::string getHwv() const { return "unknown"; }
-    virtual std::string getSwv() const;
-    virtual std::string getDevType() const;
+    virtual InitStateString getUserAgent() const { return "SyncEvolution"; }
+    virtual InitStateString getMan() const { return "Patrick Ohly"; }
+    virtual InitStateString getMod() const { return "SyncEvolution"; }
+    virtual InitStateString getOem() const { return "Open Source"; }
+    virtual InitStateString getHwv() const { return "unknown"; }
+    virtual InitStateString getSwv() const;
+    virtual InitStateString getDevType() const;
     /**@}*/
 
     enum Layout {
@@ -1867,7 +1852,7 @@ class SyncSourceConfig {
     }
     boost::shared_ptr<const FilterConfigNode> getProperties(bool hidden = false) const { return const_cast<SyncSourceConfig *>(this)->getProperties(hidden); }
 
-    virtual std::string getName() const { return m_name.c_str(); }
+    virtual std::string getName() const { return m_name; }
 
     /**
      * Directory to be used by source when it needs to store
@@ -1906,10 +1891,10 @@ class SyncSourceConfig {
         return prop.isSet(*getProperties(prop.isHidden()));
     }
 
-    virtual std::string getUser() const;
+    virtual InitStateString getUser() const;
     virtual void setUser(const std::string &value, bool temporarily = false);
 
-    virtual std::string getPassword() const;
+    virtual InitStateString getPassword() const;
     virtual void setPassword(const std::string &value, bool temporarily = false);
 
     /** same as SyncConfig::checkPassword() but with
@@ -1921,14 +1906,14 @@ class SyncSourceConfig {
     virtual void savePassword(ConfigUserInterface &ui, const std::string &serverName, FilterConfigNode& globalConfigNode);
 
     /** selects the backend database to use */
-    virtual std::string getDatabaseID() const;
+    virtual InitStateString getDatabaseID() const;
     virtual void setDatabaseID(const std::string &value, bool temporarily = false);
 
     /**
      * internal property: unique integer ID for the source, needed by Synthesis XML <dbtypeid>,
      * zero if unset
      */
-    virtual const int getSynthesisID() const;
+    virtual InitState<int> getSynthesisID() const;
     virtual void setSynthesisID(int value, bool temporarily = false);
 
     /**
@@ -1937,20 +1922,20 @@ class SyncSourceConfig {
      * they support that type. This call has to work before instantiating
      * a source and thus gets passed a node to read from.
      */
-    static SourceType getSourceType(const SyncSourceNodes &nodes);
-    virtual SourceType getSourceType() const;
+    static InitStateClass<SourceType> getSourceType(const SyncSourceNodes &nodes);
+    virtual InitStateClass<SourceType> getSourceType() const;
 
     /** set source backend and formats in one step */
     virtual void setSourceType(const SourceType &type, bool temporarily = false);
 
     virtual void setBackend(const std::string &value, bool temporarily = false);
-    virtual std::string getBackend() const;
+    virtual InitStateString getBackend() const;
     virtual void setDatabaseFormat(const std::string &value, bool temporarily = false);
-    virtual std::string getDatabaseFormat() const;
+    virtual InitStateString getDatabaseFormat() const;
     virtual void setSyncFormat(const std::string &value, bool temporarily = false);
-    virtual std::string getSyncFormat() const;
+    virtual InitStateString getSyncFormat() const;
     virtual void setForceSyncFormat(bool value, bool temporarily = false);
-    virtual bool getForceSyncFormat() const;
+    virtual InitState<bool> getForceSyncFormat() const;
 
     /**
      * Returns the SyncSource URI: used in SyncML to address the data
@@ -1960,14 +1945,14 @@ class SyncSourceConfig {
      * two different sync sources cannot access the same data at
      * the same time.
      */
-    virtual std::string getURI() const;
+    virtual InitStateString getURI() const;
     virtual void setURI(const std::string &value, bool temporarily = false);
 
     /**
      * like getURI(), but instead of returning an empty string when
      * not configured, return the source name
      */
-    virtual std::string getURINonEmpty() const;
+    virtual InitStateString getURINonEmpty() const;
 
 
     /**
@@ -1982,7 +1967,7 @@ class SyncSourceConfig {
      * - refresh-from-server
      * - refresh-from-client
      */
-    virtual std::string getSync() const;
+    virtual InitStateString getSync() const;
     virtual void setSync(const std::string &value, bool temporarily = false);
 
     /** shortcut for checking sync mode against "disabled" */

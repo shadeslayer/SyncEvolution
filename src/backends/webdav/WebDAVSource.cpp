@@ -164,7 +164,7 @@ public:
     virtual int logLevel()
     {
         return m_context ?
-            m_context->getLogLevel() :
+            m_context->getLogLevel().get() :
             0;
     }
 };

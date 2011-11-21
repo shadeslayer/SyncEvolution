@@ -1245,7 +1245,6 @@ static ULongConfigProperty syncPropMaxMsgSize("maxMsgSize",
                                               "150000");
 static UIntConfigProperty syncPropMaxObjSize("maxObjSize", "", "4000000");
 
-static BoolConfigProperty syncPropCompression("enableCompression", "enable compression of network traffic (not currently supported)", "FALSE");
 static BoolConfigProperty syncPropWBXML("enableWBXML",
                                         "use the more compact binary XML (WBXML) for messages between client and server;\n"
                                         "not applicable when the peer is a SyncML client, because then the client\n"
@@ -1566,7 +1565,6 @@ public:
         registry.push_back(&syncPropWBXML);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
-        registry.push_back(&syncPropCompression);
         registry.push_back(&syncPropSSLServerCertificates);
         registry.push_back(&syncPropSSLVerifyServer);
         registry.push_back(&syncPropSSLVerifyHost);
@@ -1639,9 +1637,9 @@ ConfigPropertyRegistry &SyncConfig::getRegistry()
     return registry;
 }
 
-std::string SyncConfig::getSyncUsername() const { return syncPropUsername.getProperty(*getNode(syncPropUsername)); }
+InitStateString SyncConfig::getSyncUsername() const { return syncPropUsername.getProperty(*getNode(syncPropUsername)); }
 void SyncConfig::setSyncUsername(const string &value, bool temporarily) { syncPropUsername.setProperty(*getNode(syncPropUsername), value, temporarily); }
-std::string SyncConfig::getSyncPassword() const {
+InitStateString SyncConfig::getSyncPassword() const {
     return syncPropPassword.getCachedProperty(*getNode(syncPropPassword), m_cachedPassword);
 }
 void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
@@ -1720,13 +1718,13 @@ void PasswordConfigProperty::savePassword(ConfigUserInterface &ui,
     }
 }
 
-string PasswordConfigProperty::getCachedProperty(const ConfigNode &node,
-                                                 const string &cachedPassword)
+InitStateString PasswordConfigProperty::getCachedProperty(const ConfigNode &node,
+                                                          const string &cachedPassword)
 {
-    string password;
+    InitStateString password;
 
     if (!cachedPassword.empty()) {
-        password = cachedPassword;
+        password = InitStateString(cachedPassword, true);
     } else {
         password = getProperty(node);
     }
@@ -1786,54 +1784,56 @@ ConfigPasswordKey ProxyPasswordConfigProperty::getPasswordKey(const string &desc
 
 void SyncConfig::setSyncPassword(const string &value, bool temporarily) { m_cachedPassword = ""; syncPropPassword.setProperty(*getNode(syncPropPassword), value, temporarily); }
 
-bool SyncConfig::getPreventSlowSync() const { return syncPropPreventSlowSync.getPropertyValue(*getNode(syncPropPreventSlowSync)); }
+InitState<bool> SyncConfig::getPreventSlowSync() const {
+    return syncPropPreventSlowSync.getPropertyValue(*getNode(syncPropPreventSlowSync));
+}
 void SyncConfig::setPreventSlowSync(bool value, bool temporarily) { syncPropPreventSlowSync.setProperty(*getNode(syncPropPreventSlowSync), value, temporarily); }
 
 static const char *ProxyString = "http_proxy";
 
 /* Reads http_proxy from environment, if not available returns configured value */
-bool SyncConfig::getUseProxy() const {
+InitState<bool> SyncConfig::getUseProxy() const {
     char *proxy = getenv(ProxyString);
     if (!proxy ) {
         return syncPropUseProxy.getPropertyValue(*getNode(syncPropUseProxy));
     } else if (strlen(proxy)>0) {
-        return true;
+        return InitState<bool>(true, true);
     } else {
-        return false;
+        return InitState<bool>(false, true);
     }
 }
 
 void SyncConfig::setUseProxy(bool value, bool temporarily) { syncPropUseProxy.setProperty(*getNode(syncPropUseProxy), value, temporarily); }
 
 /* If http_proxy set in the environment returns it, otherwise configured value */
-std::string SyncConfig::getProxyHost() const {
+InitStateString SyncConfig::getProxyHost() const {
     char *proxy = getenv(ProxyString);
     if (!proxy) {
         return syncPropProxyHost.getProperty(*getNode(syncPropUseProxy)); 
     } else {
-        return proxy;
+        return InitStateString(proxy, true);
     }
 }
 
 void SyncConfig::setProxyHost(const string &value, bool temporarily) { syncPropProxyHost.setProperty(*getNode(syncPropProxyHost), value, temporarily); }
 
-std::string SyncConfig::getProxyUsername() const { return syncPropProxyUsername.getProperty(*getNode(syncPropProxyUsername)); }
+InitStateString SyncConfig::getProxyUsername() const { return syncPropProxyUsername.getProperty(*getNode(syncPropProxyUsername)); }
 void SyncConfig::setProxyUsername(const string &value, bool temporarily) { syncPropProxyUsername.setProperty(*getNode(syncPropProxyUsername), value, temporarily); }
 
-std::string SyncConfig::getProxyPassword() const {
+InitStateString SyncConfig::getProxyPassword() const {
     return syncPropProxyPassword.getCachedProperty(*getNode(syncPropProxyPassword), m_cachedProxyPassword);
 }
 void SyncConfig::setProxyPassword(const string &value, bool temporarily) { m_cachedProxyPassword = ""; syncPropProxyPassword.setProperty(*getNode(syncPropProxyPassword), value, temporarily); }
-vector<string> SyncConfig::getSyncURL() const { 
-    string s = syncPropSyncURL.getProperty(*getNode(syncPropSyncURL));
+InitStateClass< vector<string> > SyncConfig::getSyncURL() const { 
+    InitStateString s = syncPropSyncURL.getProperty(*getNode(syncPropSyncURL));
     vector<string> urls;
     if (!s.empty()) {
         // workaround for g++ 4.3/4.4:
         // http://stackoverflow.com/questions/1168525/c-gcc4-4-warning-array-subscript-is-above-array-bounds
         static const string sep(" \t");
-        boost::split(urls, s, boost::is_any_of(sep));
+        boost::split(urls, s.get(), boost::is_any_of(sep));
     }
-    return urls;
+    return InitStateClass< vector<string> >(urls, s.wasSet());
 }
 void SyncConfig::setSyncURL(const string &value, bool temporarily) { syncPropSyncURL.setProperty(*getNode(syncPropSyncURL), value, temporarily); }
 void SyncConfig::setSyncURL(const vector<string> &value, bool temporarily) { 
@@ -1843,55 +1843,53 @@ void SyncConfig::setSyncURL(const vector<string> &value, bool temporarily) {
     }
     return setSyncURL (urls.str(), temporarily);
 }
-std::string SyncConfig::getClientAuthType() const { return syncPropClientAuthType.getProperty(*getNode(syncPropClientAuthType)); }
+InitStateString SyncConfig::getClientAuthType() const { return syncPropClientAuthType.getProperty(*getNode(syncPropClientAuthType)); }
 void SyncConfig::setClientAuthType(const string &value, bool temporarily) { syncPropClientAuthType.setProperty(*getNode(syncPropClientAuthType), value, temporarily); }
-unsigned long  SyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getPropertyValue(*getNode(syncPropMaxMsgSize)); }
+InitState<unsigned long > SyncConfig::getMaxMsgSize() const { return syncPropMaxMsgSize.getPropertyValue(*getNode(syncPropMaxMsgSize)); }
 void SyncConfig::setMaxMsgSize(unsigned long value, bool temporarily) { syncPropMaxMsgSize.setProperty(*getNode(syncPropMaxMsgSize), value, temporarily); }
-unsigned int  SyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getPropertyValue(*getNode(syncPropMaxObjSize)); }
+InitState<unsigned int > SyncConfig::getMaxObjSize() const { return syncPropMaxObjSize.getPropertyValue(*getNode(syncPropMaxObjSize)); }
 void SyncConfig::setMaxObjSize(unsigned int value, bool temporarily) { syncPropMaxObjSize.setProperty(*getNode(syncPropMaxObjSize), value, temporarily); }
-bool SyncConfig::getCompression() const { return syncPropCompression.getPropertyValue(*getNode(syncPropCompression)); }
-void SyncConfig::setCompression(bool value, bool temporarily) { syncPropCompression.setProperty(*getNode(syncPropCompression), value, temporarily); }
-std::string SyncConfig::getDevID() const { return syncPropDevID.getProperty(*getNode(syncPropDevID)); }
+InitStateString SyncConfig::getDevID() const { return syncPropDevID.getProperty(*getNode(syncPropDevID)); }
 void SyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*getNode(syncPropDevID), value, temporarily); }
-bool SyncConfig::getWBXML() const { return syncPropWBXML.getPropertyValue(*getNode(syncPropWBXML)); }
+InitState<bool> SyncConfig::getWBXML() const { return syncPropWBXML.getPropertyValue(*getNode(syncPropWBXML)); }
 void SyncConfig::setWBXML(bool value, bool temporarily) { syncPropWBXML.setProperty(*getNode(syncPropWBXML), value, temporarily); }
-std::string SyncConfig::getLogDir() const { return syncPropLogDir.getProperty(*getNode(syncPropLogDir)); }
+InitStateString SyncConfig::getLogDir() const { return syncPropLogDir.getProperty(*getNode(syncPropLogDir)); }
 void SyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*getNode(syncPropLogDir), value, temporarily); }
-int SyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPropertyValue(*getNode(syncPropMaxLogDirs)); }
-void SyncConfig::setMaxLogDirs(int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*getNode(syncPropMaxLogDirs), value, temporarily); }
-int SyncConfig::getLogLevel() const { return syncPropLogLevel.getPropertyValue(*getNode(syncPropLogLevel)); }
-void SyncConfig::setLogLevel(int value, bool temporarily) { syncPropLogLevel.setProperty(*getNode(syncPropLogLevel), value, temporarily); }
-int SyncConfig::getRetryDuration() const {return syncPropRetryDuration.getPropertyValue(*getNode(syncPropRetryDuration));}
-void SyncConfig::setRetryDuration(int value, bool temporarily) { syncPropRetryDuration.setProperty(*getNode(syncPropRetryDuration), value, temporarily); }
-int SyncConfig::getRetryInterval() const { return syncPropRetryInterval.getPropertyValue(*getNode(syncPropRetryInterval)); }
-void SyncConfig::setRetryInterval(int value, bool temporarily) { return syncPropRetryInterval.setProperty(*getNode(syncPropRetryInterval),value,temporarily); }
+InitState<unsigned int> SyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPropertyValue(*getNode(syncPropMaxLogDirs)); }
+void SyncConfig::setMaxLogDirs(unsigned int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*getNode(syncPropMaxLogDirs), value, temporarily); }
+InitState<unsigned int> SyncConfig::getLogLevel() const { return syncPropLogLevel.getPropertyValue(*getNode(syncPropLogLevel)); }
+void SyncConfig::setLogLevel(unsigned int value, bool temporarily) { syncPropLogLevel.setProperty(*getNode(syncPropLogLevel), value, temporarily); }
+InitState<unsigned int> SyncConfig::getRetryDuration() const {return syncPropRetryDuration.getPropertyValue(*getNode(syncPropRetryDuration));}
+void SyncConfig::setRetryDuration(unsigned int value, bool temporarily) { syncPropRetryDuration.setProperty(*getNode(syncPropRetryDuration), value, temporarily); }
+InitState<unsigned int> SyncConfig::getRetryInterval() const { return syncPropRetryInterval.getPropertyValue(*getNode(syncPropRetryInterval)); }
+void SyncConfig::setRetryInterval(unsigned int value, bool temporarily) { return syncPropRetryInterval.setProperty(*getNode(syncPropRetryInterval),value,temporarily); }
 
 /* used by Server Alerted Sync */
-std::string SyncConfig::getRemoteIdentifier() const { return syncPropRemoteIdentifier.getProperty(*getNode(syncPropRemoteIdentifier));}
+InitStateString SyncConfig::getRemoteIdentifier() const { return syncPropRemoteIdentifier.getProperty(*getNode(syncPropRemoteIdentifier));}
 void SyncConfig::setRemoteIdentifier (const string &value, bool temporarily) { return syncPropRemoteIdentifier.setProperty (*getNode(syncPropRemoteIdentifier), value, temporarily); }
 
-bool SyncConfig::getPeerIsClient() const { return syncPropPeerIsClient.getPropertyValue(*getNode(syncPropPeerIsClient)); }
+InitState<bool> SyncConfig::getPeerIsClient() const { return syncPropPeerIsClient.getPropertyValue(*getNode(syncPropPeerIsClient)); }
 void SyncConfig::setPeerIsClient(bool value, bool temporarily) { syncPropPeerIsClient.setProperty(*getNode(syncPropPeerIsClient), value, temporarily); }
 
-std::string SyncConfig::getSyncMLVersion() const { return syncPropSyncMLVersion.getProperty(*getNode(syncPropSyncMLVersion)); }
+InitStateString SyncConfig::getSyncMLVersion() const { return syncPropSyncMLVersion.getProperty(*getNode(syncPropSyncMLVersion)); }
 void SyncConfig::setSyncMLVersion(const string &value, bool temporarily) { syncPropSyncMLVersion.setProperty(*getNode(syncPropSyncMLVersion), value, temporarily); }
 
-string SyncConfig::getUserPeerName() const { return syncPropPeerName.getProperty(*getNode(syncPropPeerName)); }
+InitStateString SyncConfig::getUserPeerName() const { return syncPropPeerName.getProperty(*getNode(syncPropPeerName)); }
 void SyncConfig::setUserPeerName(const string &name) { syncPropPeerName.setProperty(*getNode(syncPropPeerName), name); }
 
-bool SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getPropertyValue(*getNode(syncPropPrintChanges)); }
+InitState<bool> SyncConfig::getPrintChanges() const { return syncPropPrintChanges.getPropertyValue(*getNode(syncPropPrintChanges)); }
 void SyncConfig::setPrintChanges(bool value, bool temporarily) { syncPropPrintChanges.setProperty(*getNode(syncPropPrintChanges), value, temporarily); }
-bool SyncConfig::getDumpData() const { return syncPropDumpData.getPropertyValue(*getNode(syncPropDumpData)); }
+InitState<bool> SyncConfig::getDumpData() const { return syncPropDumpData.getPropertyValue(*getNode(syncPropDumpData)); }
 void SyncConfig::setDumpData(bool value, bool temporarily) { syncPropDumpData.setProperty(*getNode(syncPropDumpData), value, temporarily); }
-std::string SyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*getNode(syncPropWebURL)); }
+InitStateString SyncConfig::getWebURL() const { return syncPropWebURL.getProperty(*getNode(syncPropWebURL)); }
 void SyncConfig::setWebURL(const std::string &url, bool temporarily) { syncPropWebURL.setProperty(*getNode(syncPropWebURL), url, temporarily); }
-std::string SyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*getNode(syncPropIconURI)); }
-bool SyncConfig::getConsumerReady() const { return syncPropConsumerReady.getPropertyValue(*getNode(syncPropConsumerReady)); }
+InitStateString SyncConfig::getIconURI() const { return syncPropIconURI.getProperty(*getNode(syncPropIconURI)); }
+InitState<bool> SyncConfig::getConsumerReady() const { return syncPropConsumerReady.getPropertyValue(*getNode(syncPropConsumerReady)); }
 void SyncConfig::setConsumerReady(bool ready) { return syncPropConsumerReady.setProperty(*getNode(syncPropConsumerReady), ready); }
 void SyncConfig::setIconURI(const std::string &uri, bool temporarily) { syncPropIconURI.setProperty(*getNode(syncPropIconURI), uri, temporarily); }
-unsigned long SyncConfig::getHashCode() const { return syncPropHashCode.getPropertyValue(*getNode(syncPropHashCode)); }
+InitState<unsigned long> SyncConfig::getHashCode() const { return syncPropHashCode.getPropertyValue(*getNode(syncPropHashCode)); }
 void SyncConfig::setHashCode(unsigned long code) { syncPropHashCode.setProperty(*getNode(syncPropHashCode), code); }
-std::string SyncConfig::getConfigDate() const { return syncPropConfigDate.getProperty(*getNode(syncPropConfigDate)); }
+InitStateString SyncConfig::getConfigDate() const { return syncPropConfigDate.getProperty(*getNode(syncPropConfigDate)); }
 void SyncConfig::setConfigDate() { 
     /* Set current timestamp as configdate */
     char buffer[17]; 
@@ -1901,26 +1899,26 @@ void SyncConfig::setConfigDate() {
     syncPropConfigDate.setProperty(*getNode(syncPropConfigDate), date);
 }
 
-std::string SyncConfig::getSSLServerCertificates() const { return syncPropSSLServerCertificates.getProperty(*getNode(syncPropSSLServerCertificates)); }
+InitStateString SyncConfig::getSSLServerCertificates() const { return syncPropSSLServerCertificates.getProperty(*getNode(syncPropSSLServerCertificates)); }
 void SyncConfig::setSSLServerCertificates(const string &value, bool temporarily) { syncPropSSLServerCertificates.setProperty(*getNode(syncPropSSLServerCertificates), value, temporarily); }
-bool SyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getPropertyValue(*getNode(syncPropSSLVerifyServer)); }
+InitState<bool> SyncConfig::getSSLVerifyServer() const { return syncPropSSLVerifyServer.getPropertyValue(*getNode(syncPropSSLVerifyServer)); }
 void SyncConfig::setSSLVerifyServer(bool value, bool temporarily) { syncPropSSLVerifyServer.setProperty(*getNode(syncPropSSLVerifyServer), value, temporarily); }
-bool SyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getPropertyValue(*getNode(syncPropSSLVerifyHost)); }
+InitState<bool> SyncConfig::getSSLVerifyHost() const { return syncPropSSLVerifyHost.getPropertyValue(*getNode(syncPropSSLVerifyHost)); }
 void SyncConfig::setSSLVerifyHost(bool value, bool temporarily) { syncPropSSLVerifyHost.setProperty(*getNode(syncPropSSLVerifyHost), value, temporarily); }
-string SyncConfig::getRemoteDevID() const { return syncPropRemoteDevID.getProperty(*getNode(syncPropRemoteDevID)); }
+InitStateString SyncConfig::getRemoteDevID() const { return syncPropRemoteDevID.getProperty(*getNode(syncPropRemoteDevID)); }
 void SyncConfig::setRemoteDevID(const string &value) { syncPropRemoteDevID.setProperty(*getNode(syncPropRemoteDevID), value); }
-string SyncConfig::getNonce() const { return syncPropNonce.getProperty(*getNode(syncPropNonce)); }
+InitStateString SyncConfig::getNonce() const { return syncPropNonce.getProperty(*getNode(syncPropNonce)); }
 void SyncConfig::setNonce(const string &value) { syncPropNonce.setProperty(*getNode(syncPropNonce), value); }
-string SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty(*getNode(syncPropDeviceData)); }
+InitStateString SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty(*getNode(syncPropDeviceData)); }
 void SyncConfig::setDeviceData(const string &value) { syncPropDeviceData.setProperty(*getNode(syncPropDeviceData), value); }
-string SyncConfig::getDefaultPeer() const { return syncPropDefaultPeer.getProperty(*getNode(syncPropDefaultPeer)); }
+InitStateString SyncConfig::getDefaultPeer() const { return syncPropDefaultPeer.getProperty(*getNode(syncPropDefaultPeer)); }
 void SyncConfig::setDefaultPeer(const string &value) { syncPropDefaultPeer.setProperty(*getNode(syncPropDefaultPeer), value); }
 
-string SyncConfig::getAutoSync() const { return syncPropAutoSync.getProperty(*getNode(syncPropAutoSync)); }
+InitStateString SyncConfig::getAutoSync() const { return syncPropAutoSync.getProperty(*getNode(syncPropAutoSync)); }
 void SyncConfig::setAutoSync(const string &value, bool temporarily) { syncPropAutoSync.setProperty(*getNode(syncPropAutoSync), value, temporarily); }
-unsigned int SyncConfig::getAutoSyncInterval() const { return syncPropAutoSyncInterval.getPropertyValue(*getNode(syncPropAutoSyncInterval)); }
+InitState<unsigned int> SyncConfig::getAutoSyncInterval() const { return syncPropAutoSyncInterval.getPropertyValue(*getNode(syncPropAutoSyncInterval)); }
 void SyncConfig::setAutoSyncInterval(unsigned int value, bool temporarily) { syncPropAutoSyncInterval.setProperty(*getNode(syncPropAutoSyncInterval), value, temporarily); }
-unsigned int SyncConfig::getAutoSyncDelay() const { return syncPropAutoSyncDelay.getPropertyValue(*getNode(syncPropAutoSyncDelay)); }
+InitState<unsigned int> SyncConfig::getAutoSyncDelay() const { return syncPropAutoSyncDelay.getPropertyValue(*getNode(syncPropAutoSyncDelay)); }
 void SyncConfig::setAutoSyncDelay(unsigned int value, bool temporarily) { syncPropAutoSyncDelay.setProperty(*getNode(syncPropAutoSyncDelay), value, temporarily); }
 
 std::string SyncConfig::findSSLServerCertificate()
@@ -2004,12 +2002,10 @@ static void setDefaultProps(const ConfigPropertyRegistry &registry,
                             bool useObligatory = true)
 {
     BOOST_FOREACH(const ConfigProperty *prop, registry) {
-        bool isDefault;
-        prop->getProperty(*node, &isDefault);
-        
+        InitStateString value = prop->getProperty(*node);
         if (!prop->isHidden() &&
             (unshared || prop->getSharing() != ConfigProperty::NO_SHARING) &&
-            (force || isDefault)) {
+            (force || !value.wasSet())) {
             if (useObligatory) {
                 prop->setDefaultProperty(*node, prop->isObligatory());
             } else {
@@ -2092,11 +2088,10 @@ static void copyProperties(const ConfigNode &fromProps,
         if (prop->isHidden() == hidden &&
             (unshared ||
              prop->getSharing() != ConfigProperty::NO_SHARING)) {
-            bool isDefault;
-            string value = prop->getProperty(fromProps, &isDefault);
+            InitStateString value = prop->getProperty(fromProps);
             string name = prop->getName(toProps);
             toProps.setProperty(name, value, prop->getComment(),
-                                isDefault ? &value : NULL);
+                                !value.wasSet() ? &value : NULL);
         }
     }
 }
@@ -2148,8 +2143,8 @@ void SyncConfig::copy(const SyncConfig &other,
     }
 }
 
-std::string SyncConfig::getSwv() const { return VERSION; }
-std::string SyncConfig::getDevType() const { return DEVICE_TYPE; }
+InitStateString SyncConfig::getSwv() const { return VERSION; }
+InitStateString SyncConfig::getDevType() const { return DEVICE_TYPE; }
 
                      
 SyncSourceConfig::SyncSourceConfig(const string &name, const SyncSourceNodes &nodes) :
@@ -2477,11 +2472,11 @@ SyncSourceNodes::getNode(const ConfigProperty &prop) const
     return boost::shared_ptr<FilterConfigNode>();
 }
 
-std::string SyncSourceConfig::getDatabaseID() const { return sourcePropDatabaseID.getProperty(*getNode(sourcePropDatabaseID)); }
+InitStateString SyncSourceConfig::getDatabaseID() const { return sourcePropDatabaseID.getProperty(*getNode(sourcePropDatabaseID)); }
 void SyncSourceConfig::setDatabaseID(const string &value, bool temporarily) { sourcePropDatabaseID.setProperty(*getNode(sourcePropDatabaseID), value, temporarily); }
-std::string SyncSourceConfig::getUser() const { return sourcePropUser.getProperty(*getNode(sourcePropUser)); }
+InitStateString SyncSourceConfig::getUser() const { return sourcePropUser.getProperty(*getNode(sourcePropUser)); }
 void SyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePropUser.setProperty(*getNode(sourcePropUser), value, temporarily); }
-std::string SyncSourceConfig::getPassword() const {
+InitStateString SyncSourceConfig::getPassword() const {
     return sourcePropPassword.getCachedProperty(*getNode(sourcePropPassword), m_cachedPassword);
 }
 void SyncSourceConfig::checkPassword(ConfigUserInterface &ui, 
@@ -2495,16 +2490,16 @@ void SyncSourceConfig::savePassword(ConfigUserInterface &ui,
     sourcePropPassword.savePassword(ui, serverName, globalConfigNode, m_name, getNode(sourcePropPassword));
 }
 void SyncSourceConfig::setPassword(const string &value, bool temporarily) { m_cachedPassword = ""; sourcePropPassword.setProperty(*getNode(sourcePropPassword), value, temporarily); }
-std::string SyncSourceConfig::getURI() const { return sourcePropURI.getProperty(*getNode(sourcePropURI)); }
-std::string SyncSourceConfig::getURINonEmpty() const {
-    string uri = sourcePropURI.getProperty(*getNode(sourcePropURI));
+InitStateString SyncSourceConfig::getURI() const { return sourcePropURI.getProperty(*getNode(sourcePropURI)); }
+InitStateString SyncSourceConfig::getURINonEmpty() const {
+    InitStateString uri = sourcePropURI.getProperty(*getNode(sourcePropURI));
     if (uri.empty()) {
-        uri = m_name;
+        uri = InitStateString(m_name, false);
     }
     return uri;
 }
 void SyncSourceConfig::setURI(const string &value, bool temporarily) { sourcePropURI.setProperty(*getNode(sourcePropURI), value, temporarily); }
-std::string SyncSourceConfig::getSync() const { return m_sourcePropSync.getProperty(*getNode(m_sourcePropSync)); }
+InitStateString SyncSourceConfig::getSync() const { return m_sourcePropSync.getProperty(*getNode(m_sourcePropSync)); }
 void SyncSourceConfig::setSync(const string &value, bool temporarily) { m_sourcePropSync.setProperty(*getNode(m_sourcePropSync), value, temporarily); }
 
 SourceType::SourceType(const string &type)
@@ -2546,15 +2541,14 @@ string SourceType::toString() const
     return type;
 }
 
-SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes)
+InitStateClass<SourceType> SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes)
 {
     // legacy "type" property is tried if the backend property is not set
-    bool isDefault;
-    string backend = sourcePropBackend.getProperty(*nodes.getNode(sourcePropBackend), &isDefault);
-    if (isDefault) {
+    InitStateString backend = sourcePropBackend.getProperty(*nodes.getNode(sourcePropBackend));
+    if (!backend.wasSet()) {
         string type;
         if (nodes.getNode(sourcePropBackend)->getProperty("type", type)) {
-            return SourceType(type);
+            return InitStateClass<SourceType>(SourceType(type), true);
         }
     }
 
@@ -2563,9 +2557,9 @@ SourceType SyncSourceConfig::getSourceType(const SyncSourceNodes &nodes)
     sourceType.m_localFormat = sourcePropDatabaseFormat.getProperty(*nodes.getNode(sourcePropDatabaseFormat));
     sourceType.m_format = sourcePropSyncFormat.getProperty(*nodes.getNode(sourcePropSyncFormat));
     sourceType.m_forceFormat = sourcePropForceSyncFormat.getPropertyValue(*nodes.getNode(sourcePropForceSyncFormat));
-    return sourceType;
+    return InitStateClass<SourceType>(sourceType, backend.wasSet());
 }
-SourceType SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
+InitStateClass<SourceType> SyncSourceConfig::getSourceType() const { return getSourceType(m_nodes); }
 
 void SyncSourceConfig::setSourceType(const SourceType &type, bool temporarily)
 {
@@ -2583,10 +2577,8 @@ void SyncSourceConfig::setBackend(const std::string &value, bool temporarily)
                                   value,
                                   temporarily);    
 }
-std::string SyncSourceConfig::getBackend() const
+InitStateString SyncSourceConfig::getBackend() const
 {
-    
-
     return sourcePropBackend.getProperty(*getNode(sourcePropBackend));
 }
 
@@ -2596,7 +2588,7 @@ void SyncSourceConfig::setDatabaseFormat(const std::string &value, bool temporar
                                          value,
                                          temporarily);
 }
-std::string SyncSourceConfig::getDatabaseFormat() const
+InitStateString SyncSourceConfig::getDatabaseFormat() const
 {
     return sourcePropDatabaseFormat.getProperty(*getNode(sourcePropDatabaseFormat));
 }
@@ -2607,7 +2599,7 @@ void SyncSourceConfig::setSyncFormat(const std::string &value, bool temporarily)
                                      value,
                                      temporarily);
 }
-std::string SyncSourceConfig::getSyncFormat() const
+InitStateString SyncSourceConfig::getSyncFormat() const
 {
     return sourcePropSyncFormat.getProperty(*getNode(sourcePropSyncFormat));
 }
@@ -2618,12 +2610,12 @@ void SyncSourceConfig::setForceSyncFormat(bool value, bool temporarily)
                                           value,
                                           temporarily);
 }
-bool SyncSourceConfig::getForceSyncFormat() const
+InitState<bool> SyncSourceConfig::getForceSyncFormat() const
 {
     return sourcePropForceSyncFormat.getPropertyValue(*getNode(sourcePropForceSyncFormat));
 }
 
-const int SyncSourceConfig::getSynthesisID() const { return sourcePropSynthesisID.getPropertyValue(*getNode(sourcePropSynthesisID)); }
+InitState<int> SyncSourceConfig::getSynthesisID() const { return sourcePropSynthesisID.getPropertyValue(*getNode(sourcePropSynthesisID)); }
 void SyncSourceConfig::setSynthesisID(int value, bool temporarily) { sourcePropSynthesisID.setProperty(*getNode(sourcePropSynthesisID), value, temporarily); }
 
 ConfigPasswordKey DatabasePasswordConfigProperty::getPasswordKey(const string &descr,
@@ -2797,22 +2789,23 @@ bool SecondsConfigProperty::checkValue(const string &value, string &error) const
     return parseDuration(value, error, seconds);
 }
 
-unsigned int SecondsConfigProperty::getPropertyValue(const ConfigNode &node, bool *isDefault) const
+InitState<unsigned int> SecondsConfigProperty::getPropertyValue(const ConfigNode &node) const
 {
     string name = getName(node);
-    string value = node.readProperty(name);
+    bool wasSet;
+    std::string value = node.readProperty(name);
     if (value.empty()) {
-        if (isDefault) {
-            *isDefault = true;
-        }
+        wasSet = false;
         value = getDefValue();
+    } else {
+        wasSet = true;
     }
     string error;
     unsigned int seconds;
     if (!parseDuration(value, error, seconds)) {
         throwValueError(node, name, value, error);
     }
-    return seconds;
+    return InitState<unsigned int>(seconds, wasSet);
 }
 
 bool SecondsConfigProperty::parseDuration(const string &value, string &error, unsigned int &seconds)

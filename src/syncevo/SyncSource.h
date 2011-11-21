@@ -1600,7 +1600,7 @@ class SyncSourceSerialize : virtual public SyncSourceBase, virtual public SyncSo
     /**
      * returns the backend selection and configuration
      */
-    virtual SourceType getSourceType() const = 0;
+    virtual InitStateClass<SourceType> getSourceType() const = 0;
 
     /**
      * Create or modify an item.
@@ -2122,7 +2122,7 @@ class TestingSyncSource : public SyncSource,
     }
     ~TestingSyncSource() {}
 
-    virtual SourceType getSourceType() const { return SyncSourceConfig::getSourceType(); }
+    virtual InitStateClass<SourceType> getSourceType() const { return SyncSourceConfig::getSourceType(); }
 
     virtual void removeAllItems();
 };

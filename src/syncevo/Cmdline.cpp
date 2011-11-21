@@ -1908,12 +1908,11 @@ void Cmdline::dumpProperties(const ConfigNode &configuredProps,
                 dumpComment(m_out, "# ", comment);
             }
         }
-        bool isDefault;
-        prop->getProperty(configuredProps, &isDefault);
-        if (isDefault) {
+        InitStateString value = prop->getProperty(configuredProps);
+        if (!value.wasSet()) {
             m_out << "# ";
         }
-        m_out << prop->getMainName() << " = " << prop->getProperty(configuredProps) << endl;
+        m_out << prop->getMainName() << " = " << value.get() << endl;
 
         list<string> *type = NULL;
         switch (prop->getSharing()) {
@@ -3382,8 +3381,6 @@ protected:
                               "\n"
                               "maxMsgSize (150000, unshared), maxObjSize (4000000, unshared)\n"
                               "\n"
-                              "enableCompression (FALSE, unshared)\n"
-                              "\n"
                               "SSLServerCertificates (" SYNCEVOLUTION_SSL_SERVER_CERTIFICATES ", unshared)\n"
                               "\n"
                               "SSLVerifyServer (TRUE, unshared)\n"
@@ -4490,7 +4487,6 @@ private:
                          "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
                          "peers/scheduleworld/config.ini:# maxMsgSize = 150000\n"
                          "peers/scheduleworld/config.ini:# maxObjSize = 4000000\n"
-                         "peers/scheduleworld/config.ini:# enableCompression = 0\n"
                          "peers/scheduleworld/config.ini:# SSLServerCertificates = \n"
                          "peers/scheduleworld/config.ini:# SSLVerifyServer = 1\n"
                          "peers/scheduleworld/config.ini:# SSLVerifyHost = 1\n"
@@ -4605,7 +4601,6 @@ private:
             "spds/syncml/config.txt:# enableWBXML = 1\n"
             "spds/syncml/config.txt:# maxMsgSize = 150000\n"
             "spds/syncml/config.txt:# maxObjSize = 4000000\n"
-            "spds/syncml/config.txt:# enableCompression = 0\n"
 #ifdef ENABLE_LIBSOUP
             // path to SSL certificates is only set for libsoup
             "spds/syncml/config.txt:# SSLServerCertificates = /etc/ssl/certs/ca-certificates.crt:/etc/pki/tls/certs/ca-bundle.crt:/usr/share/ssl/certs/ca-bundle.crt\n"
