@@ -266,6 +266,9 @@ protected:
                      const std::string &prefix,
                      const std::string &comment);
 
+    /** ensure that m_server was set, false if error message was necessary */
+    bool needConfigName();
+
     /** print usage information */
     void usage(bool full,
                const std::string &error = std::string(""),

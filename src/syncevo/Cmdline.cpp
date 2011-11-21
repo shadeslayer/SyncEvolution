@@ -309,6 +309,12 @@ bool Cmdline::parse(vector<string> &parsed)
                 boost::iequals(m_argv[opt], "-m")) {
             operations.push_back(m_argv[opt]);
             m_monitor = true;
+        } else if (boost::iequals(m_argv[opt], "--luids")) {
+            // all following parameters are luids; can't be combined
+            // with setting config and source name
+            while (++opt < m_argc) {
+                m_luids.push_back(CmdlineLUID::toLUID(m_argv[opt]));
+            }
         } else {
             usage(false, string(m_argv[opt]) + ": unknown parameter");
             return false;
@@ -338,14 +344,6 @@ bool Cmdline::parse(vector<string> &parsed)
 
     // common sanity checking for item listing/import/export/update
     if (m_accessItems) {
-        if (m_server.empty()) {
-            usage(false, operations[0] + ": needs configuration name");
-            return false;
-        }
-        if (m_sources.size() == 0) {
-            usage(false, operations[0] + ": needs source name");
-            return false;
-        }
         if ((m_import || m_update) && m_dryrun) {
             usage(false, operations[0] + ": --dry-run not supported");
             return false;
@@ -804,11 +802,10 @@ bool Cmdline::run() {
                                flags | ((name != *(--sources.end())) ? HIDE_LEGEND : DUMP_PROPS_NORMAL));
             }
         }
-    } else if (m_server == "" && m_argc > 1) {
-        // Options given, but no server - not sure what the user wanted?!
-        usage(true, "server name missing");
-        return false;
     } else if (m_configure || m_migrate) {
+        if (!needConfigName()) {
+            return false;
+        }
         if (m_dryrun) {
             SyncContext::throwError("--dry-run not supported for configuration changes");
         }
@@ -1173,6 +1170,9 @@ bool Cmdline::run() {
             }
         }
     } else if (m_remove) {
+        if (!needConfigName()) {
+            return false;
+        }
         if (m_dryrun) {
             SyncContext::throwError("--dry-run not supported for removing configurations");
         }
@@ -1198,8 +1198,12 @@ bool Cmdline::run() {
         context.reset(createSyncClient());
         context->setOutput(&m_out);
 
-        // operating on exactly one source
-        string sourceName = *m_sources.begin();
+        // operating on exactly one source (can be optional)
+        string sourceName;
+        bool haveSourceName = !m_sources.empty();
+        if (haveSourceName) {
+            sourceName = *m_sources.begin();
+        }
 
         // apply filters
         context->setConfigFilter(true, "", m_props.createSyncFilter(m_server));
@@ -1207,7 +1211,36 @@ bool Cmdline::run() {
 
         SyncSourceNodes sourceNodes = context->getSyncSourceNodesNoTracking(sourceName);
         SyncSourceParams params(sourceName, sourceNodes, context);
-        cxxptr<SyncSource> source(SyncSource::createSource(params, true));
+        cxxptr<SyncSource> source;
+
+        try {
+            source.set(SyncSource::createSource(params, true));
+        } catch (const StatusException &ex) {
+            // Creating the source failed. Detect some common reasons for this
+            // and log those instead. None of these situations are fatal by themselves,
+            // but in combination they are a problem.
+            if (ex.syncMLStatus() == SyncMLStatus(sysync::LOCERR_CFGPARSE)) {
+                std::list<std::string> explanation;
+
+                explanation.push_back(ex.what());
+                if (!m_server.empty() && !context->exists()) {
+                    explanation.push_back(StringPrintf("configuration '%s' does not exist", m_server.c_str()));
+                }
+                if (haveSourceName && !sourceNodes.exists()) {
+                    explanation.push_back(StringPrintf("source '%s' does not exist", sourceName.c_str()));
+                } else if (!haveSourceName) {
+                    explanation.push_back("no source selected");
+                }
+                SyncSourceConfig sourceConfig(sourceName, sourceNodes);
+                if (!sourceConfig.getBackend().wasSet()) {
+                    explanation.push_back("backend property not set");
+                }
+                SyncContext::throwError(SyncMLStatus(sysync::LOCERR_CFGPARSE),
+                                        boost::join(explanation, "\n"));
+            } else {
+                throw;
+            }
+        }
 
         sysync::TSyError err;
 #define CHECK_ERROR(_op) if (err) { SE_THROW_EXCEPTION_STATUS(StatusException, string(source->getName()) + ": " + (_op), SyncMLStatus(err)); }
@@ -1445,6 +1478,10 @@ bool Cmdline::run() {
         }
         source->close();
     } else {
+        if (!needConfigName()) {
+            return false;
+        }
+
         std::set<std::string> unmatchedSources;
         boost::shared_ptr<SyncContext> context;
         context.reset(createSyncClient());
@@ -1980,6 +2017,17 @@ void Cmdline::usage(bool full, const string &error, const string &param)
     }
 }
 
+bool Cmdline::needConfigName()
+{
+    if (m_server.empty()) {
+        usage(false, "no configuration name specified");
+        return false;
+    } else {
+        return true;
+    }
+}
+
+
 SyncContext* Cmdline::createSyncClient() {
     return new SyncContext(m_server, true);
 }
@@ -2341,6 +2389,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testMigrate);
     CPPUNIT_TEST(testMigrateContext);
     CPPUNIT_TEST(testMigrateAutoSync);
+    CPPUNIT_TEST(testItemOperations);
     CPPUNIT_TEST_SUITE_END();
     
 public:
@@ -4365,6 +4414,210 @@ protected:
         }
     }
 
+    void testItemOperations() {
+        ScopedEnvChange templates("SYNCEVOLUTION_TEMPLATE_DIR", "templates");
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        {
+            // "foo" not configured
+            TestCmdline cmdline("--print-items",
+                                "foo",
+                                "bar",
+                                NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL_DIFF("[ERROR] bar: backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\nconfiguration 'foo' does not exist\nsource 'bar' does not exist\nbackend property not set", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // "foo" not configured, no source named
+            TestCmdline cmdline("--print-items",
+                                "foo",
+                                NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL_DIFF("[ERROR] backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\nconfiguration 'foo' does not exist\nno source selected\nbackend property not set", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // nothing known about source
+            TestCmdline cmdline("--print-items",
+                                NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL_DIFF("[ERROR] backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\nno source selected\nbackend property not set", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // now create foo
+            TestCmdline cmdline("--configure",
+                                "--template",
+                                "default",
+                                "foo",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // "foo" now configured, still no source
+            TestCmdline cmdline("--print-items",
+                                "foo",
+                                NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL_DIFF("[ERROR] backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\nno source selected\nbackend property not set", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // foo configured, but "bar" is not
+            TestCmdline cmdline("--print-items",
+                                "foo",
+                                "bar",
+                                NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL_DIFF("[ERROR] bar: backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\nsource 'bar' does not exist\nbackend property not set", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // add "bar" source, using file backend
+            TestCmdline cmdline("--configure",
+                                "backend=file",
+                                ("database=file://" + m_testDir + "/addressbook").c_str(),
+                                "databaseFormat=text/vcard",
+                                "foo",
+                                "bar",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // no items yet
+            TestCmdline cmdline("--print-items",
+                                "foo",
+                                "bar",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        static const std::string john =
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "FN:John Doe\n"
+            "N:Doe;John;;;\n"
+            "END:VCARD\n",
+            joan =
+            "BEGIN:VCARD\n"
+            "VERSION:3.0\n"
+            "FN:Joan Doe\n"
+            "N:Doe;Joan;;;\n"
+            "END:VCARD\n";
+
+        {
+            // create one file
+            std::string file1 = "1:" + john, file2 = "2:" + joan;
+            boost::replace_all(file1, "\n", "\n1:");
+            file1.resize(file1.size() - 2);
+            boost::replace_all(file2, "\n", "\n2:");
+            file2.resize(file2.size() - 2);
+            createFiles(m_testDir + "/addressbook", file1 + file2);
+
+            TestCmdline cmdline("--print-items",
+                                "foo",
+                                "bar",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("1\n2\n", cmdline.m_out.str());
+        }
+
+        {
+            // alternatively just specify enough parameters,
+            // without the foo bar config part
+            TestCmdline cmdline("--print-items",
+                                "backend=file",
+                                ("database=file://" + m_testDir + "/addressbook").c_str(),
+                                "databaseFormat=text/vcard",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF("1\n2\n", cmdline.m_out.str());
+        }
+
+        {
+            // export all
+            TestCmdline cmdline("--export", "-",
+                                "backend=file",
+                                ("database=file://" + m_testDir + "/addressbook").c_str(),
+                                "databaseFormat=text/vcard",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(john + "\n" + joan, cmdline.m_out.str());
+        }
+
+        {
+            // export all via config
+            TestCmdline cmdline("--export", "-",
+                                "foo", "bar",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(john + "\n" + joan, cmdline.m_out.str());
+        }
+
+        {
+            // export one
+            TestCmdline cmdline("--export", "-",
+                                "backend=file",
+                                ("database=file://" + m_testDir + "/addressbook").c_str(),
+                                "databaseFormat=text/vcard",
+                                "--luids", "1",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(john, cmdline.m_out.str());
+        }
+
+        {
+            // export one via config
+            TestCmdline cmdline("--export", "-",
+                                "foo", "bar", "1",
+                                NULL);
+            cmdline.doit();
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL_DIFF(john, cmdline.m_out.str());
+        }
+
+        // TODO: check configuration of just the source as @foo bar without peer
+
+        {
+            // check error message for missing config name
+            TestCmdline cmdline((const char *)NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL_DIFF("ERROR: no configuration name specified\n",
+                                      lastLine(cmdline.m_err.str()));
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+
+        {
+            // check error message for missing config name, version II
+            TestCmdline cmdline("--run",
+                                NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL_DIFF("ERROR: no configuration name specified\n",
+                                      lastLine(cmdline.m_err.str()));
+            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
+        }
+    }
+
     const string m_testDir;        
 
 private:
@@ -4407,14 +4660,23 @@ private:
             init();
         }
 
-        void doit() {
-            bool success;
-            success = m_cmdline->parse() &&
-                m_cmdline->run();
-            if (m_err.str().size()) {
+        void doit(bool expectSuccess = true) {
+            bool success = false;
+            // emulates syncevolution.cpp exception handling
+            try {
+                success = m_cmdline->parse() &&
+                    m_cmdline->run();
+            } catch (const std::exception &ex) {
+                m_err << "[ERROR] " << ex.what();
+            } catch (...) {
+                std::string explanation;
+                Exception::handle(explanation);
+                m_err << "[ERROR] " << explanation;
+            }
+            if (expectSuccess && m_err.str().size()) {
                 m_out << endl << m_err.str();
             }
-            CPPUNIT_ASSERT_MESSAGE(m_out.str(), success);
+            CPPUNIT_ASSERT_MESSAGE(m_out.str(), success == expectSuccess);
         }
 
         ostringstream m_out, m_err;

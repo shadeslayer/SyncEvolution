@@ -43,18 +43,21 @@ Create, update or remove a configuration:
   syncevolution --remove|--migrate <options> [--] <config>
 
 List items:
-  syncevolution --print-items [--] <config> <source>
+  syncevolution --print-items [--] [<config> [<source>]]
 
 Export item(s):
-  syncevolution [--delimiter <string>] --export <dir>|<file>|- [--] <config> <source> [<luid> ...]
+  syncevolution [--delimiter <string>] --export <dir>|<file>|- [--] [<config> [<source> [<luid> ...]]]
+                                                                --luids <luid> ...
 
 Add item(s):
-  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- [--] <config> <source>
+  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- [--] [<config> [<source>]]
+                                                                     --luids <luid> ...
 
 Update item(s):
   syncevolution --update <dir> [--] <config> <source>
 
   syncevolution [--delimiter <string>|none] --update <file>|- [--] <config> <source> <luid> ...
+                                                               --luids <luid> ...
 
 
 Remove item(s):
@@ -420,8 +423,8 @@ needs to get a clean copy of all local items, then use ``--sync
 refresh-from-local`` in the next run. ::
 
   syncevolution --print-items <config> <source>
-  syncevolution [--delimiter <string>] --export <dir>|<file>|- <config> <source> [<luid> ...]
-  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- <config> <source>
+  syncevolution [--delimiter <string>] --export <dir>|<file>|- [<config> [<source> [<luid> ...]]]
+  syncevolution [--delimiter <string>|none] --import <dir>|<file>|- [<config> <source>]
   syncevolution --update <dir> <config> <source>
   syncevolution [--delimiter <string>|none] --update <file>|- <config> <source> <luid> ...
   syncevolution --delete-items <config> <source> (<luid> ... | *)
@@ -431,15 +434,22 @@ created by SyncEvolution. Arbitrary access to item data is provided
 with additional options. <luid> here is the unique local identifier
 assigned to each item in the source, transformed so that it contains
 only alphanumeric characters, dash and underscore. A star * in
---delete-items selects all items for deletion.
+--delete-items selects all items for deletion. There are two ways
+of specifying luids: either as additional parameters after the
+config and source parameters (which may be empty in this case, but
+must be given) or after the ``--luids`` keyword.
 
-<config> and <source> must be given, but they do not have to refer to
-existing configurations. In that case, the desired backend and must be
-give via the ``backend`` property, like this::
+<config> and <source> may be given to define the database which is to
+be used. If not given or not refering to an existing configuration
+(which is not an error, due to historic reasons), the desired backend
+must be given via the ``backend`` property, like this::
 
-  syncevolution --print-items backend=evolution-contacts dummy-config dummy-source
+  syncevolution --print-items backend=evolution-contacts
+  syncevolution --export - backend=evolution-contacts \
+                --luids pas-id-4E33F24300000006 pas-id-4E36DD7B00000007
 
 The desired backend database can be chosen via ``database=<identifier>``.
+See ``--print-databases``.
 
 OPTIONS
 =======
