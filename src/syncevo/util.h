@@ -26,6 +26,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/function.hpp>
+#include <boost/utility/value_init.hpp>
 
 #include <stdarg.h>
 #include <time.h>
@@ -382,19 +383,70 @@ class Timespec : public timespec
 };
 
 /**
- * Acts like a boolean, but in addition, can also tell whether the
- * value was explicitly set. Defaults to false.
+ * Acts like the underlying type. In addition ensures that plain types
+ * are not left uninitialized.
  */
-class Bool { 
+template<class T> class Init {
  public:
- Bool(bool val = false) : m_value(val), m_wasSet(false) {}
-    operator bool () const { return m_value; }
-    Bool & operator = (bool val) { m_value = val; m_wasSet = true; return *this; }
+    Init(const T &val) : m_value(val) {}
+    Init() : m_value(boost::value_initialized<T>()) {}
+    Init(const Init &other) : m_value(other.m_value) {}
+    Init & operator = (const T &val) { m_value = val; return *this; }
+    operator const T & () const { return m_value; }
+    operator T & () { return m_value; }
+ private:
+    T m_value;
+};
+
+
+/**
+ * Version of InitState for scalar values (can't derive from them):
+ * acts like the underlying type. In addition ensures that plain types
+ * are not left uninitialized and tracks whether a value was every
+ * assigned explicitly.
+ */
+template<class T> class InitState {
+ public:
+    InitState(const T &val, bool wasSet) : m_value(val), m_wasSet(wasSet) {}
+    InitState() : m_value(boost::value_initialized<T>()), m_wasSet(false) {}
+    InitState(const InitState &other) : m_value(other.m_value), m_wasSet(other.m_wasSet) {}
+    InitState & operator = (const T &val) { m_value = val; m_wasSet = true; return *this; }
+    operator const T & () const { return m_value; }
+    operator T & () { return m_value; }
+    const T & get() const { return m_value; }
+    T & get() { return m_value; }
     bool wasSet() const { return m_wasSet; }
  private:
-    bool m_value;
+    T m_value;
     bool m_wasSet;
 };
+
+/** version of InitState for classes */
+template<class T> class InitStateClass : public T {
+ public:
+    InitStateClass(const T &val, bool wasSet) : T(val), m_wasSet(wasSet) {}
+    InitStateClass() : m_wasSet(false) {}
+    InitStateClass(const char *val) : T(val), m_wasSet(false) {}
+    InitStateClass(const InitStateClass &other) : T(other), m_wasSet(other.m_wasSet) {}
+    InitStateClass & operator = (const T &val) { *this = val; m_wasSet = true; return *this; }
+    const T & get() const { return *this; }
+    T & get() { return *this; }
+    bool wasSet() const { return m_wasSet; }
+ private:
+    bool m_wasSet;
+};
+
+/**
+ * Acts like a boolean, but in addition, can also tell whether the
+ * value was explicitly set. Defaults to false for both.
+ */
+typedef InitState<bool> Bool;
+
+/**
+ * Acts like a string, but in addition, can also tell whether the
+ * value was explicitly set.
+ */
+typedef InitStateClass<std::string> InitStateString;
 
 enum HandleExceptionFlags {
     HANDLE_EXCEPTION_FLAGS_NONE = 0,
