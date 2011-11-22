@@ -666,6 +666,10 @@ AC_SUBST(GUI_DESKTOP_FILES)
 # as Debian Etch backport.
 AX_BOOST_BASE(1.34)
 
+# C++ regular expression support is required often enough to make it
+# mandatory.
+PKG_CHECK_MODULES(PCRECPP, libpcrecpp)
+
 # need rst2man for man pages
 AC_ARG_WITH(rst2man,
             AS_HELP_STRING([--with-rst2man=<path to reStructuredText to man converter>],

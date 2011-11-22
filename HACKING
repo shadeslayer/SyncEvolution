@@ -7,13 +7,17 @@ SyncEvolution source packages and will be used automatically.
 The section _`Checking out the source` explains how to work
 with sources obtained via the git repositories.
 
-Also needed are the Evolution and Boost (>= 1.35) development
-files. For HTTP, either Curl or libsoup can be used.
+Also needed are the Evolution (can be disabled), Boost (>= 1.35) and
+pcre development files. For HTTP, either Curl or libsoup can be used.
+For compiling libsynthesis, sqlite, expat, libz are needed.
 
-On Debian based systems the required packages can be installed with
+On Debian based systems, the required packages can be installed with
    apt-get install evolution-data-server-dev \
                    libecal1.2-dev libebook1.2-dev \
                    libsoup2.4-dev \
+                   libpcre3-dev \
+                   libexpat-dev \
+                   libz-dev \
                    libboost-dev
 
 libboost-dev >= 1.34, available as libboost1.35-dev backport for Debian Etch.
@@ -29,11 +33,6 @@ Optional (enables direct sync with phones):
 
 Optional (only used for SHA-256 when glib is not already a dependency):
    apt-get install libnss3-dev
-
-For compiling libsynthesis:
-   apt-get install libpcre3-dev libsqlite3-dev libexpat-dev libz-dev
-
-This was copied from the libsynthesis README.
 
 The test framework also requires CPPUnit:
    apt-get install libcppunit-dev

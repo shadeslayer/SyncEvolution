@@ -173,11 +173,13 @@ src_syncevo_libsyncevolution_la_LIBADD = \
   @GTHREAD_LIBS@ \
   @GLIB_LIBS@ \
   $(SYNTHESIS_LIBS) \
+  $(PCRECPP_LIBS) \
   $(TRANSPORT_LIBS) \
   @LIBS@ \
   $(src_syncevo_ldadd) \
   $(NSS_LIBS)
 src_syncevo_libsyncevolution_la_CXXFLAGS = \
+  $(PCRECPP_CFLAGS) \
   $(TRANSPORT_CFLAGS) \
   $(src_syncevo_cxxflags) \
   $(SYNTHESIS_CFLAGS) \
