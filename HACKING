@@ -99,8 +99,8 @@ in the Synthesis code base, then please work directly with
 the upstream branch.
 
 For doing development work the recommended configure line is:
-   configure CFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
-             CXXFLAGS="-g -Wall -Werror -Wno-unknown-pragmas" \
+   configure --with-synthesis-src=<path to libsynthesis source> \
+             --enable-warnings=fatal \
              --enable-unit-tests \
              --enable-libcurl \
              --disable-shared \
