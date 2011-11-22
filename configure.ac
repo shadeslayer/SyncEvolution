@@ -440,7 +440,7 @@ AC_ARG_ENABLE(dbus-service,
                fi])
 AM_CONDITIONAL([COND_DBUS], [test "$enable_dbus_service" = "yes"])
 
-AC_ARG_WITH(gio-gdbus,
+AC_ARG_WITH([gio-gdbus],
             AS_HELP_STRING([--with-gio-gdbus],
                            [enables use of GIO's GDBus instead of the in-tree, Bluez gdbus.]),
             with_gio_gdbus="$withval",
@@ -534,25 +534,29 @@ if test $enable_dbus_service = "yes"; then
     if test -z "$XSLT"; then
        AC_MSG_ERROR([xsltproc not found, is required for D-Bus service])
     fi
-    PKG_CHECK_MODULES(DBUS, dbus-1, dummy=yes,
-                      AC_MSG_ERROR(libdbus-1 is required))
-    AC_CHECK_LIB(dbus-1, dbus_watch_get_unix_fd, dummy=yes,
-                 AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
-                 [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
-    need_glib=yes
+    # We only need to check for dbus-1 if gio-gdbus is not used
+    if test "x$with_gio_gdbus" = "xno"; then
+        PKG_CHECK_MODULES(DBUS, dbus-1, dummy=yes,
+                          AC_MSG_ERROR(libdbus-1 is required))
+        AC_CHECK_LIB(dbus-1, dbus_watch_get_unix_fd, dummy=yes,
+                     AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
+                     [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
+        need_glib=yes
+    fi
     # Recent libnotify releases work with gtk+-2.0 and gtk+-3.0. We
     # pick gtk+-2.0 here, to be compatible with old libnotify releases
     # which had that hard-cored and because sync-ui also depends on
     # gtk+-2.0.
-    PKG_CHECK_MODULES(LIBNOTIFY, [libnotify gtk+-2.0], HAVE_LIBNOTIFY=yes, HAVE_LIBNOTIFY=no)
-    AC_ARG_ENABLE(notify,
-                  AS_HELP_STRING([--enable-notify],
-                                 [send notifications for automatic sync events, using libnotify]),
-                  [ test "$enableval" = "no" || test $HAVE_LIBNOTIFY = "yes" || AC_MSG_ERROR([required libnotify package not found]) ],
-                  [ test $HAVE_LIBNOTIFY = "yes" || AC_MSG_ERROR([required libnotify package not found, use --disable-notify to compile without libnotify based notifications]) ])
-    if test $HAVE_LIBNOTIFY = "yes"; then
-        AC_DEFINE(HAS_NOTIFY, 1, [define if libnotify could be used in dbus service])
-    fi
+    AC_ARG_ENABLE([notify],
+        AS_HELP_STRING([--enable-notify],
+                       [send notifications for automatic sync events, using libnotify]),
+        enable_notify="$enableval",
+        PKG_CHECK_EXISTS([libnotify gtk+-2.0],
+                         [enable_notify="yes"],
+                         [enable_notify="no"]))
+    AS_IF([test "x$enable_notify" = "xyes"], [PKG_CHECK_MODULES([LIBNOTIFY], [libnotify gtk+-2.0])]
+                                             [AC_DEFINE(HAS_NOTIFY, 1,
+                                                        [define if libnotify could be used in dbus service])])
 
     AC_ARG_ENABLE(notify-compatibility,
                   AS_HELP_STRING([--enable-notify-compatibility],
@@ -1082,6 +1086,7 @@ for backend in $BACKENDS; do
     eval echo $backend: \${enable_${backend}}
 done
 echo "DBus service: $enable_dbus_service"
+echo "Notifications: $enable_notify"
 echo "GIO GDBus: $with_gio_gdbus"
 echo "GNOME keyring: $enable_gnome_keyring"
 echo "UI (DBus client): $enable_gui"
