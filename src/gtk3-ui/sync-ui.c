@@ -1242,9 +1242,8 @@ init_ui (app_data *data)
     GError *error = NULL;
     GtkWidget *frame, * service_error_box, *btn;
     GtkAdjustment *adj;
-
-    gtk_rc_parse (THEMEDIR "sync-ui.rc");
-
+    GtkCssProvider *provider;
+ 
     builder = gtk_builder_new ();
     gtk_builder_add_from_file (builder, GLADEDIR "ui.xml", &error);
     if (error) {
@@ -1365,6 +1364,21 @@ init_ui (app_data *data)
     glade_name_workaround (builder, "sync_btn");
 
     init_bluetooth_ui (data);
+
+    /* custom styling */
+    provider = gtk_css_provider_new ();
+    if (gtk_css_provider_load_from_path (provider, THEMEDIR "sync-ui.css", &error)) {
+        gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+                                                   GTK_STYLE_PROVIDER (provider),
+                                                   GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+        g_object_unref (provider);
+    } else {
+        g_printerr ("Failed to load styles from %s: %s\n",
+                    THEMEDIR "sync-ui.css",
+                    error->message);
+        g_error_free (error);
+        error = NULL;
+    }
 
     g_object_unref (builder);
 

@@ -31,7 +31,7 @@ dist_src_gtk3_ui_icon_DATA = src/gtk3-ui/sync.png
 src_gtk3_ui_themercfiles = \
   src/gtk3-ui/sync-generic.png \
   src/gtk3-ui/sync-spinner.gif \
-  src/gtk3-ui/sync-ui.rc
+  src/gtk3-ui/sync-ui.css
 
 src_gtk3_ui_themercdir = $(datadir)/syncevolution/
 dist_src_gtk3_ui_themerc_DATA = $(src_gtk3_ui_themercfiles)

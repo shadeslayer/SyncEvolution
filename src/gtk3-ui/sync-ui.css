@@ -1,0 +1,43 @@
+# generic rules for MuxWidgets
+
+MuxFrame {
+    background-color : #ffffff;
+    -MuxFrame-border-color : #dee2e5;
+    -MuxFrame-bullet-color : #aaaaaa;
+    -MuxFrame-title-font : Bold 12;
+}
+
+MuxFrame:insensitive {
+    background-color : #ffffff;
+}
+
+# sync-ui specific rules
+
+GtkWindow#meego_win {
+    background-color : #4a535a;
+}
+
+GtkEventBox#sync_data_and_type_box,
+GtkEventBox#sync_data_and_type_box:insensitive {
+    background-color : #ececec;
+}
+
+
+
+GtkFrame#log_frame:insensitive,
+GtkFrame#backup_frame:insensitive,
+GtkFrame#services_frame:insensitive {
+    background-color : #d2d6d9;
+}
+
+GtkLabel#sync_service_label,
+GtkLabel#sync_status_label,
+GtkLabel#no_server_label,
+GtkLabel#sync_failure_label {
+    font : Bold 11;
+}
+
+GtkButton#sync_btn {
+    -GtkButton-inner-border : 10 10 10 10;
+    font : Bold 11;
+}
