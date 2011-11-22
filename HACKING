@@ -155,11 +155,13 @@ It understands several environment variables, among them:
 
 For unattended testing:
 - CLIENT_TEST_FAILURES = comma separated list of tests which are allowed
-  to fail without affecting the return code of the test runner
+  to fail without affecting the return code of the test runner; each list
+  entry is a regex which must match a complete test name
 - CLIENT_TEST_SKIP = comma separated list of tests or test groups which
   are not to be executed at all; for this to work the test or test group
   has to be passed through test.h's version of ADD_TEST or FilterTest,
-  which is the case for most tests but not all
+  which is the case for most tests but not all; as in CLIENT_TEST_FAILURES,
+  each entry is a regex
 - CLIENT_TEST_LOG = name of server log file, will be copied and reset
   after each sync
 - CLIENT_TEST_ALARM = number of seconds a single test is allowed to run

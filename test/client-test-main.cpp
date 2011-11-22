@@ -43,6 +43,10 @@
 #include <syncevo/LogRedirect.h>
 #include "ClientTest.h"
 
+#include <boost/algorithm/string/split.hpp>
+
+#include <pcrecpp.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -112,17 +116,7 @@ public:
     }
 
     void addAllowedFailures(string allowedFailures) {
-        size_t start = 0, end;
-        while ((end = allowedFailures.find(',', start)) != allowedFailures.npos) {
-            size_t len = end - start;
-            if (len) {
-                m_allowedFailures.insert(allowedFailures.substr(start, len));
-            }
-            start = end + 1;
-        }
-        if (allowedFailures.size() > start) {
-            m_allowedFailures.insert(allowedFailures.substr(start));
-        }
+        boost::split(m_allowedFailures, allowedFailures, boost::is_from_range(',', ','));
     }
 
     void startTest (CppUnit::Test *test) {
@@ -165,11 +159,16 @@ public:
             CppUnit::CompilerOutputter formatter(&m_failures, output);
             formatter.printFailureReport();
             failure = output.str();
-            if (m_allowedFailures.find(m_currentTest) == m_allowedFailures.end()) {
+            m_failed = true;
+            BOOST_FOREACH (const std::string &re, m_allowedFailures) {
+                if (pcrecpp::RE(re).FullMatch(m_currentTest)) {
+                    result = "*** failure ignored ***";
+                    m_failed = false;
+                    break;
+                }
+            }
+            if (m_failed) {
                 result = "*** failed ***";
-                m_failed = true;
-            } else {
-                result = "*** failure ignored ***";
             }
         } else {
             result = "okay";

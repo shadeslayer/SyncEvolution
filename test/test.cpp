@@ -31,6 +31,9 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/foreach.hpp>
+
+#include <pcrecpp.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -59,12 +62,14 @@ CppUnit::Test *FilterTest(CppUnit::Test *test)
     }
 
     std::string name = test->getName();
-    if (filter.find(name) != filter.end()) {
-        delete test;
-        return new SkipTest(name);
-    } else {
-        return test;
+    BOOST_FOREACH (const std::string &re, filter) {
+        if (pcrecpp::RE(re).FullMatch(name)) {
+            delete test;
+            return new SkipTest(name);
+        }
     }
+
+    return test;
 }
 
 SE_END_CXX
