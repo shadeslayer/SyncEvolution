@@ -302,11 +302,13 @@ class ClientTest {
     static void getItems(const std::string &file, std::list<std::string> &items, std::string &realfile);
 
     /**
-     * utility function for importing items with blank lines as separator
+     * utility function for importing items with blank lines as separator,
+     * for ClientTestConfig::m_import
      */
     static std::string import(ClientTest &client, TestingSyncSource &source,
                               const ClientTestConfig &config,
-                              const std::string &file, std::string &realfile);
+                              const std::string &file, std::string &realfile,
+                              std::list<std::string> *luids);
 
     /**
      * utility function for comparing vCard and iCal files with the external
@@ -587,6 +589,7 @@ public:
     virtual void testChanges();
     virtual void testImport();
     virtual void testImportDelete();
+    virtual void testRemoveProperties();
     virtual void testManyChanges();
     virtual void testLinkedItemsParent();
     virtual void testLinkedItemsChild();

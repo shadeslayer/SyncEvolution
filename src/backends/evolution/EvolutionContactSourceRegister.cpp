@@ -154,6 +154,8 @@ public:
     {
         config.m_type = "evolution-contacts:text/vcard";
         config.m_update = config.m_genericUpdate;
+        // this property gets re-added by EDS and thus cannot be removed
+	config.m_essentialProperties.insert("X-EVOLUTION-FILE-AS");
     }
 } vCard30Test;
 

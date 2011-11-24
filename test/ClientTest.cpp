@@ -59,6 +59,8 @@
 #include <boost/tokenizer.hpp>
 #include <boost/assign.hpp>
 
+#include <pcrecpp.h>
+
 #include <syncevo/declarations.h>
 
 #ifdef ENABLE_BUTEO_TESTS
@@ -302,6 +304,18 @@ static std::string importItem(TestingSyncSource *source, const ClientTestConfig 
     }
 }
 
+/** overwrite existing item */
+static void updateItem(TestingSyncSource *source, std::string &data, const std::string &luid)
+{
+    CT_ASSERT(source);
+    CT_ASSERT(!data.empty());
+    CT_ASSERT(!luid.empty());
+
+    SyncSourceRaw::InsertItemResult res;
+    SOURCE_ASSERT_NO_FAILURE(source, res = source->insertItemRaw(luid, data));
+    CT_ASSERT_EQUAL(luid, res.m_luid);
+}
+
 static void restoreStorage(const ClientTest::Config &config, ClientTest &client)
 {
 #ifdef ENABLE_BUTEO_TESTS
@@ -346,6 +360,9 @@ void LocalTests::addTests() {
                 !config.m_testcases.empty()) {
                 ADD_TEST(LocalTests, testImport);
                 ADD_TEST(LocalTests, testImportDelete);
+                if (!config.m_essentialProperties.empty()) {
+                    ADD_TEST(LocalTests, testRemoveProperties);
+                }
             }
 
             if (!config.m_templateItem.empty()) {
@@ -1071,7 +1088,7 @@ void LocalTests::testImport() {
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
     restoreStorage(config, client);
     std::string testcases;
-    std::string importFailures = config.m_import(client, *source.get(), config, config.m_testcases, testcases);
+    std::string importFailures = config.m_import(client, *source.get(), config, config.m_testcases, testcases, NULL);
     backupStorage(config, client);
     CT_ASSERT_NO_THROW(source.reset());
 
@@ -1095,6 +1112,84 @@ void LocalTests::testImportDelete() {
     // delete again, because it was observed that this did not
     // work right with calendars in SyncEvolution
     CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+}
+
+// clean database, import file, update with minimized test data (= all
+// non-essential properties removed), compare: verifies that updates
+// can remove data
+void LocalTests::testRemoveProperties() {
+    // check additional requirements
+    CT_ASSERT(config.m_import);
+    CT_ASSERT(config.m_dump);
+    CT_ASSERT(config.m_compare);
+    CT_ASSERT(!config.m_testcases.empty());
+    CT_ASSERT(config.m_createSourceA);
+
+    CT_ASSERT_NO_THROW(deleteAll(createSourceA));
+
+    // import via sync source A
+    TestingSyncSourcePtr source;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+    restoreStorage(config, client);
+    std::string testcases;
+    std::list<std::string> luids;
+    std::string importFailures = config.m_import(client, *source.get(), config, config.m_testcases, testcases, &luids);
+    backupStorage(config, client);
+    CT_ASSERT_NO_THROW(source.reset());
+
+    // don't check for correct importing - that is done in testImport
+
+    // reduce data
+    std::list<std::string> items;
+    std::string dummy;
+    CT_ASSERT_NO_THROW(ClientTest::getItems(testcases, items, dummy));
+    static const pcrecpp::RE bodyre("^BEGIN:(VCARD|VEVENT|VTODO|VJOURNAL)\\r?\\n(.*)^(END:\\g1)",
+                                    pcrecpp::RE_Options().set_multiline(true).set_dotall(true));
+    std::string updated = getCurrentTest();
+    updated += ".updated.";
+    updated += config.m_sourceName;
+    updated += ".dat";
+    simplifyFilename(updated);
+    ofstream out(updated.c_str());
+
+    BOOST_FOREACH (std::string &item, items) {
+        std::string kind;
+        pcrecpp::StringPiece body;
+        CT_ASSERT(bodyre.PartialMatch(item, &kind, &body));
+        static const pcrecpp::RE propre("^((\\S[^;:]*).*\\n(?:\\s.*\\n)*)",
+                                        pcrecpp::RE_Options().set_multiline(true));
+        pcrecpp::StringPiece input(body);
+        pcrecpp::StringPiece prop;
+        std::string propname;
+        std::list<std::string> result;
+        while (propre.Consume(&input, &prop, &propname)) {
+            if (config.m_essentialProperties.find(propname) != config.m_essentialProperties.end()) {
+                result.push_back(prop.as_string());
+            }
+        }
+
+        item.replace(body.data() - item.c_str(), body.size(),
+                     boost::join(result, ""));
+        out << item << "\n";
+    }
+    out.close();
+
+    // update
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+    std::string updateFailures = config.m_import(client, *source.get(), config, updated, dummy, &luids);
+    CT_ASSERT_NO_THROW(source.reset());
+
+    // compare
+    TestingSyncSourcePtr copy;
+    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
+    bool equal = compareDatabases(updated.c_str(), *copy.get(), false);
+    CT_ASSERT_NO_THROW(source.reset());
+
+    if (importFailures.empty() && updateFailures.empty()) {
+        CT_ASSERT_MESSAGE("imported and exported data equal", equal);
+    } else {
+        CT_ASSERT_EQUAL(std::string(""), importFailures + updateFailures);
+    }
 }
 
 // test change tracking with large number of items
@@ -5103,28 +5198,59 @@ void ClientTest::getItems(const std::string &file, list<string> &items, std::str
             wasend = !line.compare(0, 4, "END:");
         } while(!input.eof());
     }
-    if (!data.empty()) {
+    if (data != "" && data != "\r\n" && data != "\n") {
         items.push_back(data);
     }
 }
 
 std::string ClientTest::import(ClientTest &client, TestingSyncSource &source, const ClientTestConfig &config,
-                               const std::string &file, std::string &realfile)
+                               const std::string &file, std::string &realfile,
+                               std::list<std::string> *luids)
 {
     list<string> items;
     getItems(file, items, realfile);
     std::string failures;
+    bool doImport = !luids || luids->empty();
+    std::list<std::string>::const_iterator it;
+    if (!doImport) {
+        it = luids->begin();
+    }
     BOOST_FOREACH(string &data, items) {
+        std::string luid;
         try {
-            importItem(&source, config, data);
+            if (doImport) {
+                luid = importItem(&source, config, data);
+                CT_ASSERT(!luid.empty());
+                if (luids) {
+                    luids->push_back(luid);
+                }
+            } else {
+                CT_ASSERT(it != luids->end());
+                luid = *it;
+                ++it;
+                // Did import already fail? If yes, then don't try to
+                // update because it will also fail.
+                if (!luid.empty()) {
+                    // TODO: should fail for status = 6 in eas
+                    updateItem(&source, data, luid);
+                }
+            }
         } catch (...) {
             std::string explanation;
             Exception::handle(explanation);
-            failures += "Failed to import:\n";
+            failures += "Failed to ";
+            if (doImport) {
+                failures += "import:\n";
+            } else {
+                failures += "update " + luid + ":\n";
+            }
             failures += data;
             failures += "\n";
             failures += explanation;
             failures += "\n";
+            if (doImport && luids) {
+                luids->push_back("");
+            }
         }
     }
     return failures;
@@ -5399,6 +5525,8 @@ static void addMonthly(size_t &index, ClientTestConfig::MultipleLinkedItems_t &s
 
 void ClientTest::getTestData(const char *type, Config &config)
 {
+    std::string server = currentServer();
+
     config = Config();
     char *env = getenv("CLIENT_TEST_RETRY");
     config.m_retrySync = (env && !strcmp (env, "t")) ?true :false;
@@ -5425,11 +5553,21 @@ void ClientTest::getTestData(const char *type, Config &config)
 
     config.m_mangleItem = mangleGeneric;
 
+    static std::set<std::string> vCardEssential =
+        boost::assign::list_of("FN")("N")("UID")("VERSION"),
+        iCalEssential =
+        boost::assign::list_of("DTSTART")("DTEND")("SUMMARY")("UID")("RRULE")("RECURRENCE-ID")("VERSION");
+    // RRULE is not essential for a valid item, but removing it has implications
+    // for other properties (EXDATE) and other items (detached recurrences) and
+    // thus cannot be tested in testRemoveProperties (because it doesn't know about
+    // these inter-depdendencies).
+
     if (!strcmp(type, "eds_contact")) {
         config.m_sourceName = "eds_contact";
         config.m_sourceNameServerTemplate = "addressbook";
         config.m_uri = "card3"; // ScheduleWorld
         config.m_type = "text/vcard";
+        config.m_essentialProperties = vCardEssential;
         config.m_insertItem =
             "BEGIN:VCARD\n"
             "VERSION:3.0\n"
@@ -5508,6 +5646,11 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.m_sourceNameServerTemplate = "calendar";
         config.m_uri = "cal2"; // ScheduleWorld
         config.m_type = "text/x-vcalendar";
+        config.m_essentialProperties = iCalEssential;
+        if (server == "exchange") {
+            // currently cannot remove EXDATE properties, see BMC #24290
+            config.m_essentialProperties.insert("EXDATE");
+        }
         config.m_mangleItem = mangleICalendar20;
         config.m_insertItem =
             "BEGIN:VCALENDAR\n"
@@ -5599,7 +5742,6 @@ void ClientTest::getTestData(const char *type, Config &config)
 	// Must use different test cases for some servers to
 	// avoid having the linkedItems test cases fail
 	// because of that.
-	std::string server = currentServer();
 	// default: time zones + UNTIL in UTC, with VALARM
         config.m_linkedItems.resize(1);
         config.m_linkedItems[0].m_name = "Default";
@@ -6263,6 +6405,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.m_sourceNameServerTemplate = "calendar";
         config.m_uri = "cal2"; // ScheduleWorld
         config.m_type = "text/x-vcalendar";
+        config.m_essentialProperties = iCalEssential;
         config.m_mangleItem = mangleICalendar20;
         config.m_insertItem =
             "BEGIN:VCALENDAR\n"
@@ -6350,6 +6493,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.m_sourceNameServerTemplate = "todo";
         config.m_uri = "task2"; // ScheduleWorld
         config.m_type = "text/x-vcalendar";
+        config.m_essentialProperties = iCalEssential;
         config.m_mangleItem = mangleICalendar20;
         config.m_insertItem =
             "BEGIN:VCALENDAR\n"
@@ -6428,6 +6572,7 @@ void ClientTest::getTestData(const char *type, Config &config)
         config.m_sourceNameServerTemplate = "memo";
         config.m_type = "memo";
         config.m_itemType = "text/calendar";
+        config.m_essentialProperties = iCalEssential;
         config.m_mangleItem = mangleICalendar20;
         config.m_insertItem =
             "BEGIN:VCALENDAR\n"

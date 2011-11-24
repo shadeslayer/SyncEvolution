@@ -403,10 +403,12 @@ struct ClientTestConfig {
      * @param file       the name of the file to import
      * @retval realfile  the name of the file that was really imported;
      *                   this may depend on the current server that is being tested
+     * @param luids      optional; if empty, then fill with luids (empty string for failed items);
+     *                   if not empty, then update instead of adding the items
      * @return error string, empty for success
      */
     boost::function<std::string (ClientTest &, TestingSyncSource &, const ClientTestConfig &,
-                                 const std::string &, std::string &)> m_import;
+                                 const std::string &, std::string &, std::list<std::string> *)> m_import;
 
     /**
      * a function which compares two files with items in the format used by "dump"
@@ -455,6 +457,13 @@ struct ClientTestConfig {
     Bool m_retrySync;
     Bool m_suspendSync;
     Bool m_resendSync;
+
+    /**
+     * Set this to a list of properties which must *not* be removed
+     * from the test items. Leave empty to disable the testRemoveProperties
+     * test. Test items must be in vCard 3.0/iCalendar 2.0 format.
+     */
+    std::set<std::string> m_essentialProperties;
 
     /**
      * Set this to test if the source supports preserving local data extensions.
