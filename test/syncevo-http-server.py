@@ -26,12 +26,32 @@ import twisted.web
 import twisted.python.log
 from twisted.web import server, resource, http
 from twisted.internet import ssl, reactor
+from OpenSSL import SSL
 
 # for output from this script itself
 logger = logging.getLogger("syncevo-http")
 
 # for output from core SyncEvolution
 loggerCore = logging.getLogger("sync")
+
+class ChainedOpenSSLContextFactory(ssl.DefaultOpenSSLContextFactory):
+    def __init__(self, privateKeyFileName, certificateChainFileName,
+                 sslmethod = SSL.SSLv3_METHOD):
+        """
+        @param privateKeyFileName: Name of a file containing a private key
+        @param certificateChainFileName: Name of a file containing a certificate chain
+        @param sslmethod: The SSL method to use
+        """
+        self.privateKeyFileName = privateKeyFileName
+        self.certificateChainFileName = certificateChainFileName
+        self.sslmethod = sslmethod
+        self.cacheContext()
+    
+    def cacheContext(self):
+        ctx = SSL.Context(self.sslmethod)
+        ctx.use_certificate_chain_file(self.certificateChainFileName)
+        ctx.use_privatekey_file(self.privateKeyFileName)
+        self._context = ctx
 
 # cached information about previous POST and reply,
 # in case that we need to resend
@@ -504,7 +524,7 @@ syncevo-http-server itself is installed""")
             logger.error("need server certificate for https")
             exit(1)
         reactor.listenSSL(url.port, site,
-                          ssl.DefaultOpenSSLContextFactory(options.key or options.cert, options.cert))
+                          ChainedOpenSSLContextFactory(options.key or options.cert, options.cert))
     else:
         reactor.listenTCP(url.port, site)
     reactor.run()
