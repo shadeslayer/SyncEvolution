@@ -1381,7 +1381,7 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::testDeleteAllRefresh,"
                                 "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Retry,"
                                 "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Suspend "
-                                "CLIENT_TEST_DELAY=5 "
+                                "CLIENT_TEST_DELAY=10 "
                                 "CLIENT_TEST_COMPARE_LOG=T "
                                 "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                 "CLIENT_TEST_INTERRUPT_AT=1",
