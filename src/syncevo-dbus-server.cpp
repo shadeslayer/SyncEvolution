@@ -66,6 +66,7 @@ static DBusMessage *SyncEvoHandleException(DBusMessage *msg);
 #include <boost/noncopyable.hpp>
 
 #include <glib-object.h>
+#include <glib.h>
 #include <glib/gi18n.h>
 #ifdef USE_GNOME_KEYRING
 extern "C" {

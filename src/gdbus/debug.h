@@ -19,7 +19,7 @@
  *
  */
 
-#include <glib/gmessages.h>
+#include <glib.h>
 
 //#define DBG(fmt, arg...)  g_debug("%s: " fmt, __FUNCTION__ , ## arg)
 #define DBG(fmt, arg...)

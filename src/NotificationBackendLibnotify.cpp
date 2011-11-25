@@ -27,6 +27,7 @@
 #include "syncevo/util.h"
 
 #include <stdlib.h>
+#include <glib.h>
 #include <glib/gi18n.h>
 #include <boost/algorithm/string/predicate.hpp>
 
