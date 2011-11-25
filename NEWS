@@ -1,4 +1,4 @@
-SyncEvolution 1.2 -> 1.2.1, 21.11.2011
+SyncEvolution 1.2 -> 1.2.1, 25.11.2011
 ======================================
 
 Maintenance release with various bug fixes.
@@ -38,12 +38,26 @@ Maintenance release with various bug fixes.
   "todo" sources in the Nokia and Ovi templates. Existing configs are not
   touched, so beware when you already have configured your Nokia phone.
 
+* vCard: X- chat extensions were limited to one instance per kind
+
+  For example, only one Jabber account could be synchronized. This
+  was caused by an incomplete definition of the conversion to and from
+  vCard.
+
 * syncevo-dbus-server + phone sync: catch SIGPIPE to avoid premature exit
 
   Frederik Elwert reported that running a local sync with a phone via
   Bluetooth caused the syncevo-dbus-server to shut down during a sync.
   Explicitly telling the process to ignore the SIGPIPE signal solved that
   problem.
+
+* syncevo-http-server: support chained SSL certificates
+
+  So far, the file pointed to by --certificate-file had to
+  contain the server certificated (signed by a CA known to the client)
+  and (optionally) a client certificate. Now the file may also contain
+  additional intermediate certificates which will be sent to the client
+  (chained certificates).
 
 * documentation: added glossary and command line conventions sections,
   improved listing of properties, embedd property definitions in man page,
@@ -55,6 +69,12 @@ Maintenance release with various bug fixes.
   version. This might have prevented using them (if not found) or
   could have led to a mixture of old and new libecal in the same
   process (probably crashed).
+
+* glib: avoid including glib/*.h headers directly
+
+  Recent glib deprecates the direct inclusion of some of its headers,
+  in favor of including glib.h. Doing that here whenever possible, so
+  perhaps it now compiles on Fedora 17 (untested).
 
 
 SyncEvolution 1.1.1 -> 1.2, 13.10.2011
