@@ -2746,6 +2746,11 @@ void SyncContext::initMain(const char *appname)
     g_set_prgname(appname);
 #endif
 
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &sa, NULL);
+
     // Initializing a potential use of EDS early is necessary for
     // libsynthesis when compiled with
     // --enable-evolution-compatibility: in that mode libical will

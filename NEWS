@@ -1,3 +1,82 @@
+SyncEvolution 1.2 -> 1.2.1, 25.11.2011
+======================================
+
+Maintenance release with various bug fixes.
+
+* GTK UI + config: fix "custom server" setup (BMC #13511)
+
+  When the "default" config template (= ScheduleWorld) was downgraded to
+  "not consumer ready" in SyncEvolution 1.1.0.99.1, setting up a custom
+  SyncML service in the GTK UI stopped working because the UI wouldn't
+  show the "not consumer ready" config.
+
+  The problem described above is deterministic and fixed now.
+  Initially the problem seemed to be random. So perhaps there is
+  also another, related issue.
+
+* phone sync: delete<->delete conflict + phone calendar+todo sync (BMC #23744)
+
+  When deleting an item on phone and locally, the next sync failed with
+  ERROR messages about "object not found". Retrying the sync then worked.
+
+* Nokia: prevent accidental usage of "calendar" or "todo" sources
+
+  Nokia phones use a combined "calendar+todo" source for syncing. The
+  "calendar" and "todo" sources also exist because that is where local
+  databases are configured.
+
+  In such a setup, syncing always has to use "calendar+todo". For example,
+  to refresh from the Linux desktop to the phone, use:
+       --sync refresh-from-server <config> calendar+todo
+
+  To work with items (restore, show local content), use the underlying sources,
+  as in:
+       --print-items <config> calendar
+
+  It was possible to accidentally sync with the "calendar". This commit
+  prevents that by adding an invalid URI setting to the "calendar" and
+  "todo" sources in the Nokia and Ovi templates. Existing configs are not
+  touched, so beware when you already have configured your Nokia phone.
+
+* vCard: X- chat extensions were limited to one instance per kind
+
+  For example, only one Jabber account could be synchronized. This
+  was caused by an incomplete definition of the conversion to and from
+  vCard.
+
+* syncevo-dbus-server + phone sync: catch SIGPIPE to avoid premature exit
+
+  Frederik Elwert reported that running a local sync with a phone via
+  Bluetooth caused the syncevo-dbus-server to shut down during a sync.
+  Explicitly telling the process to ignore the SIGPIPE signal solved that
+  problem.
+
+* syncevo-http-server: support chained SSL certificates
+
+  So far, the file pointed to by --certificate-file had to
+  contain the server certificated (signed by a CA known to the client)
+  and (optionally) a client certificate. Now the file may also contain
+  additional intermediate certificates which will be sent to the client
+  (chained certificates).
+
+* documentation: added glossary and command line conventions sections,
+  improved listing of properties, embedd property definitions in man page,
+  README and README.html
+
+* EDS compatibility: fixed inconsistency in libecal check
+
+  The check for the _r variants in libical still used an older max
+  version. This might have prevented using them (if not found) or
+  could have led to a mixture of old and new libecal in the same
+  process (probably crashed).
+
+* glib: avoid including glib/*.h headers directly
+
+  Recent glib deprecates the direct inclusion of some of its headers,
+  in favor of including glib.h. Doing that here whenever possible, so
+  perhaps it now compiles on Fedora 17 (untested).
+
+
 SyncEvolution 1.1.1 -> 1.2, 13.10.2011
 ======================================
 

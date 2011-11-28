@@ -31,7 +31,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/socket.h>
-#include <glib/giochannel.h>
+#include <glib.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/ObexTransportAgent.h>
 

@@ -837,6 +837,17 @@ boost::shared_ptr<SyncConfig> SyncConfig::createPeerTemplate(const string &serve
             }
         }
     }
+
+    // "default" maps to SyncEvolution server template, which is not
+    // consumer ready. When used as "default" by the GTK sync UI,
+    // the UI expects the "consumer ready" flag to be set. Do that
+    // here. Also unset the peer name, because otherwise it shows
+    // up in the UI.
+    if (server == "default") {
+        config->setConsumerReady(true);
+        config->setUserPeerName("");
+    }
+
     return config;
 }
 

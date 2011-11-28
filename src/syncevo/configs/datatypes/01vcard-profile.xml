@@ -232,95 +232,112 @@
         <property name="X-AIM" suppressempty="yes" rule="KDE"/>
         <property name="X-AIM" suppressempty="yes" rule="other">
           <value field="AIM_HANDLE"/>
+          <position field="AIM_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="AIM_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/aim-All" suppressempty="yes" show="no" rule="KDE">
           <value field="AIM_HANDLE"/>
+          <position field="AIM_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
         <property name="X-GADUGADU" suppressempty="yes" rule="KDE"/>
         <property name="X-GADUGADU" suppressempty="yes" rule="other">
           <value field="GADUGADU_HANDLE"/>
+          <position field="GADUGADU_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="GADUGADU_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/gadu-All" suppressempty="yes" show="no" rule="KDE">
           <value field="GADUGADU_HANDLE"/>
+          <position field="GADUGADU_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
 
         <property name="X-GROUPWISE" suppressempty="yes" rule="KDE"/>
         <property name="X-GROUPWISE" suppressempty="yes" rule="other">
           <value field="GROUPWISE_HANDLE"/>
+          <position field="GROUPWISE_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="GROUPWISE_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/groupwise-All" suppressempty="yes" show="no" rule="KDE">
           <value field="GROUPWISE_HANDLE"/>
+          <position field="GROUPWISE_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
         <property name="X-ICQ" suppressempty="yes" rule="KDE"/>
         <property name="X-ICQ" suppressempty="yes" rule="other">
           <value field="ICQ_HANDLE"/>
+          <position field="ICQ_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="ICQ_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/icq-All" suppressempty="yes" show="no" rule="KDE">
           <value field="ICQ_HANDLE"/>
+          <position field="ICQ_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
         <property name="X-JABBER" suppressempty="yes" rule="KDE"/>
         <property name="X-JABBER" suppressempty="yes" rule="other">
           <value field="JABBER_HANDLE"/>
+          <position field="JABBER_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no">
             <value field="JABBER_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/xmpp-All" suppressempty="yes" show="no" rule="KDE">
           <value field="JABBER_HANDLE"/>
+          <position field="JABBER_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
         <property name="X-MSN" suppressempty="yes" rule="KDE"/>
         <property name="X-MSN" suppressempty="yes" rule="other">
           <value field="MSN_HANDLE"/>
+          <position field="MSN_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="MSN_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/msn-All" suppressempty="yes" show="no" rule="KDE">
           <value field="MSN_HANDLE"/>
+          <position field="MSN_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
         <property name="X-YAHOO" suppressempty="yes" rule="KDE"/>
         <property name="X-YAHOO" suppressempty="yes" rule="other">
           <value field="YAHOO_HANDLE"/>
+          <position field="YAHOO_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="YAHOO_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/yahoo-All" suppressempty="yes" show="no" rule="KDE">
           <value field="YAHOO_HANDLE"/>
+          <position field="YAHOO_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
         <property name="X-SKYPE" suppressempty="yes" rule="KDE"/>
         <property name="X-SKYPE" suppressempty="yes" rule="other"> 
           <value field="SKYPE_HANDLE"/>
+          <position field="SKYPE_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="SKYPE_SLOT"/>
           </parameter>
         </property>
         <property name="X-messaging/skype-All" suppressempty="yes" show="no" rule="KDE">
           <value field="SKYPE_HANDLE"/>
+          <position field="SKYPE_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
 
         <!-- No X-messaging/sip-All in KDE?! Then let's use X-SIP for everyone. -->
         <property name="X-SIP" suppressempty="yes">
           <value field="SIP_HANDLE"/>
+          <position field="SIP_HANDLE" repeat="array" increment="1" minshow="0"/>
           <parameter name="X-EVOLUTION-UI-SLOT" positional="no" show="no" rule="HAVE-EVOLUTION-UI-SLOT">
             <value field="SIP_SLOT"/>
           </parameter>
@@ -333,12 +350,15 @@
         -->
         <property name="X-messaging/irc-All" suppressempty="yes">
           <value field="IRC_HANDLE"/>
+          <position field="IRC_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
         <property name="X-messaging/meanwhile-All" suppressempty="yes">
           <value field="MEANWHILE_HANDLE"/>
+          <position field="MEANWHILE_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
         <property name="X-messaging/sms-All" suppressempty="yes">
           <value field="SMS_HANDLE"/>
+          <position field="SMS_HANDLE" repeat="array" increment="1" minshow="0"/>
         </property>
         <property name="X-KADDRESSBOOK-CRYPTOENCRYPTPREF" suppressempty="yes">
           <value field="CRYPTOENCRYPTPREF" show="yes"/>

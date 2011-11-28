@@ -27,7 +27,7 @@
 #include <syncevo/TransportAgent.h>
 #include <syncevo/SmartPtr.h>
 #include <libsoup/soup.h>
-#include <glib/gmain.h>
+#include <glib.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX

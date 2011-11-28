@@ -17,6 +17,7 @@
  * 02110-1301  USA
  */
 
+#include <glib.h>
 #include <glib/gi18n.h>
 
 #include <string.h>

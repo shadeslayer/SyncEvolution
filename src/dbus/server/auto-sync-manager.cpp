@@ -21,6 +21,7 @@
 #include "session.h"
 #include "server.h"
 
+#include <glib.h>
 #include <glib/gi18n.h>
 
 #include <boost/tokenizer.hpp>
