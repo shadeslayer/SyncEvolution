@@ -410,16 +410,25 @@ class DBusUtil(Timeout):
                     break
         else:
             logfile = open(syncevolog, "w")
-            logfile.write("env:\n%s\n\nargs:\n%s\n\n" % (env, server + serverArgs))
+            prefix = os.environ.get("TEST_DBUS_PREFIX", "")
+            args = []
+            if prefix:
+                args.append(prefix)
+            args.extend(server)
+            args.extend(serverArgs)
+            logfile.write("env:\n%s\n\nargs:\n%s\n\n" % (env, args))
             logfile.flush()
             size = os.path.getsize(syncevolog)
-            DBusUtil.pserver = subprocess.Popen(server + serverArgs,
+            DBusUtil.pserver = subprocess.Popen(args,
                                                 env=env,
                                                 stdout=logfile,
                                                 stderr=subprocess.STDOUT)
-            while (os.path.getsize(syncevolog) == size or \
-                    not ("syncevo-dbus-server: ready to run" in open(syncevolog).read())) and \
-                    self.isServerRunning():
+            while self.isServerRunning():
+                newsize = os.path.getsize(syncevolog)
+                if newsize != size:
+                    if "syncevo-dbus-server: ready to run" in open(syncevolog).read():
+                        break
+                size = newsize
                 time.sleep(1)
 
         numerrors = len(result.errors)

@@ -960,13 +960,15 @@ evolutiontest = SyncEvolutionTest("evolution", compile,
                                   testPrefix=options.testprefix)
 context.add(evolutiontest)
 
-# test-dbus.py doesn't need valgrind, remove it
+# test-dbus.py itself doesn't need to run under valgrind, remove it...
 shell = re.sub(r'\S*valgrind\S*', '', options.shell)
 testprefix = re.sub(r'\S*valgrind\S*', '', options.testprefix)
 dbustest = SyncEvolutionTest("dbus", compile,
                              "", shell,
                              "",
                              [],
+                             # ... but syncevo-dbus-server started by test-dbus.py should use valgrind
+                             testenv="TEST_DBUS_PREFIX='%s'" % options.testprefix,
                              testPrefix=testprefix,
                              testBinary=os.path.join(sync.basedir,
                                                      "test",
