@@ -35,7 +35,7 @@ boost::function<void (void)> MethodHandler::m_callback;
 GDBusConnection *dbus_get_bus_connection(const char *busType,
                                          const char *name,
                                          bool unshared,
-                                         DBusErrorCXX *err /* Ignored */)
+                                         DBusErrorCXX *err)
 {
     GDBusConnection *conn;
     GError* error = NULL;
@@ -45,7 +45,9 @@ GDBusConnection *dbus_get_bus_connection(const char *busType,
                                                         G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM,
                                                         NULL, &error);
         if(address == NULL) {
-            err->set(error);
+            if (err) {
+                err->set(error);
+            }
             return NULL;
         }
         // Here we set up a private client connection using the chosen bus' address.
@@ -56,22 +58,22 @@ GDBusConnection *dbus_get_bus_connection(const char *busType,
                                                       NULL, NULL, &error);
         g_free(address);
 
-        if(error != NULL) {
-            err->set(error);
+        if(conn == NULL) {
+            if (err) {
+                err->set(error);
+            }
             return NULL;
         }
     } else {
         // This returns a singleton, shared connection object.
         conn = g_bus_get_sync(boost::iequals(busType, "SESSION") ? G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM,
                               NULL, &error);
-        if(error != NULL) {
-            err->set(error);
+        if(conn == NULL) {
+            if (err) {
+                err->set(error);
+            }
             return NULL;
         }
-    }
-
-    if(!conn) {
-        return NULL;
     }
 
     if(name) {
