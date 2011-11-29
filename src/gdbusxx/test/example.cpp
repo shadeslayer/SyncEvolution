@@ -261,8 +261,9 @@ int main(int argc, char *argv[])
 
     conn = dbus_get_bus_connection("SESSION", "org.example", false, &err);
     if (conn == NULL) {
-        if (err.message) {
-            fprintf(stderr, "%s\n", err.message);
+        std::string message = err.getMessage();
+        if (!message.empty()) {
+            fprintf(stderr, "%s\n", message.c_str());
         } else
             fprintf(stderr, "Can't register with session bus\n");
         exit(1);

@@ -132,20 +132,15 @@ class DBusErrorCXX
 {
     GError *m_error;
  public:
-    char *message;
     DBusErrorCXX(GError *error = NULL)
     : m_error(error)
     {
-        if (m_error) {
-            message = m_error->message;
-        }
     }
     DBusErrorCXX(const DBusErrorCXX &dbus_error)
     : m_error(NULL)
     {
         if (dbus_error.m_error) {
             m_error = g_error_copy (dbus_error.m_error);
-            message = m_error->message;
         }
     }
 
@@ -156,7 +151,6 @@ class DBusErrorCXX
 
         temp_error.m_error = m_error;
         m_error = temp_c_error;
-        message = m_error->message;
         return *this;
     }
 
@@ -165,9 +159,6 @@ class DBusErrorCXX
             g_error_free (m_error);
         }
         m_error = error;
-        if (m_error) {
-            message = m_error->message;
-        }
     }
 
     ~DBusErrorCXX() {
@@ -181,10 +172,12 @@ class DBusErrorCXX
         std::string error_message(m_error ? (std::string(": ") + m_error->message) : "");
         throw std::runtime_error(operation + explanation + error_message);
     }
+
+    std::string getMessage() const { return m_error ? m_error->message : ""; }
 };
 
 GDBusConnection *dbus_get_bus_connection(const char *busType,
-                                         const char *interface,
+                                         const char*interface,
                                          bool unshared,
                                          DBusErrorCXX *err);
 
