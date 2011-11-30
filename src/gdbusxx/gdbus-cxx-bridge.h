@@ -1780,7 +1780,7 @@ class DBusResult : virtual public Result
         GDBusMessage *errMsg;
         errMsg = g_dbus_message_new_method_error(m_msg.get(), error.dbusName().c_str(),
                                                  "%s", error.what());
-        if (!g_dbus_connection_send_message(m_conn.get(), m_msg.get(),
+        if (!g_dbus_connection_send_message(m_conn.get(), errMsg,
                                             G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
             throw std::runtime_error(" g_dbus_connection_send_message failed");
         }
