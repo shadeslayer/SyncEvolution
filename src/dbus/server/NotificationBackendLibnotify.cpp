@@ -25,11 +25,13 @@
 
 #include "NotificationBackendLibnotify.h"
 #include "syncevo/util.h"
+#include "syncevo/GLibSupport.h"
 
 #include <stdlib.h>
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/foreach.hpp>
 
 #ifdef NOTIFY_COMPATIBILITY
 # include <dlfcn.h>
@@ -130,12 +132,10 @@ bool NotificationBackendLibnotify::init()
 
     m_initialized = notify_init("SyncEvolution");
     if(m_initialized) {
-        GList *list = notify_get_server_caps();
-        if(list) {
-            for(; list != NULL; list = list->next) {
-                if(boost::iequals((char *)list->data, "actions")) {
-                    m_acceptsActions = true;
-                }
+        GStringListFreeCXX list(notify_get_server_caps());
+        BOOST_FOREACH (const char *cap, list) {
+            if(boost::iequals(cap, "actions")) {
+                m_acceptsActions = true;
             }
         }
         return true;
