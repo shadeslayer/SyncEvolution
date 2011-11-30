@@ -77,6 +77,7 @@ namespace boost {
 #include <boost/shared_ptr.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
+#include <boost/utility.hpp>
 
 /* The connection is the only client-exposed type from the C API. To
  * keep changes to a minimum while supporting both dbus
@@ -1195,6 +1196,19 @@ template<class V> struct dbus_traits< std::vector<V> > : public dbus_traits_base
     }
 };
 
+/** simple smart pointer which takes memory allocated by libdbus and frees it with dbus_free() */
+template <class T> class DBusMem : private boost::noncopyable
+{
+    T *m_pointer;
+
+ public:
+    DBusMem(T *pointer) : m_pointer(pointer) {}
+    ~DBusMem() { if (m_pointer) dbus_free(m_pointer); }
+    operator T * () { return m_pointer; }
+    T * get() { return m_pointer; }
+    operator bool () { return m_pointer != 0; }
+};
+
 /**
  * A boost::variant <V> maps to a dbus variant, only care about values of
  * type V but will not throw error if type is not matched, this is useful if
@@ -1217,7 +1231,8 @@ template <class V> struct dbus_traits <boost::variant <V> > : public dbus_traits
         }
         DBusMessageIter sub;
         dbus_message_iter_recurse(&iter, &sub);
-        if (dbus_message_iter_get_signature(&sub) != dbus_traits<V>::getSignature()){
+        DBusMem<char> sig(dbus_message_iter_get_signature(&sub));
+        if (dbus_traits<V>::getSignature() != sig.get()) {
             //ignore unrecognized sub type in variant
             return;
         }
@@ -1252,18 +1267,17 @@ template <class V1, class V2> struct dbus_traits <boost::variant <V1, V2> > : pu
         }
         DBusMessageIter sub;
         dbus_message_iter_recurse(&iter, &sub);
-        if (dbus_message_iter_get_signature(&sub) != dbus_traits<V1>::getSignature()
-                && dbus_message_iter_get_signature(&sub) != dbus_traits<V2>::getSignature()){
-            //ignore unrecognized sub type in variant
-            return;
-        } else if (dbus_message_iter_get_signature(&sub) == dbus_traits<V1>::getSignature()) {
+        DBusMem<char> sig(dbus_message_iter_get_signature(&sub));
+        if (dbus_traits<V1>::getSignature() == sig.get()) {
             V1 val;
             dbus_traits<V1>::get (conn, msg, sub, val);
             value = val;
-        } else {
+        } else if (dbus_traits<V2>::getSignature() == sig.get()) {
             V2 val;
             dbus_traits<V2>::get (conn, msg, sub, val);
             value = val;
+        } else {
+            //ignore unrecognized sub type in variant
         }
     }
 
