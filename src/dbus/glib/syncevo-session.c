@@ -242,10 +242,6 @@ syncevo_session_class_init (SyncevoSessionClass *klass)
 static void
 syncevo_session_init (SyncevoSession *session)
 {
-    SyncevoSessionPrivate *priv;
-
-    priv = GET_PRIVATE (session);
-
     /* ProgressChanged */
     dbus_g_object_register_marshaller (syncevo_marshal_VOID__INT_BOXED,
                                        G_TYPE_NONE,

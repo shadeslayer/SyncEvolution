@@ -1286,7 +1286,7 @@ init_ui (app_data *data)
 {
     GtkBuilder *builder;
     GError *error = NULL;
-    GtkWidget *frame, * service_error_box, *btn;
+    GtkWidget /* *frame, */ * service_error_box, *btn;
     GtkAdjustment *adj;
 
     gtk_rc_parse (THEMEDIR "sync-ui.rc");
@@ -1375,8 +1375,8 @@ init_ui (app_data *data)
 
     data->main_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "main_frame")));
     data->log_frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "log_frame")));
-    frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
-    frame = switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "emergency_frame")));
+    /* frame = */ switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "services_list_frame")));
+    /* frame = */ switch_dummy_to_mux_frame (GTK_WIDGET (gtk_builder_get_object (builder, "emergency_frame")));
 
     g_signal_connect (data->sync_win, "destroy",
                       G_CALLBACK (gtk_main_quit), NULL);
@@ -1719,7 +1719,7 @@ get_reports_for_backups_cb (SyncevoServer *server,
         GHashTable *report = syncevo_reports_index (reports, i);
         GHashTableIter iter;
         char *key, *val;
-        long status = -1;
+        /* long status = -1; */
         long endtime = -1;
         char *peername = NULL;
         char *dir = NULL;
@@ -1742,7 +1742,7 @@ get_reports_for_backups_cb (SyncevoServer *server,
             } else if (g_strcmp0 (strs[0], "end") == 0) {
                 endtime = strtol (val, NULL, 10);
             } else if (g_strcmp0 (strs[0], "status") == 0) {
-                status = strtol (val, NULL, 10);
+                /* status = strtol (val, NULL, 10); */
             } else if (g_strcmp0 (strs[0], "peer") == 0) {
                 peername = val;
             } else if (g_strcmp0 (strs[0], "dir") == 0) {

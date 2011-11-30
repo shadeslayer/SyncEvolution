@@ -294,10 +294,6 @@ syncevo_server_get_new_proxy (SyncevoServer *server)
 static void
 syncevo_server_init (SyncevoServer *server)
 {
-    SyncevoServerPrivate *priv;
-
-    priv = GET_PRIVATE (server);
-
     /* SessionChanged */
     dbus_g_object_register_marshaller (syncevo_marshal_VOID__STRING_BOOLEAN,
                                        G_TYPE_NONE,
