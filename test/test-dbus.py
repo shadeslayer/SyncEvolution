@@ -53,6 +53,9 @@ monitor = ["dbus-monitor"]
 xdg_root = "temp-test-dbus"
 configName = "dbus_unittest"
 
+def usingValgrind():
+    return 'valgrind' in os.environ.get("TEST_DBUS_PREFIX", "")
+
 def GrepNotifications(dbuslog):
     '''finds all Notify calls and returns their parameters as list of line lists'''
     return re.findall(r'^method call .* dest=.* .*interface=org.freedesktop.Notifications; member=Notify\n((?:^   .*\n)*)',
@@ -115,9 +118,9 @@ def property(key, value):
 
 def timeout(seconds):
     """Function decorator which sets a non-default timeout for a test.
-    The default timeout, enforced by DBusTest.runTest(), are 5 seconds.
+    The default timeout, enforced by DBusTest.runTest(), are 20 seconds.
     Use like this:
-        @timeout(10)
+        @timeout(60)
         def testMyTest:
             ...
     """
@@ -438,9 +441,9 @@ class DBusUtil(Timeout):
 
         # Find out what test function we run and look into
         # the function definition to see whether it comes
-        # with a non-default timeout, otherwise use a 5 second
+        # with a non-default timeout, otherwise use a 20 second
         # timeout.
-        timeout = self.getTestProperty("timeout", 5)
+        timeout = self.getTestProperty("timeout", 20)
         timeout_handle = None
         if timeout and not debugger:
             def timedout():
@@ -492,7 +495,12 @@ class DBusUtil(Timeout):
                 # only append report if not part of some other error below
                 result.errors.append((self,
                                       "D-Bus log failed check: %s\n%s" % (sys.exc_info()[1], (not hasfailed and report) or "")))
-        if DBusUtil.pserver.returncode and DBusUtil.pserver.returncode != -15:
+        # detect the expected "killed by signal TERM" both when
+        # running syncevo-dbus-server directly (negative value) and
+        # when valgrindcheck.sh returns the error code 128 + 15 = 143
+        if DBusUtil.pserver.returncode and \
+           DBusUtil.pserver.returncode != 128 + 15 and \
+           DBusUtil.pserver.returncode != -15:
             # create a new failure specifically for the server
             result.errors.append((self,
                                   "server terminated with error code %d%s" % (DBusUtil.pserver.returncode, report)))
@@ -507,16 +515,38 @@ class DBusUtil(Timeout):
         """True while the syncevo-dbus-server executable is still running"""
         return DBusUtil.pserver and DBusUtil.pserver.poll() == None
 
-    def serverExecutable(self):
-        """returns full path of currently running syncevo-dbus-server binary"""
+    def serverExecutableHelper(self, pid):
         self.assertTrue(self.isServerRunning())
-        maps = open("/proc/%d/maps" % DBusUtil.pserver.pid, "r")
+        maps = open("/proc/%d/maps" % pid, "r")
         regex = re.compile(r'[0-9a-f]*-[0-9a-f]* r-xp [0-9a-f]* [^ ]* \d* *(.*)\n')
+        parentre = re.compile(r'^PPid:\s+(\d+)', re.MULTILINE);
         for line in maps:
             match = regex.match(line)
             if match:
-                return match.group(1)
-        self.fail("no executable found")
+                # must be syncevo-dbus-server
+                res = match.group(1)
+                if 'syncevo-dbus-server' in res:
+                    return res
+                # not found, try children
+                for process in os.listdir('/proc'):
+                    try:
+                        status = open('/proc/%s/status' % process).read()
+                        parent = parentre.search(status)
+                        if parent and int(parent.group(1)) == pid:
+                            res = self.serverExecutableHelper(int(process))
+                            if res:
+                                return res
+                    except:
+                        # ignore all errors
+                        pass
+        # no result
+        return ""
+
+    def serverExecutable(self):
+        """returns full path of currently running syncevo-dbus-server binary"""
+        res = self.serverExecutableHelper(DBusUtil.pserver.pid)
+        self.assertTrue(res)
+        return res
 
     def setUpServer(self):
         self.server = dbus.Interface(bus.get_object('org.syncevolution',
@@ -1265,7 +1295,6 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         self.assertEqual(self.session.GetFlags(), ["foo", "bar"])
         self.assertEqual(self.session.GetConfigName(), "foobar@no-such-context");
 
-    @timeout(20)
     def testSecondSession(self):
         """TestDBusSession.testSecondSession - a second session should not run unless the first one stops"""
         sessions = self.server.GetSessions()
@@ -1491,7 +1520,6 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         config = copy.deepcopy(ref)
         self.assertEqual(config, self.session.GetConfig(False, utf8_strings=True))
 
-    @timeout(20)
     def testCreateGetConfig(self):
         """TestSessionAPIsDummy.testCreateGetConfig -  test the config is created successfully. """
         self.setUpConfigListeners()
@@ -2068,8 +2096,10 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                                                 "session " + self.auto_sync_session_path + " done"])
         self.assertNotEqual(first_auto, self.auto_sync_session_path)
         delta = start - end
-        self.assertTrue(delta < 13)
-        self.assertTrue(delta > 7)
+        # avoid timing checks when running under valgrind
+        if not usingValgrind():
+            self.assertTrue(delta < 13)
+            self.assertTrue(delta > 7)
 
         # check that org.freedesktop.Notifications.Notify was not called
         # (network errors are considered temporary, can't tell in this case
@@ -2524,7 +2554,6 @@ class TestConnection(unittest.TestCase, DBusUtil):
                                                     "connection " + conpath + " got final reply",
                                                     "session done"])
 
-    @timeout(20)
     def testCredentialsRight(self):
         """TestConnection.testCredentialsRight - send correct credentials"""
         self.setupConfig()
@@ -2635,7 +2664,6 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
 
-    @timeout(20)
     def testTimeoutSync(self):
         """TestConnection.testTimeoutSync - start a sync, then wait for server to detect that we stopped replying"""
 
@@ -2980,7 +3008,6 @@ END:VCARD''')
         input = open(xdg_root + "/server/0", "r")
         self.assertTrue("FN:John Doe" in input.read())
 
-    @timeout(10)
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
     def testConcurrency(self):
         """TestLocalSync.testConcurrency - D-Bus server must remain responsive while sync runs"""
@@ -3047,8 +3074,12 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
         time.sleep(15)
         self.assertTrue(self.isServerRunning())
         self.session.Detach()
-        # should shut down almost immediately
-        time.sleep(1)
+        # should shut down almost immediately,
+        # except when using valgrind
+        if usingValgrind():
+            time.sleep(10)
+        else:
+            time.sleep(1)
         self.assertFalse(self.isServerRunning())
 
     @timeout(30)
@@ -3061,7 +3092,10 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
         self.session.Detach()
         time.sleep(8)
         self.assertTrue(self.isServerRunning())
-        time.sleep(4)
+        if usingValgrind():
+            time.sleep(10)
+        else:
+            time.sleep(4)
         self.assertFalse(self.isServerRunning())
 
     @timeout(60)
