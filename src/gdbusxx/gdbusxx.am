@@ -11,13 +11,13 @@ src_gdbusxx_libgdbussyncevo_la_SOURCES =	\
     src/gdbusxx/gdbus-cxx.h
 
 src_gdbusxx_libgdbussyncevo_la_LDFLAGS = $(src_gdbus_version_info)
-src_gdbusxx_libgdbussyncevo_la_LIBADD = @GLIB_LIBS@ @GIO_GDBUS_LIBS@
-src_gdbusxx_libgdbussyncevo_la_CXXFLAGS = @GLIB_CFLAGS@ @GIO_GDBUS_CFLAGS@
+src_gdbusxx_libgdbussyncevo_la_LIBADD = $(GLIB_LIBS) $(DBUS_LIBS)
+src_gdbusxx_libgdbussyncevo_la_CXXFLAGS = $(GLIB_CFLAGS) $(DBUS_CFLAGS)
 
 MAINTAINERCLEANFILES += Makefile.in
 
 noinst_PROGRAMS += src/gdbusxx/example
 src_gdbusxx_example_SOURCES = src/gdbusxx/test/example.cpp
 src_gdbusxx_example_CPPFLAGS = -I$(top_srcdir)/src/gdbusxx/
-src_gdbusxx_example_CXXFLAGS = @GLIB_CFLAGS@ @GIO_GDBUS_CFLAGS@
-src_gdbusxx_example_LDADD = src/gdbusxx/libgdbussyncevo.la @GLIB_LIBS@ @GIO_GDBUS_LIBS@
+src_gdbusxx_example_CXXFLAGS = $(GLIB_CFLAGS) $(DBUS_CFLAGS)
+src_gdbusxx_example_LDADD = src/gdbusxx/libgdbussyncevo.la $(GLIB_LIBS) $(DBUS_LIBS)
