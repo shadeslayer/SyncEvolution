@@ -4069,14 +4069,17 @@ template <class T> class SignalWatch
  public:
     SignalWatch(const DBusRemoteObject &object,
                  const std::string &signal)
-        : m_object(object), m_signal(signal)
+        : m_object(object), m_signal(signal), m_tag(0)
     {
     }
 
     ~SignalWatch()
     {
         if (m_tag) {
-            g_dbus_connection_signal_unsubscribe(m_object.getConnection(), m_tag);
+            GDBusConnection *connection = m_object.getConnection();
+            if (connection) {
+                g_dbus_connection_signal_unsubscribe(connection, m_tag);
+            }
         }
     }
 
