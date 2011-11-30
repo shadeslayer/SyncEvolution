@@ -626,3 +626,41 @@
    ...
    fun:gnutls_certificate_set_x509_trust_file
 }
+
+# ==7816== 24 bytes in 1 blocks are definitely lost in loss record 603 of 1,569
+# ==7816==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==7816==    by 0x7B6AC42: g_malloc (in /lib/libglib-2.0.so.0.2800.8)
+# ==7816==    by 0xBBB992C: ??? (in /lib/x86_64-linux-gnu/libgcrypt.so.11.7.0)
+# ==7816==    by 0xBBBA888: ??? (in /lib/x86_64-linux-gnu/libgcrypt.so.11.7.0)
+# ==7816==    by 0xBBBABCE: ??? (in /lib/x86_64-linux-gnu/libgcrypt.so.11.7.0)
+# ==7816==    by 0xBC03A09: ??? (in /lib/x86_64-linux-gnu/libgcrypt.so.11.7.0)
+# ==7816==    by 0x6F8864A: ??? (in /usr/lib/x86_64-linux-gnu/libgnome-keyring.so.0.1.1)
+# ==7816==    by 0x6F7D24B: ??? (in /usr/lib/x86_64-linux-gnu/libgnome-keyring.so.0.1.1)
+# ==7816==    by 0x6F7D4F1: ??? (in /usr/lib/x86_64-linux-gnu/libgnome-keyring.so.0.1.1)
+# ==7816==    by 0x6F7C6EE: ??? (in /usr/lib/x86_64-linux-gnu/libgnome-keyring.so.0.1.1)
+# ==7816==    by 0x576EFE: SyncEvo::DBusUserInterface::savePassword(std::string const&, std::string const&, SyncEvo::ConfigPasswordKey const&) (dbus-user-interface.cpp:206)
+# ==7816==    by 0x693130: SyncEvo::PasswordConfigProperty::savePassword(SyncEvo::ConfigUserInterface&, std::string const&, SyncEvo::FilterConfigNode&, std::string const&, boost::shared_ptr<SyncEvo::FilterConfigNode> const&) const (SyncConfig.cpp:1711)
+# ==7816==    by 0x6A730E: SyncEvo::SyncConfig::preFlush(SyncEvo::ConfigUserInterface&) (SyncConfig.cpp:912)
+# ==7816==    by 0x54A689: SyncEvo::Session::setNamedConfig(std::string const&, bool, bool, std::map<std::string, std::map<std::string, std::string, std::less<std::string>, std::allocator<std::pair<std::string const, std::string> > >, std::less<std::string>, std::allocator<std::pair<std::string const, std::map<std::string, std::string, std::less<std::string>, std::allocator<std::pair<std::string const, std::string> > > > > > const&) (session.cpp:238)
+# ==7816==    by 0x55B48D: GDBusCXX::MakeMethodEntry<boost::function<void ()(bool, bool, std::map<std::string, std::map<std::string, std::string, std::less<std::string>, std::allocator<std::pair<std::string const, std::string> > >, std::less<std::string>, std::allocator<std::pair<std::string const, std::map<std::string, std::string, std::less<std::string>, std::allocator<std::pair<std::string const, std::string> > > > > > const&)> >::methodFunction(DBusConnection*, DBusMessage*, void*) (function_template.hpp:1013)
+# ==7816==    by 0x5866F0: handle_message (object.c:622)
+# ==7816==    by 0x7E2C3C0: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==7816==    by 0x7E1E2BF: dbus_connection_dispatch (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==7816==    by 0x588354: queue_dispatch (mainloop.c:91)
+# ==7816==    by 0x7B63EDC: g_main_context_dispatch (in /lib/libglib-2.0.so.0.2800.8)
+# ==7816==    by 0x7B646B7: ??? (in /lib/libglib-2.0.so.0.2800.8)
+# ==7816==    by 0x7B64CF9: g_main_loop_run (in /lib/libglib-2.0.so.0.2800.8)
+# ==7816==    by 0x5344EB: SyncEvo::Server::run(SyncEvo::LogRedirect&) (server.cpp:344)
+# ==7816==    by 0x515CE3: main (main.cpp:117)
+# ==7816== 
+{
+   gcrypt + GNOME keyring
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   obj:*libgcrypt.so*
+   ...
+   obj:*libgnome-keyring.so*
+   ...
+   fun:*DBusUserInterface*Password*
+}
