@@ -24,6 +24,8 @@
 
 #include "gdbus-cxx-bridge.h"
 
+#include <boost/utility.hpp>
+
 #include <syncevo/declarations.h>
 
 SE_BEGIN_CXX
@@ -185,7 +187,11 @@ private:
     boost::shared_ptr<BluezAdapter> m_adapter;
 
     // Holds the bluetooth lookup table and whether it was successfully loaded.
-    struct lookupTable {
+    class lookupTable : private boost::noncopyable {
+    public:
+        lookupTable() : bt_key_file(NULL), isLoaded(false) {}
+        ~lookupTable() { if (bt_key_file) g_key_file_free(bt_key_file); }
+
         GKeyFile *bt_key_file;
         bool isLoaded;
     } m_lookupTable;

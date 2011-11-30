@@ -22,6 +22,7 @@
 
 #include "bluez-manager.h"
 #include "server.h"
+#include "syncevo/SmartPtr.h"
 
 #include <algorithm>
 
@@ -36,8 +37,6 @@ BluezManager::BluezManager(Server &server) :
     m_server(server),
     m_adapterChanged(*this, "DefaultAdapterChanged")
 {
-    m_lookupTable.bt_key_file = NULL;
-    m_lookupTable.isLoaded = false;
     const char *bluetoothTest = getenv ("DBUS_TEST_BLUETOOTH");
     m_bluezConn = (bluetoothTest && !strcmp(bluetoothTest, "none")) ? NULL :
         dbus_get_bus_connection((bluetoothTest && !strcmp(bluetoothTest, "session")) ?
@@ -246,19 +245,19 @@ bool BluezManager::getPnpInfoNamesFromValues(const std::string &vendorValue, std
     const char *VENDOR_GROUP  = "Vendors";
     const char *PRODUCT_GROUP = "Products";
 
-    char *vendor = g_key_file_get_string(m_lookupTable.bt_key_file, VENDOR_GROUP,
-                                         vendorValue.c_str(), NULL);
+    GStringPtr vendor(g_key_file_get_string(m_lookupTable.bt_key_file, VENDOR_GROUP,
+                                            vendorValue.c_str(), NULL));
     if(vendor) {
-        vendorName = vendor;
+        vendorName = vendor.get();
     } else {
         // We at least need a vendor id match.
         return false;
     }
 
-    char *product = g_key_file_get_string(m_lookupTable.bt_key_file, PRODUCT_GROUP,
-                                          productValue.c_str(), NULL);
+    GStringPtr product(g_key_file_get_string(m_lookupTable.bt_key_file, PRODUCT_GROUP,
+                                             productValue.c_str(), NULL));
     if(product)  {
-        productName = product;
+        productName = product.get();
     } else {
         // If the product is not in the look-up table, the product is
         // set to an empty string.
