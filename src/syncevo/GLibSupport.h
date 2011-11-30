@@ -186,6 +186,7 @@ struct GErrorCXX {
 };
 
 template<class T> void NoopDestructor(T *) {}
+template<class T> void GFreeDestructor(T *ptr) { g_free(static_cast<void *>(ptr)); }
 
 /**
  * Wraps a G[S]List of pointers to a specific type.
@@ -214,8 +215,9 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
  public:
     typedef T * value_type;
 
-    /** empty error, NULL pointer */
-    GListCXX() : m_list(NULL) {}
+    /** by default initialize an empty list; if parameter is not NULL,
+        owership is transferred to the new instance of GListCXX */
+    GListCXX(L *list = NULL) : m_list(list) {}
 
     /** free list */
     ~GListCXX() { clear(); }
@@ -310,6 +312,10 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
     void push_front(T *entry) { m_list = listPrepend(m_list, entry); }
 };
 
+/** use this for a list which owns the strings it points to */
+typedef GListCXX<char, GList, GFreeDestructor<char> > GStringListFreeCXX;
+/** use this for a list which does not own the strings it points to */
+typedef GListCXX<char, GList> GStringListNoFreeCXX;
 
 #endif
 
