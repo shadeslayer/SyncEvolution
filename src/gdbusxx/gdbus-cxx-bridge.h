@@ -837,8 +837,8 @@ class DBusObjectHelper : public DBusObject
         m_path(path),
         m_interface(interface),
         m_activated(false),
-        m_methods(g_ptr_array_new()),
-        m_signals(g_ptr_array_new())
+        m_methods(g_ptr_array_new_with_free_func((GDestroyNotify)g_dbus_method_info_unref)),
+        m_signals(g_ptr_array_new_with_free_func((GDestroyNotify)g_dbus_signal_info_unref))
     {
         if (!MethodHandler::m_callback) {
             MethodHandler::m_callback = callback;
@@ -868,6 +868,14 @@ class DBusObjectHelper : public DBusObject
         }
         if (first_to_erase != iter_end) {
             MethodHandler::m_methodMap.erase(first_to_erase, last_to_erase);
+        }
+
+        // free entries, necessary if activate() was never called
+        if (m_methods) {
+            g_ptr_array_free(m_methods, TRUE);
+        }
+        if (m_signals) {
+            g_ptr_array_free(m_signals, TRUE);
         }
     }
 
