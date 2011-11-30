@@ -112,8 +112,9 @@ static void add_arguments(GString *xml, const char *direction,
 		return;
 
 	do {
-		g_string_append_printf(xml, "\t\t\t<arg type=\"%s\"",
-				dbus_signature_iter_get_signature(&iter));
+		char *sig = dbus_signature_iter_get_signature(&iter);
+		g_string_append_printf(xml, "\t\t\t<arg type=\"%s\"", sig);
+		dbus_free (sig);
 
 		if (direction != NULL)
 			g_string_append_printf(xml, " direction=\"%s\"/>\n",
