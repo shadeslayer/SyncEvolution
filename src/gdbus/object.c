@@ -607,6 +607,7 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 	for (method = interface->methods;
 				method->name && method->function; method++) {
 		DBusMessage *reply;
+                BDBusMethodFlags flags = method->flags;
 
 		if (dbus_message_is_method_call(message,
 				interface->name, method->name) == FALSE)
@@ -619,20 +620,25 @@ static DBusHandlerResult handle_message(DBusConnection *connection,
 		if(interface->callback) {
 			interface->callback(interface->user_data);
 		}
+
+                /* method->function() might disconnect the interface,
+                   in which case the "method" pointer itself becomes
+                   invalid - don't use it below */
 		reply = method->function(connection,
 						message,
-						(method->flags & 
+						(flags & 
 						 G_DBUS_METHOD_FLAG_METHOD_DATA) ?
 						method->method_data :
 						interface->user_data);
+                method = NULL;
 
-		if (method->flags & G_DBUS_METHOD_FLAG_NOREPLY) {
+		if (flags & G_DBUS_METHOD_FLAG_NOREPLY) {
 			if (reply != NULL)
 				dbus_message_unref(reply);
 			return DBUS_HANDLER_RESULT_HANDLED;
 		}
 
-		if (method->flags & G_DBUS_METHOD_FLAG_ASYNC) {
+		if (flags & G_DBUS_METHOD_FLAG_ASYNC) {
 			if (reply == NULL)
 				return DBUS_HANDLER_RESULT_HANDLED;
 		}
