@@ -664,3 +664,61 @@
    ...
    fun:*DBusUserInterface*Password*
 }
+
+# ==10804== 60 (16 direct, 44 indirect) bytes in 1 blocks are definitely lost in loss record 1,121 of 2,014
+# ==10804==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==10804==    by 0x7FABC02: g_malloc (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7FC0976: g_slice_alloc (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7F9045F: g_error_copy (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x76700B1: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x761465E: g_initable_new_valist (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x7614748: g_initable_new (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x766EB1E: g_dbus_connection_new_for_address_sync (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x597E08: GDBusCXX::dbus_get_bus_connection(char const*, char const*, bool, GDBusCXX::DBusErrorCXX*) (gdbus-cxx-bridge.cpp:58)
+# ==10804==    by 0x583CB8: SyncEvo::ConnmanClient::ConnmanClient(SyncEvo::Server&) (connman-client.cpp:30)
+# ==10804==    by 0x541730: SyncEvo::Server::Server(_GMainLoop*, bool&, boost::shared_ptr<SyncEvo::Restart>&, GDBusCXX::DBusConnectionPtr const&, int) (server.cpp:239)
+# ==10804==    by 0x52141B: main (main.cpp:113)
+# ==10804== 
+{
+   failed g_dbus_connection_new_for_address_sync
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_error_copy
+   obj:*libgio*
+   fun:g_initable_new_valist
+   fun:g_initable_new
+   fun:g_dbus_connection_new_for_address_sync
+}
+
+# ==10804== 363 (120 direct, 243 indirect) bytes in 3 blocks are definitely lost in loss record 1,844 of 2,014
+# ==10804==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==10804==    by 0x7FABC02: g_malloc (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7FC0976: g_slice_alloc (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7FDEEC9: ??? (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7FDF02C: ??? (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7FDC825: g_variant_builder_end (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7672049: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x76736ED: g_dbus_message_new_from_blob (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x767F01D: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x7625D86: g_simple_async_result_complete (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x7625E98: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x7FA50CE: g_main_context_dispatch (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7FA58C7: ??? (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x7FA5E01: g_main_loop_run (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x767CDC5: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==10804==    by 0x7FCA7E5: ??? (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==10804==    by 0x5076B3F: start_thread (pthread_create.c:304)
+# ==10804==    by 0x8AC636C: clone (clone.S:112)
+# ==10804== 
+{
+   GIO thread leak
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   ...
+   obj:*libgio*
+   obj:*libglib*
+   fun:start_thread
+}
