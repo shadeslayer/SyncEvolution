@@ -19,13 +19,10 @@
 
 #include "gdbus-cxx-bridge.h"
 
-namespace boost
-{
-    void intrusive_ptr_add_ref(GDBusConnection *con)  { g_object_ref(con); }
-    void intrusive_ptr_release(GDBusConnection *con)  { g_object_unref(con); }
-    void intrusive_ptr_add_ref(GDBusMessage    *msg)  { g_object_ref(msg); }
-    void intrusive_ptr_release(GDBusMessage    *msg)  { g_object_unref(msg); }
-}
+void intrusive_ptr_add_ref(GDBusConnection *con)  { g_object_ref(con); }
+void intrusive_ptr_release(GDBusConnection *con)  { g_object_unref(con); }
+void intrusive_ptr_add_ref(GDBusMessage    *msg)  { g_object_ref(msg); }
+void intrusive_ptr_release(GDBusMessage    *msg)  { g_object_unref(msg); }
 
 namespace GDBusCXX {
 

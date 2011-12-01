@@ -78,12 +78,13 @@
 #define DBUS_MESSAGE_TYPE    GDBusMessage
 #define DBUS_NEW_ERROR_MSG   g_dbus_message_new_method_error
 
-namespace boost {
-    void intrusive_ptr_add_ref(GDBusConnection       *con);
-    void intrusive_ptr_release(GDBusConnection       *con);
-    void intrusive_ptr_add_ref(GDBusMessage          *msg);
-    void intrusive_ptr_release(GDBusMessage          *msg);
-}
+// Boost docs want this in the boost:: namespace, but
+// that fails with clang 2.9 depending on the inclusion order of
+// header files. Global namespace works in all cases.
+void intrusive_ptr_add_ref(GDBusConnection       *con);
+void intrusive_ptr_release(GDBusConnection       *con);
+void intrusive_ptr_add_ref(GDBusMessage          *msg);
+void intrusive_ptr_release(GDBusMessage          *msg);
 
 namespace GDBusCXX {
 

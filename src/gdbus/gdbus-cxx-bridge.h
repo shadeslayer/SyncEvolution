@@ -63,14 +63,15 @@
 #include <map>
 #include <vector>
 
-namespace boost {
-    void intrusive_ptr_add_ref(DBusConnection  *con);
-    void intrusive_ptr_release(DBusConnection  *con);
-    void intrusive_ptr_add_ref(DBusMessage     *msg);
-    void intrusive_ptr_release(DBusMessage     *msg);
-    void intrusive_ptr_add_ref(DBusPendingCall *call);
-    void intrusive_ptr_release(DBusPendingCall *call);
-}
+// Boost docs want this in the boost:: namespace, but
+// that fails with clang 2.9 depending on the inclusion order of
+// header files. Global namespace works in all cases.
+void intrusive_ptr_add_ref(DBusConnection  *con);
+void intrusive_ptr_release(DBusConnection  *con);
+void intrusive_ptr_add_ref(DBusMessage     *msg);
+void intrusive_ptr_release(DBusMessage     *msg);
+void intrusive_ptr_add_ref(DBusPendingCall *call);
+void intrusive_ptr_release(DBusPendingCall *call);
 
 #include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
