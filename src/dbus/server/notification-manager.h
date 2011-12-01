@@ -20,7 +20,7 @@
 #ifndef __NOTIFICATION_MANAGER_H
 #define __NOTIFICATION_MANAGER_H
 
-#include "NotificationManagerBase.h"
+#include "notification-manager-base.h"
 
 #include "syncevo/declarations.h"
 

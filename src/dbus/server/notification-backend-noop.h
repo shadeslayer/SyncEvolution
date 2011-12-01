@@ -17,36 +17,26 @@
  * 02110-1301  USA
  */
 
-#include "NotificationManager.h"
-#include "syncevo/declarations.h"
+#ifndef __NOTIFICATION_BACKEND_NOOP_H
+#define __NOTIFICATION_BACKEND_NOOP_H
 
-#include <string>
+#include "syncevo/declarations.h"
+#include "notification-backend-base.h"
 
 SE_BEGIN_CXX
 
-template <class T>
-NotificationManager<T>::NotificationManager()
-{
-}
+class NotificationBackendNoop : public NotificationBackendBase {
+    public:
+        NotificationBackendNoop();
+        virtual ~NotificationBackendNoop();
 
-template <class T>
-NotificationManager<T>::~NotificationManager()
-{
-}
+        bool init();
 
-template <class T>
-bool NotificationManager<T>::init()
-{
-    return m_backend->init();
-}
-
-template <class T>
-void NotificationManager<T>::publish(const std::string& summary,
-                                     const std::string& body,
-                                     const std::string& viewParams)
-{
-    m_backend->publish(summary, body, viewParams);
-}
+        void publish(const std::string& summary, const std::string& body,
+                     const std::string& viewParams = std::string());
+};
 
 SE_END_CXX
+
+#endif // __NOTIFICATION_BACKEND_NOOP_H
 

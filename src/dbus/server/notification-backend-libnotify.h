@@ -27,7 +27,7 @@
 #if HAS_NOTIFY
 
 #include "syncevo/declarations.h"
-#include "NotificationBackendBase.h"
+#include "notification-backend-base.h"
 
 #include <libnotify/notify.h>
 

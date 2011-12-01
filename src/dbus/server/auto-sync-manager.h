@@ -25,7 +25,7 @@
 #include <syncevo/SyncML.h>
 #include <syncevo/SmartPtr.h>
 
-#include "NotificationManagerFactory.h"
+#include "notification-manager-factory.h"
 
 #include "session-listener.h"
 

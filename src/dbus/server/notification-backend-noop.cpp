@@ -17,26 +17,28 @@
  * 02110-1301  USA
  */
 
-#ifndef __NOTIFICATION_BACKEND_MLITE_H
-#define __NOTIFICATION_BACKEND_MLITE_H
-
-#include "syncevo/declarations.h"
-#include "NotificationBackendBase.h"
+#include "notification-backend-noop.h"
 
 SE_BEGIN_CXX
 
-class NotificationBackendMLite : public NotificationBackendBase {
-    public:
-        NotificationBackendMLite();
-        virtual ~NotificationBackendMLite();
+NotificationBackendNoop::NotificationBackendNoop()
+{
+}
 
-        bool init();
+NotificationBackendNoop::~NotificationBackendNoop()
+{
+}
 
-        void publish(const std::string& summary, const std::string& body,
-                     const std::string& viewParams = std::string());
-};
+bool NotificationBackendNoop::init()
+{
+    return true;
+}
+
+void NotificationBackendNoop::publish(
+    const std::string& summary, const std::string& body,
+    const std::string& viewParams)
+{
+}
 
 SE_END_CXX
-
-#endif // __NOTIFICATION_BACKEND_MLITE_H
 

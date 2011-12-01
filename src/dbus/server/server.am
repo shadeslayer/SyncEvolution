@@ -3,10 +3,10 @@ if COND_DBUS
 noinst_LTLIBRARIES += src/dbus/server/libsyncevodbusserver.la
 
 src_dbus_server_server_cpp_files = \
-  src/dbus/server/NotificationBackendNoop.cpp \
-  src/dbus/server/NotificationBackendLibnotify.cpp \
-  src/dbus/server/NotificationBackendMLite.cpp \
-  src/dbus/server/NotificationManagerFactory.cpp \
+  src/dbus/server/notification-backend-noop.cpp \
+  src/dbus/server/notification-backend-libnotify.cpp \
+  src/dbus/server/notification-backend-mlite.cpp \
+  src/dbus/server/notification-manager-factory.cpp \
   src/dbus/server/auto-sync-manager.cpp \
   src/dbus/server/bluez-manager.cpp \
   src/dbus/server/client.cpp \
@@ -26,9 +26,9 @@ src_dbus_server_server_cpp_files = \
 
 src_dbus_server_server_h_files = \
   $(src_dbus_server_server_cpp_files:.cpp=.h) \
-  src/dbus/server/NotificationBackendBase.h \
-  src/dbus/server/NotificationManager.h \
-  src/dbus/server/NotificationManagerBase.h \
+  src/dbus/server/notification-backend-base.h \
+  src/dbus/server/notification-manager.h \
+  src/dbus/server/notification-manager-base.h \
   src/dbus/server/auto-term.h \
   src/dbus/server/cmdline-wrapper.h \
   src/dbus/server/resource.h \

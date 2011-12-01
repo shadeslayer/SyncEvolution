@@ -17,12 +17,12 @@
  * 02110-1301  USA
  */
 
-#include "NotificationManagerFactory.h"
+#include "notification-manager-factory.h"
 
-#include "NotificationBackendNoop.h"
-#include "NotificationBackendMLite.h"
-#include "NotificationBackendLibnotify.h"
-#include "NotificationManager.h"
+#include "notification-backend-noop.h"
+#include "notification-backend-mlite.h"
+#include "notification-backend-libnotify.h"
+#include "notification-manager.h"
 
 #include <unistd.h>
 

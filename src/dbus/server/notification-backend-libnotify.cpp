@@ -23,7 +23,7 @@
 
 #if HAS_NOTIFY
 
-#include "NotificationBackendLibnotify.h"
+#include "notification-backend-libnotify.h"
 #include "syncevo/util.h"
 #include "syncevo/GLibSupport.h"
 

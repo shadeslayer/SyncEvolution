@@ -21,7 +21,7 @@
 
 #ifdef HAS_MLITE
 
-#include "NotificationBackendMLite.h"
+#include "notification-backend-mlite.h"
 
 #include <mlite/MNotification>
 #include <QString>

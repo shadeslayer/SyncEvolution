@@ -17,18 +17,18 @@
  * 02110-1301  USA
  */
 
-#ifndef __NOTIFICATION_BACKEND_NOOP_H
-#define __NOTIFICATION_BACKEND_NOOP_H
+#ifndef __NOTIFICATION_BACKEND_MLITE_H
+#define __NOTIFICATION_BACKEND_MLITE_H
 
 #include "syncevo/declarations.h"
-#include "NotificationBackendBase.h"
+#include "notification-backend-base.h"
 
 SE_BEGIN_CXX
 
-class NotificationBackendNoop : public NotificationBackendBase {
+class NotificationBackendMLite : public NotificationBackendBase {
     public:
-        NotificationBackendNoop();
-        virtual ~NotificationBackendNoop();
+        NotificationBackendMLite();
+        virtual ~NotificationBackendMLite();
 
         bool init();
 
@@ -38,5 +38,5 @@ class NotificationBackendNoop : public NotificationBackendBase {
 
 SE_END_CXX
 
-#endif // __NOTIFICATION_BACKEND_NOOP_H
+#endif // __NOTIFICATION_BACKEND_MLITE_H
 

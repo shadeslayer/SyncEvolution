@@ -17,29 +17,36 @@
  * 02110-1301  USA
  */
 
-#ifndef __NOTIFICATION_MANAGER_FACTORY_H
-#define __NOTIFICATION_MANAGER_FACTORY_H
-
+#include "notification-manager.h"
 #include "syncevo/declarations.h"
-#include "NotificationManager.h"
 
-#include <boost/shared_ptr.hpp>
+#include <string>
 
 SE_BEGIN_CXX
 
-class NotificationBackendBase;
+template <class T>
+NotificationManager<T>::NotificationManager()
+{
+}
 
-class NotificationManagerFactory {
-    public:
-        /** Creates the appropriate NotificationManager for the current
-         * platform.
-         * Note: NotificationManagerFactory does not take ownership of
-         * the returned pointer: the user must delete it when done.
-         */
-        static boost::shared_ptr<NotificationManagerBase> createManager();
-};
+template <class T>
+NotificationManager<T>::~NotificationManager()
+{
+}
+
+template <class T>
+bool NotificationManager<T>::init()
+{
+    return m_backend->init();
+}
+
+template <class T>
+void NotificationManager<T>::publish(const std::string& summary,
+                                     const std::string& body,
+                                     const std::string& viewParams)
+{
+    m_backend->publish(summary, body, viewParams);
+}
 
 SE_END_CXX
-
-#endif
 
