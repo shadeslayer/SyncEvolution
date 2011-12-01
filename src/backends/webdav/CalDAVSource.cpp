@@ -1190,7 +1190,6 @@ void CalDAVSource::Event::fixIncomingCalendar(icalcomponent *calendar)
     // time.
     bool ridInUTC = false;
     const icaltimezone *zone = NULL;
-    icalcomponent *parent = NULL;
 
     for (icalcomponent *comp = icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT);
          comp;
@@ -1204,7 +1203,6 @@ void CalDAVSource::Event::fixIncomingCalendar(icalcomponent *calendar)
         // is parent event? -> remember time zone unless it is UTC
         static const struct icaltimetype null = { 0 };
         if (!memcmp(&rid, &null, sizeof(null))) {
-            parent = comp;
             struct icaltimetype dtstart = icalcomponent_get_dtstart(comp);
             if (!icaltime_is_utc(dtstart)) {
                 zone = icaltime_get_timezone(dtstart);
