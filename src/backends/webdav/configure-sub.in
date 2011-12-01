@@ -31,6 +31,6 @@ AC_ARG_ENABLE(neon-compatibility,
               )
 if test "$enable_neon_compat" = "yes"; then
         AC_DEFINE(NEON_COMPATIBILITY, 1, [dynamically open libneon])
-        NEON_LIBS="`echo $NEON_LIBS | sed -e 's/\(-lneon\|[^ ]*libneon.la\)/-ldl/'`"
+        NEON_LIBS="`echo $NEON_LIBS | sed -e 's/\(-lneon\(-gnutls\)*\|[^ ]*libneon\(-gnutls\)*.la\)/-ldl/'`"
 fi
 AM_CONDITIONAL([NEON_COMPATIBILITY], [test "$enable_neon_compat" = "yes"])
