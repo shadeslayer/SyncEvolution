@@ -36,3 +36,23 @@ src_backends_webdav_syncdav_la_LDFLAGS = -module -avoid-version
 src_backends_webdav_syncdav_la_CXXFLAGS = $(NEON_CFLAGS) $(SYNCEVO_WFLAGS)
 src_backends_webdav_syncdav_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 src_backends_webdav_syncdav_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)
+
+if NEON_COMPATIBILITY
+all_local_installchecks += webdav_so_check
+endif
+
+WEBDAV_SO_CHECK_FILES = $(DESTDIR)/$(bindir)/syncevolution
+if ENABLE_MODULES
+WEBDAV_SO_CHECK_FILES += $(DESTDIR)/$(src_backends_webdav_backenddir)/syncdav.so
+endif
+
+webdav_so_check:
+	for i in $(WEBDAV_SO_CHECK_FILES); do \
+		if [ -e $$i ]; then \
+			if ldd $$i | grep libneon; then \
+				echo $$i should not be linked against libneon; exit 1; \
+			fi; \
+		else \
+			echo $$i not found; exit 1; \
+		fi \
+	done
