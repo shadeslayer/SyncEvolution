@@ -3911,7 +3911,7 @@ class DBusClientCall0 : public DBusClientCall<boost::function<void (const std::s
     /** called by gdbus on error or completion of call */
     static void dbusCallback (GObject *src_obj, GAsyncResult *res, void *user_data)
     {
-        typedef typename DBusClientCall<Callback_t>::CallbackData CallbackData;
+        typedef DBusClientCall<Callback_t>::CallbackData CallbackData;
         CallbackData *data = static_cast<CallbackData *>(user_data);
 
         GError *err = NULL;
