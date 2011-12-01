@@ -213,6 +213,7 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                      'apple',
                      'egroupware-dav',
                      'oracle',
+                     'exchange',
                      'dbus']
     sourceServersRun = 0
     haveSource = False

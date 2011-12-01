@@ -22,4 +22,12 @@ src_backends_activesync_syncactivesync_la_LIBADD = $(EASCLIENT_LIBS) $(SYNCEVOLU
 src_backends_activesync_syncactivesync_la_LDFLAGS = -no-undefined -module -avoid-version
 src_backends_activesync_syncactivesync_la_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
 src_backends_activesync_syncactivesync_la_CXXFLAGS = $(EASCLIENT_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(SYNCEVO_WFLAGS) $(LIBICAL_CFLAGS)
-src_backends_activesync_syncactivesync_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)
+src_backends_activesync_syncactivesync_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS) $(EASCLIENT_DEPENDENCIES)
+
+# activated by EASCLIENT_DEPENDENCIES: usually empty, unless --with-activesyncd-src is used
+$(src_backends_activesync_src) src/backends/activesync/ActiveSyncSourceRegister.cpp: $(EASCLIENT_DEPENDENCIES)
+$(EASCLIENT_DEPENDENCIES): $(LIBEASCLIENT_LA_DEPENDENCIES)
+	cd src/backends/activesync/activesyncd/build && $(MAKE)
+	for i in libeasaccount/src libeasclient eas-daemon/libeas libeastest/src eas-daemon/src; do \
+		(cd src/backends/activesync/activesyncd/build/$$i && $(MAKE) DESTDIR= install) || exit 1; \
+	done

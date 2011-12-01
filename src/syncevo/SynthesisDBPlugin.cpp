@@ -489,6 +489,12 @@ bool SyncEvolution_ReadNextMapItem( CContext aContext, MapID mID, bool aFirst )
     }
     bool res = false;
     try {
+        // always reset mID, just in case that caller expects it or
+        // operation doesn't do it correctly
+        mID->localID = NULL;
+        mID->remoteID = NULL;
+        mID->ident = 0;
+        mID->flags = 0;
         if (source->getOperations().m_readNextMapItem) {
             res = source->getOperations().m_readNextMapItem(mID, aFirst);
         }

@@ -27,6 +27,8 @@
 #include <syncevo/util.h>
 #include "test.h"
 
+#include <synthesis/SDK_util.h>
+
 #include <unistd.h>
 #include <errno.h>
 
@@ -1608,6 +1610,8 @@ void Cmdline::readLUIDs(SyncSource *source, list<string> &luids)
     CHECK_ERROR("next item");
     while (status != sysync::ReadNextItem_EOF) {
         luids.push_back(id.item);
+        StrDispose(id.item);
+        StrDispose(id.parent);
         err = ops.m_readNextItem(&id, &status, false);
         CHECK_ERROR("next item");
     }

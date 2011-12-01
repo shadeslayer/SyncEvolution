@@ -5,8 +5,39 @@ SE_ARG_ENABLE_BACKEND(activesync, activesync,
                       [AS_HELP_STRING([--enable-activesync], [enable access to servers via ActiveSync (default off)])],
 		      [enable_activesync="$enableval"], [enable_activesync="no"])
 
+AC_ARG_WITH(activesyncd-src,
+            AS_HELP_STRING([--with-activesyncd-src=<base directory>],
+                           [Specifies location of the activesyncd source root directory.
+                           Use this when activesyncd is to
+                           be compiled as part of the SyncEvolution compilation.]),
+            [ACTIVESYNCDSRC="$withval"
+             test "$ACTIVESYNCDSRC" != "yes" || AC_MSG_ERROR([--with-synthesis-src requires a parameter (base directory, svn URL or git URL)])],
+            [ACTIVESYNCDSRC=""])
+
+AM_CONDITIONAL([BUILD_ACTIVESYNCD], [test "$enable_activesync" = "yes" && test "$ACTIVESYNCDSRC" != ""])
+
 if test "$enable_activesync" = "yes"; then
-        PKG_CHECK_MODULES(EASCLIENT, libeasclient)
+        if test "$ACTIVESYNCDSRC" != ""; then
+                # brute-force dependency on any file in the source repo
+                LIBEASCLIENT_LA_DEPENDENCIES=`find "$ACTIVESYNCDSRC"/* -type f -printf '%p ' `
+                AC_SUBST(LIBEASCLIENT_LA_DEPENDENCIES)
+                mkdir -p src/backends/activesync/activesyncd/build
+                AC_MSG_NOTICE([configuring activesyncd using the $ACTIVESYNCDSRC source code])
+                ( set -x; cd src/backends/activesync/activesyncd/build &&
+                  $ACTIVESYNCDSRC/configure --prefix=`pwd`/../install) ||
+                AC_MSG_ERROR([configuring activesyncd failed])
+
+                # hard-coded replacement for pkg-config: necessary because
+                # .pc file not installed yet
+                EASCLIENT_LIBS=src/backends/activesync/activesyncd/install/lib/libeasclient.la
+                EASCLIENT_DEPENDENCIES=src/backends/activesync/activesyncd/install/lib/libeasclient.la
+                EASCLIENT_CFLAGS=-Isrc/backends/activesync/activesyncd/install/include/eas-daemon/eas-client
+                AC_SUBST(EASCLIENT_LIBS)
+                AC_SUBST(EASCLIENT_DEPENDENCIES)
+                AC_SUBST(EASCLIENT_CFLAGS)
+        else
+                PKG_CHECK_MODULES(EASCLIENT, libeasclient)
+        fi
         AC_DEFINE(ENABLE_ACTIVESYNC, 1, [ActiveSync available])
         need_ical="yes"
         need_glib="yes"

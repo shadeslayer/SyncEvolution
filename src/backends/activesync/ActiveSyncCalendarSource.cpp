@@ -96,7 +96,7 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
 
     // same logic as in ActiveSyncSource::beginSync()
 
-    bool slowSync = false;
+    // TODO: use slow sync? bool slowSync = false;
     for (bool firstIteration = true;
          moreAvailable;
          firstIteration = false) {
@@ -115,13 +115,13 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
                                         gerror)) {
             if (gerror.m_gerror &&
                 /*
-                gerror.m_gerror->domain == EAS_TYPE_CONNECTION_ERROR &&
+                gerror.m_gerror->domain == EAS_TYPE_CONECTION_ERROR &&
                 gerror.m_gerror->code == EAS_CONNECTION_SYNC_ERROR_INVALIDSYNCKEY && */
                 gerror.m_gerror->message &&
                 !strcmp(gerror.m_gerror->message, "Sync error: Invalid synchronization key") &&
                 firstIteration) {
                 // fall back to slow sync
-                slowSync = true;
+                // slowSync = true;
                 setCurrentSyncKey("");
                 m_trackingNode->clear();
                 continue;
@@ -448,7 +448,7 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
         }
     }
 
-    InsertItemResultState state;
+    InsertItemResultState state = ITEM_OKAY;
     if (easid.empty()) {
         // New VEVENT; should not be part of an existing merged item
         // ("meeting series").

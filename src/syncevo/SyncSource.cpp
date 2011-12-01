@@ -518,6 +518,9 @@ sysync::TSyError SyncSourceChanges::iterate(sysync::ItemID aID,
                                             sysync::sInt32 *aStatus,
                                             bool aFirst)
 {
+    aID->item = NULL;
+    aID->parent = NULL;
+
     if (m_first || aFirst) {
         m_it = m_items[ANY].begin();
         m_first = false;

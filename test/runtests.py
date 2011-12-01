@@ -18,6 +18,7 @@ import os, sys, popen2, traceback, re, time, smtplib, optparse, stat, shutil, St
 import shlex
 import subprocess
 import fnmatch
+import copy
 
 try:
     import gzip
@@ -92,6 +93,28 @@ def copyLog(filename, dirname, htaccess, lineFilter=None):
         htaccess.write("AddDescription \"%s\" %s\n" %
                        (error.strip().replace("\"", "'").replace("<", "&lt;").replace(">","&gt;"),
                         os.path.basename(filename)))
+
+def TryKill(pid, signal):
+    try:
+        os.kill(pid, signal)
+    except OSError, ex:
+        # might have quit in the meantime, deal with the race
+        # condition
+        if ex.errno != 3:
+            raise ex
+
+def ShutdownSubprocess(popen, timeout):
+    start = time.time()
+    if popen.poll() == None:
+        TryKill(popen.pid, signal.SIGTERM)
+    while popen.poll() == None and start + timeout >= time.time():
+        time.sleep(0.01)
+    if popen.poll() == None:
+        TryKill(popen.pid, signal.SIGKILL)
+        while popen.poll() == None and start + timeout + 1 >= time.time():
+            time.sleep(0.01)
+        return False
+    return True
 
 class Action:
     """Base class for all actions to be performed."""
@@ -714,6 +737,9 @@ parser.add_option("", "--syncevo-tag",
 parser.add_option("", "--synthesis-tag",
                   type="string", dest="synthesistag", default="master",
                   help="the tag of the synthesis library (default = master in the moblin.org repo)")
+parser.add_option("", "--activesyncd-tag",
+                  type="string", dest="activesyncdtag", default="master",
+                  help="the tag of the activesyncd (default = master)")
 parser.add_option("", "--configure",
                   type="string", dest="configure", default="",
                   help="additional parameters for configure")
@@ -839,6 +865,14 @@ class SynthesisCheckout(GitCheckout):
                              "git@gitorious.org:meego-middleware/libsynthesis.git",
                              revision)
 
+class ActiveSyncDCheckout(GitCheckout):
+    def __init__(self, name, revision):
+        """checkout activesyncd"""
+        GitCheckout.__init__(self,
+                             name, context.workdir, options.shell,
+                             "git://git.infradead.org/activesyncd.git",
+                             revision)
+
 class SyncEvolutionBuild(AutotoolsBuild):
     def execute(self):
         AutotoolsBuild.execute(self)
@@ -870,6 +904,19 @@ context.add(libsynthesis)
 
 if options.sourcedir:
     if options.nosourcedircopy:
+        activesyncd = NopSource("activesyncd", options.sourcedir)
+    else:
+        activesyncd = GitCopy("activesyncd",
+                              options.workdir,
+                              options.shell,
+                              options.sourcedir,
+                              options.activesyncdtag)
+else:
+    activesyncd = ActiveSyncDCheckout("activesyncd", options.activesyncdtag)
+context.add(activesyncd)
+
+if options.sourcedir:
+    if options.nosourcedircopy:
         sync = NopSource("syncevolution", options.sourcedir)
     else:
         sync = GitCopy("syncevolution",
@@ -880,10 +927,11 @@ if options.sourcedir:
 else:
     sync = SyncEvolutionCheckout("syncevolution", options.syncevotag)
 context.add(sync)
+source = []
 if options.synthesistag:
-    synthesis_source = "--with-synthesis-src=%s" % libsynthesis.basedir
-else:
-    synthesis_source = ""
+    source.append("--with-synthesis-src=%s" % libsynthesis.basedir)
+if options.activesyncdtag:
+    source.append("--with-activesyncd-src=%s" % activesyncd.basedir)
 
 # determine where binaries come from:
 # either compile anew or prebuilt
@@ -894,7 +942,7 @@ if options.prebuilt:
 else:
     compile = SyncEvolutionBuild("compile",
                                  sync.basedir,
-                                 "%s %s" % (options.configure, synthesis_source),
+                                 "%s %s" % (options.configure, " ".join(source)),
                                  options.shell,
                                  [ libsynthesis.name, sync.name ])
 context.add(compile)
@@ -1060,6 +1108,54 @@ test = SyncEvolutionTest("apple", compile,
                          "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
                          testPrefix=options.testprefix)
+context.add(test)
+
+class ActiveSyncTest(SyncEvolutionTest):
+    def __init__(self, name):
+        SyncEvolutionTest.__init__(self, name,
+                                   compile,
+                                   "", options.shell,
+                                   "Client::Sync::eds_event Client::Sync::eds_contact Client::Source::eas_event Client::Source::eas_contact",
+                                   [ "eas_event", "eas_contact", "eds_event", "eds_contact" ],
+                                   "CLIENT_TEST_NUM_ITEMS=10 "
+                                   "CLIENT_TEST_MODE=server " # for Client::Sync
+                                   "EAS_SOUP_LOGGER=1 "
+                                   "EAS_DEBUG=5 "
+                                   "EAS_DEBUG_DETACHED_RECURRENCES=1 "
+                                   "CLIENT_TEST_LOG=activesyncd.log "
+                                   ,
+                                   testPrefix=" ".join(("env EAS_DEBUG_FILE=activesyncd.log",
+                                                        os.path.join(sync.basedir, "test", "wrappercheck.sh"),
+                                                        options.testprefix,
+                                                        os.path.join(compile.builddir, "src", "backends", "activesync", "activesyncd", "install", "libexec", "activesyncd"),
+                                                        "--",
+                                                        options.testprefix)))
+
+    def executeWithActiveSync(self):
+        '''start and stop activesyncd before/after running the test'''
+        args = []
+        if options.testprefix:
+            args.append(options.testprefix)
+        args.append(os.path.join(compile.builddir, "src", "backends", "activesync", "activesyncd", "install", "libexec", "activesyncd"))
+        env = copy.deepcopy(os.environ)
+        env['EAS_SOUP_LOGGER'] = '1'
+        env['EAS_DEBUG'] = '5'
+        env['EAS_DEBUG_DETACHED_RECURRENCES'] = '1'
+        activesyncd = subprocess.Popen(args,
+                                       env=env)
+        try:
+            SyncEvolutionTest.execute(self)
+        finally:
+            if not ShutdownSubprocess(activesyncd, 5):
+                raise Exception("activesyncd had to be killed with SIGKILL")
+            returncode = activesyncd.poll()
+            if returncode != None:
+                if returncode != 0:
+                    raise Exception("activesyncd returned %d" % returncode)
+            else:
+                raise Exception("activesyncd did not return")
+
+test = ActiveSyncTest("exchange")
 context.add(test)
 
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
