@@ -418,17 +418,18 @@ span.hl { color: #c02020 }
                 indent = indents[-1]
             else:
                 for log in logs:
-                    if os.path.basename(log) in ['____compare.log',
-                                                 'syncevo.log', # D-Bus server output
-                                                 'dbus.log', # dbus-monitor output
-                                                 ]:
+                    logname = os.path.basename(log)
+                    if logname in ['____compare.log',
+                                   'syncevo.log', # D-Bus server output
+                                   'dbus.log', # dbus-monitor output
+                                   ]:
                         continue
                     # <path>/Client_Sync_eds_contact_testItems.log
                     # <path>/SyncEvo_CmdlineTest_testConfigure.log
                     # <path>/N7SyncEvo11CmdlineTestE_testConfigure.log - C++ name mangling?
-                    m = re.match(r'.*/(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)\.log', log)
+                    m = re.match(r'^(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)\.log', logname)
                     if not m:
-                        print "skipping", log
+                        print "skipping", logname
                         continue
                     # Client_Sync_, Client_Source_, SyncEvo_, ...
                     prefix = m.group(1)
@@ -443,7 +444,7 @@ span.hl { color: #c02020 }
                     if m:
                         format = m.group(1)
                         casename = m.group(2) + '::' + casename
-                    print "analyzing log %s: prefix %s, subset %s, testcase %s" % (log, prefix, format, casename)
+                    print "analyzing log %s: prefix %s, subset %s, testcase %s" % (logname, prefix, format, casename)
                     if(format not in logdic):
                         logdic[format]=[]
                     logdic[format].append((casename, log))
