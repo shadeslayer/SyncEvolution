@@ -284,37 +284,24 @@ def TryKill(pid, signal):
 def ShutdownSubprocess(popen, timeout):
     start = time.time()
     if popen.poll() == None:
+        # kill process and process group, in case that process has
+        # forked children (valgrindcheck.sh + syncevo-dbus-server
+        # case or syncevo-dbus-server + local sync)
         TryKill(popen.pid, signal.SIGTERM)
+        TryKill(-popen.pid, signal.SIGTERM)
     while popen.poll() == None and start + timeout >= time.time():
         time.sleep(0.01)
     if popen.poll() == None:
         TryKill(popen.pid, signal.SIGKILL)
+        TryKill(-popen.pid, signal.SIGKILL)
         while popen.poll() == None and start + timeout + 1 >= time.time():
             time.sleep(0.01)
         return False
-    return True
-
-def TryKill(pid, signal):
-    try:
-        os.kill(pid, signal)
-    except OSError, ex:
-        # might have quit in the meantime, deal with the race
-        # condition
-        if ex.errno != 3:
-            raise ex
-
-def ShutdownSubprocess(popen, timeout):
-    start = time.time()
-    if popen.poll() == None:
-        TryKill(popen.pid, signal.SIGTERM)
-    while popen.poll() == None and start + timeout >= time.time():
-        time.sleep(0.01)
-    if popen.poll() == None:
-        TryKill(popen.pid, signal.SIGKILL)
-        while popen.poll() == None and start + timeout + 1 >= time.time():
-            time.sleep(0.01)
-        return False
-    return True
+    else:
+        # there shouldn't be any processes in the process group left now
+        # because the parent process has quit normally, but make sure anyway
+        TryKill(-popen.pid, signal.SIGKILL)
+        return True
 
 class DBusUtil(Timeout):
     """Contains the common run() method for all D-Bus test suites
@@ -423,6 +410,7 @@ class DBusUtil(Timeout):
             logfile.flush()
             size = os.path.getsize(syncevolog)
             DBusUtil.pserver = subprocess.Popen(args,
+                                                preexec_fn=lambda: os.setpgid(0, 0),
                                                 env=env,
                                                 stdout=logfile,
                                                 stderr=subprocess.STDOUT)
@@ -470,8 +458,15 @@ class DBusUtil(Timeout):
             # allow debugger to run as long as it is needed
             DBusUtil.pserver.communicate()
         else:
-            # force shutdown in 5 seconds
-            if not ShutdownSubprocess(DBusUtil.pserver, 5):
+            # Force shutdown after a certain delay: how much time we grant
+            # the process depends on how much work it still needs to do
+            # after being asked to quit. valgrind leak checking can take
+            # a while.
+            if usingValgrind():
+                delay = 60
+            else:
+                delay = 20
+            if not ShutdownSubprocess(DBusUtil.pserver, delay):
                 print "   syncevo-dbus-server had to be killed with SIGKILL"
                 result.errors.append((self,
                                       "syncevo-dbus-server had to be killed with SIGKILL"))
