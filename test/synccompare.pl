@@ -305,10 +305,9 @@ sub NormalizeItem {
         my $def = $1;
         my $tzid = $2;
         # used as parameter?
-        if (! m/;TZID=$tzid/) {
+        if (! m/;TZID="?\Q$tzid\E"?/) {
             # no, remove definition
-            $def =~ s/([.*?!+{}])/\\$1/g;
-            s!$def!!s;
+            s!\Q$def\E!!s;
         }
     }
 
