@@ -2198,14 +2198,12 @@ void LocalTests::testLinkedItemsSubset()
         sent.push_back(data);
 
         SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceB()));
-        StringMap::const_iterator it = items.m_options.find(skip == -1 ?
-                                                            StringPrintf("%d_e_%d",
-                                                                         start, i) :
-                                                            StringPrintf("%d_%d_%d",
-                                                                         start, skip, i));
         std::list<std::string> actual(sent);
-        if (it != items.m_options.end()) {
-            actual.push_back(it->second);
+        if (items.m_testLinkedItemsSubsetAdditional) {
+            std::string event = items.m_testLinkedItemsSubsetAdditional(start, skip, i, items.size());
+            if (!event.empty()) {
+                actual.push_back(event);
+            }
         }
         CT_ASSERT_NO_THROW_MESSAGE(message, compareDatabasesRef(*copy, actual));
 
@@ -5410,6 +5408,204 @@ static string mangleICalendar20(const std::string &data, bool update)
     return item;
 }
 
+static std::string additionalYearly(const std::string &single,
+                                    const std::string &many,
+                                    int start, int skip, int index, int total)
+{
+    int startYear = 2012 + start - 1;
+    std::string event;
+
+    if (start == 0) {
+        // no missing parent, nothing to add
+    } else if (start == index) {
+        // inserting a single detached recurrence
+        event = StringPrintf(single.c_str(), startYear);
+    } else {
+        // many detached recurrences
+        int endYear = startYear + index - start;
+        std::string exdates;
+        for (int year = startYear; year <= endYear; year++) {
+            // a gap?
+            if ((year - startYear) % (skip + 1)) {
+                exdates +=
+                    StringPrintf("EXDATE;TZID=Standard Timezone:%04d0101T120000\n",
+                                 year);
+            }
+        }
+        event = StringPrintf(many.c_str(), startYear, endYear, exdates.c_str());
+    }
+
+
+    SE_LOG_DEBUG(NULL, NULL, "additional yearly: start %d, skip %d, index %d/%d:\n%s",
+                 start, skip, index, total,
+                 event.c_str());
+    return event;
+}
+
+static std::string additionalMonthly(const std::string &single,
+                                     const std::string &many,
+                                     int day,
+                                     int start, int skip, int index, int total)
+{
+    int startMonth = 1 + start - 1;
+    std::string event;
+    int endMonth = startMonth + index - start;
+    int time = (endMonth >= 4 && endMonth <= 10) ? 10 : 11;
+
+    if (start == 0) {
+    } else if (start == index) {
+        event = StringPrintf(single.c_str(), startMonth, day, time);
+    } else {
+        // Monthly recurrence uses INTERVAL instead of
+        // EXDATEs, in contrast to yearly recurrence
+        // (where Exchange somehow didn't grok the
+        // INTERVAL). So EXDATEs are only necessary
+        // for the first, second, last case.
+        if (skip == -1 ) {
+            std::string exdates;
+            for (int month = startMonth; month <= endMonth; month++) {
+                int step = month - startMonth;
+                // a gap?
+                if (step > 1 && step < total - start - 1) {
+                    exdates +=
+                        StringPrintf("EXDATE;TZID=Standard Timezone:2012%02d01T120000\n",
+                                     month);
+                }
+            }
+            event = StringPrintf(many.c_str(), startMonth, day, endMonth, time, 1, exdates.c_str());
+        } else {
+            event = StringPrintf(many.c_str(), startMonth, day, endMonth, time, skip + 1, "");
+        }
+    }
+
+    SE_LOG_DEBUG(NULL, NULL, "additional monthly: start %d, skip %d, index %d/%d:\n%s",
+                 start, skip, index, total,
+                 event.c_str());
+    return event;
+}
+
+// instead of trying to determine the dates of all Sundays in 2012
+// algorithmically, hard-code them...
+static const struct {
+    int m_month, m_day;
+} sundays[] = {
+    { 1, 1 },
+    { 1, 8 },
+    { 1, 15 },
+    { 1, 22 },
+    { 1, 29 },
+    { 2, 5 },
+    { 2, 12 },
+    { 2, 19 },
+    { 2, 26 },
+    { 3, 4 },
+    { 3, 11 },
+    { 3, 18 },
+    // winter time ends on March 25th, week 12 (counting from zero)
+#define SUNDAYS_2012_WINTER_TIME_ENDS 12
+    { 3, 25 },
+    { 4, 1 },
+    { 4, 8 },
+    { 4, 15 },
+    { 4, 22 },
+    { 4, 29 },
+    { 5, 6 },
+    { 5, 13 },
+    { 5, 20 },
+    { 5, 27 },
+    { 6, 3 },
+    { 6, 10 },
+    { 6, 17 },
+    { 6, 24 },
+    { 7, 1 },
+    { 7, 8 },
+    { 7, 15 },
+    { 7, 22 },
+    { 7, 29 },
+    { 8, 5 },
+    { 8, 12 },
+    { 8, 19 },
+    { 8, 26 },
+    { 9, 2 },
+    { 9, 9 },
+    { 9, 16 },
+    { 9, 23 },
+    { 9, 30 },
+    { 10, 7 },
+    { 10, 14 },
+    { 10, 21 },
+    // winter time start on October 28th, week 43 (counting from zero)
+#define SUNDAYS_2012_WINTER_TIME_STARTS 43
+    { 10, 28 },
+    { 11, 4 },
+    { 11, 11 },
+    { 11, 18 },
+    { 11, 25 },
+    { 12, 2 },
+    { 12, 9 },
+    { 12, 16 },
+    { 12, 23 },
+    { 12, 30 },
+    { 0, 0 }
+};
+
+static std::string additionalWeekly(const std::string &single,
+                                    const std::string &many,
+                                    int start, int skip, int index, int total)
+{
+    int startWeek = start - 1; // numbered from zero in "sundays" array
+    if (startWeek < 0) {
+        startWeek = 0;
+    }
+    std::string event;
+    int endWeek = startWeek + index - start;
+    int time = (endWeek >= SUNDAYS_2012_WINTER_TIME_ENDS &&
+                endWeek < SUNDAYS_2012_WINTER_TIME_STARTS) ? 12 : 13;
+    int startMonth = sundays[startWeek].m_month;
+    int startDay = sundays[startWeek].m_day;
+
+    if (start == 0) {
+    } else if (start == index) {
+        event = StringPrintf(single.c_str(), startMonth, startDay, time);
+    } else {
+        int endMonth = sundays[endWeek].m_month;
+        int endDay = sundays[endWeek].m_day;
+
+        // Weekly recurrence uses INTERVAL instead of
+        // EXDATEs, in contrast to yearly recurrence
+        // (where Exchange somehow didn't grok the
+        // INTERVAL). So EXDATEs are only necessary
+        // for the first, second, last case.
+        std::string exdates;
+        if (skip == -1 ) {
+            for (int week = startWeek; week <= endWeek; week++) {
+                int step = week - startWeek;
+                // a gap?
+                if (step > 1 && step < total - start - 1) {
+                    exdates +=
+                        StringPrintf("EXDATE;TZID=Standard Timezone:2012%02d%02dT140000\n",
+                                                             sundays[week].m_month,
+                                     sundays[week].m_day);
+                }
+            }
+            event = StringPrintf(many.c_str(),
+                                 startMonth, startDay,
+                                 endMonth, endDay,
+                                 time, 1, exdates.c_str());
+        } else {
+            event = StringPrintf(many.c_str(),
+                                 startMonth, startDay,
+                                 endMonth, endDay,
+                                 time, skip + 1, "");
+        }
+    }
+
+    SE_LOG_DEBUG(NULL, NULL, "additional weekly: start %d, skip %d, index %d/%d:\n%s",
+                 start, skip, index, total,
+                 event.c_str());
+    return event;
+}
+
 static void addMonthly(size_t &index, ClientTestConfig::MultipleLinkedItems_t &subset,
                        const std::string &pre, const std::string &post,
                        const char *suffix, int day, int months)
@@ -5474,51 +5670,9 @@ static void addMonthly(size_t &index, ClientTestConfig::MultipleLinkedItems_t &s
             "END:VEVENT\n" +
             post;
 
-        for (int start = 1;
-             (size_t)start < items->size();
-             start++) {
-            for (int skip = -1;
-                 skip <= 0 || (size_t)(start + skip + 1) < items->size();
-                 skip++) {
-                for (int index = start;
-                     (size_t)index < items->size();
-                     index++) {
-                    std::string key = skip == -1 ?
-                        StringPrintf("%d_e_%d", start, index) :
-                        StringPrintf("%d_%d_%d", start, skip, index);
-                    int startMonth = 1 + start - 1;
-                    std::string event;
-                    int endMonth = startMonth + index - start;
-                    int time = (endMonth >= 4 && endMonth <= 10) ? 10 : 11;
-
-                    if (start == index) {
-                        event = StringPrintf(single.c_str(), startMonth, day, time);
-                    } else {
-                        // Monthly recurrence uses INTERVAL instead of
-                        // EXDATEs, in contrast to yearly recurrence
-                        // (where Exchange somehow didn't grok the
-                        // INTERVAL). So EXDATEs are only necessary
-                        // for the first, second, last case.
-                        if (skip == -1 ) {
-                            std::string exdates;
-                            for (int month = startMonth; month <= endMonth; month++) {
-                                int step = month - startMonth;
-                                // a gap?
-                                if (step > 1 && (size_t)step < items->size() - start - 1) {
-                                    exdates +=
-                                        StringPrintf("EXDATE;TZID=Standard Timezone:2012%02d01T120000\n",
-                                                     month);
-                                }
-                            }
-                            event = StringPrintf(many.c_str(), startMonth, day, endMonth, time, 1, exdates.c_str());
-                        } else {
-                            event = StringPrintf(many.c_str(), startMonth, day, endMonth, time, skip + 1, "");
-                        }
-                    }
-                    items->m_options.insert(StringPair(key, event));
-                }
-            }
-        }
+        items->m_testLinkedItemsSubsetAdditional = boost::bind(additionalMonthly,
+                                                               single, many, day,
+                                                               _1, _2, _3, _4);
     }
 }
 
@@ -6155,57 +6309,9 @@ void ClientTest::getTestData(const char *type, Config &config)
                     "END:VEVENT\n" +
                     post;
 
-                // expands to the insert calls below: doing it programmatically is
-                // longer for a small number of test items, but has the advantage
-                // that it works for an arbitrary number of them
-                for (int start = 1;
-                     (size_t)start < items->size();
-                     start++) {
-                    for (int skip = 0;
-                         !skip || (size_t)(start + skip + 1) < items->size();
-                         skip++) {
-                        for (int index = start;
-                             (size_t)index < items->size();
-                             index++) {
-                            std::string key = StringPrintf("%d_%d_%d",
-                                                           start, skip, index);
-                            int startYear = 2012 + start - 1;
-                            std::string event;
-                            if (start == index) {
-                                event = StringPrintf(single.c_str(), startYear);
-                            } else {
-                                int endYear = startYear + index - start;
-                                std::string exdates;
-                                for (int year = startYear; year <= endYear; year++) {
-                                    // a gap?
-                                    if ((year - startYear) % (skip + 1)) {
-                                        exdates +=
-                                            StringPrintf("EXDATE;TZID=Standard Timezone:%04d0101T120000\n",
-                                                         year);
-                                    }
-                                }
-                                event = StringPrintf(many.c_str(), startYear, endYear, exdates.c_str());
-                            }
-                            items->m_options.insert(StringPair(key, event));
-                        }
-                    }
-                }
-
-#if 0
-                boost::assign::insert(items->m_options)
-                    ("1_0_1", StringPrintf(single.c_str(), 2012))
-                    ("1_0_2", StringPrintf(many.c_str(), 2012, 2013, ""))
-                    ("1_0_3", StringPrintf(many.c_str(), 2012, 2014, ""))
-
-                    ("1_1_1", StringPrintf(single.c_str(), 2012))
-                    ("1_1_3", StringPrintf(many.c_str(), 2012, 2014, "EXDATE;TZID=Standard Timezone:20130101T120000\n"))
-
-                    ("2_0_2", StringPrintf(single.c_str(), 2013))
-                    ("2_0_3", StringPrintf(many.c_str(), 2013, 2014, ""))
-
-                    ("3_0_3", StringPrintf(single.c_str(), 2014))
-                    ;
-#endif
+                items->m_testLinkedItemsSubsetAdditional = boost::bind(additionalYearly,
+                                                                       single, many,
+                                                                       _1, _2, _3, _4);
             }
 
             addMonthly(index, config.m_linkedItemsSubset, pre, post, "First", 1, 12);
@@ -6225,70 +6331,6 @@ void ClientTest::getTestData(const char *type, Config &config)
                              "TRANSP:TRANSPARENT\n"
                              "END:VEVENT\n" +
                              post);
-            // instead of trying to determine the dates of all Sundays in 2012
-            // algorithmically, hard-code them...
-            struct {
-                int m_month, m_day;
-            } sundays[] = {
-                { 1, 1 },
-                { 1, 8 },
-                { 1, 15 },
-                { 1, 22 },
-                { 1, 29 },
-                { 2, 5 },
-                { 2, 12 },
-                { 2, 19 },
-                { 2, 26 },
-                { 3, 4 },
-                { 3, 11 },
-                { 3, 18 },
-// winter time ends on March 25th, week 12 (counting from zero)
-#define SUNDAYS_2012_WINTER_TIME_ENDS 12
-                { 3, 25 },
-                { 4, 1 },
-                { 4, 8 },
-                { 4, 15 },
-                { 4, 22 },
-                { 4, 29 },
-                { 5, 6 },
-                { 5, 13 },
-                { 5, 20 },
-                { 5, 27 },
-                { 6, 3 },
-                { 6, 10 },
-                { 6, 17 },
-                { 6, 24 },
-                { 7, 1 },
-                { 7, 8 },
-                { 7, 15 },
-                { 7, 22 },
-                { 7, 29 },
-                { 8, 5 },
-                { 8, 12 },
-                { 8, 19 },
-                { 8, 26 },
-                { 9, 2 },
-                { 9, 9 },
-                { 9, 16 },
-                { 9, 23 },
-                { 9, 30 },
-                { 10, 7 },
-                { 10, 14 },
-                { 10, 21 },
-// winter time start on October 28th, week 43 (counting from zero)
-#define SUNDAYS_2012_WINTER_TIME_STARTS 43
-                { 10, 28 },
-                { 11, 4 },
-                { 11, 11 },
-                { 11, 18 },
-                { 11, 25 },
-                { 12, 2 },
-                { 12, 9 },
-                { 12, 16 },
-                { 12, 23 },
-                { 12, 30 },
-                { 0, 0 }
-            };
             for (int i = 0; sundays[i].m_month; i++) {
                 items->push_back(StringPrintf((pre +
                                                "BEGIN:VEVENT\n"
@@ -6332,66 +6374,9 @@ void ClientTest::getTestData(const char *type, Config &config)
                     "END:VEVENT\n" +
                     post;
 
-                for (int start = 1;
-                     (size_t)start < items->size();
-                     start++) {
-                    for (int skip = -1;
-                         skip <= 0 || (size_t)(start + skip + 1) < items->size();
-                         skip++) {
-                        for (int index = start;
-                             (size_t)index < items->size();
-                             index++) {
-                            std::string key = skip == -1 ?
-                                StringPrintf("%d_e_%d", start, index) :
-                                StringPrintf("%d_%d_%d", start, skip, index);
-                            int startWeek = start - 1; // numbered from zero in "sundays" array
-                            if (startWeek < 0) {
-                                startWeek = 0;
-                            }
-                            std::string event;
-                            int endWeek = startWeek + index - start;
-                            int time = (endWeek >= SUNDAYS_2012_WINTER_TIME_ENDS &&
-                                        endWeek < SUNDAYS_2012_WINTER_TIME_STARTS) ? 12 : 13;
-                            int startMonth = sundays[startWeek].m_month;
-                            int startDay = sundays[startWeek].m_day;
-                            if (start == index) {
-                                event = StringPrintf(single.c_str(), startMonth, startDay, time);
-                            } else {
-                                int endMonth = sundays[endWeek].m_month;
-                                int endDay = sundays[endWeek].m_day;
-
-                                // Weekly recurrence uses INTERVAL instead of
-                                // EXDATEs, in contrast to yearly recurrence
-                                // (where Exchange somehow didn't grok the
-                                // INTERVAL). So EXDATEs are only necessary
-                                // for the first, second, last case.
-                                std::string exdates;
-                                if (skip == -1 ) {
-                                    for (int week = startWeek; week <= endWeek; week++) {
-                                        int step = week - startWeek;
-                                        // a gap?
-                                        if (step > 1 && (size_t)step < items->size() - start - 1) {
-                                            exdates +=
-                                                StringPrintf("EXDATE;TZID=Standard Timezone:2012%02d%02dT140000\n",
-                                                             sundays[week].m_month,
-                                                             sundays[week].m_day);
-                                        }
-                                    }
-                                    event = StringPrintf(many.c_str(),
-                                                         startMonth, startDay,
-                                                         endMonth, endDay,
-                                                         time, 1, exdates.c_str());
-                                } else {
-                                    event = StringPrintf(many.c_str(),
-                                                         startMonth, startDay,
-                                                         endMonth, endDay,
-                                                         time, skip + 1, "");
-                                }
-                            }
-                            items->m_options.insert(StringPair(key, event));
-                        }
-                    }
-                }
+                items ->m_testLinkedItemsSubsetAdditional = boost::bind(additionalWeekly,
+                                                                        single, many,
+                                                                        _1, _2, _3, _4);
             }
         }
 

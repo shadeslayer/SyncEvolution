@@ -327,8 +327,10 @@ struct ClientTestConfig {
     typedef class LinkedItems : public std::vector<std::string> {
     public:
         std::string m_name; /**< used as Client::Source::LinkedItems<m_name> */
-        StringMap m_options; /**< used to pass additional parameters to the test,
-                                for example testLinkedItemsSubset */
+        StringMap m_options; /**< used to pass additional parameters to the test */
+        /** for testLinkedItemsSubset: create the additional VEVENT that is added when talking to Exchange;
+            parameters are start, skip, index and total number of items in that test */
+        boost::function<std::string (int, int, int, int)> m_testLinkedItemsSubsetAdditional;
     } LinkedItems_t;
 
     /**
