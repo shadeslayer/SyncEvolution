@@ -322,11 +322,21 @@ class Context:
         resultchecker = self.findTestFile("resultchecker.py")
         compare = self.findTestFile("compare.xsl")
         generateHTML = self.findTestFile("generate-html.xsl")
-        self.runCommand(resultchecker + " " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+uri +" "+srcdir + " '" + shell + " " + testprefix +" '"+" '" +backenddir +"'");
-        # transform to html
-        self.runCommand("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + self.lastresultdir +"/nightly.xml "+compare+" "+ self.resultdir+"/nightly.xml")
+        commands = []
+
+        # produce nightly.xml from plain text log files
+        commands.append(resultchecker + " " +self.resultdir+" "+"'"+",".join(run_servers)+"'"+" "+uri +" "+srcdir + " '" + shell + " " + testprefix +" '"+" '" +backenddir +"'")
+        previousxml = os.path.join(self.lastresultdir, "nightly.xml")
+
+        if os.path.exists(previousxml):
+            # compare current nightly.xml against previous file
+            commands.append("xsltproc -o " + self.resultdir + "/cmp_result.xml --stringparam cmp_file " + previousxml + " " + compare + " " + self.resultdir + "/nightly.xml")
+
         # produce HTML with URLs relative to current directory of the nightly.html
-        self.runCommand("xsltproc -o " + self.resultdir + "/nightly.html --stringparam url . --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + generateHTML + " "+ self.resultdir+"/nightly.xml")
+        commands.append("xsltproc -o " + self.resultdir + "/nightly.html --stringparam url . --stringparam cmp_result_file " + self.resultdir + "/cmp_result.xml " + generateHTML + " "+ self.resultdir+"/nightly.xml")
+
+        self.runCommand(" && ".join(commands))
+
         # report result by email
         if self.recipients:
             server = smtplib.SMTP(self.mailhost)
