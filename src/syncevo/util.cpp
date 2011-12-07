@@ -311,6 +311,7 @@ int Execute(const std::string &cmd, ExecuteFlags flags) throw()
 
 UUID::UUID()
 {
+#ifdef USE_SRAND
     static class InitSRand {
     public:
         InitSRand() {
@@ -321,17 +322,32 @@ UUID::UUID()
             }
             srand(seed);
         }
-    } initSRand;
+        int operator () () { return rand(); }
+    } myrand;
+#else
+    static class InitSRand {
+        unsigned int m_seed;
+    public:
+        InitSRand() {
+            ifstream seedsource("/dev/urandom");
+            if (!seedsource.get((char *)&m_seed, sizeof(m_seed))) {
+                m_seed = time(NULL);
+            }
+        }
+        int operator () () { return rand_r(&m_seed); }
+    } myrand;
+#endif
+
 
     char buffer[16 * 4 + 5];
     sprintf(buffer, "%08x-%04x-%04x-%02x%02x-%08x%04x",
-            rand() & 0xFFFFFFFF,
-            rand() & 0xFFFF,
-            (rand() & 0x0FFF) | 0x4000 /* RFC 4122 time_hi_and_version */,
-            (rand() & 0xBF) | 0x80 /* clock_seq_hi_and_reserved */,
-            rand() & 0xFF,
-            rand() & 0xFFFFFFFF,
-            rand() & 0xFFFF
+            myrand() & 0xFFFFFFFF,
+            myrand() & 0xFFFF,
+            (myrand() & 0x0FFF) | 0x4000 /* RFC 4122 time_hi_and_version */,
+            (myrand() & 0xBF) | 0x80 /* clock_seq_hi_and_reserved */,
+            myrand() & 0xFF,
+            myrand() & 0xFFFFFFFF,
+            myrand() & 0xFFFF
             );
     this->assign(buffer);
 }
