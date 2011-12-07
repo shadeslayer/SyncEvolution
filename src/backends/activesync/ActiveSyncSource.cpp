@@ -234,8 +234,8 @@ void ActiveSyncSource::deleteItem(const string &luid)
 {
     // send delete request
     // TODO (?): batch delete requests
-    GSList* items = NULL;
-    items = g_slist_prepend(items, (char*)luid.c_str());
+    GListCXX<char, GSList> items;
+    items.push_back((char *)luid.c_str());
 
     GErrorCXX gerror;
     char *buffer;
