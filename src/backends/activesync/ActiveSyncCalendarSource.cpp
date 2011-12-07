@@ -129,9 +129,7 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
 
             gerror.throwError("reading ActiveSync changes");
         }
-        if (!buffer) {
-            throwError("reading changes: empty sync key returned");
-        }
+        GStringPtr bufferOwner(buffer, "reading changes: empty sync key returned");
 
         // TODO: Test that we really get an empty token here for an unexpected slow
         // sync. If not, we'll start an incremental sync here and later the engine

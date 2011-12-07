@@ -128,9 +128,7 @@ void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string
 
             gerror.throwError("reading ActiveSync changes");
         }
-        if (!buffer) {
-            throwError("reading changes: empty sync key returned");
-        }
+        GStringPtr bufferOwner(buffer, "reading changes: empty sync key returned");
 
         // TODO: Test that we really get an empty token here for an unexpected slow
         // sync. If not, we'll start an incremental sync here and later the engine
@@ -248,9 +246,7 @@ void ActiveSyncSource::deleteItem(const string &luid)
                                        gerror)) {
         gerror.throwError("deleting eas item");
     }
-    if (!buffer) {
-        throwError("delete items: empty sync key returned");
-    }
+    GStringPtr bufferOwner(buffer, "delete items: empty sync key returned");
 
     // remove from item list
     if (m_ids) {
@@ -322,9 +318,7 @@ SyncSourceSerialize::InsertItemResult ActiveSyncSource::insertItem(const std::st
         }
         res.m_luid = luid;
     }
-    if (!buffer) {
-        throwError("insert item: empty sync key returned");
-    }
+    GStringPtr bufferOwner(buffer, "insert item: empty sync key returned");
 
     // add/update in cache
     if (m_ids) {
