@@ -2744,6 +2744,9 @@ void SyncContext::initMain(const char *appname)
     g_type_init();
     g_thread_init(NULL);
     g_set_prgname(appname);
+
+    // redirect glib logging into our own logging
+    g_log_set_default_handler(Logger::glogFunc, NULL);
 #endif
 
     struct sigaction sa;

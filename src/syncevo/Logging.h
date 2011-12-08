@@ -24,6 +24,13 @@
 #include <stdarg.h>
 #include <string>
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+#ifdef HAVE_GLIB
+# include <glib.h>
+#endif
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -107,7 +114,19 @@ class Logger
      */
     static void setProcessName(const std::string &name) { m_processName = name; }
     static std::string getProcessName() { return m_processName; }
-    
+
+#ifdef HAVE_GLIB
+    /**
+     * can be used in g_log_set_handler() to redirect log messages
+     * into our own logging; must be called for each log domain
+     * that may be relevant
+     */
+    static void glogFunc(const gchar *logDomain,
+                         GLogLevelFlags logLevel,
+                         const gchar *message,
+                         gpointer userData);
+#endif
+
     virtual ~Logger() {}
 
     /**

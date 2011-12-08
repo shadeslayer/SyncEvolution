@@ -122,4 +122,26 @@ Logger::Level Logger::strToLevel(const char *str)
     }
 }
 
+#ifdef HAVE_GLIB
+void Logger::glogFunc(const gchar *logDomain,
+                      GLogLevelFlags logLevel,
+                      const gchar *message,
+                      gpointer userData)
+{
+    LoggerBase::instance().message((logLevel & (G_LOG_LEVEL_ERROR|G_LOG_LEVEL_CRITICAL)) ? ERROR :
+                                   (logLevel & G_LOG_LEVEL_WARNING) ? WARNING :
+                                   (logLevel & (G_LOG_LEVEL_MESSAGE|G_LOG_LEVEL_INFO)) ? SHOW :
+                                   DEBUG,
+                                   NULL,
+                                   NULL,
+                                   0,
+                                   NULL,
+                                   "%s%s%s",
+                                   logDomain ? logDomain : "",
+                                   logDomain ? ": " : "",
+                                   message);
+}
+
+#endif
+
 SE_END_CXX
