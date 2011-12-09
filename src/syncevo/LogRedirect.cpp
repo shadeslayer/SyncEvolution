@@ -706,6 +706,11 @@ public:
         // check that intercept all glib message and don't print anything to stdout
         int orig_stdout = -1;
         try {
+            // need to restore the current state below; would be nice
+            // to query it instead of assuming that Logger::glogFunc
+            // is the current log handler
+            g_log_set_default_handler(g_log_default_handler, NULL);
+
             orig_stdout = dup(STDOUT_FILENO);
             dup2(new_stdout, STDOUT_FILENO);
 
@@ -744,9 +749,11 @@ public:
             CPPUNIT_ASSERT(dev.find("normal message stderr") != dev.npos);
             CPPUNIT_ASSERT(debug.find("test warning") != debug.npos);
         } catch(...) {
+            g_log_set_default_handler(Logger::glogFunc, NULL);
             dup2(orig_stdout, STDOUT_FILENO);
             throw;
         }
+        g_log_set_default_handler(Logger::glogFunc, NULL);
         dup2(orig_stdout, STDOUT_FILENO);
 
         lseek(new_stdout, 0, SEEK_SET);

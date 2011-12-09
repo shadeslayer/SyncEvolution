@@ -569,6 +569,9 @@ static class RegisterTestEvolution {
 public:
     RegisterTestEvolution() :
         testClient("1") {
+
+        SyncContext::initMain("client-test");
+
         struct sigaction act;
 
         memset(&act, 0, sizeof(act));
@@ -577,13 +580,6 @@ public:
         sigaction(SIGSEGV, &act, NULL);
         sigaction(SIGILL, &act, NULL);
 
-#if defined(HAVE_GLIB)
-        // this is required when using glib directly or indirectly
-        g_type_init();
-        g_thread_init(NULL);
-        g_set_prgname("client-test");
-#endif
-        EDSAbiWrapperInit();
         testClient.registerTests();
     }
 
