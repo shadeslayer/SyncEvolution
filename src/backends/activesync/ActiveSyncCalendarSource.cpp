@@ -295,7 +295,7 @@ ActiveSyncCalendarSource::Event &ActiveSyncCalendarSource::findItem(const std::s
 {
     EventCache::iterator it = m_cache.find(easid);
     if (it == m_cache.end()) {
-        throwError("event not found");
+        throwError(STATUS_NOT_FOUND, "merged event not found: " + easid);
     }
     return *it->second;
 }
@@ -556,7 +556,7 @@ void ActiveSyncCalendarSource::readItem(const std::string &luid, std::string &it
             eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(event.m_calendar)));
             item = icalstr.get();
         } else {
-            SE_THROW("event not found");
+            throwError(STATUS_NOT_FOUND, "sub event not found: " + subid + " in " + easid);
         }
     } else {
         // complex case: create VCALENDAR with just the VTIMEZONE definition(s)
@@ -580,7 +580,7 @@ void ActiveSyncCalendarSource::readItem(const std::string &luid, std::string &it
             }
         }
         if (!found) {
-            SE_THROW("event not found");
+            throwError(STATUS_NOT_FOUND, "sub event not found: " + subid + " in " + easid);
         }
         eptr<char> icalstr(ical_strdup(icalcomponent_as_ical_string(calendar)));
         item = icalstr.get();
@@ -600,7 +600,7 @@ void ActiveSyncCalendarSource::deleteItem(const string &luid)
     if (event.m_subids.size() == 1) {
         // remove entire merged item, nothing will be left after removal
         if (*event.m_subids.begin() != subid) {
-            SE_THROW("event not found");
+            throwError(STATUS_NOT_FOUND, "sub event not found: " + subid + " in " + easid);
         } else {
             event.m_subids.clear();
             event.m_calendar = NULL;
@@ -624,7 +624,7 @@ void ActiveSyncCalendarSource::deleteItem(const string &luid)
             }
         }
         if (!found) {
-            SE_THROW("event not found");
+            throwError(STATUS_NOT_FOUND, "sub event not found: " + subid + " in " + easid);
         }
         event.m_subids.erase(subid);
         // TODO: avoid updating the item immediately

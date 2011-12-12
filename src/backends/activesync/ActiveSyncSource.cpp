@@ -26,6 +26,8 @@
 
 #include "ActiveSyncSource.h"
 
+#include <eas-errors.h>
+
 #include <stdlib.h>
 #include <errno.h>
 
@@ -230,6 +232,14 @@ std::string ActiveSyncSource::endSync(bool success)
 
 void ActiveSyncSource::deleteItem(const string &luid)
 {
+    // asking to delete a non-existent item via ActiveSync does not
+    // trigger an error; this is expected by the caller, so detect
+    // the problem by looking up the item in our list (and keep the
+    // list up-to-date elsewhere)
+    if (m_ids && m_ids->readProperty(luid).empty()) {
+        throwError(STATUS_NOT_FOUND, "item not found: " + luid);
+    }
+
     // send delete request
     // TODO (?): batch delete requests
     GListCXX<char, GSList> items;
@@ -346,7 +356,18 @@ void ActiveSyncSource::readItem(const std::string &luid, std::string &item)
                                          tmp,
                                          getEasType(),
                                          gerror)) {
-            gerror.throwError(StringPrintf("reading eas item %s", luid.c_str()));
+            if (gerror.m_gerror->message &&
+                strstr(gerror.m_gerror->message, "ObjectNotFound")
+                /* gerror.matches(EAS_CONNECTION_ERROR, EAS_CONNECTION_ITEMOPERATIONS_ERROR_OBJECTNOTFOUND)
+                   (gdb) p *m_gerror
+                   $7 = {domain = 156, code = 36, 
+                   message = 0xda2940 "GDBus.Error:org.meego.activesyncd.ItemOperationsError.ObjectNotFound: Document library - The object was not found or access denied."}
+
+                */) {
+                throwError(STATUS_NOT_FOUND, "item not found: " + luid);
+            } else {
+                gerror.throwError(StringPrintf("reading eas item %s", luid.c_str()));
+            }
         }
         if (!tmp->data) {
             throwError(StringPrintf("no body returned for eas item %s", luid.c_str()));
