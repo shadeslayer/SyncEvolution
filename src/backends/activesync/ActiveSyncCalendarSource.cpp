@@ -560,6 +560,7 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
                 if (removeme) {
                     // this is what we expect when the caller mentions the ActiveSync ID
                     icalcomponent_remove_component(event.m_calendar, removeme);
+                    icalcomponent_free(removeme);
                 } else {
                     // caller confused?!
                     SE_THROW("event not found");
