@@ -472,13 +472,57 @@ SyncSourceRaw::InsertItemResult ActiveSyncCalendarSource::insertItem(const std::
             m_cache[newEvent->m_easid] = newEvent;
         }
     } else {
-        if (subid != knownSubID) {
+        if (subid != knownSubID && !subid.empty()) {
             SE_THROW(StringPrintf("update for eas item %s rid %s has wrong rid %s",
                                   easid.c_str(),
                                   knownSubID.c_str(),
                                   subid.c_str()));
         }
         Event &event = findItem(easid);
+
+        if (subid.empty() && subid != knownSubID) {
+            // fix incomplete iCalendar 2.0 item: should have had a RECURRENCE-ID
+            icalcomponent *newcomp =
+                icalcomponent_get_first_component(newEvent->m_calendar, ICAL_VEVENT_COMPONENT);
+            icalproperty *prop = icalcomponent_get_first_property(newcomp, ICAL_RECURRENCEID_PROPERTY);
+            if (prop) {
+                icalcomponent_remove_property(newcomp, prop);
+                icalproperty_free(prop);
+            }
+
+            // reconstruct RECURRENCE-ID with known value and TZID from start time of
+            // the parent event or (if not found) the current event
+            eptr<icalproperty> rid(icalproperty_new_recurrenceid(icaltime_from_string(knownSubID.c_str())),
+                                   "new rid");
+            icalproperty *dtstart = NULL;
+            icalcomponent *comp;
+            // look for parent first
+            for (comp = icalcomponent_get_first_component(event.m_calendar, ICAL_VEVENT_COMPONENT);
+                 comp && !dtstart;
+                 comp = icalcomponent_get_next_component(event.m_calendar, ICAL_VEVENT_COMPONENT)) {
+                if (!icalcomponent_get_first_property(comp, ICAL_RECURRENCEID_PROPERTY)) {
+                    dtstart = icalcomponent_get_first_property(comp, ICAL_DTSTART_PROPERTY);
+                }
+            }
+            // fall back to current event
+            if (!dtstart) {
+                dtstart = icalcomponent_get_first_property(newcomp, ICAL_DTSTART_PROPERTY);
+            }
+            // ignore missing TZID
+            if (dtstart) {
+                icalparameter *tzid = icalproperty_get_first_parameter(dtstart, ICAL_TZID_PARAMETER);
+                if (tzid) {
+                    icalproperty_set_parameter(rid, icalparameter_new_clone(tzid));
+                }
+            }
+
+            // finally add RECURRENCE-ID and fix newEvent's meta information
+            icalcomponent_add_property(newcomp, rid.release());
+            subid = knownSubID;
+            newEvent->m_subids.erase("");
+            newEvent->m_subids.insert(subid);
+        }
+
         if (event.m_subids.size() == 1 &&
             *event.m_subids.begin() == subid) {
             // special case: no need to load old data, replace or request merge immediately
