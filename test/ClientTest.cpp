@@ -6112,7 +6112,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 // some properties are not stored/supported
                 boost::replace_all(item, "TZNAME:CET\n", "");
                 boost::replace_all(item, "TZNAME:CEST\n", "");
-                boost::replace_all(item, "X-LIC-LOCATION:Europe/Berlin\n", "");
+                boost::replace_all(item, "X-LIC-LOCATION:Standard Timezone\n", "");
             }
 
             recurringAllDay = true;
