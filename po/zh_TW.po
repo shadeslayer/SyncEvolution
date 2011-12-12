@@ -1,16 +1,25 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# 
+# Translators:
 # Cheng-Chia Tseng <pswo10680@gmail.com>, 2010.
+# Chung-Ying Huang <cutedoris@gmail.com>, 2011.
+#   <tomas.galicia@intel.com>, 2011.
+# Wen-Hsin Moh <meego.pti.cht@gmail.com>, 2011.
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: http://moblin.org/projects/syncevolution\n"
-"POT-Creation-Date: 2010-05-12 09:27+0000\n"
-"PO-Revision-Date: 2010-04-05 22:53+0800\n"
-"Last-Translator: Cheng-Chia Tseng <pswo10680@gmail.com>\n"
-"Language-Team: chinese-l10n <chinese-l10n@googlegroups.com>\n"
+"Project-Id-Version: syncevolution\n"
+"Report-Msgid-Bugs-To: https://bugs.meego.com/\n"
+"POT-Creation-Date: 2011-12-05 10:21-0800\n"
+"PO-Revision-Date: 2011-12-09 19:35+0000\n"
+"Last-Translator: GLS_CHT <meego.pti.cht@gmail.com>\n"
+"Language-Team: Chinese (Taiwan) (http://www.transifex.net/projects/p/meego/team/zh_TW/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n!=1;\n"
+"Language: zh_TW\n"
+"Plural-Forms: nplurals=1; plural=0\n"
 
 #. TRANSLATORS: this is the application name that may be used by e.g.
 #. the windowmanager
@@ -22,7 +31,7 @@ msgstr "同步"
 
 #: ../src/gtk-ui/sync-ui.c:266
 msgid "Contacts"
-msgstr "連絡人"
+msgstr "聯絡人"
 
 #: ../src/gtk-ui/sync-ui.c:268
 msgid "Appointments"
@@ -62,76 +71,74 @@ msgstr "是，執行慢速同步"
 msgid "No, cancel sync"
 msgstr "不，取消同步"
 
-#. TRANSLATORS: confirmation dialog for refresh-from-server. Placeholder
+#. TRANSLATORS: confirmation dialog for "refresh from peer". Placeholder
 #. * is service/device name
 #: ../src/gtk-ui/sync-ui.c:424
 #, c-format
 msgid ""
 "Do you want to delete all local data and replace it with data from %s? This "
 "is not usually advised."
-msgstr ""
-"您要刪除所有本機資料，並使用 %s 上的資料取代它嗎？我們通常不建議這麼做。"
+msgstr "您要刪除所有本機資料，並使用 %s 上的資料取代它嗎？我們通常不建議這麼做。"
 
-#: ../src/gtk-ui/sync-ui.c:429 ../src/gtk-ui/sync-ui.c:460
+#: ../src/gtk-ui/sync-ui.c:429 ../src/gtk-ui/sync-ui.c:462
 msgid "Yes, delete and replace"
 msgstr "是，刪除並取代"
 
-#: ../src/gtk-ui/sync-ui.c:429 ../src/gtk-ui/sync-ui.c:460
-#: ../src/gtk-ui/sync-ui.c:1605
+#: ../src/gtk-ui/sync-ui.c:429 ../src/gtk-ui/sync-ui.c:462
+#: ../src/gtk-ui/sync-ui.c:1610
 msgid "No"
 msgstr "否"
 
-#. TRANSLATORS: confirmation dialog for refresh-from-client. Placeholder
+#. TRANSLATORS: confirmation dialog for "refresh from local side". Placeholder
 #. * is service/device name
-#: ../src/gtk-ui/sync-ui.c:455
+#: ../src/gtk-ui/sync-ui.c:457
 #, c-format
 msgid ""
 "Do you want to delete all data in %s and replace it with your local data? "
 "This is not usually advised."
-msgstr ""
-"您要刪除所有在 %s 上的資料，並且使用本機資料取代它嗎？我們通常不建議這麼做。"
+msgstr "您要刪除所有在 %s 上的資料，並且使用本機資料取代它嗎？我們通常不建議這麼做。"
 
-#: ../src/gtk-ui/sync-ui.c:487
+#: ../src/gtk-ui/sync-ui.c:491
 msgid "Trying to cancel sync"
 msgstr "正在嘗試取消同步"
 
-#: ../src/gtk-ui/sync-ui.c:529
+#: ../src/gtk-ui/sync-ui.c:533
 msgid "No service or device selected"
 msgstr "未選取服務或裝置"
 
 #. TRANSLATORS: This is the title on main view. Placeholder is
 #. * the service name. Example: "Google - synced just now"
-#: ../src/gtk-ui/sync-ui.c:537
+#: ../src/gtk-ui/sync-ui.c:541
 #, c-format
 msgid "%s - synced just now"
 msgstr "%s - 剛才同步過"
 
-#: ../src/gtk-ui/sync-ui.c:541
+#: ../src/gtk-ui/sync-ui.c:545
 #, c-format
 msgid "%s - synced a minute ago"
 msgstr "%s - 一分鐘前同步過"
 
-#: ../src/gtk-ui/sync-ui.c:545
+#: ../src/gtk-ui/sync-ui.c:549
 #, c-format
 msgid "%s - synced %ld minutes ago"
 msgstr "%s - %ld 分鐘前同步過"
 
-#: ../src/gtk-ui/sync-ui.c:550
+#: ../src/gtk-ui/sync-ui.c:554
 #, c-format
 msgid "%s - synced an hour ago"
 msgstr "%s - 一小時前同步過"
 
-#: ../src/gtk-ui/sync-ui.c:554
+#: ../src/gtk-ui/sync-ui.c:558
 #, c-format
 msgid "%s - synced %ld hours ago"
 msgstr "%s - %ld 小時前同步過"
 
-#: ../src/gtk-ui/sync-ui.c:559
+#: ../src/gtk-ui/sync-ui.c:563
 #, c-format
 msgid "%s - synced a day ago"
 msgstr "%s - 一天前同步過"
 
-#: ../src/gtk-ui/sync-ui.c:563
+#: ../src/gtk-ui/sync-ui.c:567
 #, c-format
 msgid "%s - synced %ld days ago"
 msgstr "%s - %ld 天前同步過"
@@ -139,68 +146,66 @@ msgstr "%s - %ld 天前同步過"
 #. TRANSLATORS: Action button in info bar in main view. Shown with e.g.
 #. * "You've just restored a backup. The changes have not been "
 #. * "synced with %s yet"
-#: ../src/gtk-ui/sync-ui.c:612 ../src/gtk-ui/sync-ui.c:726
+#: ../src/gtk-ui/sync-ui.c:616 ../src/gtk-ui/sync-ui.c:701
 msgid "Sync now"
 msgstr "現在同步"
 
 #. TRANSLATORS: Action button in info bar in main view. Shown with e.g.
 #. * "A normal sync is not possible at this time..." message.
 #. * "Other options" will open Emergency view
-#: ../src/gtk-ui/sync-ui.c:618 ../src/gtk-ui/ui.glade.h:37
+#: ../src/gtk-ui/sync-ui.c:622 ../src/gtk-ui/ui.glade.h:37
 msgid "Slow sync"
 msgstr "慢速同步"
 
-#: ../src/gtk-ui/sync-ui.c:619
+#: ../src/gtk-ui/sync-ui.c:623
 msgid "Other options..."
 msgstr "其他選項..."
 
 #. TRANSLATORS: Action button in info bar in main view. Shown e.g.
 #. * when no service is selected. Will open configuration view
-#: ../src/gtk-ui/sync-ui.c:624
+#: ../src/gtk-ui/sync-ui.c:628
 msgid "Select sync service"
 msgstr "選取同步服務"
 
 #. TRANSLATORS: Action button in info bar in main view. Shown e.g.
 #. * login to service fails. Will open configuration view for this service
-#: ../src/gtk-ui/sync-ui.c:629
+#: ../src/gtk-ui/sync-ui.c:633
 msgid "Edit service settings"
 msgstr "編輯服務設定"
 
-#: ../src/gtk-ui/sync-ui.c:700
+#: ../src/gtk-ui/sync-ui.c:709
 msgid ""
 "You haven't selected a sync service or device yet. Sync services let you "
 "synchronize your data between your netbook and a web service. You can also "
 "sync directly with some devices."
-msgstr ""
-"您尚未選取同步服務或裝置。同步服務讓您在您的網路筆電與網路服務間同步您的資"
-"料。您也可以直接和一些裝置進行同步。"
+msgstr "您尚未選取同步服務或裝置。同步服務讓您在您的網路筆電與網路服務間同步您的資料。您也可以直接和一些裝置進行同步。"
 
-#: ../src/gtk-ui/sync-ui.c:722
+#: ../src/gtk-ui/sync-ui.c:729
 msgid "Sync again"
 msgstr "再次同步"
 
-#: ../src/gtk-ui/sync-ui.c:743
+#: ../src/gtk-ui/sync-ui.c:748
 msgid "Restoring"
 msgstr "正在還原"
 
-#: ../src/gtk-ui/sync-ui.c:745
+#: ../src/gtk-ui/sync-ui.c:750
 msgid "Syncing"
 msgstr "正在同步中"
 
 #. TRANSLATORS: This is for the button in main view, right side.
 #. Keep line length below ~20 characters, use two lines if needed
-#: ../src/gtk-ui/sync-ui.c:757 ../src/gtk-ui/sync-ui.c:3399
+#: ../src/gtk-ui/sync-ui.c:762 ../src/gtk-ui/sync-ui.c:3407
 msgid "Cancel sync"
 msgstr "取消同步"
 
-#: ../src/gtk-ui/sync-ui.c:922
+#: ../src/gtk-ui/sync-ui.c:927
 msgid "Back to sync"
 msgstr "返回同步"
 
 #. TRANSLATORS: label for checkbutton/toggle in main view.
 #. * Please stick to similar length strings or break the line with
 #. * "\n" if absolutely needed
-#: ../src/gtk-ui/sync-ui.c:1224
+#: ../src/gtk-ui/sync-ui.c:1229
 msgid "Automatic sync"
 msgstr "自動同步"
 
@@ -208,50 +213,50 @@ msgstr "自動同步"
 #. * currently selected data sources. First placeholder is service/device
 #. * name, second a comma separeted list of sources.
 #. * E.g. "Affected data: Google Contacts, Appointments"
-#: ../src/gtk-ui/sync-ui.c:1519
+#: ../src/gtk-ui/sync-ui.c:1524
 #, c-format
 msgid "Affected data: %s %s"
 msgstr "受影響的資料：%s %s"
 
-#: ../src/gtk-ui/sync-ui.c:1524
+#: ../src/gtk-ui/sync-ui.c:1529
 #, c-format
 msgid "Affected data: none"
 msgstr "受影響的資料：無"
 
 #. TRANSLATORS: confirmation for restoring a backup. placeholder is the
 #. * backup time string defined below
-#: ../src/gtk-ui/sync-ui.c:1602
+#: ../src/gtk-ui/sync-ui.c:1607
 #, c-format
 msgid ""
 "Do you want to restore the backup from %s? All changes you have made since "
 "then will be lost."
 msgstr "您想要還原來自 %s 的備份嗎？所有您從那時起的變更都會喪失。"
 
-#: ../src/gtk-ui/sync-ui.c:1605
+#: ../src/gtk-ui/sync-ui.c:1610
 msgid "Yes, restore"
 msgstr "是，還原"
 
 #. TRANSLATORS: date/time for strftime(), used in emergency view backup
 #. * label. Any time format that shows date and time is good.
-#: ../src/gtk-ui/sync-ui.c:1637
+#: ../src/gtk-ui/sync-ui.c:1642
 #, c-format
 msgid "%x %X"
 msgstr "%x %X"
 
 #. TRANSLATORS: label for a backup in emergency view. Placeholder is
 #. * service or device name
-#: ../src/gtk-ui/sync-ui.c:1656
+#: ../src/gtk-ui/sync-ui.c:1661
 #, c-format
 msgid "Backed up before syncing with %s"
 msgstr "在與 %s 同步前已備份"
 
-#: ../src/gtk-ui/sync-ui.c:1673
+#: ../src/gtk-ui/sync-ui.c:1678
 msgid "Restore"
 msgstr "還原"
 
 #. TRANSLATORS: this is an explanation in Emergency view.
 #. * Placeholder is a service/device name
-#: ../src/gtk-ui/sync-ui.c:1780
+#: ../src/gtk-ui/sync-ui.c:1785
 #, c-format
 msgid ""
 "A normal sync with %s is not possible at this time. You can do a slow two-"
@@ -259,10 +264,9 @@ msgid ""
 "sync or starting from scratch will still be required before normal sync is "
 "possible."
 msgstr ""
-"與 %s 的一般同步目前無法使用。您可以執行慢速雙方同步，或是從零開始。您也可以"
-"從備份中還原，但是在一般同步可以使用之前，會需要慢速同步或從零開始。"
+"與 %s 的一般同步目前無法使用。您可以執行慢速雙方同步，或是從零開始。您也可以從備份中還原，但是在一般同步可以使用之前，會需要慢速同步或從零開始。"
 
-#: ../src/gtk-ui/sync-ui.c:1790
+#: ../src/gtk-ui/sync-ui.c:1795
 #, c-format
 msgid ""
 "If something has gone horribly wrong, you can try a slow sync, start from "
@@ -272,7 +276,7 @@ msgstr "如果有東西發生可怕錯誤，您可以嘗試慢速同步、從零
 #. TRANSLATORS: These are a buttons in Emergency view. Placeholder is a
 #. * service/device name. Please don't use too long lines, but feel free to
 #. * use several lines.
-#: ../src/gtk-ui/sync-ui.c:1799
+#: ../src/gtk-ui/sync-ui.c:1804
 #, c-format
 msgid ""
 "Delete all your local\n"
@@ -283,7 +287,7 @@ msgstr ""
 "資料並使用來自\n"
 "%s 的資料取代"
 
-#: ../src/gtk-ui/sync-ui.c:1805
+#: ../src/gtk-ui/sync-ui.c:1810
 #, c-format
 msgid ""
 "Delete all data on\n"
@@ -294,96 +298,92 @@ msgstr ""
 "資料並使用您的本機\n"
 "資料取代"
 
-#: ../src/gtk-ui/sync-ui.c:2267
+#: ../src/gtk-ui/sync-ui.c:2275
 msgid "Failed to get list of supported services from SyncEvolution"
 msgstr "從 SyncEvolution 取得支援的服務清單時失敗"
 
-#: ../src/gtk-ui/sync-ui.c:2321
+#: ../src/gtk-ui/sync-ui.c:2329
 msgid ""
 "There was a problem communicating with the sync process. Please try again "
 "later."
 msgstr "與同步程序溝通成有錯誤發生。請稍候重試。"
 
-#: ../src/gtk-ui/sync-ui.c:2380
+#: ../src/gtk-ui/sync-ui.c:2388
 msgid "Restore failed"
 msgstr "還原失敗"
 
-#: ../src/gtk-ui/sync-ui.c:2383 ../src/gtk-ui/sync-ui.c:3268
+#: ../src/gtk-ui/sync-ui.c:2391 ../src/gtk-ui/sync-ui.c:3276
 msgid "Sync failed"
 msgstr "同步失敗"
 
-#: ../src/gtk-ui/sync-ui.c:2389
+#: ../src/gtk-ui/sync-ui.c:2397
 msgid "Restore complete"
 msgstr "還原完成"
 
-#: ../src/gtk-ui/sync-ui.c:2392
+#: ../src/gtk-ui/sync-ui.c:2400
 msgid "Sync complete"
 msgstr "同步完成"
 
-#: ../src/gtk-ui/sync-ui.c:2484
+#: ../src/gtk-ui/sync-ui.c:2492
 #, c-format
 msgid "Preparing '%s'"
 msgstr "正在準備「%s」"
 
-#: ../src/gtk-ui/sync-ui.c:2487
+#: ../src/gtk-ui/sync-ui.c:2495
 #, c-format
 msgid "Receiving '%s'"
 msgstr "正在接收「%s」"
 
-#: ../src/gtk-ui/sync-ui.c:2490
+#: ../src/gtk-ui/sync-ui.c:2498
 #, c-format
 msgid "Sending '%s'"
 msgstr "正在傳送「%s」"
 
-#: ../src/gtk-ui/sync-ui.c:2611
+#: ../src/gtk-ui/sync-ui.c:2619
 #, c-format
 msgid "There was one remote rejection."
 msgid_plural "There were %ld remote rejections."
-msgstr[0] "有過一次遠端拒絕。"
-msgstr[1] "有過 %ld 次遠端拒絕。"
+msgstr[0] "有 %ld 個遠端拒絕。"
 
-#: ../src/gtk-ui/sync-ui.c:2616
+#: ../src/gtk-ui/sync-ui.c:2624
 #, c-format
 msgid "There was one local rejection."
 msgid_plural "There were %ld local rejections."
-msgstr[0] "有過一次本機拒絕。"
-msgstr[1] "有過 %ld 次本機拒絕。"
+msgstr[0] "有 %ld 個本機拒絕。"
 
-#: ../src/gtk-ui/sync-ui.c:2621
+#: ../src/gtk-ui/sync-ui.c:2629
 #, c-format
 msgid "There were %ld local rejections and %ld remote rejections."
 msgstr "有過 %ld  次本機拒絕和 %ld  次遠端拒絕。"
 
-#: ../src/gtk-ui/sync-ui.c:2626
+#: ../src/gtk-ui/sync-ui.c:2634
 #, c-format
 msgid "Last time: No changes."
 msgstr "上次：沒有變更。"
 
-#: ../src/gtk-ui/sync-ui.c:2628
+#: ../src/gtk-ui/sync-ui.c:2636
 #, c-format
 msgid "Last time: Sent one change."
 msgid_plural "Last time: Sent %ld changes."
-msgstr[0] "上次：傳送了一個變更。"
-msgstr[1] "上次：傳送了 %ld 個變更。"
+msgstr[0] "上次：已傳送 %ld 個變更。"
 
 #. This is about changes made to the local data. Not all of these
 #. changes were requested by the remote server, so "applied"
 #. is a better word than "received" (bug #5185).
-#: ../src/gtk-ui/sync-ui.c:2636
+#: ../src/gtk-ui/sync-ui.c:2644
 #, c-format
 msgid "Last time: Applied one change."
 msgid_plural "Last time: Applied %ld changes."
-msgstr[0] "上次：套用了一個變更。"
-msgstr[1] "上次：套用了 %ld 個變更。"
+msgstr[0] "上次：已套用 %ld 個變更。"
 
-#: ../src/gtk-ui/sync-ui.c:2641
+#: ../src/gtk-ui/sync-ui.c:2649
 #, c-format
 msgid "Last time: Applied %ld changes and sent %ld changes."
 msgstr "上次：套用了 %ld 個變更並傳送了 %ld 個變更。"
 
 #. TRANSLATORS: the placeholder is a error message (hopefully)
 #. * explaining the problem
-#: ../src/gtk-ui/sync-ui.c:2848
+#: ../src/gtk-ui/sync-ui.c:2856
 #, c-format
 msgid ""
 "There was a problem with last sync:\n"
@@ -392,137 +392,136 @@ msgstr ""
 "上次同步有錯誤發生：\n"
 "%s"
 
-#: ../src/gtk-ui/sync-ui.c:2858
+#: ../src/gtk-ui/sync-ui.c:2866
 #, c-format
 msgid ""
 "You've just restored a backup. The changes have not been synced with %s yet"
 msgstr "您剛才已經還原一份備份。這些變更尚未與 %s 同步"
 
-#: ../src/gtk-ui/sync-ui.c:3146
+#: ../src/gtk-ui/sync-ui.c:3154
 msgid "Waiting for current operation to finish..."
 msgstr "正在等候目前的操作完成..."
 
 #. TRANSLATORS: next strings are error messages.
-#: ../src/gtk-ui/sync-ui.c:3180
+#: ../src/gtk-ui/sync-ui.c:3188
 msgid ""
-"A normal sync is not possible at this time. The server suggests a slow sync, "
-"but this might not always be what you want if both ends already have data."
-msgstr ""
-"一般同步目前無法使用。這台伺服器建議使用慢速同步，但這可能不總是您想要的，因"
-"為雙方可能都已經有資料。"
+"A normal sync is not possible at this time. The server suggests a slow sync,"
+" but this might not always be what you want if both ends already have data."
+msgstr "一般同步目前無法使用。這台伺服器建議使用慢速同步，但這可能不總是您想要的，因為雙方可能都已經有資料。"
 
-#: ../src/gtk-ui/sync-ui.c:3184
+#: ../src/gtk-ui/sync-ui.c:3192
 msgid "The sync process died unexpectedly."
 msgstr "同步程序在沒有預期的情況下終止了。"
 
-#: ../src/gtk-ui/sync-ui.c:3189
+#: ../src/gtk-ui/sync-ui.c:3197
 msgid ""
-"Password request was not answered. You can save the password in the settings "
-"to prevent the request."
+"Password request was not answered. You can save the password in the settings"
+" to prevent the request."
 msgstr "密碼請求沒有回應。您可以在設定值內儲存密碼來略過請求。"
 
 #. TODO use the service device name here, this is a remote problem
-#: ../src/gtk-ui/sync-ui.c:3193
+#: ../src/gtk-ui/sync-ui.c:3201
 msgid "There was a problem processing sync request. Trying again may help."
 msgstr "同步請發生問題。重試一次可能會有幫助。"
 
-#: ../src/gtk-ui/sync-ui.c:3199
+#: ../src/gtk-ui/sync-ui.c:3207
 msgid ""
 "Failed to login. Could there be a problem with your username or password?"
 msgstr "登入失敗。您的使用者名稱或密碼是否有問題？"
 
-#: ../src/gtk-ui/sync-ui.c:3202
+#: ../src/gtk-ui/sync-ui.c:3210
 msgid "Forbidden"
 msgstr "禁止"
 
 #. TRANSLATORS: data source means e.g. calendar or addressbook
-#: ../src/gtk-ui/sync-ui.c:3208
+#: ../src/gtk-ui/sync-ui.c:3216
 msgid ""
-"A data source could not be found. Could there be a problem with the settings?"
+"A data source could not be found. Could there be a problem with the "
+"settings?"
 msgstr "無法找到資料來源。設定值是否有問題？"
 
-#: ../src/gtk-ui/sync-ui.c:3212
+#: ../src/gtk-ui/sync-ui.c:3220
 msgid "Remote database error"
 msgstr "遠端資料庫錯誤"
 
 #. This can happen when EDS is borked, restart it may help...
-#: ../src/gtk-ui/sync-ui.c:3215
+#: ../src/gtk-ui/sync-ui.c:3223
 msgid ""
 "There is a problem with the local database. Syncing again or rebooting may "
 "help."
 msgstr "本機資料庫有問題。再次同步或是重新開機可能會有所幫助。"
 
-#: ../src/gtk-ui/sync-ui.c:3218
+#: ../src/gtk-ui/sync-ui.c:3226
 msgid "No space on disk"
 msgstr "磁碟沒有空間"
 
-#: ../src/gtk-ui/sync-ui.c:3220
+#: ../src/gtk-ui/sync-ui.c:3228
 msgid "Failed to process SyncML"
 msgstr "進行 SyncML 動作失敗"
 
-#: ../src/gtk-ui/sync-ui.c:3222
+#: ../src/gtk-ui/sync-ui.c:3230
 msgid "Server authorization failed"
 msgstr "伺服器授權失敗"
 
-#: ../src/gtk-ui/sync-ui.c:3224
+#: ../src/gtk-ui/sync-ui.c:3232
 msgid "Failed to parse configuration file"
 msgstr "解析設置檔案動作失敗"
 
-#: ../src/gtk-ui/sync-ui.c:3226
+#: ../src/gtk-ui/sync-ui.c:3234
 msgid "Failed to read configuration file"
 msgstr "讀取設置檔案動作失敗"
 
-#: ../src/gtk-ui/sync-ui.c:3228
+#: ../src/gtk-ui/sync-ui.c:3236
 msgid "No configuration found"
 msgstr "未找到設置"
 
-#: ../src/gtk-ui/sync-ui.c:3230
+#: ../src/gtk-ui/sync-ui.c:3238
 msgid "No configuration file found"
 msgstr "未找到設置檔案"
 
-#: ../src/gtk-ui/sync-ui.c:3232
+#: ../src/gtk-ui/sync-ui.c:3240
 msgid "Server sent bad content"
 msgstr "伺服器傳送出壞的內容"
 
-#: ../src/gtk-ui/sync-ui.c:3234
+#: ../src/gtk-ui/sync-ui.c:3242
 msgid "Connection certificate has expired"
 msgstr "連線憑證己過期"
 
-#: ../src/gtk-ui/sync-ui.c:3236
+#: ../src/gtk-ui/sync-ui.c:3244
 msgid "Connection certificate is invalid"
 msgstr "連線憑證無效"
 
-#: ../src/gtk-ui/sync-ui.c:3244
+#: ../src/gtk-ui/sync-ui.c:3252
 msgid ""
 "We were unable to connect to the server. The problem could be temporary or "
 "there could be something wrong with the settings."
 msgstr "我們無法連接到伺服器。問題可能是暫時的，或是伺服器的設定值可能有問題。"
 
-#: ../src/gtk-ui/sync-ui.c:3251
+#: ../src/gtk-ui/sync-ui.c:3259
 msgid "The server URL is bad"
 msgstr "伺服器的 URL 不對"
 
-#: ../src/gtk-ui/sync-ui.c:3256
+#: ../src/gtk-ui/sync-ui.c:3264
 msgid "The server was not found"
 msgstr "找不到伺服器"
 
-#: ../src/gtk-ui/sync-ui.c:3258
+#: ../src/gtk-ui/sync-ui.c:3266
 #, c-format
 msgid "Error %d"
 msgstr "錯誤 %d"
 
 #. TRANSLATORS: password request dialog contents: title, cancel button
 #. * and ok button
-#: ../src/gtk-ui/sync-ui.c:3396
+#: ../src/gtk-ui/sync-ui.c:3404
 msgid "Password is required for sync"
 msgstr "同步需要密碼"
 
-#: ../src/gtk-ui/sync-ui.c:3400
+#: ../src/gtk-ui/sync-ui.c:3408
 msgid "Sync with password"
 msgstr "使用密碼進行同步"
 
 #. TRANSLATORS: password request dialog message, placeholder is service name
-#: ../src/gtk-ui/sync-ui.c:3410
+#: ../src/gtk-ui/sync-ui.c:3418
 #, c-format
 msgid "Please enter password for syncing with %s:"
 msgstr "請輸入使用 %s 進行同步的密碼："
@@ -581,15 +580,14 @@ msgstr "新增服務"
 msgid ""
 "Backups are made before every time we Sync. Choose a backup to restore. Any "
 "changes you have made since then will be lost."
-msgstr ""
-"在我們每次同步前都會進行備份。選擇要還原的備份。所有您從那時起的變更都會喪"
-"失。"
+msgstr "在我們每次同步前都會進行備份。選擇要還原的備份。所有您從那時起的變更都會喪失。"
 
 #: ../src/gtk-ui/ui.glade.h:19
 msgid "Calendar"
 msgstr "行事曆"
 
-#. Button in main view, right side. Keep to below 20 chars per line, feel free to use two lines
+#. Button in main view, right side. Keep to below 20 chars per line, feel free
+#. to use two lines
 #: ../src/gtk-ui/ui.glade.h:21
 msgid ""
 "Change or edit\n"
@@ -617,7 +615,8 @@ msgid ""
 "with data from Zyb"
 msgstr "刪除所有本機資料，並使用遠端資料取代"
 
-#. button in main view, right side. Keep length to 20 characters or so, use two lines if needed
+#. button in main view, right side. Keep length to 20 characters or so, use
+#. two lines if needed
 #: ../src/gtk-ui/ui.glade.h:32
 msgid ""
 "Fix a sync\n"
@@ -628,12 +627,10 @@ msgstr ""
 
 #: ../src/gtk-ui/ui.glade.h:34
 msgid ""
-"If you don't see your service above but know that your sync provider uses "
-"SyncML\n"
+"If you don't see your service above but know that your sync provider uses SyncML\n"
 "you can setup a service manually."
 msgstr ""
-"如果您在上方沒有看到您的服務，但是您知道您的同步功能供應廠商使用 SyncML 的"
-"話，\n"
+"如果您在上方沒有看到您的服務，但是您知道您的同步功能供應廠商使用 SyncML 的話，\n"
 "您可以手動設定服務。"
 
 #: ../src/gtk-ui/ui.glade.h:36
@@ -646,8 +643,7 @@ msgstr "同步緊急狀況"
 
 #: ../src/gtk-ui/ui.glade.h:41
 msgid ""
-"To sync you'll need a network connection and an account with a sync "
-"service.\n"
+"To sync you'll need a network connection and an account with a sync service.\n"
 "We support the following services: "
 msgstr ""
 "若要同步，您需要有網路連線以及使用同步服務的帳號。\n"
@@ -661,21 +657,25 @@ msgstr "使用藍牙從某裝置同步您的資料到另一個裝置去。"
 msgid "You will need to add Bluetooth devices before they can be synced."
 msgstr "在它們能被同步前，您需要先加入藍牙裝置。"
 
-#: ../src/gtk-ui/sync.desktop.in.h:2 ../src/gtk-ui/sync-gtk.desktop.in.h:2
+#: ../src/gtk-ui/sync.desktop.in.h:2
 msgid "Up to date"
 msgstr "已是最新"
 
 #: ../src/gtk-ui/sync-gtk.desktop.in.h:1
-msgid "Sync (GTK)"
-msgstr "同步 (GTK)"
+msgid "SyncEvolution (GTK)"
+msgstr "SyncEvolution (GTK)"
 
-#: ../src/gtk-ui/sync-config-widget.c:78
+#: ../src/gtk-ui/sync-gtk.desktop.in.h:2
+msgid "Synchronize PIM data"
+msgstr "將個人資訊管理系統 (PIM) 的資料同步"
+
+#: ../src/gtk-ui/sync-config-widget.c:88
 msgid ""
-"ScheduleWorld enables you to keep your contacts, events, tasks, and notes in "
-"sync."
+"ScheduleWorld enables you to keep your contacts, events, tasks, and notes in"
+" sync."
 msgstr "ScheduleWorld 可以讓您的連絡人、行事曆事項、工作、以及註記保持同步。"
 
-#: ../src/gtk-ui/sync-config-widget.c:81
+#: ../src/gtk-ui/sync-config-widget.c:91
 msgid ""
 "Google Sync can back up and synchronize your contacts with your Gmail "
 "contacts."
@@ -684,38 +684,43 @@ msgstr "Google Sync 可以將您的聯絡人和 Gmail 連絡人進行備份以�
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
 #. your language): Funambol is going to be a 90 day demo service
 #. in the future
-#: ../src/gtk-ui/sync-config-widget.c:87
+#: ../src/gtk-ui/sync-config-widget.c:97
 msgid ""
 "Back up your contacts and calendar. Sync with a single click, anytime, "
 "anywhere (DEMO)."
-msgstr "備份您的連絡人與行事曆。一個按鍵就同步，任何時間、任何地點(樣本)。"
+msgstr "備份您的連絡人與行事曆。一個按鍵就同步，任何時間、任何地點 (樣本)。"
 
-#: ../src/gtk-ui/sync-config-widget.c:90
+#: ../src/gtk-ui/sync-config-widget.c:100
 msgid ""
 "Mobical Backup and Restore service allows you to securely back up your "
 "personal mobile data for free."
 msgstr "Mobical 備份與還原服務讓您可以安全地備份個人行動資料，而且免費。"
 
-#: ../src/gtk-ui/sync-config-widget.c:93
+#: ../src/gtk-ui/sync-config-widget.c:103
 msgid ""
 "ZYB is a simple way for people to store and share mobile information online."
 msgstr "ZYB 是人們儲存與線上分享行動資訊的一種簡單方法。"
 
-#: ../src/gtk-ui/sync-config-widget.c:96
+#: ../src/gtk-ui/sync-config-widget.c:106
 msgid ""
 "Memotoo lets you access your personal data from any computer connected to "
 "the Internet."
 msgstr "Memotoo 能讓您從任何連接到網路的電腦存取您的個人資料。"
 
-#: ../src/gtk-ui/sync-config-widget.c:192
+#: ../src/gtk-ui/sync-config-widget.c:195
 msgid "Sorry, failed to save the configuration"
 msgstr "很抱歉，儲存設定檔失敗"
 
-#: ../src/gtk-ui/sync-config-widget.c:381
+#: ../src/gtk-ui/sync-config-widget.c:445
 msgid "Service must have a name and server URL"
 msgstr "服務項目必須要有一個名稱和伺服器網址"
 
-#: ../src/gtk-ui/sync-config-widget.c:422
+#. TRANSLATORS: error dialog when creating a new sync configuration
+#: ../src/gtk-ui/sync-config-widget.c:451
+msgid "A username is required for this service"
+msgstr "此服務需要使用者名稱"
+
+#: ../src/gtk-ui/sync-config-widget.c:493
 #, c-format
 msgid ""
 "Do you want to reset the settings for %s? This will not remove any synced "
@@ -723,42 +728,40 @@ msgid ""
 msgstr "您想要為 %s 重設設定嗎？這不會移除任何兩方同步過的資訊。"
 
 #. TRANSLATORS: buttons in reset-service warning dialog
-#: ../src/gtk-ui/sync-config-widget.c:426
+#: ../src/gtk-ui/sync-config-widget.c:497
 msgid "Yes, reset"
 msgstr "是，重設"
 
-#: ../src/gtk-ui/sync-config-widget.c:427
-#: ../src/gtk-ui/sync-config-widget.c:438
+#: ../src/gtk-ui/sync-config-widget.c:498
+#: ../src/gtk-ui/sync-config-widget.c:509
 msgid "No, keep settings"
 msgstr "不，維持設定"
 
-#: ../src/gtk-ui/sync-config-widget.c:432
+#: ../src/gtk-ui/sync-config-widget.c:503
 #, c-format
 msgid ""
 "Do you want to delete the settings for %s? This will not remove any synced "
 "information on either end but it will remove these settings."
-msgstr ""
-"您想要為 %s 刪除設定值嗎？這不會移除任何兩端同步過的資訊，但是它會移除這些設"
-"定值。"
+msgstr "您想要為 %s 刪除設定值嗎？這不會移除任何兩端同步過的資訊，但是它會移除這些設定值。"
 
 #. TRANSLATORS: buttons in delete-service warning dialog
-#: ../src/gtk-ui/sync-config-widget.c:437
+#: ../src/gtk-ui/sync-config-widget.c:508
 msgid "Yes, delete"
 msgstr "是，刪除"
 
-#: ../src/gtk-ui/sync-config-widget.c:467
+#: ../src/gtk-ui/sync-config-widget.c:539
 msgid "Reset settings"
 msgstr "重設設定值"
 
-#: ../src/gtk-ui/sync-config-widget.c:470
+#: ../src/gtk-ui/sync-config-widget.c:542
 msgid "Delete settings"
 msgstr "刪除設定值"
 
-#: ../src/gtk-ui/sync-config-widget.c:480
+#: ../src/gtk-ui/sync-config-widget.c:552
 msgid "Save and use"
 msgstr "儲存並使用"
 
-#: ../src/gtk-ui/sync-config-widget.c:483
+#: ../src/gtk-ui/sync-config-widget.c:555
 msgid ""
 "Save and replace\n"
 "current service"
@@ -766,113 +769,112 @@ msgstr ""
 "儲存並取代\n"
 "目前的服務"
 
-#: ../src/gtk-ui/sync-config-widget.c:493
+#: ../src/gtk-ui/sync-config-widget.c:563
 msgid "Stop using device"
 msgstr "停止使用裝置"
 
-#: ../src/gtk-ui/sync-config-widget.c:496
+#: ../src/gtk-ui/sync-config-widget.c:566
 msgid "Stop using service"
 msgstr "停止使用服務"
 
 #. TRANSLATORS: label for an entry in service configuration form.
 #. * Placeholder is a source  name.
 #. * Example: "Appointments URI"
-#: ../src/gtk-ui/sync-config-widget.c:679
+#: ../src/gtk-ui/sync-config-widget.c:749
 #, c-format
 msgid "%s URI"
 msgstr "%s URI"
 
 #. TRANSLATORS: toggles in service configuration form, placeholder is service
 #. * or device name
-#: ../src/gtk-ui/sync-config-widget.c:854
+#: ../src/gtk-ui/sync-config-widget.c:936
 #, c-format
 msgid "Send changes to %s"
 msgstr "傳送變更到 %s"
 
-#: ../src/gtk-ui/sync-config-widget.c:859
+#: ../src/gtk-ui/sync-config-widget.c:941
 #, c-format
 msgid "Receive changes from %s"
 msgstr "接收來自 %s 的變更"
 
-#: ../src/gtk-ui/sync-config-widget.c:875
+#: ../src/gtk-ui/sync-config-widget.c:957
 msgid "<b>Sync</b>"
 msgstr "<b>同步</b>"
 
 #. TRANSLATORS: label of a entry in service configuration
-#: ../src/gtk-ui/sync-config-widget.c:891
+#: ../src/gtk-ui/sync-config-widget.c:973
 msgid "Server address"
 msgstr "伺服器位址"
 
 #. TRANSLATORS: explanation before a device template combobox.
 #. * Placeholder is a device name like 'Nokia N85' or 'Syncevolution
 #. * Client'
-#: ../src/gtk-ui/sync-config-widget.c:967
+#: ../src/gtk-ui/sync-config-widget.c:1049
 #, c-format
 msgid ""
 "This device looks like it might be a '%s'. If this is not correct, please "
 "take a look at the list of supported devices and pick yours if it is listed"
-msgstr ""
-"此裝置看起來可能是「%s」。如果不正確的話，請查看支援裝置的清單，如果它列於其"
-"中的話請選取您的裝置。"
+msgstr "此裝置看起來可能是「%s」。如果不正確的話，請查看支援裝置的清單，如果它列於其中的話請選取您的裝置。"
 
-#: ../src/gtk-ui/sync-config-widget.c:973
+#: ../src/gtk-ui/sync-config-widget.c:1055
+#: ../src/gtk-ui/sync-config-widget.c:1915
 msgid ""
-"We don't know what this device is exactly. Please take a look at the list of "
-"supported devices and pick yours if it is listed"
-msgstr ""
-"我們不知道此裝置到底是什麼。請查看支援裝置的清單，如果它列於其中的話請選取您"
-"的裝置。"
+"We don't know what this device is exactly. Please take a look at the list of"
+" supported devices and pick yours if it is listed"
+msgstr "我們不知道此裝置到底是什麼。請查看支援裝置的清單，如果它列於其中的話請選取您的裝置。"
 
-#: ../src/gtk-ui/sync-config-widget.c:1126
+#: ../src/gtk-ui/sync-config-widget.c:1207
 #, c-format
 msgid "%s - Bluetooth device"
 msgstr "%s - 藍牙裝置"
 
 #. TRANSLATORS: service title for services that are not based on a
 #. * template in service list, the placeholder is the name of the service
-#: ../src/gtk-ui/sync-config-widget.c:1132
+#: ../src/gtk-ui/sync-config-widget.c:1213
 #, c-format
 msgid "%s - manually setup"
 msgstr "%s - 手動設置"
 
 #. TRANSLATORS: link button in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1807
+#: ../src/gtk-ui/sync-config-widget.c:1886
 msgid "Launch website"
 msgstr "開啟網站"
 
 #. TRANSLATORS: button in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1816
+#: ../src/gtk-ui/sync-config-widget.c:1895
 msgid "Set up now"
 msgstr "立刻設置"
 
+#: ../src/gtk-ui/sync-config-widget.c:1953
+msgid "Use these settings"
+msgstr "使用這些設定"
+
 #. TRANSLATORS: labels of entries in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1912
+#: ../src/gtk-ui/sync-config-widget.c:1991
 msgid "Username"
 msgstr "使用者名稱"
 
-#: ../src/gtk-ui/sync-config-widget.c:1927
+#: ../src/gtk-ui/sync-config-widget.c:2006
 msgid "Password"
 msgstr "密碼"
 
 #. TRANSLATORS: warning in service configuration form for people
 #. who have modified the configuration via other means.
-#: ../src/gtk-ui/sync-config-widget.c:1950
+#: ../src/gtk-ui/sync-config-widget.c:2029
 msgid ""
 "Current configuration is more complex than what can be shown here. Changes "
 "to sync mode or synced data types will overwrite that configuration."
-msgstr ""
-"目前的設定檔比這裡能夠顯示的還要複雜許多。變更為同步模式或是同步過的資料類型"
-"將會覆蓋寫入那份設定檔。"
+msgstr "目前的設定檔比這裡能夠顯示的還要複雜許多。變更為同步模式或是同步過的資料類型將會覆蓋寫入那份設定檔。"
 
 #. TRANSLATORS: this is the epander label for server settings
 #. in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1969
+#: ../src/gtk-ui/sync-config-widget.c:2048
 msgid "Hide server settings"
 msgstr "隱藏伺服器設定"
 
 #. TRANSLATORS: this is the epander label for server settings
 #. in service configuration form
-#: ../src/gtk-ui/sync-config-widget.c:1989
+#: ../src/gtk-ui/sync-config-widget.c:2068
 msgid "Show server settings"
 msgstr "顯示伺服器設定"
 
@@ -880,169 +882,46 @@ msgstr "顯示伺服器設定"
 msgid "Sync in the Sync application"
 msgstr "在「同步」應用程式內同步"
 
-#: ../src/syncevo-dbus-server.cpp:5664
+#: ../src/syncevo-dbus-server.cpp:6653
 #, c-format
 msgid "%s is syncing"
 msgstr "%s 正在同步中"
 
-#: ../src/syncevo-dbus-server.cpp:5665
+#: ../src/syncevo-dbus-server.cpp:6654
 #, c-format
 msgid "We have just started to sync your computer with the %s sync service."
 msgstr "我們剛開始將您的電腦同步到 %s 同步服務。"
 
 #. if sync is successfully started and done
-#: ../src/syncevo-dbus-server.cpp:5679
+#: ../src/syncevo-dbus-server.cpp:6670
 #, c-format
 msgid "%s sync complete"
 msgstr "%s 同步完成"
 
-#: ../src/syncevo-dbus-server.cpp:5680
+#: ../src/syncevo-dbus-server.cpp:6671
 #, c-format
 msgid "We have just finished syncing your computer with the %s sync service."
 msgstr "我們剛完成將您的電腦同步到 %s 同步服務。"
 
-#. if sync is successfully started and has errors, or not started successful with a fatal problem
-#: ../src/syncevo-dbus-server.cpp:5685
+#. if sync is successfully started and has errors, or not started successful
+#. with a fatal problem
+#: ../src/syncevo-dbus-server.cpp:6676
 msgid "Sync problem."
 msgstr "同步發生問題。"
 
-#: ../src/syncevo-dbus-server.cpp:5686
+#: ../src/syncevo-dbus-server.cpp:6677
 msgid "Sorry, there's a problem with your sync that you need to attend to."
 msgstr "抱歉，您的同步有個問題是您需要關心的。"
 
-#: ../src/syncevo-dbus-server.cpp:5759
+#: ../src/syncevo-dbus-server.cpp:6758
 msgid "View"
 msgstr "檢視"
 
 #. Use "default" as ID because that is what mutter-moblin
 #. recognizes: it then skips the action instead of adding it
 #. in addition to its own "Dismiss" button (always added).
-#: ../src/syncevo-dbus-server.cpp:5763
+#: ../src/syncevo-dbus-server.cpp:6762
 msgid "Dismiss"
 msgstr "摒棄"
 
-#~ msgid ""
-#~ "Do you want to replace %s with %s? This will not remove any synced "
-#~ "information on either end but you will no longer be able to sync with %s."
-#~ msgstr ""
-#~ "您想要把 %s 用 %s 取代掉嗎？這不會移除兩方任何同步過的資訊，但是您將無法再"
-#~ "與 %s 進行同步。"
 
-#~ msgid "Yes, use %s"
-#~ msgstr "是，使用 %s"
-
-#~ msgid "No, use %s"
-#~ msgstr "是，使用 %s"
-
-#~ msgid "Database error"
-#~ msgstr "數據錯誤"
-
-#~ msgid "Reset service"
-#~ msgstr "重設服務"
-
-#~ msgid "Todo"
-#~ msgstr "要做的事"
-
-#~ msgid "Memo"
-#~ msgstr "備忘錄"
-
-#~ msgid "Failed to abort sync"
-#~ msgstr "放棄同步時失敗"
-
-#~ msgid "Failed to start sync"
-#~ msgstr "開始同步動作失敗"
-
-#~ msgid "%s (not supported by this service)"
-#~ msgstr "%s （不被此服務支援）"
-
-#~ msgid "Failed to get list of configured services from SyncEvolution"
-#~ msgstr "從 SyncEvolution 取得已設定的服務清單時失敗"
-
-#~ msgid "Not authorized"
-#~ msgstr "未授權"
-
-#~ msgid "Not found"
-#~ msgstr "未找到"
-
-#~ msgid "Transport failure (no connection?)"
-#~ msgstr "傳輸失敗（沒有連線？）"
-
-#~ msgid "Connection timed out"
-#~ msgstr "連線時間已過"
-
-#~ msgid "Connection failed"
-#~ msgstr "連線失敗"
-
-#~ msgid "<b>No sync service in use</b>"
-#~ msgstr "<b>沒有使用中的同步服務</b>"
-
-#~ msgid "<big>Manual setup</big>"
-#~ msgstr "<big>手動設置</big>"
-
-#~ msgid "Merge local and remote data (recommended)"
-#~ msgstr "合併本地和遠端資料（建議）"
-
-#~ msgid ""
-#~ "Sorry, you need an internet\n"
-#~ "connection to sync."
-#~ msgstr ""
-#~ "抱歉，您需要有網際網路連線\n"
-#~ "才能同步。"
-
-#~ msgid ""
-#~ "Synchronization is not available (D-Bus service does not answer), sorry."
-#~ msgstr "非常抱歉，因為 D-Bus 服務沒有回應，所以無法提供同步化。"
-
-#~ msgid "Server URL"
-#~ msgstr "伺服器 URL"
-
-#~ msgid "Addressbook"
-#~ msgstr "地址簿"
-
-#~ msgid "Failed to save current service in GConf configuration system"
-#~ msgstr "在 GConf 設定系統上儲存目前服務時失敗"
-
-#~ msgid "Failed to save service configuration to SyncEvolution"
-#~ msgstr "儲存服務設定檔到 SyncEvolution 時失敗"
-
-#~ msgid "Failed to get service configuration from SyncEvolution"
-#~ msgstr "從 SyncEvolution 取得服務設定檔時失敗"
-
-#~ msgid "Failed to remove service configuration from SyncEvolution"
-#~ msgstr "從 SyncEvolution 移除服務設定檔時失敗"
-
-#~ msgid "Failed to cancel: sync was no longer in progress"
-#~ msgstr "取消動作失敗：同步不再進行"
-
-#~ msgid "Failed to cancel sync"
-#~ msgstr "取消同步動作失敗"
-
-#~ msgid "Canceling sync"
-#~ msgstr "正在取消同步"
-
-#~ msgid "No sources are enabled, not syncing"
-#~ msgstr "沒有啟用的來源，無法同步"
-
-#~ msgid "A sync is already in progress"
-#~ msgstr "已經有同步在進行當中"
-
-#~ msgid "Failed to get server configuration from SyncEvolution"
-#~ msgstr "從 SyncEvolution 取得伺服器設定檔時失敗"
-
-#~ msgid "Failed to get list of manually setup services from SyncEvolution"
-#~ msgstr "從 SyncEvolution 取得手動設置服務的清單時失敗"
-
-#~ msgid "Service configuration not found"
-#~ msgstr "找不到服務設定檔"
-
-#~ msgid "Sync canceled"
-#~ msgstr "同步已取消"
-
-#~ msgid "Ending sync"
-#~ msgstr "正在結束同步"
-
-#~ msgid "Reset original server settings"
-#~ msgstr "重置為原始的伺服器設定"
-
-#~ msgid "Bring your data with you"
-#~ msgstr "請帶攜您的數據"
