@@ -609,7 +609,7 @@ public:
     virtual void testLinkedItemsSingle404();
     virtual void testLinkedItemsMany404();
 
-    virtual void testLinkedItemsSubset();
+    virtual void testSubset();
 
     /** retrieve right set of items for running test */
     ClientTestConfig::LinkedItems_t getParentChildData();

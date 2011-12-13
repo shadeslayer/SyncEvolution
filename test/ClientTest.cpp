@@ -428,14 +428,14 @@ void LocalTests::addTests() {
                     for (int skip = 0;
                          !skip || (size_t)(start + skip + 1) < items.size();
                          skip++) {
-                        ADD_TEST_TO_SUITE_SUFFIX(linked, LocalTests, testLinkedItemsSubset,
-                                                 StringPrintf("_%d_%d", start, skip));
+                        ADD_TEST_TO_SUITE_SUFFIX(linked, LocalTests, testSubset,
+                                                 StringPrintf("Start%dSkip%d", start, skip));
                     }
                     // add a test which uses start, start + 1 and last item
                     // if that leads to a gap (EXDATE)
                     if (start > 0 && items.size() - start > 3) {
-                        ADD_TEST_TO_SUITE_SUFFIX(linked, LocalTests, testLinkedItemsSubset,
-                                                 StringPrintf("_%d_e", start));
+                        ADD_TEST_TO_SUITE_SUFFIX(linked, LocalTests, testSubset,
+                                                 StringPrintf("Start%dExdate", start));
                     }
                 }
                 addTest(linked);
@@ -2149,30 +2149,29 @@ void LocalTests::testLinkedItemsMany404() {
     CT_ASSERT_EQUAL(STATUS_NOT_FOUND, status);
 }
 
-// Is run as Client::Source::LinkedItems<testdata>::testLinkedItemsSubset_<start>_<skip>
+// Is run as Client::Source::LinkedItems<testdata>::testSubsetStart<start>Skip<skip>
 // where start = first detached recurrence to send and skip = detached recurrences
 // to skip before adding the next one (=> 0 = send all).
 //
-// <skip>=e (for EXDATE) is special: it picks the <start>, <start> + 1 and last
+// "Exdate" instead of Skip<skip> is special: it picks the <start>, <start> + 1 and last
 // item, which typically leads to an irregular pattern and requires adding EXDATEs
 // in the activesyncd.
-void LocalTests::testLinkedItemsSubset()
+void LocalTests::testSubset()
 {
     ClientTestConfig::LinkedItems_t items = getParentChildData();
     int start, skip;
     std::string test = getCurrentTest();
-    const std::string testname = "testLinkedItemsSubset_";
-    size_t off = test.find(testname);
-    CT_ASSERT(off != test.npos);
-    off += testname.size();
-    start = atoi(test.c_str() + off);
-    off = test.find('_', off);
-    CT_ASSERT(off != test.npos);
-    if (test.c_str()[off + 1] == 'e') {
-        // EXDATE case
-        skip = -1;
+    pcrecpp::RE re("testSubsetStart(\\d+)(?:Skip(\\d+)|(Exdate))");
+    std::string exdate, optSkip;
+    CT_ASSERT(re.PartialMatch(test, &start, &optSkip, &exdate));
+    if (exdate.empty()) {
+        // skip case
+        CT_ASSERT(!optSkip.empty());
+        skip = atoi(optSkip.c_str());
     } else {
-        skip = atoi(test.c_str() + off + 1);
+        // EXDATE case
+        CT_ASSERT_EQUAL(std::string("Exdate"), exdate);
+        skip = -1;
     }
     CT_ASSERT(items.size() > (size_t)start);
     CT_ASSERT(skip >= -1);
