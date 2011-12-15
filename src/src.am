@@ -129,11 +129,6 @@ src_syncevolution_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_
 src_syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 src_syncevolution_CPPFLAGS = $(src_cppflags) -I$(top_srcdir)/src/$(GDBUS_DIR)
 
-# rule which is only relevant when compiling Synthesis in subdirectory
-#$(SYNTHESIS_LIB) : $(SYNTHESIS_SUBDIR)/all
-#$(SYNTHESIS_SUBDIR)/% :
-#	[ ! "$(SYNTHESIS_SUBDIR)" ] || ( cd ${dir $@} && $(MAKE) ${notdir $@} )
-
 # include Synthesis in distribution: package only files in git if using a git checkout
 all_dist_hooks += src_dist_hook
 src_dist_hook:

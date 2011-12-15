@@ -195,6 +195,11 @@ src_syncevo_libsyncevolution_la_CPPFLAGS = \
   -DLIBDIR=\""$(libdir)"\"
 src_syncevo_libsyncevolution_la_DEPENDENCIES = $(SYNTHESIS_DEP) @SYNCEVOLUTION_LDADD@
 
+# rule which is only relevant when compiling Synthesis in subdirectory
+src/build-synthesis/libsynthesissdk.la: $(SYNTHESIS_SUBDIR)/all
+$(SYNTHESIS_SUBDIR)/% :
+	[ ! "$(SYNTHESIS_SUBDIR)" ] || ( cd ${dir $@} && $(MAKE) ${notdir $@} )
+
 if ENABLE_MODULES
 src_syncevo_libsyncevolution_la_LDFLAGS =
 else
