@@ -214,7 +214,7 @@ static void remove_watch(DBusWatch *watch, void *user_data)
 {
 	WatchData *watch_data = dbus_watch_get_data(watch);
 
-	DBG("watch %p connection data %p", watch, user_data);
+	DBG("watch %p watch data %p connection data %p", watch, watch_data, user_data);
 
 	dbus_watch_set_data(watch, NULL, NULL);
 
