@@ -84,7 +84,6 @@ void intrusive_ptr_release(DBusPendingCall *call);
  * keep changes to a minimum while supporting both dbus
  * implementations, this is made to be a define. The intention is to
  * remove the define once the in-tree gdbus is dropped. */
-#define DBUS_CONNECTION_TYPE DBusConnection
 #define DBUS_MESSAGE_TYPE    DBusMessage
 #define DBUS_NEW_ERROR_MSG   b_dbus_create_error
 
@@ -165,10 +164,10 @@ class DBusErrorCXX : public DBusError
     }
 };
 
-DBusConnection *dbus_get_bus_connection(const char *busType,
-                                        const char *interface,
-                                        bool unshared,
-                                        DBusErrorCXX *err);
+DBusConnectionPtr dbus_get_bus_connection(const char *busType,
+                                          const char *name,
+                                          bool unshared,
+                                          DBusErrorCXX *err);
 
 /**
  * Special type for object paths. A string in practice.
@@ -334,16 +333,65 @@ template<class A> struct Get <A &>
 };
 
 /**
- * interface expected by EmitSignal
+ * combines D-Bus connection, path and interface
  */
 class DBusObject
 {
- public:
-    virtual ~DBusObject() {}
+    DBusConnectionPtr m_conn;
+    std::string m_path;
+    std::string m_interface;
+    bool m_closeConnection;
 
-    virtual DBusConnection *getConnection() const = 0;
-    virtual const char *getPath() const = 0;
-    virtual const char *getInterface() const = 0;
+ public:
+    /**
+     * @param closeConnection    set to true if the connection
+     *                           is private and this instance of
+     *                           DBusObject is meant to be the
+     *                           last user of the connection;
+     *                           when this DBusObject deconstructs,
+     *                           it'll close the connection
+     *                           (required  by libdbus for private
+     *                           connections; the mechanism in GDBus for
+     *                           this didn't work)
+     */
+    DBusObject(const DBusConnectionPtr &conn,
+               const std::string &path,
+               const std::string &interface,
+               bool closeConnection = false) :
+        m_conn(conn),
+        m_path(path),
+        m_interface(interface),
+        m_closeConnection(closeConnection)
+    {}
+    ~DBusObject() {
+        if (m_closeConnection &&
+            m_conn) {
+            dbus_connection_close(m_conn.get());
+        }
+    }
+
+    DBusConnection *getConnection() const { return m_conn.get(); }
+    const char *getPath() const { return m_path.c_str(); }
+    const char *getInterface() const { return m_interface.c_str(); }
+};
+
+/**
+ * adds destination to D-Bus connection, path and interface
+ */
+class DBusRemoteObject : public DBusObject
+{
+    std::string m_destination;
+public:
+    DBusRemoteObject(const DBusConnectionPtr &conn,
+                     const std::string &path,
+                     const std::string &interface,
+                     const std::string &destination,
+                     bool closeConnection = false) :
+    DBusObject(conn, path, interface, closeConnection),
+        m_destination(destination)
+    {}
+
+    const char *getDestination() const { return m_destination.c_str(); }
 };
 
 class EmitSignal0
@@ -703,22 +751,17 @@ template <class T> class DBusVector {
  */
 class DBusObjectHelper : public DBusObject
 {
-    DBusConnectionPtr m_conn;
-    std::string m_path;
-    std::string m_interface;
     boost::function<void (void)> m_callback;
     bool m_activated;
     DBusVector<BDBusMethodTable> m_methods;
     DBusVector<BDBusSignalTable> m_signals;
 
  public:
-    DBusObjectHelper(DBusConnection *conn,
+    DBusObjectHelper(const DBusConnectionPtr &conn,
                      const std::string &path,
                      const std::string &interface,
                      const boost::function<void (void)> &callback = boost::function<void (void)>()) :
-        m_conn(conn),
-        m_path(path),
-        m_interface(interface),
+        DBusObject(conn, path, interface),
         m_callback(callback),
         m_activated(false)
     {
@@ -728,10 +771,6 @@ class DBusObjectHelper : public DBusObject
     {
         deactivate();
     }
-
-    virtual DBusConnection *getConnection() const { return m_conn.get(); }
-    virtual const char *getPath() const { return m_path.c_str(); }
-    virtual const char *getInterface() const { return m_interface.c_str(); }
 
     /**
      * binds a member to the this pointer of its instance
@@ -3734,26 +3773,6 @@ struct MakeMethodEntry< boost::function<void ()> >
     }
 };
 
-/**
- * interface to refer to a remote object
- */
-class DBusRemoteObject : public DBusObject
-{
-public:
-    virtual const char *getDestination() const = 0;
-    virtual ~DBusRemoteObject() {}
-};
-/**
- * interface expected by DBusClient
- */
-class DBusCallObject : public DBusRemoteObject
-{
-public:
-    /* The method name for the calling dbus method */
-    virtual const char *getMethod() const =0;
-    virtual ~DBusCallObject() {}
-};
-
 template <class T>
 class DBusClientCall
 {
@@ -3788,16 +3807,6 @@ public:
             :m_conn(conn), m_callback(callback)
         {}
     };
-
-    DBusClientCall(const DBusCallObject &object, DBusCallback dbusCallback)
-        :m_destination (object.getDestination()),
-         m_path (object.getPath()),
-         m_interface (object.getInterface()),
-         m_method (object.getMethod()),
-         m_conn (object.getConnection()),
-         m_dbusCallback(dbusCallback)
-    {
-    }
 
     DBusClientCall(const DBusRemoteObject &object, const std::string &method, DBusCallback dbusCallback)
         :m_destination (object.getDestination()),
@@ -3944,11 +3953,6 @@ class DBusClientCall0 : public DBusClientCall<boost::function<void (const std::s
     }
 
 public:
-    DBusClientCall0 (const DBusCallObject &object)
-        : DBusClientCall<Callback_t>(object, &DBusClientCall0::dbusCallback) 
-    {
-    }
-
     DBusClientCall0 (const DBusRemoteObject &object, const std::string &method)
         : DBusClientCall<Callback_t>(object, method, &DBusClientCall0::dbusCallback)
     {
@@ -3984,11 +3988,6 @@ class DBusClientCall1 : public DBusClientCall<boost::function<void (const R1 &, 
     }
 
 public:
-    DBusClientCall1 (const DBusCallObject &object)
-        : DBusClientCall<Callback_t>(object, &DBusClientCall1::dbusCallback) 
-    {
-    }
-
     DBusClientCall1 (const DBusRemoteObject &object, const std::string &method)
         : DBusClientCall<Callback_t>(object, method, &DBusClientCall1::dbusCallback)
     {
@@ -4026,11 +4025,6 @@ class DBusClientCall2 : public DBusClientCall<boost::function<
     }
 
 public:
-    DBusClientCall2 (const DBusCallObject &object)
-        : DBusClientCall<Callback_t>(object, &DBusClientCall2::dbusCallback) 
-    {
-    }
-
     DBusClientCall2 (const DBusRemoteObject &object, const std::string &method)
         : DBusClientCall<Callback_t>(object, method, &DBusClientCall2::dbusCallback)
     {
@@ -4069,11 +4063,6 @@ class DBusClientCall3 : public DBusClientCall<boost::function<
     }
 
 public:
-    DBusClientCall3 (const DBusCallObject &object)
-        : DBusClientCall<Callback_t>(object, &DBusClientCall3::dbusCallback) 
-    {
-    }
-
     DBusClientCall3 (const DBusRemoteObject &object, const std::string &method)
         : DBusClientCall<Callback_t>(object, method, &DBusClientCall3::dbusCallback)
     {

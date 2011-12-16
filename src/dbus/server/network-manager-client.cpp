@@ -24,12 +24,16 @@
 SE_BEGIN_CXX
 
 NetworkManagerClient::NetworkManagerClient(Server &server) :
+    DBusRemoteObject(GDBusCXX::dbus_get_bus_connection("SYSTEM", NULL, true, NULL),
+                     "/org/freedesktop/NetworkManager",
+                     "org.freedesktop.NetworkManager",
+                     "org.freedesktop.NetworkManager",
+                     true),
     m_server(server),
     m_stateChanged(*this, "StateChanged"),
     m_properties(*this)
 {
-    m_networkManagerConn = GDBusCXX::dbus_get_bus_connection("SYSTEM", NULL, true, NULL);
-    if(m_networkManagerConn) {
+    if (getConnection()) {
         m_properties.get();
         m_stateChanged.activate(boost::bind(
                                     &NetworkManagerClient::stateChanged,
@@ -64,9 +68,12 @@ void NetworkManagerClient::stateChanged(uint32_t uiState)
 
 NetworkManagerClient::NetworkManagerProperties::NetworkManagerProperties(
     NetworkManagerClient& manager) :
+    GDBusCXX::DBusRemoteObject(manager.getConnection(),
+                               "/org/freedesktop/NetworkManager",
+                               "org.freedesktop.DBus.Properties",
+                               "org.freedesktop.NetworkManager"),
     m_manager(manager)
 {
-
 }
 
 void NetworkManagerClient::NetworkManagerProperties::get()

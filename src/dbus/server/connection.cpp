@@ -396,7 +396,7 @@ Connection::Connection(Server &server,
                        const std::string &sessionID,
                        const StringMap &peer,
                        bool must_authenticate) :
-    DBusObjectHelper(conn.get(),
+    DBusObjectHelper(conn,
                      std::string("/org/syncevolution/Connection/") + sessionID,
                      "org.syncevolution.Connection",
                      boost::bind(&Server::autoTermCallback, &server)),

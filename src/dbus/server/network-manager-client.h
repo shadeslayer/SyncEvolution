@@ -60,23 +60,10 @@ public:
 public:
     NetworkManagerClient(Server& server);
 
-    virtual const char *getDestination() const {
-        return "org.freedesktop.NetworkManager";
-    }
-    virtual const char *getPath() const {
-        return "/org/freedesktop/NetworkManager";
-    }
-    virtual const char *getInterface() const {
-        return "org.freedesktop.NetworkManager";
-    }
-    virtual DBUS_CONNECTION_TYPE *getConnection() const {
-        return m_networkManagerConn.get();
-    }
-
     void stateChanged(uint32_t uiState);
 
     /** TRUE if watching Network Manager status */
-    bool isAvailable() { return m_networkManagerConn; }
+    bool isAvailable() { return getConnection() != NULL; }
 
 private:
 
@@ -85,18 +72,6 @@ private:
     public:
         NetworkManagerProperties(NetworkManagerClient& manager);
 
-        virtual const char *getDestination() const {
-            return "org.freedesktop.NetworkManager";
-        }
-        virtual const char *getPath() const {
-            return "/org/freedesktop/NetworkManager";
-        }
-        virtual const char *getInterface() const {
-            return "org.freedesktop.DBus.Properties";
-        }
-        virtual DBUS_CONNECTION_TYPE* getConnection() const {
-            return m_manager.getConnection();
-        }
         void get();
         void getCallback(const boost::variant<uint32_t, std::string> &prop,
                          const std::string &error);
@@ -105,7 +80,6 @@ private:
     };
 
     Server &m_server;
-    GDBusCXX::DBusConnectionPtr m_networkManagerConn;
     GDBusCXX::SignalWatch1<uint32_t> m_stateChanged;
     NetworkManagerProperties m_properties;
 };

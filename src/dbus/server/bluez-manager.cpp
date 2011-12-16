@@ -34,14 +34,18 @@ using namespace GDBusCXX;
 SE_BEGIN_CXX
 
 BluezManager::BluezManager(Server &server) :
+    DBusRemoteObject(!strcmp(getEnv("DBUS_TEST_BLUETOOTH", ""), "none") ?
+                     NULL : /* simulate missing Bluez */
+                     GDBusCXX::dbus_get_bus_connection(!strcmp(getEnv("DBUS_TEST_BLUETOOTH", ""), "session") ?
+                                                       "SESSION" : /* use our own Bluez stub */
+                                                       "SYSTEM" /* use real Bluez */,
+                                                       NULL, true, NULL),
+                     "/", "org.bluez.Manager", "org.bluez",
+                     true),
     m_server(server),
     m_adapterChanged(*this, "DefaultAdapterChanged")
 {
-    const char *bluetoothTest = getenv ("DBUS_TEST_BLUETOOTH");
-    m_bluezConn = (bluetoothTest && !strcmp(bluetoothTest, "none")) ? NULL :
-        dbus_get_bus_connection((bluetoothTest && !strcmp(bluetoothTest, "session")) ?
-                                "SESSION" : "SYSTEM", NULL, true, NULL);
-    if(m_bluezConn) {
+    if (getConnection()) {
         m_done = false;
         DBusClientCall1<DBusObject_t> getAdapter(*this, "DefaultAdapter");
         getAdapter(boost::bind(&BluezManager::defaultAdapterCb, this, _1, _2 ));
@@ -74,9 +78,11 @@ void BluezManager::defaultAdapterCb(const DBusObject_t &adapter, const string &e
     m_adapter.reset(new BluezAdapter(*this, adapter));
 }
 
-BluezManager::BluezAdapter::BluezAdapter(BluezManager &manager, const string &path)
-    : m_manager(manager), m_path(path), m_devNo(0), m_devReplies(0),
-      m_deviceRemoved(*this,  "DeviceRemoved"), m_deviceAdded(*this, "DeviceCreated")
+BluezManager::BluezAdapter::BluezAdapter(BluezManager &manager, const string &path) :
+    DBusRemoteObject(manager.getConnection(),
+                     path, "org.bluez.Adapter", "org.bluez"),
+    m_manager(manager), m_devNo(0), m_devReplies(0),
+    m_deviceRemoved(*this,  "DeviceRemoved"), m_deviceAdded(*this, "DeviceCreated")
 {
     DBusClientCall1<std::vector<DBusObject_t> > listDevices(*this, "ListDevices");
     listDevices(boost::bind(&BluezAdapter::listDevicesCb, this, _1, _2));
@@ -124,8 +130,10 @@ void BluezManager::BluezAdapter::deviceCreated(const DBusObject_t &object)
     m_devices.push_back(bluezDevice);
 }
 
-BluezManager::BluezDevice::BluezDevice (BluezAdapter &adapter, const string &path)
-    : m_adapter(adapter), m_path(path), m_reply(false), m_propertyChanged(*this, "PropertyChanged")
+BluezManager::BluezDevice::BluezDevice (BluezAdapter &adapter, const string &path) :
+    GDBusCXX::DBusRemoteObject(adapter.m_manager.getConnection(),
+                               path, "org.bluez.Device", "org.bluez"),
+    m_adapter(adapter), m_reply(false), m_propertyChanged(*this, "PropertyChanged")
 {
     DBusClientCall1<PropDict> getProperties(*this, "GetProperties");
     getProperties(boost::bind(&BluezDevice::getPropertiesCb, this, _1, _2));

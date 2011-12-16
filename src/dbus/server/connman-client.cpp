@@ -23,12 +23,17 @@
 SE_BEGIN_CXX
 
 ConnmanClient::ConnmanClient(Server &server):
+    DBusRemoteObject(!strcmp(getEnv("DBUS_TEST_CONNMAN", ""), "none") ?
+                     NULL : /* simulate missing ConnMan */
+                     GDBusCXX::dbus_get_bus_connection(!strcmp(getEnv("DBUS_TEST_CONNMAN", ""), "session") ?
+                                                       "SESSION" : /* use our own ConnMan stub */
+                                                       "SYSTEM" /* use real ConnMan */,
+                                                       NULL, true, NULL),
+                     "/", "net.connman.Manager", "net.connman", true),
     m_server(server),
     m_propertyChanged(*this, "PropertyChanged")
 {
-    const char *connmanTest = getenv ("DBUS_TEST_CONNMAN");
-    m_connmanConn = GDBusCXX::dbus_get_bus_connection(connmanTest ? "SESSION": "SYSTEM", NULL, true, NULL);
-    if (m_connmanConn){
+    if (getConnection()) {
         typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
         GDBusCXX::DBusClientCall1<PropDict>  getProp(*this,"GetProperties");
         getProp (boost::bind(&ConnmanClient::getPropCb, this, _1, _2));

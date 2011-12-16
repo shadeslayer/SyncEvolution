@@ -29,13 +29,14 @@ void intrusive_ptr_release(DBusPendingCall *call) { dbus_pending_call_unref (cal
 
 namespace GDBusCXX {
 
-DBusConnection *dbus_get_bus_connection(const char *busType,
-                                        const char *interface,
-                                        bool unshared,
-                                        DBusErrorCXX *err)
+DBusConnectionPtr dbus_get_bus_connection(const char *busType,
+                                          const char *name,
+                                          bool unshared,
+                                          DBusErrorCXX *err)
 {
-    return b_dbus_setup_bus(boost::iequals(busType, "SYSTEM") ? DBUS_BUS_SYSTEM : DBUS_BUS_SESSION,
-                            interface, unshared, err);;
+    return DBusConnectionPtr(b_dbus_setup_bus(boost::iequals(busType, "SYSTEM") ? DBUS_BUS_SYSTEM : DBUS_BUS_SESSION,
+                                              name, unshared, err),
+                             false);
 }
 
 }

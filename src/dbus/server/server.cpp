@@ -214,7 +214,7 @@ Server::Server(GMainLoop *loop,
                boost::shared_ptr<Restart> &restart,
                const DBusConnectionPtr &conn,
                int duration) :
-    DBusObjectHelper(conn.get(),
+    DBusObjectHelper(conn,
                      "/org/syncevolution/Server",
                      "org.syncevolution.Server",
                      boost::bind(&Server::autoTermCallback, this)),

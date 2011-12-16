@@ -176,7 +176,7 @@ class DBusTest : public Test, private Test2
     DBusObjectHelper m_secondary;
 
 public:
-    DBusTest(GDBusConnection *conn) :
+    DBusTest(const DBusConnectionPtr &conn) :
         m_object(conn, "/test", "org.example.Test"),
         // same path!
         m_secondary(conn, m_object.getPath(), "org.example.Secondary"),
@@ -244,7 +244,7 @@ using namespace GDBusCXX;
 
 int main(int argc, char *argv[])
 {
-    GDBusConnection *conn;
+    DBusConnectionPtr conn;
     DBusErrorCXX err;
     struct sigaction sa;
 
@@ -280,10 +280,11 @@ int main(int argc, char *argv[])
 
     test.reset();
 
-    if(!g_dbus_connection_close_sync(conn, NULL, NULL)) {
-        fprintf(stderr, "Problem closing connection.\n");
-    }
-    
+    // is this really necessary?
+    // if(!g_dbus_connection_close_sync(conn, NULL, NULL)) {
+    // fprintf(stderr, "Problem closing connection.\n");
+    // }
+
     g_main_loop_unref(main_loop);
 
     return 0;

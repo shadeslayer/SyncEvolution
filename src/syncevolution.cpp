@@ -122,10 +122,6 @@ class RemoteDBusServer : public DBusRemoteObject
 public:
     RemoteDBusServer();
 
-    virtual const char *getDestination() const {return "org.syncevolution";}
-    virtual const char *getPath() const {return "/org/syncevolution/Server";}
-    virtual const char *getInterface() const {return "org.syncevolution.Server";}
-    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_conn.get();}
     GMainLoop *getLoop() { return m_loop; }
 
     /** 
@@ -238,8 +234,6 @@ private:
 
     // the main loop
     GMainLoop *m_loop;
-    // connection
-    DBusConnectionPtr m_conn;
     // whether client can attach to the daemon. 
     // It is also used to indicate whether daemon is ready to use.
     bool m_attached;
@@ -285,10 +279,6 @@ class RemoteSession : public DBusRemoteObject
 {
 public:
     RemoteSession(RemoteDBusServer &server, const std::string &path);
-    virtual const char *getDestination() const {return "org.syncevolution";}
-    virtual const char *getPath() const {return m_path.c_str();}
-    virtual const char *getInterface() const {return "org.syncevolution.Session";}
-    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_server.getConnection();}
     RemoteDBusServer &getServer() { return m_server; }
 
     /**
@@ -427,9 +417,6 @@ private:
 
     /* whether to log output */
     bool m_output;
-
-    /** object path */
-    string m_path;
 
     /** config name of the session */
     string m_configName;
@@ -591,17 +578,21 @@ int main( int argc, char **argv )
 
 #ifdef DBUS_SERVICE
 /********************** RemoteDBusServer implementation **************************/
-RemoteDBusServer::RemoteDBusServer()
-    :m_attached(false), m_result(true),
-     m_replyTotal(0), m_replyCounter(0),
-     m_sessionChanged(*this,"SessionChanged"),
-     m_logOutput(*this, "LogOutput"),
-     m_infoReq(*this, "InfoRequest")
+RemoteDBusServer::RemoteDBusServer() :
+    DBusRemoteObject(dbus_get_bus_connection("SESSION", NULL, true, NULL),
+                     "/org/syncevolution/Server",
+                     "org.syncevolution.Server",
+                     "org.syncevolution",
+                     true),
+    m_attached(false), m_result(true),
+    m_replyTotal(0), m_replyCounter(0),
+    m_sessionChanged(*this,"SessionChanged"),
+    m_logOutput(*this, "LogOutput"),
+    m_infoReq(*this, "InfoRequest")
 {
     m_loop = g_main_loop_new (NULL, FALSE);
-    m_conn = dbus_get_bus_connection("SESSION", NULL, true, NULL);
 
-    if(m_conn) {
+    if (getConnection()) {
         //check whether we can attach to the daemon
         //also set up the daemon watch when attaching to server
         attachSync();
@@ -1033,8 +1024,12 @@ bool RemoteDBusServer::monitor(const string &peer)
 
 /********************** RemoteSession implementation **************************/
 RemoteSession::RemoteSession(RemoteDBusServer &server,
-        const string &path)
-    :m_server(server), m_output(false), m_path(path), m_runSync(false),
+                             const string &path) :
+    DBusRemoteObject(server.getConnection(),
+                     path,
+                     "org.syncevolution.Session",
+                     "org.syncevolution"),
+    m_server(server), m_output(false), m_runSync(false),
     m_statusChanged(*this, "StatusChanged")
 {
     m_statusChanged.activate(boost::bind(&RemoteSession::statusChangedCb, this, _1, _2, _3));

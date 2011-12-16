@@ -54,11 +54,6 @@ class GLibNotify;
 class BluezManager : public GDBusCXX::DBusRemoteObject {
 public:
     BluezManager(Server &server);
-
-    virtual const char *getDestination() const {return "org.bluez";}
-    virtual const char *getPath() const {return "/";}
-    virtual const char *getInterface() const {return "org.bluez.Manager";}
-    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_bluezConn.get();}
     bool isDone() { return m_done; }
 
 private:
@@ -74,10 +69,6 @@ private:
      public:
         BluezAdapter (BluezManager &manager, const std::string &path);
 
-        virtual const char *getDestination() const {return "org.bluez";}
-        virtual const char *getPath() const {return m_path.c_str();}
-        virtual const char *getInterface() const {return "org.bluez.Adapter";}
-        virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_manager.getConnection();}
         void checkDone(bool forceDone = false)
         {
             if(forceDone || m_devReplies >= m_devNo) {
@@ -101,8 +92,6 @@ private:
         void deviceCreated(const GDBusCXX::DBusObject_t &object);
 
         BluezManager &m_manager;
-        /** the object path of adapter */
-        std::string m_path;
         /** the number of device for the default adapter */
         int m_devNo;
         /** the number of devices having reply */
@@ -132,10 +121,6 @@ private:
 
         BluezDevice (BluezAdapter &adapter, const std::string &path);
 
-        virtual const char *getDestination() const {return "org.bluez";}
-        virtual const char *getPath() const {return m_path.c_str();}
-        virtual const char *getInterface() const {return "org.bluez.Device";}
-        virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_adapter.m_manager.getConnection();}
         std::string getMac() { return m_mac; }
 
         /**
@@ -155,8 +140,6 @@ private:
         void propertyChanged(const std::string &name, const boost::variant<std::vector<std::string>, std::string> &prop);
 
         BluezAdapter &m_adapter;
-        /** the object path of the device */
-        std::string m_path;
         /** name of the device */
         std::string m_name;
         /** mac address of the device */

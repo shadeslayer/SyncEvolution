@@ -38,10 +38,6 @@ class ConnmanClient : public GDBusCXX::DBusRemoteObject
 {
 public:
     ConnmanClient (Server &server);
-    virtual const char *getDestination() const {return "net.connman";}
-    virtual const char *getPath() const {return "/";}
-    virtual const char *getInterface() const {return "net.connman.Manager";}
-    virtual DBUS_CONNECTION_TYPE *getConnection() const {return m_connmanConn.get();}
 
     void propertyChanged(const std::string &name,
                          const boost::variant<std::vector<std::string>, std::string> &prop);
@@ -49,11 +45,10 @@ public:
     void getPropCb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const std::string &error);
 
     /** TRUE if watching ConnMan status */
-    bool isAvailable() { return m_connmanConn; }
+    bool isAvailable() { return getConnection() != NULL; }
 
 private:
     Server &m_server;
-    GDBusCXX::DBusConnectionPtr m_connmanConn;
 
     GDBusCXX::SignalWatch2 <std::string, boost::variant<std::vector<std::string>, std::string> > m_propertyChanged;
 };

@@ -109,6 +109,8 @@ int main(int argc, char **argv, char **envp)
         if (!conn) {
             err.throwFailure("dbus_get_bus_connection()", " failed - server already running?");
         }
+        // make this object the main owner of the connection
+        DBusObject obj(conn, "foo", "bar", true);
 
         SyncEvo::Server server(loop, shutdownRequested, restart, conn, duration);
         server.activate();
