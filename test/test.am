@@ -36,3 +36,18 @@ dist_noinst_DATA += \
   test/testcases/templates/clients/SyncEvolution.ini \
   test/syncevo-http-server-logging.conf \
   $(wildcard test/testcases/*.patch)
+
+# generic D-Bus client/server tests
+if COND_DBUS
+noinst_PROGRAMS += test/dbus-client-server
+test_dbus_client_server_SOURCES = test/dbus-client-server.cpp
+test_dbus_client_server_CPPFLAGS = -I$(gdbus_dir) -I$(top_srcdir)/src
+test_dbus_client_server_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(BACKEND_CPPFLAGS) $(DBUS_CFLAGS) $(GLIB_CFLAGS) $(GOBJECT_CFLAGS)
+test_dbus_client_server_LDADD = $(gdbus_build_dir)/libgdbussyncevo.la src/syncevo/libsyncevolution.la $(DBUS_LIBS) $(GLIB_LIBS) $(GOBJECT_LIBS)
+test_dbus_client_server_DEPENDENCIES = $(gdbus_build_dir)/libgdbussyncevo.la src/syncevo/libsyncevolution.la
+
+if ENABLE_UNIT_TESTS
+test_dbus_client_server_SOURCES += test/test.cpp
+endif
+
+endif
