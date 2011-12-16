@@ -885,11 +885,14 @@ class DBusObjectHelper : public DBusObject
     GPtrArray *m_signals;
 
  public:
+    typedef boost::function<void (void)> Callback_t;
+
     DBusObjectHelper(DBusConnectionPtr conn,
                      const std::string &path,
                      const std::string &interface,
-                     const boost::function<void (void)> &callback = boost::function<void (void)>()) :
-        DBusObject(conn, path, interface),
+                     const Callback_t &callback = Callback_t(),
+                     bool closeConnection = false) :
+        DBusObject(conn, path, interface, closeConnection),
         m_activated(false),
         m_methods(g_ptr_array_new_with_free_func((GDestroyNotify)g_dbus_method_info_unref)),
         m_signals(g_ptr_array_new_with_free_func((GDestroyNotify)g_dbus_signal_info_unref))
@@ -991,7 +994,7 @@ class DBusObjectHelper : public DBusObject
     void activate(GDBusMethodInfo   **methods,
                   GDBusSignalInfo   **signals,
                   GDBusPropertyInfo **properties,
-                  const boost::function<void (void)> &callback)
+                  const Callback_t &callback)
     {
         GDBusInterfaceInfo *ifInfo = g_new0(GDBusInterfaceInfo, 1);
         ifInfo->name       = g_strdup(getInterface());

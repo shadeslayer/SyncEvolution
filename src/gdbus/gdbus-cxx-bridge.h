@@ -757,11 +757,14 @@ class DBusObjectHelper : public DBusObject
     DBusVector<BDBusSignalTable> m_signals;
 
  public:
+    typedef boost::function<void (void)> Callback_t;
+
     DBusObjectHelper(const DBusConnectionPtr &conn,
                      const std::string &path,
                      const std::string &interface,
-                     const boost::function<void (void)> &callback = boost::function<void (void)>()) :
-        DBusObject(conn, path, interface),
+                     const Callback_t &callback = Callback_t(),
+                     bool closeConnection = false) :
+    DBusObject(conn, path, interface, closeConnection),
         m_callback(callback),
         m_activated(false)
     {
@@ -802,7 +805,7 @@ class DBusObjectHelper : public DBusObject
     void activate(BDBusMethodTable *methods,
                   BDBusSignalTable *signals,
                   BDBusPropertyTable *properties,
-                  const boost::function<void (void)> &callback) {
+                  const Callback_t &callback) {
         if (!b_dbus_register_interface_with_callback(getConnection(), getPath(), getInterface(),
                                        methods, signals, properties, this, NULL, interfaceCallback)) {
             throw std::runtime_error(std::string("b_dbus_register_interface() failed for ") + getPath() + " " + getInterface());
