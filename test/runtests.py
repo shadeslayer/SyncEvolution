@@ -1158,6 +1158,46 @@ class ActiveSyncTest(SyncEvolutionTest):
 test = ActiveSyncTest("exchange")
 context.add(test)
 
+test = SyncEvolutionTest("syncevohttp",
+                         compile,
+                         "", options.shell,
+                         "Client::Sync::eds_event Client::Sync::eds_contact",
+                         [ "eds_event", "eds_contact" ],
+                         "CLIENT_TEST_NUM_ITEMS=10 "
+                         "CLIENT_TEST_LOG=syncevohttp.log "
+                         # could be enabled, but reporting result is currently missing (BMC #1009)
+                         #"CLIENT_TEST_RETRY=t "
+                         #"CLIENT_TEST_RESEND=t "
+                         #"CLIENT_TEST_SUSPEND=t "
+                         # server supports refresh-from-client, use it for
+                         # more efficient test setup
+                         "CLIENT_TEST_DELETE_REFRESH=1 "
+                         "CLIENT_TEST_SKIP="
+                         # server does not detect duplicates (uses file backend), detecting on the
+                         # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
+                         "Client::Sync::.*::testAddBothSides.*"
+                         ,
+                         testPrefix=" ".join([os.path.join(sync.basedir, "test", "wrappercheck.sh")] +
+                                              # redirect output of command run under valgrind (when
+                                              # using valgrind) or of the whole command (otherwise)
+                                              # to syncevohttp.log
+                                              ( 'valgrindcheck' in options.testprefix and \
+                                                [ "VALGRIND_CMD_LOG=syncevohttp.log" ] or \
+                                                [ "--daemon-log", "syncevohttp.log" ] ) +
+                                              [ options.testprefix,
+                                                os.path.join(compile.installdir, "usr", "libexec", "syncevo-dbus-server"),
+                                                "--",
+                                                os.path.join(sync.basedir, "test", "wrappercheck.sh"),
+                                                # also redirect additional syncevo-http-server
+                                                # output into the same file
+                                                "--daemon-log", "syncevohttp.log",
+                                                os.path.join(compile.installdir, "usr", "bin", "syncevo-http-server"),
+                                                "--quiet",
+                                                "http://127.0.0.1:9999/syncevolution",
+                                                "--",
+                                                options.testprefix]))
+context.add(test)
+
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "", options.shell,
                                       "Client::Sync",

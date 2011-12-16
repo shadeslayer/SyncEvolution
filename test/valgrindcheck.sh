@@ -26,7 +26,8 @@ killvalgrind () {
     for i in `ps x | grep -v grep | grep -e " valgrind " -e valgrind.bin | sed -e 's/^ *//' | cut -f1 -d " "`; do kill $1 $i; done
 }
 
-( set -x; env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --gen-suppressions=all --log-file=$LOGFILE "$@" ) &
+( set +x; echo "*** starting $1 under valgrind, output to ${VALGRIND_CMD_LOG:-stdout}" )
+( set -x; if [ "$VALGRIND_CMD_LOG" ]; then exec >>"$VALGRIND_CMD_LOG" 2>&1; fi; exec env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --gen-suppressions=all --log-file=$LOGFILE "$@" $OUTPUT 2>&1 ) &
 VALGRIND_PID=$!
 
 intvalgrind () {
