@@ -121,12 +121,13 @@ endif
 # if linking statically against them, empty otherwise;
 # either way this does not lead to a dependency on those libs - done explicitly
 src_syncevolution_LDADD = $(CORE_LDADD) $(KEYRING_LIBS) $(KDE_KWALLET_LIBS)
+src_syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 if COND_DBUS
 src_syncevolution_LDADD += $(builddir)/src/$(GDBUS_DIR)/libgdbussyncevo.la
+src_syncevolution_DEPENDENCIES += $(builddir)/src/$(GDBUS_DIR)/libgdbussyncevo.la
 endif
 src_syncevolution_LDFLAGS = $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(DBUS_LIBS)
 src_syncevolution_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) -I$(srcdir)/$(GDBUS_DIR) $(DBUS_CFLAGS) $(KDE_KWALLET_CFLAGS) $(SYNCEVO_WFLAGS)
-src_syncevolution_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP)
 src_syncevolution_CPPFLAGS = $(src_cppflags) -I$(top_srcdir)/src/$(GDBUS_DIR)
 
 # include Synthesis in distribution: package only files in git if using a git checkout
