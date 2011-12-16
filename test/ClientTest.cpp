@@ -4993,10 +4993,14 @@ void SyncTests::doSync(const SyncOptions &options)
     SE_LOG_DEBUG(NULL, NULL, "%d. starting %s with sync mode %s",
                  syncCounter, logname.c_str(), PrettyPrintSyncMode(options.m_syncMode).c_str());
 
-    CT_ASSERT_NO_THROW(res = client.doSync(sourceArray,
-                                           logname,
-                                           options));
-
+    try {
+        CT_ASSERT_NO_THROW(res = client.doSync(sourceArray,
+                                               logname,
+                                               options));
+    } catch (...) {
+        postSync(res, logname);
+        throw;
+    }
     CT_ASSERT_NO_THROW(postSync(res, logname));
 }
 
@@ -5321,6 +5325,7 @@ void ClientTest::postSync(int res, const std::string &logname)
             if (ftruncate(fd, 0)) {
                 perror("truncating log file");
             }
+            close(fd);
         } else {
             perror(serverLogFileName.c_str());
         }
