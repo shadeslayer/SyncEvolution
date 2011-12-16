@@ -129,14 +129,7 @@ static gboolean dispatch_watch(GIOChannel *source,
 
 static void finalize_watch(gpointer memory)
 {
-	WatchData *watch_data = memory;
-
-	DBG("watch data %p", watch_data);
-
-	if (watch_data->watch)
-		dbus_watch_set_data(watch_data->watch, NULL, NULL);
-
-	g_free(watch_data);
+	DBG("watch data %p", memory);
 }
 
 static void free_watch(void *memory)
@@ -153,9 +146,10 @@ static void free_watch(void *memory)
 
 	if (source != NULL) {
 		g_source_destroy(source);
-		g_source_unref(source);
 		watch_data->source = NULL;
 	}
+
+	g_free(watch_data);
 }
 
 static dbus_bool_t add_watch(DBusWatch *watch, void *user_data)
@@ -216,8 +210,6 @@ static void remove_watch(DBusWatch *watch, void *user_data)
 
 	DBG("watch %p watch data %p connection data %p", watch, watch_data, user_data);
 
-	dbus_watch_set_data(watch, NULL, NULL);
-
 	if (watch_data == NULL)
 		return;
 
@@ -225,9 +217,12 @@ static void remove_watch(DBusWatch *watch, void *user_data)
 
 	if (watch_data->source != NULL) {
 		g_source_destroy(watch_data->source);
-		g_source_unref(watch_data->source);
+		// g_source_unref(watch_data->source);
 		watch_data->source = NULL;
 	}
+
+        // this will call free_watch() and deallocate watch_data
+	dbus_watch_set_data(watch, NULL, NULL);
 }
 
 static void watch_toggled(DBusWatch *watch, void *user_data)
@@ -363,9 +358,20 @@ static void free_connection(void *memory)
 
 	//b_dbus_unregister_all_objects(data->connection);
 
+        if (data->queue)
+            g_source_destroy(data->queue);
+
+        // At the point when free_connection gets called,
+        // the last unref already happened and the connection
+        // is gone; trying to close it here is too later.
+        // ConnectionData holds *no* reference on data->connection,
+        // so don't unref either. If it did, the connection would
+        // never get freed.
+#if 0
 	if (data->unshared)
 		dbus_connection_close(data->connection);
 	dbus_connection_unref(data->connection);
+#endif
 
 	g_main_context_unref(data->context);
 
