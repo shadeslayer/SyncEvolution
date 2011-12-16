@@ -220,6 +220,8 @@ void b_dbus_setup_connection(DBusConnection *connection,
 						GMainContext *context);
 void b_dbus_cleanup_connection(DBusConnection *connection);
 
+void b_dbus_setup_server(DBusServer *server);
+
 DBusConnection *b_dbus_setup_bus(DBusBusType type, const char *name,
 							gboolean unshared,
 							DBusError *error);

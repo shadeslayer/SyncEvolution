@@ -20,6 +20,8 @@
 #include "gdbus-cxx-bridge.h"
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <stdio.h>
+
 void intrusive_ptr_add_ref(DBusConnection  *con)  { dbus_connection_ref(con); }
 void intrusive_ptr_release(DBusConnection  *con)  { dbus_connection_unref(con); }
 void intrusive_ptr_add_ref(DBusMessage     *msg)  { dbus_message_ref(msg); }
@@ -37,6 +39,66 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
     return DBusConnectionPtr(b_dbus_setup_bus(boost::iequals(busType, "SYSTEM") ? DBUS_BUS_SYSTEM : DBUS_BUS_SESSION,
                                               name, unshared, err),
                              false);
+}
+
+DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
+                                          DBusErrorCXX *err)
+{
+    DBusConnectionPtr conn(dbus_connection_open_private(address.c_str(), err), false);
+    if (conn) {
+        b_dbus_setup_connection(conn.get(), TRUE, NULL);
+    }
+    return conn;
+}
+
+
+
+
+boost::shared_ptr<DBusServerCXX> DBusServerCXX::listen(const std::string &address, DBusErrorCXX *err)
+{
+    DBusServer *server = NULL;
+    const char *realAddr = address.c_str();
+    char buffer[80];
+
+    if (address.empty()) {
+        realAddr = buffer;
+        for (int counter = 1; counter < 100 && !server; counter++) {
+            sprintf(buffer, "unix:abstract=gdbuscxx-%d", counter);
+            server = dbus_server_listen(realAddr, err);
+        }
+    } else {
+        server = dbus_server_listen(realAddr, err);
+    }
+
+    if (!server) {
+        return boost::shared_ptr<DBusServerCXX>();
+    }
+
+    b_dbus_setup_server(server);
+    boost::shared_ptr<DBusServerCXX> res(new DBusServerCXX(server, realAddr));
+    dbus_server_set_new_connection_function(server, newConnection, res.get(), NULL);
+    return res;
+}
+
+void DBusServerCXX::newConnection(DBusServer *server, DBusConnection *newConn, void *data) throw()
+{
+    DBusServerCXX *me = static_cast<DBusServerCXX *>(data);
+    if (me->m_newConnection) {
+        try {
+            b_dbus_setup_connection(newConn, FALSE, NULL);
+            dbus_connection_set_exit_on_disconnect(newConn, FALSE);
+            DBusConnectionPtr conn(newConn);
+            me->m_newConnection(*me, conn);
+        } catch (...) {
+            g_error("handling new D-Bus connection failed with C++ exception");
+        }
+    }
+}
+
+DBusServerCXX::DBusServerCXX(DBusServer *server, const std::string &address) :
+    m_server(server),
+    m_address(address)
+{
 }
 
 }

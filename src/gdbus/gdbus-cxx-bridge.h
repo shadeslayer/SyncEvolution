@@ -72,6 +72,8 @@ void intrusive_ptr_add_ref(DBusMessage     *msg);
 void intrusive_ptr_release(DBusMessage     *msg);
 void intrusive_ptr_add_ref(DBusPendingCall *call);
 void intrusive_ptr_release(DBusPendingCall *call);
+static inline void intrusive_ptr_add_ref(DBusServer *server) { dbus_server_ref(server); }
+static inline void intrusive_ptr_release(DBusServer *server) { dbus_server_unref(server); }
 
 #include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -168,6 +170,49 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
                                           const char *name,
                                           bool unshared,
                                           DBusErrorCXX *err);
+
+DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
+                                          DBusErrorCXX *err);
+
+/**
+ * Wrapper around DBusServer. Does intentionally not expose
+ * any of the underlying methods so that the public API
+ * can be implemented differently for GIO GDBus.
+ */
+class DBusServerCXX : private boost::noncopyable
+{
+ public:
+    /**
+     * Called for each new connection. Callback must store the DBusConnectionPtr,
+     * otherwise it will be unref'ed after the callback returns.
+     * If the new connection is not wanted, then it is good style to close it
+     * explicitly in the callback.
+     */
+    typedef boost::function<void (DBusServerCXX &, DBusConnectionPtr &)> NewConnection_t;
+
+    void setNewConnectionCallback(const NewConnection_t &newConnection) { m_newConnection = newConnection; }
+    NewConnection_t getNewConnectionCallback() const { return m_newConnection; }
+
+    /**
+     * Start listening for new connections on the given address, like unix:abstract=myaddr.
+     * Address may be empty, in which case a new, unused address will chosen.
+     */
+    static boost::shared_ptr<DBusServerCXX> listen(const std::string &address, DBusErrorCXX *err);
+
+    /**
+     * address used by the server
+     */
+    std::string getAddress() const { return m_address; }
+
+ private:
+    DBusServerCXX(DBusServer *server, const std::string &address);
+    static void newConnection(DBusServer *server, DBusConnection *newConn, void *data) throw();
+
+    NewConnection_t m_newConnection;
+    boost::intrusive_ptr<DBusServer> m_server;
+    std::string m_address;
+};
+
 
 /**
  * Special type for object paths. A string in practice.

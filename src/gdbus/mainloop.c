@@ -34,6 +34,7 @@
 #include "debug.h"
 
 static dbus_int32_t connection_slot = -1;
+static dbus_int32_t server_slot = -1;
 
 typedef struct {
 	DBusConnection *connection;
@@ -431,6 +432,45 @@ void b_dbus_setup_connection(DBusConnection *connection,
 
 	dbus_connection_set_wakeup_main_function(connection,
 						wakeup_context, data, NULL);
+}
+
+/**
+ * b_dbus_server_connection:
+ * @server: a #DBusServer
+ *
+ * Setup server with main context
+ *
+ * Sets the watch and timeout functions of a #DBusServer
+ * to integrate the connection with the GLib main loop.
+ */
+void b_dbus_setup_server(DBusServer *server)
+{
+	ConnectionData *data;
+
+	if (dbus_server_allocate_data_slot(&server_slot) == FALSE)
+		return;
+
+	DBG("server slot %d", server_slot);
+
+	data = dbus_server_get_data(server, server_slot);
+	if (data != NULL)
+		return;
+
+	data = setup_connection(NULL, TRUE, g_main_context_default());
+	if (data == NULL)
+		return;
+
+	if (dbus_server_set_data(server, server_slot,
+                                 data, free_connection) == FALSE) {
+		g_free(data);
+		return;
+	}
+
+	dbus_server_set_watch_functions(server, add_watch,
+                                        remove_watch, watch_toggled, data, NULL);
+
+	dbus_server_set_timeout_functions(server, add_timeout,
+                                          remove_timeout, timeout_toggled, data, NULL);
 }
 
 /**
