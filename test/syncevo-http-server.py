@@ -24,6 +24,7 @@ import logging.config
 
 import twisted.web
 import twisted.python.log
+import twisted.web.error
 from twisted.web import server, resource, http
 from twisted.internet import ssl, reactor
 from OpenSSL import SSL
@@ -288,11 +289,10 @@ class SyncMLPost(resource.Resource):
                 if session.sessionid == sessionid:
                     session.process(request, data)
                     return server.NOT_DONE_YET
+            # fallback when session not found
             logger.error("unknown session %s => 404 error", sessionid)
-            request.setResponseCode(http.NOT_FOUND)
-            request.write("<html><body><h1>session not found</h1></body></html>")
-            request.finish()
-
+            page = twisted.web.error.NoResource(message="The session %s was not found" % sessionid)
+            return page.render(request)
 
 class TwistedLogging(object):
     "same as Twisted's PythonLoggingObserver, except that it uses loglevels debug and error"
