@@ -1170,12 +1170,37 @@ template<> struct dbus_traits<uint32_t> :
     static std::string getReply() { return ""; }
 };
 
-template<> struct dbus_traits<bool> :
-    public basic_marshal< bool, VariantTypeBoolean >
+template<> struct dbus_traits<bool>
+// cannot use basic_marshal because VariantTypeBoolean packs/unpacks
+// a gboolean, which is not a C++ bool (4 bytes vs 1 on x86_64)
+// public basic_marshal< bool, VariantTypeBoolean >
 {
     static std::string getType() { return "b"; }
     static std::string getSignature() {return getType(); }
     static std::string getReply() { return ""; }
+
+    typedef bool host_type;
+    typedef bool arg_type;
+
+    static void get(GDBusConnection *conn, GDBusMessage *msg,
+                    GVariantIter &iter, bool &value)
+    {
+        GVariant *var = g_variant_iter_next_value(&iter);
+        if (var == NULL || !g_variant_type_equal(g_variant_get_type(var), VariantTypeBoolean::getVariantType())) {
+            throw std::runtime_error("invalid argument");
+        }
+        gboolean buffer;
+        g_variant_get(var, g_variant_get_type_string(var), &buffer);
+        value = buffer;
+        g_variant_unref(var);
+    }
+
+    static void append(GVariantBuilder &builder, bool value)
+    {
+        const gchar *typeStr = g_variant_type_dup_string(VariantTypeBoolean::getVariantType());
+        g_variant_builder_add(&builder, typeStr, (gboolean)value);
+        g_free((gpointer)typeStr);
+    }
 };
 
 template<> struct dbus_traits<std::string> : public dbus_traits_base
