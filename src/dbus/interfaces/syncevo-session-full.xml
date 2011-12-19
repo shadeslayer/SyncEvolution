@@ -242,8 +242,30 @@
       <doc:doc><doc:description>Suspend synchronization. See Status-signal for results.</doc:description></doc:doc>
     </method>
 
+    <method name="Attach">
+      <doc:doc>
+        <doc:description>
+          Prevents destruction of the session until the client
+          detaches or quits. Implemented with a counter, so each
+          Attach() must be matched by a Detach() to free the session.
+          Meant to be used by clients which want to follow the
+          progress of a session started by the daemon or some other
+          client. StartSession() automatically includes one Attach()
+          call, so typically the client which created a session never
+          calls Attach() and Detach() only once.
+        </doc:description>
+      </doc:doc>
+    </method>
+
     <method name="Detach">
-      <doc:doc><doc:description>Detach from the session.</doc:description></doc:doc>
+      <doc:doc>
+        <doc:description>
+          Each Attach() or StartSession() must be matched by one
+          Detach() call, otherwise the session will not be
+          destructed. A client that quits without these calls will be
+          detached automatically.
+        </doc:description>
+      </doc:doc>
     </method>
 
     <method name="Restore">
