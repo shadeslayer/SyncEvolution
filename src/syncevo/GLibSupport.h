@@ -195,6 +195,55 @@ template<class T> void NoopDestructor(T *) {}
 template<class T> void GFreeDestructor(T *ptr) { g_free(static_cast<void *>(ptr)); }
 
 /**
+ * Copies strings from a collection into a newly allocated, NULL
+ * terminated array. Copying the strings is optional. Suggested
+ * usage is:
+ *
+ * C collection;
+ * collection.push_back(...);
+ * boost::scoped_array<char *> array(AllocStringArray(collection));
+ *
+ */
+template<typename T> char **AllocStringArray(const T &strings,
+                                             const char **(*allocArray)(size_t) = NULL,
+                                             void (*freeArray)(const char **) = NULL,
+                                             const char *(*copyString)(const char *) = NULL,
+                                             const void (*freeString)(char *) = NULL)
+{
+    size_t arraySize = strings.size() + 1;
+    const char **array = NULL;
+    array = allocArray ? allocArray(arraySize) : new const char *[arraySize];
+    if (!array) {
+        throw std::bad_alloc();
+    }
+    try {
+        memset(array, 0, sizeof(*array) * arraySize);
+        size_t i = 0;
+        BOOST_FOREACH(const std::string &str, strings) {
+            array[i] = copyString ? copyString(str.c_str()) : str.c_str();
+            if (!array[i]) {
+                throw std::bad_alloc();
+            }
+            i++;
+        }
+    } catch (...) {
+        if (freeString) {
+            for (const char **ptr = array;
+                 *ptr;
+                 ptr++) {
+                freeString(const_cast<char *>(*ptr));
+            }
+        }
+        if (freeArray) {
+            freeArray(array);
+        }
+        throw;
+    }
+    return const_cast<char **>(array);
+}
+
+
+/**
  * Wraps a G[S]List of pointers to a specific type.
  * Can be used with boost::FOREACH and provides forward iterators
  * (two-way iterators and reverse iterators also possible, but not implemented).
