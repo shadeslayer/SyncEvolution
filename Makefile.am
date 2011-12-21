@@ -16,6 +16,15 @@ endif
 
 SUBDIRS += .
 
+# choose D-Bus implementation
+if COND_GIO_GDBUS
+gdbus_dir = $(top_srcdir)/src/gdbusxx
+gdbus_build_dir = src/gdbusxx
+else
+gdbus_dir = $(top_srcdir)/src/gdbus
+gdbus_build_dir = src/gdbus
+endif
+
 disted_docs =
 distbin_docs =
 
