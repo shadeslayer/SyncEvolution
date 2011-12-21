@@ -1,6 +1,7 @@
 #include "gdbus-cxx-bridge.h"
 #include <syncevo/GLibSupport.h>
 #include <syncevo/SmartPtr.h>
+#include <syncevo/ForkExec.h>
 
 #include <iostream>
 #include <signal.h>
@@ -8,9 +9,10 @@
 #include <boost/bind.hpp>
 #include <boost/scoped_ptr.hpp>
 
-SE_GOBJECT_TYPE(GMainLoop);
+SyncEvo::GMainLoopCXX loop;
 
-SyncEvo::GMainLoopPtr loop;
+// closes child connection
+boost::scoped_ptr<GDBusCXX::DBusObject> guard;
 
 class Test
 {
@@ -68,10 +70,26 @@ static void newClientConnection(GDBusCXX::DBusServerCXX &server, GDBusCXX::DBusC
     testptr->activate();
 }
 
+static void onChildConnect(const GDBusCXX::DBusConnectionPtr &conn,
+                           boost::scoped_ptr<Test> &testptr)
+{
+    std::cout << "child is ready, " <<
+        (dbus_connection_get_is_authenticated(conn.get()) ? "authenticated" : "not authenticated") <<
+        std::endl;
+    testptr.reset(new Test(conn.get()));
+    testptr->activate();
+}
+
+static void onQuit(int status)
+{
+    std::cout << "child has quit, status " << status << std::endl;
+    g_main_loop_quit(loop.get());
+}
+
 class TestProxy : public GDBusCXX::DBusRemoteObject
 {
 public:
-    TestProxy(GDBusCXX::DBusConnectionPtr &conn) :
+    TestProxy(const GDBusCXX::DBusConnectionPtr &conn) :
         GDBusCXX::DBusRemoteObject(conn.get(), "/test", "org.example.Test", "direct.peer"),
         m_hello(*this, "Hello") {
     }
@@ -87,6 +105,15 @@ static void helloCB(GMainLoop *loop, const std::string &res, const std::string &
         std::cout << "hello('hello') = " << res << std::endl;
     }
     g_main_loop_quit(loop);
+}
+
+static void callServer(const GDBusCXX::DBusConnectionPtr &conn)
+{
+    TestProxy proxy(conn);
+    std::cout << "calling server" << std::endl;
+    proxy.m_hello(std::string("world"), boost::bind(helloCB, loop.get(), _1, _2));
+    // keep connection open until child quits
+    guard.reset(new  GDBusCXX::DBusObject(conn, "foo", "bar", true));
 }
 
 void signalHandler (int sig)
@@ -107,6 +134,7 @@ int main(int argc, char **argv)
 
     try {
         gboolean opt_server;
+        gboolean opt_fork_exec;
         gchar *opt_address;
         GOptionContext *opt_context;
         // gboolean opt_allow_anonymous;
@@ -114,6 +142,7 @@ int main(int argc, char **argv)
         GDBusCXX::DBusErrorCXX dbusError;
         GOptionEntry opt_entries[] = {
             { "server", 's', 0, G_OPTION_ARG_NONE, &opt_server, "Start a server instead of a client", NULL },
+            { "forkexec", 's', 0, G_OPTION_ARG_NONE, &opt_fork_exec, "Use fork+exec to start the client (implies --server)", NULL },
             { "address", 'a', 0, G_OPTION_ARG_STRING, &opt_address, "D-Bus address to use", NULL },
             // { "allow-anonymous", 'n', 0, G_OPTION_ARG_NONE, &opt_allow_anonymous, "Allow anonymous authentication", NULL },
             { NULL}
@@ -123,20 +152,35 @@ int main(int argc, char **argv)
 
         opt_address = NULL;
         opt_server = FALSE;
+        opt_fork_exec = FALSE;
         // opt_allow_anonymous = FALSE;
 
         opt_context = g_option_context_new("peer-to-peer example");
         g_option_context_add_main_entries(opt_context, opt_entries, NULL);
-        if (!g_option_context_parse(opt_context, &argc, &argv, gerror)) {
+        bool success = g_option_context_parse(opt_context, &argc, &argv, gerror);
+        g_option_context_free(opt_context);
+        if (!success) {
             gerror.throwError("parsing command line options");
         }
         // if (!opt_server && opt_allow_anonymous) {
         // throw stdruntime_error("The --allow-anonymous option only makes sense when used with --server.");
         // }
 
-        loop.set(g_main_loop_new (NULL, FALSE), "main loop");
+        loop = SyncEvo::GMainLoopCXX(g_main_loop_new (NULL, FALSE), false);
+        if (!loop) {
+            throw std::runtime_error("could not allocate main loop");
+        }
 
-        if (opt_server) {
+        if (opt_fork_exec) {
+            boost::scoped_ptr<Test> testptr;
+            boost::shared_ptr<SyncEvo::ForkExecParent> forkexec =
+                SyncEvo::ForkExecParent::create(loop,
+                                                argv[0]);
+            forkexec->m_onConnect.connect(boost::bind(onChildConnect, _1, boost::ref(testptr)));
+            forkexec->m_onQuit.connect(onQuit);
+            forkexec->start();
+            g_main_loop_run(loop.get());
+        } else if (opt_server) {
             boost::shared_ptr<GDBusCXX::DBusServerCXX> server =
                 GDBusCXX::DBusServerCXX::listen(opt_address ?
                                                 opt_address : "",
@@ -149,6 +193,13 @@ int main(int argc, char **argv)
             server->setNewConnectionCallback(boost::bind(newClientConnection, _1, _2, boost::ref(testptr)));
 
             g_main_loop_run(loop.get());
+        } else if (SyncEvo::ForkExecChild::wasForked()) {
+            boost::shared_ptr<SyncEvo::ForkExecChild> forkexec =
+                SyncEvo::ForkExecChild::create(loop);
+
+            forkexec->m_onConnect.connect(callServer);
+            forkexec->connect();
+            g_main_loop_run(loop.get());
         } else {
             if (!opt_address) {
                 throw std::runtime_error("need server address");
@@ -160,17 +211,15 @@ int main(int argc, char **argv)
                 dbusError.throwFailure("connecting to server");
             }
             // closes connection
-            GDBusCXX::DBusObject guard(conn, "foo", "bar", true);
-            TestProxy proxy(conn);
-            proxy.m_hello(std::string("world"), boost::bind(helloCB, loop.get(), _1, _2));
+            callServer(conn);
             g_main_loop_run(loop.get());
         }
 
-        loop.set(NULL);
+        loop.reset();
     } catch (const std::exception &ex) {
         std::cout << ex.what() << std::endl;
         ret = 1;
-        loop.set(NULL);
+        loop.reset();
     }
 
     std::cout << "server done" << std::endl;
