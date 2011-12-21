@@ -174,8 +174,7 @@ int main(int argc, char **argv)
         if (opt_fork_exec) {
             boost::scoped_ptr<Test> testptr;
             boost::shared_ptr<SyncEvo::ForkExecParent> forkexec =
-                SyncEvo::ForkExecParent::create(loop,
-                                                argv[0]);
+                SyncEvo::ForkExecParent::create(argv[0]);
             forkexec->m_onConnect.connect(boost::bind(onChildConnect, _1, boost::ref(testptr)));
             forkexec->m_onQuit.connect(onQuit);
             forkexec->start();
@@ -195,7 +194,7 @@ int main(int argc, char **argv)
             g_main_loop_run(loop.get());
         } else if (SyncEvo::ForkExecChild::wasForked()) {
             boost::shared_ptr<SyncEvo::ForkExecChild> forkexec =
-                SyncEvo::ForkExecChild::create(loop);
+                SyncEvo::ForkExecChild::create();
 
             forkexec->m_onConnect.connect(callServer);
             forkexec->connect();

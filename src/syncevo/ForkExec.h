@@ -24,7 +24,8 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_GLIB
+#if defined(HAVE_GLIB) && defined(DBUS_SERVICE)
+
 
 #include <syncevo/util.h>
 #include <syncevo/GLibSupport.h>
@@ -47,7 +48,7 @@ SE_BEGIN_CXX
  *
  * Progress (like "client connected") and failures ("client disconnected")
  * are reported via boost::signal2 signals. To make progess, the user of
- * this class must run a glib event loop.
+ * this class must run a glib event loop in the default context.
  *
  * Note that failures encountered inside the class methods themselves
  * will be reported via exceptions. Only asynchronous errors encountered
@@ -56,12 +57,6 @@ SE_BEGIN_CXX
 
 class ForkExec : private boost::noncopyable {
  public:
-    /**
-     * the glib main loop passed to create() or connect() in one of
-     * the derived classes (owned by the ForkExec instance)
-     */
-    GMainLoop *getLoop() { return m_loop.get(); }
-
     /**
      * Called when the D-Bus connection is up and running. It is ready
      * to register objects that the peer might need. It is
@@ -74,9 +69,7 @@ class ForkExec : private boost::noncopyable {
     // TODO: m_onFailure
 
  protected:
-    ForkExec(GMainLoopCXX &loop);
-
-    GMainLoopCXX m_loop;
+    ForkExec();
 };
 
 /**
@@ -93,8 +86,7 @@ class ForkExecParent : public ForkExec
      * will not start the helper yet: first connect your slots, then
      * call start().
      */
-    static boost::shared_ptr<ForkExecParent> create(GMainLoopCXX &loop,
-                                                    const std::string &helper);
+    static boost::shared_ptr<ForkExecParent> create(const std::string &helper);
 
     /**
      * the helper string passed to create()
@@ -126,8 +118,7 @@ class ForkExecParent : public ForkExec
     OnQuit m_onQuit;
 
  private:
-    ForkExecParent(GMainLoopCXX &loop,
-                   const std::string &helper);
+    ForkExecParent(const std::string &helper);
 
     std::string m_helper;
     boost::shared_ptr<GDBusCXX::DBusServerCXX> m_server;
@@ -162,7 +153,7 @@ class ForkExecChild : public ForkExec
      * and any environment variables set by ForkExecParent must still
      * be set.
      */
-    static boost::shared_ptr<ForkExecChild> create(GMainLoopCXX &loop);
+    static boost::shared_ptr<ForkExecChild> create();
 
     /**
      * initiates connection to parent, connect to ForkExec::m_onConnect
@@ -177,7 +168,7 @@ class ForkExecChild : public ForkExec
     static bool wasForked();
 
  private:
-    ForkExecChild(GMainLoopCXX &loop);
+    ForkExecChild();
 
     static const char *getParentDBusAddress();
 };

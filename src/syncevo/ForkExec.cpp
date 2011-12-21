@@ -23,24 +23,20 @@ SE_BEGIN_CXX
 
 static const std::string ForkExecEnvVar("SYNCEVOLUTION_FORK_EXEC=");
 
-ForkExec::ForkExec(GMainLoopCXX &loop) :
-    m_loop(loop)
+ForkExec::ForkExec()
 {
 }
 
-ForkExecParent::ForkExecParent(GMainLoopCXX &loop,
-                               const std::string &helper) :
-    ForkExec(loop),
+ForkExecParent::ForkExecParent(const std::string &helper) :
     m_helper(helper),
     m_childPid(0),
     m_watchChild(NULL)
 {
 }
 
-boost::shared_ptr<ForkExecParent> ForkExecParent::create(GMainLoopCXX &loop,
-                                                         const std::string &helper)
+boost::shared_ptr<ForkExecParent> ForkExecParent::create(const std::string &helper)
 {
-    boost::shared_ptr<ForkExecParent> forkexec(new ForkExecParent(loop, helper));
+    boost::shared_ptr<ForkExecParent> forkexec(new ForkExecParent(helper));
     return forkexec;
 }
 
@@ -103,7 +99,7 @@ void ForkExecParent::start()
     // TODO: introduce C++ wrapper around GSource
     m_watchChild = g_child_watch_source_new(m_childPid);
     g_source_set_callback(m_watchChild, (GSourceFunc)watchChildCallback, this, NULL);
-    g_source_attach(m_watchChild, g_main_loop_get_context(m_loop.get()));
+    g_source_attach(m_watchChild, NULL);
 }
 
 void ForkExecParent::watchChildCallback(GPid pid,
@@ -128,14 +124,13 @@ void ForkExecParent::kill()
 {
 }
 
-ForkExecChild::ForkExecChild(GMainLoopCXX &loop) :
-    ForkExec(loop)
+ForkExecChild::ForkExecChild()
 {
 }
 
-boost::shared_ptr<ForkExecChild> ForkExecChild::create(GMainLoopCXX &loop)
+boost::shared_ptr<ForkExecChild> ForkExecChild::create()
 {
-    boost::shared_ptr<ForkExecChild> forkexec(new ForkExecChild(loop));
+    boost::shared_ptr<ForkExecChild> forkexec(new ForkExecChild);
     return forkexec;
 }
 
