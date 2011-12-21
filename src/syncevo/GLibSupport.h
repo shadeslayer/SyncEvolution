@@ -106,6 +106,12 @@ SE_END_CXX
 SE_GOBJECT_TYPE(GFile)
 SE_GOBJECT_TYPE(GFileMonitor)
 
+void inline intrusive_ptr_add_ref(GMainLoop *ptr) { g_main_loop_ref(ptr); }
+void inline intrusive_ptr_release(GMainLoop *ptr) { g_main_loop_unref(ptr); }
+SE_BEGIN_CXX
+typedef boost::intrusive_ptr<GMainLoop> GMainLoopCXX;
+SE_END_CXX
+
 SE_BEGIN_CXX
 
 /**

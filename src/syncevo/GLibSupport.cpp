@@ -251,7 +251,10 @@ class GLibTest : public CppUnit::TestFixture {
         list<Event> events;
         static const char *name = "GLibTest.out";
         unlink(name);
-        GMainLoopPtr loop(g_main_loop_new(NULL, FALSE), "main loop");
+        GMainLoopCXX loop(g_main_loop_new(NULL, FALSE), false);
+        if (!loop) {
+            SE_THROW("could not allocate main loop");
+        }
         GLibNotify notify(name, boost::bind(notifyCallback, boost::ref(events), _1, _2, _3));
         {
             events.clear();
