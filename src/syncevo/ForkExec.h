@@ -53,6 +53,11 @@ SE_BEGIN_CXX
  * Note that failures encountered inside the class methods themselves
  * will be reported via exceptions. Only asynchronous errors encountered
  * inside the event loop are reported via the failure signal.
+ *
+ * Slots connected to the signals may throw exceptions. They will be
+ * propagated up to the caller when ForkExec methods were called directly.
+ * When thrown inside the event loop, the exception will be logged and
+ * then reported via the onFailure signal.
  */
 
 class ForkExec : private boost::noncopyable {
@@ -66,7 +71,27 @@ class ForkExec : private boost::noncopyable {
     typedef boost::signals2::signal<void (const GDBusCXX::DBusConnectionPtr &)> OnConnect;
     OnConnect m_onConnect;
 
-    // TODO: m_onFailure
+    /**
+     * Called when an exception cannot be propagated up to the caller
+     * because it was thrown inside the event loop, or when some other
+     * kind of failure is encountered which cannot be reported via some
+     * other means. The original problem is already logged when
+     * onFailure is invoked, so further logging should not be done unless
+     * it adds new information.
+     *
+     * Bad results of asynchronous method calls are reported via the
+     * result callback of the method, not via onFailure.
+     *
+     * When a failure occurs, the peer should be considered dead and
+     * the connection to it should be shut down (if any had been
+     * established at all).
+     *
+     * When the child quits before establishing a connection or quits
+     * with a non-zero return code, onFailure will be called. That way
+     * a user of ForkExecParent doesn't have to connect to onQuit.
+     */
+    typedef boost::signals2::signal<void (SyncMLStatus, const std::string &)> OnFailure;
+    OnFailure m_onFailure;
 
  protected:
     ForkExec();
@@ -127,13 +152,14 @@ class ForkExecParent : public ForkExec
     boost::scoped_array<char *> m_env;
     std::list<std::string> m_envStrings;
     GPid m_childPid;
+    bool m_hasConnected;
 
     GSource *m_watchChild;
     static void watchChildCallback(GPid pid,
                                    gint status,
-                                   gpointer data);
+                                   gpointer data) throw();
 
-    void newClientConnection(GDBusCXX::DBusConnectionPtr &conn);
+    void newClientConnection(GDBusCXX::DBusConnectionPtr &conn) throw();
 };
 
 /**

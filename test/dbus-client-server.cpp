@@ -83,6 +83,13 @@ static void onChildConnect(const GDBusCXX::DBusConnectionPtr &conn,
 static void onQuit(int status)
 {
     std::cout << "child has quit, status " << status << std::endl;
+    // always quit the process, not just on failure
+    g_main_loop_quit(loop.get());
+}
+
+static void onFailure(const std::string &error)
+{
+    std::cout << "failure, quitting now: " << error << std::endl;
     g_main_loop_quit(loop.get());
 }
 
@@ -135,6 +142,7 @@ int main(int argc, char **argv)
     try {
         gboolean opt_server;
         gboolean opt_fork_exec;
+        gboolean opt_fork_exec_failure;
         gchar *opt_address;
         GOptionContext *opt_context;
         // gboolean opt_allow_anonymous;
@@ -143,6 +151,7 @@ int main(int argc, char **argv)
         GOptionEntry opt_entries[] = {
             { "server", 's', 0, G_OPTION_ARG_NONE, &opt_server, "Start a server instead of a client", NULL },
             { "forkexec", 's', 0, G_OPTION_ARG_NONE, &opt_fork_exec, "Use fork+exec to start the client (implies --server)", NULL },
+            { "forkfailure", 's', 0, G_OPTION_ARG_NONE, &opt_fork_exec_failure, "Fork /bin/false to simulate a failure in the child (implies --forkexec)", NULL },
             { "address", 'a', 0, G_OPTION_ARG_STRING, &opt_address, "D-Bus address to use", NULL },
             // { "allow-anonymous", 'n', 0, G_OPTION_ARG_NONE, &opt_allow_anonymous, "Allow anonymous authentication", NULL },
             { NULL}
@@ -153,6 +162,7 @@ int main(int argc, char **argv)
         opt_address = NULL;
         opt_server = FALSE;
         opt_fork_exec = FALSE;
+        opt_fork_exec_failure = FALSE;
         // opt_allow_anonymous = FALSE;
 
         opt_context = g_option_context_new("peer-to-peer example");
@@ -171,12 +181,13 @@ int main(int argc, char **argv)
             throw std::runtime_error("could not allocate main loop");
         }
 
-        if (opt_fork_exec) {
+        if (opt_fork_exec || opt_fork_exec_failure) {
             boost::scoped_ptr<Test> testptr;
             boost::shared_ptr<SyncEvo::ForkExecParent> forkexec =
-                SyncEvo::ForkExecParent::create(argv[0]);
+                SyncEvo::ForkExecParent::create(opt_fork_exec_failure ? "/bin/false" : argv[0]);
             forkexec->m_onConnect.connect(boost::bind(onChildConnect, _1, boost::ref(testptr)));
             forkexec->m_onQuit.connect(onQuit);
+            forkexec->m_onFailure.connect(boost::bind(onFailure, _2));
             forkexec->start();
             g_main_loop_run(loop.get());
         } else if (opt_server) {
@@ -197,6 +208,7 @@ int main(int argc, char **argv)
                 SyncEvo::ForkExecChild::create();
 
             forkexec->m_onConnect.connect(callServer);
+            forkexec->m_onFailure.connect(boost::bind(onFailure, _2));
             forkexec->connect();
             g_main_loop_run(loop.get());
         } else {

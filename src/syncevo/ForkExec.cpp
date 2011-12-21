@@ -30,6 +30,7 @@ ForkExec::ForkExec()
 ForkExecParent::ForkExecParent(const std::string &helper) :
     m_helper(helper),
     m_childPid(0),
+    m_hasConnected(false),
     m_watchChild(NULL)
 {
 }
@@ -104,15 +105,52 @@ void ForkExecParent::start()
 
 void ForkExecParent::watchChildCallback(GPid pid,
                                         gint status,
-                                        gpointer data)
+                                        gpointer data) throw()
 {
     ForkExecParent *me = static_cast<ForkExecParent *>(data);
-    me->m_onQuit(status);
+    try {
+        me->m_onQuit(status);
+        if (!me->m_hasConnected ||
+            status != 0) {
+            std::string error = "child process quit";
+            if (!me->m_hasConnected) {
+                error += " unexpectedly";
+            }
+            if (WIFEXITED(status)) {
+                error += StringPrintf(" with return code %d", WEXITSTATUS(status));
+            } else if (WIFSIGNALED(status)) {
+                error += StringPrintf(" because of signal %d\n", WTERMSIG(status));
+            } else {
+                error += " for unknown reasons";
+            }
+            SE_LOG_ERROR(NULL, NULL, "%s", error.c_str());
+            me->m_onFailure(STATUS_FATAL, error);
+        }
+    } catch (...) {
+        std::string explanation;
+        SyncMLStatus status = Exception::handle(explanation);
+        try {
+            me->m_onFailure(status, explanation);
+        } catch (...) {
+            Exception::handle();
+        }
+    }
 }
 
-void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn)
+void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) throw()
 {
-    m_onConnect(conn);
+    try {
+        m_hasConnected = true;
+        m_onConnect(conn);
+    } catch (...) {
+        std::string explanation;
+        SyncMLStatus status = Exception::handle(explanation);
+        try {
+            m_onFailure(status, explanation);
+        } catch (...) {
+            Exception::handle();
+        }
+    }
 }
 
 
