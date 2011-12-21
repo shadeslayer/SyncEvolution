@@ -3,8 +3,12 @@ include $(top_srcdir)/src/syncevo/configs/configs.am
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library
 src_syncevo_cxxflags = @SYNCEVOLUTION_CXXFLAGS@
-src_syncevo_cppflags = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(top_builddir)/src/syncevo -I$(top_srcdir)/src -DSYNCEVO_BACKEND=\"$(BACKENDS_SEARCH_DIRECTORY)\"
+src_syncevo_cppflags = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(gdbus_dir) $(DBUS_CFLAGS) -I$(top_builddir)/src/syncevo -I$(top_srcdir)/src -DSYNCEVO_BACKEND=\"$(BACKENDS_SEARCH_DIRECTORY)\"
 src_syncevo_ldadd = @SYNCEVOLUTION_LDADD@
+
+if COND_DBUS
+src_syncevo_ldadd += $(gdbus_build_dir)/libgdbussyncevo.la
+endif
 
 if ENABLE_UNIT_TESTS
 src_syncevo_cxxflags += $(CPPUNIT_CXXFLAGS)
@@ -57,6 +61,9 @@ src_syncevo_sources = \
   \
   src/syncevo/lcs.h \
   src/syncevo/lcs.cpp \
+  \
+  src/syncevo/ForkExec.cpp \
+  src/syncevo/ForkExec.h \
   \
   src/syncevo/Cmdline.cpp \
   src/syncevo/Cmdline.h \
@@ -193,7 +200,7 @@ src_syncevo_libsyncevolution_la_CPPFLAGS = \
   -DXML_CONFIG_DIR=\""$(datadir)/syncevolution/xml"\" \
   -DTEMPLATE_DIR=\""$(datadir)/syncevolution/templates"\" \
   -DLIBDIR=\""$(libdir)"\"
-src_syncevo_libsyncevolution_la_DEPENDENCIES = $(SYNTHESIS_DEP) @SYNCEVOLUTION_LDADD@
+src_syncevo_libsyncevolution_la_DEPENDENCIES = $(SYNTHESIS_DEP) $(src_syncevo_ldadd)
 
 # rule which is only relevant when compiling Synthesis in subdirectory
 src/build-synthesis/libsynthesissdk.la: $(SYNTHESIS_SUBDIR)/all
