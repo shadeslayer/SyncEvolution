@@ -156,10 +156,12 @@ void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) thro
 
 void ForkExecParent::stop()
 {
+    ::kill(m_childPid, SIGINT);
 }
 
 void ForkExecParent::kill()
 {
+    ::kill(m_childPid, SIGKILL);
 }
 
 ForkExecChild::ForkExecChild()
