@@ -1104,13 +1104,80 @@ template <> struct dbus_traits<Caller_t> : public dbus_traits_base
 };
 
 /**
+ * a std::pair - maps to D-Bus struct
+ */
+template<class A, class B> struct dbus_traits< std::pair<A,B> > : public dbus_traits_base
+{
+    static std::string getContainedType()
+    {
+        return dbus_traits<A>::getType() + dbus_traits<B>::getType();
+    }
+    static std::string getType()
+    {
+        return "(" + getContainedType() + ")";
+    }
+    static std::string getSignature() {return getType(); }
+    static std::string getReply() { return ""; }
+    typedef std::pair<A,B> host_type;
+    typedef const std::pair<A,B> &arg_type;
+
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &pair)
+    {
+        if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRUCT) {
+            throw std::runtime_error("invalid argument");
+        }
+        DBusMessageIter sub;
+        dbus_message_iter_recurse(&iter, &sub);
+        if (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_INVALID) {
+            dbus_traits<A>::get(conn, msg, sub, pair.first);
+        }
+        if (dbus_message_iter_get_arg_type(&sub) != DBUS_TYPE_INVALID) {
+            dbus_traits<B>::get(conn, msg, sub, pair.second);
+        }
+        dbus_message_iter_next(&iter);
+    }
+
+    static void append(DBusMessageIter &iter, arg_type pair)
+    {
+        DBusMessageIter sub;
+        if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_STRUCT, NULL, &sub)) {
+            throw std::runtime_error("out of memory");
+        }
+
+        dbus_traits<A>::append(sub, pair.first);
+        dbus_traits<B>::append(sub, pair.second);
+
+        if (!dbus_message_iter_close_container(&iter, &sub)) {
+            throw std::runtime_error("out of memory");
+        }
+    }
+};
+
+/**
+ * dedicated type for chunk of data, to distinguish this case from
+ * a normal std::pair of two values
+ */
+template<class V> class DBusArray : public std::pair<size_t, const V *>
+{
+ public:
+     DBusArray() :
+        std::pair<size_t, const V *>(0, NULL)
+        {}
+     DBusArray(size_t len, const V *data) :
+        std::pair<size_t, const V *>(len, data)
+        {}
+};
+template<class V> class DBusArray<V> makeDBusArray(size_t len, const V *data) { return DBusArray<V>(len, data); }
+
+/**
  * Pass array of basic type plus its number of entries.
  * Can only be used in cases where the caller owns the
  * memory and can discard it when the call returns, in
  * other words, for method calls, asynchronous replys and
  * signals, but not for return values.
  */
-template<class V> struct dbus_traits< std::pair<size_t, const V *> > : public dbus_traits_base
+template<class V> struct dbus_traits< DBusArray<V> > : public dbus_traits_base
 {
     static std::string getContainedType()
     {
@@ -1123,7 +1190,7 @@ template<class V> struct dbus_traits< std::pair<size_t, const V *> > : public db
     }
     static std::string getSignature() {return getType(); }
     static std::string getReply() { return ""; }
-    typedef std::pair<size_t, const V *> host_type;
+    typedef DBusArray<V> host_type;
     typedef const host_type &arg_type;
 
     static void get(DBusConnection *conn, DBusMessage *msg,
@@ -1160,7 +1227,7 @@ template<class V> struct dbus_traits< std::pair<size_t, const V *> > : public db
 /**
  * a std::map - treat it like a D-Bus dict
  */
-template<class K, class V> struct dbus_traits< std::map<K, V> > : public dbus_traits_base
+template<class K, class V, class C> struct dbus_traits< std::map<K, V, C> > : public dbus_traits_base
 {
     static std::string getContainedType()
     {
@@ -1176,8 +1243,8 @@ template<class K, class V> struct dbus_traits< std::map<K, V> > : public dbus_tr
     }
     static std::string getSignature() {return getType(); }
     static std::string getReply() { return ""; }
-    typedef std::map<K, V> host_type;
-    typedef const std::map<K, V> &arg_type;
+    typedef std::map<K, V, C> host_type;
+    typedef const host_type &arg_type;
 
     static void get(DBusConnection *conn, DBusMessage *msg,
                     DBusMessageIter &iter, host_type &dict)

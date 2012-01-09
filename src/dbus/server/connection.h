@@ -106,7 +106,7 @@ class Connection : public GDBusCXX::DBusObjectHelper, public Resource
 
     /** Connection.Process() */
     void process(const GDBusCXX::Caller_t &caller,
-                 const std::pair<size_t, const uint8_t *> &message,
+                 const GDBusCXX::DBusArray<uint8_t> &message,
                  const std::string &message_type);
     /** Connection.Close() */
     void close(const GDBusCXX::Caller_t &caller,
@@ -118,7 +118,7 @@ class Connection : public GDBusCXX::DBusObjectHelper, public Resource
     GDBusCXX::EmitSignal0 sendAbort;
     bool m_abortSent;
     /** Connection.Reply */
-    GDBusCXX::EmitSignal5<const std::pair<size_t, const uint8_t *> &,
+    GDBusCXX::EmitSignal5<const GDBusCXX::DBusArray<uint8_t> &,
                           const std::string &,
                           const StringMap &,
                           bool,

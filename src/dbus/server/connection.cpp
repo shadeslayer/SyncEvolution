@@ -87,8 +87,8 @@ void Connection::wakeupSession()
 }
 
 void Connection::process(const Caller_t &caller,
-             const std::pair<size_t, const uint8_t *> &message,
-             const std::string &message_type)
+                         const GDBusCXX::DBusArray<uint8_t> &message,
+                         const std::string &message_type)
 {
     SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s sends %lu bytes via connection %s, %s",
                  caller.c_str(),

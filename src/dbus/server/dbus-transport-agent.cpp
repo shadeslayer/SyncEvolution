@@ -69,7 +69,7 @@ void DBusTransportAgent::send(const char *data, size_t len)
     // TODO: turn D-Bus exceptions into transport exceptions
     StringMap meta;
     meta["URL"] = m_url;
-    connection->reply(std::make_pair(len, reinterpret_cast<const uint8_t *>(data)),
+    connection->reply(GDBusCXX::makeDBusArray(len, reinterpret_cast<const uint8_t *>(data)),
                       m_type, meta, false, connection->m_sessionID);
 }
 
@@ -85,7 +85,7 @@ void DBusTransportAgent::shutdown()
     if (connection->m_state != Connection::FAILED) {
         // send final, empty message and wait for close
         connection->m_state = Connection::FINAL;
-        connection->reply(std::pair<size_t, const uint8_t *>(0, 0),
+        connection->reply(GDBusCXX::DBusArray<uint8_t>(0, 0),
                           "", StringMap(),
                           true, connection->m_sessionID);
     }
