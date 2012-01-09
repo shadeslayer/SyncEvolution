@@ -142,6 +142,20 @@ class ForkExecParent : public ForkExec
     typedef boost::signals2::signal<void (int)> OnQuit;
     OnQuit m_onQuit;
 
+    enum State {
+        IDLE,           /**< instance constructed, but start() not called yet */
+        STARTING,       /**< start() called */
+        CONNECTED,      /**< child has connected, D-Bus connection established */
+        TERMINATED      /**< child has quit */
+    };
+    State getState()
+    {
+        return m_hasQuit ? TERMINATED :
+            m_hasConnected ? CONNECTED :
+            m_watchChild ? STARTING :
+            IDLE;
+    }
+
  private:
     ForkExecParent(const std::string &helper);
 
@@ -153,6 +167,7 @@ class ForkExecParent : public ForkExec
     std::list<std::string> m_envStrings;
     GPid m_childPid;
     bool m_hasConnected;
+    bool m_hasQuit;
 
     GSource *m_watchChild;
     static void watchChildCallback(GPid pid,

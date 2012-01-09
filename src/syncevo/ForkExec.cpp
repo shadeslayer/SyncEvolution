@@ -31,6 +31,7 @@ ForkExecParent::ForkExecParent(const std::string &helper) :
     m_helper(helper),
     m_childPid(0),
     m_hasConnected(false),
+    m_hasQuit(false),
     m_watchChild(NULL)
 {
 }
@@ -109,6 +110,7 @@ void ForkExecParent::watchChildCallback(GPid pid,
 {
     ForkExecParent *me = static_cast<ForkExecParent *>(data);
     try {
+        me->m_hasQuit = true;
         me->m_onQuit(status);
         if (!me->m_hasConnected ||
             status != 0) {
