@@ -3015,7 +3015,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
         // was already propagated to the parent via a TransportStatusException
         // in LocalTransportAgent::checkChildReport(). What we can do here
         // is updating the individual's sources status.
-        if (m_localSync && m_agent) {
+        if (m_localSync && m_agent && getPeerIsClient()) {
             boost::shared_ptr<LocalTransportAgent> agent = boost::static_pointer_cast<LocalTransportAgent>(m_agent);
             SyncReport childReport;
             agent->getClientSyncReport(childReport);
