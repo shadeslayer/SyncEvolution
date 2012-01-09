@@ -802,7 +802,8 @@ public:
         }
 
         if (m_report &&
-            level <= ERROR &&
+            (level <= ERROR /* ||
+                               (level == SHOW && isErrorString(format, args)) */) &&
             m_report->getError().empty()) {
             va_list argscopy;
             va_copy(argscopy, args);
@@ -820,6 +821,38 @@ public:
             va_end(argscopy);
         }
     }
+
+#if 0
+    /**
+     * A quick check for level = SHOW text dumps whether the text dump
+     * starts with the [ERROR] prefix; used to detect error messages
+     * from forked process which go through this instance but are not
+     * already tagged as error messages and thus would not show up as
+     * "first error" in sync reports.
+     *
+     * Example for the problem:
+     * [ERROR] onConnect not implemented                [from child process]
+     * [ERROR] child process quit with return code 1    [from parent]
+     * ...
+     * Changes applied during synchronization:
+     * ...
+     * First ERROR encountered: child process quit with return code 1
+     */
+    static bool isErrorString(const char *format,
+                              va_list args)
+    {
+        const char *text;
+        if (!strcmp(format, "%s")) {
+            va_list argscopy;
+            va_copy(argscopy, args);
+            text = va_arg(argscopy, const char *);
+            va_end(argscopy);
+        } else {
+            text = format;
+        }
+        return boost::starts_with(text, "[ERROR");
+    }
+#endif
 
     virtual bool isProcessSafe() const { return false; }
 

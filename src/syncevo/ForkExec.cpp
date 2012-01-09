@@ -54,6 +54,17 @@ ForkExecParent::~ForkExecParent()
     }
 }
 
+/**
+ * Redirect stdout to stderr.
+ *
+ * Child setup function, called insided forked process before exec().
+ * only async-signal-safe functions allowed according to http://developer.gnome.org/glib/2.30/glib-Spawning-Processes.html#GSpawnChildSetupFunc
+ */
+static void setStdoutToStderr(gpointer /* user_data */) throw()
+{
+    // dup2(STDERR_FILENO, STDOUT_FILENO);
+}
+
 void ForkExecParent::start()
 {
     if (m_watchChild) {
@@ -89,7 +100,9 @@ void ForkExecParent::start()
                                   static_cast<gchar **>(m_env.get()),
                                   (GSpawnFlags)((m_helper.find('/') == m_helper.npos ? G_SPAWN_SEARCH_PATH : 0) |
                                                 G_SPAWN_DO_NOT_REAP_CHILD),
-                                  NULL, // child setup function TODO: redirect stdout to stderr where it will be caught by our own output redirection code
+                                  setStdoutToStderr, // child setup function: redirect stdout to stderr where it will be caught by our own output redirection code
+                                  // TODO: avoid logging child errors as "[ERROR] stderr: [ERROR] onConnect not implemented"
+                                  // TODO: log child INFO messages?
                                   NULL, // child setup user data
                                   &m_childPid,
                                   NULL, NULL, NULL, // stdin/out/error pipes
