@@ -57,6 +57,7 @@ using namespace GDBusCXX;
 #include <syncevo/Cmdline.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/LogRedirect.h>
+#include <syncevo/LocalTransportAgent.h>
 #include "CmdlineSyncClient.h"
 
 #include <dlfcn.h>
@@ -447,16 +448,19 @@ static void getEnvVars(map<string, string> &vars);
 extern "C"
 int main( int argc, char **argv )
 {
+    if (boost::ends_with(argv[0], "syncevo-local-sync")) {
+        return LocalTransportMain(argc, argv);
+    }
+
     // Intercept stderr and route it through our logging.
     // stdout is printed normally. Deconstructing it when
     // leaving main() does one final processing of pending
     // output.
     LogRedirect redirect(false);
-
-    SyncContext::initMain("syncevolution");
-
     setvbuf(stderr, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
+
+    SyncContext::initMain("syncevolution");
 
     // Expand PATH to cover the directory we were started from?
     // This might be needed to find normalize_vcard.

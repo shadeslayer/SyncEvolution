@@ -25,7 +25,13 @@
 #include <syncevo/SyncML.h>
 #include <syncevo/SmartPtr.h>
 #include <syncevo/GLibSupport.h>
+#include <syncevo/SyncConfig.h>
+#include <syncevo/ForkExec.h>
+// This needs to be defined before including gdbus-cxx-bridge.h!
+#define DBUS_CXX_EXCEPTION_HANDLER SyncEvo::SyncEvoHandleException
+#include "gdbus-cxx-bridge.h"
 #include <string>
+#include <stdint.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -33,30 +39,13 @@ SE_BEGIN_CXX
 class SyncContext;
 
 /**
- * Variable-sized message, used for both request and reply.
- * Allocated with malloc/realloc().
+ * The main() function of the local transport helper.
+ * Implements the child side of local sync.
  */
-struct Message
-{
-    /** determines which kind of data follows after m_length */
-    enum Type {
-        MSG_SYNCML_XML,
-        MSG_SYNCML_WBXML,
-        MSG_PASSWORD_REQUEST,
-        MSG_PASSWORD_RESPONSE,
-        MSG_SYNC_REPORT
-    } m_type;
+int LocalTransportMain(int argc, char **argv);
 
-    /** length including header */
-    size_t m_length;
-
-    /** payload */
-    char m_data[0];
-
-    /** length excluding header */
-    size_t getDataLength() const { return m_length - offsetof(Message, m_data); }
-};
-
+// internal in LocalTransportAgent.cpp
+class LocalTransportChild;
 
 /**
  * message send/receive with a forked process as peer
@@ -111,78 +100,43 @@ class LocalTransportAgent : public TransportAgent
 
  private:
     SyncContext *m_server;
-    boost::shared_ptr<SyncContext> m_client;
     std::string m_clientContext;
-    GMainLoop *m_loop;
-    unsigned m_timeoutSeconds;
     Status m_status;
-
-    /** type of message for next send() */
-    Message::Type m_sendType;
-
-    /** buffer for message, with total length of buffer as size */
-    class Buffer {
-    public:
-    Buffer() :
-        m_size(0),
-        m_used(0)
-        {}    
-        /** actual message */
-        SmartPtr<Message *, Message *, UnrefFree<Message> > m_message;
-        /** number of allocated bytes */
-        size_t m_size;
-        /** number of valid bytes in buffer */
-        size_t m_used;
-
-        bool haveMessage();
-    } m_receiveBuffer;
-
-    /**
-     * Read/write stream socket for sending/receiving messages.
-     * Data is sent as struct Message (includes type and length),
-     * with per-type payload.
-     */
-    int m_messageFD;
-
-    /**
-     * Second read/write stream socket for transferring final
-     * status. Same communication method as for m_messageFD.
-     * Necessary because the regular communication
-     * channel needs to be closed in case of a failure, to
-     * notify the peer.
-     */
-    int m_statusFD;
-
-    /** 0 in client, child PID in server */
-    pid_t m_pid;
-
     SyncReport m_clientReport;
-
-    void run();
-
-    /**
-     * Write Message with given type into file descriptor.
-     * Retries until error or all data written.
-     *
-     * @return ACTIVE for success, TIME_OUT or FAILED for failure, exception for really bad error
-     */
-    Status writeMessage(int fd, Message::Type type, const char *data, size_t len, Timespec deadline);
+    GMainLoopCXX m_loop;
+    boost::shared_ptr<ForkExecParent> m_forkexec;
+    std::string m_contentType;
+    std::string m_replyContentType;
+    std::string m_replyMsg;
 
     /**
-     * Read bytes into buffer until complete Message
-     * is assembled. Will read additional bytes beyond
-     * end of that Message if available. An existing
-     * complete message is not overwritten.
-     *
-     * @return ACTIVE for success, TIME_OUT or FAILED for failure, exception for really bad error
+     * provides the D-Bus API expected by the forked process:
+     * - password requests
+     * - store the child's sync report
      */
-    Status readMessage(int fd, Buffer &buffer, Timespec deadline);
+    boost::shared_ptr<GDBusCXX::DBusObjectHelper> m_parent;
 
-    /** utility function for parent: copy child's report into m_clientReport */
-    void receiveChildReport();
+    /**
+     * provides access to the forked process' D-Bus API
+     * - start sync (returns child's first message)
+     * - send server reply (returns child's next message or empty when done)
+     *
+     * Only non-NULL when child is running and connected.
+     */
+    boost::shared_ptr<LocalTransportChild> m_child;
 
-    /** utility function for parent: check m_clientReport and log/throw errors */
-    void checkChildReport();
+
+    void onChildConnect(const GDBusCXX::DBusConnectionPtr &conn);
+    void onFailure(const std::string &error);
+    void onChildQuit(int status);
+    void askPassword(const std::string &passwordName,
+                     const std::string &descr,
+                     const ConfigPasswordKey &key,
+                     const boost::shared_ptr< GDBusCXX::Result1<const std::string &> > &reply);
+    void storeSyncReport(const std::string &report);
+    void storeReplyMsg(const std::string &contentType,
+                       const GDBusCXX::DBusArray<uint8_t> &reply,
+                       const std::string &error);
 
     /**
      * utility function: calculate deadline for operation starting now
