@@ -375,6 +375,12 @@ class SyncReport : public std::map<std::string, SyncSourceReport> {
         m_remoteName("REMOTE")
         {}
 
+    /** construct from text dump */
+    SyncReport(const std::string &dump);
+
+    /** convert to text dump */
+    std::string toString() const;
+
     void setLocalName(const std::string &name) { m_localName = name; }
     void setRemoteName(const std::string &name) { m_remoteName = name; }
 

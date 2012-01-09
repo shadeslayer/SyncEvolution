@@ -21,6 +21,8 @@
 #include <syncevo/SyncML.h>
 #include <syncevo/ConfigNode.h>
 #include <syncevo/util.h>
+#include <syncevo/StringDataBlob.h>
+#include <syncevo/IniConfigNode.h>
 #include <sstream>
 #include <iomanip>
 #include <vector>
@@ -586,6 +588,28 @@ namespace {
             return res;
         }
     }
+}
+
+SyncReport::SyncReport(const std::string &dump)
+{
+    boost::shared_ptr<std::string> data(new std::string(dump));
+    boost::shared_ptr<StringDataBlob> blob(new StringDataBlob("sync report",
+                                                              data,
+                                                              true));
+    IniHashConfigNode node(blob);
+    node >> *this;
+}
+
+std::string SyncReport::toString() const
+{
+    boost::shared_ptr<std::string> data(new std::string);
+    boost::shared_ptr<StringDataBlob> blob(new StringDataBlob("sync report",
+                                                              data,
+                                                              false));
+    IniHashConfigNode node(blob);
+    node << *this;
+    node.flush();
+    return *data;
 }
 
 void SyncReport::prettyPrint(std::ostream &out, int flags) const
