@@ -3890,6 +3890,24 @@ protected:
 
     typedef T Callback_t;
 
+    void prepare(GDBusMessagePtr &msg)
+    {
+        msg.reset(g_dbus_message_new_method_call(m_destination.c_str(),
+                                                 m_path.c_str(),
+                                                 m_interface.c_str(),
+                                                 m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("g_dbus_message_new_method_call() failed");
+        }
+    }
+
+    void send(GDBusMessagePtr &msg, const Callback_t &callback)
+    {
+        CallbackData *data = new CallbackData(m_conn, callback);
+        g_dbus_connection_send_message_with_reply(m_conn.get(), msg.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE,
+                                                  -1, NULL, NULL, m_dbusCallback, data);
+    }
+
 public:
     struct CallbackData
     {
@@ -3916,76 +3934,109 @@ public:
 
     void operator () (const Callback_t &callback)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_method_call(m_destination.c_str(),
-                                                           m_path.c_str(),
-                                                           m_interface.c_str(),
-                                                           m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_method_call() failed");
-        }
-
-        CallbackData *data = new CallbackData(m_conn, callback);
-
-        //parameter marshaling (none)
-        g_dbus_connection_send_message_with_reply(m_conn.get(), msg.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE,
-                                                  -1, NULL, NULL, m_dbusCallback, data);
+        GDBusMessagePtr msg;
+        prepare(msg);
+        send(msg, callback);
     }
 
     template <class A1>
     void operator () (const A1 &a1, const Callback_t &callback)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_method_call(m_destination.c_str(),
-                                                           m_path.c_str(),
-                                                           m_interface.c_str(),
-                                                           m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_method_call() failed");
-        }
+        GDBusMessagePtr msg;
+        prepare(msg);
         AppendRetvals(msg.get()) << a1;
-
-        CallbackData *data = new CallbackData(m_conn, callback);
-
-        //parameter marshaling (none)
-        g_dbus_connection_send_message_with_reply(m_conn.get(), msg.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE,
-                                                  -1, NULL, NULL, m_dbusCallback, data);
+        send(msg, callback);
     }
 
     template <class A1, class A2>
     void operator () (const A1 &a1, const A2 &a2, const Callback_t &callback)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_method_call(m_destination.c_str(),
-                                                         m_path.c_str(),
-                                                         m_interface.c_str(),
-                                                         m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_method_call() failed");
-        }
+        GDBusMessagePtr msg;
+        prepare(msg);
         AppendRetvals(msg.get()) << a1 << a2;
-
-        CallbackData *data = new CallbackData(m_conn, callback);
-
-        //parameter marshaling (none)
-        g_dbus_connection_send_message_with_reply(m_conn.get(), msg.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE,
-                                                  -1, NULL, NULL, m_dbusCallback, data);
+        send(msg, callback);
     }
 
     template <class A1, class A2, class A3>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const Callback_t &callback)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_method_call(m_destination.c_str(),
-                                                           m_path.c_str(),
-                                                           m_interface.c_str(),
-                                                           m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_method_call() failed");
-        }
+        GDBusMessagePtr msg;
+        prepare(msg);
         AppendRetvals(msg.get()) << a1 << a2 << a3;
+        send(msg, callback);
+    }
 
-        CallbackData *data = new CallbackData(m_conn, callback);
+    template <class A1, class A2, class A3, class A4>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const Callback_t &callback)
+    {
+        GDBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg.get()) << a1 << a2 << a3 << a4;
+        send(msg, callback);
+    }
 
-        //parameter marshaling (none)
-        g_dbus_connection_send_message_with_reply(m_conn.get(), msg.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE,
-                                                  -1, NULL, NULL, m_dbusCallback, data);
+    template <class A1, class A2, class A3, class A4, class A5>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5, const Callback_t &callback)
+    {
+        GDBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg.get()) << a1 << a2 << a3 << a4 << a5;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6,
+                      const Callback_t &callback)
+    {
+        GDBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg.get()) << a1 << a2 << a3 << a4 << a5 << a6;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7,
+                      const Callback_t &callback)
+    {
+        GDBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg.get()) << a1 << a2 << a3 << a4 << a5 << a6 << a7;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7, const A8 &a8,
+                      const Callback_t &callback)
+    {
+        GDBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg.get()) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9,
+                      const Callback_t &callback)
+    {
+        GDBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg.get()) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const A10 &a10, 
+                      const Callback_t &callback)
+    {
+        GDBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg.get()) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9 << a10;
+        send(msg, callback);
     }
 };
 
