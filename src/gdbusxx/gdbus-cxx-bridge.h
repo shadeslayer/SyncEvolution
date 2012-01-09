@@ -1664,7 +1664,7 @@ template<class C> struct dbus_traits<C &> : public dbus_traits<C>
 
 /**
  * dbus-cxx base exception thrown in dbus server
- * org.syncevolution.gdbus-cxx.Exception
+ * org.syncevolution.gdbuscxx.Exception
  * This base class only contains interfaces, no data members
  */
 class DBusCXXException
@@ -1674,7 +1674,7 @@ class DBusCXXException
      * get exception name, used to convert to dbus error name
      * subclasses should override it
      */
-    virtual std::string getName() const { return "org.syncevolution.gdbus-cxx.Exception"; }
+    virtual std::string getName() const { return "org.syncevolution.gdbuscxx.Exception"; }
 
     /**
      * get error message
@@ -1695,9 +1695,9 @@ static GDBusMessage *handleException(GDBusMessage *msg)
     } catch (const DBusCXXException &ex) {
         return g_dbus_message_new_method_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
     } catch (const std::runtime_error &ex) {
-        return g_dbus_message_new_method_error(msg, "org.syncevolution.gdbus-cxx.Exception", "%s", ex.what());
+        return g_dbus_message_new_method_error(msg, "org.syncevolution.gdbuscxx.Exception", "%s", ex.what());
     } catch (...) {
-        return g_dbus_message_new_method_error(msg, "org.syncevolution.gdbus-cxx.Exception", "unknown");
+        return g_dbus_message_new_method_error(msg, "org.syncevolution.gdbuscxx.Exception", "unknown");
     }
 }
 
