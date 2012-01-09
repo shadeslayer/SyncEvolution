@@ -3844,6 +3844,36 @@ protected:
 
     typedef T Callback_t;
 
+    void prepare(DBusMessagePtr &msg)
+    {
+        // Constructor steals reference, reset() doesn't!
+        // Therefore use constructor+copy instead of reset().
+        msg =
+            DBusMessagePtr(dbus_message_new_method_call(m_destination.c_str(),
+                                                        m_path.c_str(),
+                                                        m_interface.c_str(),
+                                                        m_method.c_str()));
+        if (!msg) {
+            throw std::runtime_error("dbus_message_new_method_call() failed");
+        }
+    }
+
+    void send(DBusMessagePtr &msg, const Callback_t &callback)
+    {
+        DBusPendingCall *call;
+        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
+            throw std::runtime_error("dbus_connection_send failed");
+        }
+
+
+        DBusPendingCallPtr mCall (call);
+        CallbackData *data = new CallbackData(m_conn, callback);
+        dbus_pending_call_set_notify(mCall.get(),
+                                     m_dbusCallback,
+                                     data,
+                                     callDataUnref);
+    }
+
 public:
     struct CallbackData
     {
@@ -3870,110 +3900,111 @@ public:
 
     void operator () (const Callback_t &callback)
     {
-        DBusPendingCall *call;
-        DBusMessagePtr msg(dbus_message_new_method_call(
-                    m_destination.c_str(),
-                    m_path.c_str(),
-                    m_interface.c_str(),
-                    m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("dbus_message_new_method_call() failed");
-        }
-
-        //parameter marshaling (none)
-        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
-            throw std::runtime_error("dbus_connection_send failed");
-        }
-
-        DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(m_conn, callback);
-        dbus_pending_call_set_notify(mCall.get(),
-                                     m_dbusCallback,
-                                     data,
-                                     callDataUnref);
+        DBusMessagePtr msg;
+        prepare(msg);
+        send(msg, callback);
     }
 
     template <class A1>
     void operator () (const A1 &a1, const Callback_t &callback)
     {
-        DBusPendingCall *call;
-        DBusMessagePtr msg(dbus_message_new_method_call(
-                    m_destination.c_str(),
-                    m_path.c_str(),
-                    m_interface.c_str(),
-                    m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("dbus_message_new_method_call() failed");
-        }
+        DBusMessagePtr msg;
+        prepare(msg);
         AppendRetvals(msg) << a1;
+        send(msg, callback);
 
-        //parameter marshaling (none)
-        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
-            throw std::runtime_error("dbus_connection_send failed");
-        }
-
-        DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(m_conn, callback);
-        dbus_pending_call_set_notify(mCall.get(),
-                                     m_dbusCallback,
-                                     data,
-                                     callDataUnref);
     }
 
     template <class A1, class A2>
     void operator () (const A1 &a1, const A2 &a2, const Callback_t &callback)
     {
-        DBusPendingCall *call;
-        DBusMessagePtr msg(dbus_message_new_method_call(
-                    m_destination.c_str(),
-                    m_path.c_str(),
-                    m_interface.c_str(),
-                    m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("dbus_message_new_method_call() failed");
-        }
+        DBusMessagePtr msg;
+        prepare(msg);
         AppendRetvals(msg) << a1 << a2;
-
-        //parameter marshaling (none)
-        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
-            throw std::runtime_error("dbus_connection_send failed");
-        }
-
-        DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(m_conn, callback);
-        dbus_pending_call_set_notify(mCall.get(),
-                                     m_dbusCallback,
-                                     data,
-                                     callDataUnref);
+        send(msg, callback);
     }
 
     template <class A1, class A2, class A3>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const Callback_t &callback)
     {
-        DBusPendingCall *call;
-        DBusMessagePtr msg(dbus_message_new_method_call(
-                    m_destination.c_str(),
-                    m_path.c_str(),
-                    m_interface.c_str(),
-                    m_method.c_str()));
-        if (!msg) {
-            throw std::runtime_error("dbus_message_new_method_call() failed");
-        }
+        DBusMessagePtr msg;
+        prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3;
+        send(msg, callback);
+    }
 
-        //parameter marshaling (none)
-        if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
-            throw std::runtime_error("dbus_connection_send failed");
-        }
+    template <class A1, class A2, class A3, class A4>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const Callback_t &callback)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4;
+        send(msg, callback);
+    }
 
-        DBusPendingCallPtr mCall (call);
-        CallbackData *data = new CallbackData(m_conn, callback);
-        dbus_pending_call_set_notify(mCall.get(),
-                                     m_dbusCallback,
-                                     data,
-                                     callDataUnref);
+    template <class A1, class A2, class A3, class A4, class A5>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5, const Callback_t &callback)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const Callback_t &callback)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7, const Callback_t &callback)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7, const A8 &a8, const Callback_t &callback)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const Callback_t &callback)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
+        send(msg, callback);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10>
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const A10 &a10, const Callback_t &callback)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9 << a10;
+        send(msg, callback);
     }
 };
+
+/** fill buffer with error name and description (if available), return true if error found */
+bool CheckError(const DBusMessagePtr &reply,
+                std::string &buffer);
 
 /*
  * A DBus Client Call object handling zero or more parameter and
@@ -3991,11 +4022,8 @@ class DBusClientCall0 : public DBusClientCall<boost::function<void (const std::s
     {
         CallbackData *data = static_cast<CallbackData *>(user_data);
         DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        const char* errname = dbus_message_get_error_name (reply.get());
         std::string error;
-        if (errname) {
-            error = errname;
-        }
+        CheckError(reply, error);
         //unmarshal the return results and call user callback
         (data->m_callback)(error);
     }
@@ -4022,13 +4050,10 @@ class DBusClientCall1 : public DBusClientCall<boost::function<void (const R1 &, 
         typedef typename DBusClientCall<Callback_t>::CallbackData CallbackData;
         CallbackData *data = static_cast<CallbackData *>(user_data);
         DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        const char* errname = dbus_message_get_error_name (reply.get());
         std::string error;
         typename dbus_traits<R1>::host_type r;
-        if (!errname) {
+        if (!CheckError(reply, error)) {
             ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
-        } else {
-            error = errname;
         }
         //unmarshal the return results and call user callback
         //(*static_cast <Callback_t *>(user_data))(r, error);
@@ -4059,14 +4084,11 @@ class DBusClientCall2 : public DBusClientCall<boost::function<
         typedef typename DBusClientCall<Callback_t>::CallbackData CallbackData;
         CallbackData *data = static_cast<CallbackData *>(user_data);
         DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        const char* errname = dbus_message_get_error_name (reply.get());
         std::string error;
         typename dbus_traits<R1>::host_type r1;
         typename dbus_traits<R2>::host_type r2;
-        if (!errname) {
+        if (!CheckError(reply, error)) {
             ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
-        } else {
-            error = errname;
         }
         //unmarshal the return results and call user callback
         (data->m_callback)(r1, r2, error);
@@ -4096,15 +4118,12 @@ class DBusClientCall3 : public DBusClientCall<boost::function<
         typedef typename DBusClientCall<Callback_t>::CallbackData CallbackData;
         CallbackData *data = static_cast<CallbackData *>(user_data);
         DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        const char* errname = dbus_message_get_error_name (reply.get());
         std::string error;
         typename dbus_traits<R1>::host_type r1;
         typename dbus_traits<R2>::host_type r2;
         typename dbus_traits<R3>::host_type r3;
-        if (!errname) {
+        if (!CheckError(reply, error)) {
             ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
-        } else {
-            error = errname;
         }
         //unmarshal the return results and call user callback
         (data->m_callback)(r1, r2, r3, error);

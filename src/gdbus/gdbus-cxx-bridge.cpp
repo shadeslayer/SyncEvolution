@@ -101,4 +101,25 @@ DBusServerCXX::DBusServerCXX(DBusServer *server, const std::string &address) :
 {
 }
 
+bool CheckError(const DBusMessagePtr &reply,
+                std::string &buffer)
+{
+    const char* errname = dbus_message_get_error_name (reply.get());
+    if (errname) {
+        buffer = errname;
+        DBusMessageIter iter;
+        if (dbus_message_iter_init(reply.get(), &iter)) {
+            if (dbus_message_iter_get_arg_type(&iter) == DBUS_TYPE_STRING) {
+                buffer += ": ";
+                const char *str;
+                dbus_message_iter_get_basic(&iter, &str);
+                buffer += str;
+            }
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
 }
