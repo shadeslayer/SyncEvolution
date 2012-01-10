@@ -51,7 +51,7 @@ label_changed_cb (MuxFrame *frame)
 {
     char *font = NULL;
     GtkFrame *gtk_frame = GTK_FRAME (frame);
-    GtkWidget *label = gtk_frame_get_label_widget (GTK_FRAME (frame));
+    GtkWidget *label = gtk_frame_get_label_widget (gtk_frame);
 
     if (!label)
         return;
@@ -75,7 +75,6 @@ static void
 mux_frame_update_style (MuxFrame *frame)
 {
     GdkColor *border_color, *bullet_color;
-    char *font = NULL;
 
     gtk_widget_style_get (GTK_WIDGET (frame),
                           "border-color", &border_color, 
