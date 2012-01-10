@@ -9,13 +9,13 @@ msgstr ""
 "Project-Id-Version: syncevolution\n"
 "Report-Msgid-Bugs-To: https://bugs.meego.com/\n"
 "POT-Creation-Date: 2011-12-05 10:21-0800\n"
-"PO-Revision-Date: 2011-12-05 19:25+0000\n"
+"PO-Revision-Date: 2011-12-05 22:05+0000\n"
 "Last-Translator: margie <margie@linux.intel.com>\n"
-"Language-Team: English (United Kingdom) (http://www.transifex.net/projects/p/meego/team/en_GB/)\n"
+"Language-Team: English (United States) (http://www.transifex.net/projects/p/meego/team/en_US/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: en_GB\n"
+"Language: en_US\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 #. TRANSLATORS: this is the application name that may be used by e.g.
@@ -181,7 +181,7 @@ msgid ""
 "sync directly with some devices."
 msgstr ""
 "You haven't selected a sync service or device yet. Sync services let you "
-"synchronise your data between your netbook and a web service. You can also "
+"synchronize your data between your netbook and a web service. You can also "
 "sync directly with some devices."
 
 #: ../src/gtk-ui/sync-ui.c:729
@@ -450,7 +450,7 @@ msgstr "There was a problem processing sync request. Trying again may help."
 msgid ""
 "Failed to login. Could there be a problem with your username or password?"
 msgstr ""
-"Failed to login. Could there be a problem with your username or password?"
+"Failed to log in. Could there be a problem with your username or password?"
 
 #: ../src/gtk-ui/sync-ui.c:3210
 msgid "Forbidden"
@@ -488,7 +488,7 @@ msgstr "Failed to process SyncML"
 
 #: ../src/gtk-ui/sync-ui.c:3230
 msgid "Server authorization failed"
-msgstr "Server authorisation failed"
+msgstr "Server authorization failed"
 
 #: ../src/gtk-ui/sync-ui.c:3232
 msgid "Failed to parse configuration file"
@@ -610,8 +610,8 @@ msgid ""
 "Backups are made before every time we Sync. Choose a backup to restore. Any "
 "changes you have made since then will be lost."
 msgstr ""
-"Backups are made before every time we Sync. Choose a backup to restore. Any "
-"changes you have made since then will be lost."
+"Backups are made before every sync. Choose a backup to restore. Any changes "
+"you have made since then will be lost."
 
 #: ../src/gtk-ui/ui.glade.h:19
 msgid "Calendar"
@@ -688,7 +688,7 @@ msgstr ""
 
 #: ../src/gtk-ui/ui.glade.h:43
 msgid "Use Bluetooth to Sync your data from one device to another."
-msgstr "Use Bluetooth to Sync your data from one device to another."
+msgstr "Use Bluetooth to sync your data from one device to another."
 
 #: ../src/gtk-ui/ui.glade.h:44
 msgid "You will need to add Bluetooth devices before they can be synced."
@@ -719,7 +719,7 @@ msgid ""
 "Google Sync can back up and synchronize your contacts with your Gmail "
 "contacts."
 msgstr ""
-"Google Sync can back up and synchronise your contacts with your Gmail "
+"Google Sync can back up and synchronize your contacts with your Gmail "
 "contacts."
 
 #. TRANSLATORS: Please include the word "demo" (or the equivalent in
@@ -889,7 +889,7 @@ msgstr "%s - Bluetooth device"
 #: ../src/gtk-ui/sync-config-widget.c:1213
 #, c-format
 msgid "%s - manually setup"
-msgstr "%s - manually setup"
+msgstr "%s - manually set up"
 
 #. TRANSLATORS: link button in service configuration form
 #: ../src/gtk-ui/sync-config-widget.c:1886

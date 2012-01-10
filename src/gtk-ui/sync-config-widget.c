@@ -446,6 +446,12 @@ use_clicked_cb (GtkButton *btn, SyncConfigWidget *self)
                                _("Service must have a name and server URL"));
             return;
         }
+
+        if (!username || strlen (username) == 0) {
+            /* TRANSLATORS: error dialog when creating a new sync configuration */
+            show_error_dialog (GTK_WIDGET (self), _("A username is required for this service"));
+            return;
+        }
     }
 
     syncevo_config_foreach_source (self->config,
