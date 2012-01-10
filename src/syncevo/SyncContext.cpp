@@ -1292,6 +1292,11 @@ public:
             m_doLogging &&
             (m_client.getDumpData() || m_client.getPrintChanges())) {
             // dump initial databases
+            SE_LOG_INFO(NULL, NULL, "creating complete data backup before sync (%s)",
+                        (m_client.getDumpData() && m_client.getPrintChanges()) ? "enabled with dumpData and needed for printChanges" :
+                        m_client.getDumpData() ? "because it was enabled with dumpData" :
+                        m_client.getPrintChanges() ? "needed for printChanges" :
+                        "???");
             dumpDatabases("before", &SyncSourceReport::m_backupBefore, excludeSource);
             if (m_client.getPrintChanges()) {
                 // compare against the old "after" database dump
@@ -1318,6 +1323,11 @@ public:
             (m_client.getDumpData() ||
              (m_client.getPrintChanges() && m_reportTodo && !m_prepared.empty()))) {
             try {
+                SE_LOG_INFO(NULL, NULL, "creating complete data backup after sync (%s)",
+                            (m_client.getDumpData() && m_client.getPrintChanges()) ? "enabled with dumpData and needed for printChanges" :
+                            m_client.getDumpData() ? "because it was enabled with dumpData" :
+                            m_client.getPrintChanges() ? "needed for printChanges" :
+                            "???");
                 dumpDatabases("after", &SyncSourceReport::m_backupAfter);
             } catch (...) {
                 Exception::handle();
