@@ -1170,7 +1170,7 @@ template<> struct dbus_traits<uint32_t> :
     static std::string getReply() { return ""; }
 };
 
-template<> struct dbus_traits<bool>
+template<> struct dbus_traits<bool> : public dbus_traits_base
 // cannot use basic_marshal because VariantTypeBoolean packs/unpacks
 // a gboolean, which is not a C++ bool (4 bytes vs 1 on x86_64)
 // public basic_marshal< bool, VariantTypeBoolean >
