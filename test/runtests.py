@@ -641,7 +641,7 @@ class SyncEvolutionTest(Action):
                       "CLIENT_TEST_LOG=%(log)s " \
                       "CLIENT_TEST_EVOLUTION_PREFIX=%(evoprefix)s " \
                       "%(runner)s " \
-                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs:.libs:syncevo/.libs:$LD_LIBRARY_PATH PATH=backends/webdav:.:$PATH %(testprefix)s " \
+                      "env LD_LIBRARY_PATH=build-synthesis/src/.libs:.libs:syncevo/.libs:gdbus/.libs:gdbusxx/.libs:$LD_LIBRARY_PATH PATH=backends/webdav:.:$PATH %(testprefix)s " \
                       "%(testbinary)s" % \
                       { "server": self.serverName,
                         "sources": ",".join(self.sources),
