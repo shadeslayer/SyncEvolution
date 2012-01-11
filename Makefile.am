@@ -246,7 +246,7 @@ endif
 # patch README.rst properties on-the-fly
 README.patched.rst: README.rst src/syncevolution
 	perl -e '$$syncfound=0; $$sourcefound=0; $$res=0;' \
-	                -e 'sub run { $$cmd = shift; $$buffer = `$$cmd`; $(RUN_SYNCEVOLUTION_CHECK) }' \
+	                -e 'sub run { $$cmd = shift; $$buffer = `env LD_LIBRARY_PATH=src/syncevo/.libs:src/gdbus/.libs:src/gdbusxx/.libs:src/build-synthesis/src/.libs:$$ENV{LD_LIBRARY_PATH} $$cmd`; $(RUN_SYNCEVOLUTION_CHECK) }' \
 	                -e 'while (<>) {' \
 	                -e 's/^:Version: .*/:Version: $(VERSION)/;' \
 	                -e 's/:Date: .*/":Date: " . `date +%Y-%m-%d`/e;' \
