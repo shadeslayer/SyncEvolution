@@ -1,3 +1,5 @@
+EXTRA_DIST = configure-sub.in
+
 if ENABLE_QT_DBUS
 
 include $(top_srcdir)/m4-repo/autotroll.mk
@@ -21,8 +23,6 @@ nodist_libsyncevolution_qt_dbus_la_SOURCES = \
 	$(BUILT_SOURCES)
 
 AM_CPPFLAGS = $(SYNCEVOLUTION_CFLAGS) -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
-
-EXTRA_DIST = configure-sub.in
 
 built_headers = \
   syncevo-server-full.h \
