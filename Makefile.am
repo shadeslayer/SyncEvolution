@@ -232,20 +232,30 @@ installcheck-local:
 	done
 endif
 
+# Be strict about running 'syncevolution' only when not doing
+# cross-compilation: in that case, if running 'syncevolution' fails,
+# abort the build process. Otherwise proceed with the fallback below,
+# which is to keep the "see --sync/source-property ?" placeholders in
+# the README.
+if COND_CROSS_COMPILING
+RUN_SYNCEVOLUTION_CHECK=if ($$?) { return ""; } else { return $$buffer; }
+else
+RUN_SYNCEVOLUTION_CHECK=die if $$?; return $$buffer;
+endif
 
 # patch README.rst properties on-the-fly
 README.patched.rst: README.rst src/syncevolution
 	perl -e '$$syncfound=0; $$sourcefound=0; $$res=0;' \
-	                -e 'sub run { $$cmd = shift; $$buffer = `$$cmd`; die if $$?; return $$buffer; }' \
+	                -e 'sub run { $$cmd = shift; $$buffer = `$$cmd`; $(RUN_SYNCEVOLUTION_CHECK) }' \
 	                -e 'while (<>) {' \
 	                -e 's/^:Version: .*/:Version: $(VERSION)/;' \
 	                -e 's/:Date: .*/":Date: " . `date +%Y-%m-%d`/e;' \
-	                -e 'if (s;<<insert sync-property>>\n;run("src/syncevolution --daemon=no --sync-property ?");e) { $$syncfound=1; }' \
-	                -e 'if (s;<<insert source-property>>\n;run("src/syncevolution --daemon=no --source-property ?");e) { $$sourcefound=1; }' \
+	                -e 'if (s;(<< see "syncevolution --sync-property ." >>\n);run("src/syncevolution --daemon=no --sync-property ?") || $$1;e) { $$syncfound=1; }' \
+	                -e 'if (s;(<< see "syncevolution --source-property ." >>\n);run("src/syncevolution --daemon=no --source-property ?") || $$1;e) { $$sourcefound=1; }' \
 	                -e 'print;' \
 	                -e '}' \
-	                -e 'die "<<insert sync-property>> not in README.rst?!" unless $$syncfound;' \
-	                -e 'die "<<insert source-property>> not in README.rst?!" unless $$sourcefound;' \
+	                -e 'die "<<sync-property>> tag not in README.rst?!" unless $$syncfound;' \
+	                -e 'die "<<source-property>> tag not in README.rst?!" unless $$sourcefound;' \
 	                -e 'exit $$res;' \
 	                $< >$@
 CLEANFILES += README.patched.rst

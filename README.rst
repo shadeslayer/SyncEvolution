@@ -662,11 +662,11 @@ defined, which is marked with the word `required`.
 
 Sync properties
 ---------------
-<<insert sync-property>>
+<< see "syncevolution --sync-property ?" >>
 
 Source properties
 -----------------
-<<insert source-property>>
+<< see "syncevolution --source-property ?" >>
 
 
 EXAMPLES
