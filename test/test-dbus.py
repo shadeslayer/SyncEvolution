@@ -951,162 +951,158 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
 
 
 class Connman (dbus.service.Object):
-    count = 0
+    state = "online"
+    getPropertiesCalled = False
+    waitingForGetProperties = False
+
     @dbus.service.method(dbus_interface='net.connman.Manager', in_signature='', out_signature='a{sv}')
     def GetProperties(self):
-        self.count = self.count+1
-        if (self.count == 1):
+        # notify TestDBusServerPresence.setUp()?
+        if self.waitingForGetProperties:
             loop.quit()
-            return {"ConnectedTechnologies":["ethernet", "some other stuff"],
-                    "AvailableTechnologies": ["bluetooth"]}
-        elif (self.count == 2):
-            """ unplug the ethernet cable """
-            loop.quit()
-            return {"ConnectedTechnologies":["some other stuff"],
-                    "AvailableTechnologies": ["bluetooth"]}
-        elif (self.count == 3):
-            """ replug the ethernet cable """
-            loop.quit()
-            return {"ConnectedTechnologies":["ethernet", "some other stuff"],
-                    "AvailableTechnologies": ["bluetooth"]}
-        elif (self.count == 4):
-            """ nothing presence """
-            loop.quit()
-            return {"ConnectedTechnologies":[""],
-                    "AvailableTechnologies": [""]}
-        elif (self.count == 5):
-            """ come back the same time """
-            loop.quit()
-            return {"ConnectedTechnologies":["ethernet", "some other stuff"],
-                    "AvailableTechnologies": ["bluetooth"]}
-        else:
-            return {}
+        self.getPropertiesCalled = True
+        return { "State" : self.state }
 
     @dbus.service.signal(dbus_interface='net.connman.Manager', signature='sv')
     def PropertyChanged(self, key, value):
         pass
 
-    def emitSignal(self):
-        self.count = self.count+1
-        if (self.count == 2):
-            """ unplug the ethernet cable """
-            self.PropertyChanged("ConnectedTechnologies",["some other stuff"])
-            return
-        elif (self.count == 3):
-            """ replug the ethernet cable """
-            self.PropertyChanged("ConnectedTechnologies", ["ethernet", "some other stuff"])
-            return
-        elif (self.count == 4):
-            """ nothing presence """
-            self.PropertyChanged("ConnectedTechnologies", [""])
-            self.PropertyChanged("AvailableTechnologies", [""])
-            return
-        elif (self.count == 5):
-            """ come back the same time """
-            self.PropertyChanged("ConnectedTechnologies", ["ethernet", "some other stuff"])
-            self.PropertyChanged("AvailableTechnologies", ["bluetooth"])
-            return
+    def setState(self, state):
+        if self.state != state:
+            self.state = state
+            self.PropertyChanged("State", state)
+            # race condition: it happened that method calls
+            # reached syncevo-dbus-server before the state change,
+            # thus breaking the test
+            time.sleep(1)
 
     def reset(self):
-        self.count = 0
+        self.state = "online"
+        self.getPropertiesCalled = False
+        self.waitingForGetProperties = False
 
 class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     """Tests Presence signal and checkPresence API"""
 
+    # Our fake ConnMan implementation must be present on the
+    # bus also outside of tests, because syncevo-dbus-server
+    # will try to call it before setUp(). The implementation's
+    # initialization and tearDown() below ensures that the state
+    # is "online" outside of tests.
     name = dbus.service.BusName ("net.connman", bus);
+    conn = Connman (bus, "/")
 
     def setUp(self):
-        self.conn = Connman (bus, "/")
         self.setUpServer()
+        self.cbFailure = None
+        # we don't know if the GetProperties() call was already
+        # processed; if not, wait for it here
+        if not self.conn.getPropertiesCalled:
+            self.conn.waitingForGetProperties = True
+            loop.run()
 
     def tearDown(self):
-        self.conn.remove_from_connection()
+        self.conn.reset()
         self.conf = None
+
+    def presenceCB(self,
+                   server, status, transport,
+                   expected):
+        try:
+            state = expected.pop(server, None)
+            if not state:
+                self.fail("unexpected presence signal for config " + server)
+            self.failUnlessEqual(status, state[0])
+            if not status:
+                self.failUnlessEqual(transport, state[1])
+        except Exception, ex:
+            # tell test method about the problem
+            loop.quit()
+            self.cbFailure = ex
+            # log exception
+            raise ex
+
+        if not expected:
+            # got all expected signals
+            loop.quit()
+
+    def expect(self, expected):
+        '''expected: hash from server config name to state+transport'''
+        match = bus.add_signal_receiver(lambda x,y,z:
+                                            self.presenceCB(x,y,z, expected), \
+                                            'Presence',
+                                            'org.syncevolution.Server',
+                                            self.server.bus_name,
+                                            None,
+                                            byte_arrays=True,
+                                            utf8_strings=True)
+        return match
 
     @property("ENV", "DBUS_TEST_CONNMAN=session")
     @timeout(100)
     def testPresenceSignal(self):
         """TestDBusServerPresence.testPresenceSignal - check Server.Presence signal"""
-        self.conn.reset()
-        self.setUpSession("foo")
-        self.session.SetConfig(False, False, {"" : {"syncURL":
-        "http://http-only-1"}})
-        self.session.Detach()
-        def cb_http_presence(server, status, transport):
-            self.failUnlessEqual (status, "")
-            self.failUnlessEqual (server, "foo")
-            self.failUnlessEqual (transport, "http://http-only-1")
-            loop.quit()
 
-        match = bus.add_signal_receiver(cb_http_presence,
-                                'Presence',
-                                'org.syncevolution.Server',
-                                self.server.bus_name,
-                                None,
-                                byte_arrays=True,
-                                utf8_strings=True)
+        # creating a config does not trigger a Presence signal
+        self.setUpSession("foo")
+        self.session.SetConfig(False, False, {"" : {"syncURL": "http://http-only-1"}})
+        self.session.Detach()
+
+        # go offline
+        match = self.expect({"foo" : ("no transport", "")})
+        self.conn.setState("idle")
         loop.run()
-        time.sleep(1)
+        self.failIf(self.cbFailure)
+        match.remove()
+
+        # Changing the properties temporarily does change
+        # the presence of the config although strictly speaking,
+        # the presence of the config on disk hasn't changed.
+        # Not sure whether we really want that behavior.
+        match = self.expect({"foo" : ("", "obex-bt://temp-bluetooth-peer-changed-from-http")})
         self.setUpSession("foo")
         self.session.SetConfig(True, False, {"" : {"syncURL":
         "obex-bt://temp-bluetooth-peer-changed-from-http"}})
-        def cb_bt_presence(server, status, transport):
-            self.failUnlessEqual (status, "")
-            self.failUnlessEqual (server, "foo")
-            self.failUnlessEqual (transport,
-                    "obex-bt://temp-bluetooth-peer-changed-from-http")
-            loop.quit()
-        match.remove()
-        match = bus.add_signal_receiver(cb_bt_presence,
-                                'Presence',
-                                'org.syncevolution.Server',
-                                self.server.bus_name,
-                                None,
-                                byte_arrays=True,
-                                utf8_strings=True)
-        self.conn.emitSignal()
+        # A ConnMan state change is needed to trigger the presence signal.
+        # Definitely not the behavior that we want :-/
+        self.conn.setState("failure")
         loop.run()
-        time.sleep(1)
+        self.failIf(self.cbFailure)
+        match.remove()
+        # remove temporary config change, back to using HTTP
+        # BUG BMC #24648 in syncevo-dbus-server: after discarding the temporary
+        # config change it keeps using the obex-bt syncURL.
+        # Work around that bug in thus test here temporarily
+        # by explicitly restoring the previous URL.
+        self.session.SetConfig(True, False, {"" : {"syncURL": "http://http-only-1"}})
         self.session.Detach()
+
+        # create second session
         self.setUpSession("bar")
         self.session.SetConfig(False, False, {"" : {"syncURL":
             "http://http-client-2"}})
         self.session.Detach()
-        self.foo = "random string"
-        self.bar = "random string"
-        match.remove()
-        self.conn.emitSignal()
-        self.conn.emitSignal()
-        def cb_bt_http_presence(server, status, transport):
-            if (server == "foo"):
-                self.foo = status
-            elif (server == "bar"):
-                self.bar = status
-            else:
-                self.fail("wrong server config")
-            loop.quit()
 
-        match = bus.add_signal_receiver(cb_bt_http_presence,
-                                'Presence',
-                                'org.syncevolution.Server',
-                                self.server.bus_name,
-                                None,
-                                byte_arrays=True,
-                                utf8_strings=True)
-        #count=5, 2 signals recevied
-        self.conn.emitSignal()
+        # go back to online mode
+        match = self.expect({"foo" : ("", "http://http-only-1"),
+                             "bar" : ("", "http://http-client-2")})
+        self.conn.setState("online")
         loop.run()
+        self.failIf(self.cbFailure)
+        match.remove()
+
+        # and offline
+        match = self.expect({"foo" : ("no transport", ""),
+                             "bar" : ("no transport", "")})
+        self.conn.setState("idle")
         loop.run()
-        time.sleep(1)
-        self.failUnlessEqual (self.foo, "")
-        self.failUnlessEqual (self.bar, "")
+        self.failIf(self.cbFailure)
         match.remove()
 
     @property("ENV", "DBUS_TEST_CONNMAN=session")
     @timeout(100)
     def testServerCheckPresence(self):
         """TestDBusServerPresence.testServerCheckPresence - check Server.CheckPresence()"""
-        self.conn.reset()
         self.setUpSession("foo")
         self.session.SetConfig(False, False, {"" : {"syncURL":
         "http://http-client"}})
@@ -1120,9 +1116,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
             "obex-bt://bt-client-mixed http://http-client-mixed"}})
         self.session.Detach()
 
-        #let dbus server get the first presence
-        loop.run()
-        time.sleep(1)
+        # online initially
         (status, transports) = self.server.CheckPresence ("foo")
         self.failUnlessEqual (status, "")
         self.failUnlessEqual (transports, ["http://http-client"])
@@ -1134,9 +1128,17 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.failUnlessEqual (transports, ["obex-bt://bt-client-mixed",
         "http://http-client-mixed"])
 
-        #count = 2
-        self.conn.emitSignal()
-        time.sleep(1)
+        # go offline; Bluetooth remains on
+        self.conn.setState("idle")
+        # wait until server has seen the state change
+        match = bus.add_signal_receiver(lambda x,y,z: loop.quit(),
+                                        'Presence',
+                                        'org.syncevolution.Server',
+                                        self.server.bus_name,
+                                        None,
+                                        byte_arrays=True,
+                                        utf8_strings=True)
+        match.remove()
         (status, transports) = self.server.CheckPresence ("foo")
         self.failUnlessEqual (status, "no transport")
         (status, transports) = self.server.CheckPresence ("bar")
@@ -1150,21 +1152,66 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     @timeout(100)
     def testSessionCheckPresence(self):
         """TestDBusServerPresence.testSessionCheckPresence - check Session.CheckPresence()"""
-        self.conn.reset()
         self.setUpSession("foobar")
         self.session.SetConfig(False, False, {"" : {"syncURL":
             "obex-bt://bt-client-mixed http://http-client-mixed"}})
-        loop.run()
-        time.sleep(1)
         status = self.session.checkPresence()
         self.failUnlessEqual (status, "")
-        self.conn.emitSignal()
-        self.conn.emitSignal()
-        self.conn.emitSignal()
-        #count = 4
-        time.sleep(1)
+
+        # go offline; Bluetooth remains on
+        self.conn.setState("idle")
+        # wait until server has seen the state change
+        match = bus.add_signal_receiver(lambda x,y,z: loop.quit(),
+                                        'Presence',
+                                        'org.syncevolution.Server',
+                                        self.server.bus_name,
+                                        None,
+                                        byte_arrays=True,
+                                        utf8_strings=True)
+        match.remove()
+
+        # config uses Bluetooth, so syncing still possible
+        status = self.session.checkPresence()
+        self.failUnlessEqual (status, "")
+
+        # now the same without Bluetooth, while offline
+        self.session.Detach()
+        self.setUpSession("foo")
+        self.session.SetConfig(False, False, {"" : {"syncURL": "http://http-only"}})
         status = self.session.checkPresence()
         self.failUnlessEqual (status, "no transport")
+
+        # go online
+        self.conn.setState("online")
+        # wait until server has seen the state change
+        match = bus.add_signal_receiver(lambda x,y,z: loop.quit(),
+                                        'Presence',
+                                        'org.syncevolution.Server',
+                                        self.server.bus_name,
+                                        None,
+                                        byte_arrays=True,
+                                        utf8_strings=True)
+        match.remove()
+        status = self.session.checkPresence()
+        self.failUnlessEqual (status, "")
+
+        # temporary config change shall always affect the
+        # Session.CheckPresence() result: go offline,
+        # then switch to Bluetooth (still present)
+        self.conn.setState("idle")
+        match = bus.add_signal_receiver(lambda x,y,z: loop.quit(),
+                                        'Presence',
+                                        'org.syncevolution.Server',
+                                        self.server.bus_name,
+                                        None,
+                                        byte_arrays=True,
+                                        utf8_strings=True)
+        match.remove()
+        status = self.session.checkPresence()
+        self.failUnlessEqual (status, "no transport")
+        self.session.SetConfig(True, False, {"" : {"syncURL": "obex-bt://bt-client-mixed"}})
+        status = self.session.checkPresence()
+        self.failUnlessEqual (status, "")
 
     def run(self, result):
         self.runTest(result, True)
