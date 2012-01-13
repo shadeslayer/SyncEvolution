@@ -1,3 +1,51 @@
+SyncEvolution 1.2.1 -> 1.2.2, 13.01.2012
+========================================
+
+Maintenance release with various bug fixes.
+
+* syncevo-dbus-server + ConnMan: fixed "online" detection (BMC #21541, BMC #24587)
+
+  SyncEvolution did not recognize any cellular connectivity as
+  suitable for syncing. The strict check for certain "connected
+  technology" is unnecessary, anything which makes the computer
+  "online" should be good enough. So now it just uses the ConnMan
+  "State" property.
+
+  Additional benefit: will continue to work with ConnMan 1.0, which
+  won't have the "ConnectedTechnologies" property anymore.
+
+  The Bluetooth available check was also (incorrectly) using the
+  ConnMan API.  Now asssume that OBEX/Bluetooth is always available.
+
+* automatic backups: added INFO messages and fixed dumpData/printChanges (BMC #24619)
+
+  Point out that backups are created (user might be unaware otherwise
+  and wonder about the delay), explain why (so that users know how to
+  turn it off).
+
+  Turning these backups off with dumpData=0 printChanges=0 had to be
+  fixed, backups were always written previously.
+
+* EDS compatibility: bumped version check for EDS 3.2
+
+  SyncEvolution is known to work with EDS 3.2. Therefore use the
+  libebook/ecal/edataserver libs from 3.2 if available, without
+  warnings in the --version output. Also happens with inconsistent
+  distro setups where the old libs are available and would have been
+  prefered by SyncEvolution 1.2.1 even though the old libs no longer
+  work with EDS 3.2.
+
+* GTK-UI: do not accept service config without a username (BMC#23106)
+
+  Instead of creating such a config, an error dialog is shown.
+
+* GTK-UI: updated translations
+
+* fixed various compile issues, primarily on Fedora Core 17
+  (unistd.h/ssize_t, invoking syncevolution during compilation,
+  missing src/dbus/qt/configure-sub.in)
+
+
 SyncEvolution 1.2 -> 1.2.1, 25.11.2011
 ======================================
 

@@ -8,7 +8,7 @@ dnl Invoke autogen.sh to produce a configure script.
 #
 # Starting with the 1.1 release cycle, the rpm-style
 # .99 pseudo-version number is used to mark a pre-release.
-AC_INIT([syncevolution], [1.2.1])
+AC_INIT([syncevolution], [1.2.2])
 # STABLE_VERSION=1.0.1+
 AC_SUBST(STABLE_VERSION)
 
