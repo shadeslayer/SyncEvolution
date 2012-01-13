@@ -18,11 +18,15 @@
  */
 
 #include "gdbus-cxx-bridge.h"
+#include <stdio.h>
 
 void intrusive_ptr_add_ref(GDBusConnection *con)  { g_object_ref(con); }
 void intrusive_ptr_release(GDBusConnection *con)  { g_object_unref(con); }
 void intrusive_ptr_add_ref(GDBusMessage    *msg)  { g_object_ref(msg); }
 void intrusive_ptr_release(GDBusMessage    *msg)  { g_object_unref(msg); }
+static void intrusive_ptr_add_ref(GDBusServer *server) { g_object_ref(server); }
+static void intrusive_ptr_release(GDBusServer *server) { g_object_unref(server); }
+
 
 namespace GDBusCXX {
 
@@ -85,5 +89,115 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
 
     return conn;
 }
+
+DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
+                                          DBusErrorCXX *err)
+{
+    GError* error = NULL;
+    DBusConnectionPtr conn(g_dbus_connection_new_for_address_sync(address.c_str(),
+                                                                  G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT,
+                                                                  NULL, /* GDBusAuthObserver */
+                                                                  NULL, /* GCancellable */
+                                                                  &error),
+                           false);
+    if (!conn && err) {
+        err->set(error);
+    }
+    
+    return conn;
+}
+
+boost::shared_ptr<DBusServerCXX> DBusServerCXX::listen(const std::string &address, DBusErrorCXX *err)
+{
+    GDBusServer *server = NULL;
+    const char *realAddr = address.c_str();
+    char buffer[80];
+
+    gchar *guid = g_dbus_generate_guid();
+    GError *error = NULL;
+    if (address.empty()) {
+        realAddr = buffer;
+        for (int counter = 1; counter < 100 && !server; counter++) {
+            if (error) {
+                // previous attempt failed
+                g_debug("setting up D-Bus server on %s failed, trying next address: %s",
+                        realAddr,
+                        error->message);
+                g_clear_error(&error);
+            }
+            sprintf(buffer, "unix:abstract=gdbuscxx-%d", counter);
+            server = g_dbus_server_new_sync(realAddr,
+                                            G_DBUS_SERVER_FLAGS_NONE,
+                                            guid,
+                                            NULL, /* GDBusAuthObserver */
+                                            NULL, /* GCancellable */
+                                            &error);
+        }
+    } else {
+        server = g_dbus_server_new_sync(realAddr,
+                                        G_DBUS_SERVER_FLAGS_NONE,
+                                        guid,
+                                        NULL, /* GDBusAuthObserver */
+                                        NULL, /* GCancellable */
+                                        &error);
+    }
+    g_free(guid);
+
+    if (!server) {
+        if (err) {
+            err->set(error);
+        }
+        return boost::shared_ptr<DBusServerCXX>();
+    }
+
+    g_dbus_server_start(server);
+    boost::shared_ptr<DBusServerCXX> res(new DBusServerCXX(server, realAddr));
+    g_signal_connect(server,
+                     "new-connection",
+                     G_CALLBACK(DBusServerCXX::newConnection),
+                     res.get());
+    return res;
+}
+
+gboolean DBusServerCXX::newConnection(GDBusServer *server, GDBusConnection *newConn, void *data) throw()
+{
+    DBusServerCXX *me = static_cast<DBusServerCXX *>(data);
+    if (me->m_newConnection) {
+        GCredentials *credentials;
+        std::string credString;
+
+        credentials = g_dbus_connection_get_peer_credentials(newConn);
+        if (credentials == NULL) {
+            credString = "(no credentials received)";
+        } else {
+            gchar *s = g_credentials_to_string(credentials);
+            credString = s;
+            g_free(s);
+        }
+        g_debug("Client connected.\n"
+                "Peer credentials: %s\n"
+                "Negotiated capabilities: unix-fd-passing=%d\n",
+                credString.c_str(),
+                g_dbus_connection_get_capabilities(newConn) & G_DBUS_CAPABILITY_FLAGS_UNIX_FD_PASSING);
+
+        try {
+            DBusConnectionPtr conn(newConn);
+            me->m_newConnection(*me, conn);
+        } catch (...) {
+            g_error("handling new D-Bus connection failed with C++ exception");
+        }
+
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+DBusServerCXX::DBusServerCXX(GDBusServer *server, const std::string &address) :
+    m_server(server),
+    m_address(address)
+{
+}
+
 
 }
