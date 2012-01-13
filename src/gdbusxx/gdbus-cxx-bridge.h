@@ -4139,6 +4139,13 @@ template <class T> class SignalWatch
                                                    cb,
                                                    this,
                                                    NULL);
+
+        if (!m_tag) {
+            throw std::runtime_error(std::string("activating signal failed: ") +
+                                     "path " + m_object.getPath() +
+                                     " interface " + m_object.getInterface() +
+                                     " member " + m_signal);
+        }
     }
 };
 
