@@ -1016,10 +1016,12 @@ class DBusObjectHelper : public DBusObject
         if (!m_methods || !m_signals) {
             throw std::logic_error("This object was already activated.");
         }
-        if (m_methods->pdata[m_methods->len - 1] != NULL) {
+        if (m_methods->len &&
+            m_methods->pdata[m_methods->len - 1] != NULL) {
             g_ptr_array_add(m_methods, NULL);
         }
-        if (m_signals->pdata[m_signals->len - 1] != NULL) {
+        if (m_signals->len &&
+            m_signals->pdata[m_signals->len - 1] != NULL) {
             g_ptr_array_add(m_signals, NULL);
         }
         GDBusInterfaceInfo *ifInfo = g_new0(GDBusInterfaceInfo, 1);
