@@ -25,6 +25,9 @@
 #include <list>
 #include <ostream>
 
+// for size_t and ssize_t
+#include <unistd.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 namespace LCS {
