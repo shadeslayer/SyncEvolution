@@ -63,9 +63,7 @@ public:
 static void newClientConnection(GDBusCXX::DBusServerCXX &server, GDBusCXX::DBusConnectionPtr &conn,
                                 boost::scoped_ptr<Test> &testptr)
 {
-    std::cout << "new connection, " <<
-        (dbus_connection_get_is_authenticated(conn.get()) ? "authenticated" : "not authenticated") <<
-        std::endl;
+    std::cout << "new connection" << std::endl;
     testptr.reset(new Test(conn.get()));
     testptr->activate();
 }
@@ -73,9 +71,7 @@ static void newClientConnection(GDBusCXX::DBusServerCXX &server, GDBusCXX::DBusC
 static void onChildConnect(const GDBusCXX::DBusConnectionPtr &conn,
                            boost::scoped_ptr<Test> &testptr)
 {
-    std::cout << "child is ready, " <<
-        (dbus_connection_get_is_authenticated(conn.get()) ? "authenticated" : "not authenticated") <<
-        std::endl;
+    std::cout << "child is ready" << std::endl;
     testptr.reset(new Test(conn.get()));
     testptr->activate();
 }
