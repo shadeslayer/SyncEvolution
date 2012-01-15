@@ -453,6 +453,7 @@ guint b_dbus_add_disconnect_watch(DBusConnection *connection,
  * @function: function called when signal arrives
  * @user_data: user data to pass to the function
  * @destroy: function called to destroy user_data
+ * @is_bus_conn: whether the connection is with the bus
  *
  * Add new watch to listen for specific signals of
  * a client for the given connection.
@@ -462,9 +463,9 @@ guint b_dbus_add_disconnect_watch(DBusConnection *connection,
  *
  * Returns: identifier of the watch
  */
-guint b_dbus_add_signal_watch(DBusConnection *connection,
-				const char *rule, BDBusSignalFunction function,
-				void *user_data, BDBusDestroyFunction destroy)
+guint b_dbus_add_signal_watch(DBusConnection *connection, const char *rule,
+                              BDBusSignalFunction function, void *user_data,
+                              BDBusDestroyFunction destroy, gboolean is_bus_conn)
 {
 	ConnectionData *data;
 	SignalData *signal;
@@ -491,14 +492,16 @@ guint b_dbus_add_signal_watch(DBusConnection *connection,
 	signal->function = function;
 	signal->destroy = destroy;
 
-	dbus_error_init(&error);
+        if (is_bus_conn) {
+            dbus_error_init(&error);
 
-	dbus_bus_add_match(connection, rule, &error);
+            dbus_bus_add_match(connection, rule, &error);
 
-	if (dbus_error_is_set(&error) == TRUE) {
+            if (dbus_error_is_set(&error) == TRUE) {
 		dbus_error_free(&error);
 		goto error;
-	}
+            }
+        }
 
 	signal->id = data->next_id++;
 

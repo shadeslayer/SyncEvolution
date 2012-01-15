@@ -4213,8 +4213,8 @@ template <class T> class SignalWatch
 {
  public:
     SignalWatch(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : m_object(object), m_signal(signal), m_tag(0)
+                const std::string &signal, bool is_bus_conn = true)
+        : m_object(object), m_signal(signal), m_tag(0), m_is_bus_conn(is_bus_conn)
     {
     }
 
@@ -4236,6 +4236,7 @@ template <class T> class SignalWatch
     std::string m_signal;
     guint m_tag;
     T m_callback;
+    bool m_is_bus_conn;
 
     std::string makeSignalRule() {
         std::string rule;
@@ -4252,19 +4253,21 @@ template <class T> class SignalWatch
     static gboolean isMatched(DBusMessage *msg, void *data) {
         SignalWatch *watch = static_cast<SignalWatch*>(data);
         return dbus_message_has_path(msg, watch->m_object.getPath()) &&
-                dbus_message_is_signal(msg, watch->m_object.getInterface(), watch->m_signal.c_str());
+               dbus_message_is_signal(msg, watch->m_object.getInterface(), watch->m_signal.c_str());
     }
 
     void activateInternal(const Callback_t &callback,
                           gboolean (*cb)(DBusConnection *, DBusMessage *, void *))
     {
         m_callback = callback;
+
         std::string rule = makeSignalRule();
         m_tag = b_dbus_add_signal_watch(m_object.getConnection(),
                                         rule.c_str(),
                                         cb,
                                         this,
-                                        NULL);
+                                        NULL,
+                                        m_is_bus_conn);
 
         if (!m_tag) {
             throw std::runtime_error(std::string("activating signal failed: ") +
@@ -4281,8 +4284,8 @@ class SignalWatch0 : public SignalWatch< boost::function<void (void)> >
 
  public:
     SignalWatch0(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch<Callback_t>(object, signal)
+                 const std::string &signal, bool is_bus_conn = true)
+        : SignalWatch<Callback_t>(object, signal, is_bus_conn)
     {
     }
 
@@ -4307,8 +4310,8 @@ class SignalWatch1 : public SignalWatch< boost::function<void (const A1 &)> >
 
  public:
     SignalWatch1(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch<Callback_t>(object, signal)
+                 const std::string &signal, bool is_bus_conn = true)
+        : SignalWatch<Callback_t>(object, signal, is_bus_conn)
     {
     }
 
@@ -4339,8 +4342,8 @@ class SignalWatch2 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch2(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch<Callback_t>(object, signal)
+                 const std::string &signal, bool is_bus_conn = true)
+        : SignalWatch<Callback_t>(object, signal, is_bus_conn)
     {
     }
 
@@ -4373,8 +4376,8 @@ class SignalWatch3 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch3(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch<Callback_t>(object, signal)
+                 const std::string &signal, bool is_bus_conn = true)
+        : SignalWatch<Callback_t>(object, signal, is_bus_conn)
     {
     }
 
@@ -4409,8 +4412,8 @@ class SignalWatch4 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch4(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch<Callback_t>(object, signal)
+                 const std::string &signal, bool is_bus_conn = true)
+        : SignalWatch<Callback_t>(object, signal, is_bus_conn)
     {
     }
 
@@ -4447,8 +4450,8 @@ class SignalWatch5 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch5(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch<Callback_t>(object, signal)
+                 const std::string &signal, bool is_bus_conn = true)
+        : SignalWatch<Callback_t>(object, signal, is_bus_conn)
     {
     }
 
@@ -4488,8 +4491,8 @@ class SignalWatch6 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch6(const DBusRemoteObject &object,
-                 const std::string &signal)
-        : SignalWatch<Callback_t>(object, signal)
+                 const std::string &signal, bool is_bus_conn = true)
+        : SignalWatch<Callback_t>(object, signal, is_bus_conn)
     {
     }
 
