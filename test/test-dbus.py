@@ -1143,7 +1143,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
                                             utf8_strings=True)
         return match
 
-    @property("ENV", "DBUS_TEST_CONNMAN=session")
+    @property("ENV", "DBUS_TEST_CONNMAN=session DBUS_TEST_NETWORK_MANAGER=none")
     @timeout(100)
     def testPresenceSignal(self):
         """TestDBusServerPresence.testPresenceSignal - check Server.Presence signal"""
@@ -1204,7 +1204,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.failIf(self.cbFailure)
         match.remove()
 
-    @property("ENV", "DBUS_TEST_CONNMAN=session")
+    @property("ENV", "DBUS_TEST_CONNMAN=session DBUS_TEST_NETWORK_MANAGER=none")
     @timeout(100)
     def testServerCheckPresence(self):
         """TestDBusServerPresence.testServerCheckPresence - check Server.CheckPresence()"""
@@ -1253,7 +1253,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
         self.assertEqual (status, "")
         self.assertEqual (transports, ["obex-bt://bt-client-mixed"])
 
-    @property("ENV", "DBUS_TEST_CONNMAN=session")
+    @property("ENV", "DBUS_TEST_CONNMAN=session DBUS_TEST_NETWORK_MANAGER=none")
     @timeout(100)
     def testSessionCheckPresence(self):
         """TestDBusServerPresence.testSessionCheckPresence - check Session.CheckPresence()"""

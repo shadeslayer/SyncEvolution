@@ -24,7 +24,12 @@
 SE_BEGIN_CXX
 
 NetworkManagerClient::NetworkManagerClient(Server &server) :
-    DBusRemoteObject(GDBusCXX::dbus_get_bus_connection("SYSTEM", NULL, true, NULL),
+    DBusRemoteObject(!strcmp(getEnv("DBUS_TEST_NETWORK_MANAGER", ""), "none") ?
+                     NULL : /* simulate missing Network Manager */
+                     GDBusCXX::dbus_get_bus_connection(!strcmp(getEnv("DBUS_TEST_NETWORK_MANAGER", ""), "session") ?
+                                                       "SESSION" : /* use our own Network Manager stub */
+                                                       "SYSTEM" /* use real Network Manager */,
+                                                       NULL, true, NULL),
                      "/org/freedesktop/NetworkManager",
                      "org.freedesktop.NetworkManager",
                      "org.freedesktop.NetworkManager",
