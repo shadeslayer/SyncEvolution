@@ -3,7 +3,7 @@ include $(top_srcdir)/src/syncevo/configs/configs.am
 # applies to sources in SyncEvolution repository, but not
 # the Funambol C++ client library
 src_syncevo_cxxflags = @SYNCEVOLUTION_CXXFLAGS@
-src_syncevo_cppflags = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(gdbus_dir) $(DBUS_CFLAGS) -I$(top_builddir)/src/syncevo -I$(top_srcdir)/src -DSYNCEVO_BACKEND=\"$(BACKENDS_SEARCH_DIRECTORY)\"
+src_syncevo_cppflags = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(gdbus_dir) $(DBUS_CFLAGS) -I$(top_builddir)/src/syncevo -I$(top_srcdir)/src -DSYNCEVO_LIBEXEC=\"$(libexecdir)\" -DSYNCEVO_BACKEND=\"$(BACKENDS_SEARCH_DIRECTORY)\"
 src_syncevo_ldadd = @SYNCEVOLUTION_LDADD@
 
 if COND_DBUS

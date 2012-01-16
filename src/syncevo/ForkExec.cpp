@@ -80,7 +80,32 @@ void ForkExecParent::start()
     }
     m_server->setNewConnectionCallback(boost::bind(&ForkExecParent::newClientConnection, this, _2));
 
-    m_argvStrings.push_back(m_helper);
+    // look for helper binary
+    std::string helper;
+    GSpawnFlags flags = G_SPAWN_DO_NOT_REAP_CHILD;
+    if (m_helper.find('/') == m_helper.npos) {
+        helper = getEnv("SYNCEVOLUTION_LIBEXEC_DIR", "");
+        if (helper.empty()) {
+            // env variable not set, look in libexec dir
+            helper = SYNCEVO_LIBEXEC;
+            helper += "/";
+            helper += m_helper;
+            if (access(helper.c_str(), R_OK)) {
+                // some error, try PATH
+                flags = (GSpawnFlags)(flags | G_SPAWN_SEARCH_PATH);
+                helper = m_helper;
+            }
+        } else {
+            // use env variable without further checks, must work
+            helper += "/";
+            helper += m_helper;
+        }
+    } else {
+        // absolute path, use it
+        m_helper = helper;
+    }
+
+    m_argvStrings.push_back(helper);
     m_argv.reset(AllocStringArray(m_argvStrings));
     for (char **env = environ;
          *env;
@@ -98,8 +123,7 @@ void ForkExecParent::start()
     if (!g_spawn_async_with_pipes(NULL, // working directory
                                   static_cast<gchar **>(m_argv.get()),
                                   static_cast<gchar **>(m_env.get()),
-                                  (GSpawnFlags)((m_helper.find('/') == m_helper.npos ? G_SPAWN_SEARCH_PATH : 0) |
-                                                G_SPAWN_DO_NOT_REAP_CHILD),
+                                  flags,
                                   setStdoutToStderr, // child setup function: redirect stdout to stderr where it will be caught by our own output redirection code
                                   // TODO: avoid logging child errors as "[ERROR] stderr: [ERROR] onConnect not implemented"
                                   // TODO: log child INFO messages?

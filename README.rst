@@ -1048,6 +1048,10 @@ SYNCEVOLUTION_DATA_DIR
 SYNCEVOLUTION_BACKEND_DIR
    Overrides the default path to plugins, normally `/usr/lib/syncevolution/backends`.
 
+SYNCEVOLUTION_LIBEXEC_DIR
+   Overrides the path where additional helper executables are found, normally
+   `/usr/libexec`.
+
 SYNCEVOLUTION_TEMPLATE_DIR
    Overrides the default path to template files, normally
    `/usr/share/syncevolution/templates`.
