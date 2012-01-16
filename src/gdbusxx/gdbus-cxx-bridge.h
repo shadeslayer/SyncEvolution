@@ -844,6 +844,12 @@ struct MethodHandler
                              g_dbus_method_invocation_get_message(invocation),
                              methodData);
 
+        if (!reply) {
+            // probably asynchronous, might also be out-of-memory;
+            // either way, don't send a reply now
+            return;
+        }
+
         GError *error = NULL;
         g_dbus_connection_send_message(g_dbus_method_invocation_get_connection(invocation),
                                        reply,
@@ -2243,7 +2249,7 @@ template <class R, class DBusR> struct dbus_traits_result
 
     typedef boost::shared_ptr<R> host_type;
     typedef boost::shared_ptr<R> &arg_type;
-    static const bool asynchronous = false;
+    static const bool asynchronous = true;
 
     static void get(GDBusConnection *conn, GDBusMessage *msg,
                     GVariantIter &iter, host_type &value)
