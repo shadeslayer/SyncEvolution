@@ -100,6 +100,59 @@ atexit.register(os.kill, child, 9)
 bus = dbus.SessionBus()
 loop = gobject.MainLoop()
 
+# Bluez default adapter
+bt_adaptor = "/org/bluez/1036/hci0"
+
+# handles D-Bus messages for '/' object in both net.connman and
+# org.bluez; must be the same object because D-Bus cannot switch based
+# on the bus name (not necessarily included in message)
+class RootObject (dbus.service.Object):
+    # ConnMan state
+    state = "online"
+    getPropertiesCalled = False
+    waitingForGetProperties = False
+
+    def __init__(self):
+        self.bluez_name = dbus.service.BusName('org.bluez', bus)
+        self.conn_name = dbus.service.BusName("net.connman", bus);
+        dbus.service.Object.__init__(self, bus, '/')
+
+    @dbus.service.method(dbus_interface='org.bluez.Manager', in_signature='', out_signature='o')
+    def DefaultAdapter(self):
+        return bt_adaptor
+
+    @dbus.service.signal(dbus_interface='org.bluez.Manager', signature='o')
+    def DefaultAdapterChanged(self, obj):
+        return bt_adaptor
+
+    @dbus.service.method(dbus_interface='net.connman.Manager', in_signature='', out_signature='a{sv}')
+    def GetProperties(self):
+        # notify TestDBusServerPresence.setUp()?
+        if self.waitingForGetProperties:
+            loop.quit()
+        self.getPropertiesCalled = True
+        return { "State" : self.state }
+
+    @dbus.service.signal(dbus_interface='net.connman.Manager', signature='sv')
+    def PropertyChanged(self, key, value):
+        pass
+
+    def setState(self, state):
+        if self.state != state:
+            self.state = state
+            self.PropertyChanged("State", state)
+            # race condition: it happened that method calls
+            # reached syncevo-dbus-server before the state change,
+            # thus breaking the test
+            time.sleep(1)
+
+    def reset(self):
+        self.state = "online"
+        self.getPropertiesCalled = False
+        self.waitingForGetProperties = False
+
+root = RootObject()
+
 def property(key, value):
     """Function decorator which sets an arbitrary property of a test.
     Use like this:
@@ -1054,38 +1107,6 @@ class TestNamedConfig(unittest.TestCase, DBusUtil):
         self.assertEqual(fooConfig, self.session.GetNamedConfig("foo", False))
         self.assertEqual(barConfig, self.session.GetNamedConfig("bar", False))
 
-
-class Connman (dbus.service.Object):
-    state = "online"
-    getPropertiesCalled = False
-    waitingForGetProperties = False
-
-    @dbus.service.method(dbus_interface='net.connman.Manager', in_signature='', out_signature='a{sv}')
-    def GetProperties(self):
-        # notify TestDBusServerPresence.setUp()?
-        if self.waitingForGetProperties:
-            loop.quit()
-        self.getPropertiesCalled = True
-        return { "State" : self.state }
-
-    @dbus.service.signal(dbus_interface='net.connman.Manager', signature='sv')
-    def PropertyChanged(self, key, value):
-        pass
-
-    def setState(self, state):
-        if self.state != state:
-            self.state = state
-            self.PropertyChanged("State", state)
-            # race condition: it happened that method calls
-            # reached syncevo-dbus-server before the state change,
-            # thus breaking the test
-            time.sleep(1)
-
-    def reset(self):
-        self.state = "online"
-        self.getPropertiesCalled = False
-        self.waitingForGetProperties = False
-
 class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     """Tests Presence signal and checkPresence API"""
 
@@ -1094,8 +1115,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     # will try to call it before setUp(). The implementation's
     # initialization and tearDown() below ensures that the state
     # is "online" outside of tests.
-    name = dbus.service.BusName ("net.connman", bus);
-    conn = Connman (bus, "/")
+    conn = root
 
     def setUp(self):
         self.setUpServer()
@@ -3210,21 +3230,7 @@ bt_mac         = "D4:5D:42:73:E4:6C"
 bt_fingerprint = "Nokia 5230"
 bt_name        = "My Nokia 5230"
 bt_template    = "Bluetooth_%s_1" % (bt_mac)
-bt_adaptor     = "/org/bluez/1036/hci0"
 bt_device      = "%s/dev_%s" % (bt_adaptor, string.replace(bt_mac, ':', '_'))
-
-class BluezManager (dbus.service.Object):
-    def __init__(self):
-        bus_name = dbus.service.BusName('org.bluez', bus)
-        dbus.service.Object.__init__(self, bus_name, '/')
-
-    @dbus.service.method(dbus_interface='org.bluez.Manager', in_signature='', out_signature='o')
-    def DefaultAdapter(self):
-        return bt_adaptor
-
-    @dbus.service.signal(dbus_interface='org.bluez.Manager', signature='o')
-    def DefaultAdapterChanged(self, obj):
-        return bt_adaptor
 
 class BluezAdapter (dbus.service.Object):
     def __init__(self):
@@ -3292,17 +3298,13 @@ class BluezDevice (dbus.service.Object):
 class TestBluetooth(unittest.TestCase, DBusUtil):
     """Tests that Bluetooth works properly."""
 
-    name = dbus.service.BusName ("org.bluez", bus);
-
     def setUp(self):
-        self.man_conn = BluezManager()
         self.adp_conn = BluezAdapter()
         self.dev_conn = BluezDevice()
         loop.run()
         self.setUpServer()
 
     def tearDown(self):
-        self.man_conn.remove_from_connection()
         self.adp_conn.remove_from_connection()
         self.dev_conn.remove_from_connection()
 
