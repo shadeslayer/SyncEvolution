@@ -89,13 +89,15 @@ class PresenceStatus {
 
     void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config);
 
-    void updatePresenceStatus (bool httpPresence, bool btPresence);
     void updatePresenceStatus (bool newStatus, TransportType type);
 
     bool getHttpPresence() { return m_httpPresence; }
     bool getBtPresence() { return m_btPresence; }
     Timer& getHttpTimer() { return m_httpTimer; }
     Timer& getBtTimer() { return m_btTimer; }
+
+ private:
+    void updatePresenceStatus (bool httpPresence, bool btPresence);
 };
 
 SE_END_CXX

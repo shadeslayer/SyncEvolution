@@ -269,10 +269,15 @@ Server::Server(GMainLoop *loop,
     LoggerBase::pushLogger(this);
     setLevel(LoggerBase::DEBUG);
 
+    // Assume that Bluetooth is available. Neither ConnMan nor Network
+    // manager can tell us about that. The "Bluetooth" ConnMan technology
+    // is about IP connection via Bluetooth - not what we need.
+    getPresenceStatus().updatePresenceStatus(true, PresenceStatus::BT_TRANSPORT);
+
     if (!m_connman.isAvailable() &&
         !m_networkManager.isAvailable()) {
         // assume that we are online if no network manager was found at all
-        getPresenceStatus().updatePresenceStatus(true, true);
+        getPresenceStatus().updatePresenceStatus(true, PresenceStatus::HTTP_TRANSPORT);
     }
 }
 

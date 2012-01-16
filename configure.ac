@@ -8,7 +8,7 @@ dnl Invoke autogen.sh to produce a configure script.
 #
 # Starting with the 1.1 release cycle, the rpm-style
 # .99 pseudo-version number is used to mark a pre-release.
-AC_INIT([syncevolution], [m4_esyscmd([build/gen-git-version.sh 1.2.1])])
+AC_INIT([syncevolution], [m4_esyscmd([build/gen-git-version.sh 1.2.2])])
 # STABLE_VERSION=1.0.1+
 AC_SUBST(STABLE_VERSION)
 
@@ -1069,6 +1069,9 @@ SYNCEVOLUTION_CFLAGS=-I`cd $srcdir && pwd`/src
 SYNCEVOLUTION_LIBS=`pwd`/src/syncevo/libsyncevolution.la
 AC_SUBST(SYNCEVOLUTION_CFLAGS)
 AC_SUBST(SYNCEVOLUTION_LIBS)
+
+# invoking syncevolution binary is allowed to fail when cross-compiling
+AM_CONDITIONAL([COND_CROSS_COMPILING], [test "$cross_compiling" = "yes"])
 
 AC_CONFIG_FILES([
   Makefile

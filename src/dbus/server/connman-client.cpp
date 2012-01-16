@@ -34,7 +34,7 @@ ConnmanClient::ConnmanClient(Server &server):
     m_propertyChanged(*this, "PropertyChanged")
 {
     if (getConnection()) {
-        typedef std::map <std::string, boost::variant <std::vector <std::string> > > PropDict;
+        typedef std::map <std::string, boost::variant<std::string> > PropDict;
         GDBusCXX::DBusClientCall1<PropDict>  getProp(*this,"GetProperties");
         getProp (boost::bind(&ConnmanClient::getPropCb, this, _1, _2));
         m_propertyChanged.activate(boost::bind(&ConnmanClient::propertyChanged, this, _1, _2));
@@ -44,12 +44,12 @@ ConnmanClient::ConnmanClient(Server &server):
 }
 
 void ConnmanClient::getPropCb (const std::map <std::string,
-                               boost::variant <std::vector <std::string> > >& props, const string &error){
+                               boost::variant<std::string> >& props, const string &error){
     if (!error.empty()) {
         if (error == "org.freedesktop.DBus.Error.ServiceUnknown") {
             // ensure there is still first set of singal set in case of no
             // connman available
-            m_server.getPresenceStatus().updatePresenceStatus (true, true);
+            m_server.getPresenceStatus().updatePresenceStatus (true, PresenceStatus::HTTP_TRANSPORT);
             SE_LOG_DEBUG (NULL, NULL, "No connman service available %s", error.c_str());
             return;
         }
@@ -57,65 +57,28 @@ void ConnmanClient::getPropCb (const std::map <std::string,
         return;
     }
 
-    typedef std::pair <std::string, boost::variant <std::vector <std::string> > > element;
-    bool httpPresence = false, btPresence = false;
+    typedef std::pair <std::string, boost::variant<std::string> > element;
+    bool httpPresence = false;
     BOOST_FOREACH (element entry, props) {
-        //match connected for HTTP based peers (wifi/wimax/ethernet)
-        if (entry.first == "ConnectedTechnologies") {
-            std::vector <std::string> connected = boost::get <std::vector <std::string> > (entry.second);
-            BOOST_FOREACH (std::string tech, connected) {
-                if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet")
-                || boost::iequals (tech, "wimax")) {
-                    httpPresence = true;
-                    break;
-                }
-            }
-        } else if (entry.first == "AvailableTechnologies") {
-            std::vector <std::string> enabled = boost::get <std::vector <std::string> > (entry.second);
-            BOOST_FOREACH (std::string tech, enabled){
-                if (boost::iequals (tech, "bluetooth")) {
-                    btPresence = true;
-                    break;
-                }
-            }
-        } else {
-            continue;
+        // just check online state, we don't care how about the underlying technology
+        if (entry.first == "State") {
+            std::string state = boost::get<std::string>(entry.second);
+            httpPresence = state == "online";
+            break;
         }
     }
+
     //now delivering the signals
-    m_server.getPresenceStatus().updatePresenceStatus (httpPresence, btPresence);
+    m_server.getPresenceStatus().updatePresenceStatus (httpPresence, PresenceStatus::HTTP_TRANSPORT);
 }
 
 void ConnmanClient::propertyChanged(const std::string &name,
                                     const boost::variant<std::vector<std::string>, std::string> &prop)
 {
-    bool httpPresence=false, btPresence=false;
-    bool httpChanged=false, btChanged=false;
-    if (boost::iequals(name, "ConnectedTechnologies")) {
-        httpChanged=true;
-        std::vector<std::string> connected = boost::get<vector<std::string> >(prop);
-        BOOST_FOREACH (std::string tech, connected) {
-            if (boost::iequals (tech, "wifi") || boost::iequals (tech, "ethernet")
-                    || boost::iequals (tech, "wimax")) {
-                httpPresence=true;
-                break;
-            }
-        }
-    } else if (boost::iequals (name, "AvailableTechnologies")){
-        btChanged=true;
-        std::vector<std::string> enabled = boost::get<std::vector<std::string> >(prop);
-        BOOST_FOREACH (std::string tech, enabled){
-            if (boost::iequals (tech, "bluetooth")) {
-                btPresence = true;
-                break;
-            }
-        }
-    }
-    if(httpChanged) {
-        m_server.getPresenceStatus().updatePresenceStatus (httpPresence, PresenceStatus::HTTP_TRANSPORT);
-    } else if (btChanged) {
-        m_server.getPresenceStatus().updatePresenceStatus (btPresence, PresenceStatus::BT_TRANSPORT);
-    } else {
+    if (name == "State") {
+        std::string state = boost::get<std::string>(prop);
+        m_server.getPresenceStatus().updatePresenceStatus(state == "online",
+                                                          PresenceStatus::HTTP_TRANSPORT);
     }
 }
 

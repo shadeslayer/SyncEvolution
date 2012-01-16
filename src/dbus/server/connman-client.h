@@ -42,7 +42,7 @@ public:
     void propertyChanged(const std::string &name,
                          const boost::variant<std::vector<std::string>, std::string> &prop);
 
-    void getPropCb(const std::map <std::string, boost::variant <std::vector <std::string> > >& props, const std::string &error);
+    void getPropCb(const std::map <std::string, boost::variant<std::string> >& props, const std::string &error);
 
     /** TRUE if watching ConnMan status */
     bool isAvailable() { return getConnection() != NULL; }
@@ -50,7 +50,7 @@ public:
 private:
     Server &m_server;
 
-    GDBusCXX::SignalWatch2 <std::string, boost::variant<std::vector<std::string>, std::string> > m_propertyChanged;
+    GDBusCXX::SignalWatch2 <std::string, boost::variant<std::string> > m_propertyChanged;
 };
 
 SE_END_CXX
