@@ -1894,7 +1894,7 @@ class DBusWatch : public Watch
                                                        g_variant_new("(s)", peer),
                                                        G_VARIANT_TYPE("(b)"),
                                                        G_DBUS_CALL_FLAGS_NONE,
-                                                       -1,
+                                                       -1, // default timeout
                                                        NULL,
                                                        &error);
 
@@ -3964,7 +3964,8 @@ protected:
     {
         CallbackData *data = new CallbackData(m_conn, callback);
         g_dbus_connection_send_message_with_reply(m_conn.get(), msg.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE,
-                                                  -1, NULL, NULL, m_dbusCallback, data);
+                                                  G_MAXINT, // no timeout
+                                                  NULL, NULL, m_dbusCallback, data);
     }
 
 public:
