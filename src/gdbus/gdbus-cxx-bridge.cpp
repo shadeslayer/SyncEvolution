@@ -62,7 +62,13 @@ boost::shared_ptr<DBusServerCXX> DBusServerCXX::listen(const std::string &addres
 
     if (address.empty()) {
         realAddr = buffer;
+        buffer[0] = 0;
         for (int counter = 1; counter < 100 && !server; counter++) {
+            if (*err) {
+                g_debug("dbus_server_listen(%s) failed, trying next candidate: %s",
+                        buffer, err->message);
+                dbus_error_init(err);
+            }
             sprintf(buffer, "unix:abstract=gdbuscxx-%d", counter);
             server = dbus_server_listen(realAddr, err);
         }
@@ -99,6 +105,13 @@ DBusServerCXX::DBusServerCXX(DBusServer *server, const std::string &address) :
     m_server(server),
     m_address(address)
 {
+}
+
+DBusServerCXX::~DBusServerCXX()
+{
+    if (m_server) {
+        dbus_server_disconnect(m_server.get());
+    }
 }
 
 bool CheckError(const DBusMessagePtr &reply,

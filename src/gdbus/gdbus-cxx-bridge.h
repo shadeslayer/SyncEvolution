@@ -182,6 +182,8 @@ DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
 class DBusServerCXX : private boost::noncopyable
 {
  public:
+    ~DBusServerCXX();
+
     /**
      * Called for each new connection. Callback must store the DBusConnectionPtr,
      * otherwise it will be unref'ed after the callback returns.
