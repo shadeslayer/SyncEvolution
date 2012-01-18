@@ -13,12 +13,17 @@ For compiling libsynthesis, sqlite, expat, libz are needed.
 
 On Debian based systems, the required packages can be installed with
    apt-get install evolution-data-server-dev \
+                   libglib2.0-dev \
                    libecal1.2-dev libebook1.2-dev \
                    libsoup2.4-dev \
                    libpcre3-dev \
                    libexpat-dev \
                    libz-dev \
                    libboost-dev
+
+If gio (part of libglib) is not available in version 2.26 or higher,
+then libdbus can be used as fallback (not needed otherwise):
+   apt-get install libdbus-glib-1-dev
 
 libboost-dev >= 1.34, available as libboost1.35-dev backport for Debian Etch.
 
@@ -38,8 +43,7 @@ The test framework also requires CPPUnit:
    apt-get install libcppunit-dev
 
 For the GUI and its D-Bus based service backend:
-   apt-get install libdbus-glib-1-dev \
-                   xsltproc \
+   apt-get install xsltproc \
                    libglib2.0-dev \
                    libgtk2.0-dev libglade2-dev \
                    libgnome-keyring-dev \

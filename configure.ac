@@ -448,9 +448,25 @@ AC_ARG_WITH([gio-gdbus],
                              [with_gio_gdbus="yes"],
                              [with_gio_gdbus="no"]))
 AM_CONDITIONAL([COND_GIO_GDBUS], [test "x$with_gio_gdbus" = "xyes"])
-AS_IF([test "x$with_gio_gdbus" = "xyes"], [need_glib=yes
-                                           PKG_CHECK_MODULES([DBUS], [gio-2.0 >= 2.26])
-                                           AC_DEFINE([WITH_GIO_GDBUS],[],[Set if using GIO GDBus])])
+
+# We only need to check for dbus-1 if gio-gdbus is not used.
+#
+# Local sync depends on D-Bus communication between parent
+# and child process (works without a D-Bus daemon), and local
+# sync is not an optional feature. Could be made one if
+# someone is interested enough.
+#
+# Therefore, at the moment, either libdbus or gio-gdbus are needed
+# unconditionally. glib is needed in all cases now.
+need_glib=yes
+AS_IF([test "x$with_gio_gdbus" = "xyes"],
+      [PKG_CHECK_MODULES([DBUS], [gio-2.0 >= 2.26])
+       AC_DEFINE([WITH_GIO_GDBUS],[],[Set if using GIO GDBus])],
+      [PKG_CHECK_MODULES(DBUS, dbus-1, dummy=yes,
+                         AC_MSG_ERROR(libdbus-1 is required))
+       AC_CHECK_LIB(dbus-1, dbus_watch_get_unix_fd, dummy=yes,
+                    AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
+                    [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))])
 
 PKG_CHECK_MODULES(KEYRING, [gnome-keyring-1], HAVE_KEYRING=yes, HAVE_KEYRING=no)
 AC_ARG_ENABLE(gnome-keyring,
@@ -533,15 +549,6 @@ AM_CONDITIONAL([USE_KDE_KWALLET], [test "$use_kde_kwallet" = "yes"])
 if test $enable_dbus_service = "yes"; then
     if test -z "$XSLT"; then
        AC_MSG_ERROR([xsltproc not found, is required for D-Bus service])
-    fi
-    # We only need to check for dbus-1 if gio-gdbus is not used
-    if test "x$with_gio_gdbus" = "xno"; then
-        PKG_CHECK_MODULES(DBUS, dbus-1, dummy=yes,
-                          AC_MSG_ERROR(libdbus-1 is required))
-        AC_CHECK_LIB(dbus-1, dbus_watch_get_unix_fd, dummy=yes,
-                     AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
-                     [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
-        need_glib=yes
     fi
     # Recent libnotify releases work with gtk+-2.0 and gtk+-3.0. We
     # pick gtk+-2.0 here, to be compatible with old libnotify releases
