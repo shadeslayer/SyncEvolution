@@ -523,6 +523,32 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      */
     virtual void readStdin(string &content);
 
+    /**
+     * A helper function which interactively asks the user for
+     * a certain password. May throw errors.
+     *
+     * The default implementation uses stdin/stdout to communicate
+     * with the user.
+     *
+     * @param passwordName the name of the password in the config file
+     * @param descr        A simple string explaining what the password is needed for,
+     *                     e.g. "SyncML server". Has to be unique and understandable
+     *                     by the user.
+     * @param key          the key used to retrieve password
+     * @return entered password
+     */
+    virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key);
+
+    /**
+     * A helper function which is used for user interface to save
+     * a certain password with a specific mechanism. 
+     * Currently possibly syncml server. May throw errors.
+     * The default implementation do nothing.
+     */
+    virtual bool savePassword(const string &passwordName, const string &password, const ConfigPasswordKey &key) { 
+        return false; 
+    }
+
   protected:
     /** exchange active Synthesis engine */
     SharedEngine swapEngine(SharedEngine newengine) {
@@ -642,32 +668,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * @retval configname  a string describing where the config came from
      */
     virtual void getConfigXML(string &xml, string &configname);
-
-    /**
-     * A helper function which interactively asks the user for
-     * a certain password. May throw errors.
-     *
-     * The default implementation uses stdin/stdout to communicate
-     * with the user.
-     *
-     * @param passwordName the name of the password in the config file
-     * @param descr        A simple string explaining what the password is needed for,
-     *                     e.g. "SyncML server". Has to be unique and understandable
-     *                     by the user.
-     * @param key          the key used to retrieve password
-     * @return entered password
-     */
-    virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key);
-
-    /**
-     * A helper function which is used for user interface to save
-     * a certain password with a specific mechanism. 
-     * Currently possibly syncml server. May throw errors.
-     * The default implementation do nothing.
-     */
-    virtual bool savePassword(const string &passwordName, const string &password, const ConfigPasswordKey &key) { 
-        return false; 
-    }
 
     /**
      * Callback for derived classes: called after initializing the
