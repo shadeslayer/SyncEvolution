@@ -27,6 +27,8 @@
 #include <bluetooth/rfcomm.h>
 #endif
 
+#include <synthesis/syerror.h>
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -113,18 +115,13 @@ void ObexTransportAgent::connect() {
             //Do not use BDADDR_ANY to avoid a warning
             bdaddr_t bdaddr, anyaddr ={{0,0,0,0,0,0}};
             str2ba (m_address.c_str(), &bdaddr);
-            m_sdp = sdp_connect(&anyaddr, &bdaddr, SDP_NON_BLOCKING);
-            if(!m_sdp) {
-                SE_THROW_EXCEPTION (TransportException, "ObexTransport Bluetooth sdp connect failed");
-            }
+            m_sdp.set(sdp_connect(&anyaddr, &bdaddr, SDP_NON_BLOCKING),
+                      "ObexTransport Bluetooth sdp connect failed");
             m_connectStatus = SDP_START;
-            GIOChannel *sdpIO = g_io_channel_unix_new (sdp_get_socket (m_sdp));
-            if (sdpIO == NULL) {
-                sdp_close (m_sdp);
-                SE_THROW_EXCEPTION (TransportException, "ObexTransport: sdp socket channel create failed");
-            }
-            g_io_add_watch (sdpIO, (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), sdp_source_cb, static_cast <void*> (this));
-            g_io_channel_unref (sdpIO);
+            GIOChannelPtr sdpIO(g_io_channel_unix_new(sdp_get_socket(m_sdp)),
+                                "sdp socket channel");
+            m_sdpEvent.set(g_io_add_watch(sdpIO, (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), sdp_source_cb, static_cast <void*> (this)),
+                           "IO watch for SDP");
         } else {
             m_connectStatus = ADDR_READY;
             connectInit();
@@ -160,13 +157,10 @@ void ObexTransportAgent::connectInit () {
         SE_LOG_DEV(NULL,NULL, "Connecting Bluetooth device with address %s and channel %d",
                 m_address.c_str(), m_port);
         // Init the OBEX handle
-        obex_t *h = OBEX_Init (OBEX_TRANS_FD, obex_event, 0);
-        if(!h) {
-            SE_THROW_EXCEPTION (TransportException, "ObexTransport: Obex Handle Init failed");
-        }
+        ObexPtr handle(OBEX_Init (OBEX_TRANS_FD, obex_event, 0),
+                       "Obex Handle");
 
-        cxxptr<ObexHandle> handle (new ObexHandle (h));
-        OBEX_SetUserData (handle->get(), static_cast<void *> (this));
+        OBEX_SetUserData (handle, static_cast<void *> (this));
         // Connect the device, do not use BtOBEX_TransportConnect as it is
         // blocking.
         sockaddr_rc any;
@@ -182,13 +176,11 @@ void ObexTransportAgent::connectInit () {
         int flags = fcntl (sockfd, F_GETFL);
         fcntl(sockfd, F_SETFL, flags & ~O_NONBLOCK);
         //create the io channel
-        cxxptr<Channel> channel (new Channel (g_io_channel_unix_new (sockfd)));
-        if(!channel) {
-            SE_THROW_EXCEPTION (TransportException, "ObexTransport: io channel create failed");
-        }
-        guint obexEventSource = g_io_add_watch (channel->get(), (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), obex_fd_source_cb, static_cast<void *> (this));
+        GIOChannelPtr channel(g_io_channel_unix_new (sockfd),
+                              "socket io channel");
+        GLibEvent obexEvent(g_io_add_watch (channel, (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), obex_fd_source_cb, static_cast<void *> (this)),
+                            "socket io channel watch");
 
-        cxxptr<ObexEvent> obexEvent (new ObexEvent (obexEventSource));
         //connect to remote device
         sockaddr_rc peer;
         memset(&peer, 0, sizeof(peer));
@@ -236,10 +228,10 @@ void ObexTransportAgent::connectReq() {
     }
 
     //set up transport mtu
-    OBEX_SetTransportMTU (m_handle->get(), DEFAULT_RX_MTU, DEFAULT_TX_MTU);
+    OBEX_SetTransportMTU (m_handle, DEFAULT_RX_MTU, DEFAULT_TX_MTU);
 
     // set up the fd transport
-    if (FdOBEX_TransportSetup (m_handle->get(), m_sock->get(), m_sock->get(), OBEX_MAXIMUM_MTU) <0) {
+    if (FdOBEX_TransportSetup (m_handle, m_sock->get(), m_sock->get(), OBEX_MAXIMUM_MTU) <0) {
         SE_THROW_EXCEPTION (TransportException, "ObexTransport: Fd transport set up failed");
     }
 
@@ -247,38 +239,48 @@ void ObexTransportAgent::connectReq() {
     /* Add the header for the sync target */
     obex_headerdata_t header;
     header.bs = (unsigned char *) "SYNCML-SYNC";
-    OBEX_ObjectAddHeader(m_handle->get(), connect, OBEX_HDR_TARGET, header, strlen ((char *) header.bs), OBEX_FL_FIT_ONE_PACKET);
+    OBEX_ObjectAddHeader(m_handle, connect, OBEX_HDR_TARGET, header, strlen ((char *) header.bs), OBEX_FL_FIT_ONE_PACKET);
     m_obexReady = false;
     m_requestStart = time (NULL);
-    if (OBEX_Request (m_handle->get(), connect) <0) {
+    if (OBEX_Request (m_handle, connect) <0) {
         SE_THROW_EXCEPTION (TransportException, "ObexTransport: OBEX connect init failed");
     }
     m_connectStatus = INIT2;
 }
 
 void ObexTransportAgent::shutdown() {
-    obex_object_t *disconnect = newCmd(OBEX_CMD_DISCONNECT);
-    //add header "connection id"
-    obex_headerdata_t header;
-    header.bq4 = m_connectId;
-    OBEX_ObjectAddHeader (m_handle->get(), disconnect, OBEX_HDR_CONNECTION, header, sizeof
-            (m_connectId), OBEX_FL_FIT_ONE_PACKET);
-
     //reset up obex fd soruce 
-    guint obexSource = g_io_add_watch (m_channel->get(), (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), obex_fd_source_cb, static_cast<void *> (this));
-    cxxptr<ObexEvent> obexEventSource (new ObexEvent (obexSource));
+    GLibEvent obexEventSource;
+    if (m_channel) {
+        obexEventSource.set(g_io_add_watch(m_channel,
+                                           (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL),
+                                           obex_fd_source_cb, static_cast<void *> (this)),
+                            "OBEX shutdown event");
+    }
 
-    /* It might be true there is an ongoing OBEX request undergoing, 
-     * must cancel it before sending another cmd */
-    OBEX_CancelRequest (m_handle->get(), 0);
+    if (m_handle) {
+        /* It might be true there is an ongoing OBEX request undergoing, 
+         * must cancel it before sending another cmd */
+        OBEX_CancelRequest (m_handle, 0);
+    }
 
     //block a while waiting for the disconnect response, we will disconnects
     //always even without a response.
     m_obexReady = false;
-    m_disconnecting = true;
-    if (OBEX_Request (m_handle->get(), disconnect) <0) {
-        m_status = FAILED;
-        SE_THROW_EXCEPTION (TransportException, "ObexTransport: OBEX disconnect cmd failed");
+    if (!m_disconnecting) {
+        m_disconnecting = true;
+        if (m_handle) {
+            obex_object_t *disconnect = newCmd(OBEX_CMD_DISCONNECT);
+            //add header "connection id"
+            obex_headerdata_t header;
+            header.bq4 = m_connectId;
+            OBEX_ObjectAddHeader (m_handle, disconnect, OBEX_HDR_CONNECTION, header, sizeof
+                                  (m_connectId), OBEX_FL_FIT_ONE_PACKET);
+            if (OBEX_Request (m_handle, disconnect) <0) {
+                m_status = FAILED;
+                SE_THROW_EXCEPTION (TransportException, "ObexTransport: OBEX disconnect cmd failed");
+            }
+        }
     }
     m_obexEvent = obexEventSource;
 }
@@ -289,7 +291,7 @@ void ObexTransportAgent::shutdown() {
 void ObexTransportAgent::send(const char *data, size_t len) {
     SE_LOG_DEV (NULL, NULL, "ObexTransport send is called");
     cxxptr<Socket> sockObj = m_sock;
-    cxxptr<Channel> channel = m_channel;
+    GIOChannelPtr channel = m_channel;
     if(m_connectStatus != CONNECTED) {
         SE_THROW_EXCEPTION (TransportException, "ObexTransport send: underlying transport is not conncted");
     }
@@ -297,27 +299,27 @@ void ObexTransportAgent::send(const char *data, size_t len) {
     //add header "connection id"
     obex_headerdata_t header;
     header.bq4 = m_connectId;
-    OBEX_ObjectAddHeader (m_handle->get(), put, OBEX_HDR_CONNECTION, header, sizeof
+    OBEX_ObjectAddHeader (m_handle, put, OBEX_HDR_CONNECTION, header, sizeof
             (m_connectId), OBEX_FL_FIT_ONE_PACKET);
     //add header "target"
     header.bs =  reinterpret_cast<unsigned char *> (const_cast <char *>(m_contentType.c_str()));
-    OBEX_ObjectAddHeader (m_handle->get(), put, OBEX_HDR_TYPE, header, m_contentType.size()+1, 0);
+    OBEX_ObjectAddHeader (m_handle, put, OBEX_HDR_TYPE, header, m_contentType.size()+1, 0);
     //add header "length"
     header.bq4 = len;
-    OBEX_ObjectAddHeader (m_handle->get(), put, OBEX_HDR_LENGTH, header, sizeof (size_t), 0);
+    OBEX_ObjectAddHeader (m_handle, put, OBEX_HDR_LENGTH, header, sizeof (size_t), 0);
     //add header "body"
     header.bs = reinterpret_cast <const uint8_t *> (data);
-    OBEX_ObjectAddHeader (m_handle->get(), put, OBEX_HDR_BODY, header, len, 0);
+    OBEX_ObjectAddHeader (m_handle, put, OBEX_HDR_BODY, header, len, 0);
 
     //reset up the OBEX fd source 
-    guint obexSource = g_io_add_watch (channel->get(), (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), obex_fd_source_cb, static_cast<void *> (this));
-    cxxptr<ObexEvent> obexEventSource (new ObexEvent (obexSource));
+    GLibEvent obexEventSource(g_io_add_watch (channel, (GIOCondition) (G_IO_IN|G_IO_OUT|G_IO_HUP|G_IO_ERR|G_IO_NVAL), obex_fd_source_cb, static_cast<void *> (this)),
+                              "OBEX fd event");
 
     //send the request
     m_status = ACTIVE;
     m_requestStart = time (NULL);
     m_obexReady = false;
-    if (OBEX_Request (m_handle->get(), put) < 0) {
+    if (OBEX_Request (m_handle, put) < 0) {
         SE_THROW_EXCEPTION (TransportException, "ObexTransport: send failed");
     }
     m_sock = sockObj;
@@ -326,21 +328,28 @@ void ObexTransportAgent::send(const char *data, size_t len) {
 }
 
 /*
- * Abort the transport session; 
+ * Abort the transport session; don't wait for anything.
  */
 void ObexTransportAgent::cancel() {
     m_requestStart = 0;
-    if(m_disconnecting) {
-        m_connectStatus = END;
-        OBEX_TransportDisconnect(m_handle->get());
+    m_connectStatus = END;
+    if (m_handle) {
+        OBEX_TransportDisconnect(m_handle);
+    }
+    if (m_disconnecting) {
         SE_LOG_WARNING (NULL, NULL, "Cancel disconncting process");
         if (m_status != CLOSED) {
             m_status = FAILED;
         }
     } else {
+        // called during normal operations;
+        // set m_disconnecting like the abort handler
+        // did before it was removed
+        m_disconnecting = true;
         m_status = CANCELED;
-        //remove the event source 
-        cxxptr<ObexEvent> obexEventSource = m_obexEvent;
+        // remove the event source from the agent before calling shutdown(),
+        // will be freed when this function returns
+        GLibEvent obexEventSource = m_obexEvent;
         shutdown();
     }
 }
@@ -355,31 +364,28 @@ void ObexTransportAgent::cancel() {
  * Runs the main loop manually so that it does not block other components.
  */
 TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
-    cxxptr<Socket> sockObj;
-    cxxptr<ObexEvent> obexEvent;
-    cxxptr<Channel> channel;
-
     while (!m_obexReady) {
         g_main_context_iteration (m_context, TRUE);
-        if (m_status == FAILED) {
-            if (m_obexEvent) {
-                obexEvent = m_obexEvent;
+        if (m_status == FAILED ||
+            m_status == CANCELED) {
+            m_obexEvent.set(0);
+            m_sock.set(0);
+            m_channel.set(0);
+            if (m_status == FAILED) {
+                SE_THROW_EXCEPTION(TransportException, "OBEX/Bluetooth transport error or problem on the peer");
+            } else {
+                SE_THROW_EXCEPTION_STATUS(StatusException,
+                                          "transport aborted",
+                                          SyncMLStatus(sysync::LOCERR_USERABORT));
             }
-            if (m_sock) {
-                sockObj = m_sock;
-            }
-            if (m_channel) {
-                channel = m_channel;
-            }
-            SE_THROW_EXCEPTION (TransportException, "ObexTransprotAgent: Underlying transport error");
         }
     }
 
     //remove the obex event source here
     //only at this point we can be sure obexEvent is propertely set up
-    obexEvent = m_obexEvent;
-    sockObj = m_sock;
-    channel = m_channel;
+    cxxptr<Socket> sockObj = m_sock;
+    GLibEvent obexEvent = m_obexEvent;
+    GIOChannelPtr channel = m_channel;
 
     if (!noReply) {
         //send the Get request
@@ -387,15 +393,15 @@ TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
         //add header "connection id"
         obex_headerdata_t header;
         header.bq4 = m_connectId;
-        OBEX_ObjectAddHeader (m_handle->get(), get, OBEX_HDR_CONNECTION, header, sizeof
+        OBEX_ObjectAddHeader (m_handle, get, OBEX_HDR_CONNECTION, header, sizeof
                 (m_connectId), OBEX_FL_FIT_ONE_PACKET);
         //add header "target"
         header.bs =  reinterpret_cast <const unsigned char *> (m_contentType.c_str());
-        OBEX_ObjectAddHeader (m_handle->get(), get, OBEX_HDR_TYPE, header, m_contentType.size()+1, 0);
+        OBEX_ObjectAddHeader (m_handle, get, OBEX_HDR_TYPE, header, m_contentType.size()+1, 0);
 
         //send the request
         m_obexReady = false;
-        if (OBEX_Request (m_handle->get(), get) < 0) {
+        if (OBEX_Request (m_handle, get) < 0) {
             SE_THROW_EXCEPTION (TransportException, "ObexTransport: get failed");
         }
 
@@ -420,7 +426,7 @@ TransportAgent::Status ObexTransportAgent::wait(bool noReply) {
  */
 void ObexTransportAgent::getReply(const char *&data, size_t &len, std::string &contentType){
    cxxptr<Socket> sockObj = m_sock;
-   cxxptr<Channel> channel = m_channel;
+   GIOChannelPtr channel = m_channel;
    if (m_status != GOT_REPLY || !m_buffer || !m_bufferSize) {
        SE_THROW_EXCEPTION (TransportException, "");
    }
@@ -479,22 +485,16 @@ gboolean ObexTransportAgent::sdp_source_cb_impl (GIOChannel *io, GIOCondition co
             return TRUE;
         } else if ((cond &G_IO_IN) && m_connectStatus == SDP_REQ) {
             sdp_process (m_sdp);
-            sdp_close (m_sdp);
+            m_sdp.set(0);
             return FALSE;
         } else {
             return TRUE;
         }
-    } catch (const TransportException &te) {
-        SE_LOG_ERROR (NULL, NULL, "ObexTransport: Transport Exception in sdp_source_cb");
-        m_status = FAILED;
-        sdp_close (m_sdp);
-        return FALSE;
     } catch (...) {
-        SE_LOG_ERROR (NULL, NULL, "ObexTransport: Exception in sdp_source_cb");
-        m_status = FAILED;
-        sdp_close (m_sdp);
-        return FALSE;
+        handleException("sdp_source_cb");
     }
+    m_sdp.set(0);
+    return FALSE;
 }
 
 void ObexTransportAgent::sdp_callback_impl (uint8_t type, uint16_t status, uint8_t *rsp, size_t size)
@@ -566,22 +566,16 @@ void ObexTransportAgent::sdp_callback_impl (uint8_t type, uint16_t status, uint8
         m_port = channel;
         m_connectStatus = ADDR_READY;
         connectInit();
-    } catch (const TransportException &ex) {
-        SE_LOG_ERROR (NULL, NULL, "ObexTransport: Transport Exception in sdp_callback_impl");
-        SE_LOG_ERROR (NULL, NULL, "%s", ex.what());
-        m_status = FAILED;
     } catch (...) {
-        m_status = FAILED;
-        SE_LOG_ERROR (NULL, NULL, "ObexTransport: exception thrown in sdp_callback");
+        handleException("sdp_callback_impl");
     }
-
 }
 
 /* obex event source callbackg*/
 gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOCondition cond)
 {
     cxxptr<Socket> sockObj = m_sock;
-    cxxptr<Channel> channel = m_channel;
+    GIOChannelPtr channel = m_channel;
 
     if (m_status == CLOSED) {
         return TRUE;
@@ -589,12 +583,11 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
 
     try {
         if (cond & (G_IO_HUP | G_IO_ERR | G_IO_NVAL)) {
-            SE_LOG_ERROR (NULL, NULL, "obex_fd_source_cb_impl: got event %s%s%s", 
-                    (cond & G_IO_HUP) ?"HUP":"",
-                    (cond & G_IO_ERR) ?"ERR":"",
-                    (cond & G_IO_NVAL) ?"NVAL":"");
-            m_status = FAILED;
-            return FALSE;
+            SE_THROW_EXCEPTION (TransportException,
+                                StringPrintf("obex_fd_source_cb_impl: got event %s%s%s", 
+                                             (cond & G_IO_HUP) ?"HUP":"",
+                                             (cond & G_IO_ERR) ?"ERR":"",
+                                             (cond & G_IO_NVAL) ?"NVAL":""));
         }
 
         if (m_connectStatus == INIT0 && (cond & G_IO_OUT)) {
@@ -634,12 +627,11 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
             m_status = TIME_OUT;
             //currently we will not support transport resend for 
             //OBEX transport ??
-            m_disconnecting = true;
             cancel();
             return TRUE;
         }
 
-        if (OBEX_HandleInput (m_handle->get(), OBEX_POLL_INTERVAL) <0 && errno != EINTR) {
+        if (OBEX_HandleInput (m_handle, OBEX_POLL_INTERVAL) <0 && errno != EINTR) {
             //transport error
             //no way to recovery, simply abort
             //disconnect without sending disconnect request
@@ -647,20 +639,14 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
             //OBEX callback, thus no need to handle it again if status is
             //already marked as FAILED
             if (m_status != FAILED){
-                m_disconnecting = true;
                 cancel();
             }
         }
         m_sock = sockObj;
         m_channel = channel;
         return TRUE;
-    } catch (const TransportException &ex) {
-        SE_LOG_ERROR (NULL, NULL, "ObexTransport: Transport Exception in obex_fd_source_cb_impl");
-        SE_LOG_ERROR (NULL, NULL, "%s", ex.what());
-        m_status = FAILED;
-    } catch (...){
-        SE_LOG_ERROR (NULL, NULL, "ObexTransport: Transport Exception in obex_fd_source_cb_impl");
-        m_status = FAILED;
+    } catch (...) {
+        handleException("obex_fd_source_cb_impl");
     }
     return FALSE;
 }
@@ -691,7 +677,7 @@ void ObexTransportAgent::obex_callback (obex_object_t *object, int mode, int eve
                                 obex_headerdata_t header;
                                 uint32_t len;
 
-                                while (OBEX_ObjectGetNextHeader (m_handle->get(), object, &headertype, &header, &len)) {
+                                while (OBEX_ObjectGetNextHeader (m_handle, object, &headertype, &header, &len)) {
                                     if (headertype == OBEX_HDR_CONNECTION) {
                                         m_connectId = header.bq4;
                                     } else if (headertype == OBEX_HDR_WHO) { 
@@ -716,7 +702,7 @@ void ObexTransportAgent::obex_callback (obex_object_t *object, int mode, int eve
                             {
                                 if (m_connectStatus == CONNECTED) {
                                     m_connectStatus = END;
-                                    OBEX_TransportDisconnect (m_handle->get());
+                                    OBEX_TransportDisconnect (m_handle);
                                     m_status = CLOSED;
                                 }
                                 break;
@@ -727,7 +713,7 @@ void ObexTransportAgent::obex_callback (obex_object_t *object, int mode, int eve
                                 uint8_t headertype = 0;
                                 obex_headerdata_t header;
                                 uint32_t len;
-                                while (OBEX_ObjectGetNextHeader (m_handle->get(), object, &headertype, &header, &len)) {
+                                while (OBEX_ObjectGetNextHeader (m_handle, object, &headertype, &header, &len)) {
                                     if (headertype == OBEX_HDR_LENGTH) {
                                         length = header.bq4;
                                     } else if (headertype == OBEX_HDR_BODY) {
@@ -763,7 +749,7 @@ void ObexTransportAgent::obex_callback (obex_object_t *object, int mode, int eve
                     if (obex_rsp == 0 && m_disconnecting) {
                         //disconnct event
                         m_connectStatus = END;
-                        OBEX_TransportDisconnect (m_handle->get());
+                        OBEX_TransportDisconnect (m_handle);
                         //a normal case, same as OBEX_EV_DONE
                         m_obexReady = true;
                         m_status = CLOSED;
@@ -779,14 +765,26 @@ void ObexTransportAgent::obex_callback (obex_object_t *object, int mode, int eve
                 break;
         }
     } catch (...) {
-        m_status = FAILED;
-        SE_LOG_ERROR (NULL, NULL, "ObexTransport: exception thrown in obex_callback");
+        handleException("obex_callback");
     }
+}
 
+void ObexTransportAgent::handleException(const char *where)
+{
+    SE_LOG_DEBUG(NULL, NULL, "ObexTransport: exception thrown in %s", where);
+    if (m_status == FAILED ||
+        m_status == CANCELED ) {
+        // don't change anything, don't bother the user with error
+        // messages - something went already wrong
+    } else {
+        // log error and remember put transport into error state
+        Exception::handle();
+        m_status = FAILED;
+    }
 }
 
 obex_object_t* ObexTransportAgent::newCmd(uint8_t cmd) {
-    obex_object_t *cmdObject = OBEX_ObjectNew (m_handle->get(), cmd);
+    obex_object_t *cmdObject = OBEX_ObjectNew (m_handle, cmd);
     if(!cmdObject) {
         m_status = FAILED;
         SE_LOG_ERROR (NULL, NULL, "ObexTransport: OBEX Object New failed");

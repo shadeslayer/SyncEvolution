@@ -37,6 +37,23 @@
 
 SE_BEGIN_CXX
 
+/**
+ * utility class for various enties stored by
+ * ObexTransportAgent in SmartPtr
+ */
+class ObexUnref {
+ public:
+    static void unref(GMainContext *context) { g_main_context_unref(context); }
+    static void unref(sdp_session_t *sdp) { sdp_close(sdp); }
+    static void unref(GIOChannel *channel) { g_io_channel_unref(channel); }
+    static void unref(obex_t *handle) { OBEX_Cleanup(handle); }
+};
+
+typedef eptr<GMainContext, GMainContext, ObexUnref> GMainContextPtr;
+typedef eptr<sdp_session_t, sdp_session_t, ObexUnref> SDPSessionPtr;
+typedef eptr<GIOChannel, GIOChannel, ObexUnref> GIOChannelPtr;
+typedef eptr<obex_t, obex_t, ObexUnref> ObexPtr;
+
 class Socket {
     int socketfd;
  public:
@@ -44,34 +61,9 @@ class Socket {
      Socket(int fd) {socketfd = fd;}
      ~Socket() { if (socketfd !=-1) {::close (socketfd);} }
      int get() {return socketfd;}
-}; 
-
-class Channel {
-    GIOChannel *channel;
- public:
-     Channel() {channel = NULL;}
-     Channel(GIOChannel *c) {channel = c;}
-     ~Channel() { if (channel) {g_io_channel_unref (channel);}}
-     GIOChannel* get() {return channel;}
 };
 
-class ObexEvent {
-    guint event;
-public:
-    ObexEvent() {event = 0;}
-    ObexEvent (guint e) {event = e;}
-    ~ObexEvent () {if (event) {g_source_remove (event);}}
-    guint get() {return event;}
-};
 
-class ObexHandle {
-    obex_t *handle;
-public:
-    ObexHandle() {handle = NULL;}
-    ObexHandle(obex_t *h) {handle = h;}
-    ~ObexHandle() {if (handle) {OBEX_Cleanup (handle);}}
-    obex_t* get() {return handle;}
-};
 
 /**
  * message send/receive with libopenobex
@@ -79,11 +71,6 @@ public:
  */
 class ObexTransportAgent : public TransportAgent 
 {
-    class ContextUnref {
-    public:
-        static void unref(GMainContext *context) { g_main_context_unref(context); }
-    };
-
     public:
         enum OBEX_TRANS_TYPE{
             OBEX_BLUETOOTH,
@@ -128,6 +115,14 @@ class ObexTransportAgent : public TransportAgent
         gboolean sdp_source_cb_impl (GIOChannel *io, GIOCondition cond);
         void sdp_callback_impl (uint8_t type, uint16_t status, uint8_t *rsp, size_t size);
 
+        /**
+         * Handle exception thrown by any of the C callbacks.
+         * Exception must not escape into calling C function.
+         * Instead, set bad status and wait for that to
+         * be discovered in wait().
+         */
+        void handleException(const char *where);
+
         /* First phase of OBEX connect: connect to remote peer */
         void connectInit ();
         /* Second phase of OBEX connect: send connect cmd to initalize */
@@ -150,7 +145,7 @@ class ObexTransportAgent : public TransportAgent
         OBEX_TRANS_TYPE m_transType;
 
         /** context that needs to be kept alive while waiting for OBEX */
-        eptr<GMainContext, GMainContext, ContextUnref> m_context;
+        GMainContextPtr m_context;
 
         /* The address of the remote device  
          * macadd for Bluetooth; device name for usb; host name for
@@ -165,14 +160,15 @@ class ObexTransportAgent : public TransportAgent
 
         /*The underlying socket fd*/
         cxxptr<Socket> m_sock;
-        cxxptr<ObexEvent> m_obexEvent;
-        cxxptr<Channel> m_channel;
+        GLibEvent m_obexEvent;
+        GIOChannelPtr m_channel;
 
         std::string m_contentType;
         arrayptr<char> m_buffer;
         int m_bufferSize;
 
-        sdp_session_t *m_sdp;
+        SDPSessionPtr m_sdp;
+        GLibEvent m_sdpEvent;
 
         int m_timeoutSeconds;
         time_t m_requestStart;
@@ -183,7 +179,7 @@ class ObexTransportAgent : public TransportAgent
         //already fired disconnect
         bool m_disconnecting;
 
-        cxxptr<ObexHandle> m_handle;
+        ObexPtr m_handle;
         enum CONNECT_STATUS {
             START, 
             SDP_START, //sdp transaction start
