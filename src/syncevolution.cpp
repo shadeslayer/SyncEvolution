@@ -56,6 +56,7 @@ using namespace GDBusCXX;
 
 #include <syncevo/Cmdline.h>
 #include <syncevo/SyncContext.h>
+#include <syncevo/SuspendFlags.h>
 #include <syncevo/LogRedirect.h>
 #include <syncevo/LocalTransportAgent.h>
 #include "CmdlineSyncClient.h"
@@ -295,16 +296,10 @@ public:
     void getStatusAsync();
 
     /**
-     * call 'Suspend' method of 'Session' in dbus server
+     * call 'Suspend' or 'Abort' method of 'Session' in dbus server
      * without waiting for return
      */
-    void suspendAsync();
-
-    /**
-     * call 'Abort' method of 'Session' in dbus server
-     * without waiting for return
-     */
-    void abortAsync();
+    void interruptAsync(const char *operation);
 
     /**
      * call 'GetConfig' method of 'Session' in dbus server
@@ -723,27 +718,13 @@ void RemoteDBusServer::daemonGone()
     exit(1);
 }
 
-/**
- * Don't hang onto a shared_ptr here!
- *
- * RemoteSessions contain a reference to the
- * RemoteDBusServer which created them. Once that
- * server destructs, all sessions must have been
- * deleted earlier, otherwise they'll call a destructed
- * object.
- */
-boost::weak_ptr<RemoteSession> RemoteDBusServer::g_session;
-void RemoteDBusServer::handleSignal(int sig)
+static void SuspendFlagsChanged(RemoteSession *session,
+                                SuspendFlags &flags)
 {
-    SyncContext::handleSignal(sig);
-    boost::shared_ptr<RemoteSession> session = g_session.lock();
-    if (session) {
-        const SuspendFlags &flags = SyncContext::getSuspendFlags(); 
-        if(flags.state == SuspendFlags::CLIENT_SUSPEND) {
-            session->suspendAsync();
-        } else if(flags.state == SuspendFlags::CLIENT_ABORT) {
-            session->abortAsync();
-        }
+    if (flags.getState() == SuspendFlags::SUSPEND) {
+        session->interruptAsync("Suspend");
+    } else if(flags.getState() == SuspendFlags::ABORT) {
+        session->interruptAsync("Abort");
     }
 }
 
@@ -789,42 +770,18 @@ bool RemoteDBusServer::execute(const vector<string> &args, const string &peer, b
             return m_result;
         }
 
-        //g_session is used to pass 'abort' or 'suspend' commands
-        //make sure session is ready to run
-        g_session = m_session;
-
-        //set up signal handlers to send 'suspend' or 'abort' to dbus server
-        //only do this once session is executing and can suspend and abort
-        struct sigaction new_action, old_action;
-        struct sigaction old_term_action;
-
-        if(runSync) {
-            memset(&new_action, 0, sizeof(new_action));
-            new_action.sa_handler = handleSignal;
-            sigemptyset(&new_action.sa_mask);
-            sigaction(SIGINT, NULL, &old_action);
-            if (old_action.sa_handler == SIG_DFL) {
-                sigaction(SIGINT, &new_action, NULL);
-            }
-
-            sigaction(SIGTERM, NULL, &old_term_action);
-            if (old_term_action.sa_handler == SIG_DFL) {
-                sigaction(SIGTERM, &new_action, NULL);
-            }   
-        }
+        // Acticate signal handling in all cases.
+        // We let SuspendFlags catch them and then
+        // react in the normal event loop.
+        SuspendFlags &flags(SuspendFlags::getSuspendFlags());
+        boost::shared_ptr<SuspendFlags::Guard> signalGuard = flags.activate();
+        flags.m_stateChanged.connect(SuspendFlags::StateChanged_t::slot_type(SuspendFlagsChanged, m_session.get(), _1).track(m_session));
 
         //wait until status is 'done'
         while(!m_session->statusDone()) {
             g_main_loop_run(m_loop);
         }
 
-        if(runSync) {
-            sigaction (SIGINT, &old_action, NULL);
-            sigaction (SIGTERM, &old_term_action, NULL);
-        }
-
-        //reset session
-        g_session.reset();
         //restore logging level
         // LoggerBase::instance().setLevel(level);
         m_session->setRunSync(false);
@@ -1122,34 +1079,18 @@ void RemoteSession::getConfigCb(const Config_t &config, const string &error)
     }
 }
 
-void RemoteSession::suspendAsync()
+static void interruptCb(const std::string &error)
 {
-    DBusClientCall0 suspend(*this, "Suspend");
-    suspend(boost::bind(&RemoteSession::suspendCb, this, _1));
-}
-
-void RemoteSession::suspendCb(const string &error)
-{
-    //avoid logging messages in handleSignal
-    SyncContext::printSignals();
-    if(!error.empty()) {
-        m_server.setResult(false);
+    if (!error.empty()) {
+        SE_LOG_DEBUG(NULL, NULL, "interruptAsync() error from remote: %s", error.c_str());
     }
 }
 
-void RemoteSession::abortCb(const string &error)
+void RemoteSession::interruptAsync(const char *operation)
 {
-    //avoid logging messages in handleSignal
-    SyncContext::printSignals();
-    if(!error.empty()) {
-        m_server.setResult(false);
-    }
-}
-
-void RemoteSession::abortAsync()
-{
-    DBusClientCall0 abort(*this, "Abort");
-    abort(boost::bind(&RemoteSession::abortCb, this, _1));
+    // call Suspend() without checking result
+    DBusClientCall0 suspend(*this, operation);
+    suspend(interruptCb);
 }
 
 void RemoteSession::logOutput(Logger::Level level, const string &log)

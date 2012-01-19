@@ -18,7 +18,6 @@
  */
 
 #include <syncevo/SoupTransportAgent.h>
-#include <syncevo/SyncContext.h>
 
 #ifdef ENABLE_LIBSOUP
 
@@ -143,7 +142,6 @@ void SoupTransportAgent::send(const char *data, size_t len)
     soup_message_set_request(message.get(), m_contentType.c_str(),
                              SOUP_MEMORY_TEMPORARY, data, len);
     m_status = ACTIVE;
-    m_abortEventSource = g_timeout_add_seconds(ABORT_CHECK_INTERVAL, AbortCallback, static_cast<gpointer> (this));
     if (m_timeoutSeconds) {
         m_message = message.get();
         m_timeoutEventSource = g_timeout_add_seconds(m_timeoutSeconds, TimeoutCallback, static_cast<gpointer> (this));
@@ -194,7 +192,6 @@ TransportAgent::Status SoupTransportAgent::wait(bool noReply)
         SE_THROW_EXCEPTION(TransportException, failure);
     }
 
-    m_abortEventSource.set(0);
     m_timeoutEventSource.set(0);
     return m_status;
 }
@@ -251,18 +248,6 @@ void SoupTransportAgent::HandleSessionCallback(SoupSession *session,
     }
 
     g_main_loop_quit(m_loop.get());
-}
-
-gboolean SoupTransportAgent::AbortCallback(gpointer transport)
-{
-    const SuspendFlags &s_flags = SyncContext::getSuspendFlags();
-
-    if (s_flags.state == SuspendFlags::CLIENT_ABORT)
-    {
-        static_cast<SoupTransportAgent *>(transport)->cancel();
-        return FALSE;
-    }
-    return TRUE;
 }
 
 gboolean SoupTransportAgent::processCallback()

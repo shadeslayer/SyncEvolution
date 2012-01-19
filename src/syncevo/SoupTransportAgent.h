@@ -84,16 +84,11 @@ class SoupTransportAgent : public HTTPTransportAgent
     eptr<GMainLoop, GMainLoop, GLibUnref> m_loop;
     Status m_status;
     std::string m_failure;
-    GLibEvent m_abortEventSource;
 
     SoupMessage *m_message;
     GLibEvent m_timeoutEventSource;
     int m_timeoutSeconds;
 
-    /** User Abort check interval */
-    static const gint ABORT_CHECK_INTERVAL = 1;
-    /** This function is called regularly to check user abort event */
-    static gboolean AbortCallback (gpointer data);
     /** This function is called regularly to detect timeout */
     static gboolean TimeoutCallback (gpointer data);
 

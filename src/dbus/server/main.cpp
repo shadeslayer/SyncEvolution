@@ -27,7 +27,7 @@
 #include "restart.h"
 
 #include <syncevo/SyncContext.h>
-
+#include <syncevo/SuspendFlags.h>
 
 using namespace SyncEvo;
 using namespace GDBusCXX;
@@ -40,7 +40,7 @@ namespace {
 void niam(int sig)
 {
     shutdownRequested = true;
-    SyncContext::handleSignal(sig);
+    SuspendFlags::getSuspendFlags().handleSignal(sig);
     g_main_loop_quit (loop);
 }
 

@@ -26,6 +26,7 @@
 #include <syncevo/SyncContext.h>
 #include <syncevo/SyncSource.h>
 #include <syncevo/util.h>
+#include <syncevo/SuspendFlags.h>
 
 #include <syncevo/SafeConfigNode.h>
 #include <syncevo/FileConfigNode.h>
@@ -76,63 +77,8 @@ using namespace std;
 SE_BEGIN_CXX
 
 SyncContext *SyncContext::m_activeContext;
-SuspendFlags SyncContext::s_flags;
 
 static const char *LogfileBasename = "syncevolution-log";
-
-void SyncContext::handleSignal(int sig)
-{
-    switch (sig) {
-    case SIGTERM:
-        switch (s_flags.state) {
-        case SuspendFlags::CLIENT_ABORT:
-            s_flags.message = "Already aborting sync as requested earlier ...";
-            break;
-        default:
-            s_flags.state = SuspendFlags::CLIENT_ABORT;
-            s_flags.message = "Aborting sync immediately via SIGTERM ...";
-            break;
-        }
-        break;
-    case SIGINT: {
-        time_t current;
-        time (&current);
-        switch (s_flags.state) {
-        case SuspendFlags::CLIENT_NORMAL:
-            // first time suspend or already aborted
-            s_flags.state = SuspendFlags::CLIENT_SUSPEND;
-            s_flags.message = "Asking server to suspend...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)";
-            s_flags.last_suspend = current;
-            break;
-        case SuspendFlags::CLIENT_SUSPEND:
-            // turn into abort?
-            if (current - s_flags.last_suspend
-                < s_flags.ABORT_INTERVAL) {
-                s_flags.state = SuspendFlags::CLIENT_ABORT;
-                s_flags.message = "Aborting sync as requested via CTRL-C ...";
-            } else {
-                s_flags.last_suspend = current;
-                s_flags.message = "Suspend in progress...\nPress CTRL-C again quickly (within 2s) to stop sync immediately (can cause problems during next sync!)";
-            }
-            break;
-        case SuspendFlags::CLIENT_ABORT:
-            s_flags.message = "Already aborting sync as requested earlier ...";
-            break;
-        case SuspendFlags::CLIENT_ILLEGAL:
-            break;
-        break;
-        }
-    }
-    }
-}
-
-void SyncContext::printSignals()
-{
-    if (s_flags.message) {
-        SE_LOG_INFO(NULL, NULL, "%s", s_flags.message);
-        s_flags.message = NULL;
-    }
-}
 
 SyncContext::SyncContext()
 {
@@ -1533,6 +1479,30 @@ string SyncContext::getUsedSyncURL() {
     return "";
 }
 
+static void CancelTransport(TransportAgent *agent, SuspendFlags &flags)
+{
+    if (flags.getState() == SuspendFlags::ABORT) {
+        SE_LOG_DEBUG(NULL, NULL, "CancelTransport: cancelling because of SuspendFlags::ABORT");
+        agent->cancel();
+    }
+}
+
+/**
+ * common initialization for all kinds of transports, to be called
+ * before using them
+ */
+static void InitializeTransport(const boost::shared_ptr<TransportAgent> &agent,
+                                int timeout)
+{
+    agent->setTimeout(timeout);
+
+    // Automatically call cancel() when we an abort request
+    // is detected. Relies of automatic connection management
+    // to disconnect when agent is deconstructed.
+    SuspendFlags &flags(SuspendFlags::getSuspendFlags());
+    flags.m_stateChanged.connect(SuspendFlags::StateChanged_t::slot_type(CancelTransport, agent.get(), _1).track(agent));
+}
+
 boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainloop)
 {
     string url = getUsedSyncURL();
@@ -1543,22 +1513,21 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainl
     if (m_localSync) {
         string peer = url.substr(strlen("local://"));
         boost::shared_ptr<LocalTransportAgent> agent(new LocalTransportAgent(this, peer, gmainloop));
-        agent->setTimeout(timeout);
+        InitializeTransport(agent, timeout);
         agent->start();
         return agent;
     } else if (boost::starts_with(url, "http://") ||
         boost::starts_with(url, "https://")) {
 #ifdef ENABLE_LIBSOUP
-        
         boost::shared_ptr<SoupTransportAgent> agent(new SoupTransportAgent(static_cast<GMainLoop *>(gmainloop)));
         agent->setConfig(*this);
-        agent->setTimeout(timeout);
+        InitializeTransport(agent, timeout);
         return agent;
 #elif defined(ENABLE_LIBCURL)
         if (!gmainloop) {
             boost::shared_ptr<CurlTransportAgent> agent(new CurlTransportAgent());
             agent->setConfig(*this);
-            agent->setTimeout(timeout);
+            InitializeTransport(agent, timeout);
             return agent;
         }
 #endif
@@ -1568,7 +1537,8 @@ boost::shared_ptr<TransportAgent> SyncContext::createTransportAgent(void *gmainl
         boost::shared_ptr<ObexTransportAgent> agent(new ObexTransportAgent(ObexTransportAgent::OBEX_BLUETOOTH,
                                                                            static_cast<GMainLoop *>(gmainloop)));
         agent->setURL (btUrl);
-        agent->setTimeout(timeout);
+        InitializeTransport(agent, timeout);
+        // this will block already
         agent->connect();
         return agent;
 #endif
@@ -1888,6 +1858,20 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                      source.getDisplayName().c_str(),
                      type, extra1, extra2, extra3);
     }
+}
+
+bool SyncContext::checkForAbort()
+{
+    SuspendFlags &flags(SuspendFlags::getSuspendFlags());
+    flags.printSignals();
+    return flags.getState() == SuspendFlags::ABORT;
+}
+
+bool SyncContext::checkForSuspend()
+{
+    SuspendFlags &flags(SuspendFlags::getSuspendFlags());
+    flags.printSignals();
+    return flags.getState() == SuspendFlags::SUSPEND;
 }
 
 void SyncContext::throwError(const string &error)
@@ -3233,23 +3217,12 @@ static string Step2String(sysync::uInt16 stepcmd)
 
 SyncMLStatus SyncContext::doSync()
 {
-    // install signal handlers only if default behavior
-    // is currently active, restore when we return
-    struct sigaction new_action, old_action;
-    memset(&new_action, 0, sizeof(new_action));
-    new_action.sa_handler = handleSignal;
-    sigemptyset(&new_action.sa_mask);
-    sigaction(SIGINT, NULL, &old_action);
+    boost::shared_ptr<SuspendFlags::Guard> signalGuard;
+    // install signal handlers unless this was explicitly disabled
     bool catchSignals = getenv("SYNCEVOLUTION_NO_SYNC_SIGNALS") == NULL;
-    if (catchSignals && old_action.sa_handler == SIG_DFL) {
-        sigaction(SIGINT, &new_action, NULL);
+    if (catchSignals) {
+        signalGuard = SuspendFlags::getSuspendFlags().activate();
     }
-
-    struct sigaction old_term_action;
-    sigaction(SIGTERM, NULL, &old_term_action);
-    if (catchSignals && old_term_action.sa_handler == SIG_DFL) {
-        sigaction(SIGTERM, &new_action, NULL);
-    }   
 
     SyncMLStatus status = STATUS_OK;
     std::string s;
@@ -3820,10 +3793,6 @@ SyncMLStatus SyncContext::doSync()
         }
     }
 
-    if (catchSignals) {
-        sigaction (SIGINT, &old_action, NULL);
-        sigaction (SIGTERM, &old_term_action, NULL);
-    }
     return status;
 }
 

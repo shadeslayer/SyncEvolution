@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <glib.h>
-#include <syncevo/SyncContext.h>
+#include <syncevo/SuspendFlags.h>
 #include <syncevo/ObexTransportAgent.h>
 
 #include <syncevo/declarations.h>
@@ -602,19 +602,6 @@ gboolean ObexTransportAgent::obex_fd_source_cb_impl (GIOChannel *io, GIOConditio
             } else {
                 SE_THROW_EXCEPTION (TransportException, "OBEXTransport: socket connect failed");
             }
-        }
-
-        SuspendFlags s_flags = SyncContext::getSuspendFlags();
-        //abort transfer, only process the abort one time.
-        if (s_flags.state == SuspendFlags::CLIENT_ABORT && !m_disconnecting){
-            //first check abort flag
-            SE_LOG_INFO (NULL, NULL, "ObexTransport aborting.");
-            //do not send the disconnect cmd, close the connection directly.
-            m_disconnecting = true;
-            m_sock = sockObj;
-            m_channel = channel;
-            cancel();
-            return TRUE;
         }
 
         time_t now = time(NULL);

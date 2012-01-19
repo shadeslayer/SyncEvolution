@@ -731,6 +731,15 @@ public:
             step("waiting for Sync() call from parent");
         }
         try {
+            // ignore SIGINT signal in local sync helper from now on:
+            // the parent process will handle those and tell us when
+            // we are expected to abort by sending a SIGTERM
+            struct sigaction new_action;
+            memset(&new_action, 0, sizeof(new_action));
+            new_action.sa_handler = SIG_IGN;
+            sigemptyset(&new_action.sa_mask);
+            sigaction(SIGINT, &new_action, NULL);
+
             m_client->sync(&m_clientReport);
         } catch (...) {
             string explanation;
@@ -909,8 +918,6 @@ int LocalTransportMain(int argc, char **argv)
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SIG_IGN;
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGPIPE, &sa, NULL);
 

@@ -18,7 +18,7 @@
  */
 
 #include <syncevo/CurlTransportAgent.h>
-#include <syncevo/SyncContext.h>
+#include <syncevo/SuspendFlags.h>
 
 #ifdef ENABLE_LIBCURL
 
@@ -288,9 +288,10 @@ void CurlTransportAgent::checkCurl(CURLcode code, bool exception)
 int CurlTransportAgent::progressCallback(void* transport, double, double, double, double)
 {
     CurlTransportAgent *agent = static_cast<CurlTransportAgent *> (transport);
-    const SuspendFlags &s_flags = SyncContext::getSuspendFlags();
-    //abort transfer
-    if (s_flags.state == SuspendFlags::CLIENT_ABORT){
+    SuspendFlags &flags = SuspendFlags::getSuspendFlags();
+    // check signals and abort transfer?
+    flags.printSignals();
+    if (flags.getState() == SuspendFlags::ABORT) {
         agent->setAborting (true);
         return -1;
     }
