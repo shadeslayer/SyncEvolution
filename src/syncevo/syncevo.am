@@ -6,9 +6,8 @@ src_syncevo_cxxflags = @SYNCEVOLUTION_CXXFLAGS@
 src_syncevo_cppflags = @BACKEND_CPPFLAGS@ @GLIB_CFLAGS@ -I$(top_srcdir)/test -I$(gdbus_dir) $(DBUS_CFLAGS) -I$(top_builddir)/src/syncevo -I$(top_srcdir)/src -DSYNCEVO_LIBEXEC=\"$(libexecdir)\" -DSYNCEVO_BACKEND=\"$(BACKENDS_SEARCH_DIRECTORY)\"
 src_syncevo_ldadd = @SYNCEVOLUTION_LDADD@
 
-if COND_DBUS
+# needed in all cases
 src_syncevo_ldadd += $(gdbus_build_dir)/libgdbussyncevo.la
-endif
 
 if ENABLE_UNIT_TESTS
 src_syncevo_cxxflags += $(CPPUNIT_CXXFLAGS)
