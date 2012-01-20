@@ -12,3 +12,4 @@ Version: @VERSION@
 Cflags: -I${includedir}
 Requires: synthesis
 Libs: -L${libdir} -lsyncevolution
+Libs.private: -L${libdir}/syncevolution -lgdbussyncevo
