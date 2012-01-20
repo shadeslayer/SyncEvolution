@@ -98,10 +98,10 @@ else
 CORE_SOURCES += $(BACKEND_REGISTRIES)
 endif
 
-CORE_CXXFLAGS = $(SYNTHESIS_CFLAGS)
+CORE_CXXFLAGS = $(SYNTHESIS_CFLAGS) $(CPPUNIT_CXXFLAGS)
 CORE_LDADD = $(SYNCEVOLUTION_LDADD) src/syncevo/libsyncevolution.la $(GLIB_LIBS) $(GTHREAD_LIBS) $(GOBJECT_LIBS) $(LIBS)
 CORE_DEP = $(SYNCEVOLUTION_DEP) src/syncevo/libsyncevolution.la $(SYNTHESIS_DEP)
-CORE_LD_FLAGS = -Wl,-uSyncEvolution_Module_Version -Wl,--export-dynamic
+CORE_LD_FLAGS = -Wl,-uSyncEvolution_Module_Version -Wl,--export-dynamic $(CPPUNIT_LDFLAGS)
 
 # put link to static c++ library into current directory, needed if compiling with --enable-static-c++
 src/libstdc++.a :
