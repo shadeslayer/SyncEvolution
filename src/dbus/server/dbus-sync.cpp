@@ -132,16 +132,6 @@ void DBusSync::syncSuccessStart()
     m_session.syncSuccessStart();
 }
 
-bool DBusSync::checkForSuspend()
-{
-    return m_session.isSuspend() || SyncContext::checkForSuspend();
-}
-
-bool DBusSync::checkForAbort()
-{
-    return m_session.isAbort() || SyncContext::checkForAbort();
-}
-
 int DBusSync::sleep(int intervals)
 {
     time_t start = time(NULL);

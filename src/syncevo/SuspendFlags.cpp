@@ -95,6 +95,44 @@ public:
     }
 };
 
+SuspendFlags::State SuspendFlags::getState() const {
+    if (m_abortBlocker.lock()) {
+        // active abort blocker
+        return ABORT;
+    } else if (m_suspendBlocker.lock()) {
+        // active suspend blocker
+        return SUSPEND;
+    } else {
+        return m_state;
+    }
+}
+
+boost::shared_ptr<SuspendFlags::StateBlocker> SuspendFlags::suspend() { return block(m_suspendBlocker); }
+boost::shared_ptr<SuspendFlags::StateBlocker> SuspendFlags::abort() { return block(m_abortBlocker); }
+boost::shared_ptr<SuspendFlags::StateBlocker> SuspendFlags::block(boost::weak_ptr<StateBlocker> &blocker)
+{
+    State oldState = getState();
+    boost::shared_ptr<StateBlocker> res = blocker.lock();
+    if (!res) {
+        res.reset(new StateBlocker);
+        blocker = res;
+    }
+    State newState = getState();
+    // only alert receiving side if going from normal -> suspend
+    // or suspend -> abort
+    if (newState > oldState &&
+        m_senderFD >= 0) {
+        unsigned char msg = newState;
+        write(m_senderFD, &msg, 1);
+    }
+    // don't depend on pipes or detecting that change, alert
+    // listeners directly
+    if (newState != oldState) {
+        m_stateChanged(*this);
+    }
+    return res;
+}
+
 boost::shared_ptr<SuspendFlags::Guard> SuspendFlags::activate()
 {
     int fds[2];

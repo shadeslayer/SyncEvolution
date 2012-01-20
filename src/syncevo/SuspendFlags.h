@@ -47,10 +47,11 @@ class SuspendFlags
         NORMAL,
         /** suspend sync */
         SUSPEND,
-        /** suspend sync request received again (only written to event FD, not returned by getState()) */
-        SUSPEND_AGAIN,
         /** abort sync */
         ABORT,
+
+        /** suspend sync request received again (only written to event FD, not returned by getState()) */
+        SUSPEND_AGAIN,
         /** abort sync request received again (only written to event FD, not returned by getState()) */
         ABORT_AGAIN
     };
@@ -58,7 +59,15 @@ class SuspendFlags
     /** access to singleton */
     static SuspendFlags &getSuspendFlags();
 
-    State getState() const { return m_state; }
+    /**
+     * Current status. It is a combination of several indicators:
+     * - state set via signals (cannot be reset)
+     * - "suspend" while requested with suspend() (resets when no longer needed)
+     * - "abort" while requested with aborted() (also resets)
+     *
+     * The overall state is the maximum (NORMAL < SUSPEND < ABORT).
+     */
+    State getState() const;
 
     /**
      * Users of this class can read a single char for each received
@@ -111,6 +120,24 @@ class SuspendFlags
      */
     static void handleSignal(int sig);
 
+    class StateBlocker {};
+
+    /**
+     * Requests a state change to "suspend". The request
+     * remains active and affects getState() until
+     * the returned StateBlocker is destructed, i.e.,
+     * the last reference is dropped.
+     *
+     * A state change will be pushed into the pipe if it really
+     * changed as part of taking the suspend lock.
+     */
+    boost::shared_ptr<StateBlocker> suspend();
+
+    /**
+     * Same as suspend(), except that it asks for an abort.
+     */
+    boost::shared_ptr<StateBlocker> abort();
+
  private:
     SuspendFlags();
     ~SuspendFlags();
@@ -124,6 +151,8 @@ class SuspendFlags
     int m_senderFD, m_receiverFD;
     struct sigaction m_oldSigInt, m_oldSigTerm;
 
+    boost::weak_ptr<StateBlocker> m_suspendBlocker, m_abortBlocker;
+    boost::shared_ptr<StateBlocker> block(boost::weak_ptr<StateBlocker> &blocker);
 };
 
 

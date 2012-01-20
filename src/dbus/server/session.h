@@ -22,6 +22,9 @@
 
 #include <syncevo/SynthesisEngine.h>
 #include <boost/weak_ptr.hpp>
+#include <boost/utility.hpp>
+
+#include <syncevo/SuspendFlags.h>
 
 #include "read-operations.h"
 #include "progress-data.h"
@@ -115,8 +118,27 @@ class Session : public GDBusCXX::DBusObjectHelper,
         SYNC_ILLEGAL
     };
 
-    /** current sync status */
-    SyncStatus m_syncStatus;
+    /**
+     * current sync status; suspend and abort must be mirrored in global SuspendFlags
+     */
+    class SyncStatusOwner : boost::noncopyable {
+    public:
+        SyncStatusOwner() : m_status(SYNC_QUEUEING), m_active(false) {}
+        SyncStatusOwner(SyncStatus status) : m_status(SYNC_QUEUEING), m_active(false)
+        {
+            setStatus(status);
+        }
+        operator SyncStatus () { return m_status; }
+        SyncStatusOwner &operator = (SyncStatus status) { setStatus(status); return *this; }
+
+        void setStatus(SyncStatus status);
+
+    private:
+        SyncStatus m_status;
+        bool m_active;
+        boost::shared_ptr<SuspendFlags::StateBlocker> m_blocker;
+    } m_syncStatus;
+
 
     /** step info: whether engine is waiting for something */
     bool m_stepIsWaiting;
@@ -379,9 +401,6 @@ public:
     void abort();
     /** Session.Suspend() */
     void suspend();
-
-    bool isSuspend() { return m_syncStatus == SYNC_SUSPEND; }
-    bool isAbort() { return m_syncStatus == SYNC_ABORT; }
 
     /**
      * step info for engine: whether the engine is blocked by something

@@ -53,15 +53,6 @@ protected:
     /** called when a sync is successfully started */
     virtual void syncSuccessStart();
 
-    /**
-     * Implement checkForSuspend and checkForAbort.
-     * They will check whether dbus clients suspend
-     * or abort the session in addition to checking
-     * whether suspend/abort were requested via
-     * signals, using SyncContext's signal handling.
-     */
-    virtual bool checkForSuspend();
-    virtual bool checkForAbort();
     virtual int sleep(int intervals);
 
     /**
