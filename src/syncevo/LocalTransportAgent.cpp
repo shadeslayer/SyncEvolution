@@ -306,7 +306,11 @@ void LocalTransportAgent::shutdown()
         // block until child is done
         boost::signals2::scoped_connection c(m_forkexec->m_onQuit.connect(boost::bind(gMainLoopQuit,
                                                                                       &m_loop)));
-        m_forkexec->stop();
+        // don't kill the child here - we expect it to complete by
+        // itself at some point
+        // TODO: how do we detect a child which gets stuck after its last
+        // communication with the parent?
+        // m_forkexec->stop();
         while (m_forkexec->getState() != ForkExecParent::TERMINATED) {
             SE_LOG_DEBUG(NULL, NULL, "waiting for child to stop");
             g_main_loop_run(m_loop.get());
@@ -349,6 +353,11 @@ void LocalTransportAgent::storeReplyMsg(const std::string &contentType,
 
 void LocalTransportAgent::cancel()
 {
+    if (m_forkexec) {
+        SE_LOG_DEBUG(NULL, NULL, "killing local transport child in cancel()");
+        m_forkexec->stop();
+    }
+    m_status = CANCELED;
 }
 
 TransportAgent::Status LocalTransportAgent::wait(bool noReply)
@@ -448,6 +457,20 @@ private:
         g_main_loop_quit(m_loop.get());
     }
 };
+
+static void abortLocalSync(int sigterm)
+{
+    // logging anything here is not safe (our own logging system might
+    // have been interrupted by the SIGTERM and thus be in an inconsistent
+    // state), but let's try it anyway
+    SE_LOG_INFO(NULL, NULL, "local sync child shutting down due to SIGTERM");
+    // raise the signal again after disabling the handler, to ensure that
+    // the exit status is "killed by signal xxx" - good because then
+    // the whoever killed used gets the information that we didn't die for
+    // some other reason
+    signal(sigterm, SIG_DFL);
+    raise(sigterm);
+}
 
 class LocalTransportAgentChild : public TransportAgent
 {
@@ -739,6 +762,14 @@ public:
             new_action.sa_handler = SIG_IGN;
             sigemptyset(&new_action.sa_mask);
             sigaction(SIGINT, &new_action, NULL);
+
+            // SIGTERM would be caught by SuspendFlags and set the "abort"
+            // state. But a lot of code running in this process cannot
+            // check that flag in a timely manner (blocking calls in
+            // libneon, activesync client libraries, ...). Therefore
+            // it is better to abort inside the signal handler.
+            new_action.sa_handler = abortLocalSync;
+            sigaction(SIGTERM, &new_action, NULL);
 
             m_client->sync(&m_clientReport);
         } catch (...) {

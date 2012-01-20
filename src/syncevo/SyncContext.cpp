@@ -3746,6 +3746,23 @@ SyncMLStatus SyncContext::doSync()
                     }
                     break;
                 }
+                case TransportAgent::CANCELED:
+                    // Send might have failed because of abort or
+                    // suspend request.
+                    if (checkForSuspend()) {
+                        SE_LOG_DEBUG(NULL, NULL, "suspending after TransportAgent::CANCELED as requested by user");
+                        stepCmd = sysync::STEPCMD_SUSPEND;
+                        break;
+                    } else if (checkForAbort()) {
+                        SE_LOG_DEBUG(NULL, NULL, "aborting after TransportAgent::CANCELED as requested by user");
+                        stepCmd = sysync::STEPCMD_ABORT;
+                        break;
+                    }
+                    // not sure exactly why it is canceled
+                    SE_THROW_EXCEPTION_STATUS(BadSynthesisResult,
+                                              "transport canceled",
+                                              sysync::LOCERR_USERABORT);
+                    break;
                 default:
                     stepCmd = sysync::STEPCMD_TRANSPFAIL; // communication with server failed
                     break;

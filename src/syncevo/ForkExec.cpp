@@ -34,6 +34,8 @@ ForkExecParent::ForkExecParent(const std::string &helper) :
     m_childPid(0),
     m_hasConnected(false),
     m_hasQuit(false),
+    m_sigIntSent(false),
+    m_sigTermSent(false),
     m_watchChild(NULL)
 {
 }
@@ -153,6 +155,17 @@ void ForkExecParent::watchChildCallback(GPid pid,
         me->m_onQuit(status);
         if (!me->m_hasConnected ||
             status != 0) {
+            SE_LOG_DEBUG(NULL, NULL, "signaled %s, signal %d, int %d, term %d, int sent %s, term sent %s",
+                         WIFSIGNALED(status) ? "yes" : "no",
+                         WTERMSIG(status), SIGINT, SIGTERM,
+                         me->m_sigIntSent ? "yes" : "no",
+                         me->m_sigTermSent ? "yes" : "no");
+            if (WIFSIGNALED(status) &&
+                ((WTERMSIG(status) == SIGINT && me->m_sigIntSent) ||
+                 (WTERMSIG(status) == SIGTERM && me->m_sigTermSent))) {
+                // not an error when the child dies because we killed it
+                return;
+            }
             std::string error = "child process quit";
             if (!me->m_hasConnected) {
                 error += " unexpectedly";
@@ -197,11 +210,16 @@ void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) thro
 
 void ForkExecParent::stop()
 {
+    SE_LOG_DEBUG(NULL, NULL, "killing with SIGINT/SIGTERM");
     ::kill(m_childPid, SIGINT);
+    m_sigIntSent = true;
+    ::kill(m_childPid, SIGTERM);
+    m_sigTermSent = true;
 }
 
 void ForkExecParent::kill()
 {
+    SE_LOG_DEBUG(NULL, NULL, "killing with SIGKILL");
     ::kill(m_childPid, SIGKILL);
 }
 

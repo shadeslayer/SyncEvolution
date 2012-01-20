@@ -167,6 +167,8 @@ class ForkExecParent : public ForkExec
     GPid m_childPid;
     bool m_hasConnected;
     bool m_hasQuit;
+    bool m_sigIntSent;
+    bool m_sigTermSent;
 
     GSource *m_watchChild;
     static void watchChildCallback(GPid pid,
