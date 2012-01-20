@@ -24,8 +24,7 @@
 # include "config.h"
 #endif
 
-#if defined(HAVE_GLIB) && defined(DBUS_SERVICE)
-
+#if defined(HAVE_GLIB)
 
 #include <syncevo/util.h>
 #include <syncevo/GLibSupport.h>

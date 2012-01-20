@@ -21,6 +21,8 @@
 
 SE_BEGIN_CXX
 
+#if defined(HAVE_GLIB)
+
 static const std::string ForkExecEnvVar("SYNCEVOLUTION_FORK_EXEC=");
 
 ForkExec::ForkExec()
@@ -238,6 +240,8 @@ const char *ForkExecChild::getParentDBusAddress()
 {
     return getenv(ForkExecEnvVar.substr(0, ForkExecEnvVar.size() - 1).c_str());
 }
+
+#endif // HAVE_GLIB
 
 SE_END_CXX
 
