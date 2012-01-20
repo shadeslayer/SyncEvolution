@@ -372,8 +372,16 @@ TransportAgent::Status LocalTransportAgent::wait(bool noReply)
                 if (m_forkexec &&
                     m_forkexec->getState() == ForkExecParent::TERMINATED) {
                     m_status = FAILED;
-                    SE_THROW_EXCEPTION(TransportException,
-                                       "child process quit without sending its message");
+                    if (m_clientReport.getStatus() != STATUS_OK &&
+                        m_clientReport.getStatus() != STATUS_HTTP_OK) {
+                        // report that status
+                        SE_THROW_EXCEPTION_STATUS(StatusException,
+                                                  "failure in local sync child",
+                                                  m_clientReport.getStatus());
+                    } else {
+                        SE_THROW_EXCEPTION(TransportException,
+                                           "child process quit without sending its message");
+                    }
                 }
                 g_main_loop_run(m_loop.get());
             }
