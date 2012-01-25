@@ -405,6 +405,49 @@
    fun:getpwnam_r*
 }
 
+# ==24097== 348 (60 direct, 288 indirect) bytes in 1 blocks are definitely lost in loss record 1,582 of 1,743
+# ==24097==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==24097==    by 0x8F2E3FC: nss_parse_service_list (nsswitch.c:626)
+# ==24097==    by 0x8F2EBD1: __nss_database_lookup (nsswitch.c:167)
+# ==24097==    by 0xEBF88D8: ???
+# ==24097==    by 0x8EEC0A1: internal_getgrouplist (initgroups.c:101)
+# ==24097==    by 0x8EEC383: getgrouplist (initgroups.c:153)
+# ==24097==    by 0x8070442: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x80735FE: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x807388A: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8073916: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8073AD8: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8073BA5: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x804E188: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x804D260: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x804D78D: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x804EC09: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8068188: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8068E62: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x80696E8: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x806858C: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x80534D4: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x80535F1: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x80539FF: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8053BB1: dbus_connection_send_with_reply (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x72AD43: GDBusCXX::DBusClientCall<boost::function<void ()(std::string const&, GDBusCXX::DBusArray<unsigned char> const&, std::string const&)> >::send(GDBusCXX::DBusMessagePtr&, boost::function<void ()(std::string const&, GDBusCXX::DBusArray<unsigned char> const&, std::string const&)> const&) (gdbus-cxx-bridge.h:3933)
+# ==24097==    by 0x723ED0: SyncEvo::LocalTransportAgent::onChildConnect(GDBusCXX::DBusConnectionPtr const&) (gdbus-cxx-bridge.h:4040)
+# ==24097==    by 0x7400DA: boost::signals2::detail::signal1_impl<void, GDBusCXX::DBusConnectionPtr const&, boost::signals2::optional_last_value<void>, int, std::less<int>, boost::function<void ()(GDBusCXX::DBusConnectionPtr const&)>, boost::function<void ()(boost::signals2::connection const&, GDBusCXX::DBusConnectionPtr const&)>, boost::signals2::mutex>::operator()(GDBusCXX::DBusConnectionPtr const&) (function_template.hpp:1013)
+# ==24097==    by 0x73ADDC: SyncEvo::ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr&) (signal_template.hpp:692)
+# ==24097==    by 0x5B8E42: GDBusCXX::DBusServerCXX::newConnection(DBusServer*, DBusConnection*, void*) (function_template.hpp:1013)
+# ==24097==    by 0x806469A: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097== 
+{
+   nss_parse_service_list + grouplist
+   Memcheck:Leak
+   fun:malloc
+   fun:nss_parse_service_list
+   fun:__nss_database_lookup
+   obj:*
+   ...
+   fun:getgrouplist
+}
+
 # ==19927== 1,018,472 (864,248 direct, 154,224 indirect) bytes in 32,959 blocks are definitely lost in loss record 35 of 38
 # ==19927==    at 0x4C223DC: calloc (vg_replace_malloc.c:397)
 # ==19927==    by 0x64EBE12: g_malloc0 (in /usr/lib/libglib-2.0.so.0.1600.6)
@@ -721,4 +764,30 @@
    obj:*libgio*
    obj:*libglib*
    fun:start_thread
+}
+
+# ==24097== 596 (192 direct, 404 indirect) bytes in 1 blocks are definitely lost in loss record 1,605 of 1,743
+# ==24097==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==24097==    by 0x8064763: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8065097: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8065453: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x8063881: dbus_server_listen (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==24097==    by 0x5B8AEE: GDBusCXX::DBusServerCXX::listen(std::string const&, GDBusCXX::DBusErrorCXX*) (gdbus-cxx-bridge.cpp:73)
+# ==24097==    by 0x73991F: SyncEvo::ForkExecParent::start() (ForkExec.cpp:81)
+# ==24097==    by 0x725B33: SyncEvo::LocalTransportAgent::start() (LocalTransportAgent.cpp:143)
+# ==24097==    by 0x6B79CD: SyncEvo::SyncContext::createTransportAgent(void*) (SyncContext.cpp:1517)
+# ==24097==    by 0x5A4165: SyncEvo::DBusSync::createTransportAgent() (dbus-sync.cpp:94)
+# ==24097==    by 0x6B116C: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3373)
+# ==24097==    by 0x6B6CD4: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:2957)
+# ==24097==    by 0x57A2BF: SyncEvo::Session::run(SyncEvo::LogRedirect&) (session.cpp:743)
+# ==24097==    by 0x563497: SyncEvo::Server::run(SyncEvo::LogRedirect&) (server.cpp:362)
+# ==24097==    by 0x53EF2D: main (main.cpp:119)
+# ==24097== 
+{
+   dbus_server_list
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:dbus_server_listen
+   fun:*DBusServerCXX*listen*
 }
