@@ -5624,6 +5624,7 @@ static void addMonthly(size_t &index, ClientTestConfig::MultipleLinkedItems_t &s
         pre +
         "BEGIN:VEVENT\n"
         "UID:monthly\n"
+        "DTSTAMP:20110101T120000Z\n"
         "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
         "DTEND;TZID=Standard Timezone:2012"  "%1$02d" "%2$02d" "T121000\n"
         "SUMMARY:monthly " + suffix + " Berlin\n"
@@ -5635,6 +5636,7 @@ static void addMonthly(size_t &index, ClientTestConfig::MultipleLinkedItems_t &s
         pre +
         "BEGIN:VEVENT\n"
         "UID:monthly\n"
+        "DTSTAMP:20110101T120000Z\n"
         "DTSTART;TZID=Standard Timezone:2012" "%1$02d" "%2$02d" "T120000\n"
         "DTEND;TZID=Standard Timezone:2012"  "%1$02d" "%2$02d" "T121000\n"
         "SUMMARY:%1$04d monthly " + suffix + " Berlin\n"
@@ -5714,7 +5716,7 @@ void ClientTest::getTestData(const char *type, Config &config)
     static std::set<std::string> vCardEssential =
         boost::assign::list_of("FN")("N")("UID")("VERSION"),
         iCalEssential =
-        boost::assign::list_of("DTSTART")("DTEND")("SUMMARY")("UID")("RRULE")("RECURRENCE-ID")("VERSION");
+        boost::assign::list_of("DTSTART")("DTEND")("DTSTAMP")("SUMMARY")("UID")("RRULE")("RECURRENCE-ID")("VERSION");
     // RRULE is not essential for a valid item, but removing it has implications
     // for other properties (EXDATE) and other items (detached recurrences) and
     // thus cannot be tested in testRemoveProperties (because it doesn't know about
@@ -6262,6 +6264,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 pre +
                 "BEGIN:VEVENT\n"
                 "UID:yearly\n"
+                "DTSTAMP:20110101T120000Z\n"
                 "DTSTART;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
                 "DTEND;TZID=Standard Timezone:"  "%1$04d" "0101T121000\n"
                 "SUMMARY:yearly Berlin\n"
@@ -6273,6 +6276,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 pre +
                 "BEGIN:VEVENT\n"
                 "UID:yearly\n"
+                "DTSTAMP:20110101T120000Z\n"
                 "DTSTART;TZID=Standard Timezone:" "%1$04d" "0101T120000\n"
                 "DTEND;TZID=Standard Timezone:"  "%1$04d" "0101T121000\n"
                 "SUMMARY:" "%1$04d" "yearly Berlin\n"
@@ -6328,6 +6332,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             items->push_back(pre +
                              "BEGIN:VEVENT\n"
                              "UID:weekly\n"
+                             "DTSTAMP:20110101T120000Z\n"
                              "DTSTART;TZID=Standard Timezone:20120101T140000\n"
                              "DTEND;TZID=Standard Timezone:20120101T141000\n"
                              "SUMMARY:weekly Sunday Berlin\n"
@@ -6339,6 +6344,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 items->push_back(StringPrintf((pre +
                                                "BEGIN:VEVENT\n"
                                                "UID:weekly\n"
+                                               "DTSTAMP:20110101T120000Z\n"
                                                "DTSTART;TZID=Standard Timezone:2012" "%1$02d%2$02d" "T140000\n"
                                                "DTEND;TZID=Standard Timezone:2012" "%1$02d%2$02d" "T141000\n"
                                                "SUMMARY:2012-%1$02d-%2$02d %3$d. weekly Sunday Berlin\n"
