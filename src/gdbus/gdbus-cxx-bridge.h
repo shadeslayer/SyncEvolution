@@ -1368,6 +1368,29 @@ template <class T> class DBusMem : private boost::noncopyable
     operator bool () { return m_pointer != 0; }
 };
 
+ /**
+ * Helper class to append variant values into an iterator
+ */
+class append_visitor_dummy_type {};
+
+struct append_visitor : public boost::static_visitor<>
+{
+    DBusMessageIter &iter;
+    append_visitor(DBusMessageIter &i) : iter(i) {}
+    template <class V> void operator()(const V &v) const
+    {
+        DBusMessageIter sub;
+        if (!dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT,
+                                              dbus_traits<V>::getType().c_str(), &sub)) {
+            throw std::runtime_error("out of memory");
+        }
+        dbus_traits<V>::append(sub, v);
+        if (!dbus_message_iter_close_container(&iter, &sub)) {
+            throw std::runtime_error("out of memory");
+        }
+    }
+};
+
 /**
  * A boost::variant <V> maps to a dbus variant, only care about values of
  * type V but will not throw error if type is not matched, this is useful if
@@ -1398,6 +1421,11 @@ template <class V> struct dbus_traits <boost::variant <V> > : public dbus_traits
         V val;
         dbus_traits<V>::get (conn, msg, sub, val);
         value = val;
+    }
+
+    static void append(DBusMessageIter &iter, const boost::variant<V> &value)
+    {
+        boost::apply_visitor(append_visitor(iter), value);
     }
 
     typedef boost::variant<V> host_type;
@@ -1438,6 +1466,11 @@ template <class V1, class V2> struct dbus_traits <boost::variant <V1, V2> > : pu
         } else {
             //ignore unrecognized sub type in variant
         }
+    }
+
+    static void append(DBusMessageIter &iter, const boost::variant<V1, V2> &value)
+    {
+        boost::apply_visitor(append_visitor(iter), value);
     }
 
     typedef boost::variant<V1, V2> host_type;
