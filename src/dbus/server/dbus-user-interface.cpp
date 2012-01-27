@@ -73,7 +73,7 @@ string DBusUserInterface::askPassword(const string &passwordName,
     #ifdef USE_GNOME_KEYRING
     //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session
     //and Call
-    if(getenv("KDE_FULL_SESSION"))
+    if(!getenv("KDE_FULL_SESSION"))
       isKde=false;
     #endif
     if (isKde){
@@ -149,7 +149,7 @@ bool DBusUserInterface::savePassword(const string &passwordName,
     #ifdef USE_GNOME_KEYRING
     //When Both GNOME KEYRING and KWALLET are available, Check if this is a KDE Session
     //and Call
-    if(getenv("KDE_FULL_SESSION"))
+    if(!getenv("KDE_FULL_SESSION"))
       isKde=false;
     #endif
     if(isKde){

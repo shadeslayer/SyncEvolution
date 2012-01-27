@@ -1,13 +1,14 @@
 Getting started with Akonadi on Debian testing:
 aptitude install libakonadi-dev akonadi-server \
                  libqt4-dev kdepim-runtime \
+                 akonadiconsole \
                  kdepimlibs5-dev
 
 Controlling Akonadi server:
 akonadictl start/stop/restart
 
 Debugging Akonadi:
-akonadiconsole (from kdepim-runtime)
+akonadiconsole
 
 Configuring without Evolution and with Akonadi:
 <path>/syncevolution/configure --with-synthesis-src=<path>/libsynthesis \

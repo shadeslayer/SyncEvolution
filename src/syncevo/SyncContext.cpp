@@ -71,6 +71,18 @@ using namespace std;
 #include <synthesis/SDK_util.h>
 #include <synthesis/san.h>
 
+#ifdef USE_KDE_KWALLET
+#include <QtCore/QCoreApplication>
+#include <QtCore/QString>
+#include <QtCore/QLatin1String>
+#include <QtCore/QDebug>
+#include <QtDBus/QDBusConnection>
+
+#include <KApplication>
+#include <KAboutData>
+#include <KCmdLineArgs>
+#endif
+
 #include "test.h"
 
 #include <syncevo/declarations.h>
@@ -2780,6 +2792,44 @@ void SyncContext::initMain(const char *appname)
 
     // redirect glib logging into our own logging
     g_log_set_default_handler(Logger::glogFunc, NULL);
+#endif
+
+#ifdef USE_KDE_KWALLET
+    //QCoreApplication *app;
+    int argc = 1;
+    static char *argv[] = { const_cast<char *>(appname), NULL };
+    KAboutData aboutData(// The program name used internally.
+                         "syncevolution",
+                         // The message catalog name
+                         // If null, program name is used instead.
+                         0,
+                         // A displayable program name string.
+                         ki18n("SyncEvolution"),
+                         // The program version string.
+                         "1.0",
+                         // Short description of what the app does.
+                         ki18n("Lets Akonadi synchronize with a SyncML Peer"),
+                         // The license this code is released under
+                         KAboutData::License_GPL,
+                         // Copyright Statement
+                         ki18n("(c) 2010-12"),
+                         // Optional text shown in the About box.
+                         // Can contain any information desired.
+                         ki18n(""),
+                         // The program homepage string.
+                         "http://www.syncevolution.org/",
+                         // The bug report email address
+                         "syncevolution@syncevolution.org");
+
+    KCmdLineArgs::init(argc, argv, &aboutData);
+    if (!kapp) {
+        // Explicitly disable GUI mode in the KApplication.  Otherwise
+        // the whole binary will fail to run when there is no X11
+        // display.
+        new KApplication(false);
+        //To stop KApplication from spawning it's own DBus Service ... Will have to patch KApplication about this
+        QDBusConnection::sessionBus().unregisterService("org.syncevolution.syncevolution-"+QString::number(getpid()));
+    }
 #endif
 
     struct sigaction sa;

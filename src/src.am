@@ -255,7 +255,7 @@ CLIENT_LIB_TEST_FILES += $(TEST_FILES_GENERATED)
 
 src_client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(src_cppflags) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(QT_CPPFLAGS)
 src_client_test_CXXFLAGS = @CPPUNIT_CXXFLAGS@ $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(KEYRING_CFLAGS) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(filter-out -O2 -g -W -Wall, $(QT_CXXFLAGS)) $(SYNCEVO_WFLAGS)
-src_client_test_LDFLAGS = @CPPUNIT_LDFLAGS@ `nm src/syncevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-Wl,-u/'` $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(KEYRING_LIBS) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LDFLAGS)
+src_client_test_LDFLAGS = @CPPUNIT_LDFLAGS@ `nm src/syncevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-Wl,-u/'` $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(KEYRING_LIBS) $(KDE_KWALLET_LIBS) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LDFLAGS)
 src_client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LIBS)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test.

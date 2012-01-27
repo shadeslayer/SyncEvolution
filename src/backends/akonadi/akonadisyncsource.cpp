@@ -35,14 +35,7 @@
 
 #include <Akonadi/ServerManager>
 #include <Akonadi/Control>
-#include <KApplication>
-#include <KAboutData>
-#include <KCmdLineArgs>
 #include <kurl.h>
-
-#include <QtCore/QCoreApplication>
-#include <QtCore/QStringList>
-#include <QtDBus/QDBusConnection>
 
 #include <QtCore/QDebug>
 
@@ -72,46 +65,11 @@ bool AkonadiSyncSource::isEmpty()
 
 void AkonadiSyncSource::start()
 {
-    int argc = 1;
-    static const char *prog = "syncevolution";
-    static char *argv[] = { (char *)&prog, NULL };
-    //if (!qApp) {
-        //new QCoreApplication(argc, argv);
-    //}
-    KAboutData aboutData(// The program name used internally.
-                         "syncevolution",
-                         // The message catalog name
-                         // If null, program name is used instead.
-                         0,
-                         // A displayable program name string.
-                         ki18n("Syncevolution"),
-                         // The program version string.
-                         "1.0",
-                         // Short description of what the app does.
-                         ki18n("Lets Akonadi synchronize with a SyncML Peer"),
-                         // The license this code is released under
-                         KAboutData::License_GPL,
-                         // Copyright Statement
-                         ki18n("(c) 2010"),
-                         // Optional text shown in the About box.
-                         // Can contain any information desired.
-                         ki18n(""),
-                         // The program homepage string.
-                         "http://www.syncevolution.org/",
-                         // The bug report email address
-                         "syncevolution@syncevolution.org");
-
-    KCmdLineArgs::init(argc, argv, &aboutData);
-    if (!kapp) {
-        new KApplication;
-        //To stop KApplication from spawning it's own DBus Service ... Will have to patch KApplication about this
-        QDBusConnection::sessionBus().unregisterService("org.syncevolution.syncevolution-"+QString::number(getpid()));
-    }
     // Start The Akonadi Server if not already Running.
     if (!Akonadi::ServerManager::isRunning()) {
-        qDebug() << "Akonadi Server isn't running, and hence starting it.";
+        SE_LOG_DEBUG(NULL, NULL, "Akonadi Server isn't running, and hence starting it.");
         if (!Akonadi::Control::start()) {
-            qDebug() << "Couldn't Start Akonadi Server: hence the akonadi backend of syncevolution wont work ..";
+            SE_THROW("Couldn't Start Akonadi Server: hence the akonadi backend of syncevolution wont work ..");
         }
     }
 }
@@ -159,9 +117,29 @@ void AkonadiSyncSource::open()
     // otherwise the collection URL or a name
     string id = getDatabaseID();
 
-    // support selection by name and empty ID for default by using
-    // evolutionsource = akonadi:?collection=<number>
-    // invalid url=>invalid collection Error at runtime.
+    // hack for testing: use first resp. second database
+    if (boost::starts_with(id, "Test_")) {
+        Databases databases = getDatabases();
+        ssize_t index = -1;
+        if (boost::ends_with(id, "_1")) {
+            index = 0;
+        } else if (boost::ends_with(id, "_2")) {
+            index = 1;
+        }
+        if (index >= 0) {
+            if (databases.size() <= (size_t)index) {
+                SE_THROW("need two Akonadi resources for testing");
+            }
+            id = databases[index].m_uri;
+            SE_LOG_DEBUG(NULL, NULL, "testing Akonadi with %s", id.c_str());
+        }
+    }
+
+    if (!boost::starts_with(id, "akonadi:")) {
+        // TODO: support selection by name and empty ID for default
+        SE_THROW("database must be selected via database = akonadi:?collection=<number>");
+    }
+
     m_collection = Collection::fromUrl(KUrl(id.c_str()));
 }
 

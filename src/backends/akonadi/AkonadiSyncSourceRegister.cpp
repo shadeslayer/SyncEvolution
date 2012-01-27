@@ -342,6 +342,16 @@ namespace {
 }
 #endif
 
+static class vCard30Test : public RegisterSyncSourceTest {
+public:
+    vCard30Test() : RegisterSyncSourceTest("kde_contact", "eds_contact") {}
+
+    virtual void updateConfig(ClientTestConfig &config) const
+    {
+        config.m_type = "kde-contacts";
+    }
+} vCard30Test;
+
 static class iCal20Test : public RegisterSyncSourceTest {
 public:
     iCal20Test() : RegisterSyncSourceTest("kde_event", "eds_event") {}

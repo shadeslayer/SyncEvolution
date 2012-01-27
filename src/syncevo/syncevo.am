@@ -182,6 +182,7 @@ src_syncevo_libsyncevolution_la_LIBADD = \
   @GIO_LIBS@ \
   @GTHREAD_LIBS@ \
   @GLIB_LIBS@ \
+  $(KDE_KWALLET_LIBS) \
   $(SYNTHESIS_LIBS) \
   $(PCRECPP_LIBS) \
   $(TRANSPORT_LIBS) \

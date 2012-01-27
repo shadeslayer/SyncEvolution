@@ -498,7 +498,7 @@ then
   then
     KDEKWALLETFOUND=yes
     if ! test "$KDE_KWALLET_CFLAGS"; then
-      KDE_KWALLET_CFLAGS="-I`$KDE4_CONFIG --path include` -I`$KDE4_CONFIG --path include`/KDE -I`$QMAKE -query QT_INSTALL_HEADERS`"
+      KDE_KWALLET_CFLAGS="-I`$KDE4_CONFIG --path include` -I`$KDE4_CONFIG --path include`/KDE -I`$QMAKE -query QT_INSTALL_HEADERS` `pkg-config --cflags QtDBus`"
     fi
     if ! test "$KDE_KWALLET_LIBS"; then
       KDE_KWALLET_LIBS="-lkdeui -lkdecore `pkg-config --libs QtDBus`"

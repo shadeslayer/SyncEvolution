@@ -25,16 +25,6 @@ extern "C" {
 #endif
 
 #ifdef USE_KDE_KWALLET
-#include <QtCore/QCoreApplication>
-#include <QtCore/QString>
-#include <QtCore/QLatin1String>
-#include <QtCore/QDebug>
-#include <QtDBus/QDBusConnection>
-
-#include <KApplication>
-#include <KAboutData>
-#include <KCmdLineArgs>
-
 #include <kwallet.h>
 #endif
 
@@ -49,45 +39,6 @@ CmdlineSyncClient::CmdlineSyncClient(const string &server,
     SyncContext(server, doLogging),
     m_keyring(useKeyring)
 {
-#ifdef USE_KDE_KWALLET
-    //QCoreApplication *app;
-    int argc = 1;
-    static const char *prog = "syncevolution";
-    static char *argv[] = { (char *)&prog, NULL };
-    //if (!qApp) {
-        //new QCoreApplication(argc, argv);
-    //}
-    KAboutData aboutData(// The program name used internally.
-                         "syncevolution",
-                         // The message catalog name
-                         // If null, program name is used instead.
-                         0,
-                         // A displayable program name string.
-                         ki18n("Syncevolution"),
-                         // The program version string.
-                         "1.0",
-                         // Short description of what the app does.
-                         ki18n("Lets Akonadi synchronize with a SyncML Peer"),
-                         // The license this code is released under
-                         KAboutData::License_GPL,
-                         // Copyright Statement
-                         ki18n("(c) 2010"),
-                         // Optional text shown in the About box.
-                         // Can contain any information desired.
-                         ki18n(""),
-                         // The program homepage string.
-                         "http://www.syncevolution.org/",
-                         // The bug report email address
-                         "syncevolution@syncevolution.org");
-
-    KCmdLineArgs::init(argc, argv, &aboutData);
-    if (!kapp) {
-        new KApplication;
-        //To stop KApplication from spawning it's own DBus Service ... Will have to patch KApplication about this
-        QDBusConnection::sessionBus().unregisterService("org.syncevolution.syncevolution-"+QString::number(getpid()));
-
-    }
-#endif
 }
 /**
  * GNOME keyring distinguishes between empty and unset
@@ -187,7 +138,7 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
 #ifdef USE_GNOME_KEYRING
     // When both GNOME KEYRING and KWALLET are available, check if
     // this is a KDE Session and call
-    if (getenv("KDE_FULL_SESSION")) {
+    if (!getenv("KDE_FULL_SESSION")) {
         isKde = false;
     }
 #endif
