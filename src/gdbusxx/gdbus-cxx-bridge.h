@@ -1569,6 +1569,25 @@ template<class V> struct dbus_traits< std::vector<V> > : public dbus_traits_base
 };
 
 /**
+ * Helper class to append variant values into a builder
+ */
+class append_visitor_dummy_type {};
+
+template <class V1, class V2 = append_visitor_dummy_type> struct append_visitor : public boost::static_visitor<>
+{
+    GVariantBuilder &builder;
+    append_visitor(GVariantBuilder &b) : builder(b) {}
+    void operator()(const V1 &v) const
+    {
+        dbus_traits<V1>::append(builder, v);
+    }
+    void operator()(const V2 &v) const
+    {
+        dbus_traits<V2>::append(builder, v);
+    }
+};
+
+/**
  * A boost::variant <V> maps to a dbus variant, only care about values of
  * type V but will not throw error if type is not matched, this is useful if
  * application is interested on only a sub set of possible value types
@@ -1605,6 +1624,13 @@ template <class V> struct dbus_traits <boost::variant <V> > : public dbus_traits
 
         g_variant_unref(var);
         g_variant_unref(varVar);
+    }
+
+    static void append(GVariantBuilder &builder, const boost::variant<V> &value)
+    {
+        g_variant_builder_open(&builder, G_VARIANT_TYPE(getType().c_str()));
+        boost::apply_visitor(append_visitor<V>(builder), value);
+        g_variant_builder_close(&builder);
     }
 
     typedef boost::variant<V> host_type;
@@ -1655,6 +1681,13 @@ template <class V1, class V2> struct dbus_traits <boost::variant <V1, V2> > : pu
         }
         g_variant_unref(var);
         g_variant_unref(varVar);
+    }
+
+    static void append(GVariantBuilder &builder, const boost::variant<V1, V2> &value)
+    {
+        g_variant_builder_open(&builder, G_VARIANT_TYPE(getType().c_str()));
+        boost::apply_visitor(append_visitor<V1, V2>(builder), value);
+        g_variant_builder_close(&builder);
     }
 
     typedef boost::variant<V1, V2> host_type;
