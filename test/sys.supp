@@ -786,8 +786,44 @@
 {
    dbus_server_list
    Memcheck:Leak
-   fun:calloc
    ...
    fun:dbus_server_listen
    fun:*DBusServerCXX*listen*
+}
+
+# ==3390== 64 bytes in 2 blocks are possibly lost in loss record 1,748 of 3,335
+# ==3390==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==3390==    by 0x7478C69: g_malloc0 (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==3390==    by 0x85113A: setup_connection (mainloop.c:331)
+# ==3390==    by 0x8517E6: b_dbus_setup_server (mainloop.c:463)
+# ==3390==    by 0x8503C3: GDBusCXX::DBusServerCXX::listen(std::string const&, GDBusCXX::DBusErrorCXX*) (gdbus-cxx-bridge.cpp:83)
+# ==3390==    by 0x843AFF: SyncEvo::ForkExecParent::start() (ForkExec.cpp:81)
+# ==3390==    by 0x82F3F3: SyncEvo::LocalTransportAgent::start() (LocalTransportAgent.cpp:143)
+# ==3390==    by 0x7C0FDD: SyncEvo::SyncContext::createTransportAgent(void*) (SyncContext.cpp:1529)
+# ==3390==    by 0x524B5E: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&)::ClientTest::createTransportAgent() (SyncContext.h:645)
+# ==3390==    by 0x7BA77C: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3423)
+# ==3390==    by 0x7C02E4: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:3007)
+# ==3390==    by 0x52FB91: SyncEvo::TestEvolution::doSync(int const*, std::string const&, SyncEvo::SyncOptions const&) (client-test-app.cpp:431)
+# ==3390==    by 0x564D67: SyncEvo::SyncTests::doSync(SyncEvo::SyncOptions const&) (ClientTest.cpp:4997)
+# ==3390==    by 0x69A0E0: SyncEvo::SyncTests::doSync(char const*, SyncEvo::SyncOptions const&) (ClientTest.h:837)
+# ==3390==    by 0x55443A: SyncEvo::SyncTests::refreshClient(SyncEvo::SyncOptions) (ClientTest.h:842)
+# ==3390==    by 0x542922: SyncEvo::SyncTests::testItems() (ClientTest.cpp:3379)
+# ==3390==    by 0x6789749: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x677CC83: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x6785CC6: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x6790423: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x67894E7: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x6790049: CppUnit::TestResult::runTest(CppUnit::Test*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x6792472: CppUnit::TestRunner::run(CppUnit::TestResult&, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x6794FDA: CppUnit::TextTestRunner::run(std::string, bool, bool, bool) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==3390==    by 0x5200DD: main (client-test-main.cpp:290)
+# ==3390== 
+#
+# Probably a valid leak, but how to fix it in the (soon obsolete) code wasn't obvious.
+# Very generic rule to also catch some other, similar leaks.
+{
+   b_dbus_setup_server
+   Memcheck:Leak
+   ...
+   fun:b_dbus_setup_server
 }
