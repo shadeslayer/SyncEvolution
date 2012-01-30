@@ -1440,11 +1440,13 @@ template<class V> struct dbus_traits< DBusArray<V> > : public dbus_traits_base
 
     static void append(GVariantBuilder &builder, arg_type array)
     {
-        g_variant_builder_open(&builder, G_VARIANT_TYPE(getType().c_str()));
-        for(uint i = 0; i < array.first; ++i) {
-            g_variant_builder_add(&builder, getContainedType().c_str(), array.second[i]);
-        }
-        g_variant_builder_close(&builder);
+        g_variant_builder_add_value(&builder,
+                                    g_variant_new_from_data(G_VARIANT_TYPE(getType().c_str()),
+                                                            (gconstpointer)array.second,
+                                                            array.first,
+                                                            true, // data is trusted to be in serialized form
+                                                            NULL, NULL // no need to free data
+                                                            ));
     }
 };
 
