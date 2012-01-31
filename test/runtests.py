@@ -1007,6 +1007,11 @@ evolutiontest = SyncEvolutionTest("evolution", compile,
                                   "", options.shell,
                                   "Client::Source SyncEvolution",
                                   [],
+                                  "CLIENT_TEST_FAILURES="
+                                  "Client::Source::kde_.*::testDelete404,"
+                                  "Client::Source::kde_.*::testImport.*,"
+                                  "Client::Source::kde_.*::testRemoveProperties,"
+                                  " "
                                   "CLIENT_TEST_SKIP="
                                   "Client::Source::file_event::LinkedItemsDefault::testLinkedItemsInsertBothUpdateChildNoIDs,"
                                   "Client::Source::file_event::LinkedItemsDefault::testLinkedItemsUpdateChildNoIDs,"
