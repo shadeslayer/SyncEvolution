@@ -225,6 +225,9 @@ void AkonadiSyncSource::readItem(const std::string &luid, std::string &data, boo
     ItemFetchJob *fetchJob = new ItemFetchJob(Item(syncItemId));
     fetchJob->fetchScope().fetchFullPayload();
     if (fetchJob->exec()) {
+        if (fetchJob->items().empty()) {
+            throwError(STATUS_NOT_FOUND, string("extracting item ") + luid);
+        }
         QByteArray payload = fetchJob->items().first().payloadData();
         data.assign(payload.constData(),
                     payload.size());
