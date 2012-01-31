@@ -358,15 +358,23 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
     }
 
     const SourceRegistry &registry(getSourceRegistry());
+    SyncSource *source = NULL;
     BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
-        SyncSource *source = sourceInfos->m_create(params);
-        if (source) {
+        SyncSource *nextSource = sourceInfos->m_create(params);
+        if (nextSource) {
+            if (source) {
+                SyncContext::throwError(params.getDisplayName() + ": backend " + sourceType.m_backend +
+                                        " is ambiguous, avoid the alias and pick a specific backend instead directly");
+            }
             if (source == RegisterSyncSource::InactiveSource) {
                 SyncContext::throwError(params.getDisplayName() + ": access to " + sourceInfos->m_shortDescr +
                                         " not enabled");
             }
-            return source;
+            source = nextSource;
         }
+    }
+    if (source) {
+        return source;
     }
 
     if (error) {
