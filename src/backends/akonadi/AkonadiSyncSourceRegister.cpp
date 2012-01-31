@@ -35,7 +35,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
     
     
     isMe = sourceType.m_backend == "KDE Address Book";
-    if (isMe || sourceType.m_backend == "addressbook") {
+    if (isMe /* || sourceType.m_backend == "addressbook" */) {
         if (sourceType.m_format == "" || sourceType.m_format == "text/vcard" 
                 || sourceType.m_format == "text/x-vcard") { 
             return
@@ -51,7 +51,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
     }
 
     isMe = sourceType.m_backend == "KDE Task List";
-    if (isMe || sourceType.m_backend == "todo") {
+    if (isMe /* || sourceType.m_backend == "todo" */) {
         if (sourceType.m_format == "" || sourceType.m_format == "text/calendar" 
                 || sourceType.m_format == "text/x-vcalendar") { 
             return
@@ -67,7 +67,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
     }
 
     isMe = sourceType.m_backend == "KDE Memos";
-    if (isMe || sourceType.m_backend == "memo") {
+    if (isMe /* || sourceType.m_backend == "memo" */) {
         if (sourceType.m_format == "" || sourceType.m_format == "text/plain") {
             return
 #ifdef ENABLE_AKONADI
@@ -82,7 +82,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
     }
 
     isMe = sourceType.m_backend == "KDE Calendar";
-    if (isMe || sourceType.m_backend == "calendar") {
+    if (isMe /* || sourceType.m_backend == "calendar" */) {
         if (sourceType.m_format == "" || sourceType.m_format == "text/calendar" ||
             sourceType.m_format == "text/x-vcalendar" /* this is for backwards compatibility with broken configs */ ) {
             return
@@ -133,9 +133,9 @@ static RegisterSyncSource registerMe("KDE Contact/Calendar/Task List/Memos",
 class AkonadiTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(AkonadiTest);
     CPPUNIT_TEST(testInstantiate);
-    CPPUNIT_TEST(testOpenDefaultCalendar);
-    CPPUNIT_TEST(testOpenDefaultTodo);
-    CPPUNIT_TEST(testOpenDefaultMemo);
+    // CPPUNIT_TEST(testOpenDefaultCalendar);
+    // CPPUNIT_TEST(testOpenDefaultTodo);
+    // CPPUNIT_TEST(testOpenDefaultMemo);
     CPPUNIT_TEST(testTimezones);
     CPPUNIT_TEST_SUITE_END();
 
@@ -148,52 +148,53 @@ protected:
 
     void testInstantiate() {
         boost::shared_ptr<SyncSource> source;
-        source.reset(SyncSource::createTestingSource("addressbook", "addressbook", true));
-        source.reset(SyncSource::createTestingSource("addressbook", "contacts", true));
+        // source.reset(SyncSource::createTestingSource("addressbook", "addressbook", true));
+        // source.reset(SyncSource::createTestingSource("addressbook", "contacts", true));
         source.reset(SyncSource::createTestingSource("addressbook", "kde-contacts", true));
         source.reset(SyncSource::createTestingSource("addressbook", "KDE Contacts", true));
         source.reset(SyncSource::createTestingSource("addressbook", "KDE Address Book:text/x-vcard", true));
         source.reset(SyncSource::createTestingSource("addressbook", "KDE Address Book:text/vcard", true));
 
 
-        source.reset(SyncSource::createTestingSource("calendar", "calendar", true));
+        // source.reset(SyncSource::createTestingSource("calendar", "calendar", true));
         source.reset(SyncSource::createTestingSource("calendar", "kde-calendar", true));
         source.reset(SyncSource::createTestingSource("calendar", "KDE Calendar:text/calendar", true));
 
-        source.reset(SyncSource::createTestingSource("calendar", "tasks", true));
-        source.reset(SyncSource::createTestingSource("calendar", "kde-tasks", true));
-        source.reset(SyncSource::createTestingSource("calendar", "KDE Tasks", true));
-        source.reset(SyncSource::createTestingSource("calendar", "KDE Task List:text/calendar", true));
+        // source.reset(SyncSource::createTestingSource("tasks", "tasks", true));
+        source.reset(SyncSource::createTestingSource("tasks", "kde-tasks", true));
+        source.reset(SyncSource::createTestingSource("tasks", "KDE Tasks", true));
+        source.reset(SyncSource::createTestingSource("tasks", "KDE Task List:text/calendar", true));
 
-        source.reset(SyncSource::createTestingSource("calendar", "memos", true));
-        source.reset(SyncSource::createTestingSource("calendar", "kde-memos", true));
-        source.reset(SyncSource::createTestingSource("calendar", "KDE Memos:text/plain", true));
-        source.reset(SyncSource::createTestingSource("calendar", "KDE Memos:text/calendar", true));
+        // source.reset(SyncSource::createTestingSource("memos", "memos", true));
+        source.reset(SyncSource::createTestingSource("memos", "kde-memos", true));
+        source.reset(SyncSource::createTestingSource("memos", "KDE Memos:text/plain", true));
     }
 
-    void testOpenDefaultAddressBook() {
-        boost::shared_ptr<TestingSyncSource> source;
-        source.reset((TestingSyncSource *)SyncSource::createTestingSource("contacts", "kde-contacts", true, NULL));
-        CPPUNIT_ASSERT_NO_THROW(source->open());
-    }
+    // TODO: support default databases
 
-    void testOpenDefaultCalendar() {
-        boost::shared_ptr<TestingSyncSource> source;
-        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "kde-calendar", true, NULL));
-        CPPUNIT_ASSERT_NO_THROW(source->open());
-    }
+    // void testOpenDefaultAddressBook() {
+    //     boost::shared_ptr<TestingSyncSource> source;
+    //     source.reset((TestingSyncSource *)SyncSource::createTestingSource("contacts", "kde-contacts", true, NULL));
+    //     CPPUNIT_ASSERT_NO_THROW(source->open());
+    // }
 
-    void testOpenDefaultTodo() {
-        boost::shared_ptr<TestingSyncSource> source;
-        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "kde-tasks", true, NULL));
-        CPPUNIT_ASSERT_NO_THROW(source->open());
-    }
+    // void testOpenDefaultCalendar() {
+    //     boost::shared_ptr<TestingSyncSource> source;
+    //     source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "kde-calendar", true, NULL));
+    //     CPPUNIT_ASSERT_NO_THROW(source->open());
+    // }
 
-    void testOpenDefaultMemo() {
-        boost::shared_ptr<TestingSyncSource> source;
-        source.reset((TestingSyncSource *)SyncSource::createTestingSource("calendar", "kde-memos", true, NULL));
-        CPPUNIT_ASSERT_NO_THROW(source->open());
-    }
+    // void testOpenDefaultTodo() {
+    //     boost::shared_ptr<TestingSyncSource> source;
+    //     source.reset((TestingSyncSource *)SyncSource::createTestingSource("tasks", "kde-tasks", true, NULL));
+    //     CPPUNIT_ASSERT_NO_THROW(source->open());
+    // }
+
+    // void testOpenDefaultMemo() {
+    //     boost::shared_ptr<TestingSyncSource> source;
+    //     source.reset((TestingSyncSource *)SyncSource::createTestingSource("memos", "kde-memos", true, NULL));
+    //     CPPUNIT_ASSERT_NO_THROW(source->open());
+    // }
 
     void testTimezones() {
         const char *prefix = getenv("CLIENT_TEST_EVOLUTION_PREFIX");
