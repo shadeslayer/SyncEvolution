@@ -11,11 +11,14 @@
 #
 # Additional valgrind parameters can be passed in the VALGRIND_ARGS
 # environment variable. The log file can be chosen via VALGRIND_LOG,
-# with valgrind.<pid of shell>.out as default.
+# with valgrind.<pid of shell>.<current process>.out as default.
 
-LOGFILE=${VALGRIND_LOG:-valgrind.$$.out}
 
-trap "if [ -f $LOGFILE ]; then cat $LOGFILE >&2; rm $LOGFILE; fi" EXIT
+LOGPARAM=${VALGRIND_LOG:-valgrind.p$$.c%p.out}
+# more than one file might get written
+LOGFILES=${VALGRIND_LOG:-valgrind.p$$.*.out}
+
+trap "cat $LOGFILES >&2 2>/dev/null; rm -f $LOGFILES" EXIT
 
 killvalgrind () {
     # killall did not always find valgrind when evolution-data-server-2.22 forked?!
@@ -27,7 +30,7 @@ killvalgrind () {
 }
 
 ( set +x; echo "*** starting $1 under valgrind, output to ${VALGRIND_CMD_LOG:-stdout}" )
-( set -x; if [ "$VALGRIND_CMD_LOG" ]; then exec >>"$VALGRIND_CMD_LOG" 2>&1; fi; exec env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --gen-suppressions=all --log-file=$LOGFILE "$@" $OUTPUT 2>&1 ) &
+( set -x; if [ "$VALGRIND_CMD_LOG" ]; then exec >>"$VALGRIND_CMD_LOG" 2>&1; fi; exec env GLIBCXX_FORCE_NEW=1 G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind $VALGRIND_ARGS --gen-suppressions=all --log-file=$LOGPARAM "$@" $OUTPUT 2>&1 ) &
 VALGRIND_PID=$!
 
 intvalgrind () {
@@ -118,23 +121,38 @@ killvalgrind -9
 # 100 is returned by Perl either way because of the Cond error in the main process.
 #
 
+SUBRET=0
+for i in $LOGFILES; do
 perl \
     -e '$onlyfirst = $ENV{VALGRIND_LEAK_CHECK_ONLY_FIRST};' \
+    -e '@leakskip = split(/,/, $ENV{VALGRIND_LEAK_CHECK_SKIP});' \
+    -e '%skippids = {};' \
     -e '$ret = 0;' \
     -e '$pid = 0;' \
     -e '$skipping = 0;' \
     -e 'while (<>) {' \
-    -e '   if (/^==(\d*)==/) {'\
+    -e '   if (/^==(\d*)== Command: (.*)/) {' \
+    -e '      $newpid = $1; $command = $2;' \
+    -e '      foreach $pattern (@leakskip) {' \
+    -e '         if ($command =~ /$pattern/) {' \
+    -e '             $skippids{$newpid} = 1;' \
+    -e '             last;' \
+    -e '         }' \
+    -e '      }' \
+    -e '   } elsif (/^==(\d*)==/) {'\
     -e '      $newpid = $1;' \
     -e '   } else {' \
     -e '      $newpid = 0;' \
     -e '   }' \
-    -e '   if ($skipping && $pid == $newpid) {' \
+    -e '   if ($newpid && ($skipping == 1 && $pid == $newpid || $skipping == 2 && !$skippids{$newpid})) {' \
     -e '      $skipping = 0;' \
     -e '   }' \
     -e '   if (!$skipping) {' \
     -e '      $pid = $newpid unless $pid;' \
-    -e '      if ($onlyfirst && $newpid && $pid != $newpid && /(possibly|indirectly) lost in loss record/) {' \
+    -e '      $ispotential = /(possibly|indirectly) lost in loss record/;' \
+    -e '      if ($newpid && $skippids{$newpid} && $ispotential) {' \
+    -e '         $skipping = 2;' \
+    -e '      } elsif ($newpid && $onlyfirst && $pid != $newpid && $ispotential) {' \
     -e '         $skipping = 1;' \
     -e '      } else {' \
     -e '         print;' \
@@ -145,8 +163,12 @@ perl \
     -e '   }' \
     -e '}' \
     -e 'exit $ret;' \
-    $LOGFILE
-SUBRET=$?
+    $i
+    SUBSUBRET=$?
+    if [ $SUBRET -eq 0 ]; then
+       SUBRET=$SUBSUBRET
+    fi
+done
 
 # bad valgrind log result always overrides normal completion status:
 # that way the valgrind errors also show up in the nightly test summary
@@ -155,7 +177,7 @@ if [ $SUBRET -ne 0 ]; then
     RET=$SUBRET
     echo valgrindcheck: "$@": log analysis overrides return code $RET with $SUBRET >&2
 fi
-rm $LOGFILE
+rm $LOGFILES
 
 echo valgrindcheck: "$@": final result $RET >&2
 exit $RET
