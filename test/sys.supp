@@ -827,3 +827,245 @@
    ...
    fun:b_dbus_setup_server
 }
+
+### KDE ###
+
+# ==21052== 1,040 bytes in 26 blocks are possibly lost in loss record 5,184 of 5,271
+# ==21052==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==21052==    by 0x6E13E80: QListData::detach_grow(int*, int) (in /usr/lib/libQtCore.so.4.7.3)
+# ==21052==    by 0x66C2028: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x677656A: KStandardDirs::addResourceType(char const*, char const*, QString const&, bool) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x6776E16: KStandardDirs::addKDEDefaults() (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x676E9E4: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x676F03F: KComponentData::config() const (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x676C2F5: KGlobal::config() (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x67EF05A: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x684285B: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x67EB637: KLocale::KLocale(QString const&, KSharedPtr<KSharedConfig>) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x676CE35: KGlobal::locale() (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x61EB01D: ??? (in /usr/lib/libkdeui.so.5.6.0)
+# ==21052==    by 0x61EBF57: KApplication::KApplication(bool) (in /usr/lib/libkdeui.so.5.6.0)
+# ==21052==    by 0x7C440E: SyncEvo::SyncContext::initMain(char const*) (SyncContext.cpp:2829)
+# ==21052==    by 0x52B95C: SyncEvo::RegisterTestEvolution::RegisterTestEvolution() (client-test-app.cpp:573)
+# ==21052==    by 0x526758: _GLOBAL__sub_I_client_test_app.cpp (client-test-app.cpp:589)
+# ==21052==    by 0x96774C: __libc_csu_init (in /data/runtests/work/testing-amd64/build/src/client-test)
+# ==21052==    by 0xA323E3F: (below main) (libc-start.c:187)
+# ==21052== 
+{
+   KApplication + malloc
+   Memcheck:Leak
+   ...
+   fun:*KApplication*
+   fun:*SyncContext*initMain*
+}
+{
+   Qt + malloc
+   Memcheck:Leak
+   ...
+   obj:*libQtCore*
+}
+
+# ==21052== 30,404 bytes in 414 blocks are possibly lost in loss record 5,268 of 5,271
+# ==21052==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==21052==    by 0x6E3786A: QString::QString(QChar const*, int) (in /usr/lib/libQtCore.so.4.7.3)
+# ==21052==    by 0x6E38C3A: QString::mid(int, int) const (in /usr/lib/libQtCore.so.4.7.3)
+# ==21052==    by 0x682D606: KStringHandler::perlSplit(QRegExp const&, QString const&, int) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x6718C21: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x6719E45: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x671A1CC: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x671AA1D: KSystemTimeZones::readZone(QString const&) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21052==    by 0x18342945: KCalCore::ICalTimeZoneSource::standardZone(QString const&, bool) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x1832DDCE: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x1832DF7E: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x1833743C: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x18337EC5: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x18338CBE: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x183270BA: KCalCore::ICalFormat::fromRawString(QSharedPointer<KCalCore::Calendar> const&, QByteArray const&, bool, QString const&) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x18326B5F: KCalCore::ICalFormat::fromString(QSharedPointer<KCalCore::Calendar> const&, QString const&, bool, QString const&) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x1832B8BD: KCalCore::ICalFormat::fromString(QString const&) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21052==    by 0x17E6B7F6: ??? (in /usr/lib/kde4/akonadi_serializer_kcalcore.so)
+# ==21052==    by 0x538EE31: ??? (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==21052==    by 0x538F465: ??? (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==21052==    by 0x537B1C8: Akonadi::Item::setPayloadFromData(QByteArray const&) (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==21052==    by 0x6E0C62: SyncEvo::AkonadiSyncSource::insertItem(std::string const&, std::string const&, bool) (akonadisyncsource.cpp:175)
+# ==21052==    by 0x8342FF: SyncEvo::TrackingSyncSource::insertItemRaw(std::string const&, std::string const&) (TrackingSyncSource.cpp:151)
+# ==21052==    by 0x6C2A24: SyncEvo::AkonadiTest::testTimezones() (AkonadiSyncSourceRegister.cpp:145)
+# ==21052==    by 0x7E4C749: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==21052==    by 0x7E3FC83: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==21052==    by 0x7E48CC6: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==21052==    by 0x7E53423: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==21052==    by 0x7E4C4E7: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==21052==    by 0x7E4CC22: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==21052== 
+{
+   Akonadi leaks
+   Memcheck:Leak
+   ...
+   fun:*Akonadi*
+}
+
+# ==21829== 66 bytes in 1 blocks are possibly lost in loss record 2,504 of 5,276
+# ==21829==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==21829==    by 0x6E39682: QString::fromLatin1_helper(char const*, int) (in /usr/lib/libQtCore.so.4.7.3)
+# ==21829==    by 0x6E3978D: QString::fromLatin1(char const*, int) (in /usr/lib/libQtCore.so.4.7.3)
+# ==21829==    by 0x6F0B142: ??? (in /usr/lib/libQtCore.so.4.7.3)
+# ==21829==    by 0x6E397F1: QString::fromLocal8Bit(char const*, int) (in /usr/lib/libQtCore.so.4.7.3)
+# ==21829==    by 0x6E727A4: ??? (in /usr/lib/libQtCore.so.4.7.3)
+# ==21829==    by 0x6E72C49: QFile::decodeName(QByteArray const&) (in /usr/lib/libQtCore.so.4.7.3)
+# ==21829==    by 0x676FDBD: KStandardDirs::realPath(QString const&) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x67785C7: KStandardDirs::saveLocation(char const*, QString const&, bool) const (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x6778C57: KStandardDirs::locateLocal(char const*, QString const&, bool, KComponentData const&) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x6778CC0: KStandardDirs::locateLocal(char const*, QString const&, KComponentData const&) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x6743120: KTemporaryFile::KTemporaryFile(KComponentData const&) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x684459E: KLockFile::lock(QFlags<KLockFile::LockFlag>) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x677B148: KToolInvocation::startKdeinit() (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x677B51F: KToolInvocation::klauncher() (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x6719FB4: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x671A1CC: ??? (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x671AA1D: KSystemTimeZones::readZone(QString const&) (in /usr/lib/libkdecore.so.5.6.0)
+# ==21829==    by 0x18342945: KCalCore::ICalTimeZoneSource::standardZone(QString const&, bool) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x1832DDCE: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x1832DF7E: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x1833743C: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x18337EC5: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x18338CBE: ??? (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x183270BA: KCalCore::ICalFormat::fromRawString(QSharedPointer<KCalCore::Calendar> const&, QByteArray const&, bool, QString const&) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x18326B5F: KCalCore::ICalFormat::fromString(QSharedPointer<KCalCore::Calendar> const&, QString const&, bool, QString const&) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x1832B8BD: KCalCore::ICalFormat::fromString(QString const&) (in /usr/lib/libkcalcore.so.4.6.0)
+# ==21829==    by 0x17E6B7F6: ??? (in /usr/lib/kde4/akonadi_serializer_kcalcore.so)
+# ==21829==    by 0x538EE31: ??? (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==21829==    by 0x538F465: ??? (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==21829== 
+{
+   kcalcore leaks
+   Memcheck:Leak
+   ...
+   obj:*libkcalcore*
+}
+
+# ==22290== Invalid read of size 4
+# ==22290==    at 0x1224B673: ??? (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x1224D9D4: FcConfigFilename (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260895: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260F5D: ??? (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x92CEAAB: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CF8A0: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CC77B: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CE10A: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92D16B1: XML_ParseBuffer (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x122609F0: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260CF7: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260F5D: ??? (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x92CEAAB: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CF8A0: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CC77B: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CE10A: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92D16B1: XML_ParseBuffer (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x122609F0: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12256246: FcInitLoadConfig (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12256325: FcInitLoadConfigAndFonts (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12256524: FcInit (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0xBE2CF69: ??? (in /usr/lib/libQtGui.so.4.7.3)
+# ==22290==    by 0xBDBAB53: QApplicationPrivate::construct(_XDisplay*, unsigned long, unsigned long) (in /usr/lib/libQtGui.so.4.7.3)
+# ==22290==    by 0xBDBB2A7: QApplication::QApplication(int&, char**, bool, int) (in /usr/lib/libQtGui.so.4.7.3)
+# ==22290==    by 0x61EBE36: KApplication::KApplication(bool) (in /usr/lib/libkdeui.so.5.6.0)
+# ==22290==    by 0x7C440E: SyncEvo::SyncContext::initMain(char const*) (SyncContext.cpp:2829)
+# ==22290==    by 0x52B95C: SyncEvo::RegisterTestEvolution::RegisterTestEvolution() (client-test-app.cpp:573)
+# ==22290==    by 0x526758: _GLOBAL__sub_I_client_test_app.cpp (client-test-app.cpp:589)
+# ==22290==    by 0x96774C: __libc_csu_init (in /data/runtests/work/testing-amd64/build/src/client-test)
+# ==22290==    by 0xA323E3F: (below main) (libc-start.c:187)
+# ==22290==  Address 0x14d1fea4 is 20 bytes inside a block of size 22 alloc'd
+# ==22290==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==22290==    by 0x1224B5CC: ??? (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x1224D9D4: FcConfigFilename (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260895: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260F5D: ??? (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x92CEAAB: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CF8A0: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CC77B: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CE10A: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92D16B1: XML_ParseBuffer (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x122609F0: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260CF7: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12260F5D: ??? (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x92CEAAB: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CF8A0: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CC77B: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92CE10A: ??? (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x92D16B1: XML_ParseBuffer (in /lib/x86_64-linux-gnu/libexpat.so.1.5.2)
+# ==22290==    by 0x122609F0: FcConfigParseAndLoad (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12256246: FcInitLoadConfig (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12256325: FcInitLoadConfigAndFonts (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0x12256524: FcInit (in /usr/lib/x86_64-linux-gnu/libfontconfig.so.1.4.4)
+# ==22290==    by 0xBE2CF69: ??? (in /usr/lib/libQtGui.so.4.7.3)
+# ==22290==    by 0xBDBAB53: QApplicationPrivate::construct(_XDisplay*, unsigned long, unsigned long) (in /usr/lib/libQtGui.so.4.7.3)
+# ==22290==    by 0xBDBB2A7: QApplication::QApplication(int&, char**, bool, int) (in /usr/lib/libQtGui.so.4.7.3)
+# ==22290==    by 0x61EBE36: KApplication::KApplication(bool) (in /usr/lib/libkdeui.so.5.6.0)
+# ==22290==    by 0x7C440E: SyncEvo::SyncContext::initMain(char const*) (SyncContext.cpp:2829)
+# ==22290==    by 0x52B95C: SyncEvo::RegisterTestEvolution::RegisterTestEvolution() (client-test-app.cpp:573)
+# ==22290==    by 0x526758: _GLOBAL__sub_I_client_test_app.cpp (client-test-app.cpp:589)
+# ==22290==    by 0x96774C: __libc_csu_init (in /data/runtests/work/testing-amd64/build/src/client-test)
+# ==22290== 
+{
+   Qt + fontconfig
+   Memcheck:Addr4
+   obj:*libfontconfig*
+}
+{
+   memory leaks in fontconfig
+   Memcheck:Leak
+   ...
+   obj:*libfontconfig*
+}
+
+# ==10153== Conditional jump or move depends on uninitialised value(s)
+# ==10153==    at 0x9758290: inflateReset2 (in /usr/lib/libz.so.1.2.3.4)
+# ==10153==    by 0x975837F: inflateInit2_ (in /usr/lib/libz.so.1.2.3.4)
+# ==10153==    by 0x126A2120: png_create_read_struct_2 (in /lib/x86_64-linux-gnu/libpng12.so.0.46.0)
+# ==10153==    by 0x126A22C6: png_create_read_struct (in /lib/x86_64-linux-gnu/libpng12.so.0.46.0)
+# ==10153==    by 0xBEA66F6: ??? (in /usr/lib/libQtGui.so.4.7.3)
+# ==10153==    by 0xBEA7414: ??? (in /usr/lib/libQtGui.so.4.7.3)
+# ==10153==    by 0xBE78FD7: QImageReader::read(QImage*) (in /usr/lib/libQtGui.so.4.7.3)
+# ==10153==    by 0xBE79606: QImageReader::read() (in /usr/lib/libQtGui.so.4.7.3)
+# ==10153==    by 0xBE69A7D: QImage::fromData(unsigned char const*, int, char const*) (in /usr/lib/libQtGui.so.4.7.3)
+# ==10153==    by 0xBE6EA3F: QImage::loadFromData(unsigned char const*, int, char const*) (in /usr/lib/libQtGui.so.4.7.3)
+# ==10153==    by 0x17CCFAC0: KABC::VCardTool::parsePicture(KABC::VCardLine const&) const (in /usr/lib/libkabc.so.4.6.0)
+# ==10153==    by 0x17CD83A5: KABC::VCardTool::parseVCards(QByteArray const&) const (in /usr/lib/libkabc.so.4.6.0)
+# ==10153==    by 0x17CCEA09: KABC::VCardConverter::parseVCards(QByteArray const&) const (in /usr/lib/libkabc.so.4.6.0)
+# ==10153==    by 0x17CCEA5C: KABC::VCardConverter::parseVCard(QByteArray const&) const (in /usr/lib/libkabc.so.4.6.0)
+# ==10153==    by 0x17A69E31: ??? (in /usr/lib/kde4/akonadi_serializer_addressee.so)
+# ==10153==    by 0x538EE31: ??? (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==10153==    by 0x538F465: ??? (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==10153==    by 0x537B1C8: Akonadi::Item::setPayloadFromData(QByteArray const&) (in /usr/lib/libakonadi-kde.so.4.6.0)
+# ==10153==    by 0x6E0C62: SyncEvo::AkonadiSyncSource::insertItem(std::string const&, std::string const&, bool) (akonadisyncsource.cpp:175)
+# ==10153==    by 0x83443F: SyncEvo::TrackingSyncSource::insertItemRaw(std::string const&, std::string const&) (TrackingSyncSource.cpp:151)
+# ==10153==    by 0x569099: SyncEvo::importItem(SyncEvo::TestingSyncSource*, SyncEvo::ClientTestConfig const&, std::string&) (ClientTest.cpp:299)
+# ==10153==    by 0x56F4E9: SyncEvo::ClientTest::import(SyncEvo::ClientTest&, SyncEvo::TestingSyncSource&, SyncEvo::ClientTestConfig const&, std::string const&, std::string&, std::list<std::string, std::allocator<std::string> >*) (ClientTest.cpp:5223)
+# ==10153==    by 0x6A05F9: boost::detail::function::function_invoker6<std::string (*)(SyncEvo::ClientTest&, SyncEvo::TestingSyncSource&, SyncEvo::ClientTestConfig const&, std::string const&, std::string&, std::list<std::string, std::allocator<std::string> >*), std::string, SyncEvo::ClientTest&, SyncEvo::TestingSyncSource&, SyncEvo::ClientTestConfig const&, std::string const&, std::string&, std::list<std::string, std::allocator<std::string> >*>::invoke(boost::detail::function::function_buffer&, SyncEvo::ClientTest&, SyncEvo::TestingSyncSource&, SyncEvo::ClientTestConfig const&, std::string const&, std::string&, std::list<std::string, std::allocator<std::string> >*) (function_template.hpp:95)
+# ==10153==    by 0x5FF153: SyncEvo::LocalTests::testImport() (function_template.hpp:1013)
+# ==10153==    by 0x7E4C749: CppUnit::TestCaseMethodFunctor::operator()() const (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==10153==    by 0x7E3FC83: CppUnit::DefaultProtector::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==10153==    by 0x7E48CC6: CppUnit::ProtectorChain::protect(CppUnit::Functor const&, CppUnit::ProtectorContext const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==10153==    by 0x7E53423: CppUnit::TestResult::protect(CppUnit::Functor const&, CppUnit::Test*, std::string const&) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==10153==    by 0x7E4C4E7: CppUnit::TestCase::run(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==10153==    by 0x7E4CC22: CppUnit::TestComposite::doRunChildTests(CppUnit::TestResult*) (in /usr/lib/libcppunit-1.12.so.1.0.0)
+# ==10153== 
+{
+   png + Qt GUI
+   Memcheck:Cond
+   ...
+   fun:png_create_*
+   ...
+   obj:*libQtGui.so*
+}
+
+# ==8627== 840 bytes in 28 blocks are possibly lost in loss record 574 of 681
+# ==8627==    at 0x48DB796: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+# ==8627==    by 0x95AED52: ??? (in /lib/i386-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==8627== 
+{
+   glib leak i386
+   Memcheck:Leak
+   fun:calloc
+   obj:/lib/i386-linux-gnu/libglib-2.0.so.0.3000.2
+}
