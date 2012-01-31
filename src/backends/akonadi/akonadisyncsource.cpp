@@ -289,3 +289,7 @@ TrackingSyncSource::InsertItemResult AkonadiMemoSource::insertItem(const std::st
 
 SE_END_CXX
 #endif // ENABLE_AKONADI
+
+#ifdef ENABLE_MODULES
+# include "AkonadiSyncSourceRegister.cpp"
+#endif
