@@ -1677,9 +1677,18 @@ void SyncContext::displaySourceProgress(sysync::TProgressEventEnum type,
                 }
                 break;
             }
-            source.recordFinalSyncMode(SyncMode(mode));
-            source.recordFirstSync(extra1 == 2);
-            source.recordResumeSync(extra2 == 1);
+            if (source.getFinalSyncMode() == SYNC_NONE) {
+                source.recordFinalSyncMode(SyncMode(mode));
+                source.recordFirstSync(extra1 == 2);
+                source.recordResumeSync(extra2 == 1);
+            } else if (SyncMode(mode) != SYNC_NONE) {
+                // may happen when the source is used in multiple
+                // SyncML sessions; only remember the initial sync
+                // mode in that case and count all following syncs
+                // (they should only finish the work of the initial
+                // one)
+                source.recordRestart();
+            }
         } else {
             SE_LOG_INFO(NULL, NULL, "%s: restore from backup", source.getDisplayName().c_str());
             source.recordFinalSyncMode(SYNC_RESTORE_FROM_BACKUP);
