@@ -113,17 +113,17 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
         xmlstream <<
             "      <plugin_earlystartdataread>yes</plugin_earlystartdataread>\n";
     }
+    if (info.m_readOnly) {
+         xmlstream <<
+             "      <!-- if this is set to 'yes', SyncML clients can only read\n"
+             "           from the database, but make no modifications -->\n"
+             "      <readonly>yes</readonly>\n";
+    }
     xmlstream <<
         "      <plugin_datastoreadmin>" <<
         (serverModeEnabled() ? "yes" : "no") <<
         "</plugin_datastoreadmin>\n"
         "      <fromremoteonlysupport> yes </fromremoteonlysupport>\n"
-        "\n"
-        "      <!-- General datastore settings for all DB types -->\n"
-        "\n"
-        "      <!-- if this is set to 'yes', SyncML clients can only read\n"
-        "           from the database, but make no modifications -->\n"
-        "      <readonly>no</readonly>\n"
         "\n"
         "      <!-- conflict strategy: Newer item wins\n"
         "           You can set 'server-wins' or 'client-wins' as well\n"

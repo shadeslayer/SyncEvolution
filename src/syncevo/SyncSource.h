@@ -1061,6 +1061,14 @@ class SyncSourceBase : public Logger {
          * See SyncSourceSession::beginSync for further comments.
          */
         Bool m_earlyStartDataRead;
+
+        /**
+         * If true, then the storage is considered read-only by the
+         * engine. All write requests by the peer will be silently
+         * discarded. This is necessary for slow syncs, where the peer
+         * might send back modified items.
+         */
+        Bool m_readOnly;
     };
 
     /**
