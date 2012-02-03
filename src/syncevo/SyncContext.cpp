@@ -2428,6 +2428,7 @@ void SyncContext::getConfigXML(string &xml, string &configname)
             debug << "<xmltranslate>" << (loglevel >= 4 ? "yes" : "no") << "</xmltranslate>\n";
             if (loglevel >= 3) {
                 debug <<
+                    "    <sourcelink>doxygen</sourcelink>\n"
                     "    <enable option=\"all\"/>\n"
                     "    <enable option=\"userdata\"/>\n"
                     "    <enable option=\"scripts\"/>\n"
