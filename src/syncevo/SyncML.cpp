@@ -809,7 +809,11 @@ void SyncReport::prettyPrint(std::ostream &out, int flags) const
                                SyncSourceReport::ITEM_ANY,
                                SyncSourceReport::ITEM_RECEIVED_BYTES)) {
             line <<
-                PrettyPrintSyncMode(source.getFinalSyncMode()) << ", " <<
+                PrettyPrintSyncMode(source.getFinalSyncMode()) << ", ";
+            if (source.getRestarts()) {
+                line << source.getRestarts() + 1 << " cycles, ";
+            }
+            line <<
                 source.getItemStat(SyncSourceReport::ITEM_LOCAL,
                                    SyncSourceReport::ITEM_ANY,
                                    SyncSourceReport::ITEM_SENT_BYTES) / 1024 <<
@@ -980,6 +984,10 @@ ConfigNode &operator << (ConfigNode &node, const SyncReport &report)
         string key;
         key = prefix + "-mode";
         node.setProperty(key, PrettyPrintSyncMode(source.getFinalSyncMode()));
+        if (source.getRestarts()) {
+            key = prefix + "-restarts";
+            node.setProperty(key, source.getRestarts());
+        }
         key = prefix + "-first";
         node.setProperty(key, source.isFirstSync());
         key = prefix + "-resume";
@@ -1066,6 +1074,11 @@ ConfigNode &operator >> (ConfigNode &node, SyncReport &report)
                     source.setItemStat(location, state, result, intval);
                 } else if (key == "mode") {
                     source.recordFinalSyncMode(StringToSyncMode(prop.second));
+                } else if (key == "restarts") {
+                    int value;
+                    if (node.getProperty(prop.first, value)) {
+                        source.setRestarts(value);
+                    }
                 } else if (key == "first") {
                     bool value;
                     if (node.getProperty(prop.first, value)) {

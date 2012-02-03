@@ -265,6 +265,7 @@ class SyncSourceReport {
             m_resume = false;
         m_mode = SYNC_NONE;
         m_status = STATUS_OK;
+        m_restarts = 0;
     }
 
     enum ItemLocation {
@@ -330,6 +331,14 @@ class SyncSourceReport {
     void recordFinalSyncMode(SyncMode mode) { m_mode = mode; }
     SyncMode getFinalSyncMode() const { return m_mode; }
 
+    void recordRestart() { m_restarts++; }
+    void setRestarts(int restarts) { m_restarts = restarts; }
+    /**
+     * number of times that the sync session was restarted
+     * involving the source, usually zero
+     */
+    int getRestarts() const { return m_restarts; }
+
     void recordFirstSync(bool isFirstSync) { m_first = isFirstSync; }
     bool isFirstSync() const { return m_first; }
 
@@ -354,6 +363,7 @@ class SyncSourceReport {
     int m_stat[ITEM_LOCATION_MAX + 1][ITEM_STATE_MAX + 1][ITEM_RESULT_MAX + 1];
 
     SyncMode m_mode;
+    int m_restarts;
     bool m_first;
     bool m_resume;
     SyncMLStatus m_status;
