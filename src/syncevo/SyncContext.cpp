@@ -1463,6 +1463,19 @@ string SyncContext::askPassword(const string &passwordName, const string &descr,
     }
 }
 
+void SyncContext::requestAnotherSync()
+{
+    if (m_activeContext &&
+        m_activeContext->m_engine.get() &&
+        m_activeContext->m_session) {
+        SharedKey sessionKey =
+            m_activeContext->m_engine.OpenSessionKey(m_activeContext->m_session);
+        m_activeContext->m_engine.SetInt32Value(sessionKey,
+                                                "restartsync",
+                                                true);
+    }
+}
+
 void SyncContext::readStdin(string &content)
 {
     if (!ReadFile(cin, content)) {

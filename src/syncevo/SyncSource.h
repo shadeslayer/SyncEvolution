@@ -1199,6 +1199,30 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
     void popSynthesisAPI();
 
     /**
+     * If called while a sync session runs (i.e. after m_startDataRead
+     * (aka beginSync()) and before m_endDataWrite (aka endSync())),
+     * the engine will finish the session and then immediately try to
+     * run another session where any source in which requestAnotherSync()
+     * was called is active again. There is no guarantee that this
+     * will be possible.
+     *
+     * The source must be prepared to correctly handle another sync
+     * session. m_endDataWrite will be called and then the sequence
+     * of calls starts again at m_startDataRead.
+     *
+     * The sync mode will switch to an incremental sync in the same
+     * direction as the initial sync (one-way to client or server,
+     * two-way).
+     *
+     * Does nothing when called at the wrong time. There's no
+     * guarantee either that restarting is possible.
+     *
+     * Currently only supported when a single source is active in
+     * the initial sync.
+     */
+    void requestAnotherSync();
+
+    /**
      * factory function for a SyncSource that provides the
      * source type specified in the params.m_nodes.m_configNode
      *

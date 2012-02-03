@@ -344,6 +344,17 @@ string SyncSource::backendsDebug() {
     return scannedModules.debug.str();
 }
 
+void SyncSource::requestAnotherSync()
+{
+    // At the moment the per-source request to restart cannot be
+    // stored; instead only a per-session request is set. That's okay
+    // for now because restarting is limited to sessions with only
+    // one source active (intentional simplification).
+    SE_LOG_DEBUG(this, NULL, "requesting another sync");
+    SyncContext::requestAnotherSync();
+}
+
+
 SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error, SyncConfig *config)
 {
     SourceType sourceType = getSourceType(params.m_nodes);

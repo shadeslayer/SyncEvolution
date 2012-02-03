@@ -456,6 +456,18 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void setRemoteInitiated(bool remote) {m_remoteInitiated = remote;}
 
     /**
+     * If called while a sync session runs,
+     * the engine will finish the session and then
+     * immediately try to run another one with
+     * the same sources.
+     *
+     * Does nothing when called at the wrong time.
+     * There's no guarantee either that restarting is
+     * possible.
+     */
+    static void requestAnotherSync();
+
+    /**
      * Read from stdin until end of stream.
      *
      * Default implementation reads from real stdin,
