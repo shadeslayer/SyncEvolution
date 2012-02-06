@@ -62,6 +62,7 @@
 
 #include <map>
 #include <vector>
+#include <utility>
 
 // Boost docs want this in the boost:: namespace, but
 // that fails with clang 2.9 depending on the inclusion order of
@@ -81,6 +82,7 @@ static inline void intrusive_ptr_release(DBusServer *server) { dbus_server_unref
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/utility.hpp>
+#include <boost/tuple/tuple.hpp>
 
 /* The connection is the only client-exposed type from the C API. To
  * keep changes to a minimum while supporting both dbus
@@ -3890,9 +3892,140 @@ struct MakeMethodEntry< boost::function<void ()> >
     }
 };
 
-template <class T>
+template <class Cb, class Ret>
+struct TraitsBase
+{
+    typedef Cb Callback_t;
+    typedef Ret Return_t;
+
+    struct CallbackData
+    {
+        //only keep connection, for DBusClientCall instance is absent when 'dbus client call' returns
+        //suppose connection is available in the callback handler
+        const DBusConnectionPtr m_conn;
+        Callback_t m_callback;
+        CallbackData(const DBusConnectionPtr &conn, const Callback_t &callback)
+        : m_conn(conn), m_callback(callback)
+        {}
+    };
+};
+
+struct VoidReturn {};
+
+struct VoidTraits : public TraitsBase<boost::function<void (const std::string &)>, VoidReturn>
+{
+    typedef TraitsBase<boost::function<void (const std::string &)>, VoidReturn> base;
+    typedef base::Callback_t Callback_t;
+    typedef base::Return_t Return_t;
+
+    static Return_t demarshal(DBusMessagePtr &/*reply*/, const DBusConnectionPtr &/*conn*/)
+    {
+        return Return_t();
+    }
+
+    static void handleMessage(DBusMessagePtr &/*reply*/, base::CallbackData *data, const std::string &error)
+    {
+        //unmarshal the return results and call user callback
+        (data->m_callback)(error);
+    }
+};
+
+template <class R1>
+struct Ret1Traits : public TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1>
+{
+  typedef TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1> base;
+  typedef typename base::Callback_t Callback_t;
+  typedef typename base::Return_t Return_t;
+
+  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+  {
+    typename dbus_traits<R1>::host_type r;
+
+    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r);
+    return r;
+  }
+
+  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
+  {
+    typename dbus_traits<R1>::host_type r;
+    if (error.empty()) {
+      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
+    }
+
+    //unmarshal the return results and call user callback
+    (data->m_callback)(r, error);
+  }
+};
+
+template <class R1, class R2>
+struct Ret2Traits : public TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> >
+{
+  typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> > base;
+  typedef typename base::Callback_t Callback_t;
+  typedef typename base::Return_t Return_t;
+
+  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+  {
+    Return_t r;
+
+    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r.first) >> Get<R2>(r.second);
+    return r;
+  }
+
+  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
+  {
+    typename dbus_traits<R1>::host_type r1;
+    typename dbus_traits<R2>::host_type r2;
+    if (error.empty()) {
+      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
+    }
+
+    //unmarshal the return results and call user callback
+    (data->m_callback)(r1, r2, error);
+  }
+};
+
+template <class R1, class R2, class R3>
+struct Ret3Traits : public TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> >
+{
+  typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> > base;
+  typedef typename base::Callback_t Callback_t;
+  typedef typename base::Return_t Return_t;
+
+  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+  {
+    Return_t r;
+
+    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(boost::get<0>(r)) >> Get<R2>(boost::get<1>(r)) >> Get<R3>(boost::get<2>(r));
+    return r;
+  }
+
+  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
+  {
+    typename dbus_traits<R1>::host_type r1;
+    typename dbus_traits<R2>::host_type r2;
+    typename dbus_traits<R3>::host_type r3;
+    if (error.empty()) {
+      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
+    }
+
+    //unmarshal the return results and call user callback
+    (data->m_callback)(r1, r2, r3, error);
+  }
+};
+
+/** fill buffer with error name and description (if available), return true if error found */
+bool CheckError(const DBusMessagePtr &reply,
+                std::string &buffer);
+
+template <class CallTraits>
 class DBusClientCall
 {
+public:
+  typedef typename CallTraits::Callback_t Callback_t;
+  typedef typename CallTraits::Return_t Return_t;
+  typedef typename CallTraits::base::CallbackData CallbackData;
+
 protected:
     const std::string m_destination;
     const std::string m_path;
@@ -3900,8 +4033,15 @@ protected:
     const std::string m_method;
     const DBusConnectionPtr m_conn;
 
-    typedef DBusPendingCallNotifyFunction DBusCallback;
-    DBusCallback m_dbusCallback;
+    static void dbusCallback (DBusPendingCall *call, void *user_data)
+    {
+        CallbackData *data = static_cast<CallbackData *>(user_data);
+        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
+        std::string error;
+
+        CheckError(reply, error);
+        CallTraits::handleMessage(reply, data, error);
+    }
 
     /**
      * called by libdbus to free the user_data pointer set in 
@@ -3910,8 +4050,6 @@ protected:
     static void callDataUnref(void *user_data) {
         delete static_cast<CallbackData *>(user_data);
     }
-
-    typedef T Callback_t;
 
     void prepare(DBusMessagePtr &msg)
     {
@@ -3938,36 +4076,45 @@ protected:
         DBusPendingCallPtr mCall (call);
         CallbackData *data = new CallbackData(m_conn, callback);
         dbus_pending_call_set_notify(mCall.get(),
-                                     m_dbusCallback,
+                                     dbusCallback,
                                      data,
                                      callDataUnref);
     }
 
-public:
-    struct CallbackData
+    Return_t sendAndReturn(DBusMessagePtr &msg)
     {
-        //only keep connection, for DBusClientCall instance is absent when 'dbus client call' returns
-        //suppose connection is available in the callback handler
-        const DBusConnectionPtr m_conn;
-        Callback_t m_callback;
-        CallbackData(const DBusConnectionPtr &conn, const Callback_t &callback)
-            :m_conn(conn), m_callback(callback)
-        {}
-    };
+        DBusErrorCXX error;
+        // Constructor steals reference, reset() doesn't!
+        // Therefore use constructor+copy instead of reset().
+        DBusMessagePtr reply = DBusMessagePtr(dbus_connection_send_with_reply_and_block(m_conn.get(), msg.get(), -1, &error));
+        if (!reply) {
+            error.throwFailure(m_method);
+        }
+        return CallTraits::demarshal(reply, m_conn);
+    }
 
-    DBusClientCall(const DBusRemoteObject &object, const std::string &method, DBusCallback dbusCallback)
+
+public:
+    DBusClientCall(const DBusRemoteObject &object, const std::string &method)
         :m_destination (object.getDestination()),
          m_path (object.getPath()),
          m_interface (object.getInterface()),
          m_method (method),
-         m_conn (object.getConnection()),
-         m_dbusCallback(dbusCallback)
+         m_conn (object.getConnection())
     {
     }
 
     DBusConnection *getConnection() { return m_conn.get(); }
+    std::string getMethod() const { return m_method; }
 
-    void operator () (const Callback_t &callback)
+    Return_t operator () ()
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        return sendAndReturn(msg);
+    }
+
+    void start(const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -3975,17 +4122,34 @@ public:
     }
 
     template <class A1>
-    void operator () (const A1 &a1, const Callback_t &callback)
+    Return_t operator () (const A1 &a1)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1;
+        return sendAndReturn(msg);
+    }
+
+    template <class A1>
+    void start(const A1 &a1, const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1;
         send(msg, callback);
-
     }
 
     template <class A1, class A2>
-    void operator () (const A1 &a1, const A2 &a2, const Callback_t &callback)
+    Return_t operator () (const A1 &a1, const A2 &a2)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2;
+        return sendAndReturn(msg);
+    }
+
+    template <class A1, class A2>
+    void start(const A1 &a1, const A2 &a2, const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -3994,7 +4158,16 @@ public:
     }
 
     template <class A1, class A2, class A3>
-    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const Callback_t &callback)
+    void operator ()(const A1 &a1, const A2 &a2, const A3 &a3)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4003,7 +4176,16 @@ public:
     }
 
     template <class A1, class A2, class A3, class A4>
-    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const Callback_t &callback)
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3, class A4>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4012,7 +4194,16 @@ public:
     }
 
     template <class A1, class A2, class A3, class A4, class A5>
-    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5, const Callback_t &callback)
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5, const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4022,7 +4213,18 @@ public:
 
     template <class A1, class A2, class A3, class A4, class A5, class A6>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
-                      const A6 &a6, const Callback_t &callback)
+                      const A6 &a6)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+               const A6 &a6,
+               const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4032,7 +4234,18 @@ public:
 
     template <class A1, class A2, class A3, class A4, class A5, class A6, class A7>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
-                      const A6 &a6, const A7 &a7, const Callback_t &callback)
+                      const A6 &a6, const A7 &a7)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+               const A6 &a6, const A7 &a7,
+               const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4042,7 +4255,18 @@ public:
 
     template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
-                      const A6 &a6, const A7 &a7, const A8 &a8, const Callback_t &callback)
+                      const A6 &a6, const A7 &a7, const A8 &a8)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+               const A6 &a6, const A7 &a7, const A8 &a8,
+               const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4052,7 +4276,18 @@ public:
 
     template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
-                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const Callback_t &callback)
+                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+               const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9,
+               const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4062,7 +4297,18 @@ public:
 
     template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
-                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const A10 &a10, const Callback_t &callback)
+                      const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const A10 &a10)
+    {
+        DBusMessagePtr msg;
+        prepare(msg);
+        AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9 << a10;
+        sendAndReturn(msg);
+    }
+
+    template <class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10>
+    void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
+               const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const A10 &a10,
+               const Callback_t &callback)
     {
         DBusMessagePtr msg;
         prepare(msg);
@@ -4071,136 +4317,48 @@ public:
     }
 };
 
-/** fill buffer with error name and description (if available), return true if error found */
-bool CheckError(const DBusMessagePtr &reply,
-                std::string &buffer);
-
 /*
  * A DBus Client Call object handling zero or more parameter and
  * zero return value.
  */
-class DBusClientCall0 : public DBusClientCall<boost::function<void (const std::string &)> >
+class DBusClientCall0 : public DBusClientCall<VoidTraits>
 {
-    /**
-     * called when result of call is available or an error occurred (non-empty string)
-     */
-    typedef boost::function<void (const std::string &)> Callback_t;
-
-    /** called by libdbus on error or completion of call */
-    static void dbusCallback (DBusPendingCall *call, void *user_data)
-    {
-        CallbackData *data = static_cast<CallbackData *>(user_data);
-        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        std::string error;
-        CheckError(reply, error);
-        //unmarshal the return results and call user callback
-        (data->m_callback)(error);
-    }
-
 public:
     DBusClientCall0 (const DBusRemoteObject &object, const std::string &method)
-        : DBusClientCall<Callback_t>(object, method, &DBusClientCall0::dbusCallback)
+        : DBusClientCall<VoidTraits>(object, method)
     {
     }
 };
 
 /** 1 return value and 0 or more parameters */
 template <class R1>
-class DBusClientCall1 : public DBusClientCall<boost::function<void (const R1 &, const std::string &)> >
+class DBusClientCall1 : public DBusClientCall<Ret1Traits<R1> >
 {
-    /**
-     * called when the call is returned or an error occurred (non-empty string)
-     */
-    typedef boost::function<void (const R1 &, const std::string &)> Callback_t;
-
-    /** called by libdbus on error or completion of call */
-    static void dbusCallback (DBusPendingCall *call, void *user_data)
-    {
-        typedef typename DBusClientCall<Callback_t>::CallbackData CallbackData;
-        CallbackData *data = static_cast<CallbackData *>(user_data);
-        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        std::string error;
-        typename dbus_traits<R1>::host_type r;
-        if (!CheckError(reply, error)) {
-            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
-        }
-        //unmarshal the return results and call user callback
-        //(*static_cast <Callback_t *>(user_data))(r, error);
-        (data->m_callback)(r, error);
-    }
-
 public:
     DBusClientCall1 (const DBusRemoteObject &object, const std::string &method)
-        : DBusClientCall<Callback_t>(object, method, &DBusClientCall1::dbusCallback)
+        : DBusClientCall<Ret1Traits<R1> >(object, method)
     {
     }
 };
 
 /** 2 return value and 0 or more parameters */
 template <class R1, class R2>
-class DBusClientCall2 : public DBusClientCall<boost::function<
-                               void (const R1 &, const R2 &, const std::string &)> >
-
+class DBusClientCall2 : public DBusClientCall<Ret2Traits<R1, R2> >
 {
-    /**
-     * called when the call is returned or an error occurred (non-empty string)
-     */
-    typedef boost::function<void (const R1 &, const R2 &, const std::string &)> Callback_t;
-
-    /** called by libdbus on error or completion of call */
-    static void dbusCallback (DBusPendingCall *call, void *user_data)
-    {
-        typedef typename DBusClientCall<Callback_t>::CallbackData CallbackData;
-        CallbackData *data = static_cast<CallbackData *>(user_data);
-        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        std::string error;
-        typename dbus_traits<R1>::host_type r1;
-        typename dbus_traits<R2>::host_type r2;
-        if (!CheckError(reply, error)) {
-            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
-        }
-        //unmarshal the return results and call user callback
-        (data->m_callback)(r1, r2, error);
-    }
-
 public:
     DBusClientCall2 (const DBusRemoteObject &object, const std::string &method)
-        : DBusClientCall<Callback_t>(object, method, &DBusClientCall2::dbusCallback)
+        : DBusClientCall<Ret2Traits<R1, R2> >(object, method)
     {
     }
 };
 
 /** 3 return value and 0 or more parameters */
 template <class R1, class R2, class R3>
-class DBusClientCall3 : public DBusClientCall<boost::function<
-                               void (const R1 &, const R2 &, const R3 &, const std::string &)> >
-
+class DBusClientCall3 : public DBusClientCall<Ret3Traits<R1, R2, R3> >
 {
-    /**
-     * called when the call is returned or an error occurred (non-empty string)
-     */
-    typedef boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)> Callback_t;
-
-    /** called by libdbus on error or completion of call */
-    static void dbusCallback (DBusPendingCall *call, void *user_data)
-    {
-        typedef typename DBusClientCall<Callback_t>::CallbackData CallbackData;
-        CallbackData *data = static_cast<CallbackData *>(user_data);
-        DBusMessagePtr reply = dbus_pending_call_steal_reply (call);
-        std::string error;
-        typename dbus_traits<R1>::host_type r1;
-        typename dbus_traits<R2>::host_type r2;
-        typename dbus_traits<R3>::host_type r3;
-        if (!CheckError(reply, error)) {
-            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
-        }
-        //unmarshal the return results and call user callback
-        (data->m_callback)(r1, r2, r3, error);
-    }
-
 public:
     DBusClientCall3 (const DBusRemoteObject &object, const std::string &method)
-        : DBusClientCall<Callback_t>(object, method, &DBusClientCall3::dbusCallback)
+        : DBusClientCall<Ret3Traits<R1, R2, R3> >(object, method)
     {
     }
 };

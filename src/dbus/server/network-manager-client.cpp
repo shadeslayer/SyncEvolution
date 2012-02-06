@@ -84,8 +84,8 @@ NetworkManagerClient::NetworkManagerProperties::NetworkManagerProperties(
 void NetworkManagerClient::NetworkManagerProperties::get()
 {
     GDBusCXX::DBusClientCall1<boost::variant<uint32_t, std::string> > get(*this, "Get");
-    get(std::string(m_manager.getInterface()), std::string("State"),
-        boost::bind(&NetworkManagerProperties::getCallback, this, _1, _2));
+    get.start(std::string(m_manager.getInterface()), std::string("State"),
+              boost::bind(&NetworkManagerProperties::getCallback, this, _1, _2));
 }
 
 void NetworkManagerClient::NetworkManagerProperties::getCallback(

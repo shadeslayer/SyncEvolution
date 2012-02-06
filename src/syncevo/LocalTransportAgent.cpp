@@ -225,16 +225,16 @@ void LocalTransportAgent::onChildConnect(const GDBusCXX::DBusConnectionPtr &conn
             sources[sourceName] = std::make_pair(targetName, sync);
         }
     }
-    m_child->m_startSync(m_clientContext,
-                         StringPair(m_server->getConfigName(),
-                                    m_server->getRootPath()),
-                         static_cast<std::string>(m_server->getLogDir()),
-                         m_server->getDoLogging(),
-                         StringPair(m_server->getSyncUsername(),
-                                    m_server->getSyncPassword()),
-                         m_server->getConfigProps(),
-                         sources,
-                         boost::bind(&LocalTransportAgent::storeReplyMsg, this, _1, _2, _3));
+    m_child->m_startSync.start(m_clientContext,
+                               StringPair(m_server->getConfigName(),
+                                          m_server->getRootPath()),
+                               static_cast<std::string>(m_server->getLogDir()),
+                               m_server->getDoLogging(),
+                               StringPair(m_server->getSyncUsername(),
+                                          m_server->getSyncPassword()),
+                               m_server->getConfigProps(),
+                               sources,
+                               boost::bind(&LocalTransportAgent::storeReplyMsg, this, _1, _2, _3));
 }
 
 void LocalTransportAgent::onFailure(const std::string &error)
@@ -326,8 +326,8 @@ void LocalTransportAgent::send(const char *data, size_t len)
 {
     if (m_child) {
         m_status = ACTIVE;
-        m_child->m_sendMsg(m_contentType, GDBusCXX::makeDBusArray(len, (uint8_t *)(data)),
-                           boost::bind(&LocalTransportAgent::storeReplyMsg, this, _1, _2, _3));
+        m_child->m_sendMsg.start(m_contentType, GDBusCXX::makeDBusArray(len, (uint8_t *)(data)),
+                                 boost::bind(&LocalTransportAgent::storeReplyMsg, this, _1, _2, _3));
     } else {
         m_status = FAILED;
         SE_THROW_EXCEPTION(TransportException,
@@ -445,9 +445,9 @@ public:
                      passwordName.c_str(),
                      descr.c_str());
         std::string password;
-        m_parent->m_askPassword(passwordName, descr, key,
-                                boost::bind(&LocalTransportContext::storePassword, this,
-                                            boost::ref(password), _1, _2));
+        m_parent->m_askPassword.start(passwordName, descr, key,
+                                      boost::bind(&LocalTransportContext::storePassword, this,
+                                                  boost::ref(password), _1, _2));
         g_main_loop_run(m_loop.get());
         return password;
     }
@@ -793,8 +793,8 @@ public:
             if (m_parent) {
                 std::string report = m_clientReport.toString();
                 SE_LOG_DEBUG(NULL, NULL, "child sending sync report after failure:\n%s", report.c_str());
-                m_parent->m_storeSyncReport(report,
-                                            boost::bind(&LocalTransportAgentChild::syncReportReceived, this, _1));
+                m_parent->m_storeSyncReport.start(report,
+                                                  boost::bind(&LocalTransportAgentChild::syncReportReceived, this, _1));
                 // wait for acknowledgement for report once:
                 // we are in some kind of error state, better
                 // do not wait too long
@@ -810,8 +810,8 @@ public:
             // send final report, ignore result
             std::string report = m_clientReport.toString();
             SE_LOG_DEBUG(NULL, NULL, "child sending sync report:\n%s", report.c_str());
-            m_parent->m_storeSyncReport(report,
-                                        boost::bind(&LocalTransportAgentChild::syncReportReceived, this, _1));
+            m_parent->m_storeSyncReport.start(report,
+                                              boost::bind(&LocalTransportAgentChild::syncReportReceived, this, _1));
             while (!m_reportSent && m_parent) {
                 SE_LOG_DEBUG(NULL, NULL, "waiting for parent's ACK for sync report");
                 g_main_loop_run(m_loop.get());

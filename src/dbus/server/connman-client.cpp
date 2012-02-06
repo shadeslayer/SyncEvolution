@@ -36,7 +36,7 @@ ConnmanClient::ConnmanClient(Server &server):
     if (getConnection()) {
         typedef std::map <std::string, boost::variant<std::string> > PropDict;
         GDBusCXX::DBusClientCall1<PropDict>  getProp(*this,"GetProperties");
-        getProp (boost::bind(&ConnmanClient::getPropCb, this, _1, _2));
+        getProp.start(boost::bind(&ConnmanClient::getPropCb, this, _1, _2));
         m_propertyChanged.activate(boost::bind(&ConnmanClient::propertyChanged, this, _1, _2));
     }else{
         SE_LOG_ERROR (NULL, NULL, "DBus connection setup for connman failed");

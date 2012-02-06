@@ -618,7 +618,7 @@ void RemoteDBusServer::attachSync()
 {
     resetReplies();
     DBusClientCall1<boost::shared_ptr<Watch> > attach(*this, "Attach");
-    attach(boost::bind(&RemoteDBusServer::attachCb, this, _1, _2));
+    attach.start(boost::bind(&RemoteDBusServer::attachCb, this, _1, _2));
     while(!done()) {
         g_main_loop_run(m_loop);
     }
@@ -636,7 +636,7 @@ void RemoteDBusServer::attachCb(const boost::shared_ptr<Watch> &watch, const str
 
         // do a version check now before calling replyInc()
         DBusClientCall1< StringMap > getVersions(*this, "GetVersions");
-        getVersions(boost::bind(&RemoteDBusServer::versionCb, this, _1, _2));
+        getVersions.start(boost::bind(&RemoteDBusServer::versionCb, this, _1, _2));
     } else {
         // done with attach phase, skip version check
         replyInc();
@@ -691,7 +691,7 @@ void RemoteDBusServer::infoResponse(const string &id,
 {
     //call Server.InfoResponse
     DBusClientCall0 call(*this, "InfoResponse");
-    call(id, state, resp, boost::bind(&RemoteDBusServer::infoResponseCb, this, _1));
+    call.start(id, state, resp, boost::bind(&RemoteDBusServer::infoResponseCb, this, _1));
 }
 
 void RemoteDBusServer::infoResponseCb(const string &error)
@@ -741,7 +741,7 @@ bool RemoteDBusServer::execute(const vector<string> &args, const string &peer, b
     if (!runSync) {
         flags.push_back("no-sync");
     }
-    startSession(peer, flags, boost::bind(&RemoteDBusServer::startSessionCb, this, _1, _2));
+    startSession.start(peer, flags, boost::bind(&RemoteDBusServer::startSessionCb, this, _1, _2));
 
     // wait until 'StartSession' returns
     resetReplies();
@@ -822,7 +822,7 @@ void RemoteDBusServer::getRunningSessions()
 {
     //get all sessions
     DBusClientCall1<vector<string> > sessions(*this, "GetSessions");
-    sessions(boost::bind(&RemoteDBusServer::getSessionsCb, this, _1, _2));
+    sessions.start(boost::bind(&RemoteDBusServer::getSessionsCb, this, _1, _2));
     resetReplies();
     while(!done()) {
         g_main_loop_run(m_loop);
@@ -1003,7 +1003,7 @@ void RemoteSession::executeAsync(const vector<string> &args)
     map<string, string> vars;
     getEnvVars(vars);
     DBusClientCall0 call(*this, "Execute");
-    call(args, vars, boost::bind(&RemoteSession::executeCb, this, _1));
+    call.start(args, vars, boost::bind(&RemoteSession::executeCb, this, _1));
 }
 
 void RemoteSession::executeCb(const string &error)
@@ -1039,7 +1039,7 @@ void RemoteSession::statusChangedCb(const string &status,
 void RemoteSession::getStatusAsync()
 {
     DBusClientCall3<string, uint32_t, SourceStatuses_t> call(*this, "GetStatus");
-    call(boost::bind(&RemoteSession::getStatusCb, this, _1, _2, _3, _4));
+    call.start(boost::bind(&RemoteSession::getStatusCb, this, _1, _2, _3, _4));
 }
 
 void RemoteSession::getStatusCb(const string &status,
@@ -1058,7 +1058,7 @@ void RemoteSession::getStatusCb(const string &status,
 void RemoteSession::getConfigAsync()
 {
     DBusClientCall1<Config_t> call(*this, "GetConfig");
-    call(false, boost::bind(&RemoteSession::getConfigCb, this, _1, _2));
+    call.start(false, boost::bind(&RemoteSession::getConfigCb, this, _1, _2));
 }
 
 void RemoteSession::getConfigCb(const Config_t &config, const string &error)
@@ -1090,7 +1090,7 @@ void RemoteSession::interruptAsync(const char *operation)
 {
     // call Suspend() without checking result
     DBusClientCall0 suspend(*this, operation);
-    suspend(interruptCb);
+    suspend.start(interruptCb);
 }
 
 void RemoteSession::logOutput(Logger::Level level, const string &log)

@@ -8,6 +8,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/tuple/tuple_io.hpp>
 
 SyncEvo::GMainLoopCXX loop;
 
@@ -28,6 +29,8 @@ public:
         // m_disconnected(m_dbusAPI, "Disconnected")
     {
         m_server.add(this, &Test::hello, "Hello");
+        m_server.add(this, &Test::getstrings, "GetStrings");
+        m_server.add(this, &Test::getmixed, "GetMixed");
     }
 
     void activate()
@@ -47,6 +50,19 @@ public:
     {
         std::cout << "hello() called with " << in << std::endl;
         return "world";
+    }
+
+    void getstrings(std::string &first, std::string &second)
+    {
+        first = "hello";
+        second = "world";
+    }
+
+    void getmixed(std::string &first, int &second, std::string &third)
+    {
+        first = "hello";
+        second = 1;
+        third = "world";
     }
 
     void disconnected()
@@ -113,8 +129,26 @@ static void helloCB(GMainLoop *loop, const std::string &res, const std::string &
 static void callServer(const GDBusCXX::DBusConnectionPtr &conn)
 {
     TestProxy proxy(conn);
+
+    std::cout << "blocking call to server without callback" << std::endl;
+    std::cout << proxy.m_hello(std::string("blocking world, II")) << std::endl;
+
+    try {
+        GDBusCXX::DBusClientCall1<std::string> nosuchcall(proxy, "nosuchcall");
+        std::cout << nosuchcall(std::string("ignoreme")) << std::endl;
+    } catch (const std::runtime_error &ex) {
+        std::cout << "caught exception, as expected: " << ex.what() << std::endl;
+    }
+
+    GDBusCXX::DBusClientCall2<std::string, std::string> getstrings(proxy, "GetStrings");
+    std::pair<std::string, std::string> r = getstrings();
+    std::cout << "Got pair: (" << r.first << ", " << r.second << ")" << std::endl;
+
+    GDBusCXX::DBusClientCall3<std::string, int, std::string> getmixed(proxy, "GetMixed");
+    std::cout << "Got tuple: " << getmixed() << std::endl;
+
     std::cout << "calling server" << std::endl;
-    proxy.m_hello(std::string("world"), boost::bind(helloCB, loop.get(), _1, _2));
+    proxy.m_hello.start(std::string("world"), boost::bind(helloCB, loop.get(), _1, _2));
     // keep connection open until child quits
     guard.reset(new  GDBusCXX::DBusObject(conn, "foo", "bar", true));
 }
