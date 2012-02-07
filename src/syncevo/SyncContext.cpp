@@ -1277,21 +1277,28 @@ public:
 
     // call when all sync sources are ready to dump
     // pre-sync databases
-    // @param excludeSource   when non-empty, limit preparation to that source
-    void syncPrepare(const string &excludeSource = "") {
+    // @param sourceName   limit preparation to that source
+    void syncPrepare(const string &sourceName) {
+        if (m_prepared.find(sourceName) != m_prepared.end()) {
+            // data dump was already done (can happen when running multiple
+            // SyncML sessions)
+            return;
+        }
+
         if (m_logdir.getLogfile().size() &&
             m_doLogging &&
             (m_client.getDumpData() || m_client.getPrintChanges())) {
             // dump initial databases
-            SE_LOG_INFO(NULL, NULL, "creating complete data backup before sync (%s)",
+            SE_LOG_INFO(NULL, NULL, "creating complete data backup of source %s before sync (%s)",
+                        sourceName.c_str(),
                         (m_client.getDumpData() && m_client.getPrintChanges()) ? "enabled with dumpData and needed for printChanges" :
                         m_client.getDumpData() ? "because it was enabled with dumpData" :
                         m_client.getPrintChanges() ? "needed for printChanges" :
                         "???");
-            dumpDatabases("before", &SyncSourceReport::m_backupBefore, excludeSource);
+            dumpDatabases("before", &SyncSourceReport::m_backupBefore, sourceName);
             if (m_client.getPrintChanges()) {
                 // compare against the old "after" database dump
-                dumpLocalChanges("", "after", "before", excludeSource,
+                dumpLocalChanges("", "after", "before", sourceName,
                                  StringPrintf("%s data changes to be applied during synchronization:\n",
                                               m_client.isLocalSync() ? m_client.getContextName().c_str() : "Local"));
             }
