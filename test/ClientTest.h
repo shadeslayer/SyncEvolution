@@ -73,6 +73,7 @@ class CheckSyncReport {
         serverAdded(srAdded),
         serverUpdated(srUpdated),
         serverDeleted(srDeleted),
+        restarts(0),
         mustSucceed(mstSucceed),
         syncMode(mode),
         m_report(NULL)
@@ -82,6 +83,7 @@ class CheckSyncReport {
 
     int clientAdded, clientUpdated, clientDeleted,
         serverAdded, serverUpdated, serverDeleted;
+    int restarts;
     bool mustSucceed;
     SyncMode syncMode;
 
@@ -90,7 +92,7 @@ class CheckSyncReport {
 
     CheckSyncReport &setMode(SyncMode mode) { syncMode = mode; return *this; }
     CheckSyncReport &setReport(SyncReport *report) { m_report = report; return *this; }
-
+    CheckSyncReport &setRestarts(int r) { restarts = r; return *this; }
 
     /**
      * checks that the sync completed as expected and throws
