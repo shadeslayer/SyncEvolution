@@ -124,6 +124,7 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
         (serverModeEnabled() ? "yes" : "no") <<
         "</plugin_datastoreadmin>\n"
         "      <fromremoteonlysupport> yes </fromremoteonlysupport>\n"
+        "      <canrestart>yes</canrestart>\n"
         "\n"
         "      <!-- conflict strategy: Newer item wins\n"
         "           You can set 'server-wins' or 'client-wins' as well\n"
@@ -533,6 +534,19 @@ bool SyncSourceChanges::addItem(const string &luid, State state)
     return res.second;
 }
 
+bool SyncSourceChanges::reset()
+{
+    bool removed = false;
+    for (int i = 0; i < MAX; i++) {
+        if (!m_items[i].empty()) {
+            m_items[i].clear();
+            removed = true;
+        }
+    }
+    m_first = true;
+    return removed;
+}
+
 sysync::TSyError SyncSourceChanges::iterate(sysync::ItemID aID,
                                             sysync::sInt32 *aStatus,
                                             bool aFirst)
@@ -861,6 +875,8 @@ void ItemCache::finalize(BackupReport &report)
 void SyncSourceRevisions::initRevisions()
 {
     if (!m_revisionsSet) {
+        // might still be filled with garbage from previous run
+        m_revisions.clear();
         listAllItems(m_revisions);
         m_revisionsSet = true;
     }
@@ -994,6 +1010,17 @@ void SyncSourceRevisions::restoreData(const SyncSource::Operations::ConstBackupI
 
 void SyncSourceRevisions::detectChanges(ConfigNode &trackingNode, ChangeMode mode)
 {
+    // erase content which might have been set in a previous call
+    reset();
+    if (!m_firstCycle) {
+        // detectChanges() must have been called before;
+        // don't trust our cached revisions in that case (not updated during sync!)
+        // TODO: keep the revision map up-to-date as part of a sync and reuse it
+        m_revisionsSet = false;
+    } else {
+        m_firstCycle = false;
+    }
+
     if (mode == CHANGES_NONE) {
         // shortcut because nothing changed: just copy our known item list
         ConfigProps props;
@@ -1131,6 +1158,7 @@ void SyncSourceRevisions::init(SyncSourceRaw *raw,
     m_modTimeStamp = 0;
     m_revisionAccuracySeconds = granularity;
     m_revisionsSet = false;
+    m_firstCycle = false;
     if (raw) {
         ops.m_backupData = boost::bind(&SyncSourceRevisions::backupData,
                                        this, _1, _2, _3);

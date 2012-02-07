@@ -1470,6 +1470,11 @@ class SyncSourceChanges : virtual public SyncSourceBase {
      */
     bool addItem(const string &luid, State state = ANY);
 
+    /**
+     * Wipe out all added items, returning true if any were found.
+     */
+    bool reset();
+
     typedef std::set<std::string> Items_t;
     const Items_t &getItems(State state) { return m_items[state]; }
     const Items_t &getAllItems() const { return m_items[ANY]; }
@@ -1958,6 +1963,7 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
     /** buffers the result of the initial listAllItems() call */
     RevisionMap_t m_revisions;
     bool m_revisionsSet;
+    bool m_firstCycle;
     void initRevisions();
 
     /**
