@@ -3870,6 +3870,11 @@ bool addBothSidesMayUpdate = false;
 // Add commands as "added items" even if they are turned into updates
 bool addBothSidesAddStatsBroken = false;
 
+// if true, then the peer is a SyncML server which does not
+// support UID/RECURRENCE-ID and thus doesn't detect
+// duplicates itself; the client needs to do that
+bool addBothSidesServerIsDumb = getenv("CLIENT_TEST_ADD_BOTH_SIDES_SERVER_IS_DUMB") != NULL;
+
 void SyncTests::testAddBothSides()
 {
     CT_ASSERT_NO_THROW(deleteAll());
@@ -3917,6 +3922,18 @@ void SyncTests::testAddBothSides()
                                                       0,
 
                                                       true, SYNC_TWO_WAY) :
+                                      addBothSidesServerIsDumb ?
+                                      CheckSyncReport(addBothSidesServerIsDumb ? 1 : 0,
+                                                      addBothSidesMayUpdate ? -1 : 0,
+                                                      0,
+
+                                                      // client got one redundant item from
+                                                      // server, had to receive it, match against
+                                                      // its own copy, then tell the server to
+                                                      // update one copy and delete the other;
+                                                      // no update necessary on server because
+                                                      // it already had the latest copy
+                                                      1,0,1, true, SYNC_TWO_WAY).setRestarts(1) :
                                       CheckSyncReport(0,
                                                       addBothSidesMayUpdate ? -1 : 0,
                                                       0,
@@ -3929,6 +3946,12 @@ void SyncTests::testAddBothSides()
     doSync(__FILE__, __LINE__,
            "update",
            SyncOptions(SYNC_TWO_WAY,
+                       (!isServerMode() && addBothSidesServerIsDumb) ?
+                       // server had to be told to update old item
+                       // and delete redundant one, which is what it now
+                       // also tells us here
+                       CheckSyncReport(1,0,1,
+                                       0,0,0, true, SYNC_TWO_WAY) :
                        CheckSyncReport(0,
                                        addBothSidesMayUpdate ? -1 :
                                        addBothSidesUsesUpdateItem ? 1 : 0,
@@ -4006,6 +4029,19 @@ void SyncTests::testAddBothSidesRefresh()
                                                       0,
 
                                                       true, SYNC_TWO_WAY) :
+                                      // When the server is dumb, it
+                                      // will just accept the added
+                                      // item and send us an <Add>
+                                      // with an item that has the
+                                      // same UID as the one it just
+                                      // received. The client then
+                                      // must start a second sync and
+                                      // fix the server by sending an update
+                                      // (of the old version) and a delete (of the
+                                      // new one)
+                                      addBothSidesServerIsDumb ?
+                                      CheckSyncReport(1,0,0,
+                                                      1,1,1, true, SYNC_TWO_WAY).setRestarts(1) :
                                       CheckSyncReport(0,
                                                       addBothSidesMayUpdate ? -1 :
                                                       addBothSidesUsesUpdateItem ? 1 : 0,
@@ -4015,10 +4051,13 @@ void SyncTests::testAddBothSidesRefresh()
                                                       // an update
                                                       1,0,0, true, SYNC_TWO_WAY)));
 
-    // update sent to client A (result of merge)
+    // potentially send update to A
     doSync(__FILE__, __LINE__,
            "nopA",
            SyncOptions(SYNC_TWO_WAY,
+                       (!isServerMode() && addBothSidesServerIsDumb) ?
+                       // receives extra changes because dumb server had to be fixed
+                       CheckSyncReport(1,0,1, 0,0,0, true, SYNC_TWO_WAY) :
                        CheckSyncReport(0,addBothSidesMayUpdate ? -1 : 0,0, 0,0,0, true, SYNC_TWO_WAY)));
 
     // nothing necessary for client B (already synchronized completely above in one sync)
