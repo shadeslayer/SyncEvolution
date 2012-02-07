@@ -15,5 +15,12 @@
            client we'll have not much such changes. -->
       <updateclientinslowsync>yes</updateclientinslowsync>
       <updateserverinslowsync>yes</updateserverinslowsync>
+
+      <!--
+          unconditionally disable the standard-compliant "skip map phase"
+          behavior in favor of letting the client choose to restart the
+          sync session if it has more changes
+      -->
+      <completefromclientonly>yes</completefromclientonly>
     </remoterule>
 
