@@ -588,7 +588,9 @@ public:
     virtual void testLocalDeleteAll();
     virtual void testComplexInsert();
     virtual void testLocalUpdate();
+    void doChanges(bool restart);
     virtual void testChanges();
+    virtual void testChangesMultiCycles();
     virtual void testImport();
     virtual void testImportDelete();
     virtual void testRemoveProperties();

@@ -274,6 +274,12 @@ public:
         }
     }
 
+    /** call endSync() and beginSync() of the source, as in a multi-cycle sync session */
+    void restart() {
+        // reset() does what we want
+        CT_ASSERT_NO_THROW(reset(this->get()));
+    }
+
     void reset(TestingSyncSource *source = NULL)
     {
         if (this->get()) {
@@ -287,7 +293,11 @@ public:
             m_anchors[node] = anchor;
             CT_ASSERT_NO_THROW(get()->close());
         }
-        base_t::reset(source);
+        // avoid deleting the instance that we are setting
+        // (done by restart())
+        if (get() != source) {
+            base_t::reset(source);
+        }
         if (source) {
             int delay = atoi(getEnv("CLIENT_TEST_SOURCE_DELAY", "0"));
             if (delay) {
@@ -404,6 +414,7 @@ void LocalTests::addTests() {
 
                 if (config.m_createSourceB) {
                     ADD_TEST(LocalTests, testChanges);
+                    ADD_TEST(LocalTests, testChangesMultiCycles);
                 }
             }
 
@@ -996,8 +1007,10 @@ void LocalTests::testLocalUpdate() {
     CT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
 }
 
-// complex sequence of changes
-void LocalTests::testChanges() {
+// Complex sequence of changes, with one restarted instance of source
+// B to observe the changes or multiple instances of it.
+// Changes are made both via source A and via source B itself.
+void LocalTests::doChanges(bool restart) {
     SyncSourceChanges::Items_t::const_iterator it, it2;
 
     // check additional requirements
@@ -1013,10 +1026,10 @@ void LocalTests::testChanges() {
     CLIENT_TEST_LOG("clean changes in sync source B by creating and closing it");
     TestingSyncSourcePtr source;
     SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    CT_ASSERT_NO_THROW(source.reset());
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
 
     CLIENT_TEST_LOG("no new changes now in source B");
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
@@ -1031,12 +1044,12 @@ void LocalTests::testChanges() {
     // it because it gets only IDs and data of added or updated items.
     // Don't test it.
     // SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, item));
-    CT_ASSERT_NO_THROW(source.reset());
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
 
     CLIENT_TEST_LOG("delete item again via sync source A");
     CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     CLIENT_TEST_LOG("check for deleted item via source B");
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
@@ -1045,12 +1058,45 @@ void LocalTests::testChanges() {
     CT_ASSERT(it != source->getDeletedItems().end());
     CT_ASSERT(!it->empty());
     CT_ASSERT_EQUAL(luid, *it);
-    CT_ASSERT_NO_THROW(source.reset());
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
+
+    // now make changes via source B directly: these changes are not to be
+    // reported back
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
+    // add
+    std::string mangled = config.m_mangleItem(config.m_insertItem, false);
+    SyncSourceRaw::InsertItemResult res;
+    SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw("", mangled));
+    CT_ASSERT(!res.m_luid.empty());
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
+    // update
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
+    SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+    mangled = config.m_mangleItem(config.m_updateItem, false);
+    SOURCE_ASSERT_NO_FAILURE(source.get(), res = source->insertItemRaw(res.m_luid, mangled));
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
+    // delete
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
+    SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), source->deleteItem(res.m_luid));
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
 
     CLIENT_TEST_LOG("insert another item via source A");
     CT_ASSERT_NO_THROW(testSimpleInsert());
     CLIENT_TEST_LOG("check for new item via source B");
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
@@ -1064,12 +1110,12 @@ void LocalTests::testChanges() {
     CT_ASSERT(it != source->getNewItems().end());
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, item));
     CT_ASSERT_EQUAL(luid, *it);
-    CT_ASSERT_NO_THROW(source.reset());
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
 
     CLIENT_TEST_LOG("update item via source A");
     CT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
     CLIENT_TEST_LOG("check for updated item via source B");
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countUpdatedItems(source.get()));
@@ -1079,33 +1125,40 @@ void LocalTests::testChanges() {
     CT_ASSERT(it != source->getUpdatedItems().end());
     SOURCE_ASSERT_NO_FAILURE(source.get(), source->readItem(*it, updatedItem));
     CT_ASSERT_EQUAL(luid, *it);
-    CT_ASSERT_NO_THROW(source.reset());
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
+
+    CLIENT_TEST_LOG("one item, no changes in source B");
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
+    SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+    SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
 
     CLIENT_TEST_LOG("start anew in both sources");
     CT_ASSERT_NO_THROW(deleteAll(createSourceA));
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    CT_ASSERT_NO_THROW(source.reset());
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
     CLIENT_TEST_LOG("create and update an item in source A");
     CT_ASSERT_NO_THROW(testSimpleInsert());
     CT_ASSERT_NO_THROW(update(createSourceA, config.m_updateItem));
     CLIENT_TEST_LOG("should only be listed as new or updated in source B, but not both");
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()) + countUpdatedItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
-    CT_ASSERT_NO_THROW(source.reset());
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
 
     CLIENT_TEST_LOG("start anew once more in both sources");
     CT_ASSERT_NO_THROW(deleteAll(createSourceA));
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
-    CT_ASSERT_NO_THROW(source.reset());
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
+    if (!restart) { CT_ASSERT_NO_THROW(source.reset()); }
     CLIENT_TEST_LOG("create, delete and recreate an item in source A");
     CT_ASSERT_NO_THROW(testSimpleInsert());
     CT_ASSERT_NO_THROW(deleteAll(createSourceA));
     CT_ASSERT_NO_THROW(testSimpleInsert());
     CLIENT_TEST_LOG("should only be listed as new or updated in source B, even if\n "
                     "(as for calendar with UID) the same LUID gets reused");
-    SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceB()));
+    SOURCE_ASSERT_NO_FAILURE(source.get(), restart ? source.restart() : source.reset(createSourceB()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
     SOURCE_ASSERT_EQUAL(source.get(), 1, countNewItems(source.get()) + countUpdatedItems(source.get()));
     if (countDeletedItems(source.get()) == 1) {
@@ -1123,6 +1176,22 @@ void LocalTests::testChanges() {
     } else {
         SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
     }
+
+    CT_ASSERT_NO_THROW(source.reset());
+}
+
+// complex sequence of changes, with source B instantiated anew
+// after each change
+void LocalTests::testChanges()
+{
+    doChanges(false);
+}
+
+// complex sequence of changes, with source B only instantiated once
+// and restarted multiple times
+void LocalTests::testChangesMultiCycles()
+{
+    doChanges(true);
 }
 
 // clean database, import file, then export again and compare
