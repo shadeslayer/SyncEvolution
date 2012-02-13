@@ -468,6 +468,11 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     static void requestAnotherSync();
 
     /**
+     * access to current set of sync sources, NULL if not instantiated yet
+     */
+    const std::vector<SyncSource *> *getSources() const;
+
+    /**
      * Read from stdin until end of stream.
      *
      * Default implementation reads from real stdin,

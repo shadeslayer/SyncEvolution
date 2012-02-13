@@ -1059,6 +1059,9 @@ private:
     }
 
 public:
+    /** allow iterating over sources */
+    const inherited *getSourceSet() const { return this; }
+
     LogLevel getLogLevel() const { return m_logLevel; }
     void setLogLevel(LogLevel logLevel) { m_logLevel = logLevel; }
 
@@ -1482,6 +1485,14 @@ void SyncContext::requestAnotherSync()
                                                 true);
     }
 }
+
+const std::vector<SyncSource *> *SyncContext::getSources() const
+{
+    return m_sourceListPtr ?
+        m_sourceListPtr->getSourceSet() :
+        NULL;
+}
+
 
 void SyncContext::readStdin(string &content)
 {
