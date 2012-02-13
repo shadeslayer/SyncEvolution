@@ -1178,6 +1178,8 @@ test = SyncEvolutionTest("syncevohttp",
                          # server supports refresh-from-client, use it for
                          # more efficient test setup
                          "CLIENT_TEST_DELETE_REFRESH=1 "
+                         # server supports multiple cycles inside the same session
+                         "CLIENT_TEST_PEER_CAN_RESTART=1 "
                          "CLIENT_TEST_SKIP="
                          # server does not detect duplicates (uses file backend), detecting on the
                          # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
