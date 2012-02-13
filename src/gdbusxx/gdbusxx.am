@@ -1,5 +1,5 @@
 if ENABLE_MODULES
-pkglib_LTLIBRARIES = src/gdbusxx/libgdbussyncevo.la
+lib_LTLIBRARIES += src/gdbusxx/libgdbussyncevo.la
 src_gdbusxx_version_info = -version-info 0:0:0
 else
 noinst_LTLIBRARIES += src/gdbusxx/libgdbussyncevo.la

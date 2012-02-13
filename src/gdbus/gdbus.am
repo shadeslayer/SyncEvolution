@@ -4,9 +4,7 @@ dist_noinst_DATA += \
   src/gdbus/README
 
 if ENABLE_MODULES
-# pkglibdir is defined to $(libdir)/$(PACKAGE). see:
-# http://www.gnu.org/software/automake/manual/automake.html#Uniform
-pkglib_LTLIBRARIES = src/gdbus/libgdbussyncevo.la
+lib_LTLIBRARIES += src/gdbus/libgdbussyncevo.la
 src_gdbus_version_info = -version-info 0:0:0
 else
 noinst_LTLIBRARIES += src/gdbus/libgdbussyncevo.la

@@ -303,7 +303,6 @@ dist-hook: $(all_dist_hooks)
 # during concurrent distcheck (a backed was relinked against not yet installed
 # libsyncevolution.la).
 install-am: all-am
-	@$(MAKE) $(AM_MAKEFLAGS) install-pkglibLTLIBRARIES
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-data-am
 
