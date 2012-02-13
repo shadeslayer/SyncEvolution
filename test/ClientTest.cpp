@@ -282,11 +282,9 @@ public:
 
     void reset(TestingSyncSource *source = NULL)
     {
-        if (this->get()) {
-            BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
-                          get()->getOperations().m_endSession) {
-                CT_ASSERT_NO_THROW(callback());
-            }
+        if (get()) {
+            char *dummy = const_cast<char *>("testing-source");
+            CT_ASSERT_NO_THROW(get()->getOperations().m_endDataWrite.getPostSignal()(*source, OPERATION_FINISHED, sysync::LOCERR_OK, true, &dummy));
             string node = get()->getTrackingNode()->getName();
             string anchor;
             CT_ASSERT_NO_THROW(anchor = get()->endSync(true));
@@ -311,10 +309,10 @@ public:
             if (isServerMode()) {
                 CT_ASSERT_NO_THROW(source->enableServerMode());
             }
-            BOOST_FOREACH(const SyncSource::Operations::CallbackFunctor_t &callback,
-                          source->getOperations().m_endSession) {
-                CT_ASSERT_NO_THROW(callback());
-            }
+            // the replaced m_endSession callback was invoked here,
+            // which shouldn't have been necessary - not calling
+            // m_endDataWrite post-signal at the moment
+            // CT_ASSERT_NO_THROW(source->getOperations().m_endDataWrite.getPostSignal()());
         }
     }
 };

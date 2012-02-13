@@ -30,6 +30,7 @@
 #include <synthesis/blobs.h>
 
 #include <boost/function.hpp>
+#include <boost/signals2.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -622,6 +623,327 @@ struct XMLConfigFragments {
 };
 
 /**
+ * used in SyncSource::Operations post-operation signal
+ */
+enum OperationExecution {
+    OPERATION_SKIPPED,      /**< operation was skipped because pre-operation slot threw an exception */
+    OPERATION_EXCEPTION,    /**< operation itself failed with an exception (may also return error code) */
+    OPERATION_FINISHED,     /**< operation finished normally (but might have returned an error code) */
+    OPERATION_EMPTY         /**< operation not implemented */
+};
+
+/**
+ * Implements the "call all slots, error if any failed" semantic of
+ * the pre- and post-signals described below.
+ */
+class OperationSlotInvoker {
+ public:
+    typedef sysync::TSyError result_type;
+    template<typename InputIterator>
+        result_type operator() (InputIterator first, InputIterator last) const
+        {
+            result_type res = sysync::LOCERR_OK;
+            while (first != last) {
+                try {
+                    *first;
+                } catch (...) {
+                    SyncMLStatus status = Exception::handle();
+                    if (res == sysync::LOCERR_OK) {
+                        res = static_cast<result_type>(status);
+                    }
+                }
+                ++first;
+            }
+            return res;
+        }
+};
+
+/**
+ * helper class, needs to be specialized based on number of parameters
+ */
+template<class F, int arity> class OperationWrapperSwitch;
+
+/** one parameter */
+template<class F> class OperationWrapperSwitch<F, 0>
+{
+ public:
+    typedef sysync::TSyError result_type;
+    typedef boost::function<F> OperationType;
+
+    /**
+     * The pre-signal is invoked with the same parameters as
+     * the operations, plus a reference to the sync source as
+     * initial parameter. Slots may throw exceptions, which
+     * will skip the actual implementation. However, all slots
+     * will be invoked exactly once even if one of them throws
+     * an exception. The result of the operation then is the
+     * error code extracted from the first exception (see
+     * OperationSlotInvoker).
+     */
+    typedef boost::signals2::signal<void (SyncSource &),
+        OperationSlotInvoker> PreSignal;
+
+    /**
+     * The post-signal is invoked exactly once, regardless
+     * whether the implementation was skipped, executed or
+     * doesn't exist at all. This information is passed as the
+     * second parameter, followed by the result of the
+     * operation or the pre-signals, followed by the
+     * parameters of the operation.
+     *
+     * As with the pre-signal, any slot may throw an exception
+     * to override the final result, but this won't interrupt
+     * calling the rest of the slots.
+     */
+    typedef boost::signals2::signal<void (SyncSource &, OperationExecution, sysync::TSyError),
+        OperationSlotInvoker> PostSignal;
+
+    /**
+     * invokes signals and implementation of operation,
+     * combines all return codes into one
+     */
+    sysync::TSyError operator () (SyncSource &source) const throw ()
+    {
+        sysync::TSyError res;
+        OperationExecution exec;
+        res = m_pre(source);
+        if (res != sysync::LOCERR_OK) {
+            exec = OPERATION_SKIPPED;
+        } else {
+            if (m_operation) {
+                try {
+                    res = m_operation();
+                    exec = OPERATION_FINISHED;
+                } catch (...) {
+                    res = Exception::handle(/* source */);
+                    exec = OPERATION_EXCEPTION;
+                }
+            } else {
+                res = sysync::LOCERR_NOTIMP;
+                exec = OPERATION_EMPTY;
+            }
+        }
+        sysync::TSyError newres = m_post(source, exec, res);
+        if (newres != sysync::LOCERR_OK) {
+            res = newres;
+        }
+        return res == STATUS_FATAL ? STATUS_DATASTORE_FAILURE : res;
+    }
+
+    /**
+     * Anyone may connect code to the signals via
+     * getOperations().getPre/PostSignal(), although strictly
+     * speaking this modifies the behavior of the
+     * implementation.
+     */
+    PreSignal &getPreSignal() const { return const_cast<OperationWrapperSwitch<F, 0> *>(this)->m_pre; }
+    PostSignal &getPostSignal() const { return const_cast<OperationWrapperSwitch<F, 0> *>(this)->m_post; }
+
+ protected:
+    OperationType m_operation;
+
+ private:
+    PreSignal m_pre;
+    PostSignal m_post;
+};
+
+template<class F> class OperationWrapperSwitch<F, 1>
+{
+ public:
+    typedef sysync::TSyError result_type;
+    typedef boost::function<F> OperationType;
+    typedef typename boost::function<F>::arg1_type arg1_type;
+    typedef boost::signals2::signal<void (SyncSource &, arg1_type a1),
+        OperationSlotInvoker> PreSignal;
+    typedef boost::signals2::signal<void (SyncSource &, OperationExecution, sysync::TSyError,
+                                          arg1_type a1),
+        OperationSlotInvoker> PostSignal;
+
+    sysync::TSyError operator () (SyncSource &source,
+                                  arg1_type a1) const throw ()
+    {
+        sysync::TSyError res;
+        OperationExecution exec;
+        res = m_pre(source, a1);
+        if (res != sysync::LOCERR_OK) {
+            exec = OPERATION_SKIPPED;
+        } else {
+            if (m_operation) {
+                try {
+                    res = m_operation(a1);
+                    exec = OPERATION_FINISHED;
+                } catch (...) {
+                    res = Exception::handle(/* source */);
+                    exec = OPERATION_EXCEPTION;
+                }
+            } else {
+                res = sysync::LOCERR_NOTIMP;
+                exec = OPERATION_EMPTY;
+            }
+        }
+        sysync::TSyError newres = m_post(source, exec, res, a1);
+        if (newres != sysync::LOCERR_OK) {
+            res = newres;
+        }
+        return res == STATUS_FATAL ? STATUS_DATASTORE_FAILURE : res;
+    }
+
+    PreSignal &getPreSignal() const { return const_cast<OperationWrapperSwitch<F, 1> *>(this)->m_pre; }
+    PostSignal &getPostSignal() const { return const_cast<OperationWrapperSwitch<F, 1> *>(this)->m_post; }
+
+ protected:
+    OperationType m_operation;
+
+ private:
+    PreSignal m_pre;
+    PostSignal m_post;
+};
+
+template<class F> class OperationWrapperSwitch<F, 2>
+{
+ public:
+    typedef sysync::TSyError result_type;
+    typedef boost::function<F> OperationType;
+    typedef typename boost::function<F>::arg1_type arg1_type;
+    typedef typename boost::function<F>::arg2_type arg2_type;
+    typedef boost::signals2::signal<void (SyncSource &, arg1_type a1, arg2_type a2),
+        OperationSlotInvoker> PreSignal;
+    typedef boost::signals2::signal<void (SyncSource &, OperationExecution, sysync::TSyError,
+                                          arg1_type a1, arg2_type a2),
+        OperationSlotInvoker> PostSignal;
+
+    sysync::TSyError operator () (SyncSource &source,
+                                  arg1_type a1, arg2_type a2) const throw ()
+    {
+        sysync::TSyError res;
+        OperationExecution exec;
+        res = m_pre(source, a1, a2);
+        if (res != sysync::LOCERR_OK) {
+            exec = OPERATION_SKIPPED;
+        } else {
+            if (m_operation) {
+                try {
+                    res = m_operation(a1, a2);
+                    exec = OPERATION_FINISHED;
+                } catch (...) {
+                    res = Exception::handle(/* source */);
+                    exec = OPERATION_EXCEPTION;
+                }
+            } else {
+                res = sysync::LOCERR_NOTIMP;
+                exec = OPERATION_EMPTY;
+            }
+        }
+        sysync::TSyError newres = m_post(source, exec, res, a1, a2);
+        if (newres != sysync::LOCERR_OK) {
+            res = newres;
+        }
+        return res == STATUS_FATAL ? STATUS_DATASTORE_FAILURE : res;
+    }
+
+    PreSignal &getPreSignal() const { return const_cast<OperationWrapperSwitch<F, 2> *>(this)->m_pre; }
+    PostSignal &getPostSignal() const { return const_cast<OperationWrapperSwitch<F, 2> *>(this)->m_post; }
+
+ protected:
+    OperationType m_operation;
+
+ private:
+    PreSignal m_pre;
+    PostSignal m_post;
+};
+
+template<class F> class OperationWrapperSwitch<F, 3>
+{
+ public:
+    typedef sysync::TSyError result_type;
+    typedef boost::function<F> OperationType;
+    typedef typename boost::function<F>::arg1_type arg1_type;
+    typedef typename boost::function<F>::arg2_type arg2_type;
+    typedef typename boost::function<F>::arg3_type arg3_type;
+    typedef boost::signals2::signal<void (SyncSource &, arg1_type a1, arg2_type a2, arg3_type a3),
+        OperationSlotInvoker> PreSignal;
+    typedef boost::signals2::signal<void (SyncSource &, OperationExecution, sysync::TSyError,
+                                          arg1_type a1, arg2_type a2, arg3_type a3),
+        OperationSlotInvoker> PostSignal;
+
+    sysync::TSyError operator () (SyncSource &source,
+                                  arg1_type a1, arg2_type a2, arg3_type a3) const throw ()
+    {
+        sysync::TSyError res;
+        OperationExecution exec;
+        res = m_pre(source, a1, a2, a3);
+        if (res != sysync::LOCERR_OK) {
+            exec = OPERATION_SKIPPED;
+        } else {
+            if (m_operation) {
+                try {
+                    res = m_operation(a1, a2, a3);
+                    exec = OPERATION_FINISHED;
+                } catch (...) {
+                    res = Exception::handle(/* source */);
+                        exec = OPERATION_EXCEPTION;
+                }
+            } else {
+                res = sysync::LOCERR_NOTIMP;
+                exec = OPERATION_EMPTY;
+            }
+        }
+        sysync::TSyError newres = m_post(source, exec, res, a1, a2, a3);
+        if (newres != sysync::LOCERR_OK) {
+            res = newres;
+        }
+        return res == STATUS_FATAL ? STATUS_DATASTORE_FAILURE : res;
+    }
+
+    PreSignal &getPreSignal() const { return const_cast<OperationWrapperSwitch<F, 3> *>(this)->m_pre; }
+    PostSignal &getPostSignal() const { return const_cast<OperationWrapperSwitch<F, 3> *>(this)->m_post; }
+
+ protected:
+    OperationType m_operation;
+
+ private:
+    PreSignal m_pre;
+    PostSignal m_post;
+
+};
+
+/**
+ * This mimics a boost::function with the same signature. The function
+ * signature F must have a sysync::TSyError error return code, as in most
+ * of the Synthesis DB API.
+ *
+ * Specializations of this class for operations with different number
+ * of parameters provide a call operator which invokes a pre- and
+ * post-signal around the actual implementation. See
+ * OperationWrapperSwitch<F, 0> for details.
+ *
+ * Additional operations could be wrapped by providing more
+ * specializations (different return code, more parameters). The
+ * number or parameters in the operation cannot exceed six, because
+ * adding three more parameters in the post-signal would push the
+ * total number of parameters in that signal beyond the limit of nine
+ * supported arguments in boost::signals2/boost::function.
+ */
+template<class F> class OperationWrapper :
+public OperationWrapperSwitch<F, boost::function<F>::arity>
+{
+    typedef OperationWrapperSwitch<F, boost::function<F>::arity> inherited;
+ public:
+    /** operation implemented? */
+    operator bool () const { return inherited::m_operation; }
+
+    /**
+     * Only usable by derived classes via read/write m_operations:
+     * sets the actual implementation of the operation.
+     */
+    void operator = (const boost::function<F> &operation)
+    {
+        inherited::m_operation = operation;
+    }
+};
+
+
+/**
  * abstract base class for SyncSource with some common functionality
  * and no data
  *
@@ -780,6 +1102,9 @@ class SyncSourceBase : public Logger {
      * operations, the bridge code in SynthesisDBPlugin code catches
      * exceptions, logs them and translates them into Synthesis error
      * codes, which are returned to the Synthesis engine.
+     *
+     * Monitoring of most DB operations is possible via the pre- and
+     * post-signals managed by OperationWrapper.
      */
     struct Operations {
         /**
@@ -894,51 +1219,35 @@ class SyncSourceBase : public Logger {
          * to be part of a sync session.
          */
         /**@{*/
-        typedef void (Callback_t)();
-        typedef boost::function<Callback_t> CallbackFunctor_t;
-        typedef std::list<CallbackFunctor_t> Callbacks_t;
+        typedef OperationWrapper<sysync::TSyError (const char *, const char *)> StartDataRead_t;
+        StartDataRead_t m_startDataRead;
 
-        /** all of these functions will be called before accessing
-            the source's data for the first time, i.e., before m_startDataRead */
-        Callbacks_t m_startAccess;
+        typedef OperationWrapper<sysync::TSyError ()> EndDataRead_t;
+        EndDataRead_t m_endDataRead;
 
-        typedef sysync::TSyError (StartDataRead_t)(const char *lastToken, const char *resumeToken);
-        boost::function<StartDataRead_t> m_startDataRead;
+        typedef OperationWrapper<sysync::TSyError ()> StartDataWrite_t;
+        StartDataWrite_t m_startDataWrite;
 
-        /** all of these functions will be called directly after
-            m_startDataRead() returned successfully */
-        Callbacks_t m_startSession;
-
-        typedef sysync::TSyError (EndDataRead_t)();
-        boost::function<EndDataRead_t> m_endDataRead;
-
-        typedef sysync::TSyError (StartDataWrite_t)();
-        boost::function<StartDataWrite_t> m_startDataWrite;
-
-        /** all of these functions will be called right
-            before m_endDataWrite() */
-        std::list<CallbackFunctor_t> m_endSession;
-
-        typedef sysync::TSyError (EndDataWrite_t)(bool success, char **newToken);
-        boost::function<EndDataWrite_t> m_endDataWrite;
+        typedef OperationWrapper<sysync::TSyError (bool success, char **newToken)> EndDataWrite_t;
+        EndDataWrite_t m_endDataWrite;
 
         /** the SynthesisDBPlugin is configured so that this operation
             doesn't have to (and cannot) return the item data */
-        typedef sysync::TSyError (ReadNextItem_t)(sysync::ItemID aID,
-                                                  sysync::sInt32 *aStatus, bool aFirst);
-        boost::function<ReadNextItem_t> m_readNextItem;
-        
-        typedef sysync::TSyError (ReadItemAsKey_t)(sysync::cItemID aID, sysync::KeyH aItemKey);
-        boost::function<ReadItemAsKey_t> m_readItemAsKey;
+        typedef OperationWrapper<sysync::TSyError (sysync::ItemID aID,
+                                                   sysync::sInt32 *aStatus, bool aFirst)> ReadNextItem_t;
+        ReadNextItem_t m_readNextItem;
 
-        typedef sysync::TSyError (InsertItemAsKey_t)(sysync::KeyH aItemKey, sysync::ItemID newID);
-        boost::function<InsertItemAsKey_t> m_insertItemAsKey;
-        
-        typedef sysync::TSyError (UpdateItemAsKey_t)(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID updID);
-        boost::function<UpdateItemAsKey_t> m_updateItemAsKey;
+        typedef OperationWrapper<sysync::TSyError (sysync::cItemID aID, sysync::KeyH aItemKey)> ReadItemAsKey_t;
+        ReadItemAsKey_t m_readItemAsKey;
 
-        typedef sysync::TSyError (DeleteItem_t)(sysync::cItemID aID);
-        boost::function<DeleteItem_t> m_deleteItem;
+        typedef OperationWrapper<sysync::TSyError (sysync::KeyH aItemKey, sysync::ItemID newID)> InsertItemAsKey_t;
+        InsertItemAsKey_t m_insertItemAsKey;
+
+        typedef OperationWrapper<sysync::TSyError (sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID updID)> UpdateItemAsKey_t;
+        UpdateItemAsKey_t m_updateItemAsKey;
+
+        typedef OperationWrapper<sysync::TSyError (sysync::cItemID aID)> DeleteItem_t;
+        DeleteItem_t m_deleteItem;
         /**@}*/
 
 
@@ -955,47 +1264,50 @@ class SyncSourceBase : public Logger {
          * implementation, like the one from SyncSourceAdmin.
          */
         /**@{*/
-        typedef sysync::TSyError (LoadAdminData_t)(const char *aLocDB,
+        typedef OperationWrapper<sysync::TSyError (const char *aLocDB,
                                                    const char *aRemDB,
-                                                   char **adminData);
-        boost::function<LoadAdminData_t> m_loadAdminData;
+                                                   char **adminData)> LoadAdminData_t;
+        LoadAdminData_t m_loadAdminData;
 
-        typedef sysync::TSyError (SaveAdminData_t)(const char *adminData);
-        boost::function<SaveAdminData_t> m_saveAdminData;
+        typedef OperationWrapper<sysync::TSyError (const char *adminData)> SaveAdminData_t;
+        SaveAdminData_t m_saveAdminData;
 
+        // not currently wrapped because it has a different return type;
+        // templates could be adapted to handle that
         typedef bool (ReadNextMapItem_t)(sysync::MapID mID, bool aFirst);
         boost::function<ReadNextMapItem_t> m_readNextMapItem;
 
-        typedef sysync::TSyError (InsertMapItem_t)(sysync::cMapID mID);
-        boost::function<InsertMapItem_t> m_insertMapItem;
+        typedef OperationWrapper<sysync::TSyError (sysync::cMapID mID)> InsertMapItem_t;
+        InsertMapItem_t m_insertMapItem;
 
-        typedef sysync::TSyError (UpdateMapItem_t)(sysync::cMapID mID);
-        boost::function<UpdateMapItem_t> m_updateMapItem;
+        typedef OperationWrapper<sysync::TSyError (sysync::cMapID mID)> UpdateMapItem_t;
+        UpdateMapItem_t m_updateMapItem;
 
-        typedef sysync::TSyError (DeleteMapItem_t)(sysync::cMapID mID);
-        boost::function<DeleteMapItem_t> m_deleteMapItem;
+        typedef OperationWrapper<sysync::TSyError (sysync::cMapID mID)> DeleteMapItem_t;
+        DeleteMapItem_t m_deleteMapItem;
 
-        typedef sysync::TSyError (ReadBlob_t)(sysync::cItemID aID, const char *aBlobID,
-                                              void **aBlkPtr, size_t *aBlkSize,
-                                              size_t *aTotSize,
-                                              bool aFirst, bool *aLast);
-        boost::function<ReadBlob_t> m_readBlob;
+        // not wrapped, too many parameters
+        typedef boost::function<sysync::TSyError (sysync::cItemID aID, const char *aBlobID,
+                                                  void **aBlkPtr, size_t *aBlkSize,
+                                                  size_t *aTotSize,
+                                                  bool aFirst, bool *aLast)> ReadBlob_t;
+        ReadBlob_t m_readBlob;
 
-        typedef sysync::TSyError (WriteBlob_t)(sysync::cItemID aID, const char *aBlobID,
-                                               void *aBlkPtr, size_t aBlkSize,
-                                               size_t aTotSize,
-                                               bool aFirst, bool aLast);
-        boost::function<WriteBlob_t> m_writeBlob;
+        typedef boost::function<sysync::TSyError (sysync::cItemID aID, const char *aBlobID,
+                                                  void *aBlkPtr, size_t aBlkSize,
+                                                  size_t aTotSize,
+                                                  bool aFirst, bool aLast)> WriteBlob_t;
+        WriteBlob_t m_writeBlob;
 
-        typedef sysync::TSyError (DeleteBlob_t)(sysync::cItemID aID, const char *aBlobID);
-        boost::function<DeleteBlob_t> m_deleteBlob;
+        typedef OperationWrapper<sysync::TSyError (sysync::cItemID aID, const char *aBlobID)> DeleteBlob_t;
+        DeleteBlob_t m_deleteBlob;
         /**@}*/
     };
 
     /**
      * Read-only access to operations.
      */
-    virtual const Operations &getOperations() = 0;
+    virtual const Operations &getOperations() const = 0;
 
  protected:
     struct SynthesisInfo {
@@ -1164,14 +1476,8 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
      * Read-only access to operations.  Derived classes can modify
      * them via m_operations.
      */
-    virtual const Operations &getOperations() { return m_operations; }
+    virtual const Operations &getOperations() const { return m_operations; }
 
-    /**
-     * outside users of the source are only allowed to add callbacks,
-     * not overwrite arbitrary operations
-     */
-    void addCallback(Operations::CallbackFunctor_t callback, Operations::Callbacks_t Operations::* where) { (m_operations.*where).push_back(callback); }
-        
     /**
      * closes the data source so that it can be reopened
      *
@@ -2043,12 +2349,9 @@ class SyncSourceLogging : public virtual SyncSourceBase
     std::list<std::string> m_fields;
     std::string m_sep;
 
-    sysync::TSyError insertItemAsKey(sysync::KeyH aItemKey, sysync::ItemID newID,
-                                     const boost::function<SyncSource::Operations::InsertItemAsKey_t> &parent);
-    sysync::TSyError updateItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID,
-                                     const boost::function<SyncSource::Operations::UpdateItemAsKey_t> &parent);
-    sysync::TSyError deleteItem(sysync::cItemID aID,
-                                const boost::function<SyncSource::Operations::DeleteItem_t> &parent);
+    void insertItemAsKey(sysync::KeyH aItemKey, sysync::ItemID newID);
+    void updateItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID);
+    void deleteItem(sysync::cItemID aID);
 };
 
 /**

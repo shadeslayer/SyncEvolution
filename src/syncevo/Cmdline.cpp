@@ -1272,7 +1272,7 @@ bool Cmdline::run() {
                 source->throwError("reading items not supported");
             }
 
-            err = ops.m_startDataRead("", "");
+            err = ops.m_startDataRead(*source, "", "");
             CHECK_ERROR("reading items");
             list<string> luids;
             readLUIDs(source, luids);
@@ -1292,7 +1292,7 @@ bool Cmdline::run() {
             }
             list<string> luids;
             bool deleteAll = std::find(m_luids.begin(), m_luids.end(), "*") != m_luids.end();
-            err = ops.m_startDataRead("", "");
+            err = ops.m_startDataRead(*source, "", "");
             CHECK_ERROR("reading items");
             if (deleteAll) {
                 readLUIDs(source, luids);
@@ -1300,21 +1300,21 @@ bool Cmdline::run() {
                 luids = m_luids;
             }
             if (ops.m_endDataRead) {
-                err = ops.m_endDataRead();
+                err = ops.m_endDataRead(*source);
                 CHECK_ERROR("stop reading items");
             }
             if (ops.m_startDataWrite) {
-                err = ops.m_startDataWrite();
+                err = ops.m_startDataWrite(*source);
                 CHECK_ERROR("writing items");
             }
             BOOST_FOREACH(const string &luid, luids) {
                 sysync::ItemIDType id;
                 id.item = (char *)luid.c_str();
-                err = ops.m_deleteItem(&id);
+                err = ops.m_deleteItem(*source, &id);
                 CHECK_ERROR("deleting item");
             }
             char *token;
-            err = ops.m_endDataWrite(true, &token);
+            err = ops.m_endDataWrite(*source, true, &token);
             if (token) {
                 free(token);
             }
@@ -1325,14 +1325,14 @@ bool Cmdline::run() {
                 source->throwError("reading/writing items directly not supported");
             }
             if (m_import || m_update) {
-                err = ops.m_startDataRead("", "");
+                err = ops.m_startDataRead(*source, "", "");
                 CHECK_ERROR("reading items");
                 if (ops.m_endDataRead) {
-                    err = ops.m_endDataRead();
+                    err = ops.m_endDataRead(*source);
                     CHECK_ERROR("stop reading items");
                 }
                 if (ops.m_startDataWrite) {
-                    err = ops.m_startDataWrite();
+                    err = ops.m_startDataWrite(*source);
                     CHECK_ERROR("writing items");
                 }
 
@@ -1412,13 +1412,13 @@ bool Cmdline::run() {
                     }
                 }
                 char *token = NULL;
-                err = ops.m_endDataWrite(true, &token);
+                err = ops.m_endDataWrite(*source, true, &token);
                 if (token) {
                     free(token);
                 }
                 CHECK_ERROR("stop writing items");
             } else if (m_export) {
-                err = ops.m_startDataRead("", "");
+                err = ops.m_startDataRead(*source, "", "");
                 CHECK_ERROR("reading items");
 
                 ostream *out = NULL;
@@ -1606,13 +1606,13 @@ void Cmdline::readLUIDs(SyncSource *source, list<string> &luids)
     const SyncSource::Operations &ops = source->getOperations();
     sysync::ItemIDType id;
     sysync::sInt32 status;
-    sysync::TSyError err = ops.m_readNextItem(&id, &status, true);
+    sysync::TSyError err = ops.m_readNextItem(*source, &id, &status, true);
     CHECK_ERROR("next item");
     while (status != sysync::ReadNextItem_EOF) {
         luids.push_back(id.item);
         StrDispose(id.item);
         StrDispose(id.parent);
-        err = ops.m_readNextItem(&id, &status, false);
+        err = ops.m_readNextItem(*source, &id, &status, false);
         CHECK_ERROR("next item");
     }
 }

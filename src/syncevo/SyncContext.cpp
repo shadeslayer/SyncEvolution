@@ -3039,7 +3039,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
                 }
 
                 // request callback when starting to use source
-                source->addCallback(boost::bind(&SyncContext::startSourceAccess, this, source), &SyncSource::Operations::m_startAccess);
+                source->getOperations().m_startDataRead.getPreSignal().connect(boost::bind(&SyncContext::startSourceAccess, this, source));
             }
 
             // ready to go

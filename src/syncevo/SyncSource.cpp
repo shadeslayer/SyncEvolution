@@ -36,6 +36,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/lambda/lambda.hpp>
 
 #include <ctype.h>
 #include <errno.h>
@@ -501,6 +502,8 @@ SyncSource::Databases VirtualSyncSource::getDatabases()
 void SyncSourceSession::init(SyncSource::Operations &ops)
 {
     ops.m_startDataRead = boost::bind(&SyncSourceSession::startDataRead, this, _1, _2);
+    ops.m_endDataRead = boost::lambda::constant(sysync::LOCERR_OK);
+    ops.m_startDataWrite = boost::lambda::constant(sysync::LOCERR_OK);
     ops.m_endDataWrite = boost::bind(&SyncSourceSession::endDataWrite, this, _1, _2);
 }
 
@@ -1167,8 +1170,8 @@ void SyncSourceRevisions::init(SyncSourceRaw *raw,
         ops.m_restoreData = boost::bind(&SyncSourceRevisions::restoreData,
                                         this, _1, _2, _3);
     }
-    ops.m_endSession.push_back(boost::bind(&SyncSourceRevisions::sleepSinceModification,
-                                           this));
+    ops.m_endDataWrite.getPostSignal().connect(boost::bind(&SyncSourceRevisions::sleepSinceModification,
+                                                           this));
 }
 
 std::string SyncSourceLogging::getDescription(sysync::KeyH aItemKey)
@@ -1201,46 +1204,31 @@ std::string SyncSourceLogging::getDescription(const string &luid)
     return "";
 }
 
-sysync::TSyError SyncSourceLogging::insertItemAsKey(sysync::KeyH aItemKey, sysync::ItemID newID, const boost::function<SyncSource::Operations::InsertItemAsKey_t> &parent)
+void SyncSourceLogging::insertItemAsKey(sysync::KeyH aItemKey, sysync::ItemID newID)
 {
     std::string description = getDescription(aItemKey);
     SE_LOG_INFO(this, NULL,
                 description.empty() ? "%s <%s>" : "%s \"%s\"",
                 "adding",
                 !description.empty() ? description.c_str() : "???");
-    if (parent) {
-        return parent(aItemKey, newID);
-    } else {
-        return sysync::LOCERR_NOTIMP;
-    }
 }
 
-sysync::TSyError SyncSourceLogging::updateItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID, const boost::function<SyncSource::Operations::UpdateItemAsKey_t> &parent)
+void SyncSourceLogging::updateItemAsKey(sysync::KeyH aItemKey, sysync::cItemID aID, sysync::ItemID newID)
 {
     std::string description = getDescription(aItemKey);
     SE_LOG_INFO(this, NULL,
                 description.empty() ? "%s <%s>" : "%s \"%s\"",
                 "updating",
                 !description.empty() ? description.c_str() : aID ? aID->item : "???");
-    if (parent) {
-        return parent(aItemKey, aID, newID);
-    } else {
-        return sysync::LOCERR_NOTIMP;
-    }
 }
 
-sysync::TSyError SyncSourceLogging::deleteItem(sysync::cItemID aID, const boost::function<SyncSource::Operations::DeleteItem_t> &parent)
+void SyncSourceLogging::deleteItem(sysync::cItemID aID)
 {
     std::string description = getDescription(aID->item);
     SE_LOG_INFO(this, NULL,
                 description.empty() ? "%s <%s>" : "%s \"%s\"",
                 "deleting",
                 !description.empty() ? description.c_str() : aID->item);
-    if (parent) {
-        return parent(aID);
-    } else {
-        return sysync::LOCERR_NOTIMP;
-    }
 }
 
 void SyncSourceLogging::init(const std::list<std::string> &fields,
@@ -1250,12 +1238,12 @@ void SyncSourceLogging::init(const std::list<std::string> &fields,
     m_fields = fields;
     m_sep = sep;
 
-    ops.m_insertItemAsKey = boost::bind(&SyncSourceLogging::insertItemAsKey,
-                                        this, _1, _2, ops.m_insertItemAsKey);
-    ops.m_updateItemAsKey = boost::bind(&SyncSourceLogging::updateItemAsKey,
-                                        this, _1, _2, _3, ops.m_updateItemAsKey);
-    ops.m_deleteItem = boost::bind(&SyncSourceLogging::deleteItem,
-                                   this, _1, ops.m_deleteItem);
+    ops.m_insertItemAsKey.getPreSignal().connect(boost::bind(&SyncSourceLogging::insertItemAsKey,
+                                                             this, _2, _3));
+    ops.m_updateItemAsKey.getPreSignal().connect(boost::bind(&SyncSourceLogging::updateItemAsKey,
+                                                             this, _2, _3, _4));
+    ops.m_deleteItem.getPreSignal().connect(boost::bind(&SyncSourceLogging::deleteItem,
+                                                        this, _2));
 }
 
 sysync::TSyError SyncSourceAdmin::loadAdminData(const char *aLocDB,
@@ -1429,8 +1417,7 @@ void SyncSourceAdmin::init(SyncSource::Operations &ops,
                                       this, _1);
     ops.m_deleteMapItem = boost::bind(&SyncSourceAdmin::deleteMapItem,
                                       this, _1);
-    ops.m_endSession.push_back(boost::bind(&SyncSourceAdmin::flush,
-                                           this));
+    ops.m_endDataWrite.getPostSignal().connect(boost::bind(&SyncSourceAdmin::flush, this));
 }
 
 void SyncSourceAdmin::init(SyncSource::Operations &ops,

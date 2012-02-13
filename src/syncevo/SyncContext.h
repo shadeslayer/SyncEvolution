@@ -742,7 +742,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     void initLocalSync(const string &config);
 
     /**
-     * called by SynthesDBPlugin in SyncEvolution_StartDataRead()
+     * called via pre-signal of m_startDataRead
      */
     void startSourceAccess(SyncSource *source);
 
