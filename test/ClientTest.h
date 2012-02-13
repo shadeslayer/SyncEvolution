@@ -79,8 +79,6 @@ class CheckSyncReport {
         m_report(NULL)
         {}
 
-    virtual ~CheckSyncReport() {}
-
     int clientAdded, clientUpdated, clientDeleted,
         serverAdded, serverUpdated, serverDeleted;
     int restarts;
@@ -101,7 +99,12 @@ class CheckSyncReport {
      * @param res     return code from SyncClient::sync()
      * @param report  the sync report stored in the SyncClient
      */
-    virtual void check(SyncMLStatus status, SyncReport &report) const;
+    void check(SyncMLStatus status, SyncReport &report) const;
+
+    /**
+     * checks that the source report matches with expectations
+     */
+    void check(const std::string &name, const SyncSourceReport &report) const;
 };
 
 /**

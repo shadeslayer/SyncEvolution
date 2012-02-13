@@ -6790,7 +6790,6 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
         CT_ASSERT_EQUAL(STATUS_OK, status);
     }
 
-    // this code is intentionally duplicated to produce nicer CPPUNIT asserts
     BOOST_FOREACH(SyncReport::value_type &entry, report) {
         const std::string &name = entry.first;
         const SyncSourceReport &source = entry.second;
@@ -6799,66 +6798,72 @@ void CheckSyncReport::check(SyncMLStatus status, SyncReport &report) const
         if (mustSucceed) {
             CLIENT_TEST_EQUAL(name, STATUS_OK, source.getStatus());
         }
-        CLIENT_TEST_EQUAL(name, 0, source.getItemStat(SyncSourceReport::ITEM_LOCAL,
-                                                      SyncSourceReport::ITEM_ANY,
-                                                      SyncSourceReport::ITEM_REJECT));
-        CLIENT_TEST_EQUAL(name, 0, source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                                                      SyncSourceReport::ITEM_ANY,
-                                                      SyncSourceReport::ITEM_REJECT));
-
-        const char* checkSyncModeStr = getenv("CLIENT_TEST_NOCHECK_SYNCMODE");
-        bool checkSyncMode = true;
-        bool checkSyncStats = getenv ("CLIENT_TEST_NOCHECK_SYNCSTATS") ? false : true;
-        if (checkSyncModeStr && 
-                (!strcmp(checkSyncModeStr, "1") || !strcasecmp(checkSyncModeStr, "t"))) {
-            checkSyncMode = false;
-        }
-
-        if (syncMode != SYNC_NONE && checkSyncMode) {
-            CLIENT_TEST_EQUAL(name, syncMode, source.getFinalSyncMode());
-        }
-
-        CLIENT_TEST_EQUAL(name, restarts + 1, source.getRestarts() + 1);
-
-        if (clientAdded != -1 && checkSyncStats) {
-            CLIENT_TEST_EQUAL(name, clientAdded,
-                              source.getItemStat(SyncSourceReport::ITEM_LOCAL,
-                                                 SyncSourceReport::ITEM_ADDED,
-                                                 SyncSourceReport::ITEM_TOTAL));
-        }
-        if (clientUpdated != -1 && checkSyncStats) {
-            CLIENT_TEST_EQUAL(name, clientUpdated,
-                              source.getItemStat(SyncSourceReport::ITEM_LOCAL,
-                                                 SyncSourceReport::ITEM_UPDATED,
-                                                 SyncSourceReport::ITEM_TOTAL));
-        }
-        if (clientDeleted != -1 && checkSyncStats) {
-            CLIENT_TEST_EQUAL(name, clientDeleted,
-                              source.getItemStat(SyncSourceReport::ITEM_LOCAL,
-                                                 SyncSourceReport::ITEM_REMOVED,
-                                                 SyncSourceReport::ITEM_TOTAL));
-        }
-
-        if (serverAdded != -1 && checkSyncStats) {
-            CLIENT_TEST_EQUAL(name, serverAdded,
-                              source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                                                 SyncSourceReport::ITEM_ADDED,
-                                                 SyncSourceReport::ITEM_TOTAL));
-        }
-        if (serverUpdated != -1 && checkSyncStats) {
-            CLIENT_TEST_EQUAL(name, serverUpdated,
-                              source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                                                 SyncSourceReport::ITEM_UPDATED,
-                                                 SyncSourceReport::ITEM_TOTAL));
-        }
-        if (serverDeleted != -1 && checkSyncStats) {
-            CLIENT_TEST_EQUAL(name, serverDeleted,
-                              source.getItemStat(SyncSourceReport::ITEM_REMOTE,
-                                                 SyncSourceReport::ITEM_REMOVED,
-                                                 SyncSourceReport::ITEM_TOTAL));
-        }
+        check(name, source);
     }
     SE_LOG_DEBUG(NULL, NULL, "Done with checking sync report.");
+}
+
+void CheckSyncReport::check(const std::string &name, const SyncSourceReport &source) const
+{
+    // this code is intentionally duplicated to produce nicer CPPUNIT asserts
+    CLIENT_TEST_EQUAL(name, 0, source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                                  SyncSourceReport::ITEM_ANY,
+                                                  SyncSourceReport::ITEM_REJECT));
+    CLIENT_TEST_EQUAL(name, 0, source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                                  SyncSourceReport::ITEM_ANY,
+                                                  SyncSourceReport::ITEM_REJECT));
+
+    const char* checkSyncModeStr = getenv("CLIENT_TEST_NOCHECK_SYNCMODE");
+    bool checkSyncMode = true;
+    bool checkSyncStats = getenv ("CLIENT_TEST_NOCHECK_SYNCSTATS") ? false : true;
+    if (checkSyncModeStr && 
+        (!strcmp(checkSyncModeStr, "1") || !strcasecmp(checkSyncModeStr, "t"))) {
+        checkSyncMode = false;
+    }
+
+    if (syncMode != SYNC_NONE && checkSyncMode) {
+        CLIENT_TEST_EQUAL(name, syncMode, source.getFinalSyncMode());
+    }
+
+    CLIENT_TEST_EQUAL(name, restarts + 1, source.getRestarts() + 1);
+
+    if (clientAdded != -1 && checkSyncStats) {
+        CLIENT_TEST_EQUAL(name, clientAdded,
+                          source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                             SyncSourceReport::ITEM_ADDED,
+                                             SyncSourceReport::ITEM_TOTAL));
+    }
+    if (clientUpdated != -1 && checkSyncStats) {
+        CLIENT_TEST_EQUAL(name, clientUpdated,
+                          source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                             SyncSourceReport::ITEM_UPDATED,
+                                             SyncSourceReport::ITEM_TOTAL));
+    }
+    if (clientDeleted != -1 && checkSyncStats) {
+        CLIENT_TEST_EQUAL(name, clientDeleted,
+                          source.getItemStat(SyncSourceReport::ITEM_LOCAL,
+                                             SyncSourceReport::ITEM_REMOVED,
+                                             SyncSourceReport::ITEM_TOTAL));
+    }
+
+    if (serverAdded != -1 && checkSyncStats) {
+        CLIENT_TEST_EQUAL(name, serverAdded,
+                          source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                             SyncSourceReport::ITEM_ADDED,
+                                             SyncSourceReport::ITEM_TOTAL));
+    }
+    if (serverUpdated != -1 && checkSyncStats) {
+        CLIENT_TEST_EQUAL(name, serverUpdated,
+                          source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                             SyncSourceReport::ITEM_UPDATED,
+                                             SyncSourceReport::ITEM_TOTAL));
+    }
+    if (serverDeleted != -1 && checkSyncStats) {
+        CLIENT_TEST_EQUAL(name, serverDeleted,
+                          source.getItemStat(SyncSourceReport::ITEM_REMOTE,
+                                             SyncSourceReport::ITEM_REMOVED,
+                                             SyncSourceReport::ITEM_TOTAL));
+    }
 }
 
 /** @} */
