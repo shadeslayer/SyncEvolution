@@ -137,13 +137,13 @@ struct SyncOptions {
     
     bool m_isAborted;
 
-    typedef boost::function<bool (SyncContext &,
-                                  SyncOptions &)> Callback_t;
     /**
      * Callback to be invoked after setting up local sources, but
      * before running the engine. May throw exception to indicate
      * error and return true to stop sync without error.
      */
+    typedef boost::function<bool (SyncContext &,
+                                  SyncOptions &)> Callback_t;
     Callback_t m_startCallback;
 
     /**
