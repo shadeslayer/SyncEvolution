@@ -155,7 +155,11 @@ void EvolutionContactSource::open()
     GError *gerror = NULL;
     string id = getDatabaseID();
     ESource *source = findSource(sources, id);
-    bool onlyIfExists = true;
+    bool onlyIfExists = false; // always try to create address book, because even if there is
+                               // a source there's no guarantee that the actual database was
+                               // created already; the original logic below for only setting
+                               // this when explicitly requesting a new address book
+                               // therefore failed in some cases
     bool created = false;
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and

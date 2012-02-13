@@ -202,7 +202,11 @@ void EvolutionCalendarSource::open()
 
     string id = getDatabaseID();    
     ESource *source = findSource(sources, id);
-    bool onlyIfExists = true;
+    bool onlyIfExists = false; // always try to create address book, because even if there is
+                               // a source there's no guarantee that the actual database was
+                               // created already; the original logic below for only setting
+                               // this when explicitly requesting a new database
+                               // therefore failed in some cases
     bool created = false;
 
     // Open twice. This solves an issue where Evolution's CalDAV
