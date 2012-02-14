@@ -107,7 +107,7 @@ void ForkExecParent::start()
         }
     } else {
         // absolute path, use it
-        m_helper = helper;
+        helper = m_helper;
     }
 
     m_argvStrings.push_back(helper);
