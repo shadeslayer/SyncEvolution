@@ -1069,3 +1069,25 @@
    fun:calloc
    obj:/lib/i386-linux-gnu/libglib-2.0.so.0.3000.2
 }
+
+# ==15919== Jump to the invalid address stated on the next line
+# ==15919==    at 0x4CE: ???
+# ==15919==    by 0x4005557: open_verify (dl-load.c:1821)
+# ==15919==    by 0x4005BE7: open_path (dl-load.c:2082)
+# ==15919==    by 0x4007A91: _dl_map_object (dl-load.c:2285)
+# ==15919==    by 0x400CF61: openaux (dl-deps.c:65)
+# ==15919==    by 0x400D925: _dl_catch_error (dl-error.c:178)
+# ==15919==    by 0x400C02B: _dl_map_object_deps (dl-deps.c:247)
+# ==15919==    by 0x40032B6: dl_main (rtld.c:1815)
+# ==15919==    by 0x4014B2D: _dl_sysdep_start (dl-sysdep.c:244)
+# ==15919==    by 0x4001422: _dl_start (rtld.c:342)
+# ==15919==    by 0x4000AF7: ??? (in /lib/x86_64-linux-gnu/ld-2.13.so)
+# ==15919==  Address 0x4ce is not stack'd, malloc'd or (recently) free'd
+# ==15919== 
+{
+   segfault caused by valgrind + libdl
+   Memcheck:Jump
+   obj:*
+   fun:open_verify
+   fun:open_path
+}
