@@ -3098,6 +3098,7 @@ class TestLocalSync(unittest.TestCase, DBusUtil):
                                                         "databaseFormat": "text/vcard",
                                                         "database": "file://" + xdg_root + "/server" } })
 
+    @timeout(100)
     def testSync(self):
         """TestLocalSync.testSync - run a simple slow sync between local dirs"""
         os.makedirs(xdg_root + "/server")
@@ -3117,6 +3118,7 @@ END:VCARD''')
         self.assertTrue("FN:John Doe" in input.read())
 
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
+    @timeout(100)
     def testConcurrency(self):
         """TestLocalSync.testConcurrency - D-Bus server must remain responsive while sync runs"""
         self.setUpListeners(self.sessionpath)
