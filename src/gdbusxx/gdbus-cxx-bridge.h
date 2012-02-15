@@ -3953,10 +3953,12 @@ protected:
 
     void prepare(GDBusMessagePtr &msg)
     {
-        msg.reset(g_dbus_message_new_method_call(m_destination.c_str(),
-                                                 m_path.c_str(),
-                                                 m_interface.c_str(),
-                                                 m_method.c_str()));
+        // Constructor steals reference, reset() doesn't!
+        // Therefore use constructor+copy instead of reset().
+        msg = GDBusMessagePtr(g_dbus_message_new_method_call(m_destination.c_str(),
+                                                             m_path.c_str(),
+                                                             m_interface.c_str(),
+                                                             m_method.c_str()));
         if (!msg) {
             throw std::runtime_error("g_dbus_message_new_method_call() failed");
         }
