@@ -5,6 +5,14 @@ include $(top_srcdir)/src/gnome-bluetooth/gnome-bluetooth.am
 src_cppflags += -I$(top_srcdir)/src/gnome-bluetooth
 endif
 
+if COND_GIO_GDBUS
+include $(top_srcdir)/src/gdbusxx/gdbusxx.am
+src_cppflags += -I$(top_srcdir)/src/gdbusxx
+else
+include $(top_srcdir)/src/gdbus/gdbus.am
+src_cppflags += -I$(top_srcdir)/src/gdbus
+endif
+
 if COND_CORE
 include $(top_srcdir)/src/syncevo/syncevo.am
 src_cppflags += -I$(top_srcdir)/src/syncevo
@@ -15,14 +23,6 @@ bin_SCRIPTS += src/synccompare
 include $(top_srcdir)/src/templates/templates.am
 else
 src_cppflags += -I$(top_srcdir)/$(SYNTHESIS_SUBDIR_INCLUDES)
-endif
-
-if COND_GIO_GDBUS
-include $(top_srcdir)/src/gdbusxx/gdbusxx.am
-src_cppflags += -I$(top_srcdir)/src/gdbusxx
-else
-include $(top_srcdir)/src/gdbus/gdbus.am
-src_cppflags += -I$(top_srcdir)/src/gdbus
 endif
 
 include $(top_srcdir)/src/dbus/dbus.am
