@@ -4323,7 +4323,8 @@ class SignalWatch0 : public SignalWatch< boost::function<void (void)> >
 
  public:
     SignalWatch0(const DBusRemoteObject &object,
-                 const std::string &signal)
+                 const std::string &signal,
+                 bool = true)
         : SignalWatch<Callback_t>(object, signal)
     {
     }
@@ -4353,7 +4354,8 @@ class SignalWatch1 : public SignalWatch< boost::function<void (const A1 &)> >
 
  public:
     SignalWatch1(const DBusRemoteObject &object,
-                 const std::string &signal)
+                 const std::string &signal,
+                 bool = true)
         : SignalWatch<Callback_t>(object, signal)
     {
     }
@@ -4389,7 +4391,8 @@ class SignalWatch2 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch2(const DBusRemoteObject &object,
-                 const std::string &signal)
+                 const std::string &signal,
+                 bool = true)
         : SignalWatch<Callback_t>(object, signal)
     {
     }
@@ -4428,7 +4431,8 @@ class SignalWatch3 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch3(const DBusRemoteObject &object,
-                 const std::string &signal)
+                 const std::string &signal,
+                 bool = true)
         : SignalWatch<Callback_t>(object, signal)
     {
     }
@@ -4475,7 +4479,8 @@ class SignalWatch4 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch4(const DBusRemoteObject &object,
-                 const std::string &signal)
+                 const std::string &signal,
+                 bool = true)
         : SignalWatch<Callback_t>(object, signal)
     {
     }
@@ -4520,7 +4525,8 @@ class SignalWatch5 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch5(const DBusRemoteObject &object,
-                 const std::string &signal)
+                 const std::string &signal,
+                 bool = true)
         : SignalWatch<Callback_t>(object, signal)
     {
     }
@@ -4570,7 +4576,8 @@ class SignalWatch6 : public SignalWatch< boost::function<void (const A1 &, const
 
  public:
     SignalWatch6(const DBusRemoteObject &object,
-                 const std::string &signal)
+                 const std::string &signal,
+                 bool = true)
         : SignalWatch<Callback_t>(object, signal)
     {
     }

@@ -103,7 +103,7 @@ DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
     if (!conn && err) {
         err->set(error);
     }
-    
+
     return conn;
 }
 
