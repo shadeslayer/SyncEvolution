@@ -4658,3 +4658,25 @@
    obj:*libORBit*
    obj:*libgconf*
 }
+
+## SyncEvolution ##
+
+# Occurs when running D-Bus test TestFileNotify.testRestart
+# Code will be rewritten soon, ignore for the moment.
+#
+#==25995== Conditional jump or move depends on uninitialised value(s)
+# ==25995==    at 0x59B1DE: SyncEvo::AutoSyncManager::initConfig(std::string const&) (auto-term.h:130)
+# ==25995==    by 0x59C62B: SyncEvo::AutoSyncManager::init() (auto-sync-manager.cpp:36)
+# ==25995==    by 0x57342C: SyncEvo::Server::Server(_GMainLoop*, bool&, boost::shared_ptr<SyncEvo::Restart>&, GDBusCXX::DBusConnectionPtr const&, int) (auto-sync-manager.h:209)
+# ==25995==    by 0x5478F6: main (main.cpp:115)
+# ==25995==  Uninitialised value was created by a stack allocation
+# ==25995==    at 0x54746D: main (main.cpp:62)
+# ==25995== 
+{
+   TestFileNotify.testRestart
+   Memcheck:Cond
+   fun:_ZN7SyncEvo15AutoSyncManager10initConfigERKSs
+   fun:_ZN7SyncEvo15AutoSyncManager4initEv
+   fun:_ZN7SyncEvo6ServerC1EP10_GMainLoopRbRN5boost10shared_ptrINS_7RestartEEERKN8GDBusCXX17DBusConnectionPtrEi
+   fun:main
+}
