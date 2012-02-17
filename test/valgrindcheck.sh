@@ -45,7 +45,7 @@ trap "kill -INT $VALGRIND_PID" INT
 
 wait $VALGRIND_PID
 RET=$?
-echo valgrindcheck: "$@": returned $RET >&2
+echo "valgrindcheck ($$): '$@' ($VALGRIND_PID): returned $RET" >&2
 
 # give other valgrind instances some time to settle down, then kill them
 sleep 1

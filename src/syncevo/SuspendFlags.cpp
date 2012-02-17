@@ -135,6 +135,8 @@ boost::shared_ptr<SuspendFlags::StateBlocker> SuspendFlags::block(boost::weak_pt
 
 boost::shared_ptr<SuspendFlags::Guard> SuspendFlags::activate()
 {
+    SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: (re)activating, currently %s",
+                 m_senderFD > 0 ? "active" : "inactive");
     int fds[2];
     if (pipe(fds)) {
         SE_THROW(StringPrintf("allocating pipe for signals failed: %s", strerror(errno)));
@@ -144,6 +146,8 @@ boost::shared_ptr<SuspendFlags::Guard> SuspendFlags::activate()
     fcntl(fds[1], F_SETFL, fcntl(fds[1], F_GETFL) | O_NONBLOCK);
     m_senderFD = fds[1];
     m_receiverFD = fds[0];
+    SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: activating signal handler(s) with fds %d->%d",
+                 m_senderFD, m_receiverFD);
     sigaction(SIGINT, NULL, &m_oldSigInt);
     sigaction(SIGTERM, NULL, &m_oldSigTerm);
 
@@ -162,9 +166,11 @@ boost::shared_ptr<SuspendFlags::Guard> SuspendFlags::activate()
     }
     if (m_oldSigInt.sa_handler == SIG_DFL) {
         sigaction(SIGINT, &new_action, NULL);
+        SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: catch SIGINT");
     }
     if (m_oldSigTerm.sa_handler == SIG_DFL) {
         sigaction(SIGTERM, &new_action, NULL);
+        SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: catch SIGTERM");
     }
 
     return boost::shared_ptr<Guard>(new GLibGuard(m_receiverFD));
@@ -172,6 +178,8 @@ boost::shared_ptr<SuspendFlags::Guard> SuspendFlags::activate()
 
 void SuspendFlags::deactivate()
 {
+    SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: deactivating fds %d->%d",
+                 m_senderFD, m_receiverFD);
     if (m_receiverFD >= 0) {
         sigaction(SIGTERM, &m_oldSigTerm, NULL);
         sigaction(SIGINT, &m_oldSigInt, NULL);
@@ -185,6 +193,9 @@ void SuspendFlags::deactivate()
 void SuspendFlags::handleSignal(int sig)
 {
     SuspendFlags &me(getSuspendFlags());
+
+    // can't use logging infrastructure in signal handler,
+    // not reentrant
 
     unsigned char msg;
     switch (sig) {
@@ -237,6 +248,8 @@ void SuspendFlags::printSignals()
     if (m_receiverFD >= 0) {
         unsigned char msg;
         while (read(m_receiverFD, &msg, 1) == 1) {
+            SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: read %d from fd %d",
+                         msg, m_receiverFD);
             const char *str = NULL;
             switch (msg) {
             case SUSPEND:

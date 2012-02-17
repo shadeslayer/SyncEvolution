@@ -91,15 +91,16 @@ int main(int argc, char **argv, char **envp)
         setvbuf(stderr, NULL, _IONBF, 0);
         setvbuf(stdout, NULL, _IONBF, 0);
 
-        signal(SIGTERM, niam);
-        signal(SIGINT, niam);
-
         LogRedirect redirect(true);
 
         // make daemon less chatty - long term this should be a command line option
         LoggerBase::instance().setLevel(getenv("SYNCEVOLUTION_DEBUG") ?
                                         LoggerBase::DEBUG :
                                         LoggerBase::INFO);
+
+        SE_LOG_DEBUG(NULL, NULL, "syncevo-dbus-server: catch SIGINT/SIGTERM in our own shutdown function");
+        signal(SIGTERM, niam);
+        signal(SIGINT, niam);
 
         DBusErrorCXX err;
         DBusConnectionPtr conn = dbus_get_bus_connection("SESSION",

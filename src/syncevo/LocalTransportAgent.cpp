@@ -779,6 +779,8 @@ public:
             new_action.sa_handler = abortLocalSync;
             sigaction(SIGTERM, &new_action, NULL);
 
+            SE_LOG_DEBUG(NULL, NULL, "LocalTransportChild: ignore SIGINT, die in SIGTERM");
+
             m_client->sync(&m_clientReport);
         } catch (...) {
             string explanation;

@@ -3271,6 +3271,7 @@ SyncMLStatus SyncContext::doSync()
     // install signal handlers unless this was explicitly disabled
     bool catchSignals = getenv("SYNCEVOLUTION_NO_SYNC_SIGNALS") == NULL;
     if (catchSignals) {
+        SE_LOG_DEBUG(NULL, NULL, "sync is starting, catch signals");
         signalGuard = SuspendFlags::getSuspendFlags().activate();
     }
 

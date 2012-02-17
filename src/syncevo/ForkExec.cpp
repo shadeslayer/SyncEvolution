@@ -78,6 +78,7 @@ void ForkExecParent::start()
     // boost::shared_ptr<ForkExecParent> me = ...;
     GDBusCXX::DBusErrorCXX dbusError;
 
+    SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: preparing for child process %s", m_helper.c_str());
     m_server = GDBusCXX::DBusServerCXX::listen("", &dbusError);
     if (!m_server) {
         dbusError.throwFailure("starting server");
@@ -123,6 +124,8 @@ void ForkExecParent::start()
     m_envStrings.push_back(ForkExecEnvVar + m_server->getAddress());
     m_env.reset(AllocStringArray(m_envStrings));
 
+    SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: running %s with D-Bus address %s",
+                 helper.c_str(), m_server->getAddress().c_str());
     GErrorCXX gerror;
     if (!g_spawn_async_with_pipes(NULL, // working directory
                                   static_cast<gchar **>(m_argv.get()),
@@ -138,6 +141,9 @@ void ForkExecParent::start()
         m_childPid = 0;
         gerror.throwError("spawning child");
     }
+
+    SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: child process for %s has pid %ld",
+                 helper.c_str(), (long)m_childPid);
 
     // TODO: introduce C++ wrapper around GSource
     m_watchChild = g_child_watch_source_new(m_childPid);
@@ -155,7 +161,7 @@ void ForkExecParent::watchChildCallback(GPid pid,
         me->m_onQuit(status);
         if (!me->m_hasConnected ||
             status != 0) {
-            SE_LOG_DEBUG(NULL, NULL, "signaled %s, signal %d, int %d, term %d, int sent %s, term sent %s",
+            SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: child was signaled %s, signal %d, int %d, term %d, int sent %s, term sent %s",
                          WIFSIGNALED(status) ? "yes" : "no",
                          WTERMSIG(status), SIGINT, SIGTERM,
                          me->m_sigIntSent ? "yes" : "no",
@@ -194,6 +200,8 @@ void ForkExecParent::watchChildCallback(GPid pid,
 void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) throw()
 {
     try {
+        SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: child %s has connected",
+                     m_helper.c_str());
         m_hasConnected = true;
         m_onConnect(conn);
     } catch (...) {
@@ -210,7 +218,8 @@ void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) thro
 
 void ForkExecParent::stop()
 {
-    SE_LOG_DEBUG(NULL, NULL, "killing with SIGINT/SIGTERM");
+    SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with SIGINT/SIGTERM",
+                 m_helper.c_str());
     ::kill(m_childPid, SIGINT);
     m_sigIntSent = true;
     ::kill(m_childPid, SIGTERM);
@@ -219,7 +228,8 @@ void ForkExecParent::stop()
 
 void ForkExecParent::kill()
 {
-    SE_LOG_DEBUG(NULL, NULL, "killing with SIGKILL");
+    SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with SIGKILL",
+                 m_helper.c_str());
     ::kill(m_childPid, SIGKILL);
 }
 
@@ -240,6 +250,8 @@ void ForkExecChild::connect()
         SE_THROW("cannot connect to parent, was not forked");
     }
 
+    SE_LOG_DEBUG(NULL, NULL, "ForkExecChild: connecting to parent with D-Bus address %s",
+                 address);
     GDBusCXX::DBusErrorCXX dbusError;
     GDBusCXX::DBusConnectionPtr conn = dbus_get_bus_connection(address,
                                                                &dbusError);
