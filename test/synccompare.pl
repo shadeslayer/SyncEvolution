@@ -88,6 +88,7 @@ my $yahoo = $server =~ /yahoo/;
 my $davical = $server =~ /davical/;
 my $apple = $server =~ /apple/;
 my $oracle = $server =~ /oracle/;
+my $radicale = $server =~ /radicale/;
 my $evolution = $client =~ /evolution/;
 my $addressbook = $client =~ /addressbook/;
 
@@ -410,6 +411,11 @@ sub NormalizeItem {
         s/^(X-S1CS-RECURRENCE-COUNT)(;[^:;\n]*)*:.*\r?\n?//gm;
         # ignore loss of LANGUAGE=xxx property in ATTENDEE
         s/^ATTENDEE([^\n:]*);LANGUAGE=([^\n;:]*)/ATTENDEE$1/mg;
+    }
+
+    if ($radicale) {
+        # remove extensions added by server
+        s/^(X-RADICALE-NAME)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     if ($google || $yahoo) {
