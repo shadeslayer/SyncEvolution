@@ -48,11 +48,11 @@ std::string features()
     return boost::join(res, ", ");
 }
 
-URI URI::parse(const std::string &url)
+URI URI::parse(const std::string &url, bool collection)
 {
     ne_uri uri;
     int error = ne_uri_parse(url.c_str(), &uri);
-    URI res = fromNeon(uri);
+    URI res = fromNeon(uri, collection);
     if (!res.m_port) {
         res.m_port = ne_uri_defaultport(res.m_scheme.c_str());
     }
@@ -66,14 +66,14 @@ URI URI::parse(const std::string &url)
     return res;
 }
 
-URI URI::fromNeon(const ne_uri &uri)
+URI URI::fromNeon(const ne_uri &uri, bool collection)
 {
     URI res;
 
     if (uri.scheme) { res.m_scheme = uri.scheme; }
     if (uri.host) { res.m_host = uri.host; }
     if (uri.userinfo) { res.m_userinfo = uri.userinfo; }
-    if (uri.path) { res.m_path = normalizePath(uri.path, false); }
+    if (uri.path) { res.m_path = normalizePath(uri.path, collection); }
     if (uri.query) { res.m_query = uri.query; }
     if (uri.fragment) { res.m_fragment = uri.fragment; }
     res.m_port = uri.port;

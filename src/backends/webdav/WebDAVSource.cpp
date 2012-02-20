@@ -333,7 +333,7 @@ void WebDAVSource::contactServer()
     std::string database = getDatabaseID();
     if (!database.empty() &&
         m_contextSettings) {
-        m_calendar = Neon::URI::parse(database);
+        m_calendar = Neon::URI::parse(database, true);
         // m_contextSettings = m_settings, so this sets m_settings->getURL()
         m_contextSettings->setURL(database);
         // start talking to host defined by m_settings->getURL()
@@ -666,7 +666,7 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
             success = true;
         } catch (const Neon::RedirectException &ex) {
             // follow to new location
-            Neon::URI next = Neon::URI::parse(ex.getLocation());
+            Neon::URI next = Neon::URI::parse(ex.getLocation(), true);
             Neon::URI old = m_session->getURI();
             // keep old host + scheme + port if not set in next location
             if (next.m_scheme.empty()) {
