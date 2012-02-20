@@ -164,7 +164,9 @@ struct URI {
     /**
      * Removes differences caused by escaping different characters.
      * Appends slash if path is a collection (or meant to be one) and
-     * doesn't have a trailing slash.
+     * doesn't have a trailing slash. Removes double slashes.
+     *
+     * @param path   an absolute path (leading slash)
      */
     static std::string normalizePath(const std::string &path, bool collection);
 

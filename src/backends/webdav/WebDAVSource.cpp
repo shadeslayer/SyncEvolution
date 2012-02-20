@@ -1161,11 +1161,15 @@ void WebDAVSource::listAllItemsCallback(const Neon::URI &uri,
 
 std::string WebDAVSource::path2luid(const std::string &path)
 {
-    if (boost::starts_with(path, m_calendar.m_path)) {
-        return Neon::URI::unescape(path.substr(m_calendar.m_path.size()));
+    // m_calendar.m_path is normalized, path is not.
+    // Before comparing, normalize it.
+    std::string res = Neon::URI::normalizePath(path, false);
+    if (boost::starts_with(res, m_calendar.m_path)) {
+        res = Neon::URI::unescape(res.substr(m_calendar.m_path.size()));
     } else {
-        return path;
+        // keep full, absolute path as LUID
     }
+    return res;
 }
 
 std::string WebDAVSource::luid2path(const std::string &luid)
