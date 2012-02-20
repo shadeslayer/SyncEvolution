@@ -596,11 +596,15 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                 // First dump WebDAV "allprops" properties (does not contain
                 // properties which must be asked for explicitly!). Only
                 // relevant for debugging.
-                SE_LOG_DEBUG(NULL, NULL, "debugging: read all WebDAV properties of %s", path.c_str());
-                Neon::Session::PropfindPropCallback_t callback =
-                    boost::bind(&WebDAVSource::openPropCallback,
-                                this, _1, _2, _3, _4);
-                m_session->propfindProp(path, 0, NULL, callback, deadline);
+                try {
+                    SE_LOG_DEBUG(NULL, NULL, "debugging: read all WebDAV properties of %s", path.c_str());
+                    Neon::Session::PropfindPropCallback_t callback =
+                        boost::bind(&WebDAVSource::openPropCallback,
+                                    this, _1, _2, _3, _4);
+                    m_session->propfindProp(path, 0, NULL, callback, Timespec());
+                } catch (...) {
+                    handleException();
+                }
             }
         
             // Now ask for some specific properties of interest for us.
