@@ -220,9 +220,15 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
     // retrieved items. This is partly intentional: Google is known to
     // have problems with providing all of its data via GET or the
     // multiget REPORT below. It returns a 404 error for items that a
-    // calendar-query includes (see loadItem()).  Such items are
-    // ignored it and thus will be silently skipped. This is not
+    // calendar-query includes (see loadItem()). Such items are
+    // ignored and thus will be silently skipped. This is not
     // perfect, but better than failing the sync.
+    //
+    // Unfortunately there are other servers (Radicale, I'm looking at
+    // you) which simply return neither data nor errors for the
+    // requested hrefs. To handle that we try the multiget first,
+    // record retrieved or failed responses, then follow up with
+    // individual requests for anything that wasn't mentioned.
     if (!mustRead.empty()) {
         std::stringstream buffer;
         buffer << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -232,17 +238,19 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
             "   <D:getetag/>\n"
             "   <C:calendar-data/>\n"
             "</D:prop>\n";
-        BOOST_FOREACH(const std::string &href, mustRead) {
-            buffer << "<D:href>" << luid2path(href) << "</D:href>\n";
+        BOOST_FOREACH(const std::string &luid, mustRead) {
+            buffer << "<D:href>" << luid2path(luid) << "</D:href>\n";
         }
         buffer << "</C:calendar-multiget>";
         std::string query = buffer.str();
+        std::set<std::string> results; // LUIDs of all hrefs returned by report
         getSession()->startOperation("updateAllSubItems REPORT 'multiget new/updated items'", deadline);
         while (true) {
             string data;
             Neon::XMLParser parser;
-            parser.initReportParser(boost::bind(&CalDAVSource::appendItem, this,
+            parser.initReportParser(boost::bind(&CalDAVSource::appendMultigetResult, this,
                                                 boost::ref(revisions),
+                                                boost::ref(results),
                                                 _1, _2, boost::ref(data)));
             parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
                                boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
@@ -254,7 +262,41 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
                 break;
             }
         }
+        // Workaround for Radicale 0.6.4: it simply returns nothing (no error, no data).
+        // Fall back to GET of items with no response.
+        BOOST_FOREACH(const std::string &luid, mustRead) {
+            if (results.find(luid) == results.end()) {
+                getSession()->startOperation(StringPrintf("GET item %s not returned by 'multiget new/updated items'", luid.c_str()),
+                                             deadline);
+                std::string path = luid2path(luid);
+                std::string data;
+                std::string etag;
+                while (true) {
+                    data.clear();
+                    Neon::Request req(*getSession(), "GET", path,
+                                      "", data);
+                    req.addHeader("Accept", contentType());
+                    if (req.run()) {
+                        etag = getETag(req);
+                        break;
+                    }
+                }
+                appendItem(revisions, path, etag, data);
+            }
+        }
     }
+}
+
+int CalDAVSource::appendMultigetResult(SubRevisionMap_t &revisions,
+                                       std::set<std::string> &luids,
+                                       const std::string &href,
+                                       const std::string &etag,
+                                       std::string &data)
+{
+    // record which items were seen in the response...
+    luids.insert(path2luid(href));
+    // and store information about them
+    return appendItem(revisions, href, etag, data);
 }
 
 int CalDAVSource::appendItem(SubRevisionMap_t &revisions,

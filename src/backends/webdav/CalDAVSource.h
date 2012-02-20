@@ -177,6 +177,14 @@ class CalDAVSource : public WebDAVSource,
 
     std::string getSubDescription(Event &event, const string &subid);
 
+    /** calback for multiget: same as appendItem, but also records luid of all responses */
+    int appendMultigetResult(SubRevisionMap_t &revisions,
+                             std::set<std::string> &luids,
+                             const std::string &href,
+                             const std::string &etag,
+                             std::string &data);
+
+
     /** callback for listAllSubItems: parse and add new item */
     int appendItem(SubRevisionMap_t &revisions,
                    const std::string &href,

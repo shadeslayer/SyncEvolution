@@ -227,6 +227,15 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     }
 
     /**
+     * return true if the resource with the given properties is one
+     * of those collections which is guaranteed to not contain
+     * other, unrelated collections (a CalDAV collection must not
+     * contain a CardDAV collection, for example)
+     */
+    bool ignoreCollection(const StringMap &props) const;
+
+ protected:
+    /**
      * Extracts ETag from response header, empty if not found.
      */
     std::string getETag(Neon::Request &req) { return ETag2Rev(req.getResponseHeader("ETag")); }
@@ -235,14 +244,6 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
      * Extracts new LUID from response header, empty if not found.
      */
     std::string getLUID(Neon::Request &req);
-
-    /**
-     * return true if the resource with the given properties is one
-     * of those collections which is guaranteed to not contain
-     * other, unrelated collections (a CalDAV collection must not
-     * contain a CardDAV collection, for example)
-     */
-    bool ignoreCollection(const StringMap &props) const;
 };
 
 SE_END_CXX
