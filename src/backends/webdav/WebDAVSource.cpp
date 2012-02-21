@@ -748,7 +748,8 @@ bool WebDAVSource::findCollections(const boost::function<bool (const std::string
                 // which returns information about "/dav" when asked about "/".
                 // Move to that path.
                 if (!m_davProps.empty()) {
-                    string newpath = m_davProps.begin()->first;
+                    pathProps = m_davProps.begin();
+                    string newpath = pathProps->first;
                     SE_LOG_DEBUG(NULL, NULL, "use properties for '%s' instead of '%s'",
                                  newpath.c_str(), path.c_str());
                     path = newpath;
