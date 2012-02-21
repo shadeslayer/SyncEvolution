@@ -4716,6 +4716,7 @@
 {
    TestFileNotify.testRestart
    Memcheck:Cond
+   ...
    fun:_ZN7SyncEvo15AutoSyncManager10initConfigERKSs
    fun:_ZN7SyncEvo15AutoSyncManager4initEv
    fun:_ZN7SyncEvo6ServerC1EP10_GMainLoopRbRN5boost10shared_ptrINS_7RestartEEERKN8GDBusCXX17DBusConnectionPtrEi
