@@ -4659,6 +4659,47 @@
    obj:*libgconf*
 }
 
+# ==6717== 7,700 bytes in 200 blocks are definitely lost in loss record 19,661 of 19,692
+# ==6717==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==6717==    by 0x8B5CC02: g_malloc (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==6717==    by 0x8B733BD: g_strdup (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==6717==    by 0x5DAACCF: gdbus_proxy_async_method_done (e-gdbus-templates.c:1016)
+# ==6717==    by 0x84C1803: g_closure_invoke (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x84D3789: ??? (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x84DCE10: g_signal_emit_valist (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x84DCFB1: g_signal_emit (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x5DAA438: e_gdbus_proxy_emit_signal (e-gdbus-templates.c:600)
+# ==6717==    by 0x110717BB: ffi_call_unix64 (in /usr/lib/x86_64-linux-gnu/libffi.so.5.0.10)
+# ==6717==    by 0x11071236: ffi_call (in /usr/lib/x86_64-linux-gnu/libffi.so.5.0.10)
+# ==6717==    by 0x84C1CC6: g_cclosure_marshal_generic (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x84C1803: g_closure_invoke (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x84D35BE: ??? (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x84DCE10: g_signal_emit_valist (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x84DCFB1: g_signal_emit (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==6717==    by 0x77630FE: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==6717==    by 0x77519AD: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==6717==    by 0x8B560CE: g_main_context_dispatch (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==6717==    by 0x8B568C7: ??? (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==6717==    by 0x8B56A98: g_main_context_iteration (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==6717==    by 0x5DA86EA: gdbus_proxy_call_sync (e-gdbus-templates.c:1442)
+# ==6717==    by 0x5DAC2B8: e_gdbus_proxy_call_sync_string__string (e-gdbus-templates.c:1608)
+# ==6717==    by 0x594096A: e_gdbus_cal_call_create_object_sync (e-gdbus-cal.c:571)
+# ==6717==    by 0x5916E15: e_cal_create_object (e-cal.c:3932)
+# ==6717==    by 0x6E8817: SyncEvo::EvolutionCalendarSource::insertItem(std::string const&, std::string const&, bool) (EvolutionCalendarSource.cpp:446)
+# ==6717==    by 0x82CE1F: SyncEvo::TrackingSyncSource::insertItemRaw(std::string const&, std::string const&) (TrackingSyncSource.cpp:151)
+# ==6717==    by 0x568789: SyncEvo::importItem(SyncEvo::TestingSyncSource*, SyncEvo::ClientTestConfig const&, std::string&) (ClientTest.cpp:299)
+# ==6717==    by 0x691BF5: SyncEvo::LocalTests::insertManyItems(SyncEvo::CreateSource, int, int, int) (ClientTest.cpp:796)
+# ==6717==    by 0x5A31A0: SyncEvo::LocalTests::testManyChanges() (ClientTest.cpp:1210)
+# ==6717== 
+{
+   [ecal] create object in EDS 3.2
+   Memcheck:Leak
+   ...
+   fun:gdbus_proxy_async_method_done
+   ...
+   fun:*create_object_sync*
+}
+
 ## SyncEvolution ##
 
 # Occurs when running D-Bus test TestFileNotify.testRestart
