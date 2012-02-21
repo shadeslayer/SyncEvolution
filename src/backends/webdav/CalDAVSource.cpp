@@ -277,6 +277,16 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
     }
     entry.m_uid = uid;
 
+    // Ignore items which contain no VEVENT. Happens with Google Calendar
+    // after using it for a while. Deleting them via DELETE doesn't seem
+    // to have an effect either, so all we really can do is ignore them.
+    if (entry.m_subids.empty()) {
+        SE_LOG_DEBUG(NULL, NULL, "ignoring broken item %s (is empty)", davLUID.c_str());
+        revisions.erase(davLUID);
+        data.clear();
+        return 0;
+    }
+
     if (!m_cache.m_initialized) {
         boost::shared_ptr<Event> event(new Event);
         event->m_DAVluid = davLUID;
@@ -1372,10 +1382,17 @@ int CalDAVSource::backupItem(ItemCache &cache,
                              const std::string &etag,
                              std::string &data)
 {
-    Event::unescapeRecurrenceID(data);
-    std::string luid = path2luid(Neon::URI::parse(href).m_path);
-    std::string rev = ETag2Rev(etag);
-    cache.backupItem(data, luid, rev);
+    // detect and ignore empty items, like we do in appendItem()
+    eptr<icalcomponent> calendar(icalcomponent_new_from_string((char *)data.c_str()), // cast is a hack for broken definition in old libical
+                                 "iCalendar 2.0");
+    if (icalcomponent_get_first_component(calendar, ICAL_VEVENT_COMPONENT)) {
+        Event::unescapeRecurrenceID(data);
+        std::string luid = path2luid(Neon::URI::parse(href).m_path);
+        std::string rev = ETag2Rev(etag);
+        cache.backupItem(data, luid, rev);
+    } else {
+        SE_LOG_DEBUG(NULL, NULL, "ignoring broken item %s during backup (is empty)", href.c_str());
+    }
 
     // reset data for next item
     data.clear();
