@@ -408,6 +408,8 @@ sub NormalizeItem {
     if ($oracle) {
         # remove extensions added by server
         s/^(X-S1CS-RECURRENCE-COUNT)(;[^:;\n]*)*:.*\r?\n?//gm;
+        # ignore loss of LANGUAGE=xxx property in ATTENDEE
+        s/^ATTENDEE([^\n:]*);LANGUAGE=([^\n;:]*)/ATTENDEE$1/mg;
     }
 
     if ($google || $yahoo) {
