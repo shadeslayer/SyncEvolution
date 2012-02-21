@@ -670,6 +670,44 @@
    fun:gnutls_certificate_set_x509_trust_file
 }
 
+# ==25419== 21 bytes in 1 blocks are definitely lost in loss record 157 of 649
+# ==25419==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==25419==    by 0xA182881: strdup (strdup.c:43)
+# ==25419==    by 0x132A2D5A: p11_kit_registered_module_to_name (in /usr/lib/x86_64-linux-gnu/libp11-kit.so.0.0.0)
+# ==25419==    by 0xE815504: gnutls_pkcs11_init (in /usr/lib/x86_64-linux-gnu/libgnutls.so.26.21.9)
+# ==25419==    by 0xE7FEFF1: gnutls_global_init (in /usr/lib/x86_64-linux-gnu/libgnutls.so.26.21.9)
+# ==25419==    by 0x594C66A: ne_sock_init (in /usr/lib/libneon-gnutls.so.27.2.6)
+# ==25419==    by 0x581D48: SyncEvo::Neon::Session::Session(boost::shared_ptr<SyncEvo::Neon::Settings> const&) (NeonCXX.cpp:202)
+# ==25419==    by 0x5825E3: SyncEvo::Neon::Session::create(boost::shared_ptr<SyncEvo::Neon::Settings> const&) (NeonCXX.cpp:279)
+# ==25419==    by 0x5728CF: SyncEvo::WebDAVSource::contactServer() (WebDAVSource.cpp:340)
+# ==25419==    by 0x565B50: SyncEvo::WebDAVSource::beginSync(std::string const&, std::string const&) (WebDAVSource.h:81)
+# ==25419==    by 0x5BED1A: SyncEvo::SyncSourceSession::startDataRead(char const*, char const*) (SyncSource.cpp:498)
+# ==25419==    by 0x5D3E29: SyncEvolution_StartDataRead (function_template.hpp:760)
+# ==25419==    by 0x717BDC: sysync::TPluginApiDS::apiReadSyncSet(bool) (pluginapids.cpp:1063)
+# ==25419==    by 0x73DF44: sysync::TCustomImplDS::makeSyncSetLoaded(bool) (customimplds.cpp:3373)
+# ==25419==    by 0x78B106: sysync::TStdLogicDS::dsBeforeStateChange(sysync::TLocalEngineDSState, sysync::TLocalEngineDSState) (stdlogicds.cpp:1520)
+# ==25419==    by 0x7525D7: sysync::TLocalEngineDS::changeState(sysync::TLocalEngineDSState, bool) (localengineds.cpp:4182)
+# ==25419==    by 0x753B36: sysync::TLocalEngineDS::engInitDSForClientSync() (localengineds.cpp:3586)
+# ==25419==    by 0x79237B: sysync::TSyncAgent::NextMessage(bool&) (syncagent.cpp:1186)
+# ==25419==    by 0x794CF2: sysync::TSyncAgent::ClientGeneratingStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:3422)
+# ==25419==    by 0x79505C: sysync::TSyncAgent::ClientSessionStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:3316)
+# ==25419==    by 0x7953E4: sysync::TSyncAgent::SessionStep(unsigned short&, sysync::TEngineProgressType*) (syncagent.cpp:2927)
+# ==25419==    by 0x65ACBE: SyncEvo::SharedEngine::SessionStep(boost::shared_ptr<sysync::SessionType> const&, unsigned short&, sysync::TEngineProgressType*) (SynthesisEngine.cpp:96)
+# ==25419==    by 0x5DDE30: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3549)
+# ==25419==    by 0x5E67C9: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:3016)
+# ==25419==    by 0x59FDA2: SyncEvo::LocalTransportAgentChild::run() (LocalTransportAgent.cpp:784)
+# ==25419==    by 0x598833: SyncEvo::LocalTransportMain(int, char**) (LocalTransportAgent.cpp:973)
+# ==25419==    by 0xA121EAC: (below main) (libc-start.c:228)
+# ==25419== 
+{
+   p11-kit + gnutls + libneon
+   Memcheck:Leak
+   ...
+   fun:p11_kit_registered_module_to_name
+   ...
+   fun:ne_sock_init
+}
+
 # ==7816== 24 bytes in 1 blocks are definitely lost in loss record 603 of 1,569
 # ==7816==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
 # ==7816==    by 0x7B6AC42: g_malloc (in /lib/libglib-2.0.so.0.2800.8)
@@ -1057,6 +1095,28 @@
    fun:png_create_*
    ...
    obj:*libQtGui.so*
+}
+
+# ==14778== 46 bytes in 1 blocks are possibly lost in loss record 865 of 1,692
+# ==14778==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==14778==    by 0x8217C02: g_malloc (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==14778==    by 0x822E3BD: g_strdup (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==14778==    by 0x7B01262: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==14778==    by 0x7B03F0C: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==14778==    by 0x15FBC997: ??? (in /usr/lib/x86_64-linux-gnu/gio/modules/libgvfsdbus.so)
+# ==14778==    by 0x6142B4: SyncEvo::GLibNotify::GLibNotify(char const*, boost::function<void ()(_GFile*, _GFile*, GFileMonitorEvent)> const&) (GLibSupport.cpp:205)
+# ==14778==    by 0x5718DD: SyncEvo::Server::run(SyncEvo::LogRedirect&) (server.cpp:338)
+# ==14778==    by 0x54799B: main (main.cpp:120)
+# ==14778== 
+{
+   GIO potential leak
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_strdup
+   obj:*libgio-2.0.so*
+   ...
+   obj:*gio/modules/libgvfsdbus.so
 }
 
 # ==8627== 840 bytes in 28 blocks are possibly lost in loss record 574 of 681
