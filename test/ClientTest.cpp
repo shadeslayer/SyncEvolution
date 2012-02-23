@@ -67,6 +67,60 @@
 #include "client-test-buteo.h"
 #endif
 
+namespace CppUnit {
+
+/**
+ * behaves like an int and can be compared against one in ASSERT_EQUAL,
+ * but includes the item list when being printed
+ */
+struct ItemCount
+{
+    SyncEvo::SyncSourceChanges::Items_t m_items;
+
+    ItemCount() {}
+    ItemCount(const SyncEvo::SyncSourceChanges::Items_t &items) : m_items(items) {}
+    int size() const { return m_items.size(); }
+    operator int () const { return size(); }
+};
+
+static std::ostream &operator << (ostream &out, const ItemCount &count)
+{
+    out << count.size() << " ( ";
+    BOOST_FOREACH(const std::string &id, count.m_items) {
+        out << id << " ";
+    }
+    out << ")";
+    return out;
+}
+
+template<> struct assertion_traits<ItemCount>
+{
+    template <class E> static bool equal(const E &expected, const ItemCount &count) { return expected == count; }
+    static std::string toString(const ItemCount &count)
+    {
+        std::ostringstream out;
+        out << count;
+        return out.str();
+    }
+};
+
+/** comparison between arbitrary type A and B */
+template <class A, class B>
+void assertEquals(const A& expected,
+                  const B& actual,
+                  SourceLine sourceLine,
+                  const std::string &message)
+{
+    if (!assertion_traits<B>::equal(expected,actual)) {
+        Asserter::failNotEqual(assertion_traits<A>::toString(expected),
+                               assertion_traits<B>::toString(actual),
+                               sourceLine,
+                               message);
+    }
+}
+
+}
+
 SE_BEGIN_CXX
 
 static set<ClientTest::Cleanup_t> cleanupSet;
@@ -283,12 +337,11 @@ static std::list<std::string> listUpdatedItems(TestingSyncSource *source) { retu
 static std::list<std::string> listDeletedItems(TestingSyncSource *source) { return listItemsOfType(source, SyncSourceChanges::DELETED); }
 static std::list<std::string> listItems(TestingSyncSource *source) { return listItemsOfType(source, SyncSourceChanges::ANY); }
 
-int countItemsOfType(TestingSyncSource *source, int type) { return source->getItems(SyncSourceChanges::State(type)).size(); }
-static int countNewItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::NEW); }
-static int countUpdatedItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::UPDATED); }
-static int countDeletedItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::DELETED); }
-static int countItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::ANY); }
-
+static CppUnit::ItemCount countItemsOfType(TestingSyncSource *source, int type) { return source->getItems(SyncSourceChanges::State(type)); }
+static CppUnit::ItemCount countNewItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::NEW); }
+static CppUnit::ItemCount countUpdatedItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::UPDATED); }
+static CppUnit::ItemCount countDeletedItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::DELETED); }
+static CppUnit::ItemCount countItems(TestingSyncSource *source) { return countItemsOfType(source, SyncSourceChanges::ANY); }
 
 /** insert new item, return LUID */
 static std::string importItem(TestingSyncSource *source, const ClientTestConfig &config, std::string &data)
