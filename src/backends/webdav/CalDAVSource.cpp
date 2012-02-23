@@ -188,6 +188,24 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
             // read current information below
             SE_LOG_DEBUG(NULL, NULL, "updateAllSubItems(): read new or modified item %s", item.first.c_str());
             mustRead.push_back(item.first);
+            // The server told us that the item exists. We still need
+            // to deal with the situation that the server might fail
+            // to deliver the item data when we ask for it below.
+            //
+            // There are two reasons when this can happen: either an
+            // item was removed in the meantime or the server is
+            // confused.  The latter started to happen reliably with
+            // the Google Calendar server sometime in January/February
+            // 2012.
+            //
+            // In both cases, let's assume that the item is really gone
+            // (and not just unreadable due to that other Google Calendar
+            // bug, see loadItem()+REPORT workaround), and therefore let's
+            // remove the entry from the revisions.
+            if (it != revisions.end()) {
+                revisions.erase(it);
+            }
+            m_cache.erase(item.first);
         } else {
             // copy still relevant information
             SE_LOG_DEBUG(NULL, NULL, "updateAllSubItems(): unmodified item %s", it->first.c_str());
@@ -283,6 +301,7 @@ int CalDAVSource::appendItem(SubRevisionMap_t &revisions,
     if (entry.m_subids.empty()) {
         SE_LOG_DEBUG(NULL, NULL, "ignoring broken item %s (is empty)", davLUID.c_str());
         revisions.erase(davLUID);
+        m_cache.erase(davLUID);
         data.clear();
         return 0;
     }
