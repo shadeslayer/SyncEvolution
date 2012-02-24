@@ -6120,7 +6120,8 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
         } else if (server == "memotoo") {
-	    // local time, except for detached recurrence
+	    // local floating time, always, regardless what the original
+            // time zone might have been (TZID, UTC, floating)
             config.m_linkedItems[0].m_name = "LocalTime";
 	    config.m_linkedItems[0][0] =
 	        "BEGIN:VCALENDAR\n"
@@ -6148,8 +6149,8 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "BEGIN:VEVENT\n"
                 "UID:20080407T193125Z-19554-727-1-50@gollum\n"
                 "DTSTAMP:20080407T193125Z\n"
-                "DTSTART:20080413T050000Z\n"
-                "DTEND:20080413T053000Z\n"
+                "DTSTART:20080413T070000\n"
+                "DTEND:20080413T073000\n"
                 "TRANSP:OPAQUE\n"
                 "SEQUENCE:XXX\n"
                 "SUMMARY:Recurring: Modified\n"
@@ -6160,6 +6161,17 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "DESCRIPTION:second instance modified\n"
                 "END:VEVENT\n"
                 "END:VCALENDAR\n";
+
+            // also affects normal test items
+            std::string *items[] = { &config.m_insertItem,
+                                     &config.m_updateItem,
+                                     &config.m_mergeItem1,
+                                     &config.m_mergeItem2 };
+            BOOST_FOREACH(std::string *item, items) {
+                static const pcrecpp::RE times("^(DTSTART|DTEND)(.*)Z$",
+                                               pcrecpp::RE_Options().set_multiline(true));
+                times.GlobalReplace("\\1\\2", item);
+            }
         } else if (server == "exchange") {
             config.m_linkedItems[0].m_name = "StandardTZ";
             BOOST_FOREACH(std::string &item, config.m_linkedItems[0]) {
