@@ -149,6 +149,7 @@ class SyncMLSession:
     def reply(self, data, type, meta, final, session):
         '''sent reply to HTTP client and/or close down normally'''
         logger.debug("reply session %s final %s data len %d %s", session, final, len(data), meta)
+        self.logMessage("outgoing", self.request, data, type)
         # When the D-Bus server sends an empty array, Python binding
         # puts the four chars in 'None' into the data array?!
         if data and len(data) > 0 and data != 'None':
@@ -183,6 +184,9 @@ class SyncMLSession:
 
     def start(self, request, config, url):
         '''start a new session based on the incoming message'''
+        data = request.content.read()
+        type = request.getHeader('content-type')
+        self.logMessage("incoming", request, data, type)
         logger.debug("requesting new session")
         self.object = Context.getDBusServer()
         self.request = request
@@ -216,12 +220,13 @@ class SyncMLSession:
 
         # feed new data into SyncEvolution and wait for reply
         request.content.seek(0, 0)
-        self.connection.Process(request.content.read(),
-                                request.getHeader('content-type'))
+        self.connection.Process(data, type)
         SyncMLSession.sessions.append(self)
 
     def process(self, request, data):
         '''process next message by client in running session'''
+        type = request.getHeader('content-type')
+        self.logMessage("incoming", request, data, type)
         if self.request:
             # message resend?! Ignore old request.
             logger.debug("message resend?!")
@@ -231,8 +236,13 @@ class SyncMLSession:
         deferred.addCallback(self.done)
         deferred.addErrback(self.done)
         self.request = request
-        self.connection.Process(data,
-                                request.getHeader('content-type'))
+        self.connection.Process(data, type)
+
+    def logMessage(self, direction, request, data, type):
+        if 'plain' in type or "+xml" in type:
+            logger.debug("processing %s message of type %s and length %d:\n%s" % (direction, type, len(data), data))
+        else:
+            logger.debug("processing %s message of type %s and length %d, binary data" % (direction, type, len(data)))
 
 class SyncMLPost(resource.Resource):
     isLeaf = True
