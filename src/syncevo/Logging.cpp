@@ -39,11 +39,16 @@ static std::vector<LoggerBase *> &loggers()
 
 LoggerBase &LoggerBase::instance()
 {
-    static LoggerStdout DefaultLogger;
+    // prevent destructing this instance as part of the executable's
+    // shutdown by allocating it dynamically, because it may be
+    // needed by other instances that get destructed later
+    // (order of global instance construction/destruction is
+    // undefined)
+    static LoggerStdout *DefaultLogger = new LoggerStdout;
     if (!loggers().empty()) {
         return *loggers()[loggers().size() - 1];
     } else {
-        return DefaultLogger;
+        return *DefaultLogger;
     }
 }
 
