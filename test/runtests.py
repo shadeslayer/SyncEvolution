@@ -854,7 +854,7 @@ class SyncEvolutionCheckout(GitCheckout):
                              name, context.workdir,
                              # parameter to autogen.sh in SyncEvolution: also
                              # check for clean Synthesis source
-                             "env SYNTHESISSRC=../libsynthesis %s" % options.shell,
+                             "SYNTHESISSRC=../libsynthesis %s" % options.shell,
                              "git@gitorious.org:meego-middleware/syncevolution.git",
                              revision)
 
@@ -922,7 +922,7 @@ if options.sourcedir:
     else:
         sync = GitCopy("syncevolution",
                        options.workdir,
-                       "env SYNTHESISSRC=%s %s" % (libsynthesis.basedir, options.shell),
+                       "SYNTHESISSRC=%s %s" % (libsynthesis.basedir, options.shell),
                        options.sourcedir,
                        options.syncevotag)
 else:
