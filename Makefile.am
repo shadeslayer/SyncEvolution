@@ -119,7 +119,12 @@ TYPE_rpm = -R
 # Dependency calculation is intentionally incomplete:
 # - don't force dependency on specific EDS libs via backends, their versions change too much (handled via --enable-evolution-compatibility and dynamic loading of the backends)
 # - ignore client-test dependencies (because users typically don't run it)
-REQUIRES_deb = --requires="'$(shell set -x; cd dist; LD_LIBRARY_PATH=$(distdir)/usr/lib:$(distdir)/usr/lib/syncevolution dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $$(find $(distdir) -type f -perm /u+x | grep -v -e client-test -e lib/syncevolution/sync); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed -e 's/[^=]*=//')$(REQUIRES_deb_neon)'"
+# - be more flexible about kdelibs5 than dpkg-shlibdeps: it is found as package
+#   for libkdeui.so.5 and libkdecore.so.5 on Ubuntu Lucid, but after Debian
+#   Squeeze the package was replaced by individual library packages. On such
+#   distros, libkdeui5 is what we need.
+# - same for kdepimlibs5 -> libakonadi-kde4
+REQUIRES_deb = --requires="'$(shell set -x; cd dist; LD_LIBRARY_PATH=$(distdir)/usr/lib:$(distdir)/usr/lib/syncevolution dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $$(find $(distdir) -type f -perm /u+x | grep -v -e client-test -e lib/syncevolution/sync); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed -e 's/kdelibs5 ([^,]*),/kdelibs5 | libkdeui5,/g' -e 's/kdepimlibs5 ([^,]*),/kdepimlibs5 | libakonadi-kde4,/g' -e 's/[^=]*=//')$(REQUIRES_deb_neon)'"
 if NEON_COMPATIBILITY
 # --enable-neon-compatibility in src/backends/webdav:
 # replace dependencies from linking with hard-coded dlopen() dependencies
