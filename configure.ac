@@ -498,10 +498,10 @@ then
   then
     KDEKWALLETFOUND=yes
     if ! test "$KDE_KWALLET_CFLAGS"; then
-      KDE_KWALLET_CFLAGS="-I`$KDE4_CONFIG --path include` -I`$KDE4_CONFIG --path include`/KDE -I`$QMAKE -query QT_INSTALL_HEADERS` `pkg-config --cflags QtDBus`"
+      KDE_KWALLET_CFLAGS="-I`$KDE4_CONFIG --path include` -I`$KDE4_CONFIG --path include`/KDE `pkg-config --cflags QtDBus QtCore`"
     fi
     if ! test "$KDE_KWALLET_LIBS"; then
-      KDE_KWALLET_LIBS="-lkdeui -lkdecore -L`kde4-config --install lib` `pkg-config --libs QtDBus`"
+      KDE_KWALLET_LIBS="-lkdeui -lkdecore -L`kde4-config --install lib` `pkg-config --libs QtDBus QtCore`"
     fi
     AC_LANG_PUSH(C++)
     old_CPPFLAGS="$CPPFLAGS"
