@@ -110,6 +110,7 @@ void CalDAVSource::listAllSubItems(SubRevisionMap_t &revisions)
                                             boost::ref(revisions),
                                             _1, _2, boost::ref(data)));
         m_cache.clear();
+        m_cache.m_initialized = false;
         parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
                            boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
         Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
@@ -180,6 +181,7 @@ void CalDAVSource::updateAllSubItems(SubRevisionMap_t &revisions)
     // build list of new or updated entries,
     // copy others to cache
     m_cache.clear();
+    m_cache.m_initialized = false;
     std::list<std::string> mustRead;
     BOOST_FOREACH(const StringPair &item, items) {
         SubRevisionMap_t::iterator it = revisions.find(item.first);

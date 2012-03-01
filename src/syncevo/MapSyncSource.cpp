@@ -71,6 +71,9 @@ bool MapSyncSource::serverModeEnabled() const
 
 void MapSyncSource::detectChanges(SyncSourceRevisions::ChangeMode mode)
 {
+    // erase content which might have been set in a previous call
+    reset();
+
     // read old list from node (matches endSync() code)
     m_revisions.clear();
     ConfigProps props;

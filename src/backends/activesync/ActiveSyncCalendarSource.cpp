@@ -38,6 +38,9 @@ ActiveSyncCalendarSource::ActiveSyncCalendarSource(const SyncSourceParams &param
 
 void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std::string &resumeToken)
 {
+    // erase content which might have been set in a previous call
+    reset();
+
     // claim item node for our change tracking
     m_trackingNode.swap(m_itemNode);
 
