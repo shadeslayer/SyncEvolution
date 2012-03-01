@@ -6900,10 +6900,6 @@ void ClientTest::getTestData(const char *type, Config &config)
 
             recurringAllDay = true;
             subsets = true;
-        } else if (server == "radicale") {
-            // don't do the tests, Radicale has problems with detached
-            // recurrences (only stores one VEVENT per item)
-            config.m_linkedItems.clear();
         } else {
             // in particular for Google Calendar: also try with
             // VALARM, because testing showed that the server works
