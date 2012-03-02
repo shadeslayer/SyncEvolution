@@ -18,6 +18,10 @@ PKG_CHECK_MODULES(EPACKAGE, libedataserver-1.2, EDSFOUND=yes, [EDSFOUND=no])
 PKG_CHECK_MODULES(ECAL, libecal-1.2, ECALFOUND=yes, [ECALFOUND=no])
 PKG_CHECK_MODULES(EBOOK, libebook-1.2, EBOOKFOUND=yes, [EBOOKFOUND=no])
 
+PKG_CHECK_MODULES(EBOOK_VERSION, [libebook-1.2 >= 3.3],
+                  [AC_DEFINE(HAVE_E_CONTACT_INLINE_LOCAL_PHOTOS, 1, [have e_contact_inline_local_photos()])],
+                  [true])
+
 SE_ARG_ENABLE_BACKEND(ebook, evolution,
                       [AS_HELP_STRING([--disable-ebook],
                                       [disable access to Evolution addressbooks (must be used to compile without it)])],

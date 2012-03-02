@@ -197,8 +197,10 @@ extern "C" void EDSAbiWrapperInit()
 # endif // HAVE_EDS
 
 # ifdef ENABLE_EBOOK
+    static const int libebookMinVersion = 5,
+        libebookMaxVersion = 12;
     ebookhandle =
-    findSymbols("libebook-1.2.so", 5, 12,
+    findSymbols("libebook-1.2.so", libebookMinVersion, libebookMaxVersion,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_book_add_contact, "e_book_add_contact",
                 &EDSAbiWrapperSingleton.e_book_authenticate_user, "e_book_authenticate_user",
@@ -228,6 +230,11 @@ extern "C" void EDSAbiWrapperInit()
                 &EDSAbiWrapperSingleton.e_vcard_to_string, "e_vcard_to_string",
                 (void *)0);
     EDSAbiHaveEbook = EDSAbiWrapperSingleton.e_book_new != 0;
+    findSymbols("libebook-1.2.so", libebookMinVersion, libebookMaxVersion,
+                FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
+                &EDSAbiWrapperSingleton.e_contact_inline_local_photos, "e_contact_inline_local_photos",
+                (void *)0);
+
 # endif // ENABLE_EBOOK
 
 # ifdef ENABLE_ECAL

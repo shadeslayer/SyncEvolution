@@ -319,6 +319,24 @@ void EvolutionContactSource::readItem(const string &luid, std::string &item, boo
         }
     }
     eptr<EContact, GObject> contactptr(contact, "contact");
+
+    // Inline PHOTO data if exporting, leave VALUE=uri references unchanged
+    // when processing inside engine (will be inlined by engine as needed).
+    // The function for doing the inlining was added in EDS 3.4.
+    // In compatibility mode, we must check the function pointer for non-NULL.
+    // In direct call mode, the existence check is done by configure.
+    if (raw
+#ifdef EVOLUTION_COMPATIBILITY
+        && e_contact_inline_local_photos
+#endif
+        ) {
+#if defined(EVOLUTION_COMPATIBILITY) || defined(HAVE_E_CONTACT_INLINE_LOCAL_PHOTOS)
+        if (!e_contact_inline_local_photos(contactptr, &gerror)) {
+            throwError(string("inlining PHOTO file data in ") + luid, gerror);
+        }
+#endif
+    }
+
     eptr<char> vcardstr(e_vcard_to_string(&contactptr->parent,
                                           EVC_FORMAT_VCARD_30));
     if (!vcardstr) {

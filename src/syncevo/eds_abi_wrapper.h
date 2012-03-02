@@ -127,6 +127,7 @@ struct EDSAbiWrapper {
     GQuark (*e_book_error_quark) (void);
     gboolean (*e_book_remove_contact) (EBook *book, const char *id, GError **error);
     char* (*e_vcard_to_string) (EVCard *evc, EVCardFormat format);
+    gboolean (*e_contact_inline_local_photos) (EContact *contact, GError **error);
 # endif /* ENABLE_EBOOK */
 
 # ifdef ENABLE_ECAL
@@ -302,6 +303,7 @@ extern struct EDSAbiWrapper EDSAbiWrapperSingleton;
 #   define e_book_query_unref EDSAbiWrapperSingleton.e_book_query_unref
 #   define e_book_remove_contact EDSAbiWrapperSingleton.e_book_remove_contact
 #   define e_vcard_to_string EDSAbiWrapperSingleton.e_vcard_to_string
+#   define e_contact_inline_local_photos EDSAbiWrapperSingleton.e_contact_inline_local_photos
 #  endif /* ENABLE_EBOOK */
 
 #  ifdef ENABLE_ECAL
