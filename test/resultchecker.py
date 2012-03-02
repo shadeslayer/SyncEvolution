@@ -267,7 +267,8 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 # then get added at the end.
                 for source in ('file_task', 'file_event', 'file_contact', 'eds_contact', 'eds_event'):
                     os.chdir (srcdir)
-                    fout,fin=popen2.popen2(shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_SOURCES="+source+" ./client-test -h")
+                    cmd = shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_PEER_CAN_RESTART=1 CLIENT_TEST_SOURCES="+source+" ./client-test -h"
+                    fout,fin=popen2.popen2(cmd)
                     os.chdir(oldpath)
                     for line in fout:
                         l = line.partition('Client::Sync::'+source+'::')[2].rpartition('\n')[0]
