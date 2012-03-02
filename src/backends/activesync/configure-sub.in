@@ -24,7 +24,7 @@ if test "$enable_activesync" = "yes"; then
                 mkdir -p src/backends/activesync/activesyncd/build
                 AC_MSG_NOTICE([configuring activesyncd using the $ACTIVESYNCDSRC source code])
                 ( set -x; cd src/backends/activesync/activesyncd/build &&
-                  $ACTIVESYNCDSRC/configure --prefix=`pwd`/../install) ||
+                  $ACTIVESYNCDSRC/configure --disable-eplugin --disable-camel-backend --prefix=`pwd`/../install) ||
                 AC_MSG_ERROR([configuring activesyncd failed])
 
                 # hard-coded replacement for pkg-config: necessary because
