@@ -28,13 +28,13 @@ trap "kill $KEYRING_PID; kill $DBUS_SESSION_BUS_PID" EXIT
 E_CAL_PID=
 E_BOOK_PID=
 case "$@" in *valgrind*) prefix=`echo $@ | perl -p -e 's;.*?(\S*/?valgrind\S*).*;$1;'`;;
-             *syncevolution\ *|*client-test\ *|*test-dbus.py\ *) prefix=env;;
+             *syncevolution\ *|*client-test\ *|*test-dbus.py\ *|*gdb\ *) prefix=env;;
              *) prefix=;; # don't start EDS
 esac
 if [ "$DBUS_SESSION_SH_EDS_BASE" ] && [ "$prefix" ]; then
-    $prefix $DBUS_SESSION_SH_EDS_BASE/e-calendar-factory --keep-running &
+    $prefix $DBUS_SESSION_SH_EDS_BASE/evolution-calendar-factory --keep-running &
     E_CAL_PID=$!
-    $prefix $DBUS_SESSION_SH_EDS_BASE/e-addressbook-factory --keep-running &
+    $prefix $DBUS_SESSION_SH_EDS_BASE/evolution-addressbook-factory --keep-running &
     E_BOOK_PID=$!
 
     # give daemons some time to start and register with D-Bus
@@ -77,8 +77,8 @@ shutdown () {
 if [ "$DBUS_SESSION_SH_EDS_BASE" ]; then
     kill "$E_CAL_PID" 2>/dev/null
     kill "$E_BOOK_PID" 2>/dev/null
-    shutdown "$E_CAL_PID" "$DBUS_SESSION_SH_EDS_BASE/e-calendar-factory"
-    shutdown "$E_BOOK_PID" "$DBUS_SESSION_SH_EDS_BASE/e-addressbook-factory"
+    shutdown "$E_CAL_PID" "$DBUS_SESSION_SH_EDS_BASE/evolution-calendar-factory"
+    shutdown "$E_BOOK_PID" "$DBUS_SESSION_SH_EDS_BASE/evolution-addressbook-factory"
 fi
 
 echo dbus-session.sh: final result $res >&2
