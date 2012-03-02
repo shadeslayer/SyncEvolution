@@ -1167,7 +1167,7 @@ context.add(test)
 test = SyncEvolutionTest("syncevohttp",
                          compile,
                          "", options.shell,
-                         "Client::Sync::eds_event Client::Sync::eds_contact",
+                         "Client::Sync::eds_event Client::Sync::eds_contact Client::Sync::eds_event_eds_contact",
                          [ "eds_event", "eds_contact" ],
                          "CLIENT_TEST_NUM_ITEMS=10 "
                          "CLIENT_TEST_LOG=syncevohttp.log "
