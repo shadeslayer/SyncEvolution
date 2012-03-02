@@ -61,6 +61,8 @@ use strict;
 binmode(STDOUT, ":utf8");
 
 use Algorithm::Diff;
+use MIME::Base64;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 # ignore differences caused by specific servers or local backends?
 my $server = $ENV{CLIENT_TEST_SERVER};
@@ -146,6 +148,12 @@ sub NormalizeTrigger {
     $value .= ($minutes . "M") if $minutes;
     $value .= ($seconds . "S") if $seconds;
     return $value;
+}
+
+# decode base64 string, return size and hash
+sub describeBase64 {
+    my $data = decode_base64($1);
+    return sprintf("%d b64 characters = %d bytes, %s md5sum", length($1), length($data), md5_hex($data));
 }
 
 # called for one VCALENDAR (with single VEVENT/VTODO/VJOURNAL) or VCARD,
@@ -241,6 +249,9 @@ sub NormalizeItem {
             while (s/^PHOTO(.*?): (\S+)[\t ]+(\S+)/PHOTO$1: $2$3/mg) {}
         }
     }
+    # Don't show base64 encoded PHOTO data (makes diff very long). Instead
+    # decode and show size + hash.
+    s/^PHOTO;ENCODING=B: (.*)$/"PHOTO: " . describeBase64($1)/mge;
     # special case for the inlining of the local test case PHOTO
     s!^PHOTO;;VALUE=uri:file://testcases/local.png$!PHOTO;;VALUE=uri:<local.png>!m;
     s!^PHOTO;ENCODING=B: iVBORw0KGgoAAAANSUh.*UQOVkeH/aKBSLM04QlMqAAFNBTl\+CjN9AAAAAElFTkSuQmCC$!PHOTO;;VALUE=uri:<local.png>!m;
