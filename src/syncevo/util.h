@@ -437,6 +437,14 @@ template<class T> class InitStateClass : public T {
 };
 
 /**
+ * a nop destructor which doesn't do anything, for boost::shared_ptr
+ */
+struct NopDestructor
+{
+    template <class T> void operator () (T *) {}
+};
+
+/**
  * Acts like a boolean, but in addition, can also tell whether the
  * value was explicitly set. Defaults to false for both.
  */

@@ -20,8 +20,9 @@
 #ifndef DBUS_USER_INTERFACE_H
 #define DBUS_USER_INTERFACE_H
 
-#include <syncevo/SyncContext.h>
+#include <syncevo/UserInterface.h>
 
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**
@@ -29,28 +30,26 @@ SE_BEGIN_CXX
  * and 'savePassword' of ConfigUserInterface. The main functionality is
  * to only get and save passwords in the gnome keyring.
  */
-class DBusUserInterface : public SyncContext
+class DBusUserInterface : public UserInterface
 {
 public:
-    DBusUserInterface(const std::string &config);
-
     /*
      * Ask password from gnome keyring, if not found, empty string
      * is returned
      */
-    string askPassword(const string &passwordName,
-                       const string &descr,
-                       const ConfigPasswordKey &key);
+    std::string askPassword(const std::string &passwordName,
+                            const std::string &descr,
+                            const ConfigPasswordKey &key);
 
     //save password to gnome keyring, if not successful, false is returned.
-    bool savePassword(const string &passwordName,
-                      const string &password,
+    bool savePassword(const std::string &passwordName,
+                      const std::string &password,
                       const ConfigPasswordKey &key);
 
     /**
      * Read stdin via InfoRequest/Response.
      */
-    void readStdin(string &content);
+    void readStdin(std::string &content);
 };
 
 SE_END_CXX

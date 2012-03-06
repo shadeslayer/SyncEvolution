@@ -26,9 +26,10 @@ SE_BEGIN_CXX
 
 DBusSync::DBusSync(const std::string &config,
                    Session &session) :
-    DBusUserInterface(config),
+    SyncContext(config, true),
     m_session(session)
 {
+    setUserInterface(this);
 }
 
 boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()

@@ -17,25 +17,21 @@
  * 02110-1301  USA
  */
 
-#include <config.h>
-
-#ifdef USE_GNOME_KEYRING
-
-#include "GNOMEPlatform.h"
 #include <syncevo/UserInterface.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
-static class GNOMEInit
+
+LoadPasswordSignal &GetLoadPasswordSignal()
 {
-public:
-    GNOMEInit()
-    {
-        GetLoadPasswordSignal().connect(1, GNOMELoadPasswordSlot);
-        GetSavePasswordSignal().connect(1, GNOMESavePasswordSlot);
-    }
-} gnomeinit;
+    static LoadPasswordSignal loadPasswordSignal;
+    return loadPasswordSignal;
+}
+
+SavePasswordSignal &GetSavePasswordSignal()
+{
+    static SavePasswordSignal savePasswordSignal;
+    return savePasswordSignal;
+}
 
 SE_END_CXX
-
-#endif // USE_GNOME_KEYRING

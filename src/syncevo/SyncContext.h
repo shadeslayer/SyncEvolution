@@ -25,6 +25,7 @@
 #include <syncevo/SyncConfig.h>
 #include <syncevo/SyncML.h>
 #include <syncevo/SynthesisEngine.h>
+#include <syncevo/UserInterface.h>
 
 #include <string>
 #include <set>
@@ -51,7 +52,7 @@ class SyncSource;
  * implementation of those uses stdin/out.
  *
  */
-class SyncContext : public SyncConfig, public ConfigUserInterface {
+class SyncContext : public SyncConfig {
     /**
      * the string used to request a config,
      * *not* the normalized config name itself;
@@ -77,6 +78,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
     FullProps m_configFilters;
     
     boost::shared_ptr<TransportAgent> m_agent;
+    boost::shared_ptr<UserInterface> m_userInterface;
 
     /**
      * a pointer to the active SourceList instance for this context if one exists;
@@ -219,6 +221,19 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
 
     bool isServerAlerted() const { return m_serverAlerted; }
     void setServerAlerted(bool serverAlerted) { m_serverAlerted = serverAlerted; }
+
+    boost::shared_ptr<UserInterface> getUserInterface() { return m_userInterface; }
+    void setUserInterface(const boost::shared_ptr<UserInterface> &userInterface) { m_userInterface = userInterface; }
+
+    /** use config UI owned by caller, without reference counting */
+    void setUserInterface(UserInterface *userInterface) { m_userInterface = boost::shared_ptr<UserInterface>(userInterface, NopDestructor()); }
+
+    /**
+     * In contrast to getUserInterface(), this call here never returns NULL.
+     * If no UserInterface is currently set, then it returns
+     * a reference to a dummy instance which doesn't do anything.
+     */
+    UserInterface &getUserInterfaceNonNull();
 
     /**
      * Running operations typically checks that a config really exists
@@ -479,40 +494,6 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * access to current set of sync sources, NULL if not instantiated yet
      */
     const std::vector<SyncSource *> *getSources() const;
-
-    /**
-     * Read from stdin until end of stream.
-     *
-     * Default implementation reads from real stdin,
-     * D-Bus server implementation must ask client.
-     */
-    virtual void readStdin(string &content);
-
-    /**
-     * A helper function which interactively asks the user for
-     * a certain password. May throw errors.
-     *
-     * The default implementation uses stdin/stdout to communicate
-     * with the user.
-     *
-     * @param passwordName the name of the password in the config file
-     * @param descr        A simple string explaining what the password is needed for,
-     *                     e.g. "SyncML server". Has to be unique and understandable
-     *                     by the user.
-     * @param key          the key used to retrieve password
-     * @return entered password
-     */
-    virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key);
-
-    /**
-     * A helper function which is used for user interface to save
-     * a certain password with a specific mechanism. 
-     * Currently possibly syncml server. May throw errors.
-     * The default implementation do nothing.
-     */
-    virtual bool savePassword(const string &passwordName, const string &password, const ConfigPasswordKey &key) { 
-        return false; 
-    }
 
   protected:
     /** exchange active Synthesis engine */

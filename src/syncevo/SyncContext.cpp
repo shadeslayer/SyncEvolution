@@ -1441,23 +1441,22 @@ void unref(SourceList *sourceList)
     delete sourceList;
 }
 
-string SyncContext::askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key)
+UserInterface &SyncContext::getUserInterfaceNonNull()
 {
-    char buffer[256];
-
-    printf("Enter password for %s: ",
-           descr.c_str());
-    fflush(stdout);
-    if (fgets(buffer, sizeof(buffer), stdin) &&
-        strcmp(buffer, "\n")) {
-        size_t len = strlen(buffer);
-        if (len && buffer[len - 1] == '\n') {
-            buffer[len - 1] = 0;
-        }
-        return buffer;
+    if (m_userInterface) {
+        return *m_userInterface;
     } else {
-        throwError(string("could not read password for ") + descr);
-        return "";
+        static class DummyUserInterface : public UserInterface
+        {
+        public:
+            virtual std::string askPassword(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key) { return ""; }
+
+            virtual bool savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key) { return false; }
+
+            virtual void readStdin(std::string &content) { content.clear(); }
+        } dummy;
+
+        return dummy;
     }
 }
 
@@ -1479,14 +1478,6 @@ const std::vector<SyncSource *> *SyncContext::getSources() const
     return m_sourceListPtr ?
         m_sourceListPtr->getSourceSet() :
         NULL;
-}
-
-
-void SyncContext::readStdin(string &content)
-{
-    if (!ReadFile(cin, content)) {
-        throwError("stdin", errno);
-    }
 }
 
 string SyncContext::getUsedSyncURL() {
@@ -2980,12 +2971,12 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
              */
             ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*this, m_server, *getProperties());
+                prop->checkPassword(getUserInterfaceNonNull(), m_server, *getProperties());
             }
             BOOST_FOREACH(SyncSource *source, sourceList) {
                 ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
                 BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                    prop->checkPassword(*this, m_server, *getProperties(),
+                    prop->checkPassword(getUserInterfaceNonNull(), m_server, *getProperties(),
                                         source->getName(), source->getProperties());
                 }
             }
@@ -3889,7 +3880,7 @@ void SyncContext::status()
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, *getProperties(),
+            prop->checkPassword(getUserInterfaceNonNull(), m_server, *getProperties(),
                                 source->getName(), source->getProperties());
         }
     }
@@ -3942,7 +3933,7 @@ void SyncContext::checkStatus(SyncReport &report)
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, *getProperties(),
+            prop->checkPassword(getUserInterfaceNonNull(), m_server, *getProperties(),
                                 source->getName(), source->getProperties());
         }
     }
@@ -4034,7 +4025,7 @@ void SyncContext::restore(const string &dirname, RestoreDatabase database)
     BOOST_FOREACH(SyncSource *source, sourceList) {
         ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*this, m_server, *getProperties(),
+            prop->checkPassword(getUserInterfaceNonNull(), m_server, *getProperties(),
                                 source->getName(), source->getProperties());
         }
     }

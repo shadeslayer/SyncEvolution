@@ -24,7 +24,7 @@
 
 #include "KDEPlatform.h"
 #include <syncevo/SyncContext.h>
-#include <syncevo/SyncConfig.h>
+#include <syncevo/UserInterface.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX

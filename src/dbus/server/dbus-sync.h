@@ -21,6 +21,7 @@
 #define DBUS_SYNC_H
 
 #include "dbus-user-interface.h"
+#include <syncevo/SyncContext.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -31,7 +32,7 @@ class Session;
  * A running sync engine which keeps answering on D-Bus whenever
  * possible and updates the Session while the sync runs.
  */
-class DBusSync : public DBusUserInterface
+class DBusSync : public SyncContext, private DBusUserInterface
 {
     Session &m_session;
 

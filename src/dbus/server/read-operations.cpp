@@ -19,7 +19,7 @@
 
 #include "read-operations.h"
 #include "server.h"
-#include "dbus-user-interface.h"
+#include "dbus-sync.h"
 
 SE_BEGIN_CXX
 
@@ -73,13 +73,13 @@ void ReadOperations::getConfigs(bool getTemplates, std::vector<std::string> &con
     }
 }
 
-boost::shared_ptr<DBusUserInterface> ReadOperations::getLocalConfig(const string &configName, bool mustExist)
+boost::shared_ptr<SyncConfig> ReadOperations::getLocalConfig(const string &configName, bool mustExist)
 {
     string peer, context;
     SyncConfig::splitConfigString(SyncConfig::normalizeConfigString(configName),
                                   peer, context);
 
-    boost::shared_ptr<DBusUserInterface> syncConfig(new DBusUserInterface(configName));
+    boost::shared_ptr<SyncConfig> syncConfig(new SyncConfig(configName));
 
     /** if config was not set temporarily */
     if (!setFilters(*syncConfig)) {
@@ -106,7 +106,6 @@ void ReadOperations::getNamedConfig(const std::string &configName,
 {
     map<string, string> localConfigs;
     boost::shared_ptr<SyncConfig> dbusConfig;
-    boost::shared_ptr<DBusUserInterface> dbusUI;
     SyncConfig *syncConfig;
     string syncURL;
     /** get server template */
@@ -155,7 +154,7 @@ void ReadOperations::getNamedConfig(const std::string &configName,
 
         // use the shared properties from the right context as filter
         // so that the returned template preserves existing properties
-        boost::shared_ptr<DBusUserInterface> shared = getLocalConfig(string("@") + context, false);
+        boost::shared_ptr<SyncConfig> shared = getLocalConfig(string("@") + context, false);
 
         ConfigProps props;
         shared->getProperties()->readProperties(props);
@@ -173,23 +172,24 @@ void ReadOperations::getNamedConfig(const std::string &configName,
         }
         syncConfig = dbusConfig.get();
     } else {
-        dbusUI = getLocalConfig(configName);
+        DBusUserInterface ui;
+        dbusConfig = getLocalConfig(configName);
         //try to check password and read password from gnome keyring if possible
         ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {
-            prop->checkPassword(*dbusUI, configName, *dbusUI->getProperties());
+            prop->checkPassword(ui, configName, *dbusConfig->getProperties());
         }
-        list<string> configuredSources = dbusUI->getSyncSources();
+        list<string> configuredSources = dbusConfig->getSyncSources();
         BOOST_FOREACH(const string &sourceName, configuredSources) {
             ConfigPropertyRegistry& registry = SyncSourceConfig::getRegistry();
-            SyncSourceNodes sourceNodes = dbusUI->getSyncSourceNodes(sourceName);
+            SyncSourceNodes sourceNodes = dbusConfig->getSyncSourceNodes(sourceName);
 
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*dbusUI, configName, *dbusUI->getProperties(),
+                prop->checkPassword(ui, configName, *dbusConfig->getProperties(),
                         sourceName, sourceNodes.getProperties());
             }
         }
-        syncConfig = dbusUI.get();
+        syncConfig = dbusConfig.get();
     }
 
     /** get sync properties and their values */

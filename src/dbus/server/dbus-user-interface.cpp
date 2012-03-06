@@ -19,22 +19,15 @@
 
 #include "dbus-user-interface.h"
 
-// redefining "signals" clashes with the use of that word in gtkbindings.h,
-// included via notify.h
-#define QT_NO_KEYWORDS
+#include <syncevo/util.h>
 
 SE_BEGIN_CXX
 
-DBusUserInterface::DBusUserInterface(const std::string &config):
-    SyncContext(config, true)
+std::string DBusUserInterface::askPassword(const std::string &passwordName,
+                                           const std::string &descr,
+                                           const ConfigPasswordKey &key)
 {
-}
-
-string DBusUserInterface::askPassword(const string &passwordName,
-                                      const string &descr,
-                                      const ConfigPasswordKey &key)
-{
-    string password;
+    std::string password;
     if (GetLoadPasswordSignal()(passwordName, descr, key,  password)) {
         // handled
         return password;
@@ -44,8 +37,8 @@ string DBusUserInterface::askPassword(const string &passwordName,
     return "";
 }
 
-bool DBusUserInterface::savePassword(const string &passwordName,
-                                     const string &password,
+bool DBusUserInterface::savePassword(const std::string &passwordName,
+                                     const std::string &password,
                                      const ConfigPasswordKey &key)
 {
     if (GetSavePasswordSignal()(passwordName, password, key)) {
@@ -56,9 +49,9 @@ bool DBusUserInterface::savePassword(const string &passwordName,
     return false;
 }
 
-void DBusUserInterface::readStdin(string &content)
+void DBusUserInterface::readStdin(std::string &content)
 {
-    throwError("reading stdin in D-Bus server not supported, use --daemon=no in command line");
+    SE_THROW("reading stdin in D-Bus server not supported, use --daemon=no in command line");
 }
 
 SE_END_CXX

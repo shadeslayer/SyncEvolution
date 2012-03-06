@@ -235,7 +235,7 @@ void Session::setNamedConfig(const std::string &configName,
         syncConfig->prepareConfigForWrite();
         syncConfig->copy(*from, NULL);
 
-        syncConfig->preFlush(*syncConfig);
+        syncConfig->preFlush(syncConfig->getUserInterfaceNonNull());
         syncConfig->flush();
         m_setConfig = true;
     }

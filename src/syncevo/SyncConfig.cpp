@@ -48,19 +48,6 @@ SE_BEGIN_CXX
 
 const char *const SourceAdminDataName = "adminData";
 
-LoadPasswordSignal &GetLoadPasswordSignal()
-{
-    static LoadPasswordSignal loadPasswordSignal;
-    return loadPasswordSignal;
-}
-
-SavePasswordSignal &GetSavePasswordSignal()
-{
-    static SavePasswordSignal savePasswordSignal;
-    return savePasswordSignal;
-}
-
-
 int ConfigVersions[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX] =
 {
     { CONFIG_ROOT_MIN_VERSION, CONFIG_ROOT_CUR_VERSION },
@@ -914,7 +901,7 @@ list<string> SyncConfig::getPeers() const
     return res;
 }
 
-void SyncConfig::preFlush(ConfigUserInterface &ui)
+void SyncConfig::preFlush(UserInterface &ui)
 {
     /* Iterator over all sync global and source properties 
      * one by one and check whether they need to save password */
@@ -1655,7 +1642,7 @@ void SyncConfig::setSyncUsername(const string &value, bool temporarily) { syncPr
 InitStateString SyncConfig::getSyncPassword() const {
     return syncPropPassword.getCachedProperty(*getNode(syncPropPassword), m_cachedPassword);
 }
-void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
+void PasswordConfigProperty::checkPassword(UserInterface &ui,
                                            const string &serverName,
                                            FilterConfigNode &globalConfigNode,
                                            const string &sourceName,
@@ -1697,7 +1684,7 @@ void PasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
         }
     }
 }
-void PasswordConfigProperty::savePassword(ConfigUserInterface &ui,
+void PasswordConfigProperty::savePassword(UserInterface &ui,
                                           const string &serverName,
                                           FilterConfigNode &globalConfigNode,
                                           const string &sourceName,
@@ -1771,7 +1758,7 @@ ConfigPasswordKey PasswordConfigProperty::getPasswordKey(const string &descr,
     key.user   = syncPropUsername.getProperty(globalConfigNode);
     return key;
 }
-void ProxyPasswordConfigProperty::checkPassword(ConfigUserInterface &ui,
+void ProxyPasswordConfigProperty::checkPassword(UserInterface &ui,
                                            const string &serverName,
                                            FilterConfigNode &globalConfigNode,
                                            const string &sourceName,
@@ -2492,12 +2479,12 @@ void SyncSourceConfig::setUser(const string &value, bool temporarily) { sourcePr
 InitStateString SyncSourceConfig::getPassword() const {
     return sourcePropPassword.getCachedProperty(*getNode(sourcePropPassword), m_cachedPassword);
 }
-void SyncSourceConfig::checkPassword(ConfigUserInterface &ui, 
+void SyncSourceConfig::checkPassword(UserInterface &ui, 
                                      const string &serverName, 
                                      FilterConfigNode& globalConfigNode) {
     sourcePropPassword.checkPassword(ui, serverName, globalConfigNode, m_name, getNode(sourcePropPassword));
 }
-void SyncSourceConfig::savePassword(ConfigUserInterface &ui, 
+void SyncSourceConfig::savePassword(UserInterface &ui, 
                                     const string &serverName, 
                                     FilterConfigNode& globalConfigNode) {
     sourcePropPassword.savePassword(ui, serverName, globalConfigNode, m_name, getNode(sourcePropPassword));

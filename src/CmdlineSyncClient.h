@@ -30,18 +30,22 @@ SE_BEGIN_CXX
  * supporting a mechanism to save and retrieve password
  * in keyring.
  */
-class CmdlineSyncClient : public SyncContext {
+class CmdlineSyncClient : public SyncContext, private UserInterface {
  public:
     CmdlineSyncClient(const string &server,
                       bool doLogging = false,
                       bool useKeyring = false);
 
     /**
-     * These 2 functions are from ConfigUserInterface and implement it
-     * to use keyring to retrieve and save password in the keyring.
+     * These 2 functions are from UserInterface and implement it
+     * to use keyring to retrieve and save password in the keyring,
+     * if enabled.
      */
     virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key);
     virtual bool savePassword(const string &passwordName, const string &password, const ConfigPasswordKey &key); 
+
+    /** read from real stdin */
+    virtual void readStdin(string &content);
 
     void setKeyring(bool keyring) { m_keyring = keyring; }
     bool getKeyring() const { return m_keyring; }

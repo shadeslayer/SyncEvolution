@@ -264,7 +264,7 @@ void LocalTransportAgent::askPassword(const std::string &passwordName,
                  descr.c_str());
     if (m_server) {
         std::string password;
-        password = m_server->askPassword(passwordName, descr, key);
+        password = m_server->getUserInterfaceNonNull().askPassword(passwordName, descr, key);
         SE_LOG_DEBUG(NULL, NULL, "local sync parent: %s",
                      password.empty() ? "got no password" : "got password");
         reply->done(password);
@@ -420,20 +420,14 @@ void LocalTransportAgent::setTimeout(int seconds)
     // m_timeoutSeconds = seconds;
 }
 
-class LocalTransportContext : public SyncContext
+class LocalTransportUI : public UserInterface
 {
     boost::shared_ptr<LocalTransportParent> m_parent;
     SyncEvo::GMainLoopCXX m_loop;
 
 public:
-    LocalTransportContext(const string &client,
-                          const string &server,
-                          const string &rootPath,
-                          const boost::shared_ptr<TransportAgent> &agent,
-                          bool doLogging,
-                          const boost::shared_ptr<LocalTransportParent> &parent,
-                          const SyncEvo::GMainLoopCXX loop) :
-        SyncContext(client, server, rootPath, agent, doLogging),
+    LocalTransportUI(const boost::shared_ptr<LocalTransportParent> &parent,
+                     const SyncEvo::GMainLoopCXX loop) :
         m_parent(parent),
         m_loop(loop)
     {}
@@ -446,11 +440,14 @@ public:
                      descr.c_str());
         std::string password;
         m_parent->m_askPassword.start(passwordName, descr, key,
-                                      boost::bind(&LocalTransportContext::storePassword, this,
+                                      boost::bind(&LocalTransportUI::storePassword, this,
                                                   boost::ref(password), _1, _2));
         g_main_loop_run(m_loop.get());
         return password;
     }
+
+    virtual bool savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key) { SE_THROW("not implemented"); return false; }
+    virtual void readStdin(std::string &content) { SE_THROW("not implemented"); }
 
 private:
     void storePassword(std::string &res, const std::string &password, const std::string &error)
@@ -622,13 +619,13 @@ class LocalTransportAgentChild : public TransportAgent
         SE_LOG_DEBUG(NULL, NULL, "Sync() called, starting the sync");
 
         // initialize sync context
-        m_client.reset(new LocalTransportContext(std::string("target-config") + clientContext,
-                                                 serverConfig.first,
-                                                 serverConfig.second + "/." + clientContext,
-                                                 boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
-                                                 serverDoLogging,
-                                                 m_parent,
-                                                 m_loop));
+        m_client.reset(new SyncContext(std::string("target-config") + clientContext,
+                                       serverConfig.first,
+                                       serverConfig.second + "/." + clientContext,
+                                       boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
+                                       serverDoLogging));
+        boost::shared_ptr<UserInterface> ui(new LocalTransportUI(m_parent, m_loop));
+        m_client->setUserInterface(ui);
 
         // allow proceeding with sync even if no "target-config" was created,
         // because information about username/password (for WebDAV) or the

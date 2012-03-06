@@ -28,7 +28,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/foreach.hpp>
-#include <boost/signals2.hpp>
 #include <list>
 #include <string>
 #include <sstream>
@@ -127,9 +126,10 @@ extern int ConfigVersions[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX];
 class SyncSourceConfig;
 typedef SyncSourceConfig PersistentSyncSourceConfig;
 class ConfigTree;
-class ConfigUserInterface;
+class UserInterface;
 class SyncSourceNodes;
 class ConstSyncSourceNodes;
+struct ConfigPasswordKey;
 
 /** name of the per-source admin data property */
 extern const char *const SourceAdminDataName;
@@ -291,7 +291,7 @@ class ConfigProperty {
      * @param sourceName the source name used for source config properties
      * @param sourceConfigNode the config node for the source
      */
-    virtual void checkPassword(ConfigUserInterface &ui,
+    virtual void checkPassword(UserInterface &ui,
                                const std::string &serverName,
                                FilterConfigNode &globalConfigNode,
                                const std::string &sourceName = std::string(),
@@ -302,7 +302,7 @@ class ConfigProperty {
      * It firstly check password and then invoke ui's savePassword
      * function to save the password if necessary
      */
-    virtual void savePassword(ConfigUserInterface &ui,
+    virtual void savePassword(UserInterface &ui,
                               const std::string &serverName,
                               FilterConfigNode &globalConfigNode,
                               const std::string &sourceName = std::string(),
@@ -671,132 +671,6 @@ class SecondsConfigProperty : public UIntConfigProperty
     static bool parseDuration(const std::string &value, std::string &error, unsigned int &seconds);
 };
 
-/**
- * This struct wraps keys for storing passwords
- * in configuration system. Some fields might be empty
- * for some passwords. Each field might have different 
- * meaning for each password. Fields using depends on
- * what user actually wants.
- */
-struct ConfigPasswordKey {
- public:
-    ConfigPasswordKey() : port(0) {}
-
-    /** the user for the password */
-    std::string user;
-    /** the server for the password */
-    std::string server;
-    /** the domain name */
-    std::string domain;
-    /** the remote object */
-    std::string object;
-    /** the network protocol */
-    std::string protocol;
-    /** the authentication type */
-    std::string authtype;
-    /** the network port */
-    unsigned int port;
-};
-
-/**
- * This interface has to be provided by the user of the config
- * to let the config code interact with the user.
- */
-class ConfigUserInterface {
- public:
-    virtual ~ConfigUserInterface() {}
-
-    /**
-     * A helper function which interactively asks the user for
-     * a certain password. May throw errors.
-     *
-     * @param passwordName the name of the password in the config file, such as 'proxyPassword'
-     * @param descr        A simple string explaining what the password is needed for,
-     *                     e.g. "SyncML server". This string alone has to be enough
-     *                     for the user to know what the password is for, i.e. the
-     *                     string has to be unique.
-     * @param key          the key used to retrieve password. Using this instead of ConfigNode is
-     *                     to make user interface independent on Configuration Tree
-     * @return entered password
-     */
-    virtual std::string askPassword(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key) = 0;
-
-    /**
-     * A helper function which is used for user interface to save
-     * a certain password. Currently possibly syncml server. May
-     * throw errors.
-     * @param passwordName the name of the password in the config file, such as 'proxyPassword'
-     * @param password     password to be saved
-     * @param key          the key used to store password
-     * @return true if ui saves the password and false if not
-     */
-    virtual bool savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key) = 0;
-};
-
-/**
- * Some ConfigUserInterface implementations check in the system's
- * password manager before asking the user. Backends provide optional
- * access to GNOME keyring (maps to freedesktop.org Secrets D-Bus API)
- * and KWallet (custom protocol in KDE < 4.8, same Secrets API >=
- * 4.8).
- *
- * The following signals are to be invoked by ConfigUserInterface
- * implementations which want to use these extensions. They return
- * true if some backend implemented the request, false otherwise.
- */
-
-/**
- * call one slot after the other, return as soon as the first one
- * returns true
- */
-struct TrySlots
-{
-    typedef bool result_type;
-
-    template<typename InputIterator>
-    bool operator()(InputIterator first, InputIterator last) const
-    {
-        while (first != last) {
-            if (*first) {
-                return true;
-            }
-            ++first;
-        }
-        return false;
-    }
-};
-
-/**
- * Same as ConfigUserInterface::askPassword(), except that the
- * password is returned in retval and the return value indicates
- * whether any slot was able to retrieve the value.
- *
- * Backends need to be sure that the user wants them to handle
- * the request before doing the work and returning true.
- *
- * GNOME keyring and KWallet add themselves here and in
- * SavePasswordSignal. KWallet adds itself with priority 0
- * and GNOME keyring with 1, which means that KWallet is called
- * first. It checks whether KDE really is the preferred
- * storage, otherwise defers to GNOME keyring (or any other
- * slot) by returning false.
- */
-typedef boost::signals2::signal<bool (const std::string &passwordName,
-                                      const std::string &descr,
-                                      const ConfigPasswordKey &key,
-                                      std::string &password),
-                                TrySlots> LoadPasswordSignal;
-LoadPasswordSignal &GetLoadPasswordSignal();
-
-/**
- * Same as AskPasswordSignal for saving.
- */
-typedef boost::signals2::signal<bool (const std::string &passwordName,
-                                      const std::string &password,
-                                      const ConfigPasswordKey &key),
-                                TrySlots> SavePasswordSignal;
-SavePasswordSignal &GetSavePasswordSignal();
-
 class PasswordConfigProperty : public ConfigProperty {
  public:
     PasswordConfigProperty(const std::string &name, const std::string &comment, const std::string &def = std::string(""),const std::string &descr = std::string("")) :
@@ -809,7 +683,7 @@ class PasswordConfigProperty : public ConfigProperty {
     /**
      * Check the password and cache the result.
      */
-    virtual void checkPassword(ConfigUserInterface &ui,
+    virtual void checkPassword(UserInterface &ui,
                                const std::string &serverName,
                                FilterConfigNode &globalConfigNode,
                                const std::string &sourceName = "",
@@ -820,7 +694,7 @@ class PasswordConfigProperty : public ConfigProperty {
      * It firstly check password and then invoke ui's savePassword
      * function to save the password if necessary
      */
-    virtual void savePassword(ConfigUserInterface &ui,
+    virtual void savePassword(UserInterface &ui,
                               const std::string &serverName,
                               FilterConfigNode &globalConfigNode,
                               const std::string &sourceName = "",
@@ -860,7 +734,7 @@ class ProxyPasswordConfigProperty : public PasswordConfigProperty {
      * re-implement this function for it is necessary to do a check 
      * before retrieving proxy password
      */
-    virtual void checkPassword(ConfigUserInterface &ui,
+    virtual void checkPassword(UserInterface &ui,
                                const std::string &serverName,
                                FilterConfigNode &globalConfigNode,
                                const std::string &sourceName,
@@ -1279,7 +1153,7 @@ class SyncConfig {
      * useful when user interface wants to do preparation jobs, such
      * as savePassword and others.
      */
-    virtual void preFlush(ConfigUserInterface &ui); 
+    virtual void preFlush(UserInterface &ui); 
 
     void flush();
 
@@ -1967,10 +1841,10 @@ class SyncSourceConfig {
     /** same as SyncConfig::checkPassword() but with
      * an extra argument globalConfigNode for source config property
      * may need global config node to check password */
-    virtual void checkPassword(ConfigUserInterface &ui, const std::string &serverName, FilterConfigNode& globalConfigNode);
+    virtual void checkPassword(UserInterface &ui, const std::string &serverName, FilterConfigNode& globalConfigNode);
 
     /** same as SyncConfig::savePassword() */
-    virtual void savePassword(ConfigUserInterface &ui, const std::string &serverName, FilterConfigNode& globalConfigNode);
+    virtual void savePassword(UserInterface &ui, const std::string &serverName, FilterConfigNode& globalConfigNode);
 
     /** selects the backend database to use */
     virtual InitStateString getDatabaseID() const;

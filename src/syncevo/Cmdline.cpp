@@ -511,7 +511,7 @@ void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
                          const boost::shared_ptr<SyncContext> &to)
 {
     // give a change to do something before flushing configs to files
-    to->preFlush(*to);
+    to->preFlush(to->getUserInterfaceNonNull());
 
     // done, now write it
     m_configModified = true;
@@ -1261,13 +1261,13 @@ bool Cmdline::run() {
         {
             ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*context, m_server, *context->getProperties());
+                prop->checkPassword(context->getUserInterfaceNonNull(), m_server, *context->getProperties());
             }
         }
         {
             ConfigPropertyRegistry &registry = SyncSourceConfig::getRegistry();
             BOOST_FOREACH(const ConfigProperty *prop, registry) {
-                prop->checkPassword(*context, m_server, *context->getProperties(),
+                prop->checkPassword(context->getUserInterfaceNonNull(), m_server, *context->getProperties(),
                                     source->getName(), sourceNodes.getProperties());
             }
         }
@@ -1351,7 +1351,7 @@ bool Cmdline::run() {
                     string content;
                     string luid;
                     if (m_itemPath == "-") {
-                        context->readStdin(content);
+                        context->getUserInterfaceNonNull().readStdin(content);
                     } else if (!ReadFile(m_itemPath, content)) {
                         SyncContext::throwError(m_itemPath, errno);
                     }

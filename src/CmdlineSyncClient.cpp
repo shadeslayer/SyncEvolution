@@ -19,6 +19,8 @@
 
 #include "CmdlineSyncClient.h"
 
+#include <iostream>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -30,6 +32,7 @@ CmdlineSyncClient::CmdlineSyncClient(const string &server,
     SyncContext(server, doLogging),
     m_keyring(useKeyring)
 {
+    setUserInterface(this);
 }
 
 string CmdlineSyncClient::askPassword(const string &passwordName,
@@ -45,13 +48,25 @@ string CmdlineSyncClient::askPassword(const string &passwordName,
         return password;
     }
 
-    // TODO: move SyncContext::askPassword here
-
     /**
      * if not built with secrets support or that support failed,
      * directly ask user to input password
      */
-    password = SyncContext::askPassword(passwordName, descr, key);
+    char buffer[256];
+    printf("Enter password for %s: ",
+           descr.c_str());
+    fflush(stdout);
+    if (fgets(buffer, sizeof(buffer), stdin) &&
+        strcmp(buffer, "\n")) {
+        size_t len = strlen(buffer);
+        if (len && buffer[len - 1] == '\n') {
+            buffer[len - 1] = 0;
+        }
+        password = buffer;
+    } else {
+        throwError(string("could not read password for ") + descr);
+    }
+
     return password;
 }
 
@@ -76,6 +91,13 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
 
     // let config code store the password
     return false;
+}
+
+void CmdlineSyncClient::readStdin(string &content)
+{
+    if (!ReadFile(cin, content)) {
+        throwError("stdin", errno);
+    }
 }
 
 SE_END_CXX
