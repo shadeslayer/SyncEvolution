@@ -1,12 +1,15 @@
     <macro name="VCARD_OUTGOING_PHOTO_INLINING_SCRIPT"><![CDATA[
-      if (PHOTO_VALUE == "uri" &&
-          SUBSTR(PHOTO, 0, 7) == "file://") {
-          // inline the photo data
-          string data;
-          data = READ(SUBSTR(PHOTO, 7));
-          if (data != UNASSIGNED) {
-              PHOTO = data;
-              PHOTO_VALUE = "binary";
+      if (PHOTO_VALUE == "uri") {
+          string path;
+          path = URITOPATH(PHOTO);
+          if (path) {
+              // try to inline the photo data
+              string data;
+              data = READ(path);
+              if (data != UNASSIGNED) {
+                  PHOTO = data;
+                  PHOTO_VALUE = "binary";
+              }
           }
       }
     ]]></macro>
