@@ -1238,6 +1238,48 @@
    fun:e_book_new*
 }
 
+# ==31707== 805 bytes in 13 blocks are definitely lost in loss record 2,572 of 2,697
+# ==31707==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==31707==    by 0x8B83C02: g_malloc (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==31707==    by 0x8B9A3BD: g_strdup (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==31707==    by 0x5DCBEF1: e_gdbus_proxy_async_method_done (e-gdbus-templates.c:1026)
+# ==31707==    by 0x5DCC011: e_gdbus_proxy_async_method_done_string (e-gdbus-templates.c:1067)
+# ==31707==    by 0x5DB5DFF: e_gdbus_marshallers_VOID__UINT_BOXED_STRING (e-gdbus-marshallers.c:364)
+# ==31707==    by 0x84E8803: g_closure_invoke (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x84FA789: ??? (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x8503E10: g_signal_emit_valist (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x8503FB1: g_signal_emit (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x5DCAD84: e_gdbus_proxy_emit_signal (e-gdbus-templates.c:613)
+# ==31707==    by 0x595EB10: g_signal (e-gdbus-cal.c:1590)
+# ==31707==    by 0x1115E7BB: ffi_call_unix64 (in /usr/lib/x86_64-linux-gnu/libffi.so.5.0.10)
+# ==31707==    by 0x1115E236: ffi_call (in /usr/lib/x86_64-linux-gnu/libffi.so.5.0.10)
+# ==31707==    by 0x84E8CC6: g_cclosure_marshal_generic (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x84E8803: g_closure_invoke (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x84FA5BE: ??? (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x8503E10: g_signal_emit_valist (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x8503FB1: g_signal_emit (in /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.3000.2)
+# ==31707==    by 0x778A0FE: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==31707==    by 0x77789AD: ??? (in /usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.3000.2)
+# ==31707==    by 0x8B7D0CE: g_main_context_dispatch (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==31707==    by 0x8B7D8C7: ??? (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==31707==    by 0x8B7DA98: g_main_context_iteration (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==31707==    by 0x5DCD12E: e_gdbus_proxy_call_sync (e-gdbus-templates.c:1460)
+# ==31707==    by 0x5DCDB2B: e_gdbus_proxy_call_sync_string__string (e-gdbus-templates.c:1626)
+# ==31707==    by 0x595C44F: e_gdbus_cal_call_create_object_sync (e-gdbus-cal.c:575)
+# ==31707==    by 0x592CAEE: e_cal_create_object (e-cal.c:3933)
+# ==31707==    by 0x797F17: SyncEvo::EvolutionCalendarSource::insertItem(std::string const&, std::string const&, bool) (EvolutionCalendarSource.cpp:446)
+# ==31707==    by 0x9102DF: SyncEvo::TrackingSyncSource::insertItemRaw(std::string const&, std::string const&) (TrackingSyncSource.cpp:151)
+# ==31707== 
+{
+   e_cal_create_object leak
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_strdup
+   ...
+   fun:e_cal_create_object
+}
+
 # ==18590== 49 bytes in 1 blocks are definitely lost in loss record 481 of 799
 # ==18590==    at 0x4C244E8: malloc (vg_replace_malloc.c:236)
 # ==18590==    by 0x6432504: g_malloc (in /lib/libglib-2.0.so.0.2400.1)
