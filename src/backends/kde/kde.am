@@ -1,0 +1,23 @@
+dist_noinst_DATA += src/backends/kde/configure-sub.in
+
+src_backends_kde_lib = src/backends/kde/platformkde.la
+MOSTLYCLEANFILES += $(src_backends_kde_lib)
+
+src_backends_kde_platformkde_la_SOURCES = \
+  src/backends/kde/KDEPlatform.h \
+  src/backends/kde/KDEPlatform.cpp
+
+if ENABLE_MODULES
+src_backends_kde_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_kde_backend_LTLIBRARIES = $(src_backends_kde_lib)
+src_backends_kde_platformkde_la_SOURCES += \
+  src/backends/kde/KDEPlatformRegister.cpp
+else
+noinst_LTLIBRARIES += $(src_backends_kde_lib)
+endif
+
+src_backends_kde_platformkde_la_LIBADD = $(KDE_KWALLET_LIBS) $(SYNCEVOLUTION_LIBS) 
+src_backends_kde_platformkde_la_LDFLAGS = -module -avoid-version
+src_backends_kde_platformkde_la_CXXFLAGS = $(KDE_KWALLET_CFLAGS) $(SYNCEVOLUTION_CFLAGS)
+src_backends_kde_platformkde_la_CPPFLAGS = -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_kde_platformkde_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

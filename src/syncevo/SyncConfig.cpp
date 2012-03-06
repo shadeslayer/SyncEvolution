@@ -48,6 +48,19 @@ SE_BEGIN_CXX
 
 const char *const SourceAdminDataName = "adminData";
 
+LoadPasswordSignal &GetLoadPasswordSignal()
+{
+    static LoadPasswordSignal loadPasswordSignal;
+    return loadPasswordSignal;
+}
+
+SavePasswordSignal &GetSavePasswordSignal()
+{
+    static SavePasswordSignal savePasswordSignal;
+    return savePasswordSignal;
+}
+
+
 int ConfigVersions[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX] =
 {
     { CONFIG_ROOT_MIN_VERSION, CONFIG_ROOT_CUR_VERSION },

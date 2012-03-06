@@ -1,0 +1,16 @@
+PKG_CHECK_MODULES(KEYRING, [gnome-keyring-1], HAVE_KEYRING=yes, HAVE_KEYRING=no)
+AC_ARG_ENABLE(gnome-keyring,
+              AS_HELP_STRING([--enable-gnome-keyring],
+                             [enables or disables support for the GNOME keyring; default is on if development files are available]),
+              [enable_gnome_keyring="$enableval"
+               test "$enable_gnome_keyring" = "yes" || test "$enable_gnome_keyring" = "no" || AC_MSG_ERROR([invalid value for --enable-gnome-keyring: $enable_gnome_keyring])
+               test "$enable_gnome_keyring" = "no" || test "$HAVE_KEYRING" = "yes" || AC_MSG_ERROR([gnome-keyring-1 pkg not found, needed for --enable-gnome-keyring])],
+              enable_gnome_keyring="$HAVE_KEYRING")
+if test $enable_gnome_keyring = "yes"; then
+    AC_DEFINE(USE_GNOME_KEYRING, 1, [define if gnome keyring should be used in dbus service])
+    PKG_CHECK_MODULES([KEYRING_2_20], [gnome-keyring-1 >= 2.20 ],
+                      [AC_DEFINE(GNOME_KEYRING_220, 1, [define if gnome keyring version is above 2.20])],
+                      [true])
+    # link into static executables, similar to a SyncSource
+    SYNCSOURCES="$SYNCSOURCES src/backends/gnome/platformgnome.la"
+fi

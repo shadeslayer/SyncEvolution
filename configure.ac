@@ -468,84 +468,6 @@ AS_IF([test "x$with_gio_gdbus" = "xyes"],
                     AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
                     [Define to 1 if you need the dbus_watch_get_unix_fd() function.]))])
 
-PKG_CHECK_MODULES(KEYRING, [gnome-keyring-1], HAVE_KEYRING=yes, HAVE_KEYRING=no)
-AC_ARG_ENABLE(gnome-keyring,
-              AS_HELP_STRING([--enable-gnome-keyring],
-                             [enables or disables support for the GNOME keyring; default is on if development files are available]),
-              [enable_gnome_keyring="$enableval"
-               test "$enable_gnome_keyring" = "yes" || test "$enable_gnome_keyring" = "no" || AC_MSG_ERROR([invalid value for --enable-gnome-keyring: $enable_gnome_keyring])
-               test "$enable_gnome_keyring" = "no" || test "$HAVE_KEYRING" = "yes" || AC_MSG_ERROR([gnome-keyring-1 pkg not found, needed for --enable-gnome-keyring])],
-              enable_gnome_keyring="$HAVE_KEYRING")
-if test $enable_gnome_keyring = "yes"; then
-    AC_DEFINE(USE_GNOME_KEYRING, 1, [define if gnome keyring should be used in dbus service])
-    PKG_CHECK_MODULES([KEYRING_2_20], [gnome-keyring-1 >= 2.20 ], KEYRING220=yes, KEYRING220=no)
-    if test $KEYRING220 = "yes"; then
-        AC_DEFINE(GNOME_KEYRING_220, 1, [define if gnome keyring version is above 2.20])
-    fi
-fi
-
-
-## Begin KWallet ##############################
-
-# first check for qmake-qt4, because qmake may point to qmake-qt3.
-AC_CHECK_PROGS([QMAKE], [qmake-qt4 qmake])
-
-if test "x$QMAKE" != 'x'
-then
-  AC_PATH_PROG([KDE4_CONFIG], [kde4-config], [no])
-
-  if test "x$KDE4_CONFIG" != 'xno'
-  then
-    KDEKWALLETFOUND=yes
-    if ! test "$KDE_KWALLET_CFLAGS"; then
-      KDE_KWALLET_CFLAGS="-I`$KDE4_CONFIG --path include` -I`$KDE4_CONFIG --path include`/KDE `pkg-config --cflags QtDBus QtCore`"
-    fi
-    if ! test "$KDE_KWALLET_LIBS"; then
-      KDE_KWALLET_LIBS="-lkdeui -lkdecore -L`kde4-config --install lib` `pkg-config --libs QtDBus QtCore`"
-    fi
-    AC_LANG_PUSH(C++)
-    old_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$CPPFLAGS $KDE_KWALLET_CFLAGS"
-    AC_CHECK_HEADERS(kwallet.h, [], [KDEKWALLETFOUND=no])
-    CPPFLAGS="$old_CPPFLAGS"
-    AC_LANG_POP(C++)
-  else
-    KDEKWALLETFOUND=no
-  fi
-else
-  KDEKWALLETFOUND=no
-fi
-
-# In contrast to the GNOME KEYRING, the KWallet is
-# currently considered optional. "configure" will never enable
-# by default, because that is a change that might not be
-# expected by traditional users.
-AC_ARG_ENABLE(kwallet,
-              AS_HELP_STRING([--enable-kwallet], [enable access to KWallet]),
-              [use_kde_kwallet="$enableval"
-              test $KDEKWALLETFOUND = "yes" || test "$use_kde_kwallet" = "no" || AC_MSG_ERROR([kwallet.pc not found. Install it to compile with the KWallet enabled.])],
-              [use_kde_kwallet="no"])
-
-if test "$use_kde_kwallet" = "yes"; then
-    # conditional compilation in preprocessor
-    AC_DEFINE(USE_KDE_KWALLET, 1, [KWallet available])
-    # TODO: KWallet needs Qt. Enable the Qt check in
-    # configure-post.in, otherwise it fails to compiler
-    # when none of the backends ask for Qt.
-else
-    # avoid unneeded dependencies on KWallet
-    KDE_KWALLET_CFLAGS=
-    KDE_KWALLET_LIBS=
-fi
-AC_SUBST(KDE_KWALLET_LIBS)
-AC_SUBST(KDE_KWALLET_CFLAGS)
-
-# conditional compilation in make
-AM_CONDITIONAL([USE_KDE_KWALLET], [test "$use_kde_kwallet" = "yes"])
-
-## End KWallet ################################
-
-
 if test $enable_dbus_service = "yes"; then
     if test -z "$XSLT"; then
        AC_MSG_ERROR([xsltproc not found, is required for D-Bus service])
@@ -600,8 +522,6 @@ AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
 AC_SUBST(DBUS_GLIB_CFLAGS)
 AC_SUBST(DBUS_GLIB_LIBS)
-AC_SUBST(KEYRING_CFLAGS)
-AC_SUBST(KEYRING_LIBS)
 AC_SUBST(LIBNOTIFY_CFLAGS)
 AC_SUBST(LIBNOTIFY_LIBS)
 AC_SUBST(LIBEXECDIR)

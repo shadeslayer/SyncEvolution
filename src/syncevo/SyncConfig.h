@@ -28,6 +28,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/foreach.hpp>
+#include <boost/signals2.hpp>
 #include <list>
 #include <string>
 #include <sstream>
@@ -731,6 +732,70 @@ class ConfigUserInterface {
      */
     virtual bool savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key) = 0;
 };
+
+/**
+ * Some ConfigUserInterface implementations check in the system's
+ * password manager before asking the user. Backends provide optional
+ * access to GNOME keyring (maps to freedesktop.org Secrets D-Bus API)
+ * and KWallet (custom protocol in KDE < 4.8, same Secrets API >=
+ * 4.8).
+ *
+ * The following signals are to be invoked by ConfigUserInterface
+ * implementations which want to use these extensions. They return
+ * true if some backend implemented the request, false otherwise.
+ */
+
+/**
+ * call one slot after the other, return as soon as the first one
+ * returns true
+ */
+struct TrySlots
+{
+    typedef bool result_type;
+
+    template<typename InputIterator>
+    bool operator()(InputIterator first, InputIterator last) const
+    {
+        while (first != last) {
+            if (*first) {
+                return true;
+            }
+            ++first;
+        }
+        return false;
+    }
+};
+
+/**
+ * Same as ConfigUserInterface::askPassword(), except that the
+ * password is returned in retval and the return value indicates
+ * whether any slot was able to retrieve the value.
+ *
+ * Backends need to be sure that the user wants them to handle
+ * the request before doing the work and returning true.
+ *
+ * GNOME keyring and KWallet add themselves here and in
+ * SavePasswordSignal. KWallet adds itself with priority 0
+ * and GNOME keyring with 1, which means that KWallet is called
+ * first. It checks whether KDE really is the preferred
+ * storage, otherwise defers to GNOME keyring (or any other
+ * slot) by returning false.
+ */
+typedef boost::signals2::signal<bool (const std::string &passwordName,
+                                      const std::string &descr,
+                                      const ConfigPasswordKey &key,
+                                      std::string &password),
+                                TrySlots> LoadPasswordSignal;
+LoadPasswordSignal &GetLoadPasswordSignal();
+
+/**
+ * Same as AskPasswordSignal for saving.
+ */
+typedef boost::signals2::signal<bool (const std::string &passwordName,
+                                      const std::string &password,
+                                      const ConfigPasswordKey &key),
+                                TrySlots> SavePasswordSignal;
+SavePasswordSignal &GetSavePasswordSignal();
 
 class PasswordConfigProperty : public ConfigProperty {
  public:

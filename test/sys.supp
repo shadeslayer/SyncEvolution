@@ -771,8 +771,10 @@
 # ==7816==    by 0x5344EB: SyncEvo::Server::run(SyncEvo::LogRedirect&) (server.cpp:344)
 # ==7816==    by 0x515CE3: main (main.cpp:117)
 # ==7816== 
+#
+# Different backtrace starting with the move of GNOME keyring support into a backend.
 {
-   gcrypt + GNOME keyring
+   gcrypt + GNOME keyring + modules
    Memcheck:Leak
    fun:malloc
    fun:g_malloc
@@ -780,7 +782,7 @@
    ...
    obj:*libgnome-keyring.so*
    ...
-   fun:*DBusUserInterface*Password*
+   fun:*GNOME*Password*
 }
 
 # ==10804== 60 (16 direct, 44 indirect) bytes in 1 blocks are definitely lost in loss record 1,121 of 2,014
@@ -930,8 +932,7 @@
    KApplication + malloc
    Memcheck:Leak
    ...
-   fun:*KApplication*
-   fun:*SyncContext*initMain*
+   fun:*KDEInitMain*
 }
 {
    Qt + malloc

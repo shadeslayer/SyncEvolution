@@ -1,0 +1,23 @@
+dist_noinst_DATA += src/backends/gnome/configure-sub.in
+
+src_backends_gnome_lib = src/backends/gnome/platformgnome.la
+MOSTLYCLEANFILES += $(src_backends_gnome_lib)
+
+src_backends_gnome_platformgnome_la_SOURCES = \
+  src/backends/gnome/GNOMEPlatform.h \
+  src/backends/gnome/GNOMEPlatform.cpp
+
+if ENABLE_MODULES
+src_backends_gnome_backenddir = $(BACKENDS_DIRECTORY)
+src_backends_gnome_backend_LTLIBRARIES = $(src_backends_gnome_lib)
+src_backends_gnome_platformgnome_la_SOURCES += \
+  src/backends/gnome/GNOMEPlatformRegister.cpp
+else
+noinst_LTLIBRARIES += $(src_backends_gnome_lib)
+endif
+
+src_backends_gnome_platformgnome_la_LIBADD = $(KEYRING_LIBS) $(SYNCEVOLUTION_LIBS) 
+src_backends_gnome_platformgnome_la_LDFLAGS = -module -avoid-version
+src_backends_gnome_platformgnome_la_CXXFLAGS = $(KEYRING_CFLAGS) $(SYNCEVOLUTION_CFLAGS)
+src_backends_gnome_platformgnome_la_CPPFLAGS = -I$(top_srcdir)/test $(BACKEND_CPPFLAGS)
+src_backends_gnome_platformgnome_la_DEPENDENCIES = $(SYNCEVOLUTION_LIBS)

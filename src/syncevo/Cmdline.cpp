@@ -811,13 +811,13 @@ bool Cmdline::run() {
         if (m_dryrun) {
             SyncContext::throwError("--dry-run not supported for configuration changes");
         }
-        if (m_keyring) {
-#if (!defined USE_GNOME_KEYRING) and (!defined USE_KDE_KWALLET)
+        if (m_keyring &&
+            GetLoadPasswordSignal().empty()) {
             m_err << "Error: this syncevolution binary was compiled without support for storing "
-                     "passwords in a keyring or wallet. Either store passwords in your configuration "
+                     "passwords in a keyring or wallet, or the backends for that functionality are not usable. "
+                     "Either store passwords in your configuration "
                      "files or enter them interactively on each program run." << endl;
             return false;
-#endif
         }
 
         // name of renamed config ("foo.old") after migration

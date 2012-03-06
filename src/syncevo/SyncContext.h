@@ -32,6 +32,7 @@
 #include <stdint.h>
 
 #include <boost/smart_ptr.hpp>
+#include <boost/signals2.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -147,6 +148,13 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
      * @param appname     static string, must remain valid, defines name of executable (see g_set_prgname())
      */
     static void initMain(const char *appname);
+
+    /**
+     * A signal invoked as part of initMain().
+     * Backends can connect to it to extend initMain().
+     */
+    typedef boost::signals2::signal<void (const char *appname)> InitMainSignal;
+    static InitMainSignal &GetInitMainSignal();
 
     /**
      * true if binary was compiled as stable release
