@@ -1188,3 +1188,25 @@
    fun:open_verify
    fun:open_path
 }
+
+# ==17052== Jump to the invalid address stated on the next line
+# ==17052==    at 0x4CE: ???
+# ==17052==    by 0x4005557: open_verify (dl-load.c:1821)
+# ==17052==    by 0x4007913: _dl_map_object (dl-load.c:2368)
+# ==17052==    by 0x400CF61: openaux (dl-deps.c:65)
+# ==17052==    by 0x400D925: _dl_catch_error (dl-error.c:178)
+# ==17052==    by 0x400C02B: _dl_map_object_deps (dl-deps.c:247)
+# ==17052==    by 0x40032B6: dl_main (rtld.c:1815)
+# ==17052==    by 0x4014B2D: _dl_sysdep_start (dl-sysdep.c:244)
+# ==17052==    by 0x4001422: _dl_start (rtld.c:342)
+# ==17052==    by 0x4000AF7: ??? (in /lib/x86_64-linux-gnu/ld-2.13.so)
+# ==17052==  Address 0x4ce is not stack'd, malloc'd or (recently) free'd
+# ==17052== 
+{
+   segfault caused by valgrind + libdl, II
+   Memcheck:Jump
+   obj:*
+   fun:open_verify
+   fun:_dl_map_object
+   fun:openaux
+}
