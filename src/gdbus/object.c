@@ -1246,7 +1246,7 @@ gboolean b_dbus_send_error(DBusConnection *connection, DBusMessage *message,
 
 	va_start(args, format);
 
-	error = b_dbus_create_error(message, name, format, args);
+	error = b_dbus_create_error_valist(message, name, format, args);
 
 	va_end(args);
 
