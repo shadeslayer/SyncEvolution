@@ -4151,14 +4151,6 @@ protected:
         CallTraits::handleMessage(reply, data, err);
     }
 
-     /**
-     * called by GDBus to free the user_data pointer set in
-     * dbus_pending_call_set_notify()
-     */
-    static void callDataUnref(void *user_data) {
-        delete static_cast<CallbackData *>(user_data);
-    }
-
     void prepare(DBusMessagePtr &msg)
     {
         // Constructor steals reference, reset() doesn't!
