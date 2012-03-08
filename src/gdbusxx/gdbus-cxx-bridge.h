@@ -3992,139 +3992,165 @@ struct MakeMethodEntry< boost::function<void ()> >
 template <class Cb, class Ret>
 struct TraitsBase
 {
-  typedef Cb Callback_t;
-  typedef Ret Return_t;
+    typedef Cb Callback_t;
+    typedef Ret Return_t;
 
-  struct CallbackData
-  {
-    //only keep connection, for DBusClientCall instance is absent when 'dbus client call' returns
-    //suppose connection is available in the callback handler
-    const DBusConnectionPtr m_conn;
-    Callback_t m_callback;
-    CallbackData(const DBusConnectionPtr &conn, const Callback_t &callback)
-    : m_conn(conn), m_callback(callback)
-    {}
-  };
+    struct CallbackData
+    {
+        //only keep connection, for DBusClientCall instance is absent when 'dbus client call' returns
+        //suppose connection is available in the callback handler
+        const DBusConnectionPtr m_conn;
+        Callback_t m_callback;
+        CallbackData(const DBusConnectionPtr &conn, const Callback_t &callback)
+            : m_conn(conn), m_callback(callback)
+        {}
+    };
 };
 
 struct VoidReturn {};
 
 struct VoidTraits : public TraitsBase<boost::function<void (const std::string &)>, VoidReturn>
 {
-  typedef TraitsBase<boost::function<void (const std::string &)>, VoidReturn> base;
-  typedef typename base::Callback_t Callback_t;
-  typedef typename base::Return_t Return_t;
+    typedef TraitsBase<boost::function<void (const std::string &)>, VoidReturn> base;
+    typedef base::Callback_t Callback_t;
+    typedef base::Return_t Return_t;
 
-  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
-  {
-    return Return_t();
-  }
-
-  static void handleMessage(DBusMessagePtr &/*reply*/, base::CallbackData *data, GError* error)
-  {
-    //unmarshal the return results and call user callback
-    (data->m_callback)(error ? error->message : "");
-    delete data;
-    if (error != NULL) {
-      g_error_free (error);
+    static Return_t demarshal(DBusMessagePtr &/*reply*/, const DBusConnectionPtr &/*conn*/)
+    {
+        return Return_t();
     }
-  }
+
+    static void handleMessage(DBusMessagePtr &reply, base::CallbackData *data, GError* error)
+    {
+        std::string error_msg;
+        //unmarshal the return results and call user callback
+        if (error != NULL || g_dbus_message_to_gerror(reply.get(), &error)) {
+            if (boost::starts_with(error->message, "GDBus.Error:")) {
+                error_msg = error->message + 12;
+            } else {
+                error_msg = error->message;
+            }
+        }
+        (data->m_callback)(error_msg);
+        delete data;
+        if (error != NULL) {
+            g_error_free (error);
+        }
+    }
 };
 
 template <class R1>
 struct Ret1Traits : public TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1>
 {
-  typedef TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1> base;
-  typedef typename base::Callback_t Callback_t;
-  typedef typename base::Return_t Return_t;
+    typedef TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1> base;
+    typedef typename base::Callback_t Callback_t;
+    typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
-  {
-    typename dbus_traits<R1>::host_type r;
+    static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+    {
+        typename dbus_traits<R1>::host_type r;
 
-    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r);
-    return r;
-  }
-
-  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
-  {
-    typename dbus_traits<R1>::host_type r;
-    if (error == NULL && !g_dbus_message_to_gerror(reply.get(), &error)) {
-      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
+        ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r);
+        return r;
     }
 
-    //unmarshal the return results and call user callback
-    (data->m_callback)(r, error ? error->message : "");
-    delete data;
-    if (error != NULL) {
-      g_error_free (error);
+    static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
+    {
+        typename dbus_traits<R1>::host_type r;
+        std::string error_msg;
+
+        if (error == NULL && !g_dbus_message_to_gerror(reply.get(), &error)) {
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
+        } else if (boost::starts_with(error->message, "GDBus.Error:")) {
+            error_msg = error->message + 12;
+        } else {
+            error_msg = error->message;
+        }
+
+        //unmarshal the return results and call user callback
+        (data->m_callback)(r, error_msg);
+        delete data;
+        if (error != NULL) {
+            g_error_free (error);
+        }
     }
-  }
 };
 
 template <class R1, class R2>
 struct Ret2Traits : public TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> >
 {
-  typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> > base;
-  typedef typename base::Callback_t Callback_t;
-  typedef typename base::Return_t Return_t;
+    typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> > base;
+    typedef typename base::Callback_t Callback_t;
+    typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
-  {
-    Return_t r;
+    static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+    {
+        Return_t r;
 
-    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r.first) >> Get<R2>(r.second);
-    return r;
-  }
-
-  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
-  {
-    typename dbus_traits<R1>::host_type r1;
-    typename dbus_traits<R2>::host_type r2;
-    if (error == NULL && !g_dbus_message_to_gerror(reply.get(), &error)) {
-      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
+        ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r.first) >> Get<R2>(r.second);
+        return r;
     }
 
-    //unmarshal the return results and call user callback
-    (data->m_callback)(r1, r2, error ? error->message : "");
-    delete data;
-    if (error != NULL) {
-      g_error_free (error);
+    static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
+    {
+        typename dbus_traits<R1>::host_type r1;
+        typename dbus_traits<R2>::host_type r2;
+        std::string error_msg;
+
+        if (error == NULL && !g_dbus_message_to_gerror(reply.get(), &error)) {
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
+        } else if (boost::starts_with(error->message, "GDBus.Error:")) {
+            error_msg = error->message + 12;
+        } else {
+            error_msg = error->message;
+        }
+
+        //unmarshal the return results and call user callback
+        (data->m_callback)(r1, r2, error_msg);
+        delete data;
+        if (error != NULL) {
+            g_error_free (error);
+        }
     }
-  }
 };
 
 template <class R1, class R2, class R3>
 struct Ret3Traits : public TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> >
 {
-  typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> > base;
-  typedef typename base::Callback_t Callback_t;
-  typedef typename base::Return_t Return_t;
+    typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> > base;
+    typedef typename base::Callback_t Callback_t;
+    typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
-  {
-    Return_t r;
+    static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+    {
+        Return_t r;
 
-    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(boost::get<0>(r)) >> Get<R2>(boost::get<1>(r)) >> Get<R3>(boost::get<2>(r));
-    return r;
-  }
-
-  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
-  {
-    typename dbus_traits<R1>::host_type r1;
-    typename dbus_traits<R2>::host_type r2;
-    typename dbus_traits<R3>::host_type r3;
-    if (error == NULL && !g_dbus_message_to_gerror(reply.get(), &error)) {
-      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
+        ExtractArgs(conn.get(), reply.get()) >> Get<R1>(boost::get<0>(r)) >> Get<R2>(boost::get<1>(r)) >> Get<R3>(boost::get<2>(r));
+        return r;
     }
 
-    //unmarshal the return results and call user callback
-    (data->m_callback)(r1, r2, r3, error ? error->message : "");
-    delete data;
-    if (error != NULL) {
-      g_error_free (error);
+    static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
+    {
+        typename dbus_traits<R1>::host_type r1;
+        typename dbus_traits<R2>::host_type r2;
+        typename dbus_traits<R3>::host_type r3;
+        std::string error_msg;
+
+        if (error == NULL && !g_dbus_message_to_gerror(reply.get(), &error)) {
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
+        } else if (boost::starts_with(error->message, "GDBus.Error:")) {
+            error_msg = error->message + 12;
+        } else {
+            error_msg = error->message;
+        }
+
+        //unmarshal the return results and call user callback
+        (data->m_callback)(r1, r2, r3, error_msg);
+        delete data;
+        if (error != NULL) {
+            g_error_free (error);
+        }
     }
-  }
 };
 
 template <class CallTraits>
@@ -4254,7 +4280,7 @@ public:
     }
 
     template <class A1, class A2, class A3>
-    void operator ()(const A1 &a1, const A2 &a2, const A3 &a3)
+    void operator () (const A1 &a1, const A2 &a2, const A3 &a3)
     {
         DBusMessagePtr msg;
         prepare(msg);
