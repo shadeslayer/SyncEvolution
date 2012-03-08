@@ -159,6 +159,21 @@ class ForkExecParent : public ForkExec
             IDLE;
     }
 
+    /**
+     * Get the childs pid. This can be used as a unique id common to
+     * both parent and child.
+     */
+    int getChildPid() { return static_cast<int>(m_childPid); }
+
+    /**
+     * Simply pushes a new environment variable onto m_envStrings. An
+     * arbitrary value is assigned if no value is given. This is used
+     * when the existance of the variable is of importance, not the
+     * value. In this cas the child simply checks that the environment
+     * variable is not NULL.
+     */
+    void addEnvVar(const std::string &name, const std::string &value = "");
+
  private:
     ForkExecParent(const std::string &helper);
 
