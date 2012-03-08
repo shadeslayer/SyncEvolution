@@ -181,10 +181,14 @@ gboolean DBusServerCXX::newConnection(GDBusServer *server, GDBusConnection *newC
                 g_dbus_connection_get_capabilities(newConn) & G_DBUS_CAPABILITY_FLAGS_UNIX_FD_PASSING);
 
         try {
-            DBusConnectionPtr conn(newConn);
+            // Ref count of connection has to be increased if we want to handle it.
+            // Something inside m_newConnection has to take ownership of connection,
+            // because conn increases ref count only temporarily.
+            DBusConnectionPtr conn(newConn, true);
             me->m_newConnection(*me, conn);
         } catch (...) {
             g_error("handling new D-Bus connection failed with C++ exception");
+            return FALSE;
         }
 
         return TRUE;
