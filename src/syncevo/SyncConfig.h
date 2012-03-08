@@ -982,6 +982,8 @@ class SyncConfig {
      */
     SyncConfig();
 
+    virtual ~SyncConfig() {}
+
     /**
      * determines whether the need to migrate a config causes a
      * STATUS_MIGRATION_NEEDED error or does the migration

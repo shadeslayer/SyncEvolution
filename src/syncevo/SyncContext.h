@@ -192,7 +192,7 @@ class SyncContext : public SyncConfig, public ConfigUserInterface {
                 const boost::shared_ptr<TransportAgent> &agent,
                 bool doLogging = false);
 
-    ~SyncContext();
+    virtual ~SyncContext();
 
     /**
      * Output channel to be used by this context. NULL means "use std::cout", the default.
