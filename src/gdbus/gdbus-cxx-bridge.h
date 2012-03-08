@@ -3968,85 +3968,85 @@ struct VoidTraits : public TraitsBase<boost::function<void (const std::string &)
 template <class R1>
 struct Ret1Traits : public TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1>
 {
-  typedef TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1> base;
-  typedef typename base::Callback_t Callback_t;
-  typedef typename base::Return_t Return_t;
+    typedef TraitsBase<boost::function<void (const R1 &, const std::string &)>, R1> base;
+    typedef typename base::Callback_t Callback_t;
+    typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
-  {
-    typename dbus_traits<R1>::host_type r;
+    static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+    {
+        typename dbus_traits<R1>::host_type r;
 
-    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r);
-    return r;
-  }
-
-  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
-  {
-    typename dbus_traits<R1>::host_type r;
-    if (error.empty()) {
-      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
+        ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r);
+        return r;
     }
 
-    //unmarshal the return results and call user callback
-    (data->m_callback)(r, error);
-  }
+    static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
+    {
+        typename dbus_traits<R1>::host_type r;
+        if (error.empty()) {
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r);
+        }
+
+        //unmarshal the return results and call user callback
+        (data->m_callback)(r, error);
+    }
 };
 
 template <class R1, class R2>
 struct Ret2Traits : public TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> >
 {
-  typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> > base;
-  typedef typename base::Callback_t Callback_t;
-  typedef typename base::Return_t Return_t;
+    typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const std::string &)>, std::pair<R1, R2> > base;
+    typedef typename base::Callback_t Callback_t;
+    typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
-  {
-    Return_t r;
+    static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+    {
+        Return_t r;
 
-    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r.first) >> Get<R2>(r.second);
-    return r;
-  }
-
-  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
-  {
-    typename dbus_traits<R1>::host_type r1;
-    typename dbus_traits<R2>::host_type r2;
-    if (error.empty()) {
-      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
+        ExtractArgs(conn.get(), reply.get()) >> Get<R1>(r.first) >> Get<R2>(r.second);
+        return r;
     }
 
-    //unmarshal the return results and call user callback
-    (data->m_callback)(r1, r2, error);
-  }
+    static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
+    {
+        typename dbus_traits<R1>::host_type r1;
+        typename dbus_traits<R2>::host_type r2;
+        if (error.empty()) {
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2);
+        }
+
+        //unmarshal the return results and call user callback
+        (data->m_callback)(r1, r2, error);
+    }
 };
 
 template <class R1, class R2, class R3>
 struct Ret3Traits : public TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> >
 {
-  typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> > base;
-  typedef typename base::Callback_t Callback_t;
-  typedef typename base::Return_t Return_t;
+    typedef TraitsBase<boost::function<void (const R1 &, const R2 &, const R3 &, const std::string &)>, boost::tuple<R1, R2, R3> > base;
+    typedef typename base::Callback_t Callback_t;
+    typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
-  {
-    Return_t r;
+    static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
+    {
+        Return_t r;
 
-    ExtractArgs(conn.get(), reply.get()) >> Get<R1>(boost::get<0>(r)) >> Get<R2>(boost::get<1>(r)) >> Get<R3>(boost::get<2>(r));
-    return r;
-  }
-
-  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
-  {
-    typename dbus_traits<R1>::host_type r1;
-    typename dbus_traits<R2>::host_type r2;
-    typename dbus_traits<R3>::host_type r3;
-    if (error.empty()) {
-      ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
+        ExtractArgs(conn.get(), reply.get()) >> Get<R1>(boost::get<0>(r)) >> Get<R2>(boost::get<1>(r)) >> Get<R3>(boost::get<2>(r));
+        return r;
     }
 
-    //unmarshal the return results and call user callback
-    (data->m_callback)(r1, r2, r3, error);
-  }
+    static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, const std::string &error)
+    {
+        typename dbus_traits<R1>::host_type r1;
+        typename dbus_traits<R2>::host_type r2;
+        typename dbus_traits<R3>::host_type r3;
+        if (error.empty()) {
+            ExtractArgs(data->m_conn.get(), reply.get()) >> Get<R1>(r1) >> Get<R2>(r2) >> Get<R3>(r3);
+        }
+
+        //unmarshal the return results and call user callback
+        (data->m_callback)(r1, r2, r3, error);
+    }
 };
 
 /** fill buffer with error name and description (if available), return true if error found */
@@ -4057,9 +4057,9 @@ template <class CallTraits>
 class DBusClientCall
 {
 public:
-  typedef typename CallTraits::Callback_t Callback_t;
-  typedef typename CallTraits::Return_t Return_t;
-  typedef typename CallTraits::base::CallbackData CallbackData;
+    typedef typename CallTraits::Callback_t Callback_t;
+    typedef typename CallTraits::Return_t Return_t;
+    typedef typename CallTraits::base::CallbackData CallbackData;
 
 protected:
     const std::string m_destination;
