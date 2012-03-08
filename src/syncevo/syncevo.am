@@ -43,6 +43,8 @@ src_syncevo_sources = \
   src/syncevo/LogStdout.cpp \
   src/syncevo/LogRedirect.h \
   src/syncevo/LogRedirect.cpp \
+  src/syncevo/LogSyslog.h \
+  src/syncevo/LogSyslog.cpp \
   \
   src/syncevo/TransportAgent.h \
   src/syncevo/TransportAgent.cpp \
@@ -140,6 +142,7 @@ src_syncevo_libsyncevolution_include_HEADERS = \
   src/syncevo/MapSyncSource.h \
   src/syncevo/LogRedirect.h \
   src/syncevo/LogStdout.h \
+  src/syncevo/LogSyslog.h \
   src/syncevo/FileConfigNode.h \
   \
   src/syncevo/FilterConfigNode.h \
