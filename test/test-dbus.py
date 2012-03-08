@@ -3080,14 +3080,20 @@ class TestLocalSync(unittest.TestCase, DBusUtil):
 
     def setUp(self):
         self.setUpServer()
+
+    def setUpConfigs(self, childPassword=None):
         # create file<->file configs
         self.setUpSession("target-config@client")
+        addressbook = { "sync": "two-way",
+                        "backend": "file",
+                        "databaseFormat": "text/vcard",
+                        "database": "file://" + xdg_root + "/client" }
+        if childPassword:
+            addressbook["databaseUser"] = "foo-user"
+            addressbook["databasePassword"] = childPassword
         self.session.SetConfig(False, False,
                                {"" : { "loglevel": "4" },
-                                "source/addressbook": { "sync": "two-way",
-                                                        "backend": "file",
-                                                        "databaseFormat": "text/vcard",
-                                                        "database": "file://" + xdg_root + "/client" } })
+                                "source/addressbook": addressbook })
         self.session.Detach()
         self.setUpSession("server")
         self.session.SetConfig(False, False,
@@ -3104,6 +3110,7 @@ class TestLocalSync(unittest.TestCase, DBusUtil):
     @timeout(100)
     def testSync(self):
         """TestLocalSync.testSync - run a simple slow sync between local dirs"""
+        self.setUpConfigs()
         os.makedirs(xdg_root + "/server")
         output = open(xdg_root + "/server/0", "w")
         output.write('''BEGIN:VCARD
@@ -3120,10 +3127,50 @@ END:VCARD''')
         input = open(xdg_root + "/server/0", "r")
         self.assertTrue("FN:John Doe" in input.read())
 
+    @timeout(100)
+    def testPasswordRequest(self):
+        """TestLocalSync.testPassswordRequest - check that password request child->parent->us works"""
+        self.setUpConfigs(childPassword="-")
+        self.setUpListeners(self.sessionpath)
+        self.lastState = "unknown"
+        def infoRequest(id, session, state, handler, type, params):
+            if state == "request":
+                self.assertEqual(self.lastState, "unknown")
+                self.lastState = "request"
+                self.server.InfoResponse(id, "working", {}, utf8_strings=True)
+            elif state == "waiting":
+                self.assertEqual(self.lastState, "request")
+                self.lastState = "waiting"
+                self.server.InfoResponse(id, "response", {"password" : "123456"}, utf8_strings=True)
+            elif state == "done":
+                self.assertEqual(self.lastState, "waiting")
+                self.lastState = "done"
+            else:
+                self.fail("state should not be '" + state + "'")
+
+        signal = bus.add_signal_receiver(infoRequest,
+                                         'InfoRequest',
+                                         'org.syncevolution.Server',
+                                         self.server.bus_name,
+                                         None,
+                                         byte_arrays=True,
+                                         utf8_strings=True)
+
+        try:
+            self.session.Sync("slow", {})
+            loop.run()
+        finally:
+            signal.remove()
+
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.assertEqual(self.lastState, "done")
+        self.checkSync()
+
     @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
     @timeout(100)
     def testConcurrency(self):
         """TestLocalSync.testConcurrency - D-Bus server must remain responsive while sync runs"""
+        self.setUpConfigs()
         self.setUpListeners(self.sessionpath)
         self.session.Sync("slow", {})
         time.sleep(2)
