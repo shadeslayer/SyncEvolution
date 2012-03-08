@@ -4105,6 +4105,8 @@ protected:
         DBusPendingCall *call;
         if (!dbus_connection_send_with_reply(m_conn.get(), msg.get(), &call, -1)) {
             throw std::runtime_error("dbus_connection_send failed");
+        } else if (call == NULL) {
+            throw std::runtime_error("received pending call is NULL");
         }
 
 
