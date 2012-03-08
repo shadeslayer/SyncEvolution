@@ -93,6 +93,8 @@ static inline void intrusive_ptr_release(DBusServer *server) { dbus_server_unref
 
 namespace GDBusCXX {
 
+class DBusMessagePtr;
+
 class DBusConnectionPtr : public boost::intrusive_ptr<DBusConnection>
 {
  public:

@@ -92,6 +92,8 @@ void intrusive_ptr_release(GDBusMessage          *msg);
 
 namespace GDBusCXX {
 
+class DBusMessagePtr;
+
 class DBusConnectionPtr : public boost::intrusive_ptr<GDBusConnection>
 {
  public:
@@ -109,14 +111,14 @@ class DBusConnectionPtr : public boost::intrusive_ptr<GDBusConnection>
     }
 };
 
-class GDBusMessagePtr : public boost::intrusive_ptr<GDBusMessage>
+class DBusMessagePtr : public boost::intrusive_ptr<GDBusMessage>
 {
  public:
-    GDBusMessagePtr() {}
+    DBusMessagePtr() {}
     // expected to be used for messages created anew,
     // so use the reference already incremented for us
     // and don't increment by default
-    GDBusMessagePtr(GDBusMessage *msg, bool add_ref = false) :
+    DBusMessagePtr(GDBusMessage *msg, bool add_ref = false) :
       boost::intrusive_ptr<GDBusMessage>(msg, add_ref)
     {}
 
@@ -271,7 +273,7 @@ class AppendRetvals {
     GVariantBuilder m_builder;
 
  public:
-    AppendRetvals(GDBusMessagePtr &msg) {
+    AppendRetvals(DBusMessagePtr &msg) {
         m_msg = msg.get();
         g_variant_builder_init(&m_builder, G_VARIANT_TYPE_TUPLE);
     }
@@ -487,9 +489,9 @@ class EmitSignal0
 
     void operator () ()
     {
-        GDBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                      m_object.getInterface(),
-                                                      m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
+                                                     m_object.getInterface(),
+                                                     m_signal.c_str()));
         if (!msg) {
             throw std::runtime_error("g_dbus_message_new_signal() failed");
         }
@@ -554,9 +556,9 @@ class EmitSignal1
 
     void operator () (A1 a1)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                      m_object.getInterface(),
-                                                      m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
+                                                     m_object.getInterface(),
+                                                     m_signal.c_str()));
         if (!msg) {
             throw std::runtime_error("g_dbus_message_new_signal() failed");
         }
@@ -600,9 +602,9 @@ class EmitSignal2
 
     void operator () (A1 a1, A2 a2)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                      m_object.getInterface(),
-                                                      m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
+                                                     m_object.getInterface(),
+                                                     m_signal.c_str()));
         if (!msg) {
             throw std::runtime_error("g_dbus_message_new_signal() failed");
         }
@@ -646,7 +648,7 @@ class EmitSignal3
 
     void operator () (A1 a1, A2 a2, A3 a3)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
+        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
                                                      m_object.getInterface(),
                                                      m_signal.c_str()));
         if (!msg) {
@@ -692,7 +694,7 @@ class EmitSignal4
 
     void operator () (A1 a1, A2 a2, A3 a3, A4 a4)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
+        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
                                                      m_object.getInterface(),
                                                      m_signal.c_str()));
         if (!msg) {
@@ -739,7 +741,7 @@ class EmitSignal5
 
     void operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
+        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
                                                      m_object.getInterface(),
                                                      m_signal.c_str()));
         if (!msg) {
@@ -787,7 +789,7 @@ class EmitSignal6
 
     void operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6)
     {
-        GDBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
+        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
                                                      m_object.getInterface(),
                                                      m_signal.c_str()));
         if (!msg) {
@@ -890,7 +892,7 @@ struct MethodHandler
         //
         // Because we work with messages directly for the reply from now on, we
         // unref 'invocation' immediately after referencing the underlying message.
-        GDBusMessagePtr msg(g_dbus_method_invocation_get_message(invocation), true);
+        DBusMessagePtr msg(g_dbus_method_invocation_get_message(invocation), true);
         g_object_unref(invocation);
         invocation = NULL;
 
@@ -2016,7 +2018,7 @@ class DBusResult : virtual public Result
 {
  protected:
     DBusConnectionPtr m_conn;     /**< connection via which the message was received */
-    GDBusMessagePtr m_msg;         /**< the method invocation message */
+    DBusMessagePtr m_msg;         /**< the method invocation message */
 
  public:
     DBusResult(GDBusConnection *conn,
@@ -2056,7 +2058,7 @@ class DBusResult0 :
 
     virtual void done()
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2082,7 +2084,7 @@ class DBusResult1 :
 
     virtual void done(A1 a1)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2110,7 +2112,7 @@ class DBusResult2 :
 
     virtual void done(A1 a1, A2 a2)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2143,7 +2145,7 @@ class DBusResult3 :
 
     virtual void done(A1 a1, A2 a2, A3 a3)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2176,7 +2178,7 @@ class DBusResult4 :
 
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2208,7 +2210,7 @@ class DBusResult5 :
 
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2242,7 +2244,7 @@ class DBusResult6 :
 
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2276,7 +2278,7 @@ class DBusResult7 :
 
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2310,7 +2312,7 @@ class DBusResult8 :
 
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2344,7 +2346,7 @@ class DBusResult9 :
 
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8, A9 a9)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -2378,7 +2380,7 @@ class DBusResult10 :
 
     virtual void done(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6, A7 a7, A8 a8, A9 a9, A10 a10)
     {
-        GDBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
+        DBusMessagePtr reply(g_dbus_message_new_method_reply(m_msg.get()));
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
@@ -4010,15 +4012,15 @@ struct VoidReturn {};
 struct VoidTraits : public TraitsBase<boost::function<void (const std::string &)>, VoidReturn>
 {
   typedef TraitsBase<boost::function<void (const std::string &)>, VoidReturn> base;
-  typedef base::Callback_t Callback_t;
-  typedef base::Return_t Return_t;
+  typedef typename base::Callback_t Callback_t;
+  typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(GDBusMessagePtr &/*reply*/, const DBusConnectionPtr &/*conn*/)
+  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
   {
     return Return_t();
   }
 
-  static void handleMessage(GDBusMessagePtr &/*reply*/, base::CallbackData *data, GError* error)
+  static void handleMessage(DBusMessagePtr &/*reply*/, base::CallbackData *data, GError* error)
   {
     //unmarshal the return results and call user callback
     (data->m_callback)(error ? error->message : "");
@@ -4036,7 +4038,7 @@ struct Ret1Traits : public TraitsBase<boost::function<void (const R1 &, const st
   typedef typename base::Callback_t Callback_t;
   typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(GDBusMessagePtr &reply, const DBusConnectionPtr &conn)
+  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
   {
     typename dbus_traits<R1>::host_type r;
 
@@ -4044,7 +4046,7 @@ struct Ret1Traits : public TraitsBase<boost::function<void (const R1 &, const st
     return r;
   }
 
-  static void handleMessage(GDBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
+  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
   {
     typename dbus_traits<R1>::host_type r;
     if (error == NULL && !g_dbus_message_to_gerror(reply.get(), &error)) {
@@ -4067,7 +4069,7 @@ struct Ret2Traits : public TraitsBase<boost::function<void (const R1 &, const R2
   typedef typename base::Callback_t Callback_t;
   typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(GDBusMessagePtr &reply, const DBusConnectionPtr &conn)
+  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
   {
     Return_t r;
 
@@ -4075,7 +4077,7 @@ struct Ret2Traits : public TraitsBase<boost::function<void (const R1 &, const R2
     return r;
   }
 
-  static void handleMessage(GDBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
+  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
   {
     typename dbus_traits<R1>::host_type r1;
     typename dbus_traits<R2>::host_type r2;
@@ -4099,7 +4101,7 @@ struct Ret3Traits : public TraitsBase<boost::function<void (const R1 &, const R2
   typedef typename base::Callback_t Callback_t;
   typedef typename base::Return_t Return_t;
 
-  static Return_t demarshal(GDBusMessagePtr &reply, const DBusConnectionPtr &conn)
+  static Return_t demarshal(DBusMessagePtr &reply, const DBusConnectionPtr &conn)
   {
     Return_t r;
 
@@ -4107,7 +4109,7 @@ struct Ret3Traits : public TraitsBase<boost::function<void (const R1 &, const R2
     return r;
   }
 
-  static void handleMessage(GDBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
+  static void handleMessage(DBusMessagePtr &reply, typename base::CallbackData *data, GError* error)
   {
     typename dbus_traits<R1>::host_type r1;
     typename dbus_traits<R2>::host_type r2;
@@ -4145,7 +4147,7 @@ protected:
         CallbackData *data = static_cast<CallbackData *>(user_data);
 
         GError *err = NULL;
-        GDBusMessagePtr reply(g_dbus_connection_send_message_with_reply_finish(data->m_conn.get(), res, &err));
+        DBusMessagePtr reply(g_dbus_connection_send_message_with_reply_finish(data->m_conn.get(), res, &err));
         CallTraits::handleMessage(reply, data, err);
     }
 
@@ -4157,20 +4159,20 @@ protected:
         delete static_cast<CallbackData *>(user_data);
     }
 
-    void prepare(GDBusMessagePtr &msg)
+    void prepare(DBusMessagePtr &msg)
     {
         // Constructor steals reference, reset() doesn't!
         // Therefore use constructor+copy instead of reset().
-        msg = GDBusMessagePtr(g_dbus_message_new_method_call(m_destination.c_str(),
-                                                             m_path.c_str(),
-                                                             m_interface.c_str(),
-                                                             m_method.c_str()));
+        msg = DBusMessagePtr(g_dbus_message_new_method_call(m_destination.c_str(),
+                                                            m_path.c_str(),
+                                                            m_interface.c_str(),
+                                                            m_method.c_str()));
         if (!msg) {
             throw std::runtime_error("g_dbus_message_new_method_call() failed");
         }
     }
 
-    void send(GDBusMessagePtr &msg, const Callback_t &callback)
+    void send(DBusMessagePtr &msg, const Callback_t &callback)
     {
         CallbackData *data = new CallbackData(m_conn, callback);
         g_dbus_connection_send_message_with_reply(m_conn.get(), msg.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE,
@@ -4178,16 +4180,16 @@ protected:
                                                   NULL, NULL, dbusCallback, data);
     }
 
-    Return_t sendAndReturn(GDBusMessagePtr &msg)
+    Return_t sendAndReturn(DBusMessagePtr &msg)
     {
         GError* error = NULL;
-        GDBusMessagePtr reply(g_dbus_connection_send_message_with_reply_sync(m_conn.get(),
-                                                                             msg.get(),
-                                                                             G_DBUS_SEND_MESSAGE_FLAGS_NONE,
-                                                                             G_MAXINT, // no timeout
-                                                                             NULL,
-                                                                             NULL,
-                                                                             &error));
+        DBusMessagePtr reply(g_dbus_connection_send_message_with_reply_sync(m_conn.get(),
+                                                                            msg.get(),
+                                                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE,
+                                                                            G_MAXINT, // no timeout
+                                                                            NULL,
+                                                                            NULL,
+                                                                            &error));
 
 
         if (error || g_dbus_message_to_gerror(reply.get(), &error)) {
@@ -4211,14 +4213,14 @@ public:
 
     Return_t operator () ()
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         return sendAndReturn(msg);
     }
 
     void start(const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         send(msg, callback);
     }
@@ -4226,7 +4228,7 @@ public:
     template <class A1>
     Return_t operator () (const A1 &a1)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1;
         return sendAndReturn(msg);
@@ -4235,7 +4237,7 @@ public:
     template <class A1>
     void start(const A1 &a1, const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1;
         send(msg, callback);
@@ -4244,7 +4246,7 @@ public:
     template <class A1, class A2>
     Return_t operator () (const A1 &a1, const A2 &a2)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2;
         return sendAndReturn(msg);
@@ -4253,7 +4255,7 @@ public:
     template <class A1, class A2>
     void start(const A1 &a1, const A2 &a2, const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2;
         send(msg, callback);
@@ -4262,7 +4264,7 @@ public:
     template <class A1, class A2, class A3>
     void operator ()(const A1 &a1, const A2 &a2, const A3 &a3)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3;
         sendAndReturn(msg);
@@ -4271,7 +4273,7 @@ public:
     template <class A1, class A2, class A3>
     void start(const A1 &a1, const A2 &a2, const A3 &a3, const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3;
         send(msg, callback);
@@ -4280,7 +4282,7 @@ public:
     template <class A1, class A2, class A3, class A4>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4;
         sendAndReturn(msg);
@@ -4289,7 +4291,7 @@ public:
     template <class A1, class A2, class A3, class A4>
     void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4;
         send(msg, callback);
@@ -4298,7 +4300,7 @@ public:
     template <class A1, class A2, class A3, class A4, class A5>
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5;
         sendAndReturn(msg);
@@ -4307,7 +4309,7 @@ public:
     template <class A1, class A2, class A3, class A4, class A5>
     void start(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5, const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5;
         send(msg, callback);
@@ -4317,7 +4319,7 @@ public:
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
                       const A6 &a6)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6;
         sendAndReturn(msg);
@@ -4328,7 +4330,7 @@ public:
                const A6 &a6,
                const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6;
         send(msg, callback);
@@ -4338,7 +4340,7 @@ public:
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
                       const A6 &a6, const A7 &a7)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7;
         sendAndReturn(msg);
@@ -4349,7 +4351,7 @@ public:
                const A6 &a6, const A7 &a7,
                const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7;
         send(msg, callback);
@@ -4359,7 +4361,7 @@ public:
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
                       const A6 &a6, const A7 &a7, const A8 &a8)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
         sendAndReturn(msg);
@@ -4370,7 +4372,7 @@ public:
                const A6 &a6, const A7 &a7, const A8 &a8,
                const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
         send(msg, callback);
@@ -4380,7 +4382,7 @@ public:
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
                       const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
         sendAndReturn(msg);
@@ -4391,7 +4393,7 @@ public:
                const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9,
                const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
         send(msg, callback);
@@ -4401,7 +4403,7 @@ public:
     void operator () (const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4, const A5 &a5,
                       const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const A10 &a10)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9 << a10;
         sendAndReturn(msg);
@@ -4412,7 +4414,7 @@ public:
                const A6 &a6, const A7 &a7, const A8 &a8, const A9 &a9, const A10 &a10,
                const Callback_t &callback)
     {
-        GDBusMessagePtr msg;
+        DBusMessagePtr msg;
         prepare(msg);
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9 << a10;
         send(msg, callback);
