@@ -180,8 +180,8 @@ int main(int argc, char **argv)
         GDBusCXX::DBusErrorCXX dbusError;
         GOptionEntry opt_entries[] = {
             { "server", 's', 0, G_OPTION_ARG_NONE, &opt_server, "Start a server instead of a client", NULL },
-            { "forkexec", 's', 0, G_OPTION_ARG_NONE, &opt_fork_exec, "Use fork+exec to start the client (implies --server)", NULL },
-            { "forkfailure", 's', 0, G_OPTION_ARG_NONE, &opt_fork_exec_failure, "Fork /bin/false to simulate a failure in the child (implies --forkexec)", NULL },
+            { "forkexec", 'e', 0, G_OPTION_ARG_NONE, &opt_fork_exec, "Use fork+exec to start the client (implies --server)", NULL },
+            { "forkfailure", 'f', 0, G_OPTION_ARG_NONE, &opt_fork_exec_failure, "Fork /bin/false to simulate a failure in the child (implies --forkexec)", NULL },
             { "address", 'a', 0, G_OPTION_ARG_STRING, &opt_address, "D-Bus address to use", NULL },
             // { "allow-anonymous", 'n', 0, G_OPTION_ARG_NONE, &opt_allow_anonymous, "Allow anonymous authentication", NULL },
             { NULL}
