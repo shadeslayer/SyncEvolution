@@ -443,7 +443,7 @@ class DBusObject
         m_interface(interface),
         m_closeConnection(closeConnection)
     {}
-    ~DBusObject() {
+    virtual ~DBusObject() {
         if (m_closeConnection &&
             m_conn) {
             // TODO: is this also necessary for GIO GDBus?
