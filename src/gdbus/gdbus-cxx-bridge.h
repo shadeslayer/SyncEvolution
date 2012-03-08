@@ -414,7 +414,7 @@ class DBusObject
         m_interface(interface),
         m_closeConnection(closeConnection)
     {}
-    ~DBusObject() {
+    virtual ~DBusObject() {
         if (m_closeConnection &&
             m_conn) {
             dbus_connection_close(m_conn.get());
