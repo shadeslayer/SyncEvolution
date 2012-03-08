@@ -19,9 +19,9 @@
 
 #include "ForkExec.h"
 
-SE_BEGIN_CXX
+#if defined(HAVE_GLIB) && defined(DBUS_SERVICE)
 
-#if defined(HAVE_GLIB)
+SE_BEGIN_CXX
 
 static const std::string ForkExecEnvVar("SYNCEVOLUTION_FORK_EXEC=");
 
@@ -277,7 +277,6 @@ const char *ForkExecChild::getParentDBusAddress()
     return getenv(ForkExecEnvVar.substr(0, ForkExecEnvVar.size() - 1).c_str());
 }
 
-#endif // HAVE_GLIB
-
 SE_END_CXX
 
+#endif // HAVE_GLIB && DBUS_SERVICE
