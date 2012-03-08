@@ -46,7 +46,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_ACTIVESYNC
             new ActiveSyncContactSource(params)
 #else
-            RegisterSyncSource::InactiveSource
+            RegisterSyncSource::InactiveSource(params)
 #endif
             ;
     }
@@ -57,7 +57,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_ACTIVESYNC
             new ActiveSyncCalendarSource(params, EAS_ITEM_CALENDAR)
 #else
-            RegisterSyncSource::InactiveSource
+            RegisterSyncSource::InactiveSource(params)
 #endif
             ;
     }
@@ -68,7 +68,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_ACTIVESYNC
             new ActiveSyncCalFormatSource(params, EAS_ITEM_TODO)
 #else
-            RegisterSyncSource::InactiveSource
+            RegisterSyncSource::InactiveSource(params)
 #endif
             ;
     }
@@ -79,7 +79,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_ACTIVESYNC
             new ActiveSyncCalFormatSource(params, EAS_ITEM_JOURNAL)
 #else
-            RegisterSyncSource::InactiveSource
+            RegisterSyncSource::InactiveSource(params)
 #endif
             ;
     }

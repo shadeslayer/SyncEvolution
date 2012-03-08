@@ -39,7 +39,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_KCALEXTENDED
                 true ? new KCalExtendedSource(params) :
 #endif
-                isMe ? RegisterSyncSource::InactiveSource : NULL;
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL;
         }
     }
     return NULL;

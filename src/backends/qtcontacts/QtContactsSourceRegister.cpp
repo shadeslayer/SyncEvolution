@@ -44,7 +44,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_QTCONTACTS
                 true ? new QtContactsSource(params) :
 #endif
-                isMe ? RegisterSyncSource::InactiveSource : NULL;
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL;
         }
     }
     return NULL;

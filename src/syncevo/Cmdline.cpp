@@ -724,10 +724,19 @@ bool Cmdline::run() {
                     if (!alias.empty() && source->m_enabled) {
                         SourceType type(*alias.begin());
                         nodes->getProperties()->setProperty("backend", type.m_backend);
-                        auto_ptr<SyncSource> source(SyncSource::createSource(params, false));
-                        if (source.get() != NULL) {
-                            listSources(*source, boost::join(alias, " = "));
-                            m_out << "\n";
+                        std::string header = boost::join(alias, " = ");
+                        try {
+                            auto_ptr<SyncSource> source(SyncSource::createSource(params, false));
+                            if (!source.get()) {
+                                // silently skip backends like the "file" backend which do not support
+                                // listing databases and return NULL unless configured properly
+                            } else {
+                                listSources(*source, header);
+                                m_out << "\n";
+                            }
+                        } catch (...) {
+                            SE_LOG_ERROR(NULL, NULL, "%s:\nlisting databases failed", header.c_str());
+                            Exception::handle();
                         }
                     }
                 }
@@ -1884,6 +1893,12 @@ void Cmdline::checkForPeerProps()
 void Cmdline::listSources(SyncSource &syncSource, const string &header)
 {
     m_out << header << ":\n";
+
+    if (syncSource.isInactive()) {
+        m_out << "not enabled during compilation or not usable in the current environment\n";
+        return;
+    }
+
     SyncSource::Databases databases = syncSource.getDatabases();
 
     BOOST_FOREACH(const SyncSource::Database &database, databases) {

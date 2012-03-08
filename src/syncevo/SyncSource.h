@@ -108,15 +108,16 @@ class RegisterSyncSource
      * selected type.
      * 
      * Inactive sources should return the special InactiveSource
-     * pointer value if they recognize without a doubt that the user
-     * wanted to instantiate them: for example, an inactive
-     * EvolutionContactSource will return NULL for "addressbook" but
-     * InactiveSource for "evolution-contacts".
+     * instance (created with InactiveSource() below) if they
+     * recognize without a doubt that the user wanted to instantiate
+     * them: for example, an inactive EvolutionContactSource will
+     * return NULL for "addressbook" but InactiveSource for
+     * "evolution-contacts".
      */
     typedef SyncSource *(*Create_t)(const SyncSourceParams &params);
 
-    /** special return value of Create_t, not a real sync source! */
-    static SyncSource *const InactiveSource;
+    /** create special result of Create_t: a source which just throws errors when used */
+    static SyncSource *InactiveSource(const SyncSourceParams &params);
 
     /**
      * @param shortDescr     a few words identifying the data to be synchronized,
@@ -1427,6 +1428,9 @@ class SyncSource : virtual public SyncSourceBase, public SyncSourceConfig, publi
  public:
     SyncSource(const SyncSourceParams &params);
     virtual ~SyncSource() {}
+
+    /** true in sources which are not meant to be used, see RegisterSyncSource::InactiveSource() */
+    virtual bool isInactive() const { return false; }
 
     /**
      * SyncSource implementations must register themselves here via

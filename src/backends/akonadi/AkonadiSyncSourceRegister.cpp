@@ -42,7 +42,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_AKONADI
                 new AkonadiContactSource(params)
 #else
-                isMe ? RegisterSyncSource::InactiveSource : NULL
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL
 #endif
                 ;
         } else {
@@ -58,7 +58,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_AKONADI
                 new AkonadiTaskSource(params)
 #else
-                isMe ? RegisterSyncSource::InactiveSource : NULL
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL
 #endif
                 ;
         } else {
@@ -73,7 +73,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_AKONADI
                 new AkonadiMemoSource(params)
 #else
-                isMe ? RegisterSyncSource::InactiveSource : NULL
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL
 #endif
                 ;
         } else {
@@ -89,7 +89,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_AKONADI
                 new AkonadiCalendarSource(params)
 #else
-                isMe ? RegisterSyncSource::InactiveSource : NULL
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL
 #endif
                 ;
         } else {

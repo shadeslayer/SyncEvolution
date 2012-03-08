@@ -59,7 +59,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
                 return new MapSyncSource(params, sub);
             }
 #endif
-            return RegisterSyncSource::InactiveSource;
+            return RegisterSyncSource::InactiveSource(params);
         }
     }
 
@@ -74,7 +74,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
                 return new CardDAVSource(params, settings);
             }
 #endif
-            return RegisterSyncSource::InactiveSource;
+            return RegisterSyncSource::InactiveSource(params);
         }
     }
 

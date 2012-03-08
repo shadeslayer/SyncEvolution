@@ -40,13 +40,13 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_EBOOK
                 enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_21) :
 #endif
-                isMe ? RegisterSyncSource::InactiveSource : NULL;
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL;
         } else if (sourceType.m_format == "text/vcard") {
             return
 #ifdef ENABLE_EBOOK
                 enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_30) :
 #endif
-                isMe ? RegisterSyncSource::InactiveSource : NULL;
+                isMe ? RegisterSyncSource::InactiveSource(params) : NULL;
         }
     }
     return NULL;

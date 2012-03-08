@@ -29,7 +29,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
     SourceType sourceType = SyncSource::getSourceType(params.m_nodes);
     bool isMe = sourceType.m_backend == "Maemo Calendar";
 #ifndef ENABLE_MAEMO_CALENDAR
-    if (isMe) return RegisterSyncSource::InactiveSource;
+    if (isMe) return RegisterSyncSource::InactiveSource(params);
 #else
     bool maybeMe = sourceType.m_backend == "calendar";
 
@@ -46,7 +46,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 
     isMe = sourceType.m_backend == "Maemo Tasks";
 #ifndef ENABLE_MAEMO_CALENDAR
-    if (isMe) return RegisterSyncSource::InactiveSource;
+    if (isMe) return RegisterSyncSource::InactiveSource(params);
 #else
     maybeMe = sourceType.m_backend == "todo";
 
@@ -63,7 +63,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
 
     isMe = sourceType.m_backend == "Maemo Notes";
 #ifndef ENABLE_MAEMO_CALENDAR
-    if (isMe) return RegisterSyncSource::InactiveSource;
+    if (isMe) return RegisterSyncSource::InactiveSource(params);
 #else
     maybeMe = sourceType.m_backend == "memo";
 

@@ -325,14 +325,13 @@ void ReadOperations::getDatabases(const string &sourceName, SourceDatabases_t &d
     SyncSourceParams params(sourceName, config->getSyncSourceNodes(sourceName), config);
     const SourceRegistry &registry(SyncSource::getSourceRegistry());
     BOOST_FOREACH(const RegisterSyncSource *sourceInfo, registry) {
-        SyncSource *source = sourceInfo->m_create(params);
-        if (!source) {
+        auto_ptr<SyncSource> source(sourceInfo->m_create(params));
+        if (!source.get()) {
             continue;
-        } else if (source == RegisterSyncSource::InactiveSource) {
+        } else if (source->isInactive()) {
             SE_THROW_EXCEPTION(NoSuchSource, "'" + m_configName + "' backend of source '" + sourceName + "' is not supported");
         } else {
-            auto_ptr<SyncSource> autoSource(source);
-            databases = autoSource->getDatabases();
+            databases = source->getDatabases();
             return;
         }
     }

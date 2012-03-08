@@ -34,7 +34,7 @@ static SyncSource *createSource(const SyncSourceParams &params)
     bool isMe = sourceType.m_backend == "SQLite Address Book";
 
 #ifndef ENABLE_SQLITE
-    return isMe ? RegisterSyncSource::InactiveSource : NULL;
+    return isMe ? RegisterSyncSource::InactiveSource(params) : NULL;
 #else
     bool maybeMe = sourceType.m_backend == "addressbook";
     

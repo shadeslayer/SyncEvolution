@@ -259,7 +259,25 @@ RegisterSyncSource::RegisterSyncSource(const string &shortDescr,
     registry.push_back(this);
 }
 
-SyncSource *const RegisterSyncSource::InactiveSource = (SyncSource *)1;
+class InactiveSyncSource : public SyncSource
+{
+public:
+    InactiveSyncSource(const SyncSourceParams &params) : SyncSource(params) {}
+
+    virtual bool isInactive() const { return true; }
+    virtual void enableServerMode() {}
+    virtual bool serverModeEnabled() const { return false; }
+    virtual void getSynthesisInfo(SyncEvo::SyncSourceBase::SynthesisInfo&, SyncEvo::XMLConfigFragments&) { throwError("inactive"); }
+    virtual Databases getDatabases() { throwError("inactive"); return Databases(); }
+    virtual void open() { throwError("inactive"); }
+    virtual void close() { throwError("inactive"); }
+    virtual std::string getPeerMimeType() const { return ""; }
+};
+
+SyncSource *RegisterSyncSource::InactiveSource(const SyncSourceParams &params)
+{
+    return new InactiveSyncSource(params);
+}
 
 TestRegistry &SyncSource::getTestRegistry()
 {
@@ -371,23 +389,19 @@ SyncSource *SyncSource::createSource(const SyncSourceParams &params, bool error,
     }
 
     const SourceRegistry &registry(getSourceRegistry());
-    SyncSource *source = NULL;
+    auto_ptr<SyncSource> source;
     BOOST_FOREACH(const RegisterSyncSource *sourceInfos, registry) {
-        SyncSource *nextSource = sourceInfos->m_create(params);
-        if (nextSource) {
-            if (source) {
+        auto_ptr<SyncSource> nextSource(sourceInfos->m_create(params));
+        if (nextSource.get()) {
+            if (source.get()) {
                 SyncContext::throwError(params.getDisplayName() + ": backend " + sourceType.m_backend +
                                         " is ambiguous, avoid the alias and pick a specific backend instead directly");
-            }
-            if (source == RegisterSyncSource::InactiveSource) {
-                SyncContext::throwError(params.getDisplayName() + ": access to " + sourceInfos->m_shortDescr +
-                                        " not enabled");
             }
             source = nextSource;
         }
     }
-    if (source) {
-        return source;
+    if (source.get()) {
+        return source.release();
     }
 
     if (error) {
