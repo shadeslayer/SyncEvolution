@@ -1866,13 +1866,13 @@ static GDBusMessage *handleException(GDBusMessage *msg)
         throw;
 #endif
     } catch (const dbus_error &ex) {
-        return g_dbus_message_new_method_error(msg, ex.dbusName().c_str(), "%s", ex.what());
+        return g_dbus_message_new_method_error_literal(msg, ex.dbusName().c_str(), ex.what());
     } catch (const DBusCXXException &ex) {
-        return g_dbus_message_new_method_error(msg, ex.getName().c_str(), "%s", ex.getMessage());
+        return g_dbus_message_new_method_error_literal(msg, ex.getName().c_str(), ex.getMessage());
     } catch (const std::runtime_error &ex) {
-        return g_dbus_message_new_method_error(msg, "org.syncevolution.gdbuscxx.Exception", "%s", ex.what());
+        return g_dbus_message_new_method_error_literal(msg, "org.syncevolution.gdbuscxx.Exception", ex.what());
     } catch (...) {
-        return g_dbus_message_new_method_error(msg, "org.syncevolution.gdbuscxx.Exception", "unknown");
+        return g_dbus_message_new_method_error_literal(msg, "org.syncevolution.gdbuscxx.Exception", "unknown");
     }
 }
 
