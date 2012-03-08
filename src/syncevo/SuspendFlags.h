@@ -105,7 +105,7 @@ class SuspendFlags
     /**
      * Triggered inside the main thread when the state
      * changes. Either printSignals() needs to be called
-     * or directly or a glib watch must be activated which
+     * directly or a glib watch must be activated which
      * does that.
      */
     typedef boost::signals2::signal<void (SuspendFlags &)> StateChanged_t;

@@ -342,7 +342,7 @@ installcheck-local: $(all_local_installchecks) ;
 dist-hook: $(all_dist_hooks)
 
 # Force sequential installation. This is a workaround for relinking failures
-# during concurrent distcheck (a backed was relinked against not yet installed
+# during concurrent distcheck (a backend was relinked against not yet installed
 # libsyncevolution.la).
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am
