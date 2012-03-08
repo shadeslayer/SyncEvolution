@@ -467,7 +467,7 @@ AC_ARG_WITH([gio-gdbus],
             AS_HELP_STRING([--with-gio-gdbus],
                            [enables use of GIO's GDBus instead of the in-tree, Bluez gdbus.]),
             with_gio_gdbus="$withval",
-            PKG_CHECK_EXISTS([gio-2.0 >= 2.26],
+            PKG_CHECK_EXISTS([gio-2.0 >= 2.30],
                              [with_gio_gdbus="yes"],
                              [with_gio_gdbus="no"]))
 AM_CONDITIONAL([COND_GIO_GDBUS], [test "x$with_gio_gdbus" = "xyes"])
