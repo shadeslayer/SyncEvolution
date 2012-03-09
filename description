@@ -1,9 +1,8 @@
-SyncEvolution SyncML Client
 
 SyncEvolution synchronizes personal information management (PIM) data
-like contacts, calenders, tasks and memos via SyncML. It supports all
-of these for GNOME's Evolution and contacts for the system address
-book of the Nokia 770/800 internet tablets, Mac OS X and (at one point) the
-iPhone. The command-line tool 'syncevolution' (compiled separately for
-each of these platforms) executes the synchronization. The 'sync-ui' is
-a simpler (but also less powerful) GTK GUI for Linux.
+via various protocols (SyncML, CalDAV/CardDAV, ActiveSync). It syncs
+contacts, appointments, tasks and memos. It syncs to web services or
+to SyncML-capable phones via Bluetooth.
+
+Binaries are available for Linux desktops (using GNOME Evolution, or
+KDE's Akonadi), for MeeGo and for Maemo 5 (Nokia N900).
