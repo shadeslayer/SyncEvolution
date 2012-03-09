@@ -55,7 +55,7 @@ void KDEInitMainSlot(const char *appname)
                          // A displayable program name string.
                          ki18n("SyncEvolution"),
                          // The program version string.
-                         "1.0",
+                         VERSION,
                          // Short description of what the app does.
                          ki18n("Lets Akonadi synchronize with a SyncML Peer"),
                          // The license this code is released under
