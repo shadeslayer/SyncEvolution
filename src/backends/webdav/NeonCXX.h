@@ -472,7 +472,9 @@ class XMLParser
     std::string m_href, m_etag;
 
     int doResponseEnd(const ResponseEndCB_t &responseEnd) {
-        responseEnd(m_href, m_etag);
+        if (responseEnd) {
+            responseEnd(m_href, m_etag);
+        }
         // clean up for next response
         m_href.clear();
         m_etag.clear();
