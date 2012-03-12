@@ -473,7 +473,7 @@ Session::Session(Server &server,
     add(this, &Session::getStatus, "GetStatus");
     add(this, &Session::getProgress, "GetProgress");
     add(this, &Session::restore, "Restore");
-    add(this, &Session::checkPresence, "checkPresence");
+    add(this, &Session::checkPresence, "CheckPresence");
     add(this, &Session::execute, "Execute");
     add(emitStatus);
     add(emitProgress);
