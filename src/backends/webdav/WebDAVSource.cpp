@@ -32,6 +32,7 @@ BoolConfigProperty &WebDAVCredentialsOkay()
  */
 class ContextSettings : public Neon::Settings {
     boost::shared_ptr<SyncConfig> m_context;
+    SyncSourceConfig *m_sourceConfig;
     std::string m_url;
     /** do change tracking without relying on CTag */
     bool m_noCTag;
@@ -42,67 +43,50 @@ class ContextSettings : public Neon::Settings {
     bool m_credentialsOkay;
 
 public:
-    ContextSettings(const boost::shared_ptr<SyncConfig> &context) :
+    ContextSettings(const boost::shared_ptr<SyncConfig> &context,
+                    SyncSourceConfig *sourceConfig) :
         m_context(context),
+        m_sourceConfig(sourceConfig),
         m_noCTag(false),
         m_googleUpdateHack(false),
         m_googleChildHack(false),
         m_googleAlarmHack(false),
         m_credentialsOkay(false)
     {
-        if (m_context) {
+        std::string url;
+
+        // check source config first
+        if (m_sourceConfig) {
+            url = m_sourceConfig->getDatabaseID();
+            std::string username = m_sourceConfig->getUser();
+            boost::replace_all(url, "%u", Neon::URI::escape(username));
+        }
+
+        // fall back to sync context
+        if (url.empty() && m_context) {
             vector<string> urls = m_context->getSyncURL();
-            string urlWithUsername;
 
             if (!urls.empty()) {
-                m_url = urlWithUsername = urls.front();
+                url = urls.front();
                 std::string username = m_context->getSyncUsername();
-                boost::replace_all(urlWithUsername, "%u", Neon::URI::escape(username));
+                boost::replace_all(url, "%u", Neon::URI::escape(username));
             }
-            Neon::URI uri = Neon::URI::parse(urlWithUsername);
-            typedef boost::split_iterator<string::iterator> string_split_iterator;
-            for (string_split_iterator arg =
-                     boost::make_split_iterator(uri.m_query, boost::first_finder("&", boost::is_iequal()));
-                 arg != string_split_iterator();
-                 ++arg) {
-                static const std::string keyword = "SyncEvolution=";
-                if (boost::istarts_with(*arg, keyword)) {
-                    std::string params(arg->begin() + keyword.size(), arg->end());
-                    for (string_split_iterator flag =
-                             boost::make_split_iterator(params,
-                                                        boost::first_finder(",", boost::is_iequal()));
-                         flag != string_split_iterator();
-                         ++flag) {
-                        if (boost::iequals(*flag, "UpdateHack")) {
-                            m_googleUpdateHack = true;
-                        } else if (boost::iequals(*flag, "ChildHack")) {
-                            m_googleChildHack = true;
-                        } else if (boost::iequals(*flag, "AlarmHack")) {
-                            m_googleAlarmHack = true;
-                        } else if (boost::iequals(*flag, "Google")) {
-                            m_googleUpdateHack =
-                                m_googleChildHack =
-                                m_googleAlarmHack = true;
-                        } else if (boost::iequals(*flag, "NoCTag")) {
-                            m_noCTag = true;
-                        } else {
-                            SE_THROW(StringPrintf("unknown SyncEvolution flag %s in URL %s",
-                                                  std::string(flag->begin(), flag->end()).c_str(),
-                                                  urlWithUsername.c_str()));
-                        }
-                    }
-                } else if (arg->end() != arg->begin()) {
-                    SE_THROW(StringPrintf("unknown parameter %s in URL %s",
-                                          std::string(arg->begin(), arg->end()).c_str(),
-                                          urlWithUsername.c_str()));
-                }
-            }
+        }
+
+        // remember result and set flags
+        setURL(url);
+
+        // m_credentialsOkay: no corresponding setting when using
+        // credentials + URL from source config, in which case we
+        // never know that credentials should work (bad for Google,
+        // with its temporary authentication errors)
+        if (m_context) {
             boost::shared_ptr<FilterConfigNode> node = m_context->getNode(WebDAVCredentialsOkay());
             m_credentialsOkay = WebDAVCredentialsOkay().getPropertyValue(*node);
         }
     }
 
-    void setURL(const std::string url) { m_url = url; }
+    void setURL(const std::string url) { initializeFlags(url); m_url = url; }
     virtual std::string getURL() { return m_url; }
 
     virtual bool verifySSLHost()
@@ -143,6 +127,16 @@ public:
                                 std::string &username,
                                 std::string &password)
     {
+        // prefer source config if anything is set there
+        if (m_sourceConfig) {
+            username = m_sourceConfig->getUser();
+            password = m_sourceConfig->getPassword();
+            if (!username.empty() || !password.empty()) {
+                return;
+            }
+        }
+
+        // fall back to context
         if (m_context) {
             username = m_context->getSyncUsername();
             password = m_context->getSyncPassword();
@@ -165,9 +159,66 @@ public:
     {
         return m_context ?
             m_context->getLogLevel().get() :
-            0;
+            LoggerBase::instance().getLevel();
     }
+
+private:
+    void initializeFlags(const std::string &url);
 };
+
+void ContextSettings::initializeFlags(const std::string &url)
+{
+    bool googleUpdate = false,
+        googleChild = false,
+        googleAlarm = false,
+        noCTag = false;
+
+    Neon::URI uri = Neon::URI::parse(url);
+    typedef boost::split_iterator<string::iterator> string_split_iterator;
+    for (string_split_iterator arg =
+             boost::make_split_iterator(uri.m_query, boost::first_finder("&", boost::is_iequal()));
+         arg != string_split_iterator();
+         ++arg) {
+        static const std::string keyword = "SyncEvolution=";
+        if (boost::istarts_with(*arg, keyword)) {
+            std::string params(arg->begin() + keyword.size(), arg->end());
+            for (string_split_iterator flag =
+                     boost::make_split_iterator(params,
+                                                boost::first_finder(",", boost::is_iequal()));
+                 flag != string_split_iterator();
+                 ++flag) {
+                if (boost::iequals(*flag, "UpdateHack")) {
+                    googleUpdate = true;
+                } else if (boost::iequals(*flag, "ChildHack")) {
+                    googleChild = true;
+                } else if (boost::iequals(*flag, "AlarmHack")) {
+                    googleAlarm = true;
+                } else if (boost::iequals(*flag, "Google")) {
+                    googleUpdate =
+                        googleChild =
+                        googleAlarm = true;
+                } else if (boost::iequals(*flag, "NoCTag")) {
+                    noCTag = true;
+                } else {
+                    SE_THROW(StringPrintf("unknown SyncEvolution flag %s in URL %s",
+                                          std::string(flag->begin(), flag->end()).c_str(),
+                                          url.c_str()));
+                }
+            }
+        } else if (arg->end() != arg->begin()) {
+            SE_THROW(StringPrintf("unknown parameter %s in URL %s",
+                                  std::string(arg->begin(), arg->end()).c_str(),
+                                  url.c_str()));
+        }
+    }
+
+    // store final result
+    m_googleUpdateHack = googleUpdate;
+    m_googleChildHack = googleChild;
+    m_googleAlarmHack = googleAlarm;
+    m_noCTag = noCTag;
+}
+
 
 WebDAVSource::WebDAVSource(const SyncSourceParams &params,
                            const boost::shared_ptr<Neon::Settings> &settings) :
@@ -175,7 +226,7 @@ WebDAVSource::WebDAVSource(const SyncSourceParams &params,
     m_settings(settings)
 {
     if (!m_settings) {
-        m_contextSettings.reset(new ContextSettings(params.m_context));
+        m_contextSettings.reset(new ContextSettings(params.m_context, this));
         m_settings = m_contextSettings;
     }
 
