@@ -1137,6 +1137,20 @@ CalDAVSource::Event &CalDAVSource::loadItem(const std::string &davLUID)
     return loadItem(event);
 }
 
+int CalDAVSource::storeItem(const std::string &wantedLuid,
+                            std::string &item,
+                            std::string &data,
+                            const std::string &href)
+{
+    std::string luid = path2luid(Neon::URI::parse(href).m_path);
+    if (luid == wantedLuid) {
+        SE_LOG_DEBUG(NULL, NULL, "got item %s via REPORT fallback", luid.c_str());
+        item = data;
+    }
+    data.clear();
+    return 0;
+}
+
 CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
 {
     if (!event.m_calendar) {
@@ -1202,10 +1216,15 @@ CalDAVSource::Event &CalDAVSource::loadItem(Event &event)
                 getSession()->startOperation("REPORT 'single item'", deadline);
                 while (true) {
                     Neon::XMLParser parser;
-                    parser.initReportParser();
-                    item = "";
+                    std::string data;
+                    parser.initReportParser(boost::bind(&CalDAVSource::storeItem,
+                                                        this,
+                                                        boost::ref(event.m_DAVluid),
+                                                        boost::ref(item),
+                                                        boost::ref(data),
+                                                        _1));
                     parser.pushHandler(boost::bind(Neon::XMLParser::accept, "urn:ietf:params:xml:ns:caldav", "calendar-data", _2, _3),
-                                       boost::bind(Neon::XMLParser::append, boost::ref(item), _2, _3));
+                                       boost::bind(Neon::XMLParser::append, boost::ref(data), _2, _3));
                     Neon::Request report(*getSession(), "REPORT", getCalendar().m_path, query, parser);
                     report.addHeader("Depth", "1");
                     report.addHeader("Content-Type", "application/xml; charset=\"utf-8\"");

@@ -197,6 +197,12 @@ class CalDAVSource : public WebDAVSource,
                    const std::string &etag,
                    std::string &data);
 
+    /** callback for loadItem(): store right item from REPORT */
+    int storeItem(const std::string &wantedLuid,
+                  std::string &item,
+                  std::string &data,
+                  const std::string &href);
+
     /** add to m_cache */
     void addSubItem(const std::string &luid,
                     const SubRevisionEntry &entry);
