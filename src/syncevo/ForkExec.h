@@ -43,7 +43,11 @@ SE_BEGIN_CXX
  * automatically, or via an absolute path.
  *
  * Direct D-Bus communication is set up automatically. For this to
- * work, the helper must use ForkExecChild::connect().
+ * work, the helper must use ForkExecChild::connect(). To debug this
+ * when using GIO DBus, set G_DBUS_DEBUG=message.
+ *
+ * There are more options mentioned here:
+ * http://developer.gnome.org/gio/unstable/ch03.html
  *
  * Progress (like "client connected") and failures ("client disconnected")
  * are reported via boost::signal2 signals. To make progess, the user of
