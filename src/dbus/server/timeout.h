@@ -22,6 +22,8 @@
 
 #include <syncevo/SmartPtr.h>
 
+#include <boost/utility.hpp>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -33,7 +35,7 @@ SE_BEGIN_CXX
  * the timeout and thus ensure that it doesn't trigger without
  * valid parameters.
  */
-class Timeout
+class Timeout : boost::noncopyable
 {
     guint m_tag;
     boost::function<bool ()> m_callback;
@@ -77,6 +79,9 @@ public:
         }
         m_callback = 0;
     }
+
+    /** true iff active */
+    operator bool () const { return m_tag != 0; }
 
 private:
     static gboolean triggered(gpointer data)
