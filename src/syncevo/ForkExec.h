@@ -166,13 +166,9 @@ class ForkExecParent : public ForkExec
     int getChildPid() { return static_cast<int>(m_childPid); }
 
     /**
-     * Simply pushes a new environment variable onto m_envStrings. An
-     * arbitrary value is assigned if no value is given. This is used
-     * when the existance of the variable is of importance, not the
-     * value. In this cas the child simply checks that the environment
-     * variable is not NULL.
+     * Simply pushes a new environment variable onto m_envStrings.
      */
-    void addEnvVar(const std::string &name, const std::string &value = "");
+    void addEnvVar(const std::string &name, const std::string &value);
 
  private:
     ForkExecParent(const std::string &helper);

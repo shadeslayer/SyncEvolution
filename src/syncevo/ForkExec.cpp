@@ -218,8 +218,7 @@ void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) thro
 void ForkExecParent::addEnvVar(const std::string &name, const std::string &value)
 {
     if(!name.empty()) {
-        // If value not provided, set to the arbitrarily chosen letter 'X'.
-        m_envStrings.push_back(name + "=" + (value.empty() ? "X" : value));
+        m_envStrings.push_back(name + "=" + value);
     }
 }
 
