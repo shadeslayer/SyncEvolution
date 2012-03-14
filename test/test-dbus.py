@@ -3396,6 +3396,24 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
             time.sleep(4)
         self.assertFalse(self.isServerRunning())
 
+    @timeout(30)
+    def testSession3(self):
+        """TestFileNotify.testSession3 - shut down after quiesence period without activating a pending session request"""
+        self.assertTrue(self.isServerRunning())
+        self.modifyServerFile()
+        self.assertTrue(self.isServerRunning())
+        time.sleep(8)
+        self.assertTrue(self.isServerRunning())
+        self.session = None
+        try:
+            # this should not succeed: either the server rejects the
+            # session request because it is shutting down, or the
+            # session never becomes ready before the server shuts down
+            self.setUpSession("")
+        except:
+            pass
+        self.assertFalse(self.session)
+
     @timeout(100)
     def testRestart(self):
         """TestFileNotify.testRestart - set up auto sync, then check that server restarts"""
