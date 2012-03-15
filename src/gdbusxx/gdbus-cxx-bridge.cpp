@@ -91,11 +91,18 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
 }
 
 DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
-                                          DBusErrorCXX *err)
+                                          DBusErrorCXX *err,
+                                          bool delayed /*= false*/)
 {
     GError* error = NULL;
+    int flags = G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT;
+
+    if (delayed) {
+        flags |= G_DBUS_CONNECTION_FLAGS_DELAY_MESSAGE_PROCESSING;
+    }
+
     DBusConnectionPtr conn(g_dbus_connection_new_for_address_sync(address.c_str(),
-                                                                  G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT,
+                                                                  static_cast<GDBusConnectionFlags>(flags),
                                                                   NULL, /* GDBusAuthObserver */
                                                                   NULL, /* GCancellable */
                                                                   &error),
@@ -107,6 +114,10 @@ DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
     return conn;
 }
 
+void dbus_bus_connection_undelay(const DBusConnectionPtr &conn)
+{
+    g_dbus_connection_start_message_processing(conn.get());
+}
 
 boost::shared_ptr<DBusServerCXX> DBusServerCXX::listen(const std::string &address, DBusErrorCXX *err)
 {

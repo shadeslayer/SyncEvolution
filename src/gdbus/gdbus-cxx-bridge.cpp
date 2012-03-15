@@ -42,7 +42,8 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
 }
 
 DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
-                                          DBusErrorCXX *err)
+                                          DBusErrorCXX *err,
+                                          bool /*delayed*/ /*= false*/)
 {
     DBusConnectionPtr conn(dbus_connection_open_private(address.c_str(), err), false);
     if (conn) {
@@ -51,6 +52,10 @@ DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
     return conn;
 }
 
+void dbus_bus_connection_undelay(const DBusConnectionPtr &/*ptr*/)
+{
+    // no op
+}
 
 boost::shared_ptr<DBusServerCXX> DBusServerCXX::listen(const std::string &address, DBusErrorCXX *err)
 {

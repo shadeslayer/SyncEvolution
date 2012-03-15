@@ -189,7 +189,10 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
                                           DBusErrorCXX *err);
 
 DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
-                                          DBusErrorCXX *err);
+                                          DBusErrorCXX *err,
+                                          bool delayed = false);
+
+void dbus_bus_connection_undelay(const DBusConnectionPtr &conn);
 
 /**
  * Wrapper around DBusServer. Does intentionally not expose
