@@ -48,7 +48,7 @@ except ImportError:
 
 DBusGMainLoop(set_as_default=True)
 
-debugger = "" # "gdb"
+debugger = os.environ.get("TEST_DBUS_GDB", None) and "gdb" or ""
 server = ["syncevo-dbus-server"]
 monitor = ["dbus-monitor"]
 # primarily for XDG files, but also other temporary files
