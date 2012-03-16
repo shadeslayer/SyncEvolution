@@ -130,6 +130,9 @@ static void callServer(const GDBusCXX::DBusConnectionPtr &conn)
 {
     TestProxy proxy(conn);
 
+    // process messages already before returning from this onConnect callback
+    dbus_bus_connection_undelay(conn);
+
     std::cout << "blocking call to server without callback" << std::endl;
     std::cout << proxy.m_hello(std::string("blocking world, II")) << std::endl;
 

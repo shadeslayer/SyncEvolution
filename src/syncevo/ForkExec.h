@@ -213,9 +213,13 @@ class ForkExecChild : public ForkExec
     static boost::shared_ptr<ForkExecChild> create();
 
     /**
-     * initiates connection to parent, connect to ForkExec::m_onConnect
+     * Initiates connection to parent, connect to ForkExec::m_onConnect
      * before calling this function to be notified of success and
-     * ForkExec::m_onFailure for failures
+     * ForkExec::m_onFailure for failures.
+     *
+     * m_onConnect is guaranteed to be called before message processing
+     * starts. It's the right place to add objects to the bus that are
+     * expected by the parent.
      */
     void connect();
 

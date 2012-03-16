@@ -260,11 +260,13 @@ void ForkExecChild::connect()
                  address);
     GDBusCXX::DBusErrorCXX dbusError;
     GDBusCXX::DBusConnectionPtr conn = dbus_get_bus_connection(address,
-                                                               &dbusError);
+                                                               &dbusError,
+                                                               true /* always delay message processing */);
     if (!conn) {
         dbusError.throwFailure("connecting to server");
     }
     m_onConnect(conn);
+    dbus_bus_connection_undelay(conn);
 }
 
 bool ForkExecChild::wasForked()
