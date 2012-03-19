@@ -417,6 +417,11 @@ class DBusUtil(Timeout):
         if own_home:
             env["HOME"] = xdg_root
 
+        # populate xdg_root
+        snapshot = self.getTestProperty("snapshot", None)
+        if snapshot:
+            self.setUpFiles(snapshot)
+
         # set additional environment variables for the test run,
         # as defined by @property("ENV", "foo=bar x=y")
         for assignment in self.getTestProperty("ENV", "").split():
@@ -1216,6 +1221,27 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
             pass
         else:
             self.fail("no exception thrown")
+
+    # configure server with files in test/test-dbus/auto-sync before starting it
+    @property("snapshot", "auto-sync")
+    @timeout(100)
+    def testAutoSyncOff3(self):
+        """TestDBusServerTerm.testAutoSyncOff3 - start with auto-syncing on, D-Bus server must terminate after disabling auto syncing"""
+        # wait until -d 10 second timeout has triggered in syncevo-dbus-server,
+        # should not shut down because of auto sync
+        time.sleep(11)
+        self.assertTrue(self.isServerRunning())
+
+        self.setUpSession("scheduleworld")
+        config = self.session.GetConfig(False)
+        config[""]["autoSync"] = "0"
+        self.session.SetConfig(False, False, config)
+        self.session.Detach()
+
+        # should shut down after the 10 second idle period
+        time.sleep(16)
+        self.assertFalse(self.isServerRunning())
+
 
 class TestNamedConfig(unittest.TestCase, DBusUtil):
     """Tests for Set/GetNamedConfig"""
