@@ -38,7 +38,7 @@ SE_BEGIN_CXX
 
 void Server::clientGone(Client *c)
 {
-    for(Clients_t::iterator it = m_clients.begin();
+    for (Clients_t::iterator it = m_clients.begin();
         it != m_clients.end();
         ++it) {
         if (it->second.get() == c) {
@@ -125,7 +125,7 @@ void Server::setNotifications(bool enabled,
 
 bool Server::notificationsEnabled()
 {
-    for(Clients_t::iterator it = m_clients.begin();
+    for (Clients_t::iterator it = m_clients.begin();
         it != m_clients.end();
         ++it) {
         if (!it->second->getNotificationsEnabled()) {
@@ -441,7 +441,7 @@ void Server::run(LogRedirect &redirect)
  */
 boost::shared_ptr<Client> Server::findClient(const Caller_t &ID)
 {
-    for(Clients_t::iterator it = m_clients.begin();
+    for (Clients_t::iterator it = m_clients.begin();
         it != m_clients.end();
         ++it) {
         if (it->second->m_ID == ID) {
@@ -672,7 +672,7 @@ void Server::infoResponse(const Caller_t &caller,
 {
     InfoReqMap::iterator it = m_infoReqMap.find(id);
     // if not found, ignore
-    if(it != m_infoReqMap.end()) {
+    if (it != m_infoReqMap.end()) {
         boost::shared_ptr<InfoReq> infoReq = it->second.lock();
         infoReq->setResponse(caller, state, response);
     }
@@ -707,7 +707,7 @@ void Server::removeInfoReq(const InfoReq &req)
 {
     // remove InfoRequest from hash map
     InfoReqMap::iterator it = m_infoReqMap.find(req.getId());
-    if(it != m_infoReqMap.end()) {
+    if (it != m_infoReqMap.end()) {
         m_infoReqMap.erase(it);
     }
 }
@@ -746,10 +746,10 @@ boost::shared_ptr<SyncConfig::TemplateDescription> Server::getPeerTempl(const st
 bool Server::getDevice(const string &deviceId, SyncConfig::DeviceDescription &device)
 {
     SyncConfig::DeviceList::iterator syncDevIt;
-    for(syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
-        if(boost::equals(syncDevIt->m_deviceId, deviceId)) {
+    for (syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
+        if (boost::equals(syncDevIt->m_deviceId, deviceId)) {
             device = *syncDevIt;
-            if(syncDevIt->m_pnpInformation) {
+            if (syncDevIt->m_pnpInformation) {
                 device.m_pnpInformation = boost::shared_ptr<SyncConfig::PnpInformation>(
                     new SyncConfig::PnpInformation(syncDevIt->m_pnpInformation->m_vendor,
                                                    syncDevIt->m_pnpInformation->m_product));
@@ -763,12 +763,12 @@ bool Server::getDevice(const string &deviceId, SyncConfig::DeviceDescription &de
 void Server::addDevice(const SyncConfig::DeviceDescription &device)
 {
     SyncConfig::DeviceList::iterator it;
-    for(it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
-        if(boost::iequals(it->m_deviceId, device.m_deviceId)) {
+    for (it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
+        if (boost::iequals(it->m_deviceId, device.m_deviceId)) {
             break;
         }
     }
-    if(it == m_syncDevices.end()) {
+    if (it == m_syncDevices.end()) {
         m_syncDevices.push_back(device);
         templatesChanged();
     }
@@ -777,8 +777,8 @@ void Server::addDevice(const SyncConfig::DeviceDescription &device)
 void Server::removeDevice(const string &deviceId)
 {
     SyncConfig::DeviceList::iterator syncDevIt;
-    for(syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
-        if(boost::equals(syncDevIt->m_deviceId, deviceId)) {
+    for (syncDevIt = m_syncDevices.begin(); syncDevIt != m_syncDevices.end(); ++syncDevIt) {
+        if (boost::equals(syncDevIt->m_deviceId, deviceId)) {
             m_syncDevices.erase(syncDevIt);
             templatesChanged();
             break;
@@ -790,8 +790,8 @@ void Server::updateDevice(const string &deviceId,
                           const SyncConfig::DeviceDescription &device)
 {
     SyncConfig::DeviceList::iterator it;
-    for(it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
-        if(boost::iequals(it->m_deviceId, deviceId)) {
+    for (it = m_syncDevices.begin(); it != m_syncDevices.end(); ++it) {
+        if (boost::iequals(it->m_deviceId, deviceId)) {
             (*it) = device;
             templatesChanged();
             break;
