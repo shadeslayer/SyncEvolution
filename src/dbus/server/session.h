@@ -180,7 +180,6 @@ class Session : public GDBusCXX::DBusObjectHelper,
         OP_SYNC,            /**< running a sync */
         OP_RESTORE,         /**< restoring data */
         OP_CMDLINE,         /**< executing command line */
-        OP_SHUTDOWN,        /**< will shutdown server as soon as possible */
         OP_NULL             /**< idle, accepting commands via D-Bus */
     };
 
@@ -193,26 +192,6 @@ class Session : public GDBusCXX::DBusObjectHelper,
 
     /** Cmdline to execute command line args */
     boost::shared_ptr<CmdlineWrapper> m_cmdline;
-
-    /**
-     * time of latest file modification relevant for shutdown
-     */
-    Timespec m_shutdownLastMod;
-
-    /**
-     * timer which counts seconds until server is meant to shut down:
-     * set only while the session is active and thus shutdown is allowed
-     */
-    Timeout m_shutdownTimer;
-
-    /**
-     * Called Server::SHUTDOWN_QUIESENCE_SECONDS after last file modification,
-     * while shutdown session is active and thus ready to shut down the server.
-     * Then either triggers the shutdown or restarts.
-     *
-     * @return always false to disable timer
-     */
-    bool shutdownServer();
 
     /** Session.Attach() */
     void attach(const GDBusCXX::Caller_t &caller);
@@ -298,8 +277,7 @@ public:
         PRI_CMDLINE = -10,
         PRI_DEFAULT = 0,
         PRI_CONNECTION = 10,
-        PRI_AUTOSYNC = 20,
-        PRI_SHUTDOWN = 256  // always higher than anything else
+        PRI_AUTOSYNC = 20
     };
 
     /**
@@ -307,20 +285,6 @@ public:
      */
     void setPriority(int priority) { m_priority = priority; }
     int getPriority() const { return m_priority; }
-
-    /**
-     * Turns session into one which will shut down the server, must
-     * be called before enqueing it. Will wait for a certain idle period
-     * after file modifications before claiming to be ready for running
-     * (see Server::SHUTDOWN_QUIESENCE_SECONDS).
-     */
-    void startShutdown();
-
-    /**
-     * Called by server to tell shutdown session that a file was modified.
-     * Session uses that to determine when the quiesence period is over.
-     */
-    void shutdownFileModified();
 
     bool isServerAlerted() const { return m_serverAlerted; }
     void setServerAlerted(bool serverAlerted) { m_serverAlerted = serverAlerted; }

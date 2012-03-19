@@ -28,6 +28,19 @@
 
 SE_BEGIN_CXX
 
+AutoSyncManager::AutoSyncManager(Server &server) :
+    m_server(server), m_syncSuccessStart(false)
+{
+}
+
+boost::shared_ptr<AutoSyncManager> AutoSyncManager::create(Server &server)
+{
+    boost::shared_ptr<AutoSyncManager> result(new AutoSyncManager(server));
+    result->init();
+
+    return result;
+}
+
 void AutoSyncManager::init()
 {
     m_peerMap.clear();

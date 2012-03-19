@@ -142,6 +142,11 @@ void Server::connect(const Caller_t &caller,
                      const std::string &session,
                      DBusObject_t &object)
 {
+    if (m_shutdownRequested) {
+        // don't allow new connections, we cannot activate them
+        SE_THROW("server shutting down");
+    }
+
     if (!session.empty()) {
         // reconnecting to old connection is not implemented yet
         throw std::runtime_error("not implemented");
@@ -173,6 +178,11 @@ void Server::startSessionWithFlags(const Caller_t &caller,
                                    const std::vector<std::string> &flags,
                                    DBusObject_t &object)
 {
+    if (m_shutdownRequested) {
+        // don't allow new sessions, we cannot activate them
+        SE_THROW("server shutting down");
+    }
+
     boost::shared_ptr<Client> client = addClient(getConnection(),
                                                  caller,
                                                  watch);
@@ -220,6 +230,7 @@ Server::Server(GMainLoop *loop,
                      boost::bind(&Server::autoTermCallback, this)),
     m_loop(loop),
     m_shutdownRequested(shutdownRequested),
+    m_doShutdown(false),
     m_restart(restart),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
@@ -234,8 +245,7 @@ Server::Server(GMainLoop *loop,
     m_presence(*this),
     m_connman(*this),
     m_networkManager(*this),
-    m_autoSync(*this),
-    m_autoTerm(m_loop, m_shutdownRequested, m_autoSync.preventTerm() ? -1 : duration), //if there is any task in auto sync, prevent auto termination
+    m_autoTerm(m_loop, m_shutdownRequested, duration),
     m_parentLogger(LoggerBase::instance())
 {
     struct timeval tv;
@@ -279,6 +289,14 @@ Server::Server(GMainLoop *loop,
         // assume that we are online if no network manager was found at all
         getPresenceStatus().updatePresenceStatus(true, PresenceStatus::HTTP_TRANSPORT);
     }
+
+    // create auto sync manager, now that server is ready
+    m_autoSync = AutoSyncManager::create(*this);
+
+    // connect auto sync manager and Server ConfigChanged signal to source
+    // for that information
+    namedConfigChanged.connect(NamedConfigChanged_t::slot_type(&AutoSyncManager::update, m_autoSync.get(), _1).track(m_autoSync));
+    namedConfigChanged.connect(boost::bind(&Server::configChanged, this));
 }
 
 Server::~Server()
@@ -290,22 +308,39 @@ Server::~Server()
     LoggerBase::popLogger();
 }
 
-void Server::fileModified()
+bool Server::shutdown()
 {
-    if (!m_shutdownSession) {
-        string newSession = getNextSession();
-        vector<string> flags;
-        flags.push_back("no-sync");
-        m_shutdownSession = Session::createSession(*this,
-                                                   "",  "",
-                                                   newSession,
-                                                   flags);
-        m_shutdownSession->setPriority(Session::PRI_AUTOSYNC);
-        m_shutdownSession->startShutdown();
-        enqueue(m_shutdownSession);
+    Timespec now = Timespec::monotonic();
+    bool autosync = m_autoSync->preventTerm();
+    SE_LOG_DEBUG(NULL, NULL, "shut down or restart server at %lu.%09lu because of file modifications, auto sync %s",
+                 now.tv_sec, now.tv_nsec, autosync ? "on" : "off");
+    if (autosync) {
+        // suitable exec() call which restarts the server using the same environment it was in
+        // when it was started
+        SE_LOG_INFO(NULL, NULL, "server restarting because files loaded into memory were modified on disk");
+        m_restart->restart();
+    } else {
+        // leave server now
+        m_doShutdown = true;
+        g_main_loop_quit(m_loop);
+        SE_LOG_INFO(NULL, NULL, "server shutting down because files loaded into memory were modified on disk");
     }
 
-    m_shutdownSession->shutdownFileModified();
+    return false;
+}
+
+void Server::fileModified()
+{
+    SE_LOG_DEBUG(NULL, NULL, "file modified, %s shutdown: %s, %s",
+                 m_shutdownRequested ? "continuing" : "initiating",
+                 m_shutdownTimer ? "timer already active" : "timer not yet active",
+                 m_activeSession ? "waiting for active session to finish" : "setting timer");
+    m_lastFileMod = Timespec::monotonic();
+    if (!m_activeSession) {
+        m_shutdownTimer.activate(SHUTDOWN_QUIESENCE_SECONDS,
+                                 boost::bind(&Server::shutdown, this));
+    }
+    m_shutdownRequested = true;
 }
 
 void Server::run(LogRedirect &redirect)
@@ -343,10 +378,23 @@ void Server::run(LogRedirect &redirect)
         }
     }
 
-    while (!m_shutdownRequested) {
+    while (!m_doShutdown) {
         if (!m_activeSession ||
             !m_activeSession->readyToRun()) {
-            g_main_loop_run(m_loop);
+            // hook up SIGINT/SIGTERM with our event loop temporarily
+            SuspendFlags &suspendflags = SuspendFlags::getSuspendFlags();
+            boost::shared_ptr<SuspendFlags::Guard> guard = suspendflags.activate();
+            boost::signals2::scoped_connection c(suspendflags.m_stateChanged.connect(boost::bind(&Server::checkQueue,
+                                                                                                 this)));
+            if (suspendflags.getState() == SuspendFlags::ABORT) {
+                SE_LOG_DEBUG(NULL, NULL, "server idle, shutdown requested via signal => quit");
+                m_doShutdown = true;
+            } else if (m_shutdownRequested && !m_lastFileMod) {
+                SE_LOG_DEBUG(NULL, NULL, "server idle, shutdown requested, but neither via signal nor file mod => quit");
+                m_doShutdown = true;
+            } else {
+                g_main_loop_run(m_loop);
+            }
         }
         if (m_activeSession &&
             m_activeSession->readyToRun()) {
@@ -369,20 +417,20 @@ void Server::run(LogRedirect &redirect)
             dequeue(session.get());
         }
 
-        if (!m_shutdownRequested && m_autoSync.hasTask()) {
+        if (!m_shutdownRequested && m_autoSync && m_autoSync->hasTask()) {
             // if there is at least one pending task and no session is created for auto sync,
             // pick one task and create a session
-            m_autoSync.startTask();
+            m_autoSync->startTask();
         }
         // Make sure check whether m_activeSession is owned by autosync
         // Otherwise activeSession is owned by AutoSyncManager but it never
         // be ready to run. Because methods of Session, like 'sync', are able to be
         // called when it is active.
-        if (!m_shutdownRequested && m_autoSync.hasActiveSession())
+        if (!m_shutdownRequested && m_autoSync->hasActiveSession())
         {
             // if the autosync is the active session, then invoke 'sync'
             // to make it ready to run
-            m_autoSync.prepare();
+            m_autoSync->prepare();
         }
     }
 }
@@ -519,6 +567,40 @@ void Server::dequeue(Session *session)
 
 void Server::checkQueue()
 {
+    if (m_shutdownRequested) {
+        // don't schedule new sessions, instead check whether we can shut down now
+        if (!m_activeSession && !m_doShutdown) {
+            if (SuspendFlags::getSuspendFlags().getState() == SuspendFlags::ABORT) {
+                // don't delay any further, shut down
+                SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested via signal => quit");
+                m_doShutdown = true;
+                g_main_loop_quit(m_loop);
+            } else if (!m_lastFileMod) {
+                // shutdown requested without file modifications, don't need
+                // quiesence period
+                SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested neither via signal nor file mod => quit");
+                m_doShutdown = true;
+                g_main_loop_quit(m_loop);
+            } else if (!m_shutdownTimer) {
+                Timespec now = Timespec::monotonic();
+                if (m_lastFileMod + SHUTDOWN_QUIESENCE_SECONDS <= now) {
+                    SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested, quiesence period over => quit");
+                    m_doShutdown = true;
+                    g_main_loop_quit(m_loop);
+                } else {
+                    // activate timer not set in fileModified() because there was a running session
+                    int seconds = (m_lastFileMod + SHUTDOWN_QUIESENCE_SECONDS - now).seconds();
+                    SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested, %d seconds left in quiesence period => wait",
+                                 seconds);
+                    m_shutdownTimer.activate(seconds,
+                                             boost::bind(&Server::shutdown, this));
+                }
+            }
+        }
+
+        return;
+    }
+
     if (m_activeSession) {
         // still busy
         return;

@@ -202,12 +202,10 @@ class AutoSyncManager : public SessionListener
      */
     bool taskLikelyToRun(const AutoSyncTask &syncTask);
 
+    AutoSyncManager(Server &server);
+
  public:
-    AutoSyncManager(Server &server)
-        : m_server(server), m_syncSuccessStart(false)
-    {
-        init();
-    }
+    static boost::shared_ptr<AutoSyncManager> create(Server &server);
 
     /**
      * prevent dbus server automatic termination when it has

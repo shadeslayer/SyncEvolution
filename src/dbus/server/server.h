@@ -24,11 +24,13 @@
 
 #include "auto-sync-manager.h"
 #include "exceptions.h"
+#include <boost/signals2.hpp>
 #include "auto-term.h"
 #include "read-operations.h"
 #include "connman-client.h"
 #include "network-manager-client.h"
 #include "presence-status.h"
+#include "timeout.h"
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -39,7 +41,6 @@ class DBusTransportAgent;
 class Server;
 class InfoReq;
 class BluezManager;
-class Timeout;
 class Restart;
 class Client;
 class Resource;
@@ -60,6 +61,8 @@ class Server : public GDBusCXX::DBusObjectHelper,
 {
     GMainLoop *m_loop;
     bool &m_shutdownRequested;
+    bool m_doShutdown;
+    Timespec m_lastFileMod;
     boost::shared_ptr<SyncEvo::Restart> &m_restart;
 
     uint32_t m_lastSession;
@@ -68,22 +71,25 @@ class Server : public GDBusCXX::DBusObjectHelper,
 
     /**
      * Watch all files mapped into our address space. When
-     * modifications are seen (as during a package upgrade), queue a
-     * high priority session. This prevents running other sessions,
-     * which might not be able to execute correctly. For example, a
+     * modifications are seen (as during a package upgrade), sets
+     * m_shutdownRequested. This prevents adding new sessions and
+     * prevents running already queued ones, because future sessions
+     * might not be able to execute correctly without a restart. For example, a
      * sync with libsynthesis from 1.1 does not work with
-     * SyncEvolution XML files from 1.2. The dummy session then waits
-     * for the changes to settle (see SHUTDOWN_QUIESENCE_SECONDS) and
-     * either shuts down or restarts.  The latter is necessary if the
-     * daemon has automatic syncing enabled in a config.
+     * SyncEvolution XML files from 1.2. The daemon then waits
+     * for the changes to settle (see SHUTDOWN_QUIESENCE_SECONDS) and either shuts
+     * down or restarts.  The latter is necessary if the daemon has
+     * automatic syncing enabled in a config.
      */
     list< boost::shared_ptr<GLibNotify> > m_files;
     void fileModified();
+    bool shutdown();
 
     /**
-     * session handling the shutdown in response to file modifications
+     * timer which counts seconds until server is meant to shut down
      */
-    boost::shared_ptr<Session> m_shutdownSession;
+    Timeout m_shutdownTimer;
+
 
     /* Event source that regurally pool network manager
      * */
@@ -319,6 +325,13 @@ class Server : public GDBusCXX::DBusObjectHelper,
                           const std::string &,
                           const std::map<string, string> &> infoRequest;
 
+    /**
+     * More specific "config changed signal", called with
+     * normalized config name as parameter.
+     */
+    typedef boost::signals2::signal<void (const std::string &configName)> NamedConfigChanged_t;
+    NamedConfigChanged_t namedConfigChanged;
+
     /** Server.LogOutput */
     GDBusCXX::EmitSignal3<const GDBusCXX::DBusObject_t &,
                           string,
@@ -330,8 +343,8 @@ class Server : public GDBusCXX::DBusObjectHelper,
     ConnmanClient m_connman;
     NetworkManagerClient m_networkManager;
 
-    /** manager to automatic sync */
-    AutoSyncManager m_autoSync;
+    /** Manager to automatic sync */
+    boost::shared_ptr<AutoSyncManager> m_autoSync;
 
     //automatic termination
     AutoTerm m_autoTerm;
@@ -500,8 +513,6 @@ public:
      * be a problem.
      */
     static const int SHUTDOWN_QUIESENCE_SECONDS = 10;
-
-    AutoSyncManager &getAutoSyncManager() { return m_autoSync; }
 
     /**
      * false if any client requested suppression of notifications

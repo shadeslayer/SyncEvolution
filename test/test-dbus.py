@@ -3406,13 +3406,14 @@ class TestFileNotify(unittest.TestCase, DBusUtil):
         self.assertTrue(self.isServerRunning())
         self.session = None
         try:
-            # this should not succeed: either the server rejects the
-            # session request because it is shutting down, or the
-            # session never becomes ready before the server shuts down
+            # this should not succeed: the server should rejects the
+            # session request because it is shutting down
             self.setUpSession("")
-        except:
-            pass
-        self.assertFalse(self.session)
+        except dbus.DBusException, ex:
+            self.assertEqual(str(ex),
+                             "org.syncevolution.Exception: server shutting down")
+        else:
+            self.fail("no exception thrown")
 
     @timeout(100)
     def testRestart(self):

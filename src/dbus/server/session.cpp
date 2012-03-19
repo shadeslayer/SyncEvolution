@@ -488,16 +488,11 @@ void Session::done()
     }
     SE_LOG_DEBUG(NULL, NULL, "session %s done", getPath());
 
-    /* update auto sync manager when a config is changed */
+    // tell everyone who is interested that our config changed (includes D-Bus signal)
     if (m_setConfig) {
-        m_server.getAutoSyncManager().update(m_configName);
+        m_server.namedConfigChanged(m_configName);
     }
     m_server.dequeue(this);
-
-    // now tell other clients about config change?
-    if (m_setConfig) {
-        m_server.configChanged();
-    }
 
     // typically set by m_server.dequeue(), but let's really make sure...
     m_active = false;
@@ -511,52 +506,8 @@ Session::~Session()
     done();
 }
 
-void Session::startShutdown()
-{
-    m_runOperation = OP_SHUTDOWN;
-}
-
-void Session::shutdownFileModified()
-{
-    m_shutdownLastMod = Timespec::monotonic();
-    SE_LOG_DEBUG(NULL, NULL, "file modified at %lu.%09lus, %s",
-                 (unsigned long)m_shutdownLastMod.tv_sec,
-                 (unsigned long)m_shutdownLastMod.tv_nsec,
-                 m_active ? "active" : "not active");
-
-    if (m_active) {
-        // (re)set shutdown timer: once it fires, we are ready to shut down;
-        // brute-force approach, will reset timer many times
-        m_shutdownTimer.activate(Server::SHUTDOWN_QUIESENCE_SECONDS,
-                                 boost::bind(&Session::shutdownServer, this));
-    }
-}
-
-bool Session::shutdownServer()
-{
-    Timespec now = Timespec::monotonic();
-    bool autosync = m_server.getAutoSyncManager().hasTask() ||
-        m_server.getAutoSyncManager().hasAutoConfigs();
-    SE_LOG_DEBUG(NULL, NULL, "shut down server at %lu.%09lu because of file modifications, auto sync %s",
-                 now.tv_sec, now.tv_nsec,
-                 autosync ? "on" : "off");
-    if (autosync) {
-        // suitable exec() call which restarts the server using the same environment it was in
-        // when it was started
-        m_server.m_restart->restart();
-    } else {
-        // leave server now
-        m_server.m_shutdownRequested = true;
-        g_main_loop_quit(m_server.getLoop());
-        SE_LOG_INFO(NULL, NULL, "server shutting down because files loaded into memory were modified on disk");
-    }
-
-    return false;
-}
-
 void Session::setActive(bool active)
 {
-    bool oldActive = m_active;
     m_active = active;
     if (active) {
         if (m_syncStatus == SYNC_QUEUEING) {
@@ -567,29 +518,6 @@ void Session::setActive(bool active)
         boost::shared_ptr<Connection> c = m_connection.lock();
         if (c) {
             c->ready();
-        }
-
-        if (!oldActive &&
-            m_runOperation == OP_SHUTDOWN) {
-            // shutdown session activated: check if or when we can shut down
-            if (m_shutdownLastMod) {
-                Timespec now = Timespec::monotonic();
-                SE_LOG_DEBUG(NULL, NULL, "latest file modified at %lu.%09lus, now is %lu.%09lus",
-                             (unsigned long)m_shutdownLastMod.tv_sec,
-                             (unsigned long)m_shutdownLastMod.tv_nsec,
-                             (unsigned long)now.tv_sec,
-                             (unsigned long)now.tv_nsec);
-                if (m_shutdownLastMod + Server::SHUTDOWN_QUIESENCE_SECONDS <= now) {
-                    // ready to shutdown immediately
-                    shutdownServer();
-                } else {
-                    // need to wait
-                    int secs = Server::SHUTDOWN_QUIESENCE_SECONDS -
-                        (now - m_shutdownLastMod).tv_sec;
-                    SE_LOG_DEBUG(NULL, NULL, "shut down in %ds", secs);
-                    m_shutdownTimer.activate(secs, boost::bind(&Session::shutdownServer, this));
-                }
-            }
         }
     }
 }
@@ -785,13 +713,6 @@ void Session::run(LogRedirect &redirect)
                     }
                 }
                 m_setConfig = m_cmdline->configWasModified();
-                break;
-            case OP_SHUTDOWN:
-                // block until time for shutdown or restart if no
-                // shutdown requested already
-                if (!m_server.m_shutdownRequested) {
-                    g_main_loop_run(m_server.getLoop());
-                }
                 break;
             default:
                 break;
