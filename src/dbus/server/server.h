@@ -91,9 +91,6 @@ class Server : public GDBusCXX::DBusObjectHelper,
     Timeout m_shutdownTimer;
 
 
-    /* Event source that regurally pool network manager
-     * */
-    GLibEvent m_pollConnman;
     /**
      * The session which currently holds the main lock on the server.
      * To avoid issues with concurrent modification of data or configs,
