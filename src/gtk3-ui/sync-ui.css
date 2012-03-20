@@ -17,6 +17,10 @@ GtkWindow#meego_win {
     background-color : #4a535a;
 }
 
+GtkLabel#info_label {
+    font : 12;
+}
+
 GtkEventBox#sync_data_and_type_box,
 GtkEventBox#sync_data_and_type_box:insensitive {
     background-color : #ececec;
@@ -34,10 +38,10 @@ GtkLabel#sync_service_label,
 GtkLabel#sync_status_label,
 GtkLabel#no_server_label,
 GtkLabel#sync_failure_label {
-    font : Bold 11;
+    font : Bold;
 }
 
 GtkButton#sync_btn {
     -GtkButton-inner-border : 10 10 10 10;
-    font : Bold 11;
+    font : Bold;
 }

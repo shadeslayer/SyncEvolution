@@ -583,24 +583,33 @@ set_info_bar (GtkWidget *widget,
     case SYNC_ERROR_RESPONSE_SYNC:
         /* TRANSLATORS: Action button in info bar in main view. Shown with e.g.
          * "You've just restored a backup. The changes have not been "
-         * "synced with %s yet" */
+         * "synced with %s yet"
+         * Please make this text multi-line if your text is longer
+         * than ~25 chars (example: "My very long\nbutton title") */
         gtk_info_bar_add_button (bar, _("Sync now"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_EMERGENCY:
         /* TRANSLATORS: Action button in info bar in main view. Shown with e.g.
          * "A normal sync is not possible at this time..." message.
-         * "Other options" will open Emergency view */
+         * "Other options" will open Emergency view
+         * Please make this text multi-line if your text is longer
+         * than ~25 chars (example: "My very long\nbutton title") */
         gtk_info_bar_add_button (bar, _("Slow sync"), SYNC_ERROR_RESPONSE_EMERGENCY_SLOW_SYNC);
         gtk_info_bar_add_button (bar, _("Other options..."), response_id);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_SELECT:
         /* TRANSLATORS: Action button in info bar in main view. Shown e.g.
-         * when no service is selected. Will open configuration view */
+         * when no service is selected. Will open configuration view
+         * Please make this text multi-line if your text is longer
+         * than ~25 chars (example: "My very long\nbutton title") */
         gtk_info_bar_add_button (bar, _("Select sync service"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_SETTINGS_OPEN:
         /* TRANSLATORS: Action button in info bar in main view. Shown e.g. 
-         * login to service fails. Will open configuration view for this service */
+         * login to service fails. Will open configuration view for this service
+         * (e.g. "Edit service\nsettings")
+         * Please make this text multi-line if your text is longer
+         * than ~25 chars (example: "My very long\nbutton title") */
         gtk_info_bar_add_button (bar, _("Edit service settings"), response_id);
         break;
     case SYNC_ERROR_RESPONSE_NONE:
@@ -616,8 +625,9 @@ set_info_bar (GtkWidget *widget,
                            container);
 
     label = gtk_label_new (message);
+    gtk_widget_set_name (label, "info_label");
     gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
-    gtk_widget_set_size_request (label, 450, -1);
+    gtk_widget_set_size_request (label, 250, -1);
     gtk_box_pack_start (GTK_BOX (container), label, FALSE, FALSE, 8);
     gtk_widget_show (label);
     gtk_widget_show (widget);
