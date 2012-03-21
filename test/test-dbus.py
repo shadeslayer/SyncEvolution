@@ -649,7 +649,7 @@ class DBusUtil(Timeout):
                                                 sessionpath),
                                  'org.syncevolution.Session')
         status, error, sources = session.GetStatus(utf8_strings=True)
-        if wait and status == "queuing":
+        if wait and status == "queueing":
             # wait for signal
             loop.run()
             self.assertEqual(DBusUtil.quit_events, ["session " + sessionpath + " ready"])
