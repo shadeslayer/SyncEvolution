@@ -222,14 +222,24 @@ void ForkExecParent::addEnvVar(const std::string &name, const std::string &value
     }
 }
 
-void ForkExecParent::stop()
+void ForkExecParent::stop(int signal)
 {
-    SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with SIGINT/SIGTERM",
-                 m_helper.c_str());
-    ::kill(m_childPid, SIGINT);
-    m_sigIntSent = true;
-    ::kill(m_childPid, SIGTERM);
-    m_sigTermSent = true;
+    SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with signal %d (%s %s)",
+                 m_helper.c_str(),
+                 signal,
+                 (!signal || signal == SIGINT) ? "SIGINT" : "",
+                 (!signal || signal == SIGTERM) ? "SIGTERM" : "");
+    if (!signal || signal == SIGINT) {
+        ::kill(m_childPid, SIGINT);
+        m_sigIntSent = true;
+    }
+    if (!signal || signal == SIGTERM) {
+        ::kill(m_childPid, SIGTERM);
+        m_sigTermSent = true;
+    }
+    if (signal && signal != SIGINT && signal != SIGTERM) {
+        ::kill(m_childPid, signal);
+    }
 }
 
 void ForkExecParent::kill()

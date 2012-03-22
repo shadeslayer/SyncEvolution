@@ -128,9 +128,11 @@ class ForkExecParent : public ForkExec
 
     /**
      * request that the child process terminates by sending it a
-     * SIGINT
+     * SIGINT and/or SIGTERM
+     * @param signal   if zero (default), send both signals, otherwise
+     *                 the specified one
      */
-    void stop();
+    void stop(int signal = 0);
 
     /**
      * kill the child process without giving it a chance to shut down
