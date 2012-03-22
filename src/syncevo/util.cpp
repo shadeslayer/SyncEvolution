@@ -34,6 +34,10 @@
 #include <fstream>
 #include <iostream>
 
+#include "gdbus-cxx-bridge.h"
+
+#include <pcrecpp.h>
+
 #include <errno.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -746,6 +750,9 @@ void Sleep(double seconds)
     select(0, NULL, NULL, NULL, &delay);
 }
 
+const char * const TRANSPORT_PROBLEM = "transport problem: ";
+const char * const SYNTHESIS_PROBLEM = "error code from Synthesis engine ";
+const char * const SYNCEVOLUTION_PROBLEM = "error code from SyncEvolution ";
 
 SyncMLStatus Exception::handle(SyncMLStatus *status,
                                Logger *logger,
@@ -763,17 +770,19 @@ SyncMLStatus Exception::handle(SyncMLStatus *status,
     } catch (const TransportException &ex) {
         SE_LOG_DEBUG(logger, NULL, "TransportException thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        error = ex.what();
+        error = std::string(TRANSPORT_PROBLEM) + ex.what();
         new_status = SyncMLStatus(sysync::LOCERR_TRANSPFAIL);
     } catch (const BadSynthesisResult &ex) {
         new_status = SyncMLStatus(ex.result());
-        error = StringPrintf("error code from Synthesis engine %s",
+        error = StringPrintf("%s%s",
+                             SYNTHESIS_PROBLEM,
                              Status2String(new_status).c_str());
     } catch (const StatusException &ex) {
         new_status = ex.syncMLStatus();
         SE_LOG_DEBUG(logger, NULL, "exception thrown at %s:%d",
                      ex.m_file.c_str(), ex.m_line);
-        error = StringPrintf("error code from SyncEvolution %s: %s",
+        error = StringPrintf("%s%s: %s",
+                             SYNCEVOLUTION_PROBLEM,
                              Status2String(new_status).c_str(), ex.what());
         if (new_status == STATUS_NOT_FOUND &&
             (flags & HANDLE_EXCEPTION_404_IS_OKAY)) {
@@ -798,6 +807,41 @@ SyncMLStatus Exception::handle(SyncMLStatus *status,
         *status = new_status;
     }
     return status ? *status : new_status;
+}
+
+void Exception::tryRethrow(const std::string &explanation)
+{
+    static const std::string statusre = ".* \\((?:local|remote), status (\\d+)\\)";
+    int status;
+
+    if (boost::starts_with(explanation, TRANSPORT_PROBLEM)) {
+        SE_THROW_EXCEPTION(TransportException, explanation.substr(strlen(TRANSPORT_PROBLEM)));
+    } else if (boost::starts_with(explanation, SYNTHESIS_PROBLEM)) {
+        static const pcrecpp::RE re(statusre);
+        if (re.FullMatch(explanation.substr(strlen(SYNTHESIS_PROBLEM)), &status)) {
+            SE_THROW_EXCEPTION_1(BadSynthesisResult, "Synthesis engine failure", (sysync::TSyErrorEnum)status);
+        }
+    } else if (boost::starts_with(explanation, SYNCEVOLUTION_PROBLEM)) {
+        static const pcrecpp::RE re(statusre + ": (.*)",
+                                    pcrecpp::RE_Options().set_dotall(true));
+        std::string details;
+        if (re.FullMatch(explanation.substr(strlen(SYNCEVOLUTION_PROBLEM)), &status, &details)) {
+            SE_THROW_EXCEPTION_STATUS(StatusException, details, (SyncMLStatus)status);
+        }
+    }
+}
+
+void Exception::tryRethrowDBus(const std::string &error)
+{
+    static const pcrecpp::RE re("(org\\.syncevolution(?:\\.\\w+)+): (.*)",
+                                pcrecpp::RE_Options().set_dotall(true));
+    std::string exName, explanation;
+    if (re.FullMatch(error, &exName, &explanation)) {
+        // found SyncEvolution exception explanation, parse it
+        tryRethrow(explanation);
+        // explanation not parsed, fall back to D-Bus exception
+        throw GDBusCXX::dbus_error(exName, explanation);
+    }
 }
 
 std::string SubstEnvironment(const std::string &str)
