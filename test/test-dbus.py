@@ -870,7 +870,7 @@ status: idle, 0, {}
                 lines.append(event[0])
         return '\n'.join(lines)
 
-    def doCheckSync(self, expectedError=0, expectedResult=0, numReports=1):
+    def doCheckSync(self, expectedError=0, expectedResult=0, reportOptional=False, numReports=1):
         # check recorded events in DBusUtil.events, first filter them
         statuses = []
         progresses = []
@@ -927,6 +927,9 @@ status: idle, 0, {}
 
         # now check that report is sane
         reports = self.session.GetReports(0, 100, utf8_strings=True)
+        if reportOptional and len(reports) == 0:
+            # no report was written
+            return None
         self.assertEqual(len(reports), numReports)
         if expectedResult:
             self.assertEqual(int(reports[0]["status"]), expectedResult)
@@ -935,11 +938,11 @@ status: idle, 0, {}
             self.assertNotIn("error", reports[0])
         return reports[0]
 
-    def checkSync(self, expectedError=0, expectedResult=0, numReports=1):
+    def checkSync(self, *args, **keywords):
         '''augment any assertion in doCheckSync() with text dump of events'''
         events = self.prettyPrintEvents()
         try:
-            return self.doCheckSync(expectedError, expectedResult, numReports)
+            return self.doCheckSync(*args, **keywords)
         except AssertionError, ex:
             raise self.failureException('Assertion about the following events failed:\n%s\n%s' %
                                         (events, traceback.format_exc()))
@@ -3344,9 +3347,10 @@ END:VCARD''')
         self.session.Abort()
         loop.run()
         self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
-        report = self.checkSync(20017, 20017) # aborted
-        self.assertNotIn("error", report) # ... but without error message
-        self.assertEqual(report["source-addressbook-status"], "0") # unknown status for source (aborted early)
+        report = self.checkSync(20017, 20017, reportOptional=True) # aborted, with or without report
+        if report:
+            self.assertNotIn("error", report) # ... but without error message
+            self.assertEqual(report["source-addressbook-status"], "0") # unknown status for source (aborted early)
 
     def run(self, result):
         self.runTest(result)
