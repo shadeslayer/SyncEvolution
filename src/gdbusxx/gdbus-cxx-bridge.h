@@ -4737,10 +4737,10 @@ class SignalWatch4 : public SignalWatch< boost::function<void (const A1 &, const
 
         GVariantIter iter;
         g_variant_iter_init(&iter, params);
-        dbus_traits<A1>::get(conn, NULL, &iter, a1);
-        dbus_traits<A2>::get(conn, NULL, &iter, a2);
-        dbus_traits<A3>::get(conn, NULL, &iter, a3);
-        dbus_traits<A4>::get(conn, NULL, &iter, a4);
+        dbus_traits<A1>::get(conn, NULL, iter, a1);
+        dbus_traits<A2>::get(conn, NULL, iter, a2);
+        dbus_traits<A3>::get(conn, NULL, iter, a3);
+        dbus_traits<A4>::get(conn, NULL, iter, a4);
         cb(a1, a2, a3, a4);
     }
 
