@@ -31,6 +31,7 @@ public:
         m_server.add(this, &Test::hello, "Hello");
         m_server.add(this, &Test::getstrings, "GetStrings");
         m_server.add(this, &Test::getmixed, "GetMixed");
+        m_server.add(this, &Test::kill, "Kill");
     }
 
     void activate()
@@ -63,6 +64,12 @@ public:
         first = "hello";
         second = 1;
         third = "world";
+    }
+
+    void kill()
+    {
+        std::cout << "killing myself as requested" << std::endl;
+        abort();
     }
 
     void disconnected()
@@ -110,11 +117,36 @@ class TestProxy : public GDBusCXX::DBusRemoteObject
 public:
     TestProxy(const GDBusCXX::DBusConnectionPtr &conn) :
         GDBusCXX::DBusRemoteObject(conn.get(), "/test", "org.example.Test", "direct.peer"),
-        m_hello(*this, "Hello") {
+        m_hello(*this, "Hello"),
+        m_kill(*this, "Kill")
+    {
     }
 
     GDBusCXX::DBusClientCall1<std::string> m_hello;
+    GDBusCXX::DBusClientCall0 m_kill;
 };
+
+static void onChildConnectKill(const GDBusCXX::DBusConnectionPtr &conn,
+                               boost::scoped_ptr<Test> &testptr)
+{
+    std::cout << "child is ready, kill it" << std::endl;
+    testptr.reset(new Test(conn.get()));
+    testptr->activate();
+
+    // process messages already before returning from this onConnect callback
+    dbus_bus_connection_undelay(conn);
+
+    TestProxy proxy(conn);
+    try {
+        proxy.m_kill();
+    } catch (const std::runtime_error &ex) {
+        std::cout << "caught exception, as expected: " << ex.what() << std::endl;
+        std::cout << "aborting..." << std::endl;
+        abort();
+    }
+    std::cout << "did not get the expected exception" << std::endl;
+    abort();
+}
 
 static void helloCB(GMainLoop *loop, const std::string &res, const std::string &error)
 {
@@ -129,6 +161,8 @@ static void helloCB(GMainLoop *loop, const std::string &res, const std::string &
 static void callServer(const GDBusCXX::DBusConnectionPtr &conn)
 {
     TestProxy proxy(conn);
+    Test test(conn.get());
+    test.activate();
 
     // process messages already before returning from this onConnect callback
     dbus_bus_connection_undelay(conn);
@@ -156,6 +190,33 @@ static void callServer(const GDBusCXX::DBusConnectionPtr &conn)
     guard.reset(new  GDBusCXX::DBusObject(conn, "foo", "bar", true));
 }
 
+static void killServer(const GDBusCXX::DBusConnectionPtr &conn)
+{
+    TestProxy proxy(conn);
+
+    // process messages already before returning from this onConnect callback
+    dbus_bus_connection_undelay(conn);
+
+    try {
+        proxy.m_kill();
+    } catch (const std::runtime_error &ex) {
+        std::cout << "caught exception, as expected: " << ex.what() << std::endl;
+        std::cout << "aborting..." << std::endl;
+        abort();
+    }
+    std::cout << "did not get the expected exception" << std::endl;
+    abort();
+}
+
+static void calledByServer(const GDBusCXX::DBusConnectionPtr &conn)
+{
+    // run until Test::kill() is invoked by server
+    Test test(conn.get());
+    test.activate();
+    dbus_bus_connection_undelay(conn);
+    g_main_loop_run(loop.get());
+}
+
 void signalHandler (int sig)
 {
     if (loop) {
@@ -177,6 +238,7 @@ int main(int argc, char **argv)
         gboolean opt_fork_exec;
         gboolean opt_fork_exec_failure;
         gchar *opt_address;
+        gchar *opt_kill;
         GOptionContext *opt_context;
         // gboolean opt_allow_anonymous;
         SyncEvo::GErrorCXX gerror;
@@ -184,7 +246,8 @@ int main(int argc, char **argv)
         GOptionEntry opt_entries[] = {
             { "server", 's', 0, G_OPTION_ARG_NONE, &opt_server, "Start a server instead of a client", NULL },
             { "forkexec", 'e', 0, G_OPTION_ARG_NONE, &opt_fork_exec, "Use fork+exec to start the client (implies --server)", NULL },
-            { "forkfailure", 'f', 0, G_OPTION_ARG_NONE, &opt_fork_exec_failure, "Fork /bin/false to simulate a failure in the child (implies --forkexec)", NULL },
+            { "forkfailure", 'f', 0, G_OPTION_ARG_NONE, &opt_fork_exec_failure, "Fork /bin/false to simulate a failure in the child (implies )", NULL },
+            { "forkkill", 'a', 0, G_OPTION_ARG_STRING, &opt_kill, "'child/parent' call peer which kills itself before replying (implies --forkexec)", NULL },
             { "address", 'a', 0, G_OPTION_ARG_STRING, &opt_address, "D-Bus address to use", NULL },
             // { "allow-anonymous", 'n', 0, G_OPTION_ARG_NONE, &opt_allow_anonymous, "Allow anonymous authentication", NULL },
             { NULL}
@@ -193,6 +256,7 @@ int main(int argc, char **argv)
         g_type_init();
 
         opt_address = NULL;
+        opt_kill = NULL;
         opt_server = FALSE;
         opt_fork_exec = FALSE;
         opt_fork_exec_failure = FALSE;
@@ -218,7 +282,12 @@ int main(int argc, char **argv)
             boost::scoped_ptr<Test> testptr;
             boost::shared_ptr<SyncEvo::ForkExecParent> forkexec =
                 SyncEvo::ForkExecParent::create(opt_fork_exec_failure ? "/bin/false" : argv[0]);
-            forkexec->m_onConnect.connect(boost::bind(onChildConnect, _1, boost::ref(testptr)));
+            if (opt_kill) {
+                forkexec->addEnvVar("DBUS_CLIENT_SERVER_KILL", opt_kill);
+            }
+            forkexec->m_onConnect.connect(g_strcmp0(opt_kill, "child") ?
+                                          boost::bind(onChildConnect, _1, boost::ref(testptr)) :
+                                          boost::bind(onChildConnectKill, _1, boost::ref(testptr)));
             forkexec->m_onQuit.connect(onQuit);
             forkexec->m_onFailure.connect(boost::bind(onFailure, _2));
             forkexec->start();
@@ -240,7 +309,9 @@ int main(int argc, char **argv)
             boost::shared_ptr<SyncEvo::ForkExecChild> forkexec =
                 SyncEvo::ForkExecChild::create();
 
-            forkexec->m_onConnect.connect(callServer);
+            forkexec->m_onConnect.connect(!g_strcmp0(getenv("DBUS_CLIENT_SERVER_KILL"), "child") ? calledByServer :
+                                          !g_strcmp0(getenv("DBUS_CLIENT_SERVER_KILL"), "server") ? killServer :
+                                          callServer);
             forkexec->m_onFailure.connect(boost::bind(onFailure, _2));
             forkexec->connect();
             g_main_loop_run(loop.get());
