@@ -2477,6 +2477,33 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
                               '   ]\n'
                               '   int32 -1\n'])
 
+        # check that no other session is started at the time of
+        # the next regular auto sync session
+        def testDone():
+            DBusUtil.quit_events.append("test done")
+            loop.quit()
+            return False
+        def any_session_ready(object, ready):
+            if self.running:
+                DBusUtil.quit_events.append("session " + object + (ready and " ready" or " done"))
+                loop.quit()
+        signal = bus.add_signal_receiver(any_session_ready,
+                                         'SessionChanged',
+                                         'org.syncevolution.Server',
+                                         self.server.bus_name,
+                                         None,
+                                         byte_arrays=True,
+                                         utf8_strings=True)
+
+        try:
+            timeout = glib.timeout_add(15 * 1000, testDone)
+            loop.run()
+        finally:
+            glib.source_remove(timeout)
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
+                                                "session " + self.auto_sync_session_path + " done",
+                                                "test done"])
+
         # done as part of post-processing in runTest()
         self.runTestDBusCheck = checkDBusLog
 
