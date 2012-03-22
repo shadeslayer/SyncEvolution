@@ -24,6 +24,7 @@
 #include <syncevo/StringDataBlob.h>
 #include <syncevo/IniConfigNode.h>
 #include <syncevo/GLibSupport.h>
+#include <syncevo/DBusTraits.h>
 
 #include <stddef.h>
 #include <sys/socket.h>
@@ -32,60 +33,6 @@
 #include <fcntl.h>
 
 #include <algorithm>
-
-namespace GDBusCXX {
-    /**
-     * Actual content is a std::map, so serialization can be done using that.
-     * We only have to ensure that instances and parameters use FullProps.
-     */
-    template <> struct dbus_traits<SyncEvo::FullProps> :
-        public dbus_traits < std::map<std::string, SyncEvo::ContextProps, SyncEvo::Nocase<std::string> > >
-    {
-        typedef SyncEvo::FullProps host_type;
-        typedef const SyncEvo::FullProps &arg_type;
-    };
-
-    /**
-     * Similar to SyncEvo::FullProps.
-     */
-    template <> struct dbus_traits<SyncEvo::SourceProps> :
-        public dbus_traits < std::map<std::string, SyncEvo::ConfigProps, SyncEvo::Nocase<std::string> > >
-    {
-        typedef SyncEvo::SourceProps host_type;
-        typedef const SyncEvo::SourceProps &arg_type;
-    };
-    template <> struct dbus_traits<SyncEvo::ConfigProps> :
-        public dbus_traits < std::map<std::string, std::string, SyncEvo::Nocase<std::string> > >
-    {
-        typedef SyncEvo::ConfigProps host_type;
-        typedef const SyncEvo::ConfigProps &arg_type;
-    };
-
-
-
-    /**
-     * a struct containing ConfigProps + SourceProps
-     */
-    template <> struct dbus_traits<SyncEvo::ContextProps> :
-        public dbus_struct_traits<SyncEvo::ContextProps,
-                                  GDBusCXX::dbus_member<SyncEvo::ContextProps, SyncEvo::ConfigProps, &SyncEvo::ContextProps::m_syncProps,
-                                                        GDBusCXX::dbus_member_single<SyncEvo::ContextProps, SyncEvo::SourceProps, &SyncEvo::ContextProps::m_sourceProps> > >
-    {};
-
-    /**
-     * a struct containing various strings and an integer
-     */
-    template <> struct dbus_traits<SyncEvo::ConfigPasswordKey> :
-        public dbus_struct_traits<SyncEvo::ConfigPasswordKey,
-                                  GDBusCXX::dbus_member<SyncEvo::ConfigPasswordKey, std::string, &SyncEvo::ConfigPasswordKey::user,
-                                  GDBusCXX::dbus_member<SyncEvo::ConfigPasswordKey, std::string, &SyncEvo::ConfigPasswordKey::server,
-                                  GDBusCXX::dbus_member<SyncEvo::ConfigPasswordKey, std::string, &SyncEvo::ConfigPasswordKey::domain,
-                                  GDBusCXX::dbus_member<SyncEvo::ConfigPasswordKey, std::string, &SyncEvo::ConfigPasswordKey::object,
-                                  GDBusCXX::dbus_member<SyncEvo::ConfigPasswordKey, std::string, &SyncEvo::ConfigPasswordKey::protocol,
-                                  GDBusCXX::dbus_member<SyncEvo::ConfigPasswordKey, std::string, &SyncEvo::ConfigPasswordKey::authtype,
-                                  GDBusCXX::dbus_member_single<SyncEvo::ConfigPasswordKey, unsigned int, &SyncEvo::ConfigPasswordKey::port> > > > > > > >
-    {};
-}
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX

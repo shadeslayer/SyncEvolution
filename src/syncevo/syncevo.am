@@ -22,6 +22,7 @@ src_syncevo_sources = \
   src/syncevo/ConfigFilter.cpp \
   src/syncevo/ConfigNode.h \
   src/syncevo/ConfigNode.cpp \
+  src/syncevo/DBusTraits.h \
   src/syncevo/HashConfigNode.h \
   src/syncevo/VolatileConfigNode.h \
   src/syncevo/VolatileConfigTree.h \
