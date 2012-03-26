@@ -463,7 +463,8 @@ enum HandleExceptionFlags {
      * a 404 status error is possible and must not be logged as ERROR
      */
     HANDLE_EXCEPTION_404_IS_OKAY = 1 << 0,
-    HANDLE_EXCEPTION_MAX = 1 << 1
+    HANDLE_EXCEPTION_FATAL = 1 << 1,
+    HANDLE_EXCEPTION_MAX = 1 << 2
 };
 
 /**
@@ -503,6 +504,7 @@ class Exception : public std::runtime_error
     static SyncMLStatus handle(SyncMLStatus *status = NULL, Logger *logger = NULL, std::string *explanation = NULL, Logger::Level = Logger::ERROR, HandleExceptionFlags flags = HANDLE_EXCEPTION_FLAGS_NONE);
     static SyncMLStatus handle(Logger *logger, HandleExceptionFlags flags = HANDLE_EXCEPTION_FLAGS_NONE) { return handle(NULL, logger, NULL, Logger::ERROR, flags); }
     static SyncMLStatus handle(std::string &explanation, HandleExceptionFlags flags = HANDLE_EXCEPTION_FLAGS_NONE) { return handle(NULL, NULL, &explanation, Logger::ERROR, flags); }
+    static void handle(HandleExceptionFlags flags) { handle(NULL, NULL, NULL, Logger::ERROR, flags); }
     static void log() { handle(NULL, NULL, NULL, Logger::DEBUG); }
 
     /**

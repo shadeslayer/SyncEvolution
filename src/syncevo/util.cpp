@@ -797,7 +797,14 @@ SyncMLStatus Exception::handle(SyncMLStatus *status,
     } catch (...) {
         error = "unknown error";
     }
+    if (flags & HANDLE_EXCEPTION_FATAL) {
+        level = Logger::ERROR;
+    }
     SE_LOG(level, logger, NULL, "%s", error.c_str());
+    if (flags & HANDLE_EXCEPTION_FATAL) {
+        // Something unexpected went wrong, can only shut down.
+        ::abort();
+    }
 
     if (explanation) {
         *explanation = error;
