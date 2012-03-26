@@ -21,6 +21,7 @@
 #define TIMEOUT_H
 
 #include <syncevo/SmartPtr.h>
+#include <syncevo/util.h>
 
 #include <boost/utility.hpp>
 
@@ -69,6 +70,15 @@ public:
     }
 
     /**
+     * invoke the callback once
+     */
+    void runOnce(int seconds,
+                 const boost::function<void ()> &callback)
+    {
+        activate(seconds, boost::bind(&Timeout::once, callback));
+    }
+
+    /**
      * stop calling the callback, drop callback
      */
     void deactivate()
@@ -84,10 +94,21 @@ public:
     operator bool () const { return m_tag != 0; }
 
 private:
-    static gboolean triggered(gpointer data)
+    static gboolean triggered(gpointer data) throw ()
     {
-        Timeout *me = static_cast<Timeout *>(data);
-        return me->m_callback();
+        try {
+            Timeout *me = static_cast<Timeout *>(data);
+            return me->m_callback();
+        } catch (...) {
+            // Something unexpected went wrong, can only shut down.
+            Exception::handle(HANDLE_EXCEPTION_FATAL);
+        }
+        return false;
+    }
+
+    static bool once(const boost::function<void ()> &callback) {
+        callback();
+        return false;
     }
 };
 
