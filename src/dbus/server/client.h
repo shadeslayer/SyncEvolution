@@ -30,7 +30,6 @@ SE_BEGIN_CXX
 
 class Server;
 class Resource;
-class Session;
 
 /**
  * Tracks a single client and all sessions and connections that it is

@@ -12,8 +12,7 @@ src_dbus_server_server_cpp_files = \
   src/dbus/server/client.cpp \
   src/dbus/server/connection.cpp \
   src/dbus/server/connman-client.cpp \
-  src/dbus/server/dbus-sync.cpp \
-  src/dbus/server/dbus-transport-agent.cpp \
+  src/dbus/server/dbus-callbacks.cpp \
   src/dbus/server/dbus-user-interface.cpp \
   src/dbus/server/exceptions.cpp \
   src/dbus/server/info-req.cpp \
@@ -33,7 +32,7 @@ src_dbus_server_server_h_files = \
   src/dbus/server/cmdline-wrapper.h \
   src/dbus/server/resource.h \
   src/dbus/server/restart.h \
-  src/dbus/server/session-listener.h \
+  src/dbus/server/session-common.h \
   src/dbus/server/source-progress.h \
   src/dbus/server/source-status.h \
   src/dbus/server/timeout.h \
@@ -49,6 +48,29 @@ dist_pkgdata_DATA += src/dbus/server/bluetooth_products.ini
 src_dbus_server_libsyncevodbusserver_la_LIBADD = $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(DBUS_LIBS)
 src_dbus_server_libsyncevodbusserver_la_CPPFLAGS = -DHAVE_CONFIG_H -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\" -I$(top_srcdir)/src -I$(top_srcdir)/test -I$(top_srcdir) -I$(gdbus_dir) $(BACKEND_CPPFLAGS)
 src_dbus_server_libsyncevodbusserver_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(SYNTHESIS_CFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(SYNCEVO_WFLAGS)
+
+# Session helper: syncevo-dbus-helper 
+noinst_LTLIBRARIES += src/dbus/server/libsyncevodbushelper.la
+
+src_dbus_server_dbus_helper_cpp_files = \
+  src/dbus/server/dbus-callbacks.cpp \
+  src/dbus/server/dbus-sync.cpp \
+  src/dbus/server/dbus-transport-agent.cpp \
+  src/dbus/server/session-helper.cpp
+
+src_dbus_server_dbus_helper_h_files = \
+  $(src_dbus_server_dbus_helper_cpp_files:.cpp=.h) \
+  src/dbus/server/cmdline-wrapper.h
+
+src_dbus_server_libsyncevodbushelper_la_SOURCES = \
+  $(src_dbus_server_dbus_helper_h_files) \
+  $(src_dbus_server_dbus_helper_cpp_files) \
+  src/dbus/server/session-common.h \
+  src/dbus/server/sync-helper.cpp
+
+src_dbus_server_libsyncevodbushelper_la_LIBADD = $(DBUS_LIBS)
+src_dbus_server_libsyncevodbushelper_la_CPPFLAGS = -DHAVE_CONFIG_H -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\" -I$(top_srcdir)/src -I$(top_srcdir)/test -I$(top_srcdir) -I$(gdbus_dir) $(BACKEND_CPPFLAGS)
+src_dbus_server_libsyncevodbushelper_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(SYNTHESIS_CFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(SYNCEVO_WFLAGS)
 
 # Deal with .service, .desktop and startup script files.
 CLEANFILES += \

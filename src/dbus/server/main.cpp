@@ -25,9 +25,12 @@
 
 #include "server.h"
 #include "restart.h"
+#include "session-common.h"
 
 #include <syncevo/SyncContext.h>
 #include <syncevo/SuspendFlags.h>
+#include <syncevo/LogRedirect.h>
+#include <syncevo/LogSyslog.h>
 
 using namespace SyncEvo;
 using namespace GDBusCXX;
@@ -35,7 +38,8 @@ using namespace GDBusCXX;
 namespace {
     GMainLoop *loop = NULL;
     bool shutdownRequested = false;
-}
+    const char * const execName = "syncevo-dbus-server";
+    const char * const debugEnv = "SYNCEVOLUTION_DEBUG";
 
 void niam(int sig)
 {
@@ -44,7 +48,7 @@ void niam(int sig)
     g_main_loop_quit (loop);
 }
 
-static bool parseDuration(int &duration, const char* value)
+bool parseDuration(int &duration, const char* value)
 {
     if(value == NULL) {
         return false;
@@ -57,6 +61,8 @@ static bool parseDuration(int &duration, const char* value)
         return false;
     }
 }
+
+} // anonymous namespace
 
 int main(int argc, char **argv, char **envp)
 {
@@ -84,41 +90,59 @@ int main(int argc, char **argv, char **envp)
         opt++;
     }
     try {
-        SyncContext::initMain("syncevo-dbus-server");
+        SyncContext::initMain(execName);
 
         loop = g_main_loop_new (NULL, FALSE);
 
         setvbuf(stderr, NULL, _IONBF, 0);
         setvbuf(stdout, NULL, _IONBF, 0);
 
-        LogRedirect redirect(true);
+        const char *debugVar(getenv(debugEnv));
+        const bool debugEnabled(debugVar && *debugVar);
+
+        // TODO: redirect output *and* log it via syslog?!
+        boost::shared_ptr<LoggerBase> logger((true ||  debugEnabled) ?
+                                             static_cast<LoggerBase *>(new LogRedirect(true)) :
+                                             static_cast<LoggerBase *>(new LoggerSyslog(execName)));
 
         // make daemon less chatty - long term this should be a command line option
-        LoggerBase::instance().setLevel(getenv("SYNCEVOLUTION_DEBUG") ?
+        LoggerBase::instance().setLevel(debugEnabled ?
                                         LoggerBase::DEBUG :
                                         LoggerBase::INFO);
+
+        // syncevo-dbus-server should hardly ever produce output that
+        // is relevant for end users, so include the somewhat cryptic
+        // process name for developers in this process, and not in
+        // syncevo-dbus-helper.
+        Logger::setProcessName("syncevo-dbus-server");
 
         SE_LOG_DEBUG(NULL, NULL, "syncevo-dbus-server: catch SIGINT/SIGTERM in our own shutdown function");
         signal(SIGTERM, niam);
         signal(SIGINT, niam);
+        boost::shared_ptr<SuspendFlags::Guard> guard = SuspendFlags::getSuspendFlags().activate();
 
         DBusErrorCXX err;
         DBusConnectionPtr conn = dbus_get_bus_connection("SESSION",
-                                                         "org.syncevolution",
+                                                         SessionCommon::SERVICE_NAME,
                                                          true,
                                                          &err);
         if (!conn) {
             err.throwFailure("dbus_get_bus_connection()", " failed - server already running?");
         }
         // make this object the main owner of the connection
-        DBusObject obj(conn, "foo", "bar", true);
+        boost::scoped_ptr<DBusObject> obj(new DBusObject(conn, "foo", "bar", true));
 
-        SyncEvo::Server server(loop, shutdownRequested, restart, conn, duration);
-        server.activate();
+        boost::scoped_ptr<SyncEvo::Server> server(new SyncEvo::Server(loop, shutdownRequested, restart, conn, duration));
+        server->activate();
 
-        SE_LOG_INFO(NULL, NULL, "%s: ready to run",  argv[0]);
-        server.run(redirect);
-        SE_LOG_INFO(NULL, NULL, "%s: terminating",  argv[0]);
+        SE_LOG_INFO(NULL, NULL, "ready to run");
+        server->run();
+        SE_LOG_DEBUG(NULL, NULL, "cleaning up");
+        server.reset();
+        conn.reset();
+        obj.reset();
+        guard.reset();
+        SE_LOG_INFO(NULL, NULL, "terminating");
         return 0;
     } catch ( const std::exception &ex ) {
         SE_LOG_ERROR(NULL, NULL, "%s", ex.what());

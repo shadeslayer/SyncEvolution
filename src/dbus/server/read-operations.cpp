@@ -18,6 +18,7 @@
  */
 
 #include "read-operations.h"
+#include "dbus-user-interface.h"
 #include "server.h"
 #include "dbus-sync.h"
 

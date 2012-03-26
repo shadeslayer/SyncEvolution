@@ -20,20 +20,19 @@
 #ifndef PRESENCE_STATUS_H
 #define PRESENCE_STATUS_H
 
-#include "timer.h"
 #include "read-operations.h"
 
+#include <boost/signals.hpp>
+
 SE_BEGIN_CXX
+
+class Server;
 
 class PresenceStatus {
     bool m_httpPresence;
     bool m_btPresence;
     bool m_initiated;
     Server &m_server;
-
-    /** two timers to record when the statuses of network and bt are changed */
-    Timer m_httpTimer;
-    Timer m_btTimer;
 
     enum PeerStatus {
         /* The transport is not available (local problem) */
@@ -46,9 +45,9 @@ class PresenceStatus {
         INVALID
     };
 
-    typedef map<string, vector<pair <string, PeerStatus> > > StatusMap;
-    typedef pair<const string, vector<pair <string, PeerStatus> > > StatusPair;
-    typedef pair <string, PeerStatus> PeerStatusPair;
+    typedef std::map<std::string, std::vector<std::pair <std::string, PeerStatus> > > StatusMap;
+    typedef std::pair<const std::string, std::vector<std::pair <std::string, PeerStatus> > > StatusPair;
+    typedef std::pair<std::string, PeerStatus> PeerStatusPair;
     StatusMap m_peers;
 
     static std::string status2string (PeerStatus status) {
@@ -71,8 +70,7 @@ class PresenceStatus {
 
     public:
     PresenceStatus (Server &server)
-        :m_httpPresence (false), m_btPresence (false), m_initiated (false), m_server (server),
-        m_httpTimer(), m_btTimer()
+        :m_httpPresence (false), m_btPresence (false), m_initiated (false), m_server (server)
     {
     }
 
@@ -85,7 +83,7 @@ class PresenceStatus {
     void init();
 
     /* Implement Server::checkPresence*/
-    void checkPresence (const string &peer, string& status, std::vector<std::string> &transport);
+    void checkPresence (const std::string &peer, std::string& status, std::vector<std::string> &transport);
 
     void updateConfigPeers (const std::string &peer, const ReadOperations::Config_t &config);
 
@@ -93,8 +91,11 @@ class PresenceStatus {
 
     bool getHttpPresence() { return m_httpPresence; }
     bool getBtPresence() { return m_btPresence; }
-    Timer& getHttpTimer() { return m_httpTimer; }
-    Timer& getBtTimer() { return m_btTimer; }
+
+    /** emitted on changes of the current value */
+    typedef boost::signals2::signal<void (bool)> PresenceSignal_t;
+    PresenceSignal_t m_httpPresenceSignal;
+    PresenceSignal_t m_btPresenceSignal;
 
  private:
     void updatePresenceStatus (bool httpPresence, bool btPresence);

@@ -18,7 +18,6 @@
  */
 
 #include "info-req.h"
-#include "session.h"
 #include "server.h"
 
 using namespace GDBusCXX;
@@ -28,14 +27,19 @@ SE_BEGIN_CXX
 InfoReq::InfoReq(Server &server,
                  const string &type,
                  const InfoMap &parameters,
-                 const Session *session,
+                 const string &sessionPath,
                  uint32_t timeout) :
-    m_server(server), m_session(session), m_infoState(IN_REQ),
-    m_status(ST_RUN), m_type(type), m_param(parameters),
-    m_timeout(timeout), m_timer(m_timeout * 1000)
+    m_server(server),
+    m_sessionPath(sessionPath),
+    m_id(server.getNextInfoReq()),
+    m_timeoutSeconds(timeout),
+    m_infoState(IN_REQ),
+    m_status(ST_RUN),
+    m_type(type),
+    m_param(parameters)
 {
-    m_id = m_server.getNextInfoReq();
     m_server.emitInfoReq(*this);
+    m_timeout.runOnce(m_timeoutSeconds, boost::bind(boost::ref(m_timeoutSignal)));
     m_param.clear();
 }
 
@@ -43,58 +47,6 @@ InfoReq::~InfoReq()
 {
     m_handler = "";
     done();
-    m_server.removeInfoReq(*this);
-}
-
-InfoReq::Status InfoReq::check()
-{
-    if(m_status == ST_RUN) {
-        // give an opportunity to poll the sources on the main context
-        g_main_context_iteration(g_main_loop_get_context(m_server.getLoop()), false);
-        checkTimeout();
-    }
-    return m_status;
-}
-
-bool InfoReq::getResponse(InfoMap &response)
-{
-    if (m_status == ST_OK) {
-        response = m_response;
-        return true;
-    }
-    return false;
-}
-
-InfoReq::Status InfoReq::wait(InfoMap &response, uint32_t interval)
-{
-    // give a chance to check whether it has been timeout
-    check();
-    if(m_status == ST_RUN) {
-        guint checkSource = g_timeout_add_seconds(interval,
-                                                  (GSourceFunc) checkCallback,
-                                                  static_cast<gpointer>(this));
-        while(m_status == ST_RUN) {
-            g_main_context_iteration(g_main_loop_get_context(m_server.getLoop()), true);
-        }
-
-        // if the source is not removed
-        if(m_status != ST_TIMEOUT && m_status != ST_CANCEL) {
-            g_source_remove(checkSource);
-        }
-    }
-    if (m_status == ST_OK) {
-        response = m_response;
-    }
-    return m_status;
-}
-
-void InfoReq::cancel()
-{
-    if(m_status == ST_RUN) {
-        m_handler = "";
-        done();
-        m_status = ST_CANCEL;
-    }
 }
 
 string InfoReq::statusToString(Status status)
@@ -127,31 +79,6 @@ string InfoReq::infoStateToString(InfoState state)
     }
 }
 
-gboolean InfoReq::checkCallback(gpointer data)
-{
-    // TODO: check abort and suspend(MB#8730)
-
-    // if InfoRequest("request") is sent and waiting for InfoResponse("working"),
-    // add a timeout mechanism
-    InfoReq *req = static_cast<InfoReq*>(data);
-    if (req->checkTimeout()) {
-        return FALSE;
-    }
-    return TRUE;
-}
-
-bool InfoReq::checkTimeout()
-{
-    // if waiting for client response, check time out
-    if(m_status == ST_RUN) {
-        if (m_timer.timeout()) {
-            m_status = ST_TIMEOUT;
-            return true;
-        }
-    }
-    return false;
-}
-
 void InfoReq::setResponse(const Caller_t &caller, const string &state, const InfoMap &response)
 {
     if(m_status != ST_RUN) {
@@ -161,20 +88,20 @@ void InfoReq::setResponse(const Caller_t &caller, const string &state, const Inf
         m_infoState = IN_WAIT;
         m_server.emitInfoReq(*this);
         //reset the timer, used to check timeout
-        m_timer.reset();
-    } else if(m_infoState == IN_WAIT && state == "response") {
+        m_timeout.runOnce(m_timeoutSeconds, boost::bind(boost::ref(m_timeoutSignal)));
+    } else if ((m_infoState == IN_WAIT || m_infoState == IN_REQ) && state == "response") {
         m_response = response;
         m_handler = caller;
-        done();
         m_status = ST_OK;
+        m_responseSignal(m_response);
+        done();
     }
 }
 
 string InfoReq::getSessionPath() const
 {
-    return m_session ? m_session->getPath() : "";
+    return m_sessionPath;
 }
-
 
 void InfoReq::done()
 {
@@ -182,6 +109,7 @@ void InfoReq::done()
         m_infoState = IN_DONE;
         m_server.emitInfoReq(*this);
     }
+    m_server.removeInfoReq(getId());
 }
 
 SE_END_CXX

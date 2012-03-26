@@ -25,52 +25,57 @@
 #include <syncevo/SynthesisEngine.h>
 #include <boost/weak_ptr.hpp>
 
+#include <gdbus-cxx-bridge.h>
+
+#include "session-common.h"
+
 SE_BEGIN_CXX
 
-class Session;
 class Connection;
+class SessionHelper;
 
 /**
- * A proxy for a Connection instance. The Connection instance can go
- * away (weak pointer, must be locked and and checked each time it is
- * needed). The agent must remain available as long as the engine
- * needs and basically becomes unusuable once the connection dies.
+ * A proxy for a Connection instance in the syncevo-dbus-server. The
+ * Connection instance can go away (weak pointer, must be locked and
+ * and checked each time it is needed). The agent must remain
+ * available as long as the engine needs and basically becomes
+ * unusuable once the connection dies. That information is relayed
+ * to it via the D-Bus API.
  *
  * Reconnecting is not currently supported.
  */
 class DBusTransportAgent : public TransportAgent
 {
-    GMainLoop *m_loop;
-    Session &m_session;
-    boost::weak_ptr<Connection> m_connection;
+    SessionHelper &m_helper;
 
+    /** information about outgoing message, provided by user of this instance */
     std::string m_url;
     std::string m_type;
 
-    /*
-     * When the timeout occurs, we always abort the current
-     * transmission.  If it is invoked while we are not in the wait()
-     * of this transport, then we remember that in m_eventTriggered
-     * and return from wait() right away. The main loop is only
-     * quit when the transport is waiting in it. This is a precaution
-     * to not interfere with other parts of the code.
-     */
-    int m_timeoutSeconds;
-    GLibEvent m_eventSource;
-    bool m_eventTriggered;
-    bool m_waiting;
-
+    /** latest message sent to us */
     SharedBuffer m_incomingMsg;
     std::string m_incomingMsgType;
 
-    void doWait(boost::shared_ptr<Connection> &connection);
-    static gboolean timeoutCallback(gpointer transport);
+    /** explanation for problem, sent to us by syncevo-dbus-server */
+    std::string m_error;
+
+    /**
+     * Current state. Changed by us as messages are sent and received
+     * and by syncevo-dbus-server:
+     * - connectionState with error -> failed
+     * - connectionState without error -> closed
+     */
+    SessionCommon::ConnectionState m_state;
+
+    void doWait();
 
  public:
-    DBusTransportAgent(GMainLoop *loop,
-                       Session &session,
-                       boost::weak_ptr<Connection> connection);
-    ~DBusTransportAgent();
+    DBusTransportAgent(SessionHelper &helper);
+
+    void serverAlerted();
+    void storeMessage(const GDBusCXX::DBusArray<uint8_t> &buffer,
+                      const std::string &type);
+    void storeState(const std::string &error);
 
     virtual void setURL(const std::string &url) { m_url = url; }
     virtual void setContentType(const std::string &type) { m_type = type; }
@@ -78,11 +83,7 @@ class DBusTransportAgent : public TransportAgent
     virtual void cancel() {}
     virtual void shutdown();
     virtual Status wait(bool noReply = false);
-    virtual void setTimeout(int seconds)
-    {
-        m_timeoutSeconds = seconds;
-        m_eventSource = 0;
-    }
+    virtual void setTimeout(int seconds) {}
     virtual void getReply(const char *&data, size_t &len, std::string &contentType);
 };
 

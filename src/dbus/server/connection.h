@@ -21,10 +21,19 @@
 #define CONNECTION_H
 
 #include "session.h"
+#include "session-common.h"
+#include "resource.h"
+
+#include <boost/signals2.hpp>
+
+#include <gdbus-cxx-bridge.h>
+
+#include <syncevo/SynthesisEngine.h>
 
 SE_BEGIN_CXX
 
 class Server;
+class Session;
 
 /**
  * Represents and implements the Connection interface.
@@ -40,38 +49,33 @@ class Server;
  */
 class Connection : public GDBusCXX::DBusObjectHelper, public Resource
 {
+ private:
     Server &m_server;
+    boost::weak_ptr<Connection> m_me;
     StringMap m_peer;
     bool m_mustAuthenticate;
-    enum {
-        SETUP,          /**< ready for first message */
-        PROCESSING,     /**< received message, waiting for engine's reply */
-        WAITING,        /**< waiting for next follow-up message */
-        FINAL,          /**< engine has sent final reply, wait for ACK by peer */
-        DONE,           /**< peer has closed normally after the final reply */
-        FAILED          /**< in a failed state, no further operation possible */
-    } m_state;
+    SessionCommon::ConnectionState m_state;
     std::string m_failure;
 
     /** first parameter for Session::sync() */
     std::string m_syncMode;
     /** second parameter for Session::sync() */
-    Session::SourceModes_t m_sourceModes;
+    SessionCommon::SourceModes_t m_sourceModes;
 
     const std::string m_sessionID;
     boost::shared_ptr<Session> m_session;
 
     /**
-     * main loop that our DBusTransportAgent is currently waiting in,
-     * NULL if not waiting
+     * Defines the timeout in seconds. -1 and thus "no timeout" by default.
+     *
+     * The timeout is acticated each time the connection goes into
+     * WAITING mode. Once it triggers, the connection is put into
+     * the FAILED and queued for delayed deletion in the server.
      */
-    GMainLoop *m_loop;
-
-    /**
-     * get our peer session out of the DBusTransportAgent,
-     * if it is currently waiting for us (indicated via m_loop)
-     */
-    void wakeupSession();
+    int m_timeoutSeconds;
+    Timeout m_timeout;
+    void activateTimeout();
+    void timeoutCb();
 
     /**
      * buffer for received data, waiting here for engine to ask
@@ -117,6 +121,7 @@ class Connection : public GDBusCXX::DBusObjectHelper, public Resource
     /** Connection.Abort */
     GDBusCXX::EmitSignal0 sendAbort;
     bool m_abortSent;
+
     /** Connection.Reply */
     GDBusCXX::EmitSignal5<const GDBusCXX::DBusArray<uint8_t> &,
                           const std::string &,
@@ -124,27 +129,47 @@ class Connection : public GDBusCXX::DBusObjectHelper, public Resource
                           bool,
                           const std::string &> reply;
 
-    friend class DBusTransportAgent;
-
-public:
-    const std::string m_description;
-
     Connection(Server &server,
                const GDBusCXX::DBusConnectionPtr &conn,
                const std::string &session_num,
                const StringMap &peer,
                bool must_authenticate);
 
+public:
+    const std::string m_description;
+
+    static boost::shared_ptr<Connection> createConnection(Server &server,
+                                                          const GDBusCXX::DBusConnectionPtr &conn,
+                                                          const std::string &session_num,
+                                                          const StringMap &peer,
+                                                          bool must_authenticate);
+
     ~Connection();
 
     /** session requested by us is ready to run a sync */
     void ready();
+
+    /** send outgoing message via connection */
+    void send(const GDBusCXX::DBusArray<uint8_t> buffer,
+              const std::string &type,
+              const std::string &url);
+
+    /** send last, empty message and enter FINAL state */
+    void sendFinalMsg();
 
     /** connection is no longer needed, ensure that it gets deleted */
     void shutdown();
 
     /** peer is not trusted, must authenticate as part of SyncML */
     bool mustAuthenticate() const { return m_mustAuthenticate; }
+
+    /** new incoming message ready */
+    typedef boost::signals2::signal<void (const GDBusCXX::DBusArray<uint8_t> &, const std::string &)> MessageSignal_t;
+    MessageSignal_t m_messageSignal;
+
+    /** connection went down (empty string) or failed (error message) */
+    typedef boost::signals2::signal<void (const std::string &)> StatusSignal_t;
+    StatusSignal_t m_statusSignal;
 };
 
 SE_END_CXX

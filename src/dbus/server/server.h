@@ -20,48 +20,44 @@
 #ifndef SYNCEVO_DBUS_SERVER_H
 #define SYNCEVO_DBUS_SERVER_H
 
-#include <boost/weak_ptr.hpp>
+#include <set>
 
-#include "auto-sync-manager.h"
-#include "exceptions.h"
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 #include <boost/signals2.hpp>
+
+#include "exceptions.h"
 #include "auto-term.h"
-#include "read-operations.h"
 #include "connman-client.h"
 #include "network-manager-client.h"
 #include "presence-status.h"
 #include "timeout.h"
+#include "dbus-callbacks.h"
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
+class Resource;
 class Session;
-class Connection;
-class DBusTransportAgent;
 class Server;
 class InfoReq;
 class BluezManager;
 class Restart;
 class Client;
-class Resource;
-class LogRedirect;
 class GLibNotify;
+class AutoSyncManager;
 
 /**
  * Implements the main org.syncevolution.Server interface.
  *
- * All objects created by it get a reference to the creating
- * Server instance so that they can call some of its
- * methods. Because that instance holds references to all
- * of these objects and deletes them before destructing itself,
- * that reference is guaranteed to remain valid.
+ * The Server class is responsible for listening to clients and
+ * spinning of sync sessions as requested by clients.
  */
 class Server : public GDBusCXX::DBusObjectHelper,
-                   public LoggerBase
+               public LoggerBase
 {
     GMainLoop *m_loop;
     bool &m_shutdownRequested;
-    bool m_doShutdown;
     Timespec m_lastFileMod;
     boost::shared_ptr<SyncEvo::Restart> &m_restart;
 
@@ -97,6 +93,9 @@ class Server : public GDBusCXX::DBusObjectHelper,
      * only one session may make such modifications at a time. A
      * plain pointer which is reset by the session's deconstructor.
      *
+     * The server doesn't hold a shared pointer to the session so
+     * that it can be deleted when the last client detaches from it.
+     *
      * A weak pointer alone did not work because it does not provide access
      * to the underlying pointer after the last corresponding shared
      * pointer is gone (which triggers the deconstructing of the session).
@@ -112,6 +111,10 @@ class Server : public GDBusCXX::DBusObjectHelper,
      * The running sync session. Having a separate reference to it
      * ensures that the object won't go away prematurely, even if all
      * clients disconnect.
+     *
+     * The session itself needs to request this special treatment with
+     * addSyncSession() and remove itself with removeSyncSession() when
+     * done.
      */
     boost::shared_ptr<Session> m_syncSession;
 
@@ -154,6 +157,10 @@ class Server : public GDBusCXX::DBusObjectHelper,
      * Watch callback for a specific client or connection.
      */
     void clientGone(Client *c);
+
+
+ public:
+    // D-Bus API, also usable directly
 
     /** Server.GetCapabilities() */
     vector<string> getCapabilities();
@@ -261,6 +268,7 @@ class Server : public GDBusCXX::DBusObjectHelper,
         ops.getDatabases(sourceName, databases);
     }
 
+    /** Server.GetConfigs() */
     void getConfigs(bool getTemplates,
                     std::vector<std::string> &configNames)
     {
@@ -281,17 +289,6 @@ class Server : public GDBusCXX::DBusObjectHelper,
                       const std::string &id,
                       const std::string &state,
                       const std::map<string, string> &response);
-
-    friend class InfoReq;
-
-    /** emit InfoRequest */
-    void emitInfoReq(const InfoReq &);
-
-    /** get the next id of InfoRequest */
-    std::string getNextInfoReq();
-
-    /** remove InfoReq from hash map */
-    void removeInfoReq(const InfoReq &req);
 
     /** Server.SessionChanged */
     GDBusCXX::EmitSignal2<const GDBusCXX::DBusObject_t &,
@@ -322,19 +319,22 @@ class Server : public GDBusCXX::DBusObjectHelper,
                           const std::string &,
                           const std::map<string, string> &> infoRequest;
 
-    /**
-     * More specific "config changed signal", called with
-     * normalized config name as parameter.
-     */
-    typedef boost::signals2::signal<void (const std::string &configName)> NamedConfigChanged_t;
-    NamedConfigChanged_t namedConfigChanged;
-
     /** Server.LogOutput */
     GDBusCXX::EmitSignal3<const GDBusCXX::DBusObject_t &,
                           string,
                           const std::string &> logOutput;
 
-    friend class Session;
+ private:
+    friend class InfoReq;
+
+    /** emit InfoRequest */
+    void emitInfoReq(const InfoReq &);
+
+    /** get the next id of InfoRequest */
+    std::string getNextInfoReq();
+
+    /** remove InfoReq from hash map */
+    void removeInfoReq(const std::string &infoReqId);
 
     PresenceStatus m_presence;
     ConnmanClient m_connman;
@@ -378,7 +378,28 @@ public:
     GMainLoop *getLoop() { return m_loop; }
 
     /** process D-Bus calls until the server is ready to quit */
-    void run(LogRedirect &redirect);
+    void run();
+
+    /** true iff no work is pending */
+    bool isIdle() const { return !m_activeSession && m_workQueue.empty(); }
+
+    /** isIdle() might have changed its value, current value included */
+    typedef boost::signals2::signal<void (bool isIdle)> IdleSignal_t;
+    IdleSignal_t m_idleSignal;
+
+    /**
+     * More specific "config changed signal", called with normalized
+     * config name as parameter. Config name is empty if all configs
+     * were affected.
+     */
+    typedef boost::signals2::signal<void (const std::string &configName)> ConfigChangedSignal_t;
+    ConfigChangedSignal_t m_configChangedSignal;
+
+    /**
+     * Called when a session starts its real work (= calls addSyncSession()).
+     */
+    typedef boost::signals2::signal<void (const boost::shared_ptr<Session> &)> NewSyncSessionSignal_t;
+    NewSyncSessionSignal_t m_newSyncSessionSignal;
 
     /**
      * look up client by its ID
@@ -388,8 +409,7 @@ public:
     /**
      * find client by its ID or create one anew
      */
-    boost::shared_ptr<Client> addClient(const GDBusCXX::DBusConnectionPtr &conn,
-                                        const GDBusCXX::Caller_t &ID,
+    boost::shared_ptr<Client> addClient(const GDBusCXX::Caller_t &ID,
                                         const boost::shared_ptr<GDBusCXX::Watch> &watch);
 
     /** detach this resource from all clients which own it */
@@ -407,8 +427,13 @@ public:
      * Remove all sessions with this device ID from the
      * queue. If the active session also has this ID,
      * the session will be aborted and/or deactivated.
+     *
+     * Has to be asynchronous because it might involve ensuring that
+     * there is no running helper for this device ID, which requires
+     * communicating with the helper.
      */
-    int killSessions(const std::string &peerDeviceID);
+    void killSessionsAsync(const std::string &peerDeviceID,
+                           const SimpleResult &result);
 
     /**
      * Remove a session from the work queue. If it is running a sync,
@@ -417,6 +442,21 @@ public:
      * that lock.
      */
     void dequeue(Session *session);
+
+    /**
+     * Remember that the session is running a sync (or some other
+     * important operation) and keeps a pointer to it, to prevent
+     * deleting it. Currently can only called by the active sync
+     * session. Will fail if all clients have detached already.
+     *
+     * If successful, it triggers m_newSyncSessionSignal.
+     */
+    void addSyncSession(Session *session);
+
+    /**
+     * Session is done, ready to be deleted again.
+     */
+    void removeSyncSession(Session *session);
 
     /**
      * Checks whether the server is ready to run another session
@@ -440,6 +480,46 @@ public:
     void delaySessionDestruction(const boost::shared_ptr<Session> &session);
 
     /**
+     * Works for any kind of object: keep shared pointer until the
+     * event loop is idle, then unref it inside. Useful for instances
+     * which need to delete themselves.
+     */
+    template <class T> static void delayDeletion(const boost::shared_ptr<T> &t) {
+        g_idle_add(delayDeletionCb<T>, new boost::shared_ptr<T>(t));
+    }
+
+    template <class T> static gboolean delayDeletionCb(gpointer userData) throw () {
+        boost::shared_ptr<T> *t = static_cast<boost::shared_ptr<T> *>(userData);
+
+        try {
+            t->reset();
+            delete t;
+        } catch (...) {
+            // Something unexpected went wrong, can only shut down.
+            Exception::handle(HANDLE_EXCEPTION_FATAL);
+        }
+
+        return false;
+    }
+
+    /**
+     * Handle the password request from a specific session. Ask our
+     * clients, relay answer to session if it is still around at the
+     * time when we get the response.
+     *
+     * Server does not keep a strong reference to info request,
+     * caller must do that or the request will automatically be
+     * deleted.
+     */
+    boost::shared_ptr<InfoReq> passwordRequest(const std::string &descr,
+                                               const ConfigPasswordKey &key,
+                                               const boost::weak_ptr<Session> &session);
+
+    /** got response for earlier request, need to extract password and tell session */
+    void passwordResponse(const StringMap &response,
+                          const boost::weak_ptr<Session> &session);
+
+    /**
      * Invokes the given callback once in the given amount of seconds.
      * Keeps a copy of the callback. If the Server is destructed
      * before that time, then the callback will be deleted without
@@ -448,9 +528,15 @@ public:
     void addTimeout(const boost::function<bool ()> &callback,
                     int seconds);
 
+    /**
+     * InfoReq will be added to map automatically and removed again
+     * when it completes or times out. Caller is responsible for
+     * calling removeInfoReq() when the request becomes obsolete
+     * sooner than that.
+     */
     boost::shared_ptr<InfoReq> createInfoReq(const string &type,
                                              const std::map<string, string> &parameters,
-                                             const Session *session);
+                                             const Session &session);
     void autoTermRef(int counts = 1) { m_autoTerm.ref(counts); }
 
     void autoTermUnref(int counts = 1) { m_autoTerm.unref(counts); }

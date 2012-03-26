@@ -27,7 +27,6 @@
 
 SE_BEGIN_CXX
 
-class DBusSync;
 class Server;
 
 /**

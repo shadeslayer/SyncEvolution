@@ -20,7 +20,8 @@
 
 #include <fstream>
 
-#include <syncevo/LogRedirect.h>
+#include <boost/bind.hpp>
+
 #include <syncevo/GLibSupport.h>
 
 #include "server.h"
@@ -31,10 +32,18 @@
 #include "timeout.h"
 #include "restart.h"
 #include "client.h"
+#include "auto-sync-manager.h"
+
+#include <boost/pointer_cast.hpp>
 
 using namespace GDBusCXX;
 
 SE_BEGIN_CXX
+
+static void logIdle(bool idle)
+{
+    SE_LOG_DEBUG(NULL, NULL, "server is %s", idle ? "idle" : "not idle");
+}
 
 void Server::clientGone(Client *c)
 {
@@ -95,9 +104,7 @@ StringMap Server::getVersions()
 void Server::attachClient(const Caller_t &caller,
                           const boost::shared_ptr<Watch> &watch)
 {
-    boost::shared_ptr<Client> client = addClient(getConnection(),
-                                                 caller,
-                                                 watch);
+    boost::shared_ptr<Client> client = addClient(caller, watch);
     autoTermRef();
     client->increaseAttachCount();
 }
@@ -153,18 +160,17 @@ void Server::connect(const Caller_t &caller,
     }
     std::string new_session = getNextSession();
 
-    boost::shared_ptr<Connection> c(new Connection(*this,
-                                                   getConnection(),
-                                                   new_session,
-                                                   peer,
-                                                   must_authenticate));
+    boost::shared_ptr<Connection> c(Connection::createConnection(*this,
+                                                                 getConnection(),
+                                                                 new_session,
+                                                                 peer,
+                                                                 must_authenticate));
     SE_LOG_DEBUG(NULL, NULL, "connecting D-Bus client %s with connection %s '%s'",
                  caller.c_str(),
                  c->getPath(),
                  c->m_description.c_str());
 
-    boost::shared_ptr<Client> client = addClient(getConnection(),
-                                                 caller,
+    boost::shared_ptr<Client> client = addClient(caller,
                                                  watch);
     client->attach(c);
     c->activate();
@@ -183,8 +189,7 @@ void Server::startSessionWithFlags(const Caller_t &caller,
         SE_THROW("server shutting down");
     }
 
-    boost::shared_ptr<Client> client = addClient(getConnection(),
-                                                 caller,
+    boost::shared_ptr<Client> client = addClient(caller,
                                                  watch);
     std::string new_session = getNextSession();
     boost::shared_ptr<Session> session = Session::createSession(*this,
@@ -225,12 +230,11 @@ Server::Server(GMainLoop *loop,
                const DBusConnectionPtr &conn,
                int duration) :
     DBusObjectHelper(conn,
-                     "/org/syncevolution/Server",
-                     "org.syncevolution.Server",
+                     SessionCommon::SERVER_PATH,
+                     SessionCommon::SERVER_IFACE,
                      boost::bind(&Server::autoTermCallback, this)),
     m_loop(loop),
     m_shutdownRequested(shutdownRequested),
-    m_doShutdown(false),
     m_restart(restart),
     m_lastSession(time(NULL)),
     m_activeSession(NULL),
@@ -290,13 +294,14 @@ Server::Server(GMainLoop *loop,
         getPresenceStatus().updatePresenceStatus(true, PresenceStatus::HTTP_TRANSPORT);
     }
 
-    // create auto sync manager, now that server is ready
-    m_autoSync = AutoSyncManager::create(*this);
+    // log entering and leaving idle state
+    m_idleSignal.connect(boost::bind(logIdle, _1));
 
-    // connect auto sync manager and Server ConfigChanged signal to source
-    // for that information
-    namedConfigChanged.connect(NamedConfigChanged_t::slot_type(&AutoSyncManager::update, m_autoSync.get(), _1).track(m_autoSync));
-    namedConfigChanged.connect(boost::bind(&Server::configChanged, this));
+    // connect ConfigChanged signal to source for that information
+    m_configChangedSignal.connect(boost::bind(boost::ref(configChanged)));
+
+    // create auto sync manager, now that server is ready
+    m_autoSync = AutoSyncManager::createAutoSyncManager(*this);
 }
 
 Server::~Server()
@@ -305,13 +310,15 @@ Server::~Server()
     m_syncSession.reset();
     m_workQueue.clear();
     m_clients.clear();
+    m_autoSync.reset();
+    m_infoReqMap.clear();
     LoggerBase::popLogger();
 }
 
 bool Server::shutdown()
 {
     Timespec now = Timespec::monotonic();
-    bool autosync = m_autoSync->preventTerm();
+    bool autosync = m_autoSync && m_autoSync->preventTerm();
     SE_LOG_DEBUG(NULL, NULL, "shut down or restart server at %lu.%09lu because of file modifications, auto sync %s",
                  now.tv_sec, now.tv_nsec, autosync ? "on" : "off");
     if (autosync) {
@@ -321,7 +328,6 @@ bool Server::shutdown()
         m_restart->restart();
     } else {
         // leave server now
-        m_doShutdown = true;
         g_main_loop_quit(m_loop);
         SE_LOG_INFO(NULL, NULL, "server shutting down because files loaded into memory were modified on disk");
     }
@@ -343,7 +349,7 @@ void Server::fileModified()
     m_shutdownRequested = true;
 }
 
-void Server::run(LogRedirect &redirect)
+void Server::run()
 {
     // This has the intended side effect that it loads everything into
     // memory which might be dynamically loadable, like backend
@@ -378,61 +384,11 @@ void Server::run(LogRedirect &redirect)
         }
     }
 
-    while (!m_doShutdown) {
-        if (!m_activeSession ||
-            !m_activeSession->readyToRun()) {
-            // hook up SIGINT/SIGTERM with our event loop temporarily
-            SuspendFlags &suspendflags = SuspendFlags::getSuspendFlags();
-            boost::shared_ptr<SuspendFlags::Guard> guard = suspendflags.activate();
-            boost::signals2::scoped_connection c(suspendflags.m_stateChanged.connect(boost::bind(&Server::checkQueue,
-                                                                                                 this)));
-            if (suspendflags.getState() == SuspendFlags::ABORT) {
-                SE_LOG_DEBUG(NULL, NULL, "server idle, shutdown requested via signal => quit");
-                m_doShutdown = true;
-            } else if (m_shutdownRequested && !m_lastFileMod) {
-                SE_LOG_DEBUG(NULL, NULL, "server idle, shutdown requested, but neither via signal nor file mod => quit");
-                m_doShutdown = true;
-            } else {
-                g_main_loop_run(m_loop);
-            }
-        }
-        if (m_activeSession &&
-            m_activeSession->readyToRun()) {
-            // this session must be owned by someone, otherwise
-            // it would not be set as active session
-            boost::shared_ptr<Session> session = m_activeSessionRef.lock();
-            if (!session) {
-                throw runtime_error("internal error: session no longer available");
-            }
-            try {
-                // ensure that the session doesn't go away
-                m_syncSession.swap(session);
-                m_activeSession->run(redirect);
-            } catch (const std::exception &ex) {
-                SE_LOG_ERROR(NULL, NULL, "%s", ex.what());
-            } catch (...) {
-                SE_LOG_ERROR(NULL, NULL, "unknown error");
-            }
-            session.swap(m_syncSession);
-            dequeue(session.get());
-        }
-
-        if (!m_shutdownRequested && m_autoSync && m_autoSync->hasTask()) {
-            // if there is at least one pending task and no session is created for auto sync,
-            // pick one task and create a session
-            m_autoSync->startTask();
-        }
-        // Make sure check whether m_activeSession is owned by autosync
-        // Otherwise activeSession is owned by AutoSyncManager but it never
-        // be ready to run. Because methods of Session, like 'sync', are able to be
-        // called when it is active.
-        if (!m_shutdownRequested && m_autoSync->hasActiveSession())
-        {
-            // if the autosync is the active session, then invoke 'sync'
-            // to make it ready to run
-            m_autoSync->prepare();
-        }
+    if (!m_shutdownRequested) {
+        g_main_loop_run(m_loop);
     }
+
+    SE_LOG_DEBUG(NULL, NULL, "%s", "Exiting Server::run");
 }
 
 
@@ -451,8 +407,7 @@ boost::shared_ptr<Client> Server::findClient(const Caller_t &ID)
     return boost::shared_ptr<Client>();
 }
 
-boost::shared_ptr<Client> Server::addClient(const DBusConnectionPtr &conn,
-                                            const Caller_t &ID,
+boost::shared_ptr<Client> Server::addClient(const Caller_t &ID,
                                             const boost::shared_ptr<Watch> &watch)
 {
     boost::shared_ptr<Client> client(findClient(ID));
@@ -478,23 +433,29 @@ void Server::detach(Resource *resource)
 
 void Server::enqueue(const boost::shared_ptr<Session> &session)
 {
+    bool idle = isIdle();
+
     WorkQueue_t::iterator it = m_workQueue.end();
     while (it != m_workQueue.begin()) {
         --it;
-        if (it->lock()->getPriority() <= session->getPriority()) {
+        // skip over dead sessions, they will get cleaned up elsewhere
+        boost::shared_ptr<Session> session = it->lock();
+        if (session && session->getPriority() <= session->getPriority()) {
             ++it;
             break;
         }
     }
     m_workQueue.insert(it, session);
-
     checkQueue();
+
+    if (idle) {
+        m_idleSignal(false);
+    }
 }
 
-int Server::killSessions(const std::string &peerDeviceID)
+void Server::killSessionsAsync(const std::string &peerDeviceID,
+                               const SimpleResult &onResult)
 {
-    int count = 0;
-
     WorkQueue_t::iterator it = m_workQueue.begin();
     while (it != m_workQueue.end()) {
         boost::shared_ptr<Session> session = it->lock();
@@ -508,33 +469,29 @@ int Server::killSessions(const std::string &peerDeviceID)
                 c->shutdown();
             }
             it = m_workQueue.erase(it);
-            count++;
         } else {
             ++it;
         }
     }
 
-    if (m_activeSession &&
-        m_activeSession->getPeerDeviceID() == peerDeviceID) {
+    // Check active session. We need to wait for it to shut down cleanly.
+    boost::shared_ptr<Session> active = m_activeSessionRef.lock();
+    if (active &&
+        active->getPeerDeviceID() == peerDeviceID) {
         SE_LOG_DEBUG(NULL, NULL, "aborting active session %s because it matches deviceID %s",
-                     m_activeSession->getSessionID().c_str(),
+                     active->getSessionID().c_str(),
                      peerDeviceID.c_str());
-        try {
-            // abort, even if not necessary right now
-            m_activeSession->abort();
-        } catch (...) {
-            // TODO: catch only that exception which indicates
-            // incorrect use of the function
-        }
-        dequeue(m_activeSession);
-        count++;
+        // hand over work to session
+        active->abortAsync(onResult);
+    } else {
+        onResult.done();
     }
-
-    return count;
 }
 
 void Server::dequeue(Session *session)
 {
+    bool idle = isIdle();
+
     if (m_syncSession.get() == session) {
         // This is the running sync session.
         // It's not in the work queue and we have to
@@ -548,61 +505,71 @@ void Server::dequeue(Session *session)
         if (it->lock().get() == session) {
             // remove from queue
             m_workQueue.erase(it);
-            // session was idle, so nothing else to do
-            return;
+            break;
         }
     }
 
     if (m_activeSession == session) {
         // The session is releasing the lock, so someone else might
         // run now.
-        session->setActive(false);
         sessionChanged(session->getPath(), false);
         m_activeSession = NULL;
         m_activeSessionRef.reset();
         checkQueue();
-        return;
+    }
+
+    if (!idle && isIdle()) {
+        m_idleSignal(true);
+    }
+}
+
+void Server::addSyncSession(Session *session)
+{
+    // Only one session can run a sync, and only the active session
+    // can make itself the sync session.
+    if (m_syncSession) {
+        if (m_syncSession.get() != session) {
+            SE_THROW("already have a sync session");
+        } else {
+            return;
+        }
+    }
+    m_syncSession = m_activeSessionRef.lock();
+    m_newSyncSessionSignal(m_syncSession);
+    if (!m_syncSession) {
+        SE_THROW("session should not start a sync, all clients already detached");
+    }
+    if (m_syncSession.get() != session) {
+        m_syncSession.reset();
+        SE_THROW("inactive session asked to become sync session");
+    }
+}
+
+void Server::removeSyncSession(Session *session)
+{
+    if (session == m_syncSession.get()) {
+        // Normally the owner calls this, but if it is already gone,
+        // then do it again and thus effectively start counting from
+        // now.
+        delaySessionDestruction(m_syncSession);
+        m_syncSession.reset();
+    } else {
+        SE_LOG_DEBUG(NULL, NULL, "ignoring removeSyncSession() for session %s, it is not the sync session",
+                     session->getSessionID().c_str());
     }
 }
 
 void Server::checkQueue()
 {
-    if (m_shutdownRequested) {
-        // don't schedule new sessions, instead check whether we can shut down now
-        if (!m_activeSession && !m_doShutdown) {
-            if (SuspendFlags::getSuspendFlags().getState() == SuspendFlags::ABORT) {
-                // don't delay any further, shut down
-                SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested via signal => quit");
-                m_doShutdown = true;
-                g_main_loop_quit(m_loop);
-            } else if (!m_lastFileMod) {
-                // shutdown requested without file modifications, don't need
-                // quiesence period
-                SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested neither via signal nor file mod => quit");
-                m_doShutdown = true;
-                g_main_loop_quit(m_loop);
-            } else if (!m_shutdownTimer) {
-                Timespec now = Timespec::monotonic();
-                if (m_lastFileMod + SHUTDOWN_QUIESENCE_SECONDS <= now) {
-                    SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested, quiesence period over => quit");
-                    m_doShutdown = true;
-                    g_main_loop_quit(m_loop);
-                } else {
-                    // activate timer not set in fileModified() because there was a running session
-                    int seconds = (m_lastFileMod + SHUTDOWN_QUIESENCE_SECONDS - now).seconds();
-                    SE_LOG_DEBUG(NULL, NULL, "session done, shutdown requested, %d seconds left in quiesence period => wait",
-                                 seconds);
-                    m_shutdownTimer.activate(seconds,
-                                             boost::bind(&Server::shutdown, this));
-                }
-            }
-        }
-
+    if (m_activeSession) {
+        // still busy
         return;
     }
 
-    if (m_activeSession) {
-        // still busy
+    if (m_shutdownRequested) {
+        // Don't schedule new sessions. Instead return to Server::run().
+        SE_LOG_DEBUG(NULL, NULL, "shutting down in checkQueue(), idle and shutdown was requested");
+        g_main_loop_quit(m_loop);
         return;
     }
 
@@ -613,12 +580,8 @@ void Server::checkQueue()
             // activate the session
             m_activeSession = session.get();
             m_activeSessionRef = session;
-            session->setActive(true);
+            session->activateSession();
             sessionChanged(session->getPath(), true);
-            //if the active session is changed, give a chance to quit the main loop
-            //and make it ready to run if it is owned by AutoSyncManager.
-            //Otherwise, server might be blocked.
-            g_main_loop_quit(m_loop);
             return;
         }
     }
@@ -634,12 +597,85 @@ bool Server::sessionExpired(const boost::shared_ptr<Session> &session)
 
 void Server::delaySessionDestruction(const boost::shared_ptr<Session> &session)
 {
+    if (!session) {
+        return;
+    }
+
     SE_LOG_DEBUG(NULL, NULL, "delaying destruction of session %s by one minute",
                  session->getSessionID().c_str());
     addTimeout(boost::bind(&Server::sessionExpired,
                            session),
                60 /* 1 minute */);
 }
+
+inline void insertPair(std::map<string, string> &params,
+                       const string &key,
+                       const string &value)
+{
+    if(!value.empty()) {
+        params.insert(pair<string, string>(key, value));
+    }
+}
+
+
+boost::shared_ptr<InfoReq> Server::passwordRequest(const string &descr,
+                                                   const ConfigPasswordKey &key,
+                                                   const boost::weak_ptr<Session> &s)
+{
+    boost::shared_ptr<Session> session = s.lock();
+    if (!session) {
+        // already gone, ignore request
+        return boost::shared_ptr<InfoReq>();
+    }
+
+    std::map<string, string> params;
+    insertPair(params, "description", descr);
+    insertPair(params, "user", key.user);
+    insertPair(params, "SyncML server", key.server);
+    insertPair(params, "domain", key.domain);
+    insertPair(params, "object", key.object);
+    insertPair(params, "protocol", key.protocol);
+    insertPair(params, "authtype", key.authtype);
+    insertPair(params, "port", key.port ? StringPrintf("%u",key.port) : "");
+    boost::shared_ptr<InfoReq> req = createInfoReq("password", params, *session);
+    // Return password or failure to Session and thus the session helper.
+    req->m_responseSignal.connect(boost::bind(&Server::passwordResponse,
+                                              this,
+                                              _1,
+                                              s));
+    // Tell session about timeout.
+    req->m_timeoutSignal.connect(InfoReq::TimeoutSignal_t::slot_type(&Session::passwordResponse,
+                                                                     session.get(),
+                                                                     true,
+                                                                     false,
+                                                                     "").track(s));
+    // Request becomes obsolete when session is done.
+    session->m_doneSignal.connect(boost::bind(&Server::removeInfoReq,
+                                              this,
+                                              req->getId()));
+
+    return req;
+}
+
+void Server::passwordResponse(const InfoReq::InfoMap &response,
+                              const boost::weak_ptr<Session> &s)
+{
+    boost::shared_ptr<Session> session = s.lock();
+    if (!session) {
+        // already gone, ignore request
+        return;
+    }
+
+    InfoReq::InfoMap::const_iterator it = response.find("password");
+    if (it == response.end()) {
+        // no password provided, user wants to abort
+        session->passwordResponse(false, true, "");
+    } else {
+        // password provided, might be empty
+        session->passwordResponse(false, false, it->second);
+    }
+}
+
 
 bool Server::callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost::function<bool ()> &callback)
 {
@@ -652,7 +688,7 @@ bool Server::callTimeout(const boost::shared_ptr<Timeout> &timeout, const boost:
 }
 
 void Server::addTimeout(const boost::function<bool ()> &callback,
-                            int seconds)
+                        int seconds)
 {
     boost::shared_ptr<Timeout> timeout(new Timeout);
     m_timeouts.push_back(timeout);
@@ -666,25 +702,33 @@ void Server::addTimeout(const boost::function<bool ()> &callback,
 }
 
 void Server::infoResponse(const Caller_t &caller,
-                              const std::string &id,
-                              const std::string &state,
-                              const std::map<string, string> &response)
+                          const std::string &id,
+                          const std::string &state,
+                          const std::map<string, string> &response)
 {
     InfoReqMap::iterator it = m_infoReqMap.find(id);
     // if not found, ignore
     if (it != m_infoReqMap.end()) {
-        boost::shared_ptr<InfoReq> infoReq = it->second.lock();
-        infoReq->setResponse(caller, state, response);
+        const boost::shared_ptr<InfoReq> infoReq = it->second.lock();
+        if (infoReq) {
+            infoReq->setResponse(caller, state, response);
+        }
     }
 }
 
 boost::shared_ptr<InfoReq> Server::createInfoReq(const string &type,
                                                  const std::map<string, string> &parameters,
-                                                 const Session *session)
+                                                 const Session &session)
 {
-    boost::shared_ptr<InfoReq> infoReq(new InfoReq(*this, type, parameters, session));
-    boost::weak_ptr<InfoReq> item(infoReq) ;
-    m_infoReqMap.insert(pair<string, boost::weak_ptr<InfoReq> >(infoReq->getId(), item));
+    boost::shared_ptr<InfoReq> infoReq(new InfoReq(*this, type, parameters, session.getPath()));
+    m_infoReqMap.insert(std::make_pair(infoReq->getId(), infoReq));
+    // will be removed automatically
+    infoReq->m_responseSignal.connect(boost::bind(&Server::removeInfoReq,
+                                                  this,
+                                                  infoReq->getId()));
+    infoReq->m_timeoutSignal.connect(boost::bind(&Server::removeInfoReq,
+                                                 this,
+                                                 infoReq->getId()));
     return infoReq;
 }
 
@@ -703,18 +747,16 @@ void Server::emitInfoReq(const InfoReq &req)
                 req.getParam());
 }
 
-void Server::removeInfoReq(const InfoReq &req)
+void Server::removeInfoReq(const std::string &id)
 {
     // remove InfoRequest from hash map
-    InfoReqMap::iterator it = m_infoReqMap.find(req.getId());
-    if (it != m_infoReqMap.end()) {
-        m_infoReqMap.erase(it);
-    }
+    m_infoReqMap.erase(id);
 }
 
 void Server::getDeviceList(SyncConfig::DeviceList &devices)
 {
     //wait bluez or other device managers
+    // TODO: make this asynchronous?!
     while(!m_bluezManager->isDone()) {
         g_main_loop_run(m_loop);
     }
@@ -818,11 +860,7 @@ void Server::messagev(Level level,
     // for general server output, the object path field is dbus server
     // the object path can't be empty for object paths prevent using empty string.
     string strLevel = Logger::levelToStr(level);
-    if(m_activeSession) {
-        logOutput(m_activeSession->getPath(), strLevel, log);
-    } else {
-        logOutput(getPath(), strLevel, log);
-    }
+    logOutput(getPath(), strLevel, log);
 }
 
 SE_END_CXX

@@ -485,7 +485,7 @@ class DBusUtil(Timeout):
             while self.isServerRunning():
                 newsize = os.path.getsize(syncevolog)
                 if newsize != size:
-                    if "syncevo-dbus-server: ready to run" in open(syncevolog).read():
+                    if "] ready to run\n" in open(syncevolog).read():
                         break
                 size = newsize
                 time.sleep(1)
@@ -1292,6 +1292,8 @@ class TestNamedConfig(unittest.TestCase, DBusUtil):
 
 class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     """Tests Presence signal and checkPresence API"""
+
+    # TODO: check auto sync + presence combination
 
     # Our fake ConnMan implementation must be present on the
     # bus also outside of tests, because syncevo-dbus-server
@@ -2658,8 +2660,10 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         if percentage > 20:
             if self.operation == "abort":
                 self.session.Abort()
+                self.operation = "aborted"
             if self.operation == "suspend":
                 self.session.Suspend()
+                self.operation = "suspended"
 
     @timeout(300)
     def testSync(self):
@@ -2775,6 +2779,12 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.config[""]["remoteDeviceId"] = deviceId
         self.session.SetConfig(False, False, self.config, utf8_strings=True)
         self.session.Detach()
+        # SyncEvolution <= 1.2.2 delayed the "Session.StatusChanged"
+        # "done" signal. The correct behavior is to send that
+        # important change right away.
+        loop.run()
+        self.assertEqual(DBusUtil.quit_events, ["session done"])
+        DBusUtil.quit_events = []
 
     def run(self, result):
         self.runTest(result, own_xdg=True)
@@ -2842,7 +2852,9 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertEqual(len(sessions), 1)
         # transport failure, only addressbook active and later aborted
         self.assertEqual(sessions[0]["status"], "20043")
-        self.assertEqual(sessions[0]["error"], "D-Bus peer has disconnected")
+        # Exact error string doesn't matter much, it is mostly internal.
+        if sessions[0]["error"] != "D-Bus peer has disconnected": # old error
+            self.assertEqual(sessions[0]["error"], "transport problem: send() on connection which is not ready")
         self.assertEqual(sessions[0]["source-addressbook-status"], "20017")
         # The other three sources are disabled and should not be listed in the
         # report. Used to be listed with status 0 in the past, which would also
@@ -2972,14 +2984,19 @@ class TestConnection(unittest.TestCase, DBusUtil):
         connection2.Process(message1_clientB, 'application/vnd.syncml+xml')
         conpath3, connection3 = self.getConnection()
         connection3.Process(message1_clientB, 'application/vnd.syncml+xml')
+        # Queueing session for connection2 done now.
         loop.run()
-        self.assertEqual(DBusUtil.quit_events, [ "connection " + conpath2 + " aborted" ])
+        loop.run()
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath2 + " aborted",
+                                                "session done"])
         DBusUtil.quit_events = []
 
         # now quit for good
         connection3.Close(False, 'good bye client B')
         loop.run()
-        self.assertEqual(DBusUtil.quit_events, [ "connection " + conpath3 + " aborted" ])
+        loop.run()
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath3 + " aborted",
+                                                "session done"])
         DBusUtil.quit_events = []
         connection.Close(False, 'good bye client A')
         loop.run()

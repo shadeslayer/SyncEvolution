@@ -22,13 +22,15 @@
 
 #include <string>
 
-#include "timer.h"
 #include "gdbus-cxx-bridge.h"
+#include "timeout.h"
 
+#include <boost/signals2.hpp>
+
+#include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 class Server;
-class Session;
 
 /**
  * A wrapper for handling info request and response.
@@ -52,38 +54,38 @@ public:
     InfoReq(Server &server,
             const std::string &type,
             const InfoMap &parameters,
-            const Session *session,
+            const std::string &sessionPath,
             uint32_t timeout = 120);
 
     ~InfoReq();
 
-    /**
-     * check whether the request is ready. Also give an opportunity
-     * to poll the sources and then check the response is ready
-     * @return the state of the request
-     */
-    Status check();
+    std::string getId() const { return m_id; }
+    std::string getSessionPath() const;
+    std::string getInfoStateStr() const { return infoStateToString(m_infoState); }
+    std::string getHandler() const { return m_handler; }
+    std::string getType() const { return m_type; }
+    const InfoMap& getParam() const { return m_param; }
 
     /**
-     * wait the response until timeout, abort or suspend. It may be blocked.
-     * The response is returned though the parameter 'response' when the Status is
-     * 'ST_OK'. Otherwise, corresponding statuses are returned.
-     * @param response the received response if gotten
-     * @param interval the interval to check abort, suspend and timeout, in seconds
-     * @return the current status
+     * Connect to this signal to be notified that a final response has
+     * been received.
      */
-    Status wait(InfoMap &response, uint32_t interval = 3);
+    typedef boost::signals2::signal<void (const InfoMap &)> ResponseSignal_t;
+    ResponseSignal_t m_responseSignal;
 
     /**
-     * get response when it is ready. If false, nothing will be set in response
+     * Connect to this signal to be notified when it is considered timed out.
+     * The timeout counting restarts each time any client sends any kind of
+     * response.
      */
-    bool getResponse(InfoMap &response);
-
-    /** cancel the request. If request is done, cancel won't do anything */
-    void cancel();
+    typedef boost::signals2::signal<void ()> TimeoutSignal_t;
+    TimeoutSignal_t m_timeoutSignal;
 
     /** get current status in string format */
     std::string getStatusStr() const { return statusToString(m_status); }
+
+    /** set response from dbus clients */
+    void setResponse(const GDBusCXX::Caller_t &caller, const std::string &state, const InfoMap &response);
 
 private:
     static std::string statusToString(Status status);
@@ -96,34 +98,17 @@ private:
 
     static std::string infoStateToString(InfoState state);
 
-    /** callback for the timemout source */
-    static gboolean checkCallback(gpointer data);
-
-    /** check whether the request is timeout */
-    bool checkTimeout();
-
-    friend class Server;
-
-    /** set response from dbus clients */
-void setResponse(const GDBusCXX::Caller_t &caller, const std::string &state, const InfoMap &response);
-
-    /** send 'done' state if needed */
-    void done();
-
-    std::string getId() const { return m_id; }
-    std::string getSessionPath() const;
-    std::string getInfoStateStr() const { return infoStateToString(m_infoState); }
-    std::string getHandler() const { return m_handler; }
-    std::string getType() const { return m_type; }
-    const InfoMap& getParam() const { return m_param; }
-
     Server &m_server;
 
     /** caller's session, might be NULL */
-    const Session *m_session;
+    const std::string m_sessionPath;
 
     /** unique id of this info request */
     std::string m_id;
+
+    /** times out this amount of seconds after last interaction with client */
+    uint32_t m_timeoutSeconds;
+    Timeout m_timeout;
 
     /** info req state defined in dbus api */
     InfoState m_infoState;
@@ -143,11 +128,7 @@ void setResponse(const GDBusCXX::Caller_t &caller, const std::string &state, con
     /** response returned from dbus clients */
     InfoMap m_response;
 
-    /** default timeout is 120 seconds */
-    uint32_t m_timeout;
-
-    /** a timer */
-    Timer m_timer;
+    void done();
 };
 
 SE_END_CXX

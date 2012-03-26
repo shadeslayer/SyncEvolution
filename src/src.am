@@ -182,6 +182,7 @@ src_syncevo_local_sync_DEPENDENCIES = $(builddir)/$(gdbus_build_dir)/libgdbussyn
 # Do the linking here, as with all SyncEvolution executables.
 # Sources are compiled in dbus/server.
 if COND_DBUS
+# DBus Server
 libexec_PROGRAMS += src/syncevo-dbus-server
 
 src_syncevo_dbus_server_SOURCES = \
@@ -192,10 +193,25 @@ endif
 
 src_syncevo_dbus_server_LDADD = $(builddir)/src/dbus/server/libsyncevodbusserver.la $(gdbus_build_dir)/libgdbussyncevo.la $(CORE_LDADD) $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(DBUS_LIBS)
 src_syncevo_dbus_server_CPPFLAGS = -DHAVE_CONFIG_H -I$(gdbus_dir) $(src_cppflags) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
-src_syncevo_dbus_server_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(SYNCEVO_WFLAGS)
-src_syncevo_dbus_server_LDFLAGS = $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(LIBSOUP_LIBS)
+src_syncevo_dbus_server_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(SYNCEVO_WFLAGS)
+src_syncevo_dbus_server_LDFLAGS = $(PCRECPP_LIBS) $(CORE_LD_FLAGS)
 src_syncevo_dbus_server_DEPENDENCIES = $(builddir)/src/dbus/server/libsyncevodbusserver.la $(gdbus_build_dir)/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+
+# syncevo-dbus-server's helper binary
+libexec_PROGRAMS += src/syncevo-dbus-helper
+
+if ENABLE_UNIT_TESTS
+nodist_src_syncevo_dbus_helper_SOURCES = test/test.cpp
 endif
+src_syncevo_dbus_helper_SOURCES = \
+  $(CORE_SOURCES)
+
+src_syncevo_dbus_helper_LDADD = $(builddir)/src/dbus/server/libsyncevodbushelper.la $(gdbus_build_dir)/libgdbussyncevo.la $(CORE_LDADD) $(DBUS_LIBS)
+src_syncevo_dbus_helper_CPPFLAGS = -DHAVE_CONFIG_H -I$(gdbus_dir) $(src_cppflags) -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\"
+src_syncevo_dbus_helper_CXXFLAGS = $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(SYNCEVO_WFLAGS)
+src_syncevo_dbus_helper_LDFLAGS = $(PCRECPP_LIBS) $(CORE_LD_FLAGS)
+src_syncevo_dbus_helper_DEPENDENCIES = $(builddir)/src/dbus/server/libsyncevodbushelper.la $(gdbus_build_dir)/libgdbussyncevo.la $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(SYNTHESIS_DEP)
+endif # COND_DBUS
 
 # With --disable-shared autotools links against libfunambol.a which does not
 # pull any of the test suites into the test binary, so they would not be

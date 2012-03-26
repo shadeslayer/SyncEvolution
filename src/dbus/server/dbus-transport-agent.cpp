@@ -18,161 +18,154 @@
  */
 
 #include "dbus-transport-agent.h"
-#include "connection.h"
+#include "session-helper.h"
 
 SE_BEGIN_CXX
 
-DBusTransportAgent::DBusTransportAgent(GMainLoop *loop,
-                                       Session &session,
-                                       boost::weak_ptr<Connection> connection) :
-    m_loop(loop),
-    m_session(session),
-    m_connection(connection),
-    m_timeoutSeconds(0),
-    m_eventTriggered(false),
-    m_waiting(false)
+DBusTransportAgent::DBusTransportAgent(SessionHelper &helper) :
+    m_helper(helper),
+    m_state(SessionCommon::SETUP)
 {
 }
 
-DBusTransportAgent::~DBusTransportAgent()
+void DBusTransportAgent::serverAlerted()
 {
-    boost::shared_ptr<Connection> connection = m_connection.lock();
-    if (connection) {
-        connection->shutdown();
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: server alerted (old state: %s, %s)",
+                 SessionCommon::ConnectionStateToString(m_state).c_str(),
+                 m_error.c_str());
+    if (m_state == SessionCommon::SETUP) {
+        m_state = SessionCommon::PROCESSING;
+    } else {
+        SE_THROW_EXCEPTION(TransportException,
+                           "setting 'server alerted' only allowed during setup");
+    }
+}
+
+void DBusTransportAgent::storeMessage(const GDBusCXX::DBusArray<uint8_t> &buffer,
+                                      const std::string &type)
+{
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: store incoming message, %ld bytes, %s (old state: %s, %s)",
+                 (long)buffer.first,
+                 type.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str(),
+                 m_error.c_str());
+    if (m_state == SessionCommon::SETUP ||
+        m_state == SessionCommon::WAITING) {
+        m_incomingMsg = SharedBuffer(reinterpret_cast<const char *>(buffer.second), buffer.first);
+        m_incomingMsgType = type;
+        m_state = SessionCommon::PROCESSING;
+    } else if (m_state == SessionCommon::PROCESSING &&
+               m_incomingMsgType == type &&
+               m_incomingMsg.size() == buffer.first &&
+               !memcmp(m_incomingMsg.get(), buffer.second, buffer.first)) {
+        // Exactly the same message, accept resend without error, and
+        // without doing anything.
+    } else {
+        SE_THROW_EXCEPTION(TransportException,
+                           "unexpected message");
+    }
+}
+
+void DBusTransportAgent::storeState(const std::string &error)
+{
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: got error '%s', current error is '%s', state %s",
+                 error.c_str(), m_error.c_str(), SessionCommon::ConnectionStateToString(m_state).c_str());
+
+    if (!error.empty()) {
+        // specific error encountered
+        m_state = SessionCommon::FAILED;
+        if (m_error.empty()) {
+            m_error = error;
+        }
+    } else if (m_state == SessionCommon::FINAL) {
+        // expected loss of connection
+        m_state = SessionCommon::DONE;
+    } else {
+        // unexpected loss of connection
+        m_state = SessionCommon::FAILED;
     }
 }
 
 void DBusTransportAgent::send(const char *data, size_t len)
 {
-    boost::shared_ptr<Connection> connection = m_connection.lock();
-
-    if (!connection) {
-        SE_THROW_EXCEPTION(TransportException,
-                           "D-Bus peer has disconnected");
-    }
-
-    if (connection->m_state != Connection::PROCESSING) {
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: outgoing message %ld bytes, %s, %s",
+                 (long)len, m_type.c_str(), m_url.c_str());
+    if (m_state != SessionCommon::PROCESSING) {
         SE_THROW_EXCEPTION(TransportException,
                            "cannot send to our D-Bus peer");
     }
-
-    // Change state in advance. If we fail while replying, then all
-    // further resends will fail with the error above.
-    connection->m_state = Connection::WAITING;
-    connection->m_incomingMsg = SharedBuffer();
-
-    if (m_timeoutSeconds) {
-        m_eventSource = g_timeout_add_seconds(m_timeoutSeconds, timeoutCallback, static_cast<gpointer>(this));
-    }
-    m_eventTriggered = false;
-
-    // TODO: turn D-Bus exceptions into transport exceptions
-    StringMap meta;
-    meta["URL"] = m_url;
-    connection->reply(GDBusCXX::makeDBusArray(len, reinterpret_cast<const uint8_t *>(data)),
-                      m_type, meta, false, connection->m_sessionID);
+    m_state = SessionCommon::WAITING;
+    m_incomingMsg = SharedBuffer();
+    m_helper.emitMessage(GDBusCXX::DBusArray<uint8_t>(len, reinterpret_cast<const uint8_t *>(data)),
+                         m_type,
+                         m_url);
 }
 
 void DBusTransportAgent::shutdown()
 {
-    boost::shared_ptr<Connection> connection = m_connection.lock();
-
-    if (!connection) {
-        SE_THROW_EXCEPTION(TransportException,
-                           "D-Bus peer has disconnected");
-    }
-
-    if (connection->m_state != Connection::FAILED) {
-        // send final, empty message and wait for close
-        connection->m_state = Connection::FINAL;
-        connection->reply(GDBusCXX::DBusArray<uint8_t>(0, 0),
-                          "", StringMap(),
-                          true, connection->m_sessionID);
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: shut down (old state: %s, %s)",
+                 SessionCommon::ConnectionStateToString(m_state).c_str(),
+                 m_error.c_str());
+    if (m_state != SessionCommon::FAILED) {
+        m_state = SessionCommon::FINAL;
+        m_helper.emitShutdown();
     }
 }
 
-gboolean DBusTransportAgent::timeoutCallback(gpointer transport)
+void DBusTransportAgent::doWait()
 {
-    DBusTransportAgent *me = static_cast<DBusTransportAgent *>(transport);
-    me->m_eventTriggered = true;
-    if (me->m_waiting) {
-        g_main_loop_quit(me->m_loop);
-    }
-    return false;
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: wait - old state: %s, %s",
+                 SessionCommon::ConnectionStateToString(m_state).c_str(),
+                 m_error.c_str());
+    // Block for one iteration. Both D-Bus calls and signals (thanks
+    // to the SuspendFlags guard in the running sync session) will
+    // wake us up.
+    g_main_context_iteration(NULL, true);
+
+    SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: wait - new state: %s, %s",
+                 SessionCommon::ConnectionStateToString(m_state).c_str(),
+                 m_error.c_str());
 }
 
-void DBusTransportAgent::doWait(boost::shared_ptr<Connection> &connection)
-{
-    // let Connection wake us up when it has a reply or
-    // when it closes down
-    connection->m_loop = m_loop;
-
-    // release our reference so that the Connection instance can
-    // be destructed when requested by the D-Bus peer
-    connection.reset();
-
-    // now wait
-    m_waiting = true;
-    g_main_loop_run(m_loop);
-    m_waiting = false;
-}
 
 DBusTransportAgent::Status DBusTransportAgent::wait(bool noReply)
 {
-    boost::shared_ptr<Connection> connection = m_connection.lock();
-
-    if (!connection) {
-        SE_THROW_EXCEPTION(TransportException,
-                           "D-Bus peer has disconnected");
-    }
-
-    switch (connection->m_state) {
-    case Connection::PROCESSING:
-        m_incomingMsg = connection->m_incomingMsg;
-        m_incomingMsgType = connection->m_incomingMsgType;
+    switch (m_state) {
+    case SessionCommon::PROCESSING:
         return GOT_REPLY;
         break;
-    case Connection::FINAL:
-        if (m_eventTriggered) {
-            return TIME_OUT;
-        }
-        doWait(connection);
+    case SessionCommon::FINAL:
+        doWait();
 
         // if the connection is still available, then keep waiting
-        connection = m_connection.lock();
-        if (connection) {
+        if (m_state == SessionCommon::FINAL) {
             return ACTIVE;
-        } else if (m_session.getStubConnectionError().empty()) {
+        } else if (m_error.empty()) {
             return INACTIVE;
         } else {
-            SE_THROW_EXCEPTION(TransportException, m_session.getStubConnectionError());
+            SE_THROW_EXCEPTION(TransportException, m_error);
             return FAILED;
         }
         break;
-    case Connection::WAITING:
+    case SessionCommon::WAITING:
         if (noReply) {
             // message is sent as far as we know, so return
             return INACTIVE;
         }
-
-        if (m_eventTriggered) {
-            return TIME_OUT;
-        }
-        doWait(connection);
+        doWait();
 
         // tell caller to check again
         return ACTIVE;
         break;
-    case Connection::DONE:
+    case SessionCommon::DONE:
         if (!noReply) {
             SE_THROW_EXCEPTION(TransportException,
                                "internal error: transport has shut down, can no longer receive reply");
         }
-
         return CLOSED;
     default:
         SE_THROW_EXCEPTION(TransportException,
-                           "internal error: send() on connection which is not ready");
+                           "send() on connection which is not ready");
         break;
     }
 

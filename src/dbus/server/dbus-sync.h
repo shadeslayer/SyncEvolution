@@ -20,26 +20,49 @@
 #ifndef DBUS_SYNC_H
 #define DBUS_SYNC_H
 
-#include "dbus-user-interface.h"
+#include "session-common.h"
+
 #include <syncevo/SyncContext.h>
+#include <syncevo/UserInterface.h>
+#include <syncevo/SuspendFlags.h>
+
+#include <boost/signals2.hpp>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-class Session;
+class SessionHelper;
+
+namespace SessionCommon {
+    struct SyncParams;
+}
 
 /**
- * A running sync engine which keeps answering on D-Bus whenever
- * possible and updates the Session while the sync runs.
+ * Maps sync events to D-Bus signals in SessionHelper.
+ * Does password requests by sending out a request for
+ * them via SessionHelper and waiting until a reply (positive
+ * or negative) is received.
  */
-class DBusSync : public SyncContext, private DBusUserInterface
+class DBusSync : public SyncContext, private UserInterface
 {
-    Session &m_session;
+    SessionHelper &m_helper;
+    SessionCommon::SyncParams m_params;
+    bool m_waiting;
+    boost::function<void (const std::string &)> m_passwordSuccess;
+    boost::function<void ()> m_passwordFailure;
+    std::string m_passwordDescr;
+    boost::signals2::connection m_parentWatch;
+    boost::signals2::connection m_suspendFlagsWatch;
+
+    void suspendFlagsChanged(SuspendFlags &flags);
 
 public:
-    DBusSync(const std::string &config,
-             Session &session);
-    ~DBusSync() {}
+    DBusSync(const SessionCommon::SyncParams &params,
+             SessionHelper &helper);
+    ~DBusSync();
+
+    /** to be called by SessionHelper when it gets a response via D-Bus */
+    void passwordResponse(bool timedOut, bool aborted, const std::string &password);
 
 protected:
     virtual boost::shared_ptr<TransportAgent> createTransportAgent();
@@ -48,21 +71,17 @@ protected:
     virtual void displaySourceProgress(sysync::TProgressEventEnum type,
                                        SyncSource &source,
                                        int32_t extra1, int32_t extra2, int32_t extra3);
-
     virtual void reportStepCmd(sysync::uInt16 stepCmd);
-
-    /** called when a sync is successfully started */
     virtual void syncSuccessStart();
-
-    virtual int sleep(int intervals);
-
-    /**
-     * Implement askPassword to retrieve password in gnome-keyring.
-     * If not found, then ask it from dbus clients.
-     */
     string askPassword(const string &passwordName,
                        const string &descr,
                        const ConfigPasswordKey &key);
+    virtual void askPasswordAsync(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key,
+                                  const boost::function<void (const std::string &)> &success,
+                                  const boost::function<void ()> &failureException);
+
+    virtual bool savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key);
+    virtual void readStdin(std::string &content);
 };
 
 SE_END_CXX

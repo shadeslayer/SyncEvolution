@@ -102,13 +102,6 @@ void PresenceStatus::updatePresenceStatus (bool newStatus, PresenceStatus::Trans
 void PresenceStatus::updatePresenceStatus (bool httpPresence, bool btPresence) {
     bool httpChanged = (m_httpPresence != httpPresence);
     bool btChanged = (m_btPresence != btPresence);
-    if(httpChanged) {
-        m_httpTimer.reset();
-    }
-    if(btChanged) {
-        m_btTimer.reset();
-    }
-
     if (m_initiated && !httpChanged && !btChanged) {
         //nothing changed
         return;
@@ -123,6 +116,13 @@ void PresenceStatus::updatePresenceStatus (bool httpPresence, bool btPresence) {
     // switch to new status
     m_httpPresence = httpPresence;
     m_btPresence = btPresence;
+    if (httpChanged) {
+        m_httpPresenceSignal(httpPresence);
+    }
+    if (btChanged) {
+        m_btPresenceSignal(btPresence);
+    }
+
 
     //iterate all configured peers and fire singals
     BOOST_FOREACH (StatusPair &peer, m_peers) {
