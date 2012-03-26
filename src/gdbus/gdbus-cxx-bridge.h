@@ -889,7 +889,7 @@ class DBusObjectHelper : public DBusObject
     }
     static void interfaceCallback(void *userData) {
         DBusObjectHelper* helper = static_cast<DBusObjectHelper*>(userData);
-        if(!helper->m_callback.empty()) {
+        if (helper->m_callback) {
             helper->m_callback();
         }
     }
@@ -3985,7 +3985,9 @@ struct VoidTraits : public TraitsBase<boost::function<void (const std::string &)
     static void handleMessage(DBusMessagePtr &/*reply*/, base::CallbackData *data, const std::string &error)
     {
         //unmarshal the return results and call user callback
-        (data->m_callback)(error);
+        if (data->m_callback) {
+            data->m_callback(error);
+        }
     }
 };
 
@@ -4012,7 +4014,9 @@ struct Ret1Traits : public TraitsBase<boost::function<void (const R1 &, const st
         }
 
         //unmarshal the return results and call user callback
-        (data->m_callback)(r, error);
+        if (data->m_callback) {
+            data->m_callback(r, error);
+        }
     }
 };
 
@@ -4040,7 +4044,9 @@ struct Ret2Traits : public TraitsBase<boost::function<void (const R1 &, const R2
         }
 
         //unmarshal the return results and call user callback
-        (data->m_callback)(r1, r2, error);
+        if (data->m_callback) {
+            data->m_callback(r1, r2, error);
+        }
     }
 };
 
@@ -4069,7 +4075,9 @@ struct Ret3Traits : public TraitsBase<boost::function<void (const R1 &, const R2
         }
 
         //unmarshal the return results and call user callback
-        (data->m_callback)(r1, r2, r3, error);
+        if (data->m_callback) {
+            data->m_callback(r1, r2, r3, error);
+        }
     }
 };
 
