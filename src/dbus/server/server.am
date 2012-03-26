@@ -46,9 +46,9 @@ src_dbus_server_libsyncevodbusserver_la_SOURCES = \
 
 dist_pkgdata_DATA += src/dbus/server/bluetooth_products.ini
 
-src_dbus_server_libsyncevodbusserver_la_LIBADD = $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(DBUS_LIBS) $(LIBSOUP_LIBS)
+src_dbus_server_libsyncevodbusserver_la_LIBADD = $(LIBNOTIFY_LIBS) $(MLITE_LIBS) $(DBUS_LIBS)
 src_dbus_server_libsyncevodbusserver_la_CPPFLAGS = -DHAVE_CONFIG_H -DSYNCEVOLUTION_LOCALEDIR=\"${SYNCEVOLUTION_LOCALEDIR}\" -I$(top_srcdir)/src -I$(top_srcdir)/test -I$(top_srcdir) -I$(gdbus_dir) $(BACKEND_CPPFLAGS)
-src_dbus_server_libsyncevodbusserver_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(SYNTHESIS_CFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBSOUP_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(SYNCEVO_WFLAGS)
+src_dbus_server_libsyncevodbusserver_la_CXXFLAGS = $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(SYNTHESIS_CFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) $(LIBNOTIFY_CFLAGS) $(MLITE_CFLAGS) $(SYNCEVO_WFLAGS)
 
 # Deal with .service, .desktop and startup script files.
 CLEANFILES += \
