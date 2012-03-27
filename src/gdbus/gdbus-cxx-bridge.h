@@ -1583,6 +1583,27 @@ template<class K, class M> struct dbus_struct_traits : public dbus_traits_base
 };
 
 /**
+ * a helper class which implements dbus_traits for an enum,
+ * parameterize it with the enum type and an integer type
+ * large enough to hold all valid enum values
+ */
+template<class E, class I> struct dbus_enum_traits : public dbus_traits<I>
+{
+    typedef E host_type;
+    typedef E arg_type;
+
+    // cast from enum to int in append() is implicit; in
+    // get() we have to make it explicit
+    static void get(DBusConnection *conn, DBusMessage *msg,
+                    DBusMessageIter &iter, host_type &val)
+    {
+        I ival;
+        dbus_traits<I>::get(conn, msg, iter, ival);
+        val = static_cast<E>(ival);
+    }
+};
+
+/**
  * special case const reference parameter:
  * treat like pass-by-value input argument
  *
