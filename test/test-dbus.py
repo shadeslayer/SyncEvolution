@@ -2365,8 +2365,8 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
         # wait for start and end of auto-sync session
         loop.run()
+        start1 = time.time()
         loop.run()
-        end = time.time()
         self.assertEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
                                                 "session " + self.auto_sync_session_path + " done"])
         DBusUtil.quit_events = []
@@ -2388,12 +2388,12 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
 
         # check that interval between auto-sync sessions is right
         loop.run()
-        start = time.time()
+        start2 = time.time()
         loop.run()
         self.assertEqual(DBusUtil.quit_events, ["session " + self.auto_sync_session_path + " ready",
                                                 "session " + self.auto_sync_session_path + " done"])
         self.assertNotEqual(first_auto, self.auto_sync_session_path)
-        delta = start - end
+        delta = start2 - start1
         # avoid timing checks when running under valgrind
         if not usingValgrind():
             self.assertTrue(delta < 13)
