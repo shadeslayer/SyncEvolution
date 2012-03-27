@@ -91,9 +91,6 @@ class SuspendFlags
      */
     boost::shared_ptr<Guard> activate();
 
-    /** free file descriptors, restore signal handlers */
-    void deactivate();
-
     /**
      * Retrieve state changes pushed into pipe by signal
      * handler and write user-visible messages for them.
@@ -141,6 +138,9 @@ class SuspendFlags
  private:
     SuspendFlags();
     ~SuspendFlags();
+
+    /** free file descriptors, restore signal handlers */
+    void deactivate();
 
     /** state as observed by signal handler */
     State m_state;
