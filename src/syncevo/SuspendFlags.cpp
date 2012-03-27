@@ -47,8 +47,12 @@ SuspendFlags::~SuspendFlags()
 
 SuspendFlags &SuspendFlags::getSuspendFlags()
 {
-    static SuspendFlags flags;
-    return flags;
+    // never free the instance, other singletons might depend on it
+    static SuspendFlags *flags;
+    if (!flags) {
+        flags = new SuspendFlags;
+    }
+    return *flags;
 }
 
 static gboolean SignalChannelReadyCB(GIOChannel *source,
