@@ -187,10 +187,13 @@ void SuspendFlags::deactivate()
     if (m_receiverFD >= 0) {
         sigaction(SIGTERM, &m_oldSigTerm, NULL);
         sigaction(SIGINT, &m_oldSigInt, NULL);
+        SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: close m_receiverFD %d", m_receiverFD);
         close(m_receiverFD);
+        SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: close m_senderFD %d", m_senderFD);
         close(m_senderFD);
         m_receiverFD = -1;
         m_senderFD = -1;
+        SE_LOG_DEBUG(NULL, NULL, "SuspendFlags: done with deactivation");
     }
 }
 
