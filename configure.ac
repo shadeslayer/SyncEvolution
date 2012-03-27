@@ -492,17 +492,15 @@ if test $enable_dbus_service = "yes"; then
     if test -z "$XSLT"; then
        AC_MSG_ERROR([xsltproc not found, is required for D-Bus service])
     fi
-    # Recent libnotify releases work with gtk+-2.0 and gtk+-3.0. We
-    # pick gtk+-2.0 here, to be compatible with old libnotify releases
-    # which had that hard-cored
+    # Recent libnotify releases work with gtk+-2.0 and gtk+-3.0.
     AC_ARG_ENABLE([notify],
         AS_HELP_STRING([--enable-notify],
                        [send notifications for automatic sync events, using libnotify]),
         enable_notify="$enableval",
-        PKG_CHECK_EXISTS([libnotify gtk+-2.0],
+        PKG_CHECK_EXISTS([libnotify $gtk_version],
                          [enable_notify="yes"],
                          [enable_notify="no"]))
-    AS_IF([test "x$enable_notify" = "xyes"], [PKG_CHECK_MODULES([LIBNOTIFY], [libnotify gtk+-2.0])]
+    AS_IF([test "x$enable_notify" = "xyes"], [PKG_CHECK_MODULES([LIBNOTIFY], [libnotify $gtk_version])]
                                              [AC_DEFINE(HAS_NOTIFY, 1,
                                                         [define if libnotify could be used in dbus service])])
 
