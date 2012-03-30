@@ -2725,7 +2725,7 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
         self.runTest(result, own_xdg=True)
 
     def testSyncNoConfig(self):
-        """testDBusSyncError.testSyncNoConfig - Executes a real sync with no corresponding config."""
+        """TestDBusSyncError.testSyncNoConfig - Executes a real sync with no corresponding config."""
         self.setUpListeners(self.sessionpath)
         self.session.Sync("", {})
         loop.run()
