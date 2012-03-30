@@ -3363,14 +3363,18 @@ END:VCARD''')
         self.assertEqual(self.lastState, "done")
         self.checkSync()
 
-    @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=5")
+    # Killing the syncevo-dbus-helper before it even starts (SYNCEVOLUTION_LOCAL_CHILD_DELAY=5)
+    # is possible, but leads to ugly valgrind warnings about "possibly lost" memory because
+    # SIGTERM really kills the process right away. Better wait until syncing really has started
+    # in the helper (SYNCEVOLUTION_SYNC_DELAY=5). The test is more realistic that way, too.
+    @property("ENV", usingValgrind() and "SYNCEVOLUTION_SYNC_DELAY=55" or "SYNCEVOLUTION_SYNC_DELAY=5")
     @timeout(100)
     def testConcurrency(self):
         """TestLocalSync.testConcurrency - D-Bus server must remain responsive while sync runs"""
         self.setUpConfigs()
         self.setUpListeners(self.sessionpath)
         self.session.Sync("slow", {})
-        time.sleep(2)
+        time.sleep(usingValgrind() and 30 or 3)
         status, error, sources = self.session.GetStatus(utf8_strings=True)
         self.assertEqual(status, "running")
         self.assertEqual(error, 0)
