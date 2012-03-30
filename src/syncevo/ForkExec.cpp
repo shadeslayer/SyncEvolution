@@ -224,6 +224,11 @@ void ForkExecParent::addEnvVar(const std::string &name, const std::string &value
 
 void ForkExecParent::stop(int signal)
 {
+    if (!m_childPid || m_hasQuit) {
+        // not running, nop
+        return;
+    }
+
     SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with signal %d (%s %s)",
                  m_helper.c_str(),
                  signal,
@@ -244,6 +249,11 @@ void ForkExecParent::stop(int signal)
 
 void ForkExecParent::kill()
 {
+    if (!m_childPid || m_hasQuit) {
+        // not running, nop
+        return;
+    }
+
     SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with SIGKILL",
                  m_helper.c_str());
     ::kill(m_childPid, SIGKILL);
