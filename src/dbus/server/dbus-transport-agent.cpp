@@ -106,7 +106,7 @@ void DBusTransportAgent::shutdown()
     SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: shut down (old state: %s, %s)",
                  SessionCommon::ConnectionStateToString(m_state).c_str(),
                  m_error.c_str());
-    if (m_state != SessionCommon::FAILED) {
+    if (m_state == SessionCommon::PROCESSING) {
         m_state = SessionCommon::FINAL;
         m_helper.emitShutdown();
     }

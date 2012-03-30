@@ -31,7 +31,10 @@ SE_BEGIN_CXX
 
 void Connection::failed(const std::string &reason)
 {
-    SE_LOG_DEBUG(NULL, NULL, "connection failed: %s", reason.c_str());
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: failed: %s (old state %s)",
+                 m_sessionID.c_str(),
+                 reason.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
     if (m_failure.empty()) {
         m_failure = reason;
         if (m_session) {
@@ -44,6 +47,18 @@ void Connection::failed(const std::string &reason)
     m_state = SessionCommon::FAILED;
     // tell helper (again)
     m_statusSignal(reason);
+
+    // A "failed" connection is dead, no further operations on it
+    // are allowed, in particular not the normal Connection.Close().
+    // Therefore remove ourselves.
+    //
+    // But don't delete ourselves while some code of the Connection still
+    // runs. Instead let server do that as part of its event loop.
+    boost::shared_ptr<Connection> c = m_me.lock();
+    if (c) {
+        m_server.delayDeletion(c);
+        m_server.detach(this);
+    }
 }
 
 std::string Connection::buildDescription(const StringMap &peer)
@@ -85,11 +100,12 @@ void Connection::process(const Caller_t &caller,
                          const GDBusCXX::DBusArray<uint8_t> &message,
                          const std::string &message_type)
 {
-    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s sends %lu bytes via connection %s, %s",
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: D-Bus client %s sends %lu bytes, %s (old state %s)",
+                 m_sessionID.c_str(),
                  caller.c_str(),
                  (unsigned long)message.first,
-                 getPath(),
-                 message_type.c_str());
+                 message_type.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
 
     boost::shared_ptr<Client> client(m_server.findClient(caller));
     if (!client) {
@@ -356,6 +372,13 @@ void Connection::send(const DBusArray<uint8_t> buffer,
                       const std::string &type,
                       const std::string &url)
 {
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: send %lu bytes, %s, %s (old state %s)",
+                 m_sessionID.c_str(),
+                 (unsigned long)buffer.first,
+                 type.c_str(),
+                 url.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
+
     if (m_state != SessionCommon::PROCESSING) {
         SE_THROW_EXCEPTION(TransportException,
                            "cannot send to our D-Bus peer");
@@ -375,7 +398,10 @@ void Connection::send(const DBusArray<uint8_t> buffer,
 
 void Connection::sendFinalMsg()
 {
-    if (m_state != SessionCommon::FAILED) {
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: shut down (old state %s)",
+                 m_sessionID.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
+    if (m_state == SessionCommon::PROCESSING) {
         // send final, empty message and wait for close
         m_state = SessionCommon::FINAL;
         reply(GDBusCXX::DBusArray<uint8_t>(0, 0),
@@ -388,17 +414,29 @@ void Connection::close(const Caller_t &caller,
                        bool normal,
                        const std::string &error)
 {
-    SE_LOG_DEBUG(NULL, NULL, "D-Bus client %s closes connection %s %s%s%s",
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: client %s closes connection %s %s%s%s (old state %s)",
+                 m_sessionID.c_str(),
                  caller.c_str(),
                  getPath(),
                  normal ? "normally" : "with error",
                  error.empty() ? "" : ": ",
-                 error.c_str());
+                 error.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
 
     boost::shared_ptr<Client> client(m_server.findClient(caller));
     if (!client) {
         throw runtime_error("unknown client");
     }
+
+    // Remove reference to us from client, will destruct *this*
+    // instance. To let us finish our work safely, keep a reference
+    // that the server will unref when everything is idle again.
+    boost::shared_ptr<Connection> c = m_me.lock();
+    if (!c) {
+        SE_THROW("connection already destructing");
+    }
+    m_server.delayDeletion(c);
+    client->detach(this);
 
     if (!normal ||
         m_state != SessionCommon::FINAL) {
@@ -418,22 +456,32 @@ void Connection::close(const Caller_t &caller,
         }
     }
 
-    // remove reference to us from client, will destruct *this*
-    // instance!
-    client->detach(this);
+    // TODO (?): errors during shutdown of the helper will not get
+    // reported back to the client, which sees the operation as
+    // completed successfully once this call returns.
 }
 
 void Connection::abort()
 {
     if (!m_abortSent) {
+        SE_LOG_DEBUG(NULL, NULL, "Connection %s: send abort to client (state %s)",
+                     m_sessionID.c_str(),
+                     SessionCommon::ConnectionStateToString(m_state).c_str());
         sendAbort();
         m_abortSent = true;
+    } else {
+        SE_LOG_DEBUG(NULL, NULL, "Connection %s: not sending abort to client, already done (state %s)",
+                     m_sessionID.c_str(),
+                     SessionCommon::ConnectionStateToString(m_state).c_str());
     }
 }
 
 
 void Connection::shutdown()
 {
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: self-destructing (state %s)",
+                 m_sessionID.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
     // trigger removal of this connection by removing all
     // references to it
     m_server.detach(this);
@@ -464,6 +512,9 @@ Connection::Connection(Server &server,
     add(sendAbort);
     add(reply);
     m_server.autoTermRef();
+
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: created",
+                 m_sessionID.c_str());
 }
 
 boost::shared_ptr<Connection> Connection::createConnection(Server &server,
@@ -479,11 +530,13 @@ boost::shared_ptr<Connection> Connection::createConnection(Server &server,
 
 Connection::~Connection()
 {
-    SE_LOG_DEBUG(NULL, NULL, "done with connection to '%s'%s%s%s",
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: done with '%s'%s%s%s (old state %s)",
+                 m_sessionID.c_str(),
                  m_description.c_str(),
                  m_state == SessionCommon::DONE ? ", normal shutdown" : " unexpectedly",
                  m_failure.empty() ? "" : ": ",
-                 m_failure.c_str());
+                 m_failure.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
     try {
         if (m_state != SessionCommon::DONE) {
             abort();
@@ -502,6 +555,10 @@ Connection::~Connection()
 
 void Connection::ready()
 {
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: ready to run (old state %s)",
+                 m_sessionID.c_str(),
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
+
     //if configuration not yet created
     std::string configName = m_session->getConfigName();
     SyncConfig config (configName);
@@ -583,14 +640,10 @@ void Connection::activateTimeout()
 
 void Connection::timeoutCb()
 {
+    SE_LOG_DEBUG(NULL, NULL, "Connection %s: timed out after %ds (state %s)",
+                 m_sessionID.c_str(), m_timeoutSeconds,
+                 SessionCommon::ConnectionStateToString(m_state).c_str());
     failed(StringPrintf("timed out after %ds", m_timeoutSeconds));
-    // Don't delete ourselves while some code of the Connection still
-    // runs. Instead let server do that as part of its event loop.
-    boost::shared_ptr<Connection> c = m_me.lock();
-    if (c) {
-        m_server.delayDeletion(c);
-    }
-    
 }
 
 SE_END_CXX

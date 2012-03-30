@@ -2822,6 +2822,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         # 'idle' status doesn't be checked
         self.assertIn(('abort',), DBusUtil.events)
 
+    @timeout(60)
     def testStartSync(self):
         """TestConnection.testStartSync - send a valid initial SyncML message"""
         self.setupConfig()
@@ -2864,6 +2865,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertNotIn("source-todo-status", sessions[0])
         self.assertNotIn("source-memo-status", sessions[0])
 
+    @timeout(60)
     def testCredentialsWrong(self):
         """TestConnection.testCredentialsWrong - send invalid credentials"""
         self.setupConfig()
@@ -2879,16 +2881,15 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertIn('<Chal>', DBusUtil.reply[0])
         self.assertEqual(DBusUtil.reply[3], False)
         self.assertNotEqual(DBusUtil.reply[4], '')
-        connection.Close(False, 'good bye')
-        # when the login fails, the server also ends the session
-        loop.run()
+        # When the login fails, the server also ends the session and the connection;
+        # no more Connection.close() possible (could fail, depending on the timing).
         loop.run()
         loop.run()
         DBusUtil.quit_events.sort()
         self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
-                                                    "connection " + conpath + " got final reply",
                                                     "session done"])
 
+    @timeout(60)
     def testCredentialsRight(self):
         """TestConnection.testCredentialsRight - send correct credentials"""
         self.setupConfig()
@@ -2912,6 +2913,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
 
+    @timeout(60)
     def testStartSyncTwice(self):
         """TestConnection.testStartSyncTwice - send the same SyncML message twice, starting two sessions"""
         self.setupConfig()
@@ -2959,6 +2961,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertEqual(DBusUtil.quit_events, ["connection " + conpath2 + " aborted",
                                                     "session done"])
 
+    @timeout(60)
     def testKillInactive(self):
         """TestConnection.testKillInactive - block server with client A, then let client B connect twice"""
         #set up 2 configs
@@ -3004,11 +3007,12 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
 
+    @timeout(60)
     def testTimeoutSync(self):
         """TestConnection.testTimeoutSync - start a sync, then wait for server to detect that we stopped replying"""
 
         # The server-side configuration for sc-api-nat must contain a retryDuration=10
-        # because this test itself will time out with a failure after 20 seconds.
+        # because this test itself will time out with a failure after 60 seconds.
         self.setupConfig()
         conpath, connection = self.getConnection()
         connection.Process(TestConnection.message1, 'application/vnd.syncml+xml')
