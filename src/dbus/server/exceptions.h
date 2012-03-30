@@ -23,7 +23,7 @@
 #include <syncevo/util.h>
 #include "config.h"
 
-// Can't use the DBUS_MESSAGE_TYPE define here because it's not
+// Can't use the GDBusCXX::message_type typedef here because it's not
 // defined till we include gdbus-cxx-bridge.h below.
 #ifdef WITH_GIO_GDBUS
 // Forward decleration can't be used here due to later typedef _GDBusMessage GDBusMessage.

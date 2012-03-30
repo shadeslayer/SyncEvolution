@@ -79,7 +79,6 @@
  * To keep changes to a minimum while supporting both dbus
  * implementations, this is made to be a define. The intention is to
  * remove the define once the in-tree gdbus is dropped. */
-#define DBUS_MESSAGE_TYPE    GDBusMessage
 #define DBUS_NEW_ERROR_MSG   g_dbus_message_new_method_error
 
 // Boost docs want this in the boost:: namespace, but
@@ -91,6 +90,16 @@ void intrusive_ptr_add_ref(GDBusMessage          *msg);
 void intrusive_ptr_release(GDBusMessage          *msg);
 
 namespace GDBusCXX {
+
+// GDBusCXX aliases for the underlying types.
+// Useful for some external dbus_traits which
+// need to pass pointers to these types in their
+// append()/get() methods without depending on GIO or
+// libdbus types.
+typedef GDBusConnection connection_type;
+typedef GDBusMessage message_type;
+typedef GVariantBuilder builder_type;
+typedef GVariantIter reader_type;
 
 class DBusMessagePtr;
 

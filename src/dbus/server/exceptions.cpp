@@ -25,7 +25,7 @@ SE_BEGIN_CXX
  * implement syncevolution exception handler
  * to cover its default implementation
  */
-DBUS_MESSAGE_TYPE* SyncEvoHandleException(DBUS_MESSAGE_TYPE *msg)
+GDBusCXX::message_type *SyncEvoHandleException(GDBusCXX::message_type *msg)
 {
     /** give an opportunity to let syncevolution handle exception */
     Exception::handle();

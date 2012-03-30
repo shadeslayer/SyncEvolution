@@ -88,10 +88,19 @@ static inline void intrusive_ptr_release(DBusServer *server) { dbus_server_unref
  * keep changes to a minimum while supporting both dbus
  * implementations, this is made to be a define. The intention is to
  * remove the define once the in-tree gdbus is dropped. */
-#define DBUS_MESSAGE_TYPE    DBusMessage
 #define DBUS_NEW_ERROR_MSG   b_dbus_create_error
 
 namespace GDBusCXX {
+
+// GDBusCXX aliases for the underlying types.
+// Useful for some external dbus_traits which
+// need to pass pointers to these types in their
+// append()/get() methods without depending on GIO or
+// libdbus types.
+typedef DBusConnection connection_type;
+typedef DBusMessage message_type;
+typedef DBusMessageIter builder_type;
+typedef DBusMessageIter reader_type;
 
 class DBusMessagePtr;
 
