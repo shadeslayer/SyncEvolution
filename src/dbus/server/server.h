@@ -66,6 +66,14 @@ class Server : public GDBusCXX::DBusObjectHelper,
     Clients_t m_clients;
 
     /**
+     * Functor will never be called, important are the shared pointers
+     * bound to it. m_delayDeletion will be cleared in idle and when
+     * server terminates, thus unrefing anything encapsulated inside
+     * it.
+     */
+    std::list< boost::function<void ()> > m_delayDeletion;
+
+    /**
      * Watch all files mapped into our address space. When
      * modifications are seen (as during a package upgrade), sets
      * m_shutdownRequested. This prevents adding new sessions and
@@ -484,21 +492,23 @@ public:
      * event loop is idle, then unref it inside. Useful for instances
      * which need to delete themselves.
      */
-    template <class T> static void delayDeletion(const boost::shared_ptr<T> &t) {
-        g_idle_add(delayDeletionCb<T>, new boost::shared_ptr<T>(t));
+    template <class T> void delayDeletion(const boost::shared_ptr<T> &t) {
+        // The functor will never be called, important here is only
+        // that it contains a copy of the shared pointer.
+        m_delayDeletion.push_back(boost::bind(delayDeletionDummy<T>, t));
+        g_idle_add(&Server::delayDeletionCb, this);
     }
 
-    template <class T> static gboolean delayDeletionCb(gpointer userData) throw () {
-        boost::shared_ptr<T> *t = static_cast<boost::shared_ptr<T> *>(userData);
+    template <class T> static void delayDeletionDummy(const boost::shared_ptr<T> &t) throw () {}
+    static gboolean delayDeletionCb(gpointer userData) throw () {
+        Server *me = static_cast<Server *>(userData);
 
         try {
-            t->reset();
-            delete t;
+            me->m_delayDeletion.clear();
         } catch (...) {
             // Something unexpected went wrong, can only shut down.
             Exception::handle(HANDLE_EXCEPTION_FATAL);
         }
-
         return false;
     }
 

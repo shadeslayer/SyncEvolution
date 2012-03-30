@@ -312,6 +312,8 @@ Server::~Server()
     m_clients.clear();
     m_autoSync.reset();
     m_infoReqMap.clear();
+    m_timeouts.clear();
+    m_delayDeletion.clear();
     LoggerBase::popLogger();
 }
 
