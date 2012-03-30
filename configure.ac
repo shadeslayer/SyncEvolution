@@ -404,7 +404,7 @@ AC_ARG_ENABLE(gtk,
               AS_HELP_STRING([--enable-gtk=major version],
                              [Selects the gtk+ version ("2" or "3") to use for the UI.
                               If this option is used, --enable-gui should be used as well.
-                              "3" is the default option.]),
+                              "3" is the default option if available, otherwise "2".]),
               [ if test "$enableval" = "3" ; then
                     gtk_version=gtk+-3.0
                 elif test "$enableval" = "2" ; then
@@ -413,7 +413,10 @@ AC_ARG_ENABLE(gtk,
                     AC_MSG_ERROR([Unknown gtk version: '$enableval'])
                 fi
               ],
-              [ gtk_version=gtk+-3.0 ])
+              [ PKG_CHECK_EXISTS([gtk+-3.0],
+                                 [gtk_version=gtk+-3.0],
+                                 [gtk_version=gtk+-2.0]) ])
+
 
 AM_CONDITIONAL([COND_GTK2], [test "$gtk_version" = "gtk+-2.0"])
 
