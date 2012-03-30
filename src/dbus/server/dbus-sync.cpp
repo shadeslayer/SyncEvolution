@@ -39,7 +39,7 @@ DBusSync::DBusSync(const SessionCommon::SyncParams &params,
     setServerAlerted(params.m_serverAlerted);
     if (params.m_serverMode) {
         initServer(params.m_sessionID,
-                   SharedBuffer(params.m_initialMessage.c_str(), params.m_initialMessage.size()),
+                   params.m_initialMessage,
                    params.m_initialMessageType);
     }
 
@@ -116,7 +116,7 @@ boost::shared_ptr<TransportAgent> DBusSync::createTransportAgent()
         } else if (m_params.m_serverMode) {
             // Let transport return initial message to engine.
             agent->storeMessage(GDBusCXX::DBusArray<uint8_t>(m_params.m_initialMessage.size(),
-                                                             reinterpret_cast<const uint8_t *>(m_params.m_initialMessage.c_str())),
+                                                             reinterpret_cast<const uint8_t *>(m_params.m_initialMessage.get())),
                                 m_params.m_initialMessageType);
         }
 

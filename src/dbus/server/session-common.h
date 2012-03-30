@@ -25,6 +25,9 @@
 #include <syncevo/util.h>
 #include <syncevo/DBusTraits.h>
 #include <syncevo/FilterConfigNode.h>
+#include <syncevo/SynthesisEngine.h>
+
+#include <gdbus-cxx-bridge.h>
 
 SE_BEGIN_CXX
 
@@ -119,7 +122,7 @@ namespace SessionCommon
         bool m_serverAlerted;
         bool m_remoteInitiated;
         std::string m_sessionID;
-        std::string m_initialMessage;
+        SharedBuffer m_initialMessage;
         std::string m_initialMessageType;
         SyncEvo::FilterConfigNode::ConfigFilter m_syncFilter;
         SyncEvo::FilterConfigNode::ConfigFilter m_sourceFilter;
@@ -141,13 +144,47 @@ namespace GDBusCXX {
         dbus_member<SyncParams, bool, &SyncParams::m_serverAlerted,
         dbus_member<SyncParams, bool, &SyncParams::m_remoteInitiated,
         dbus_member<SyncParams, std::string, &SyncParams::m_sessionID,
-        dbus_member<SyncParams, std::string, &SyncParams::m_initialMessage,
+        dbus_member<SyncParams, SharedBuffer, &SyncParams::m_initialMessage,
         dbus_member<SyncParams, std::string, &SyncParams::m_initialMessageType,
         dbus_member<SyncParams, FilterConfigNode::ConfigFilter, &SyncParams::m_syncFilter,
         dbus_member<SyncParams, FilterConfigNode::ConfigFilter, &SyncParams::m_sourceFilter,
         dbus_member_single<SyncParams, SourceFilters_t, &SyncParams::m_sourceFilters
         > > > > > > > > > > > > >
         {};
+
+    /**
+     * Similar to DBusArray<uint8_t>, but with different native
+     * types. Uses encoding/decoding from the base class, copies
+     * to/from SharedBuffer as needed.
+     *
+     * DBusArray<uint8_t> is more efficient because it avoids
+     * copying the bytes from the D-Bus message when decoding,
+     * but it is harder to use natively (cannot be copied).
+     * SharedBuffer does ref counting for the memory chunk,
+     * so once initialized, copying it is cheap.
+     */
+    template <> struct dbus_traits<SharedBuffer> :
+        public dbus_traits< DBusArray<uint8_t> >
+    {
+        typedef dbus_traits< DBusArray<uint8_t> > base;
+
+        typedef SharedBuffer host_type;
+        typedef const SharedBuffer &arg_type;
+
+        static void get(GDBusCXX::connection_type *conn, GDBusCXX::message_type *msg,
+                        GDBusCXX::reader_type &iter, host_type &buffer)
+        {
+            base::host_type array;
+            base::get(conn, msg, iter, array);
+            buffer = SharedBuffer(reinterpret_cast<const char *>(array.second), array.first);
+        }
+
+        static void append(GDBusCXX::builder_type &builder, arg_type buffer)
+        {
+            base::host_type array(buffer.size(), reinterpret_cast<const uint8_t *>(buffer.get()));
+            base::append(builder, array);
+        }
+    };
 }
 
 #endif // SESSION_COMMON_H

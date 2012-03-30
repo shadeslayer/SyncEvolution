@@ -38,6 +38,7 @@ import sys
 import traceback
 import re
 import atexit
+import base64
 
 # introduced in python-gobject 2.16, not available
 # on all Linux distros => make it optional
@@ -2736,6 +2737,9 @@ class TestConnection(unittest.TestCase, DBusUtil):
     """a real message sent to our own server, DevInf stripped, username/password foo/bar"""
     message1 = '''<?xml version="1.0" encoding="UTF-8"?><SyncML xmlns='SYNCML:SYNCML1.2'><SyncHdr><VerDTD>1.2</VerDTD><VerProto>SyncML/1.2</VerProto><SessionID>255</SessionID><MsgID>1</MsgID><Target><LocURI>http://127.0.0.1:9000/syncevolution</LocURI></Target><Source><LocURI>sc-api-nat</LocURI><LocName>test</LocName></Source><Cred><Meta><Format xmlns='syncml:metinf'>b64</Format><Type xmlns='syncml:metinf'>syncml:auth-md5</Type></Meta><Data>kHzMn3RWFGWSKeBpXicppQ==</Data></Cred><Meta><MaxMsgSize xmlns='syncml:metinf'>20000</MaxMsgSize><MaxObjSize xmlns='syncml:metinf'>4000000</MaxObjSize></Meta></SyncHdr><SyncBody><Alert><CmdID>1</CmdID><Data>200</Data><Item><Target><LocURI>addressbook</LocURI></Target><Source><LocURI>./addressbook</LocURI></Source><Meta><Anchor xmlns='syncml:metinf'><Last>20091105T092757Z</Last><Next>20091105T092831Z</Next></Anchor><MaxObjSize xmlns='syncml:metinf'>4000000</MaxObjSize></Meta></Item></Alert><Final/></SyncBody></SyncML>'''
 
+    """a real WBXML message, expected to trigger an authentication failure"""
+    message1WBXML = base64.b64decode('AqQBagBtbHEDMS4yAAFyA1N5bmNNTC8xLjIAAWUDMjExAAFbAzEAAW5XA2h0dHA6Ly9teS5mdW5hbWJvbC5jb20vc3luYwABAWdXA3NjLWFwaS1uYXQAAVYDcGF0cmljay5vaGx5AAEBTloAAUcDYjY0AAFTA3N5bmNtbDphdXRoLW1kNQABAQAATwNyT0dFbGR1Y2FjNE5mc3dZSm5lR2lnPT0AAQFaAAFMAzE1MDAwMAABVQM0MDAwMDAwAAEBAQAAa19LAzEAAVoAAVMDYXBwbGljYXRpb24vdm5kLnN5bmNtbC1kZXZpbmYrd2J4bWwAAQEAAFRnVwMuL2RldmluZjEyAAEBT8OMewKkA2oASmUDMS4yAAFRA1BhdHJpY2sgT2hseQABVQNTeW5jRXZvbHV0aW9uAAFWA1N5bnRoZXNpcyBBRwABTwMxLjIuOTkrMjAxMjAzMjcrU0UrMjI1MGVhMCt1bmNsZWFuAAFeAzMuNC4wLjM1AAFQA3Vua25vd24AAUkDc2MtYXBpLW5hdAABSwN3b3Jrc3RhdGlvbgABKCkqR10DLi9lZHNfZXZlbnQAAUwDZWRzX2V2ZW50AAFSAzY0AAFaRgN0ZXh0L2NhbGVuZGFyAAFkAzIuMAABAWJGA3RleHQvY2FsZW5kYXIAAWQDMi4wAAEBRUYDdGV4dC9jYWxlbmRhcgABZAMyLjAAAWtYA0JFR0lOAAFjA1ZDQUxFTkRBUgABYwNWVElNRVpPTkUAAWMDU1RBTkRBUkQAAWMDREFZTElHSFQAAWMDVlRPRE8AAWMDVkFMQVJNAAFjA1ZFVkVOVAABYwNWQUxBUk0AAQFrWANFTkQAAWMDVkNBTEVOREFSAAFjA1ZUSU1FWk9ORQABYwNTVEFOREFSRAABYwNEQVlMSUdIVAABYwNWVE9ETwABYwNWQUxBUk0AAWMDVkVWRU5UAAFjA1ZBTEFSTQABAWtYA1ZFUlNJT04AAWMDMi4wAAFtAzEAAQFrWANQUk9ESUQAAW0DMQABAWtYA1RaSUQAAQFrWANEVFNUQVJUAAEBa1gDUlJVTEUAAQFrWANUWk9GRlNFVEZST00AAQFrWANUWk9GRlNFVFRPAAEBa1gDVFpOQU1FAAEBa1gDTEFTVC1NT0RJRklFRAABbQMxAAEBa1gDRFRTVEFNUAABbQMxAAEBa1gDQ1JFQVRFRAABbQMxAAEBa1gDVUlEAAFtAzEAAQFrWANTRVFVRU5DRQABbQMxAAEBa1gDR0VPAAFtAzEAAQFrWANDQVRFR09SSUVTAAEBa1gDQ0xBU1MAAW0DMQABAWtYA1NVTU1BUlkAAW0DMQABAWtYA0RFU0NSSVBUSU9OAAFtAzEAAQFrWANMT0NBVElPTgABbQMxAAEBa1gDVVJMAAFtAzEAAQFrWANDT01QTEVURUQAAW0DMQABbFcDVFpJRAABAWxXA1ZBTFVFAAEBAWtYA0RVRQABbQMxAAFsVwNUWklEAAEBbFcDVkFMVUUAAQEBa1gDUFJJT1JJVFkAAW0DMQABAWtYA1NUQVRVUwABbQMxAAEBa1gDUEVSQ0VOVC1DT01QTEVURQABbQMxAAEBa1gDUkVMQVRFRC1UTwABbQMxAAFsVwNSRUxUWVBFAAFjA1BBUkVOVAABAQFrWANUUklHR0VSAAFtAzEAAWxXA1ZBTFVFAAEBbFcDUkVMQVRFRAABYwNTVEFSVAABYwNFTkQAAQEBa1gDQUNUSU9OAAFtAzEAAQFrWANSRVBFQVQAAW0DMQABAWtYA1gtRVZPTFVUSU9OLUFMQVJNLVVJRAABbQMxAAEBa1gDVFoAAW0DMQABAWtYA1RSQU5TUAABbQMxAAEBa1gDUkVDVVJSRU5DRS1JRAABbQMxAAFsVwNUWklEAAEBbFcDVkFMVUUAAQEBa1gDRVhEQVRFAAEBa1gDWC1TWU5DRVZPTFVUSU9OLUVYREFURS1ERVRBQ0hFRAABbFcDVFpJRAABAQFrWANEVEVORAABbQMxAAFsVwNUWklEAAEBbFcDVkFMVUUAAQEBa1gDRFVSQVRJT04AAW0DMQABAWtYA0FUVEVOREVFAAFsVwNDTgABAWxXA1BBUlRTVEFUAAFjA05FRURTLUFDVElPTgABYwNBQ0NFUFRFRAABYwNERUNMSU5FRAABYwNURU5UQVRJVkUAAWMDREVMRUdBVEVEAAEBbFcDUk9MRQABYwNDSEFJUgABYwNSRVEtUEFSVElDSVBBTlQAAWMDT1BULVBBUlRJQ0lQQU5UAAFjA05PTi1QQVJUSUNJUEFOVAABAWxXA1JTVlAAAWMDVFJVRQABYwNGQUxTRQABAWxXA0xBTkdVQUdFAAEBbFcDQ1VUWVBFAAFjA0lORElWSURVQUwAAWMDR1JPVVAAAWMDUkVTT1VSQ0UAAWMDUk9PTQABYwNVTktOT1dOAAEBAWtYA09SR0FOSVpFUgABbQMxAAFsVwNDTgABAQEBX2ADMQABYAMyAAFgAzMAAWADNAABYAM1AAFgAzYAAWADNwABYAM1NDQwMDEAAQEBAQEBAVNLAzIAAVoAAVMDYXBwbGljYXRpb24vdm5kLnN5bmNtbC1kZXZpbmYrd2J4bWwAAQEAAFRuVwMuL2RldmluZjEyAAEBAQFGSwMzAAFPAzIwMAABVG5XA2V2ZW50AAEBZ1cDLi9lZHNfZXZlbnQAAQFaAAFFSgMyMDEyMDMyOVQxMTAxMjZaAAFPAzIwMTIwMzI5VDExMDE1MloAAQFVAzQwMDAwMDAAAQEBAQAAEgEB')
+
     def setUp(self):
         self.setUpServer()
         self.setUpListeners(None)
@@ -2888,6 +2892,29 @@ class TestConnection(unittest.TestCase, DBusUtil):
         DBusUtil.quit_events.sort()
         self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
                                                     "session done"])
+
+    @timeout(60)
+    def testCredentialsWrongWBXML(self):
+        """TestConnection.testCredentialsWrongWBXML - send invalid credentials using WBXML"""
+        self.setupConfig()
+        conpath, connection = self.getConnection(must_authenticate=True)
+        connection.Process(TestConnection.message1WBXML, 'application/vnd.syncml+wbxml')
+        loop.run()
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " got reply"])
+        DBusUtil.quit_events = []
+        # TODO: check events
+        self.assertNotEqual(DBusUtil.reply, None)
+        self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+wbxml')
+        # Credentials should have been rejected because of wrong Nonce.
+        # Impossible to check with WBXML...
+        # self.assertTrue('<Chal>' in DBusUtil.reply[0])
+        self.assertEqual(DBusUtil.reply[3], False)
+        self.assertNotEqual(DBusUtil.reply[4], '')
+        loop.run()
+        loop.run()
+        DBusUtil.quit_events.sort()
+        self.assertEqual(DBusUtil.quit_events, ["connection " + conpath + " aborted",
+                                                "session done"])
 
     @timeout(60)
     def testCredentialsRight(self):

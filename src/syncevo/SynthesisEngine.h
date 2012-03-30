@@ -70,7 +70,7 @@ class SharedBuffer : public boost::shared_array<char>
         m_size(size)
         { memcpy(get(), p, size); }
 
-    size_t size() { return m_size; }
+    size_t size() const { return m_size; }
 };
 
 /**

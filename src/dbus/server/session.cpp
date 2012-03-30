@@ -360,7 +360,7 @@ void Session::sync2(const std::string &mode, const SessionCommon::SourceModes_t 
     params.m_serverAlerted = m_serverAlerted;
     params.m_remoteInitiated = m_remoteInitiated;
     params.m_sessionID = m_sessionID;
-    params.m_initialMessage.assign(m_initialMessage.get(), m_initialMessage.size());
+    params.m_initialMessage = m_initialMessage;
     params.m_initialMessageType = m_initialMessageType;
     params.m_syncFilter = m_syncFilter;
     params.m_sourceFilter = m_sourceFilter;
