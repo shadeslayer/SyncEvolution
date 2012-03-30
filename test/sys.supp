@@ -102,6 +102,47 @@
    fun:getpwnam_r
 }
 
+# ==19822== 300 (60 direct, 240 indirect) bytes in 1 blocks are definitely lost in loss record 649 of 788
+# ==19822==    at 0x4C27673: malloc (vg_replace_malloc.c:263)
+# ==19822==    by 0xA43599C: nss_parse_service_list (nsswitch.c:626)
+# ==19822==    by 0xA436171: __nss_database_lookup (nsswitch.c:167)
+# ==19822==    by 0x17C8C1EF: ???
+# ==19822==    by 0x17C8CD94: ???
+# ==19822==    by 0xA3F5ADC: getpwuid_r@@GLIBC_2.2.5 (getXXbyYY_r.c:256)
+# ==19822==    by 0x95742E7: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x95775FE: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x957788A: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x9577916: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x9577AD8: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x9577BA5: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x9552188: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x9551260: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x955178D: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x9552C09: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x956C188: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x956CE62: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x956D8D2: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x956C481: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x95573BB: ??? (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x956E5E9: dbus_watch_handle (in /lib/x86_64-linux-gnu/libdbus-1.so.3.5.8)
+# ==19822==    by 0x6139EE: dispatch_watch (mainloop.c:126)
+# ==19822==    by 0x92980CE: g_main_context_dispatch (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==19822==    by 0x92988C7: ??? (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==19822==    by 0x9298E01: g_main_loop_run (in /lib/x86_64-linux-gnu/libglib-2.0.so.0.3000.2)
+# ==19822==    by 0x7B849B: SyncEvo::LocalTransportAgent::wait(bool) (LocalTransportAgent.cpp:333)
+# ==19822==    by 0x73A153: SyncEvo::SyncContext::doSync() (SyncContext.cpp:3689)
+# ==19822==    by 0x741334: SyncEvo::SyncContext::sync(SyncEvo::SyncReport*) (SyncContext.cpp:3003)
+# ==19822==    by 0x5F3C68: SyncEvo::SessionHelper::doSync(SyncEvo::SessionCommon::SyncParams const&, boost::shared_ptr<GDBusCXX::Result0> const&) (session-helper.cpp:96)
+# ==19822== 
+{
+   nss_parse_service_list
+   Memcheck:Leak
+   fun:malloc
+   fun:nss_parse_service_list
+   ...
+   fun:getpwuid_r*
+}
+
 # ==7948== 292 (52 direct, 240 indirect) bytes in 1 blocks are definitely lost in loss record 7 of 53
 # ==7948==    at 0x4C21C16: malloc (vg_replace_malloc.c:149)
 # ==7948==    by 0x93B2120: (within /lib/libc-2.6.1.so)
@@ -1255,4 +1296,44 @@
    fun:g_cclosure_new
    fun:g_signal_connect_data
    fun:notify_notification_show
+}
+
+# ==14656== 100 bytes in 1 blocks are possibly lost in loss record 838 of 1,005
+# ==14656==    at 0x4C27209: operator new(unsigned long) (vg_replace_malloc.c:287)
+# ==14656==    by 0x9C52FC8: std::string::_Rep::_S_create(unsigned long, unsigned long, std::allocator<char> const&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.16)
+# ==14656==    by 0x9C549D4: char* std::string::_S_construct<char const*>(char const*, char const*, std::allocator<char> const&, std::forward_iterator_tag) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.16)
+# ==14656==    by 0x9C54B22: std::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string(char const*, std::allocator<char> const&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.16)
+# ==14656==    by 0x11971F9B: ??? (in /usr/lib/libstreamanalyzer.so.0.7.7)
+# ==14656==    by 0x11972257: ??? (in /usr/lib/libstreamanalyzer.so.0.7.7)
+# ==14656==    by 0x400DCCF: call_init (dl-init.c:85)
+# ==14656==    by 0x400DDC6: _dl_init (dl-init.c:134)
+# ==14656==    by 0x4000B29: ??? (in /lib/x86_64-linux-gnu/ld-2.13.so)
+# ==14656== 
+{
+   Strigi search init leak
+   Memcheck:Leak
+   ...
+   obj:*libstreamanalyzer.so*
+   fun:call_init
+   fun:_dl_init
+}
+
+# ==14906== 30 bytes in 1 blocks are possibly lost in loss record 311 of 1,005
+# ==14906==    at 0x4C27209: operator new(unsigned long) (vg_replace_malloc.c:287)
+# ==14906==    by 0x9C52FC8: std::string::_Rep::_S_create(unsigned long, unsigned long, std::allocator<char> const&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.16)
+# ==14906==    by 0x9C549D4: char* std::string::_S_construct<char const*>(char const*, char const*, std::allocator<char> const&, std::forward_iterator_tag) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.16)
+# ==14906==    by 0x9C54B22: std::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string(char const*, std::allocator<char> const&) (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.16)
+# ==14906==    by 0x145E4C5E: ??? (in /usr/lib/libstreams.so.0.7.7)
+# ==14906==    by 0x145E4CDA: ??? (in /usr/lib/libstreams.so.0.7.7)
+# ==14906==    by 0x400DCCF: call_init (dl-init.c:85)
+# ==14906==    by 0x400DDC6: _dl_init (dl-init.c:134)
+# ==14906==    by 0x4000B29: ??? (in /lib/x86_64-linux-gnu/ld-2.13.so)
+# ==14906== 
+{
+   Strigi stream search leak II
+   Memcheck:Leak
+   ...
+   obj:*libstreams.so*
+   fun:call_init
+   fun:_dl_init
 }
