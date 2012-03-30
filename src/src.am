@@ -28,16 +28,8 @@ endif
 include $(top_srcdir)/src/dbus/dbus.am
 src_cppflags += -I$(top_srcdir)/src/dbus
 
-if COND_GUI
-if COND_GTK2
 include $(top_srcdir)/src/gtk-ui/gtk-ui.am
-src_cppflags += -I$(top_srcdir)/src/gtk-ui
-else
 include $(top_srcdir)/src/gtk3-ui/gtk-ui.am
-src_cppflags += -I$(top_srcdir)/src/gtk3-ui
-endif
-endif
-
 
 src_cppflags += -I$(top_srcdir)/test -I$(top_srcdir) $(BACKEND_CPPFLAGS)
 

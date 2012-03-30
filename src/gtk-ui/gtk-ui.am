@@ -1,3 +1,8 @@
+EXTRA_DIST += src/gtk-ui/ui.xml
+
+if COND_GUI
+if COND_GTK2
+
 dist_noinst_DATA += \
   src/gtk-ui/README
 
@@ -97,3 +102,6 @@ src_gtk_ui_sync_ui_moblin_CPPFLAGS = $(src_gtk_ui_sync_ui_CPPFLAGS) -DUSE_MOBLIN
 CLEANFILES += \
   src/gtk-ui/sync-moblin.desktop \
   $(src_gtk_ui_applications_generated)
+
+endif COND_GTK2
+endif COND_GUI
