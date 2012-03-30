@@ -35,6 +35,7 @@ from dbus.mainloop.glib import DBusGMainLoop
 import dbus.service
 import gobject
 import sys
+import traceback
 import re
 import atexit
 
@@ -510,7 +511,7 @@ class DBusUtil(Timeout):
         timeout_handle = None
         if timeout and not debugger:
             def timedout():
-                error = "%s timed out after %d seconds" % (self.id(), timeout)
+                error = "%s timed out after %d seconds, current quit events: %s" % (self.id(), timeout, self.quit_events)
                 if Timeout.debugTimeout:
                     print error
                 raise Exception(error)
@@ -518,11 +519,11 @@ class DBusUtil(Timeout):
         try:
             self.running = True
             unittest.TestCase.run(self, result)
-        except KeyboardInterrupt:
+        except KeyboardInterrupt, ex:
             # somehow this happens when timedout() above raises the exception
             # while inside glib main loop
             result.errors.append((self,
-                                  "interrupted by timeout or CTRL-C or Python signal handler problem"))
+                                  "interrupted by timeout (%d seconds, current quit events: %s) or CTRL-C or Python signal handler problem, exception is: %s" % (timeout, self.quit_events, traceback.format_exc())))
         self.running = False
         self.removeTimeout(timeout_handle)
         if debugger:
