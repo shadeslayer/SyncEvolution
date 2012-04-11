@@ -235,8 +235,9 @@ protected:
                      const SyncConfig::ConfigList &servers);
 
     void dumpConfigTemplates(const std::string &preamble,
-                     const SyncConfig::TemplateList &templates,
-                     bool printRank = false);
+                             const SyncConfig::TemplateList &templates,
+                             bool printRank = false,
+                             Logger::Level level = Logger::SHOW);
 
     enum DumpPropertiesFlags {
         DUMP_PROPS_NORMAL = 0,

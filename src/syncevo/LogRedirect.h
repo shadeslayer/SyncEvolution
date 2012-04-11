@@ -104,7 +104,8 @@ class LogRedirect : public LoggerStdout
  private:
     FDs m_stdout, m_stderr;
     bool m_streams;         /**< using reliable streams instead of UDP */
-    FILE *m_out;            /** a stream for the normal LogStdout which isn't redirected */
+    FILE *m_out;            /** a stream for Logger::SHOW output which isn't redirected */
+    FILE *m_err;            /** corresponding stream for any other output */
     char *m_buffer;         /** typically fairly small buffer for reading */
     std::string m_stdoutData;  /**< incomplete stdout line */
     size_t m_len;           /** total length of buffer */

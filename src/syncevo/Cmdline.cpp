@@ -986,11 +986,13 @@ bool Cmdline::run() {
                     } else if (missing.empty()) {
                         SE_LOG_INFO(NULL, NULL, "All relevant properties seem to be set, omit the --template parameter to proceed.");
                     }
-                    SE_LOG_SHOW(NULL, NULL, "");
+                    SE_LOG_INFO(NULL, NULL, "");
                     SyncConfig::DeviceList devices;
                     devices.push_back(SyncConfig::DeviceDescription("", "", SyncConfig::MATCH_ALL));
                     dumpConfigTemplates("Available configuration templates (clients and servers):",
-                                        SyncConfig::getPeerTemplates(devices));
+                                        SyncConfig::getPeerTemplates(devices),
+                                        false,
+                                        Logger::INFO);
                     return false;
                 }
             }
@@ -1940,8 +1942,9 @@ void Cmdline::dumpConfigs(const string &preamble,
 }
 
 void Cmdline::dumpConfigTemplates(const string &preamble,
-                                       const SyncConfig::TemplateList &templates,
-                                       bool printRank)
+                                  const SyncConfig::TemplateList &templates,
+                                  bool printRank,
+                                  Logger::Level level)
 {
     ostringstream out;
     out << preamble << endl;
@@ -1961,7 +1964,7 @@ void Cmdline::dumpConfigTemplates(const string &preamble,
     if (!templates.size()) {
         out << "   none" << endl;
     }
-    SE_LOG_SHOW(NULL, NULL, "%s", out.str().c_str());
+    SE_LOG(level, NULL, NULL, "%s", out.str().c_str());
 }
 
 void Cmdline::dumpProperties(const ConfigNode &configuredProps,
@@ -3339,19 +3342,17 @@ protected:
                                 NULL);
             CPPUNIT_ASSERT(cmdline.m_cmdline->parse());
             CPPUNIT_ASSERT(!cmdline.m_cmdline->run());
-            static const char error[] = "[ERROR] No configuration template for 'yahooxyz' available.\n";
-            static const char hint[] = "\nAvailable configuration templates (clients and servers):\n";
+            static const char error[] = "[ERROR] No configuration template for 'yahooxyz' available.\n"
+                "[INFO] \n"
+                "[INFO] Available configuration templates (clients and servers):\n";
             std::string out = cmdline.m_out.str();
             std::string err = cmdline.m_err.str();
             std::string all = cmdline.m_all.str();
-            CPPUNIT_ASSERT(boost::starts_with(out, hint));
-            CPPUNIT_ASSERT(boost::ends_with(out, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(out, "\n\n"));
-            CPPUNIT_ASSERT_EQUAL(string(error),
-                                 err);
-            CPPUNIT_ASSERT(boost::starts_with(all, string(error) + hint));
-            CPPUNIT_ASSERT(boost::ends_with(all, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(all, "\n\n"));
+            CPPUNIT_ASSERT(boost::starts_with(err, error));
+            CPPUNIT_ASSERT(boost::ends_with(err, "\n"));
+            CPPUNIT_ASSERT(!boost::ends_with(err, "\n\n"));
+            CPPUNIT_ASSERT_EQUAL(string(""), out);
+            CPPUNIT_ASSERT_EQUAL(all, err);
         }
         {
             TestCmdline cmdline("--configure",
@@ -3359,19 +3360,18 @@ protected:
                                 NULL);
             CPPUNIT_ASSERT(cmdline.m_cmdline->parse());
             CPPUNIT_ASSERT(!cmdline.m_cmdline->run());
-            static const char error[] = "[ERROR] No configuration template for 'foobar' available.\n";
-            static const char hint[] = "[INFO] Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL\n\nAvailable configuration templates (clients and servers):\n";
+            static const char error[] = "[ERROR] No configuration template for 'foobar' available.\n"
+                "[INFO] Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL\n"
+                "[INFO] \n"
+                "[INFO] Available configuration templates (clients and servers):\n";
             std::string out = cmdline.m_out.str();
             std::string err = cmdline.m_err.str();
             std::string all = cmdline.m_all.str();
-            CPPUNIT_ASSERT(boost::starts_with(out, hint));
-            CPPUNIT_ASSERT(boost::ends_with(out, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(out, "\n\n"));
-            CPPUNIT_ASSERT_EQUAL(string(error),
-                                 err);
-            CPPUNIT_ASSERT(boost::starts_with(all, string(error) + hint));
-            CPPUNIT_ASSERT(boost::ends_with(all, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(all, "\n\n"));
+            CPPUNIT_ASSERT(boost::starts_with(err, error));
+            CPPUNIT_ASSERT(boost::ends_with(err, "\n"));
+            CPPUNIT_ASSERT(!boost::ends_with(err, "\n\n"));
+            CPPUNIT_ASSERT_EQUAL(string(""), out);
+            CPPUNIT_ASSERT_EQUAL(err, all);
         }
 #endif
     }
@@ -3596,19 +3596,18 @@ protected:
             TestCmdline failure("--configure", "foo", NULL);
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             CPPUNIT_ASSERT(!failure.m_cmdline->run());
-            static const char error[] = "[ERROR] No configuration template for 'foo@default' available.\n";
-            static const char hint[] = "[INFO] Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL\n\nAvailable configuration templates (clients and servers):\n";
+            static const char error[] = "[ERROR] No configuration template for 'foo@default' available.\n"
+                "[INFO] Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL\n"
+                "[INFO] \n"
+                "[INFO] Available configuration templates (clients and servers):\n";
             std::string out = failure.m_out.str();
             std::string err = failure.m_err.str();
             std::string all = failure.m_all.str();
-            CPPUNIT_ASSERT(boost::starts_with(out, hint));
-            CPPUNIT_ASSERT(boost::ends_with(out, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(out, "\n\n"));
-            CPPUNIT_ASSERT_EQUAL(string(error),
-                                 err);
-            CPPUNIT_ASSERT(boost::starts_with(all, string(error) + hint));
-            CPPUNIT_ASSERT(boost::ends_with(all, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(all, "\n\n"));
+            CPPUNIT_ASSERT(boost::starts_with(err, error));
+            CPPUNIT_ASSERT(boost::ends_with(err, "\n"));
+            CPPUNIT_ASSERT(!boost::ends_with(err, "\n\n"));
+            CPPUNIT_ASSERT_EQUAL(string(""), out);
+            CPPUNIT_ASSERT_EQUAL(all, err);
         }
 
         rm_r(m_testDir);
@@ -3620,19 +3619,18 @@ protected:
             CPPUNIT_ASSERT(failure.m_cmdline->parse());
             CPPUNIT_ASSERT(!failure.m_cmdline->run());
 
-            static const char error[] = "[ERROR] No configuration template for 'foo' available.\n";
-            static const char hint[] = "[INFO] All relevant properties seem to be set, omit the --template parameter to proceed.\n\nAvailable configuration templates (clients and servers):\n";
+            static const char error[] = "[ERROR] No configuration template for 'foo' available.\n"
+                "[INFO] All relevant properties seem to be set, omit the --template parameter to proceed.\n"
+                "[INFO] \n"
+                "[INFO] Available configuration templates (clients and servers):\n";
             std::string out = failure.m_out.str();
             std::string err = failure.m_err.str();
             std::string all = failure.m_all.str();
-            CPPUNIT_ASSERT(boost::starts_with(out, hint));
-            CPPUNIT_ASSERT(boost::ends_with(out, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(out, "\n\n"));
-            CPPUNIT_ASSERT_EQUAL(string(error),
-                                 err);
-            CPPUNIT_ASSERT(boost::starts_with(all, string(error) + hint));
-            CPPUNIT_ASSERT(boost::ends_with(all, "\n"));
-            CPPUNIT_ASSERT(!boost::ends_with(all, "\n\n"));
+            CPPUNIT_ASSERT(boost::starts_with(err, error));
+            CPPUNIT_ASSERT(boost::ends_with(err, "\n"));
+            CPPUNIT_ASSERT(!boost::ends_with(err, "\n\n"));
+            CPPUNIT_ASSERT_EQUAL(string(""), out);
+            CPPUNIT_ASSERT_EQUAL(all, err);
         }
 
         string fooconfig =
@@ -4796,7 +4794,7 @@ private:
                       va_list args)
         {
             if (level <= INFO) {
-                ostringstream &out = level <= ERROR ? m_err : m_out;
+                ostringstream &out = level != SHOW ? m_err : m_out;
                 std::string str = StringPrintfV(format, args);
                 if (level != SHOW) {
                     out << "[" << levelToStr(level) << "] ";

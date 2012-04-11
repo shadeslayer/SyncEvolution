@@ -139,8 +139,9 @@ void LoggerStdout::messagev(FILE *file,
                     break;
                 }
             }
-            if (pos < output.size()) {
-                // handle dangling last line
+            if (pos < output.size() || output.empty()) {
+                // handle dangling last line or empty chunk (don't
+                // want empty line for that, print at least the tag)
                 buffer.append(tag);
                 buffer.append(output, pos, output.size() - pos);
                 haveNewline = false;
