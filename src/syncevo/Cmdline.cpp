@@ -1712,11 +1712,16 @@ bool Cmdline::parseProp(PropertyType propertyType,
                        boost::iequals(spec.m_property, "type")) {
                 validProps = &m_validSourceProps;
             } else {
-                usage(false, StringPrintf("unrecognized property '%s' in %s", propname, args.c_str()));
+                if (propname) {
+                    usage(false, StringPrintf("unrecognized property '%s' in %s", propname, args.c_str()));
+                } else {
+                    usage(false, StringPrintf("unrecognized property in %s", args.c_str()));
+                }
                 return false;
             }
         } else {
-            usage(false, StringPrintf("a property name must be given in '%s'", args.c_str()));
+            usage(false, StringPrintf("a property name must be given in %s", args.c_str()));
+            return false;
         }
     }
 
@@ -3276,6 +3281,19 @@ protected:
                                   string(filter2.m_cmdline->m_props[""].m_sourceProps[""]));
         CPPUNIT_ASSERT_EQUAL_DIFF("",
                                   string(filter2.m_cmdline->m_props[""].m_syncProps));
+
+        TestCmdline filter3("--source-property", "xyz=1", NULL);
+        CPPUNIT_ASSERT(!filter3.m_cmdline->parse());
+        CPPUNIT_ASSERT_EQUAL(string(""), filter3.m_out.str());
+        CPPUNIT_ASSERT_EQUAL(string("[ERROR] '--source-property xyz=1': no such property\n"), filter3.m_err.str());
+
+        TestCmdline filter4("xyz=1", NULL);
+        CPPUNIT_ASSERT(!filter4.m_cmdline->parse());
+        CPPUNIT_ASSERT_NO_THROW(filter4.expectUsageError("[ERROR] unrecognized property in 'xyz=1'\n"));
+
+        TestCmdline filter5("=1", NULL);
+        CPPUNIT_ASSERT(!filter5.m_cmdline->parse());
+        CPPUNIT_ASSERT_NO_THROW(filter5.expectUsageError("[ERROR] a property name must be given in '=1'\n"));
     }
 
     void testWebDAV() {
