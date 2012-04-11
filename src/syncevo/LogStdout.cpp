@@ -60,6 +60,9 @@ void LoggerStdout::messagev(FILE *file,
 {
     if (file &&
         msglevel <= filelevel) {
+        std::string tag;
+
+        // in case of 'SHOW' level, don't print level and prefix information
         if (msglevel != SHOW) {
             string reltime;
             string procname;
@@ -104,19 +107,54 @@ void LoggerStdout::messagev(FILE *file,
                     }
                 }
             }
-
-            // in case of 'SHOW' level, don't print level and prefix information
-            fprintf(file, "[%s%s%s] %s%s",
-                    levelToStr(msglevel),
-                    procname.c_str(),
-                    reltime.c_str(),
-                    prefix ? prefix : "",
-                    prefix ? ": " : "");
+            tag = StringPrintf("[%s%s%s] %s%s",
+                               levelToStr(msglevel),
+                               procname.c_str(),
+                               reltime.c_str(),
+                               prefix ? prefix : "",
+                               prefix ? ": " : "");
         }
+
         // TODO: print debugging information, perhaps only in log file
-        vfprintf(file, format, args);
-        // TODO: add newline only when needed, add prefix to all lines
-        fprintf(file, "\n");
+        std::string output = StringPrintfV(format, args);
+
+        // Prepare final chunk:
+        // - tag at start of each line if not empty
+        // - newline at end if not already present
+        if (!tag.empty()) {
+            std::string buffer;
+            // Assume average line length of around 40 characters to
+            // predict number of lines.
+            buffer.reserve((output.size() / 40 + 1) * tag.size() + output.size());
+            bool haveNewline = false;
+            size_t pos = 0;
+            while (true) {
+                size_t next = output.find('\n', pos);
+                if (next != output.npos) {
+                    buffer.append(tag);
+                    buffer.append(output, pos, next + 1 - pos);
+                    haveNewline = true;
+                    pos = next + 1;
+                } else {
+                    break;
+                }
+            }
+            if (pos < output.size()) {
+                // handle dangling last line
+                buffer.append(tag);
+                buffer.append(output, pos, output.size() - pos);
+                haveNewline = false;
+            }
+            if (!haveNewline) {
+                buffer += '\n';
+            }
+            output = buffer;
+        } else if (!boost::ends_with(output, "\n")) {
+            // append newline if necessary
+            output += '\n';
+        }
+
+        fwrite(output.c_str(), 1, output.size(), file);
         fflush(file);
     }
 }

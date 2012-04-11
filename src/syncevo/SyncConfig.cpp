@@ -595,20 +595,12 @@ void SyncConfig::migrate(const std::string &config)
         SE_THROW("internal error, migrating config root not implemented");
     } else {
         // migrate using the higher-level logic in the Cmdline class
-        ostringstream out, err;
-        Cmdline migrate(out, err,
-                        m_peer.c_str(),
+        Cmdline migrate(m_peer.c_str(),
                         "--migrate",
                         config.c_str(),
                         NULL);
         bool res = migrate.parse() && migrate.run();
         if (!res) {
-            if (!err.str().empty()) {
-                SE_LOG_ERROR(NULL, NULL, "%s", err.str().c_str());
-            }
-            if (!out.str().empty()) {
-                SE_LOG_INFO(NULL, NULL, "%s", out.str().c_str());
-            }
             SE_THROW(StringPrintf("migration of config '%s' failed", config.c_str()));
         }
 

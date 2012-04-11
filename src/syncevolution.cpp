@@ -100,8 +100,8 @@ extern "C" EContact *e_contact_new_from_vcard(const char *vcard)
  */
 class KeyringSyncCmdline : public Cmdline {
  public:
-    KeyringSyncCmdline(int argc, const char * const * argv, ostream &out, ostream &err):
-        Cmdline(argc, argv, out, err) 
+    KeyringSyncCmdline(int argc, const char * const * argv) :
+        Cmdline(argc, argv)
     {}
     /**
      * create a user implemented sync client.
@@ -450,13 +450,7 @@ int main( int argc, char **argv )
             LoggerBase::instance().setLevel(Logger::DEBUG);
         }
 
-        /*
-         * don't log errors to cerr: LogRedirect cannot distinguish
-         * between our valid error messages and noise from other
-         * libs, therefore it would get suppressed (logged at
-         * level DEVELOPER, while output is at most INFO)
-         */
-        KeyringSyncCmdline cmdline(argc, argv, std::cout, std::cout);
+        KeyringSyncCmdline cmdline(argc, argv);
         vector<string> parsedArgs;
         if(!cmdline.parse(parsedArgs)) {
             return 1;

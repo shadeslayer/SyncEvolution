@@ -119,14 +119,8 @@ void SyncContext::initLocalSync(const string &config)
     m_localPeerContext.insert(0, "@");
 }
 
-void SyncContext::setOutput(ostream *out)
-{
-    m_out = out ? out : &std::cout;
-}
-
 void SyncContext::init()
 {
-    m_out = &std::cout;
     m_doLogging = false;
     m_quiet = false;
     m_dryrun = false;
@@ -1209,7 +1203,6 @@ public:
             m_logdir.previousLogdirs(dirs);
         }
 
-        ostream &out = m_client.getOutput();
         BOOST_FOREACH(SyncSource *source, *this) {
             if ((!excludeSource.empty() && excludeSource != source->getName()) ||
                 (newSuffix == "after" && m_prepared.find(source->getName()) == m_prepared.end())) {
@@ -1218,7 +1211,7 @@ public:
 
             // dump only if not done before or changed
             if (m_intro != intro) {
-                m_client.getOutput() << intro;
+                SE_LOG_SHOW(NULL, NULL, "%s", intro.c_str());
                 m_intro = intro;
             }
 
@@ -1245,7 +1238,7 @@ public:
                 oldDir = databaseName(*source, oldSuffix, oldSession);
             }
             string newDir = databaseName(*source, newSuffix);
-            out << "*** " << source->getDisplayName() << " ***\n" << flush;
+            SE_LOG_SHOW(NULL, NULL, "*** %s ***", source->getDisplayName().c_str());
             string cmd = string("env CLIENT_TEST_COMPARISON_FAILED=10 " + config + " synccompare '" ) +
                 oldDir + "' '" + newDir + "'";
             int ret = Execute(cmd, EXECUTE_NO_STDERR);
@@ -1253,16 +1246,16 @@ public:
                     WIFEXITED(ret) ? WEXITSTATUS(ret) :
                     -1) {
             case 0:
-                out << "no changes\n";
+                SE_LOG_SHOW(NULL, NULL, "no changes");
                 break;
             case 10:
                 break;
             default:
-                out << "Comparison was impossible.\n";
+                SE_LOG_SHOW(NULL, NULL, "Comparison was impossible.");
                 break;
             }
         }
-        out << "\n";
+        SE_LOG_SHOW(NULL, NULL, "");
         return true;
     }
 
@@ -1341,29 +1334,27 @@ public:
                 m_reportTodo = false;
 
                 string logfile = m_logdir.getLogfile();
-                ostream &out = m_client.getOutput();
-                out << flush;
-                out << "\n";
                 if (status == STATUS_OK) {
-                    out << "Synchronization successful.\n";
+                    SE_LOG_SHOW(NULL, NULL, "\nSynchronization successful.");
                 } else if (logfile.size()) {
-                    out << "Synchronization failed, see "
-                        << logfile
-                        << " for details.\n";
+                    SE_LOG_SHOW(NULL, NULL, "\nSynchronization failed, see %s for details.",
+                                logfile.c_str());
                 } else {
-                    out << "Synchronization failed.\n";
+                    SE_LOG_SHOW(NULL, NULL, "\nSynchronization failed.");
                 }
 
                 // pretty-print report
                 if (m_logLevel > LOGGING_QUIET) {
-                    out << "\nChanges applied during synchronization:\n";
+                    SE_LOG_SHOW(NULL, NULL, "\nChanges applied during synchronization:");
                 }
                 if (m_logLevel > LOGGING_QUIET && report) {
+                    ostringstream out;
                     out << *report;
                     std::string slowSync = report->slowSyncExplanation(m_client.getPeer());
                     if (!slowSync.empty()) {
                         out << endl << slowSync;
                     }
+                    SE_LOG_SHOW(NULL, NULL, "%s", out.str().c_str());
                 }
 
                 // compare databases?
@@ -3920,10 +3911,9 @@ void SyncContext::status()
             }
         }
     } else {
-        ostream &out = getOutput();
-        out << "Previous log directory not found.\n";
+        SE_LOG_SHOW(NULL, NULL, "Previous log directory not found.");
         if (getLogDir().empty()) {
-            out << "Enable the 'logdir' option and synchronize to use this feature.\n";
+            SE_LOG_SHOW(NULL, NULL, "Enable the 'logdir' option and synchronize to use this feature.");
         }
     }
 }
@@ -4100,14 +4090,19 @@ string SyncContext::readSessionInfo(const string &dir, SyncReport &report)
  * With that setup and a fake SyncContext it is possible to simulate
  * sessions and test the resulting logdirs.
  */
-class LogDirTest : public CppUnit::TestFixture, private SyncContext
+class LogDirTest : public CppUnit::TestFixture, private SyncContext, private LoggerBase
 {
 public:
     LogDirTest() :
         SyncContext("nosuchconfig@nosuchcontext"),
         m_maxLogDirs(10)
     {
-        setOutput(&m_out);
+        // suppress output by redirecting into m_out
+        pushLogger(this);
+    }
+
+    ~LogDirTest() {
+        popLogger();
     }
 
     void setUp() {
@@ -4211,6 +4206,23 @@ private:
         ofstream out(name.c_str());
         out << data;
     }
+
+    /** capture output produced while test ran */
+    void messagev(Level level,
+                  const char *prefix,
+                  const char *file,
+                  int line,
+                  const char *function,
+                  const char *format,
+                  va_list args)
+    {
+        std::string str = StringPrintfV(format, args);
+        m_out << '[' << levelToStr(level) << ']' << str;
+        if (!boost::ends_with(str, "\n")) {
+            m_out << std::endl;
+        }
+    }
+    virtual bool isProcessSafe() const { return false; }
 
     CPPUNIT_TEST_SUITE(LogDirTest);
     CPPUNIT_TEST(testQuickCompare);

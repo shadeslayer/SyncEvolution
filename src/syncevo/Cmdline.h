@@ -65,13 +65,9 @@ public:
 
 class Cmdline {
 public:
-    /**
-     * @param out      stdout stream for normal messages
-     * @param err      stderr stream for error messages
-     */
-    Cmdline(int argc, const char * const *argv, std::ostream &out, std::ostream &err);
-    Cmdline(const std::vector<std::string> &args, std::ostream &out, std::ostream &err);
-    Cmdline(std::ostream &out, std::ostream &err, const char *arg, ...);
+    Cmdline(int argc, const char * const *argv);
+    Cmdline(const std::vector<std::string> &args);
+    Cmdline(const char *arg, ...);
     virtual ~Cmdline() {}
 
     /**
@@ -127,7 +123,6 @@ protected:
 
     int m_argc;
     const char * const * m_argv;
-    std::ostream &m_out, &m_err;
 
     //array to store pointers of arguments
     boost::scoped_array<const char *> m_argvArray;
