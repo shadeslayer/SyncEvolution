@@ -334,7 +334,12 @@
     </method>
 
     <method name="Execute">
-      <doc:doc><doc:description>Execute command line arguments </doc:description></doc:doc>
+      <doc:doc><doc:description>Starts execution of the operation
+      defined via the command line arguments. Like Sync(), it returns
+      immediately even if the operation still runs. Session
+      completion indicates that the operation is done. To determine
+      whether that operation was successful, check the session status.
+      </doc:description></doc:doc>
       <arg type="as" name="args" direction="in">
         <doc:doc><doc:summary>Command line arguments</doc:summary></doc:doc>
       </arg>
