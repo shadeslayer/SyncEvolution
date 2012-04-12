@@ -27,6 +27,7 @@ import shutil
 import copy
 import heapq
 import string
+import difflib
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
@@ -3389,6 +3390,194 @@ class TestBluetooth(unittest.TestCase, DBusUtil):
         self.failIf(string.find(config['']["fingerPrint"], bt_fingerprint) < 0)
         # real hardware information
         self.failUnlessEqual(config['']["hardwareName"], bt_fingerprint)
+
+def createFiles(root, content, append = False):
+    if not append:
+        shutil.rmtree(root, True)
+
+    entries = content.split("\n")
+    outname = ''
+    outfile = None
+    for entry in entries:
+        if not entry:
+            continue
+        parts = entry.split(":")
+        newname = parts[0]
+        line = parts[1]
+        if newname != outname:
+            fullpath = root + "/" + newname
+            try:
+                os.makedirs(fullpath[0:fullpath.rindex("/")])
+            except:
+                pass
+            mode = "w"
+            if append:
+                mode = "a"
+            outfile = open(fullpath, mode)
+            outname = newname
+        outfile.write(line + "\n")
+    outfile.close()
+
+def isPropAssignment (line):
+    line = line.lstrip()
+    if (line.startswith("KCalExtended = ") or line.startswith("mkcal = ") or line.startswith("QtContacts = ")):
+        return False
+    if line.find(" = ") > -1:
+        return True
+    return False
+
+def scanFiles(root, peer = '', onlyProps = True, directory = ''):
+    newroot = root + '/' + directory
+    out = ''
+
+    for entry in sorted(os.listdir(newroot)):
+        fullEntry = newroot + "/" + entry
+        if os.path.isdir(fullEntry):
+            if not (entry.endswith("/peers") and peer and entry != peer):
+                if directory:
+                    newdir = directory + '/' + entry
+                else:
+                    newdir = entry
+                out += scanFiles(root, peer, onlyProps, newdir)
+        else:
+            infile = open (fullEntry)
+            for line in infile:
+                line = line.rstrip("\r\n")
+                if (line):
+                    takeIt = False
+                    if (line.startswith("# ")):
+                        takeIt = isPropAssignment(line[2:])
+                    else:
+                        takeIt = True
+                    if (not onlyProps or takeIt):
+                        if (directory):
+                            out += directory + "/"
+                        out += entry + ':' + line + "\n"
+    return out
+
+def sortConfig(config):
+    lines = config.splitlines()
+    linenr = -1
+
+    unsorted = []
+    for line in lines:
+        linenr += 1
+        if not line:
+            continue
+        parts = line.split(":", 1)
+        element = parts[0], linenr, parts[1]
+        unsorted.append(element)
+
+    lines = sorted(unsorted)
+    unsorted = []
+    newconfig = ""
+    for line in lines:
+        newconfig += line[0] + ":" + line[2] + "\n"
+
+    return newconfig
+
+def lastLine(string):
+    return string.splitlines(True)[-1]
+
+def stripTime(string):
+    matches = re.match("\[(\w+)\s+\d\d:\d\d:\d\d\] (.*)$", string, re.DOTALL)
+    if matches != None:
+        return "[" + matches.group(1) + "] " + matches.group(2)
+    return string
+
+class TestCmdline(unittest.TestCase, DBusUtil):
+    """Tests cmdline by Session::Execute()."""
+
+    def setUp(self):
+        self.setUpServer()
+        self.testdir = "CmdlineTest"
+        shutil.rmtree(self.testdir, True)
+        os.makedirs(self.testdir)
+
+    def run(self, result):
+        self.runTest(result)
+
+    def replaceLineInConfig(self, config, begin, to):
+        index = config.find(begin)
+        self.assertNotEqual(index, -1)
+        newline = config.find("\n", index + len(begin))
+        self.assertNotEqual(newline, -1)
+        return config[:index] + to + config[newline:]
+
+    def removeRandomUUID(self, config):
+        return self.replaceLineInConfig(config,
+                                        "deviceId = syncevolution-",
+                                        "deviceId = fixed-devid")
+
+    def removeSSLCertsPaths(self, config):
+        return self.replaceLineInConfig(config,
+                                        "SSLServerCertificates = ",
+                                        "SSLServerCertificates = ")
+
+    def diffStrings(self, expected, res):
+        if expected != res:
+            for line in difflib.context_diff(expected.splitlines(True), res.splitlines(True), fromfile = "expected", tofile = "actual"):
+                sys.stdout.write(line)
+            self.assertTrue(False)
+
+
+
+    def testFramework(self):
+        """TestCmdline.testFramework - tests whether utility functions work"""
+        content = "baz:line\n" \
+                  "caz/subdir:booh\n" \
+                  "caz/subdir2/sub:# comment\n" \
+                  "caz/subdir2/sub:# foo = bar\n" \
+                  "caz/subdir2/sub:# empty = \n" \
+                  "caz/subdir2/sub:# another comment\n" \
+                  "foo:bar1\n" \
+                  "foo:\n" \
+                  "foo: \n" \
+                  "foo:bar2\n"
+
+        filtered = "baz:line\n" \
+                   "caz/subdir:booh\n" \
+                   "caz/subdir2/sub:# foo = bar\n" \
+                   "caz/subdir2/sub:# empty = \n" \
+                   "foo:bar1\n" \
+                   "foo: \n" \
+                   "foo:bar2\n"
+
+        createFiles(self.testdir, content)
+        res = scanFiles(self.testdir)
+        self.diffStrings(filtered, res)
+        randomUUID = "deviceId = syncevolution-blabla\n"
+        fixedUUID = "deviceId = fixed-devid\n"
+        res = self.removeRandomUUID(randomUUID)
+        self.assertEqual(fixedUUID, res)
+
+        SSLCertPaths = "peers/scheduleworld/config.ini:# SSLServerCertificates = /etc/ssl/certs/ca-certificates.crt:/etc/pki/tls/certs/ca-bundle.crt:/usr/share/ssl/certs/ca-bundle.crt\n"
+        clearSSLCertpaths = "peers/scheduleworld/config.ini:# SSLServerCertificates = \n"
+        res = self.removeSSLCertsPaths(SSLCertPaths)
+        self.assertEqual(clearSSLCertpaths, res)
+
+        unsorted = "f:g\n" \
+                   "f:j\n" \
+                   "a:b\n" \
+                   "f:a\n" \
+                   "a/b:a\n"
+        expected = "a:b\n" \
+                   "a/b:a\n" \
+                   "f:g\n" \
+                   "f:j\n" \
+                   "f:a\n"
+        res = sortConfig(unsorted)
+        self.diffStrings(expected, res)
+
+        lines = "a\nb\nc\n"
+        lastline = "c\n"
+        res = lastLine(lines)
+        self.assertEqual(lastline, res)
+
+        message = "[ERROR 12:34:56] msg\n"
+        stripped = "[ERROR] msg\n"
+        res = stripTime(message)
+        self.assertEqual(stripped, res)
 
 if __name__ == '__main__':
     unittest.main()
