@@ -764,7 +764,9 @@ void Session::run(LogRedirect &redirect)
                 break;
             case OP_CMDLINE:
                 try {
-                    m_cmdline->run(redirect);
+                    if (!m_cmdline->run(redirect)) {
+                        m_error = STATUS_FATAL;
+                    }
                 } catch (...) {
                     SyncMLStatus status = Exception::handle();
                     if (!m_error) {

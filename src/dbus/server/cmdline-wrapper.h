@@ -62,8 +62,10 @@ public:
     {}
 
     bool parse() { return m_cmdline.parse(); }
-    void run(LogRedirect &redirect)
+    bool run(LogRedirect &redirect)
     {
+        bool success = true;
+
         //temporarily set environment variables and restore them after running
         list<boost::shared_ptr<ScopedEnvChange> > changes;
         BOOST_FOREACH(const StringPair &var, m_envVars) {
@@ -72,10 +74,7 @@ public:
         // exceptions must be handled (= printed) before returning,
         // so that our client gets the output
         try {
-            if (!m_cmdline.run()) {
-                SE_THROW_EXCEPTION(DBusSyncException, "command line execution failure");
-            }
-
+            success = m_cmdline.run();
         } catch (...) {
             redirect.flush();
             throw;
@@ -83,6 +82,8 @@ public:
         // always forward all currently pending redirected output
         // before closing the session
         redirect.flush();
+
+        return success;
     }
 
     bool configWasModified() { return m_cmdline.configWasModified(); }
