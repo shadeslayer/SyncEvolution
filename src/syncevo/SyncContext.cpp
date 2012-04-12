@@ -1255,7 +1255,7 @@ public:
                 break;
             }
         }
-        SE_LOG_SHOW(NULL, NULL, "");
+        SE_LOG_SHOW(NULL, NULL, "\n");
         return true;
     }
 

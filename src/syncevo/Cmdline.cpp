@@ -707,7 +707,7 @@ bool Cmdline::run() {
             auto_ptr<SyncSource> source(SyncSource::createSource(params, false, NULL));
             if (source.get() != NULL) {
                 listSources(*source, header);
-                SE_LOG_SHOW(NULL, NULL, "");
+                SE_LOG_SHOW(NULL, NULL, "\n");
             } else {
                 SE_LOG_SHOW(NULL, NULL, "%s:\n   cannot list databases", header.c_str());
             }
@@ -726,7 +726,7 @@ bool Cmdline::run() {
                                 // listing databases and return NULL unless configured properly
                             } else {
                                 listSources(*source, header);
-                                SE_LOG_SHOW(NULL, NULL, "");
+                                SE_LOG_SHOW(NULL, NULL, "\n");
                             }
                         } catch (...) {
                             SE_LOG_ERROR(NULL, NULL, "%s:\nlisting databases failed", header.c_str());
@@ -986,7 +986,7 @@ bool Cmdline::run() {
                     } else if (missing.empty()) {
                         SE_LOG_INFO(NULL, NULL, "All relevant properties seem to be set, omit the --template parameter to proceed.");
                     }
-                    SE_LOG_INFO(NULL, NULL, "");
+                    SE_LOG_INFO(NULL, NULL, "\n");
                     SyncConfig::DeviceList devices;
                     devices.push_back(SyncConfig::DeviceDescription("", "", SyncConfig::MATCH_ALL));
                     dumpConfigTemplates("Available configuration templates (clients and servers):",
@@ -1567,7 +1567,7 @@ bool Cmdline::run() {
                 if (first) {
                     first = false;
                 } else if(!m_quiet) {
-                    SE_LOG_SHOW(NULL, NULL, "");
+                    SE_LOG_SHOW(NULL, NULL, "\n");
                 }
                 SE_LOG_SHOW(NULL, NULL, "%s", dir.c_str());
                 if (!m_quiet) {
@@ -2049,7 +2049,7 @@ void Cmdline::usage(bool full, const string &error, const string &param)
     }
 
     if (error != "") {
-        SE_LOG_SHOW(NULL, NULL, "");
+        SE_LOG_SHOW(NULL, NULL, "\n");
         SE_LOG_ERROR(NULL, NULL, "%s", error.c_str());
     }
     if (param != "") {
