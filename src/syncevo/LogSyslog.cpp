@@ -22,6 +22,8 @@
 #include <errno.h>
 #include <syslog.h>
 
+#include <boost/bind.hpp>
+
 #include <syncevo/declarations.h>
 using namespace std;
 SE_BEGIN_CXX
@@ -39,6 +41,28 @@ LoggerSyslog::~LoggerSyslog()
     LoggerBase::popLogger();
 }
 
+static void printToSyslog(int sysloglevel, std::string &chunk, size_t expectedTotal)
+{
+    if (!expectedTotal) {
+        // Might contain line breaks in the middle, split it.
+        size_t pos = 0;
+        while(true) {
+            size_t next = chunk.find('\n', pos);
+            if (next == chunk.npos) {
+                // Line break is guaranteed to be last character,
+                // so we have printed everything now.
+                return;
+            }
+            chunk[next] = 0;
+            syslog(sysloglevel, "%s", chunk.c_str() + pos);
+            pos = next + 1;
+        }
+    } else {
+        // Single line. We can print the trailing line break.
+        syslog(sysloglevel, "%s", chunk.c_str());
+    }
+}
+
 void LoggerSyslog::messagev(Level level,
                             const char *prefix,
                             const char *file,
@@ -49,62 +73,17 @@ void LoggerSyslog::messagev(Level level,
 {
 
     if (level <= getLevel()) {
-        std::string syslog_prefix;
-
-        if (level != SHOW) {
-            std::string reltime;
-
-            if (getLevel() >= DEBUG) {
-                // add relative time stamp
-                Timespec now = Timespec::monotonic();
-                if (!m_startTime) {
-                    // first message, start counting time
-                    m_startTime = now;
-                    time_t nowt = time(NULL);
-                    struct tm tm_gm, tm_local;
-                    char buffer[2][80];
-
-                    gmtime_r(&nowt, &tm_gm);
-                    localtime_r(&nowt, &tm_local);
-                    strftime(buffer[0], sizeof(buffer[0]),
-                             "%a %Y-%m-%d %H:%M:%S",
-                             &tm_gm);
-                    strftime(buffer[1], sizeof(buffer[1]),
-                             "%H:%M %z %Z",
-                             &tm_local);
-                    syslog(LOG_DEBUG, "[DEBUG 00:00:00] %s UTC = %s\n", buffer[0], buffer[1]);
-                } else {
-                    if (now >= m_startTime) {
-                        Timespec delta = now - m_startTime;
-                        reltime = StringPrintf(" %02ld:%02ld:%02ld",
-                                               delta.tv_sec / (60 * 60),
-                                               (delta.tv_sec % (60 * 60)) / 60,
-                                               delta.tv_sec % 60);
-                    } else {
-                        reltime = " ??:??:??";
-                    }
-                }
-            }
-
-            // in case of 'SHOW' level, don't print level and prefix information
-            syslog_prefix = StringPrintf("[%s%s] %s%s",
-                                         levelToStr(level),
-                                         reltime.c_str(),
-                                         prefix ? prefix : "",
-                                         prefix ? ": " : "");
-        }
-
-        std::string syslog_string(StringPrintfV(format, args));
-
-        // prepend syslog_prefix to syslog_string
-        syslog_string.insert(0, syslog_prefix);
-        syslog(getSyslogLevel(), "%s\n", syslog_string.c_str());
+        formatLines(level, getLevel(),
+                    "", // process name is set when opening the syslog
+                    prefix,
+                    format, args,
+                    boost::bind(printToSyslog, getSyslogLevel(level), _1, _2));
     }
 }
 
-int LoggerSyslog::getSyslogLevel()
+int LoggerSyslog::getSyslogLevel(Level level)
 {
-    switch (getLevel()) {
+    switch (level) {
     case ERROR:
         return LOG_ERR;
     case WARNING:

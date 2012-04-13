@@ -78,6 +78,111 @@ LoggerBase *LoggerBase::loggerAt(int index)
         loggers()[index];
 }
 
+void LoggerBase::formatLines(Level msglevel,
+                             Level outputlevel,
+                             const std::string &processName,
+                             const char *prefix,
+                             const char *format,
+                             va_list args,
+                             boost::function<void (std::string &buffer, size_t expectedTotal)> print)
+{
+    std::string tag;
+
+    // in case of 'SHOW' level, don't print level and prefix information
+    if (msglevel != SHOW) {
+        std::string reltime;
+        std::string procname;
+        if (!processName.empty()) {
+            procname.reserve(processName.size() + 1);
+            procname += " ";
+            procname += m_processName;
+        }
+
+        if (outputlevel >= DEBUG) {
+            // add relative time stamp
+            Timespec now = Timespec::monotonic();
+            if (!m_startTime) {
+                // first message, start counting time
+                m_startTime = now;
+                time_t nowt = time(NULL);
+                struct tm tm_gm, tm_local;
+                char buffer[2][80];
+                gmtime_r(&nowt, &tm_gm);
+                localtime_r(&nowt, &tm_local);
+                reltime = " 00:00:00";
+                strftime(buffer[0], sizeof(buffer[0]),
+                         "%a %Y-%m-%d %H:%M:%S",
+                         &tm_gm);
+                strftime(buffer[1], sizeof(buffer[1]),
+                         "%H:%M %z %Z",
+                         &tm_local);
+                std::string line =
+                    StringPrintf("[DEBUG%s%s] %s UTC = %s\n",
+                                 procname.c_str(),
+                                 reltime.c_str(),
+                                 buffer[0],
+                                 buffer[1]);
+                print(line, 1);
+            } else {
+                if (now >= m_startTime) {
+                    Timespec delta = now - m_startTime;
+                    reltime = StringPrintf(" %02ld:%02ld:%02ld",
+                                           delta.tv_sec / (60 * 60),
+                                           (delta.tv_sec % (60 * 60)) / 60,
+                                           delta.tv_sec % 60);
+                } else {
+                    reltime = " ??:??:??";
+                }
+            }
+        }
+        tag = StringPrintf("[%s%s%s] %s%s",
+                           levelToStr(msglevel),
+                           procname.c_str(),
+                           reltime.c_str(),
+                           prefix ? prefix : "",
+                           prefix ? ": " : "");
+    }
+
+    std::string output = StringPrintfV(format, args);
+
+    if (!tag.empty()) {
+        // Print individual lines.
+        //
+        // Total size is guessed by assuming an average line length of
+        // around 40 characters to predict number of lines.
+        size_t expectedTotal = (output.size() / 40 + 1) * tag.size() + output.size();
+        size_t pos = 0;
+        while (true) {
+            size_t next = output.find('\n', pos);
+            if (next != output.npos) {
+                std::string line;
+                line.reserve(tag.size() + next + 1 - pos);
+                line.append(tag);
+                line.append(output, pos, next + 1 - pos);
+                print(line, expectedTotal);
+                pos = next + 1;
+            } else {
+                break;
+            }
+        }
+        if (pos < output.size() || output.empty()) {
+            // handle dangling last line or empty chunk (don't
+            // want empty line for that, print at least the tag)
+            std::string line;
+            line.reserve(tag.size() + output.size() - pos + 1);
+            line.append(tag);
+            line.append(output, pos, output.size() - pos);
+            line += '\n';
+            print(line, expectedTotal);
+        }
+    } else {
+        if (!boost::ends_with(output, "\n")) {
+            // append newline if necessary
+            output += '\n';
+        }
+        print(output, 0);
+    }
+}
 
 void Logger::message(Level level,
                      const char *prefix,

@@ -38,12 +38,6 @@ class LoggerStdout : public LoggerBase
     FILE *m_file;
     bool m_closeFile;
 
-    /**
-     * Set before writing the first message if log level is debugging,
-     * together with printing a message that gives the local time.
-     */
-    Timespec m_startTime;
-
  public:
     /**
      * write to stdout by default

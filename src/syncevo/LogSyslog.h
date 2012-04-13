@@ -59,7 +59,7 @@ public:
 
     virtual bool isProcessSafe() const { return true; }
 private:
-    int getSyslogLevel();
+    static int getSyslogLevel(Level level);
 };
 
 SE_END_CXX

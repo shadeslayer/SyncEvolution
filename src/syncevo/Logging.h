@@ -31,6 +31,10 @@
 # include <glib.h>
 #endif
 
+#include <syncevo/Timespec.h>
+
+#include <boost/function.hpp>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -219,8 +223,34 @@ class LoggerBase : public Logger
     virtual void setLevel(Level level) { m_level = level; }
     virtual Level getLevel() { return m_level; }
 
+ protected:
+    /**
+     * Prepares the output. The result is passed back to the caller
+     * line-by-line (expectedTotal > 0) and/or as full chunk
+     * (expectedTotal = 0). The expected size is just a guess, be
+     * prepared to handle more output.
+     *
+     * Each chunk already includes the necessary line breaks (in
+     * particular after the last line when it contains the entire
+     * output). It may be modified by the callback.
+     */
+    void formatLines(Level msglevel,
+                     Level outputlevel,
+                     const std::string &processName,
+                     const char *prefix,
+                     const char *format,
+                     va_list args,
+                     boost::function<void (std::string &chunk, size_t expectedTotal)> print);
+
  private:
     Level m_level;
+
+    /**
+     * Set by formatLines() before writing the first message if log
+     * level is debugging, together with printing a message that gives
+     * the local time.
+     */
+    Timespec m_startTime;
 };
 
 
