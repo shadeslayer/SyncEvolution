@@ -29,7 +29,6 @@
 #include <boost/utility/value_init.hpp>
 
 #include <stdarg.h>
-#include <time.h>
 
 #include <vector>
 #include <sstream>
@@ -38,6 +37,8 @@
 #include <exception>
 #include <list>
 
+#include <syncevo/Timespec.h>    // definitions used to be included in util.h,
+                                 // include it to avoid changing code using the time things
 #include <syncevo/Logging.h>
 
 #include <syncevo/declarations.h>
@@ -336,51 +337,6 @@ char *Strncpy(char *dest, const char *src, size_t n);
  * before the time has elapsed.
  */
 void Sleep(double seconds);
-
-
-/**
- * Sub-second time stamps. Thin wrapper around timespec
- * and clock_gettime() (for monotonic time). Comparisons
- * assume normalized values (tv_nsec >= 0, < 1e9). Addition
- * and substraction produce normalized values, as long
- * as the result is positive. Substracting a - b where a < b
- * leads to an undefined result.
- */
-class Timespec : public timespec
-{
- public:
-    Timespec() { tv_sec = 0; tv_nsec = 0; }
-    Timespec(time_t sec, long nsec) { tv_sec = sec; tv_nsec = nsec; }
-
-    bool operator < (const Timespec &other) const {
-        return tv_sec < other.tv_sec ||
-            (tv_sec == other.tv_sec && tv_nsec < other.tv_nsec);
-    }
-    bool operator > (const Timespec &other) const {
-        return tv_sec > other.tv_sec ||
-            (tv_sec == other.tv_sec && tv_nsec > other.tv_nsec);
-    }
-    bool operator <= (const Timespec &other) const { return !(*this > other); }
-    bool operator >= (const Timespec &other) const { return !(*this < other); }
-
-    operator bool () const { return tv_sec || tv_nsec; }
-
-    Timespec operator + (int seconds) const { return Timespec(tv_sec + seconds, tv_nsec); }
-    Timespec operator - (int seconds) const { return Timespec(tv_sec - seconds, tv_nsec); }
-    Timespec operator + (unsigned seconds) const { return Timespec(tv_sec + seconds, tv_nsec); }
-    Timespec operator - (unsigned seconds) const { return Timespec(tv_sec - seconds, tv_nsec); }
-    Timespec operator + (const Timespec &other) const;
-    Timespec operator - (const Timespec &other) const;
-
-    operator timeval () const { timeval res; res.tv_sec = tv_sec; res.tv_usec = tv_nsec / 1000; return res; }
-
-    time_t seconds() const { return tv_sec; }
-    long nsecs() const { return tv_nsec; }
-    double duration() const { return (double)tv_sec + ((double)tv_nsec) / 1e9;  }
-
-    static Timespec monotonic() { Timespec res; clock_gettime(CLOCK_MONOTONIC, &res); return res; }
-    static Timespec system() { Timespec res; clock_gettime(CLOCK_REALTIME, &res); return res; }
-};
 
 /**
  * Acts like the underlying type. In addition ensures that plain types
