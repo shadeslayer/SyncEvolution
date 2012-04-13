@@ -33,6 +33,14 @@ namespace GDBusCXX {
 MethodHandler::MethodMap MethodHandler::m_methodMap;
 boost::function<void (void)> MethodHandler::m_callback;
 
+static void GDBusNameLost(GDBusConnection *connection,
+                          const gchar *name,
+                          gpointer user_data)
+{
+    g_critical("lost D-Bus connection or failed to obtain %s D-Bus name, quitting", name);
+    exit(1);
+}
+
 DBusConnectionPtr dbus_get_bus_connection(const char *busType,
                                           const char *name,
                                           bool unshared,
@@ -82,8 +90,10 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
     }
 
     if(name) {
-        g_bus_own_name_on_connection(conn.get(), name, G_BUS_NAME_OWNER_FLAGS_NONE,
-                                     NULL, NULL, NULL, NULL);
+        // Copy name, to ensure that it remains available.
+        char *copy = g_strdup(name);
+        g_bus_own_name_on_connection(conn.get(), copy, G_BUS_NAME_OWNER_FLAGS_NONE,
+                                     NULL, GDBusNameLost, copy, g_free);
         g_dbus_connection_set_exit_on_close(conn.get(), TRUE);
     }
 
