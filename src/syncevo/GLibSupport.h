@@ -184,6 +184,9 @@ struct GErrorCXX {
      */
     operator GError ** () { return &m_gerror; }
 
+    /** true if error set */
+    operator bool () { return m_gerror != NULL; }
+
     /**
      * always throws an exception, including information from GError if available:
      * <action>: <error message>|failure
