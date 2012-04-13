@@ -142,10 +142,28 @@ class ForkExecParent : public ForkExec
 
     /**
      * Called when the helper has quit. The parameter of the signal is
-     * the return status of the helper (see waitpid()).
+     * the return status of the helper (see waitpid()). If output
+     * redirection is active, then this signal will only be invoked
+     * after processing all output.
      */
     typedef boost::signals2::signal<void (int)> OnQuit;
     OnQuit m_onQuit;
+
+    /**
+     * Called when output from the helper is available. The buffer is
+     * guaranteed to be nul-terminated with a byte that is not
+     * included in the size.
+     *
+     * Register slots *before* calling start(), because output
+     * redirection of the helper will only be done if someone is
+     * waiting for it. If m_onOutput has a slot, then both stderr and
+     * stdout are redirected into the same stream and only m_onOutput
+     * will be invoked.
+     */
+    typedef boost::signals2::signal<void (const char *buffer, size_t length)> OnOutput;
+    OnOutput m_onOutput;
+    OnOutput m_onStdout;
+    OnOutput m_onStderr;
 
     enum State {
         IDLE,           /**< instance constructed, but start() not called yet */
@@ -184,8 +202,14 @@ class ForkExecParent : public ForkExec
     GPid m_childPid;
     bool m_hasConnected;
     bool m_hasQuit;
+    gint m_status;
     bool m_sigIntSent;
     bool m_sigTermSent;
+
+    /** invoke m_onOutput while reading from a single stream */
+    bool m_mergedStdoutStderr;
+    GIOChannel *m_out, *m_err;
+    guint m_outID, m_errID;
 
     GSource *m_watchChild;
     static void watchChildCallback(GPid pid,
@@ -193,6 +217,13 @@ class ForkExecParent : public ForkExec
                                    gpointer data) throw();
 
     void newClientConnection(GDBusCXX::DBusConnectionPtr &conn) throw();
+
+    void setupPipe(GIOChannel *&channel, guint &sourceID, int fd);
+    static gboolean outputReady(GIOChannel *source,
+                                GIOCondition condition,
+                                gpointer data) throw ();
+
+    void checkCompletion() throw ();
 };
 
 /**
