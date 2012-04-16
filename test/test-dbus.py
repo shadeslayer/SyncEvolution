@@ -3558,6 +3558,112 @@ class TestCmdline(unittest.TestCase, DBusUtil):
             self.fail(result)
         return (out, err, s.returncode)
 
+    cachedSSLServerCertificates = None
+    def getSSLServerCertificates(self):
+        '''Default SSLServerCertificates path as compiled into the SyncEvolution
+        binaries. Determined once by asking for a template.'''
+        if TestCmdline.cachedSSLServerCertificates == None:
+            out, err, code = self.runCmdline(['--template', 'default',
+                                              '--print-config'])
+            self.assertEqual(err, '')
+            m = re.search(r'^# SSLServerCertificates = (.*)\n', out, re.MULTILINE)
+            self.assertTrue(m)
+            TestCmdline.cachedSSLServerCertificates = m.group(1)
+        return TestCmdline.cachedSSLServerCertificates
+
+    def ScheduleWorldConfig(self, peerMinVersion = 1, peerCurVersion = 1, contextMinVersion = 1, contextCurVersion = 1):
+        return '''peers/scheduleworld/.internal.ini:peerMinVersion = {0}
+peers/scheduleworld/.internal.ini:peerCurVersion = {1}
+peers/scheduleworld/.internal.ini:# HashCode = 0
+peers/scheduleworld/.internal.ini:# ConfigDate = 
+peers/scheduleworld/.internal.ini:# lastNonce = 
+peers/scheduleworld/.internal.ini:# deviceData = 
+peers/scheduleworld/.internal.ini:# webDAVCredentialsOkay = 0
+peers/scheduleworld/config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds
+peers/scheduleworld/config.ini:# username = 
+peers/scheduleworld/config.ini:# password = 
+.internal.ini:contextMinVersion = {2}
+.internal.ini:contextCurVersion = {3}
+config.ini:# logdir = 
+peers/scheduleworld/config.ini:# loglevel = 0
+peers/scheduleworld/config.ini:# printChanges = 1
+peers/scheduleworld/config.ini:# dumpData = 1
+config.ini:# maxlogdirs = 10
+peers/scheduleworld/config.ini:# autoSync = 0
+peers/scheduleworld/config.ini:# autoSyncInterval = 30M
+peers/scheduleworld/config.ini:# autoSyncDelay = 5M
+peers/scheduleworld/config.ini:# preventSlowSync = 1
+peers/scheduleworld/config.ini:# useProxy = 0
+peers/scheduleworld/config.ini:# proxyHost = 
+peers/scheduleworld/config.ini:# proxyUsername = 
+peers/scheduleworld/config.ini:# proxyPassword = 
+peers/scheduleworld/config.ini:# clientAuthType = md5
+peers/scheduleworld/config.ini:# RetryDuration = 5M
+peers/scheduleworld/config.ini:# RetryInterval = 2M
+peers/scheduleworld/config.ini:# remoteIdentifier = 
+peers/scheduleworld/config.ini:# PeerIsClient = 0
+peers/scheduleworld/config.ini:# SyncMLVersion = 
+peers/scheduleworld/config.ini:PeerName = ScheduleWorld
+config.ini:deviceId = fixed-devid
+peers/scheduleworld/config.ini:# remoteDeviceId = 
+peers/scheduleworld/config.ini:# enableWBXML = 1
+peers/scheduleworld/config.ini:# maxMsgSize = 150000
+peers/scheduleworld/config.ini:# maxObjSize = 4000000
+peers/scheduleworld/config.ini:# SSLServerCertificates = {4}
+peers/scheduleworld/config.ini:# SSLVerifyServer = 1
+peers/scheduleworld/config.ini:# SSLVerifyHost = 1
+peers/scheduleworld/config.ini:WebURL = http://www.scheduleworld.com
+peers/scheduleworld/config.ini:IconURI = image://themedimage/icons/services/scheduleworld
+peers/scheduleworld/config.ini:# ConsumerReady = 0
+peers/scheduleworld/config.ini:# peerType = 
+peers/scheduleworld/sources/addressbook/.internal.ini:# adminData = 
+peers/scheduleworld/sources/addressbook/.internal.ini:# synthesisID = 0
+peers/scheduleworld/sources/addressbook/config.ini:sync = two-way
+peers/scheduleworld/sources/addressbook/config.ini:uri = card3
+peers/scheduleworld/sources/addressbook/config.ini:syncFormat = text/vcard
+peers/scheduleworld/sources/addressbook/config.ini:# forceSyncFormat = 0
+peers/scheduleworld/sources/calendar/.internal.ini:# adminData = 
+peers/scheduleworld/sources/calendar/.internal.ini:# synthesisID = 0
+peers/scheduleworld/sources/calendar/config.ini:sync = two-way
+peers/scheduleworld/sources/calendar/config.ini:uri = cal2
+sources/calendar/config.ini:backend = calendar
+peers/scheduleworld/sources/calendar/config.ini:# syncFormat = 
+peers/scheduleworld/sources/calendar/config.ini:# forceSyncFormat = 0
+sources/calendar/config.ini:# database = 
+sources/calendar/config.ini:# databaseFormat = 
+sources/calendar/config.ini:# databaseUser = 
+sources/calendar/config.ini:# databasePassword = 
+peers/scheduleworld/sources/memo/.internal.ini:# adminData = 
+peers/scheduleworld/sources/memo/.internal.ini:# synthesisID = 0
+peers/scheduleworld/sources/memo/config.ini:sync = two-way
+peers/scheduleworld/sources/memo/config.ini:uri = note
+sources/memo/config.ini:backend = memo
+peers/scheduleworld/sources/memo/config.ini:# syncFormat = 
+peers/scheduleworld/sources/memo/config.ini:# forceSyncFormat = 0
+sources/memo/config.ini:# database = 
+sources/memo/config.ini:# databaseFormat = 
+sources/memo/config.ini:# databaseUser = 
+sources/memo/config.ini:# databasePassword = 
+peers/scheduleworld/sources/todo/.internal.ini:# adminData = 
+peers/scheduleworld/sources/todo/.internal.ini:# synthesisID = 0
+peers/scheduleworld/sources/todo/config.ini:sync = two-way
+peers/scheduleworld/sources/todo/config.ini:uri = task2
+sources/todo/config.ini:backend = todo
+peers/scheduleworld/sources/todo/config.ini:# syncFormat = 
+peers/scheduleworld/sources/todo/config.ini:# forceSyncFormat = 0
+sources/addressbook/config.ini:backend = addressbook
+sources/addressbook/config.ini:# database = 
+sources/addressbook/config.ini:# databaseFormat = 
+sources/addressbook/config.ini:# databaseUser = 
+sources/addressbook/config.ini:# databasePassword = 
+sources/todo/config.ini:# database = 
+sources/todo/config.ini:# databaseFormat = 
+sources/todo/config.ini:# databaseUser = 
+sources/todo/config.ini:# databasePassword = '''.format(
+           peerMinVersion, peerCurVersion,
+           contextMinVersion, contextCurVersion,
+           self.getSSLServerCertificates())
+
     def replaceLineInConfig(self, config, begin, to):
         index = config.find(begin)
         self.assertNotEqual(index, -1)
@@ -3675,6 +3781,51 @@ class TestCmdline(unittest.TestCase, DBusUtil):
         self.assertEqual(err, None)
         self.assertRegexpMatches(out, r'^List databases:\n(.*\n)*\[ERROR\] --foo-bar: unknown parameter\n$')
         self.assertEqual(1, code)
+
+    def doSetupScheduleWorld(self, shared):
+        root = self.configdir + "/default"
+        peer = ""
+
+        if shared:
+            peer = root + "/peers/scheduleworld"
+        else:
+            peer = root
+
+        shutil.rmtree(peer, True)
+        out, err, code = self.runCmdline(['--configure',
+                                          '--sync-property', 'proxyHost = proxy',
+                                          'scheduleworld', 'addressbook'])
+        self.assertEqual(out, '')
+        self.assertEqual(err, '')
+        res = sortConfig(scanFiles(root))
+        res = self.removeRandomUUID(res)
+        expected = self.ScheduleWorldConfig()
+        expected = sortConfig(expected)
+        expected = expected.replace("# proxyHost = ",
+                                    "proxyHost = proxy",
+                                    1)
+        expected = expected.replace("sync = two-way",
+                                    "sync = disabled")
+        expected = expected.replace("addressbook/config.ini:sync = disabled",
+                                    "addressbook/config.ini:sync = two-way",
+                                    1)
+        self.assertEqualDiff(expected, res)
+
+        shutil.rmtree(peer, True)
+        out, err, code = self.runCmdline(['--configure',
+                                          '--sync-property', 'deviceId = fixed-devid',
+                                          'scheduleworld'])
+        self.assertEqual(out, '')
+        self.assertEqual(err, '')
+        res = sortConfig(scanFiles(root))
+        expected = self.ScheduleWorldConfig()
+        expected = sortConfig(expected)
+        self.assertEqualDiff(expected, res)
+
+    @property('debug', False)
+    def testSetupScheduleWorld(self):
+        """TestCmdline.testSetupScheduleWorld - configure ScheduleWorld"""
+        self.doSetupScheduleWorld(False)
 
 if __name__ == '__main__':
     unittest.main()
