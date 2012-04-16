@@ -3546,10 +3546,19 @@ class TestCmdline(unittest.TestCase, DBusUtil):
         Returns tuple with stdout, stderr and result code.'''
         a = [ 'syncevolution' ]
         a.extend(args)
+        # Explicitly pass an environment. Otherwise subprocess.Popen()
+        # from Python 2.6 uses not os.environ (which would be okay)
+        # but rather the environment passed to a previous call to
+        # subprocess.Popen() (which will fail if the previous test ran
+        # with an environment which had SYNCEVOLUTION_DEBUG set).
+        if env == None:
+            env=os.environ
         if preserveOutputOrder:
-            s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                 env=env)
         else:
-            s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                 env=env)
         out, err = s.communicate()
         if expectSuccess and s.returncode != 0:
             result = 'syncevolution command failed.\nOutput:\n%s' % out
