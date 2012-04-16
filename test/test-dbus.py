@@ -3525,9 +3525,9 @@ class TestCmdline(unittest.TestCase, DBusUtil):
 
     def setUp(self):
         self.setUpServer()
-        self.testdir = "CmdlineTest"
-        shutil.rmtree(self.testdir, True)
-        os.makedirs(self.testdir)
+        # All tests run with their own XDG root hierarchy.
+        # Here are the config files.
+        self.configdir = xdg_root + "/config/syncevolution"
 
     def run(self, result):
         self.runTest(result)
@@ -3570,8 +3570,8 @@ class TestCmdline(unittest.TestCase, DBusUtil):
                    "foo: \n" \
                    "foo:bar2\n"
 
-        createFiles(self.testdir, content)
-        res = scanFiles(self.testdir)
+        createFiles(self.configdir, content)
+        res = scanFiles(self.configdir)
         self.assertEqualDiff(filtered, res)
         randomUUID = "deviceId = syncevolution-blabla\n"
         fixedUUID = "deviceId = fixed-devid\n"
