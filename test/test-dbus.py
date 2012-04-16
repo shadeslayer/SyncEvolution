@@ -832,6 +832,24 @@ class DBusUtil(Timeout):
             self.assertFalse("error" in reports[0])
         return reports[0]
 
+    def assertEqualDiff(self, expected, res):
+        '''Like assertEqual(), but raises an error which contains a
+        diff of the two parameters. Useful when they are long strings
+        (will be split at newlines automatically) or lists (compared
+        as-is). Very similar to Python's 2.7 unittest, but also works
+        for older Python releases and allows comparing strings against lists.'''
+        def splitlines(str):
+            '''split any object which looks like a string == has splitlines'''
+            if 'splitlines' in dir(str):
+                return str.splitlines(True)
+            else:
+                return str
+        expected = splitlines(expected)
+        res = splitlines(res)
+        if expected != res:
+            diff = ''.join(difflib.Differ().compare(expected, res))
+            self.fail('differences between expected and actual text\n\n' + diff)
+
 class TestDBusServer(unittest.TestCase, DBusUtil):
     """Tests for the read-only Server API."""
 
@@ -3514,14 +3532,6 @@ class TestCmdline(unittest.TestCase, DBusUtil):
                                         "SSLServerCertificates = ",
                                         "SSLServerCertificates = ")
 
-    def diffStrings(self, expected, res):
-        if expected != res:
-            for line in difflib.context_diff(expected.splitlines(True), res.splitlines(True), fromfile = "expected", tofile = "actual"):
-                sys.stdout.write(line)
-            self.assertTrue(False)
-
-
-
     def testFramework(self):
         """TestCmdline.testFramework - tests whether utility functions work"""
         content = "baz:line\n" \
@@ -3545,7 +3555,7 @@ class TestCmdline(unittest.TestCase, DBusUtil):
 
         createFiles(self.testdir, content)
         res = scanFiles(self.testdir)
-        self.diffStrings(filtered, res)
+        self.assertEqualDiff(filtered, res)
         randomUUID = "deviceId = syncevolution-blabla\n"
         fixedUUID = "deviceId = fixed-devid\n"
         res = self.removeRandomUUID(randomUUID)
@@ -3567,7 +3577,25 @@ class TestCmdline(unittest.TestCase, DBusUtil):
                    "f:j\n" \
                    "f:a\n"
         res = sortConfig(unsorted)
-        self.diffStrings(expected, res)
+        self.assertEqualDiff(expected, res)
+
+        # test DBusUtil.assertEqualDiff()
+        try:
+            self.assertEqualDiff('foo\nbar\n', 'foo\nxxx\nbar\n')
+        except AssertionError, ex:
+            expected = '''differences between expected and actual text
+
+  foo
++ xxx
+  bar
+'''
+            self.assertTrue(str(ex).endswith(expected), 'actual exception differs\n' + str(ex))
+        else:
+            self.fail('''DBusUtil.assertEqualDiff() did not detect diff''')
+
+        self.assertEqualDiff('foo\nbar', [ 'foo\n', 'bar' ])
+        self.assertEqualDiff([ 'foo\n', 'bar' ], 'foo\nbar')
+        self.assertEqualDiff([ 'foo\n', 'bar' ], [ 'foo\n', 'bar' ])
 
         lines = "a\nb\nc\n"
         lastline = "c\n"
