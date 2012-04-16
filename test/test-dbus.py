@@ -420,7 +420,8 @@ class DBusUtil(Timeout):
 
         # always print all debug output directly (no output redirection),
         # and increase log level
-        env["SYNCEVOLUTION_DEBUG"] = "1"
+        if self.getTestProperty("debug", True):
+            env["SYNCEVOLUTION_DEBUG"] = "1"
 
         # can be set by a test to run additional tests on the content
         # of the D-Bus log
@@ -3532,6 +3533,31 @@ class TestCmdline(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result)
 
+    def runCmdline(self, args, env=None, expectSuccess=True, preserveOutputOrder=False):
+        '''Run the 'syncevolution' command line (from PATH) with the
+        given arguments (list or tuple of strings). Uses the current
+        environment unless one is set explicitly. Unless told
+        otherwise, the result of the command is checked for
+        success. Usually stdout and stderr are captured separately,
+        in which case relative order of messages from different
+        streams cannot be tested. When that is relevant, set preserveOutputOrder=True
+        and look only at the stdout.
+
+        Returns tuple with stdout, stderr and result code.'''
+        a = [ 'syncevolution' ]
+        a.extend(args)
+        if preserveOutputOrder:
+            s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        else:
+            s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = s.communicate()
+        if expectSuccess and s.returncode != 0:
+            result = 'syncevolution command failed.\nOutput:\n%s' % out
+            if not preserveOutputOrder:
+                result += '\nSeparate stderr:\n%s' % err
+            self.fail(result)
+        return (out, err, s.returncode)
+
     def replaceLineInConfig(self, config, begin, to):
         index = config.find(begin)
         self.assertNotEqual(index, -1)
@@ -3549,6 +3575,7 @@ class TestCmdline(unittest.TestCase, DBusUtil):
                                         "SSLServerCertificates = ",
                                         "SSLServerCertificates = ")
 
+    @property('debug', False)
     def testFramework(self):
         """TestCmdline.testFramework - tests whether utility functions work"""
         content = "baz:line\n" \
@@ -3636,6 +3663,18 @@ class TestCmdline(unittest.TestCase, DBusUtil):
         stripped = "[ERROR] msg\n"
         res = stripTime(message)
         self.assertEqual(stripped, res)
+
+        # Run command without talking to server, separate streams.
+        out, err, code = self.runCmdline(['--foo-bar'], expectSuccess=False)
+        self.assertEqual(err, '[ERROR] --foo-bar: unknown parameter\n')
+        self.assertRegexpMatches(out, '^List databases:\n')
+        self.assertEqual(1, code)
+
+        # Run command without talking to server, joined streams.
+        out, err, code = self.runCmdline(['--foo-bar'], expectSuccess=False, preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertRegexpMatches(out, r'^List databases:\n(.*\n)*\[ERROR\] --foo-bar: unknown parameter\n$')
+        self.assertEqual(1, code)
 
 if __name__ == '__main__':
     unittest.main()
