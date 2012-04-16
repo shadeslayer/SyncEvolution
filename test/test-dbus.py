@@ -3451,13 +3451,15 @@ def createFiles(root, content, append = False):
         outfile.write(line + "\n")
     outfile.close()
 
+isPropRegEx = re.compile(r'^([a-zA-Z]+) = ')
 def isPropAssignment (line):
-    line = line.lstrip()
-    if (line.startswith("KCalExtended = ") or line.startswith("mkcal = ") or line.startswith("QtContacts = ")):
+    m = isPropRegEx.search(line)
+    if not m:
         return False
-    if line.find(" = ") > -1:
-        return True
-    return False
+    # exclude some false positives
+    if m.group(1) in ('KCalExtended', 'mkcal', 'QtContacts'):
+        return False
+    return True
 
 def scanFiles(root, peer = '', onlyProps = True, directory = ''):
     newroot = root + '/' + directory
