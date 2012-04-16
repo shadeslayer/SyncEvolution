@@ -850,6 +850,21 @@ class DBusUtil(Timeout):
             diff = ''.join(difflib.Differ().compare(expected, res))
             self.fail('differences between expected and actual text\n\n' + diff)
 
+    def assertRegexpMatchesCustom(self, text, regex, msg=None):
+        if isinstance(regex, str):
+            regex = re.compile(regex)
+        if not regex.search(text):
+            if msg != None:
+                self.fail(msg)
+            else:
+                self.fail('text does not match regex\n\nText:\n%s\n\nRegex:\n%s' % \
+                              (text, regex.pattern))
+
+
+    # reimplement Python 2.7 assertions only in older Python
+    if True or not 'assertRegexpMatches' in dir(self):
+        assertRegexpMatches = assertRegexpMatchesCustom
+
 class TestDBusServer(unittest.TestCase, DBusUtil):
     """Tests for the read-only Server API."""
 
@@ -3596,6 +3611,19 @@ class TestCmdline(unittest.TestCase, DBusUtil):
         self.assertEqualDiff('foo\nbar', [ 'foo\n', 'bar' ])
         self.assertEqualDiff([ 'foo\n', 'bar' ], 'foo\nbar')
         self.assertEqualDiff([ 'foo\n', 'bar' ], [ 'foo\n', 'bar' ])
+
+        # test our own regex match
+        self.assertRegexpMatchesCustom('foo\nbar\nend', 'bar')
+        self.assertRegexpMatchesCustom('foo\nbar\nend', 'b.r')
+        self.assertRegexpMatchesCustom('foo\nbar\nend', re.compile('^b.r$', re.MULTILINE))
+        try:
+            self.assertRegexpMatchesCustom('foo\nbar\nend', 'xxx')
+        except AssertionError, ex:
+            expected = '''text does not match regex\n\nText:\nfoo\nbar\nend\n\nRegex:\nxxx'''
+            self.assertTrue(str(ex).endswith(expected), 'actual exception differs\n' + str(ex))
+        else:
+            self.fail('''DBusUtil.assertRegexpMatchesCustom() did not fail''')
+        self.assertRegexpMatches('foo\nbar\nend', 'bar')
 
         lines = "a\nb\nc\n"
         lastline = "c\n"
