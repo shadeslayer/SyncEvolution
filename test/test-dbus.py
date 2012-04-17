@@ -3720,6 +3720,50 @@ sources/todo/config.ini:# databasePassword = '''.format(
                                 1)
         return config
 
+    def FunambolConfig(self):
+        config = self.ScheduleWorldConfig()
+        config = config.replace("/scheduleworld/",
+                                "/funambol/")
+        config = config.replace("PeerName = ScheduleWorld",
+                                "PeerName = Funambol")
+        config = config.replace("syncURL = http://sync.scheduleworld.com/funambol/ds",
+                                "syncURL = http://my.funambol.com/sync",
+                                1)
+        config = config.replace("WebURL = http://www.scheduleworld.com",
+                                "WebURL = http://my.funambol.com",
+                                1)
+        config = config.replace("IconURI = image://themedimage/icons/services/scheduleworld",
+                                "IconURI = image://themedimage/icons/services/funambol",
+                                1)
+        config = config.replace("# ConsumerReady = 0",
+                                "ConsumerReady = 1",
+                                1)
+        config = config.replace("# enableWBXML = 1",
+                                "enableWBXML = 0",
+                                1)
+        config = config.replace("# RetryInterval = 2M",
+                                "RetryInterval = 0",
+                                1)
+        config = config.replace("addressbook/config.ini:uri = card3",
+                                "addressbook/config.ini:uri = card",
+                                1)
+        config = config.replace("addressbook/config.ini:syncFormat = text/vcard",
+                                "addressbook/config.ini:# syncFormat = ")
+        config = config.replace("calendar/config.ini:uri = cal2",
+                                "calendar/config.ini:uri = event",
+                                1)
+        config = config.replace("calendar/config.ini:# syncFormat = ",
+                                "calendar/config.ini:syncFormat = text/calendar")
+        config = config.replace("calendar/config.ini:# forceSyncFormat = 0",
+                                "calendar/config.ini:forceSyncFormat = 1")
+        config = config.replace("todo/config.ini:uri = task2",
+                                "todo/config.ini:uri = task",
+                                1)
+        config = config.replace("todo/config.ini:# syncFormat = ",
+                                "todo/config.ini:syncFormat = text/calendar")
+        config = config.replace("todo/config.ini:# forceSyncFormat = 0",
+                                "todo/config.ini:forceSyncFormat = 1")
+        return config
 
     def replaceLineInConfig(self, config, begin, to):
         index = config.find(begin)
@@ -3918,6 +3962,30 @@ sources/todo/config.ini:# databasePassword = '''.format(
         res = scanFiles(root, "scheduleworld2")
         expected = sortConfig(self.ScheduleWorldConfig()).replace("/scheduleworld/", "/scheduleworld2/")
         self.assertEqualDiff(expected, res)
+
+    def doSetupFunambol(self, shared):
+        root = self.configdir + "/default"
+        peer = ""
+        args = ["--configure"]
+
+        if shared:
+            peer = root + "/peers/funambol"
+        else:
+            peer = root
+            args.extend(["--sync-property", "deviceId = fixed-devid"])
+        shutil.rmtree(peer, True)
+
+        args.append("FunamBOL")
+        out, err, code = self.runCmdline(args)
+        self.assertSilent(out, err)
+        res = scanFiles(root, "funambol")
+        expected = sortConfig(self.FunambolConfig())
+        self.assertEqualDiff(expected, res)
+
+    @property("debug", False)
+    def testSetupFunambol(self):
+        """TestCmdline.testSetupFunambol - configure Funambol"""
+        self.doSetupFunambol(False)
 
 if __name__ == '__main__':
     unittest.main()
