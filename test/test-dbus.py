@@ -371,6 +371,7 @@ class DBusUtil(Timeout):
     quit_events = []
     reply = None
     pserver = None
+    storedenv = {}
 
     def getTestProperty(self, key, default):
         """retrieve values set with @property()"""
@@ -422,6 +423,16 @@ class DBusUtil(Timeout):
         # and increase log level
         if self.getTestProperty("debug", True):
             env["SYNCEVOLUTION_DEBUG"] = "1"
+        else:
+            # we explicitly specified @property("debug", False")
+            # thus we do not want to have any debugging output.
+            try:
+                del env["SYNCEVOLUTION_DEBUG"]
+            except KeyError:
+                # there was no such key anyway
+                pass
+
+        self.storedenv = env
 
         # can be set by a test to run additional tests on the content
         # of the D-Bus log
@@ -3547,30 +3558,32 @@ class TestCmdline(unittest.TestCase, DBusUtil):
 
     def runCmdline(self, args, env=None, expectSuccess=True, preserveOutputOrder=False):
         '''Run the 'syncevolution' command line (from PATH) with the
-        given arguments (list or tuple of strings). Uses the current
-        environment unless one is set explicitly. Unless told
-        otherwise, the result of the command is checked for
-        success. Usually stdout and stderr are captured separately,
-        in which case relative order of messages from different
-        streams cannot be tested. When that is relevant, set preserveOutputOrder=True
-        and look only at the stdout.
+        given arguments (list or tuple of strings). Uses environment
+        used to run syncevo-dbus-server unless one is set
+        explicitly. Unless told otherwise, the result of the command
+        is checked for success. Usually stdout and stderr are captured
+        separately, in which case relative order of messages from
+        different streams cannot be tested. When that is relevant, set
+        preserveOutputOrder=True and look only at the stdout.
 
         Returns tuple with stdout, stderr and result code.'''
         a = [ 'syncevolution' ]
         a.extend(args)
         # Explicitly pass an environment. Otherwise subprocess.Popen()
-        # from Python 2.6 uses not os.environ (which would be okay)
-        # but rather the environment passed to a previous call to
-        # subprocess.Popen() (which will fail if the previous test ran
-        # with an environment which had SYNCEVOLUTION_DEBUG set).
+        # from Python 2.6 uses the environment passed to a previous
+        # call to subprocess.Popen() (which will fail if the previous
+        # test ran with an environment which had SYNCEVOLUTION_DEBUG
+        # set).
         if env == None:
-            env=os.environ
+            cmdline_env = self.storedenv
+        else:
+            cmdline_env = env
         if preserveOutputOrder:
             s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                 env=env)
+                                 env=cmdline_env)
         else:
             s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                 env=env)
+                                 env=cmdline_env)
         out, err = s.communicate()
         if expectSuccess and s.returncode != 0:
             result = 'syncevolution command failed.\nOutput:\n%s' % out
