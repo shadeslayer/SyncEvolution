@@ -3489,7 +3489,7 @@ def scanFiles(root, peer = '', onlyProps = True, directory = ''):
     for entry in sorted(os.listdir(newroot)):
         fullEntry = newroot + "/" + entry
         if os.path.isdir(fullEntry):
-            if not (entry.endswith("/peers") and peer and entry != peer):
+            if not (newroot.endswith("/peers") and peer and entry != peer):
                 if directory:
                     newdir = directory + '/' + entry
                 else:
