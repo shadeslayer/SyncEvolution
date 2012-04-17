@@ -3685,6 +3685,42 @@ sources/todo/config.ini:# databasePassword = '''.format(
            contextMinVersion, contextCurVersion,
            self.getSSLServerCertificates())
 
+    def DefaultConfig(self):
+        config = self.ScheduleWorldConfig()
+        config = config.replace("syncURL = http://sync.scheduleworld.com/funambol/ds",
+                                "syncURL = http://yourserver:port",
+                                1)
+        config = config.replace("http://www.scheduleworld.com",
+                                "http://www.syncevolution.org",
+                                1)
+        config = config.replace("ScheduleWorld",
+                                "SyncEvolution")
+        config = config.replace("scheduleworld",
+                                "syncevolution")
+        config = config.replace("PeerName = SyncEvolution",
+                                "# PeerName = ",
+                                1)
+        config = config.replace("# ConsumerReady = 0",
+                                "ConsumerReady = 1",
+                                1)
+        config = config.replace("uri = card3",
+                                "uri = addressbook",
+                                1)
+        config = config.replace("uri = cal2",
+                                "uri = calendar",
+                                1)
+        config = config.replace("uri = task2",
+                                "uri = todo",
+                                1)
+        config = config.replace("uri = note",
+                                "uri = memo",
+                                1)
+        config = config.replace("syncFormat = text/vcard",
+                                "# syncFormat = ",
+                                1)
+        return config
+
+
     def replaceLineInConfig(self, config, begin, to):
         index = config.find(begin)
         self.assertNotEqual(index, -1)
@@ -3850,6 +3886,20 @@ sources/todo/config.ini:# databasePassword = '''.format(
     def testSetupScheduleWorld(self):
         """TestCmdline.testSetupScheduleWorld - configure ScheduleWorld"""
         self.doSetupScheduleWorld(False)
+
+    @property("debug", False)
+    def testSetupDefault(self):
+        """TestCmdline.testSetupDefault - configure Default"""
+        root = self.configdir + '/default'
+        out, err, code = self.runCmdline(['--configure',
+                                          '--template', 'default',
+                                          '--sync-property', 'deviceId = fixed-devid',
+                                          'some-other-server'])
+        self.assertSilent(out, err)
+        res = scanFiles(root, 'some-other-server')
+        expected = sortConfig(self.DefaultConfig()).replace('/syncevolution/', '/some-other-server/')
+        self.assertEqualDiff(expected, res)
+
 
 if __name__ == '__main__':
     unittest.main()
