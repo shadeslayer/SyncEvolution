@@ -3765,6 +3765,43 @@ sources/todo/config.ini:# databasePassword = '''.format(
                                 "todo/config.ini:forceSyncFormat = 1")
         return config
 
+    def SynthesisConfig(self):
+        config = self.ScheduleWorldConfig()
+        config = config.replace("/scheduleworld/",
+                                "/synthesis/")
+        config = config.replace("PeerName = ScheduleWorld",
+                                "PeerName = Synthesis")
+        config = config.replace("syncURL = http://sync.scheduleworld.com/funambol/ds",
+                                "syncURL = http://www.synthesis.ch/sync",
+                                1)
+        config = config.replace("WebURL = http://www.scheduleworld.com",
+                                "WebURL = http://www.synthesis.ch",
+                                1)
+        config = config.replace("IconURI = image://themedimage/icons/services/scheduleworld",
+                                "IconURI = image://themedimage/icons/services/synthesis",
+                                1)
+        config = config.replace("addressbook/config.ini:uri = card3",
+                                "addressbook/config.ini:uri = contacts",
+                                1)
+        config = config.replace("addressbook/config.ini:syncFormat = text/vcard",
+                                "addressbook/config.ini:# syncFormat = ")
+        config = config.replace("calendar/config.ini:uri = cal2",
+                                "calendar/config.ini:uri = events",
+                                1)
+        config = config.replace("calendar/config.ini:sync = two-way",
+                                "calendar/config.ini:sync = disabled",
+                                1)
+        config = config.replace("memo/config.ini:uri = note",
+                                "memo/config.ini:uri = notes",
+                                1)
+        config = config.replace("todo/config.ini:uri = task2",
+                                "todo/config.ini:uri = tasks",
+                                1)
+        config = config.replace("todo/config.ini:sync = two-way",
+                                "todo/config.ini:sync = disabled",
+                                1)
+        return config
+
     def replaceLineInConfig(self, config, begin, to):
         index = config.find(begin)
         self.assertNotEqual(index, -1)
@@ -3986,6 +4023,30 @@ sources/todo/config.ini:# databasePassword = '''.format(
     def testSetupFunambol(self):
         """TestCmdline.testSetupFunambol - configure Funambol"""
         self.doSetupFunambol(False)
+
+    def doSetupSynthesis(self, shared):
+        root = self.configdir + "/default"
+        peer = ""
+        args = ["--configure"]
+
+        if shared:
+            peer = root + "/peers/synthesis"
+        else:
+            peer = root
+            args.extend(["--sync-property", "deviceId = fixed-devid"])
+        shutil.rmtree(peer, True)
+
+        args.append("synthesis")
+        out, err, code = self.runCmdline(args)
+        self.assertSilent(out, err)
+        res = scanFiles(root, "synthesis")
+        expected = sortConfig(self.SynthesisConfig())
+        self.assertEqualDiff(expected, res)
+
+    @property("debug", False)
+    def testSetupSynthesis(self):
+        """TestCmdline.testSetupSynthesis - configure Synthesis"""
+        self.doSetupSynthesis(False)
 
 if __name__ == '__main__':
     unittest.main()
