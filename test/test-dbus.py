@@ -3819,6 +3819,15 @@ sources/todo/config.ini:# databasePassword = '''.format(
                                         "SSLServerCertificates = ",
                                         "SSLServerCertificates = ")
 
+    def expectUsageError(self, out, err, specific_error):
+        '''verify a short usage info was produced and specific error
+        message was printed'''
+        self.assertTrue(out.startswith("List databases:\n"))
+        self.assertEqual(out.find("\nOptions:\n"), -1)
+        self.assertTrue(out.endswith("Remove item(s):\n" \
+                                     "  syncevolution --delete-items [--] <config> <source> (<luid> ... | '*')\n\n"))
+        self.assertEqualDiff(specific_error, stripTime(err))
+
     @property('debug', False)
     def testFramework(self):
         """TestCmdline.testFramework - tests whether utility functions work"""
@@ -4047,6 +4056,33 @@ sources/todo/config.ini:# databasePassword = '''.format(
     def testSetupSynthesis(self):
         """TestCmdline.testSetupSynthesis - configure Synthesis"""
         self.doSetupSynthesis(False)
+
+    @property("debug", False)
+    def testTemplate(self):
+        """TestCmdline.testTemplate - check --template parameter"""
+        out, err, code = self.runCmdline(['--template'], expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] missing parameter for '--template'\n")
+
+        expected = "Available configuration templates (servers):\n" \
+                   "   template name = template description\n" \
+                   "   eGroupware = http://www.egroupware.org\n" \
+                   "   Funambol = http://my.funambol.com\n" \
+                   "   Google_Calendar = event sync via CalDAV, use for the 'target-config@google-calendar' config\n" \
+                   "   Google_Contacts = contact sync via SyncML, see http://www.google.com/support/mobile/bin/topic.py?topic=22181\n" \
+                   "   Goosync = http://www.goosync.com/\n" \
+                   "   Memotoo = http://www.memotoo.com\n" \
+                   "   Mobical = https://www.everdroid.com\n" \
+                   "   Oracle = http://www.oracle.com/technology/products/beehive/index.html\n" \
+                   "   Ovi = http://www.ovi.com\n" \
+                   "   ScheduleWorld = server no longer in operation\n" \
+                   "   SyncEvolution = http://www.syncevolution.org\n" \
+                   "   Synthesis = http://www.synthesis.ch\n" \
+                   "   WebDAV = contact and event sync using WebDAV, use for the 'target-config@<server>' config\n" \
+                   "   Yahoo = contact and event sync using WebDAV, use for the 'target-config@yahoo' config\n"
+        out, err, code = self.runCmdline(["--template", "? "])
+        self.assertEqualDiff(expected, out)
+        self.assertEqualDiff('', err)
 
 if __name__ == '__main__':
     unittest.main()
