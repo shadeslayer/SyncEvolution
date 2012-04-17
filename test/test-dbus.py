@@ -3900,6 +3900,24 @@ sources/todo/config.ini:# databasePassword = '''.format(
         expected = sortConfig(self.DefaultConfig()).replace('/syncevolution/', '/some-other-server/')
         self.assertEqualDiff(expected, res)
 
+    @property("debug", False)
+    def testSetupRenamed(self):
+        """TestCmdline.testSetupRenamed - configure ScheduleWorld with other name"""
+        root = self.configdir + "/default"
+        args = ["--configure",
+                "--template",
+                "scheduleworld",
+                "--sync-property",
+                "deviceId = fixed-devid",
+                "scheduleworld2"]
+        out, err, code = self.runCmdline(["--configure",
+                                          "--template", "scheduleworld",
+                                          "--sync-property", "deviceId = fixed-devid",
+                                          "scheduleworld2"])
+        self.assertSilent(out, err)
+        res = scanFiles(root, "scheduleworld2")
+        expected = sortConfig(self.ScheduleWorldConfig()).replace("/scheduleworld/", "/scheduleworld2/")
+        self.assertEqualDiff(expected, res)
 
 if __name__ == '__main__':
     unittest.main()
