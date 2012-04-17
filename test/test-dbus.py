@@ -4098,5 +4098,40 @@ sources/todo/config.ini:# databasePassword = '''.format(
         self.assertEqualDiff(expected, out)
         self.assertEqualDiff('', err)
 
+    @property("ENV", "SYNCEVOLUTION_TEMPLATE_DIR=" + xdg_root + "/templates")
+    @property("debug", False)
+    def testMatchTemplate(self):
+        """TestCmdline.testMatchTemplate - test template matching"""
+        env = copy.deepcopy(self.storedenv)
+        env["XDG_CONFIG_HOME"] = "/dev/null"
+        self.setUpFiles('templates')
+        out, err, code = self.runCmdline(["--template", "?nokia 7210c"], env)
+        expected = "Available configuration templates (clients):\n" \
+                   "   template name = template description    matching score in percent (100% = exact match)\n" \
+                   "   Nokia_7210c = Template for Nokia S40 series Phone    100%\n" \
+                   "   SyncEvolution_Client = SyncEvolution server side template    40%\n"
+        self.assertEqualDiff(expected, out)
+        self.assertEqualDiff('', err)
+
+        out, err, code = self.runCmdline(["--template", "?nokia"], env)
+        self.assertEqualDiff(expected, out)
+        self.assertEqualDiff('', err)
+
+        out, err, code = self.runCmdline(["--template", "?7210c"], env)
+        expected = "Available configuration templates (clients):\n" \
+                   "   template name = template description    matching score in percent (100% = exact match)\n" \
+                   "   Nokia_7210c = Template for Nokia S40 series Phone    60%\n" \
+                   "   SyncEvolution_Client = SyncEvolution server side template    20%\n"
+        self.assertEqualDiff(expected, out)
+        self.assertEqualDiff('', err)
+
+        out, err, code = self.runCmdline(["--template", "?syncevolution client"], env)
+        expected = "Available configuration templates (clients):\n" \
+                   "   template name = template description    matching score in percent (100% = exact match)\n" \
+                   "   SyncEvolution_Client = SyncEvolution server side template    100%\n" \
+                   "   Nokia_7210c = Template for Nokia S40 series Phone    40%\n"
+        self.assertEqualDiff(expected, out)
+        self.assertEqualDiff('', err)
+
 if __name__ == '__main__':
     unittest.main()
