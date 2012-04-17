@@ -4133,5 +4133,21 @@ sources/todo/config.ini:# databasePassword = '''.format(
         self.assertEqualDiff(expected, out)
         self.assertEqualDiff('', err)
 
+    @property("debug", False)
+    def testPrintServers(self):
+        """TestCmdline.testPrintServers - print correct servers"""
+
+        self.doSetupScheduleWorld(False)
+        self.doSetupSynthesis(True)
+        self.doSetupFunambol(True)
+
+        out, err, code = self.runCmdline(["--print-servers"])
+        expected = "Configured servers:\n" \
+                   "   funambol = " + self.configdir + "/default/peers/funambol\n" \
+                   "   scheduleworld = " + self.configdir + "/default/peers/scheduleworld\n" \
+                   "   synthesis = " + self.configdir + "/default/peers/synthesis\n"
+        self.assertEqualDiff(expected, out)
+        self.assertEqualDiff('', err)
+
 if __name__ == '__main__':
     unittest.main()
