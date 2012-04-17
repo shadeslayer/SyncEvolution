@@ -3565,6 +3565,79 @@ def stripTime(string):
         return "[" + matches.group(1) + "] " + matches.group(2)
     return string
 
+def injectValues(config):
+    res = config
+
+    if False:
+        # username/password not set in templates, only in configs
+        # created via the command line - not anymore, but if it ever
+        # comes back, here's the place for it
+        res = res.replace("# username = ",
+                          "username = your SyncML server account name",
+                          1)
+        res = res.replace("# password = ",
+                          "password = your SyncML server password",
+                          1)
+
+    return res
+
+def filterConfig(config):
+    '''remove pure comment lines from buffer, also empty lines, also
+    defaultPeer (because reference properties do not include global
+    props)'''
+    config_lines = config.splitlines()
+    out = ''
+
+    for line in config_lines:
+        if line:
+            index = line.find("defaultPeer =")
+            if index == -1:
+                if line.startswith("# ") == False or isPropAssignment(line[2:]):
+                    out += line + "\n"
+
+    return out
+
+def internalToIni(config):
+    '''convert the internal config dump to .ini style (--print-config)'''
+    config_lines = config.splitlines()
+    ini = ''
+    section = ''
+
+    for line in config_lines:
+        if not line:
+            continue
+        colon = line.find(':')
+        prefix = line[0:colon]
+        # internal values are not part of the --print-config output
+        if ".internal.ini" in prefix or "= internal value" in line:
+            continue
+
+        # --print-config also does not duplicate the "type" property
+        # remove the shared property
+        if ":type" in line and line.startswith("sources/"):
+            continue
+
+        # sources/<name>/config.ini or spds/sources/<name>/config.ini
+        endslash = prefix.rfind("/")
+        if endslash > 1:
+            slash = prefix.rfind("/", 0, endslash)
+            if slash != -1:
+                newsource = prefix[slash + 1:endslash]
+                if newsource != section:
+                    sources = prefix.find("/sources/")
+                    if sources != -1 and newsource != "syncml":
+                        ini += "[" + newsource + "]\n"
+                        section = newsource
+
+        assignment = line[colon + 1:]
+        # substitute aliases with generic values
+        assignment = assignment.replace("= syncml:auth-md5", "= md5", 1)
+        assignment = assignment.replace("= syncml:auth-basic", "= basic", 1)
+
+        ini += assignment + "\n"
+
+    return ini
+
 class TestCmdline(unittest.TestCase, DBusUtil):
     """Tests cmdline by Session::Execute()."""
 
@@ -4207,6 +4280,141 @@ sources/todo/config.ini:# databasePassword = '''.format(
                    "   synthesis = " + self.configdir + "/default/peers/synthesis\n"
         self.assertEqualDiff(expected, out)
         self.assertEqualDiff('', err)
+
+    @property("debug", False)
+    def testPrintConfig(self):
+        """TestCmdline.testPrintConfig - print various configurations"""
+        self.doSetupFunambol(False)
+
+        out, err, code = self.runCmdline(["--print-config"],
+                                         expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] --print-config requires either a --template or a server name.\n")
+
+        out, err, code = self.runCmdline(["--print-config", "foo"],
+                                         expectSuccess = False)
+        self.assertEqualDiff('', out)
+        self.assertEqualDiff("[ERROR] Server 'foo' has not been configured yet.\n",
+                             stripTime(err))
+
+        out, err, code = self.runCmdline(["--print-config", "--template", "foo"],
+                                         expectSuccess = False)
+        self.assertEqualDiff("", out)
+        self.assertEqualDiff("[ERROR] No configuration template for 'foo' available.\n",
+                             stripTime(err))
+
+        out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld"])
+        self.assertEqualDiff("", err)
+        # deviceId must be the one from Funambol
+        self.assertIn("deviceId = fixed-devid", out)
+        filtered = injectValues(filterConfig(out))
+        self.assertEqualDiff(filterConfig(internalToIni(self.ScheduleWorldConfig())),
+                             filtered)
+        # there should have been comments
+        self.assertTrue(len(out) > len(filtered))
+
+        out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld@nosuchcontext"])
+        self.assertEqualDiff("", err)
+        # deviceId must *not* be the one from Funambol because of the new context
+        self.assertNotIn("deviceId = fixed-devid", out)
+
+        out, err, code = self.runCmdline(["--print-config", "--template", "Default"])
+        self.assertEqualDiff("", err)
+        actual = injectValues(filterConfig(out))
+        self.assertIn("deviceId = fixed-devid", actual)
+        self.assertEqualDiff(filterConfig(internalToIni(self.DefaultConfig())),
+                             actual)
+
+        out, err, code = self.runCmdline(["--print-config", "funambol"])
+        self.assertEqualDiff("", err)
+        self.assertEqualDiff(filterConfig(internalToIni(self.FunambolConfig())),
+                             injectValues(filterConfig(out)))
+
+        # override context and template properties
+        out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld",
+                                          "syncURL=foo",
+                                          "database=Personal",
+                                          "--source-property", "sync=disabled"])
+        self.assertEqualDiff('', err)
+        expected = filterConfig(internalToIni(self.ScheduleWorldConfig()))
+        expected = expected.replace("syncURL = http://sync.scheduleworld.com/funambol/ds",
+                                    "syncURL = foo",
+                                    1)
+        expected = expected.replace("# database = ",
+                                    "database = Personal")
+        expected = expected.replace("sync = two-way",
+                                    "sync = disabled")
+        actual = injectValues(filterConfig(out))
+        self.assertIn("deviceId = fixed-devid", actual)
+        self.assertEqualDiff(expected, actual)
+
+        # override context and template properties, using legacy
+        # property name
+        out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld",
+                                          "--sync-property", "syncURL=foo",
+                                          "--source-property", "evolutionsource=Personal",
+                                          "--source-property", "sync=disabled"])
+        self.assertEqualDiff('', err)
+        expected = filterConfig(internalToIni(self.ScheduleWorldConfig()))
+        expected = expected.replace("syncURL = http://sync.scheduleworld.com/funambol/ds",
+                                    "syncURL = foo",
+                                    1)
+        expected = expected.replace("# database = ",
+                                    "database = Personal")
+        expected = expected.replace("sync = two-way",
+                                    "sync = disabled")
+        actual = injectValues(filterConfig(out))
+        self.assertIn("deviceId = fixed-devid", actual)
+        self.assertEqualDiff(expected,
+                             actual)
+
+        out, err, code = self.runCmdline(["--print-config", "--quiet",
+                                          "--template", "scheduleworld",
+                                          "funambol"])
+        self.assertEqualDiff("", err)
+        self.assertIn("deviceId = fixed-devid", out)
+        self.assertEqualDiff(internalToIni(self.ScheduleWorldConfig()),
+                             injectValues(filterConfig(out)))
+
+        # change shared source properties, then check template again
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "database=Personal",
+                                          "funambol"])
+        self.assertEqualDiff("", err)
+
+        out, err, code = self.runCmdline(["--print-config", "--quiet",
+                                          "--template", "scheduleworld",
+                                          "funambol"])
+        self.assertEqualDiff("", err)
+        # from modified Funambol config
+        expected = filterConfig(internalToIni(self.ScheduleWorldConfig())).replace("# database = ",
+                                                                                   "database = Personal")
+        actual = injectValues(filterConfig(out))
+        self.assertIn("deviceId = fixed-devid", actual)
+        self.assertEqualDiff(expected, actual)
+
+        # print config => must not use settings from default context
+        out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld@nosuchcontext"])
+        self.assertEqualDiff("", err)
+        expected = filterConfig(internalToIni(self.ScheduleWorldConfig()))
+        actual = injectValues(filterConfig(out))
+        # source settings *not* from modified Funambol config
+        self.assertNotIn("deviceId = fixed-devid", actual)
+        actual = self.removeRandomUUID(actual)
+        self.assertEqualDiff(expected, actual)
+
+        # create config => again, must not use settings from default context
+        out, err, code = self.runCmdline(["--configure", "--template", "scheduleworld", "other@other"])
+        self.assertEqualDiff("", err)
+
+        out, err, code = self.runCmdline(["--print-config", "other@other"])
+        self.assertEqualDiff("", err)
+        # source settings *not* from modified Funambol config
+        expected = filterConfig(internalToIni(self.ScheduleWorldConfig()))
+        actual = injectValues(filterConfig(out))
+        self.assertNotIn("deviceId = fixed-devid", actual)
+        actual = self.removeRandomUUID(actual)
+        self.assertEqualDiff(expected, actual)
 
 if __name__ == '__main__':
     unittest.main()
