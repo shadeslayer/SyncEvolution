@@ -4497,5 +4497,22 @@ sources/todo/config.ini:# databasePassword = '''.format(
         """TestCmdline.testPrintFileTemplates - print file templates"""
         self.doPrintFileTemplates()
 
+    # Disable reading default templates, rely on finding the user
+    # ones (set up below via symlink).
+    @property("ENV", "SYNCEVOLUTION_TEMPLATE_DIR=/dev/null")
+    @property("debug", False)
+    def testPrintFileTemplatesConfig(self):
+        """TestCmdline.testPrintFileTemplatesConfig - print file templates from user home directory"""
+        # The user's "home directory" or more precisely, his
+        # XDG_CONFIG_HOME, is set to xdg_root + "config". Make sure
+        # that there is a "syncevolution-templates" with valid
+        # templates in that "config" directory, because "templates"
+        # will not be found otherwise (SYNCEVOLUTION_TEMPLATE_DIR
+        # doesn't point to it).
+        os.makedirs(xdg_root + "/config")
+        # Use same "./templates" as in testPrintFileTemplates().
+        os.symlink("../../templates", xdg_root + "/config/syncevolution-templates")
+        self.doPrintFileTemplates()
+
 if __name__ == '__main__':
     unittest.main()
