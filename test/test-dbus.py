@@ -766,10 +766,11 @@ class DBusUtil(Timeout):
         """ Directories in test/test-dbus are copied to xdg_root, but
         maybe with different names, mappings are:
                   'test/test-dbus/<snapshot>'   './test-dbus'"""
-        pairs = { 'sync4j'                    : '.sync4j',
-                  'config'                    : 'config' ,
-                  'cache'                     : 'cache'  ,
-                  'data'                      : 'data'   }
+        pairs = { 'sync4j'                    : '.sync4j'  ,
+                  'config'                    : 'config'   ,
+                  'cache'                     : 'cache'    ,
+                  'data'                      : 'data'     ,
+                  'templates'                 : 'templates'}
         for src, dest in pairs.items():
             destpath = os.path.join(xdg_root, dest)
             # make sure the dest directory does not exist, which is required by shutil.copytree
