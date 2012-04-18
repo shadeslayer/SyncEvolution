@@ -4537,5 +4537,82 @@ sources/xyz/config.ini:# databaseUser =
 sources/xyz/config.ini:# databasePassword = """)
         self.assertEqualDiff(expected, res)
 
+    @property("debug", False)
+    def testSync(self):
+        """TestCmdline.testSync - check sync with various options"""
+        out, err, code = self.runCmdline(["--sync"],
+                                         expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] missing parameter for '--sync'\n")
+
+        out, err, code = self.runCmdline(["--sync", "foo"],
+                                         expectSuccess = False)
+        self.assertEqualDiff('', out)
+        self.assertEqualDiff("[ERROR] '--sync foo': not one of the valid values (two-way, slow, refresh-from-local, refresh-from-remote = refresh, one-way-from-local, one-way-from-remote = one-way, refresh-from-client = refresh-client, refresh-from-server = refresh-server, one-way-from-client = one-way-client, one-way-from-server = one-way-server, disabled = none)\n",
+                             stripTime(err))
+
+        out, err, code = self.runCmdline(["--sync", " ?"])
+        self.assertEqualDiff("""--sync
+   Requests a certain synchronization mode when initiating a sync:
+   
+     two-way
+       only send/receive changes since last sync
+     slow
+       exchange all items
+     refresh-from-remote
+       discard all local items and replace with
+       the items on the peer
+     refresh-from-local
+       discard all items on the peer and replace
+       with the local items
+     one-way-from-remote
+       transmit changes from peer
+     one-way-from-local
+       transmit local changes
+     disabled (or none)
+       synchronization disabled
+   
+   refresh/one-way-from-server/client are also supported. Their use is
+   discouraged because the direction of the data transfer depends
+   on the role of the local side (can be server or client), which is
+   not always obvious.
+   
+   When accepting a sync session in a SyncML server (HTTP server), only
+   sources with sync != disabled are made available to the client,
+   which chooses the final sync mode based on its own configuration.
+   When accepting a sync session in a SyncML client (local sync with
+   the server contacting SyncEvolution on a device), the sync mode
+   specified in the client is typically overriden by the server.
+""",
+                             out)
+        self.assertEqualDiff("", err)
+
+        out, err, code = self.runCmdline(["--sync", "refresh-from-server"],
+                                          expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] No configuration name specified.\n")
+
+        out, err, code = self.runCmdline(["--source-property", "sync=refresh"],
+                                         expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] No configuration name specified.\n")
+
+        out, err, code = self.runCmdline(["--source-property", "xyz=1"],
+                                         expectSuccess = False)
+        self.assertEqualDiff('', out)
+        self.assertEqualDiff("[ERROR] '--source-property xyz=1': no such property\n",
+                             stripTime(err))
+
+        out, err, code = self.runCmdline(["xyz=1"],
+                                         expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] unrecognized property in 'xyz=1'\n")
+
+        out, err, code = self.runCmdline(["=1"],
+                                         expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] a property name must be given in '=1'\n")
+
+
 if __name__ == '__main__':
     unittest.main()
