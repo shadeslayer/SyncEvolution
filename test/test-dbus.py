@@ -3638,6 +3638,46 @@ def internalToIni(config):
 
     return ini
 
+# result of removeComments(self.removeRandomUUID(filterConfig())) for
+# Google Calendar template/config
+googlecaldav = '''syncURL = https://www.google.com/calendar/dav/%u/user/?SyncEvolution=Google
+printChanges = 0
+dumpData = 0
+deviceId = fixed-devid
+IconURI = image://themedimage/icons/services/google-calendar
+ConsumerReady = 1
+peerType = WebDAV
+[calendar]
+sync = two-way
+backend = CalDAV
+'''
+
+# result of removeComments(self.removeRandomUUID(filterConfig())) for
+# Yahoo Calendar + Contacts
+yahoo = '''printChanges = 0
+dumpData = 0
+deviceId = fixed-devid
+IconURI = image://themedimage/icons/services/yahoo
+ConsumerReady = 1
+peerType = WebDAV
+[addressbook]
+sync = disabled
+backend = CardDAV
+[calendar]
+sync = two-way
+backend = CalDAV
+'''
+
+def removeComments(config):
+    lines = config.splitlines()
+
+    out = ''
+    for line in lines:
+        if line and not line.startswith("#"):
+            out += line + "\n"
+
+    return out
+
 class TestCmdline(unittest.TestCase, DBusUtil):
     """Tests cmdline by Session::Execute()."""
 
@@ -4415,6 +4455,47 @@ sources/todo/config.ini:# databasePassword = '''.format(
         self.assertNotIn("deviceId = fixed-devid", actual)
         actual = self.removeRandomUUID(actual)
         self.assertEqualDiff(expected, actual)
+
+    def doPrintFileTemplates(self):
+        '''Compare only the properties which are really set'''
+
+        # note that "backend" will be taken from the @default context
+        # if one exists, so run this before setting up Funambol below
+        out, err, code = self.runCmdline(["--print-config", "--template", "google calendar"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff(googlecaldav,
+                             removeComments(self.removeRandomUUID(filterConfig(out))))
+
+        out, err, code = self.runCmdline(["--print-config", "--template", "yahoo"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff(yahoo,
+                             removeComments(self.removeRandomUUID(filterConfig(out))))
+
+        self.doSetupFunambol(False)
+
+        out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld"])
+        self.assertEqualDiff('', err)
+        # deviceId must be the one from Funambol
+        self.assertIn("deviceId = fixed-devid", out)
+        filtered = injectValues(filterConfig(out))
+        self.assertEqualDiff(filterConfig(internalToIni(self.ScheduleWorldConfig())),
+                             filtered)
+        # there should have been comments
+        self.assertTrue(len(out) > len(filtered))
+
+        out, err, code = self.runCmdline(["--print-config", "funambol"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff(filterConfig(internalToIni(self.FunambolConfig())),
+                             injectValues(filterConfig(out)))
+
+    # Use local copy of templates in build dir (no need to install);
+    # this assumes that test-dbus.py is run in the build "src"
+    # directory.
+    @property("ENV", "SYNCEVOLUTION_TEMPLATE_DIR=./templates")
+    @property("debug", False)
+    def testPrintFileTemplates(self):
+        """TestCmdline.testPrintFileTemplates - print file templates"""
+        self.doPrintFileTemplates()
 
 if __name__ == '__main__':
     unittest.main()
