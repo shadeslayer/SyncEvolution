@@ -4514,5 +4514,28 @@ sources/todo/config.ini:# databasePassword = '''.format(
         os.symlink("../../templates", xdg_root + "/config/syncevolution-templates")
         self.doPrintFileTemplates()
 
+    @property("debug", False)
+    def testAddSource(self):
+        '''TestCmdline.testAddSource - add a source'''
+        self.doSetupScheduleWorld(False)
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "uri = dummy",
+                                          "scheduleworld",
+                                          "xyz"])
+        res = scanFiles(self.configdir + "/default")
+        expected = sortConfig(self.ScheduleWorldConfig() + """
+peers/scheduleworld/sources/xyz/.internal.ini:# adminData = 
+peers/scheduleworld/sources/xyz/.internal.ini:# synthesisID = 0
+peers/scheduleworld/sources/xyz/config.ini:# sync = disabled
+peers/scheduleworld/sources/xyz/config.ini:uri = dummy
+peers/scheduleworld/sources/xyz/config.ini:# syncFormat = 
+peers/scheduleworld/sources/xyz/config.ini:# forceSyncFormat = 0
+sources/xyz/config.ini:# backend = select backend
+sources/xyz/config.ini:# database = 
+sources/xyz/config.ini:# databaseFormat = 
+sources/xyz/config.ini:# databaseUser = 
+sources/xyz/config.ini:# databasePassword = """)
+        self.assertEqualDiff(expected, res)
+
 if __name__ == '__main__':
     unittest.main()
