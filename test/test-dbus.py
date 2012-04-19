@@ -3694,6 +3694,19 @@ def filterIndented(config):
 
     return out
 
+def filterFiles(config):
+    '''remove comment lines from scanFiles() output'''
+    out = ''
+    lines = config.splitlines()
+
+    for line in lines:
+        if line.find(":#") == -1:
+            out += line + "\n"
+    # strip last newline
+#    if out:
+#        return out[:-1]
+    return out
+
 class TestCmdline(unittest.TestCase, DBusUtil):
     """Tests cmdline by Session::Execute()."""
 
@@ -5004,6 +5017,142 @@ databaseUser = evolutionuser (no default, shared), databasePassword = evolutionp
         # WORKAROUND------------------------vvvvv
         self.assertEqualDiff("'syncURL=?'\n"[:-1],
                              filterIndented(out))
+
+    # test semantic of config creation (instead of updating) with and
+    # without templates. See BMC # 14805
+    @property("debug", False)
+    def testConfigureTemplates(self):
+        """TestCmdline.testConfigureTemplates - make configuration with user provided informations"""
+        shutil.rmtree(self.configdir, True)
+
+        # catch possible typos like "sheduleworld"
+        out, err, code = self.runCmdline(["--configure", "foo"],
+                                         expectSuccess = False)
+        error = """[ERROR] No configuration template for 'foo@default' available.
+[INFO] Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL
+[INFO] 
+[INFO] Available configuration templates (clients and servers):
+"""
+        self.assertTrue(err.startswith(error))
+        self.assertTrue(err.endswith("\n"))
+        self.assertFalse(err.endswith("\n\n"))
+        self.assertEqualDiff('', out)
+
+        shutil.rmtree(self.configdir, True)
+        # catch possible typos like "sheduleworld" when enough
+        # properties are specified to continue without a template
+        out, err, code = self.runCmdline(["--configure", "syncURL=http://foo.com", "--template", "foo", "bar"],
+                                         expectSuccess = False)
+        error = """[ERROR] No configuration template for 'foo' available.
+[INFO] All relevant properties seem to be set, omit the --template parameter to proceed.
+[INFO] 
+[INFO] Available configuration templates (clients and servers):
+"""
+        self.assertTrue(err.startswith(error))
+        self.assertTrue(err.endswith("\n"))
+        self.assertFalse(err.endswith("\n\n"))
+        self.assertEqualDiff('', out)
+
+        fooconfig = """syncevolution/.internal.ini:rootMinVersion = {0}
+syncevolution/.internal.ini:rootCurVersion = {1}
+syncevolution/default/.internal.ini:contextMinVersion = {2}
+syncevolution/default/.internal.ini:contextCurVersion = {3}
+syncevolution/default/config.ini:deviceId = fixed-devid
+syncevolution/default/peers/foo/.internal.ini:peerMinVersion = {4}
+syncevolution/default/peers/foo/.internal.ini:peerCurVersion = {5}
+""".format(self.getRootMinVersion(),
+           self.getRootCurVersion(),
+           self.getContextMinVersion(),
+           self.getContextCurVersion(),
+           self.getPeerMinVersion(),
+           self.getPeerCurVersion())
+        syncurl = "syncevolution/default/peers/foo/config.ini:syncURL = local://@bar\n"
+        configsource = """syncevolution/default/peers/foo/sources/eds_event/config.ini:sync = two-way
+syncevolution/default/sources/eds_event/config.ini:backend = calendar
+"""
+        xdg_config = xdg_root + "/config"
+        shutil.rmtree(self.configdir, True)
+        # allow users to proceed if they wish: should result in no
+        # sources configured
+        out, err, code = self.runCmdline(["--configure", "--template", "none", "foo"])
+        self.assertSilent(out, err)
+        res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
+        self.assertEqualDiff(fooconfig, res)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they wish: should result in no
+        # sources configured even if general source properties are
+        # specified
+        out, err, code = self.runCmdline(["--configure", "--template", "none", "backend=calendar", "foo"])
+        self.assertSilent(out, err)
+        res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
+        self.assertEqualDiff(fooconfig, res)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they wish: should result in no
+        # sources configured, even if specific source properties are
+        # specified
+        out, err, code = self.runCmdline(["--configure", "--template", "none", "eds_event/backend=calendar", "foo"])
+        self.assertSilent(out, err)
+        res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
+        self.assertEqualDiff(fooconfig, res)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they wish and possible: here
+        # eds_event is not usable
+        out, err, code = self.runCmdline(["--configure", "--template", "none", "foo", "eds_event"],
+                                         expectSuccess = False)
+        self.assertEqualDiff('', out)
+        self.assertEqualDiff('[ERROR] error code from SyncEvolution fatal error (local, status 10500): eds_event: no backend available\n', err)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they wish and possible: here
+        # eds_event is not configurable
+        out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "foo", "eds_event"],
+                                         expectSuccess = False)
+        self.assertEqualDiff('', out)
+        self.assertEqualDiff('[ERROR] error code from SyncEvolution fatal error (local, status 10500): no such source(s): eds_event\n', err)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they wish and possible: here
+        # eds_event is not configurable (wrong context)
+        out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "eds_event/backend@xyz=calendar", "foo", "eds_event"],
+                                         expectSuccess = False)
+        self.assertEqualDiff('', out)
+        self.assertEqualDiff('[ERROR] error code from SyncEvolution fatal error (local, status 10500): no such source(s): eds_event\n', err)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they wish: configure exactly the
+        # specified sources
+        out, err, code = self.runCmdline(["--configure", "--template", "none", "backend=calendar", "foo", "eds_event"])
+        self.assertSilent(out, err)
+        res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
+        self.assertEqualDiff(fooconfig + configsource, res)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they provide enough information:
+        # should result in no sources configured
+        out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "foo"])
+        self.assertSilent(out, err)
+        res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
+        self.assertEqualDiff(fooconfig + syncurl, res)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they provide enough information:
+        # source created because listed and usable
+        out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "backend=calendar", "foo", "eds_event"])
+        self.assertSilent(out, err)
+        res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
+        self.assertEqualDiff(fooconfig + syncurl + configsource, res)
+
+        shutil.rmtree(self.configdir, True)
+        # allow user to proceed if they provide enough information:
+        # source created because listed and usable
+        out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "eds_event/backend@default=calendar", "foo", "eds_event"])
+        self.assertSilent(out, err)
+        res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
+        self.assertEqualDiff(fooconfig + syncurl + configsource, res)
+
 
 if __name__ == '__main__':
     unittest.main()
