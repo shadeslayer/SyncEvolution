@@ -3755,6 +3755,50 @@ class TestCmdline(unittest.TestCase, DBusUtil):
             TestCmdline.cachedSSLServerCertificates = m.group(1)
         return TestCmdline.cachedSSLServerCertificates
 
+    cachedVersions = {}
+    def getVersion(self, versionName):
+        '''Parses the SyncConfig.h file to get a version number
+        described by versionName.'''
+        if not versionName in TestCmdline.cachedVersions:
+            # Get the absolute path of the current python file.
+            scriptpath = os.path.abspath(os.path.expanduser(os.path.expandvars(sys.argv[0])))
+            # Get the path to SyncConfig.h
+            header = os.path.join(os.path.dirname(scriptpath), '..', 'src', 'syncevo', 'SyncConfig.h')
+            # do not care about escaping the versionName variable.
+            # this function is only used from some version getters and
+            # those are passing some simple strings with no regexp
+            # metacharacters.
+            prog = re.compile("^\s*static\s+const\s+int\s+{0}\s*=\s*(\d+);".format(versionName))
+            found = False
+            # will throw IOError if opening header fails
+            for line in open(header):
+                m = prog.match(line)
+                if m:
+                    TestCmdline.cachedVersions[versionName] = m.group(1)
+                    found = True
+                    break
+            if not found:
+                self.fail(versionname + " not found in SyncConfig.h")
+        return TestCmdline.cachedVersions[versionName]
+
+    def getRootMinVersion(self):
+        return self.getVersion('CONFIG_ROOT_MIN_VERSION')
+
+    def getRootCurVersion(self):
+        return self.getVersion('CONFIG_ROOT_CUR_VERSION')
+
+    def getContextMinVersion(self):
+        return self.getVersion('CONFIG_CONTEXT_MIN_VERSION')
+
+    def getContextCurVersion(self):
+        return self.getVersion('CONFIG_CONTEXT_CUR_VERSION')
+
+    def getPeerMinVersion(self):
+        return self.getVersion('CONFIG_PEER_MIN_VERSION')
+
+    def getPeerCurVersion(self):
+        return self.getVersion('CONFIG_PEER_CUR_VERSION')
+
     def ScheduleWorldConfig(self, peerMinVersion = 1, peerCurVersion = 1, contextMinVersion = 1, contextCurVersion = 1):
         return '''peers/scheduleworld/.internal.ini:peerMinVersion = {0}
 peers/scheduleworld/.internal.ini:peerCurVersion = {1}
