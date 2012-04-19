@@ -3977,11 +3977,6 @@ sources/todo/config.ini:# databasePassword = '''.format(
                                         "deviceId = syncevolution-",
                                         "deviceId = fixed-devid")
 
-    def removeSSLCertsPaths(self, config):
-        return self.replaceLineInConfig(config,
-                                        "SSLServerCertificates = ",
-                                        "SSLServerCertificates = ")
-
     def expectUsageError(self, out, err, specific_error):
         '''verify a short usage info was produced and specific error
         message was printed'''
@@ -4020,11 +4015,6 @@ sources/todo/config.ini:# databasePassword = '''.format(
         fixedUUID = "deviceId = fixed-devid\n"
         res = self.removeRandomUUID(randomUUID)
         self.assertEqual(fixedUUID, res)
-
-        SSLCertPaths = "peers/scheduleworld/config.ini:# SSLServerCertificates = /etc/ssl/certs/ca-certificates.crt:/etc/pki/tls/certs/ca-bundle.crt:/usr/share/ssl/certs/ca-bundle.crt\n"
-        clearSSLCertpaths = "peers/scheduleworld/config.ini:# SSLServerCertificates = \n"
-        res = self.removeSSLCertsPaths(SSLCertPaths)
-        self.assertEqual(clearSSLCertpaths, res)
 
         unsorted = "f:g\n" \
                    "f:j\n" \
