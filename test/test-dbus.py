@@ -3678,6 +3678,22 @@ def removeComments(config):
 
     return out
 
+def filterIndented(config):
+    '''remove lines indented with spaces'''
+    lines = config.splitlines()
+
+    out = ''
+    first = True
+    for line in lines:
+        if not line.startswith(" "):
+            if first:
+                first = False
+            else:
+                out += "\n"
+            out += line
+
+    return out
+
 class TestCmdline(unittest.TestCase, DBusUtil):
     """Tests cmdline by Session::Execute()."""
 
@@ -4692,6 +4708,239 @@ sources/xyz/config.ini:# databasePassword = """)
         self.assertTrue(err.endswith("\n"))
         self.assertFalse(err.endswith("\n\n"))
 
+    def printConfig(self, server):
+        out, err, code = self.runCmdline(["--print-config", server])
+        self.assertEqualDiff('', err)
+        return out
+
+    def doConfigure(self, config, prefix):
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "sync = disabled",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+        expected = filterConfig(internalToIni(config)).replace("sync = two-way",
+                                                               "sync = disabled")
+        self.assertEqualDiff(expected,
+                             filterConfig(self.printConfig("scheduleworld")))
+
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "sync = one-way-from-server",
+                                          "scheduleworld",
+                                          "addressbook"])
+        self.assertSilent(out, err)
+        expected = config.replace("sync = two-way",
+                                  "sync = disabled")
+        expected = expected.replace(prefix + "sync = disabled",
+                                    prefix + "sync = one-way-from-server",
+                                    1)
+        expected = filterConfig(internalToIni(expected))
+        self.assertEqualDiff(expected,
+                             filterConfig(self.printConfig("scheduleworld")))
+
+        out, err, code = self.runCmdline(["--configure",
+                                          "--sync", "two-way",
+                                          "-z", "database=source",
+                                          # note priority of suffix: most specific wins
+                                          "--sync-property", "maxlogdirs@scheduleworld@default=20",
+                                          "--sync-property", "maxlogdirs@default=10",
+                                          "--sync-property", "maxlogdirs=5",
+                                          "-y", "LOGDIR@default=logdir",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+        expected = expected.replace("sync = one-way-from-server",
+                                    "sync = two-way")
+        expected = expected.replace("sync = disabled",
+                                    "sync = two-way")
+        expected = expected.replace("# database = ",
+                                    "database = source")
+        expected = expected.replace("database = xyz",
+                                    "database = source")
+        expected = expected.replace("# maxlogdirs = 10",
+                                    "maxlogdirs = 20")
+        expected = expected.replace("# logdir = ",
+                                    "logdir = logdir")
+        self.assertEqualDiff(expected,
+                             filterConfig(self.printConfig("scheduleworld")))
+        return expected
+
+    @property("debug", False)
+    def testConfigure(self):
+        """TestCmdline.testConfigure - run configures"""
+        self.doSetupScheduleWorld(False)
+
+        expected = self.doConfigure(self.ScheduleWorldConfig(), "sources/addressbook/config.ini:")
+
+        # using "type" for peer is mapped to updating "backend",
+        # "databaseFormat", "syncFormat", "forceSyncFormat"
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "addressbook/type=file:text/vcard:3.0",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+        expected = expected.replace("backend = addressbook",
+                                    "backend = file",
+                                    1)
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard",
+                                    1)
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 0",
+                                    1)
+        self.assertEqualDiff(expected,
+                             filterConfig(self.printConfig("scheduleworld")))
+        shared = filterConfig(self.printConfig("@default"))
+        self.assertIn("backend = file", shared)
+        self.assertIn("databaseFormat = text/vcard", shared)
+
+        # updating type for context must not affect peer
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "type=file:text/x-vcard:2.1",
+                                          "@default", "addressbook"])
+        self.assertSilent(out, err)
+        expected = expected.replace("databaseFormat = text/vcard",
+                                    "databaseFormat = text/x-vcard",
+                                    1)
+        self.assertEqualDiff(expected,
+                             filterConfig(self.printConfig("scheduleworld")))
+        shared = filterConfig(self.printConfig("@default"))
+        self.assertIn("backend = file", shared)
+        self.assertIn("databaseFormat = text/x-vcard", shared)
+
+        syncproperties = """syncURL (no default, unshared, required)
+
+username (no default, unshared)
+
+password (no default, unshared)
+
+logdir (no default, shared)
+
+loglevel (0, unshared)
+
+printChanges (TRUE, unshared)
+
+dumpData (TRUE, unshared)
+
+maxlogdirs (10, shared)
+
+autoSync (0, unshared)
+
+autoSyncInterval (30M, unshared)
+
+autoSyncDelay (5M, unshared)
+
+preventSlowSync (TRUE, unshared)
+
+useProxy (FALSE, unshared)
+
+proxyHost (no default, unshared)
+
+proxyUsername (no default, unshared)
+
+proxyPassword (no default, unshared)
+
+clientAuthType (md5, unshared)
+
+RetryDuration (5M, unshared)
+
+RetryInterval (2M, unshared)
+
+remoteIdentifier (no default, unshared)
+
+PeerIsClient (FALSE, unshared)
+
+SyncMLVersion (no default, unshared)
+
+PeerName (no default, unshared)
+
+deviceId (no default, shared)
+
+remoteDeviceId (no default, unshared)
+
+enableWBXML (TRUE, unshared)
+
+maxMsgSize (150000, unshared), maxObjSize (4000000, unshared)
+
+SSLServerCertificates ({0}, unshared)
+
+SSLVerifyServer (TRUE, unshared)
+
+SSLVerifyHost (TRUE, unshared)
+
+WebURL (no default, unshared)
+
+IconURI (no default, unshared)
+
+ConsumerReady (FALSE, unshared)
+
+peerType (no default, unshared)
+
+defaultPeer (no default, global)
+""".format(self.getSSLServerCertificates())
+
+        sourceproperties = """sync (disabled, unshared, required)
+
+uri (no default, unshared)
+
+backend (select backend, shared)
+
+syncFormat (no default, unshared)
+
+forceSyncFormat (FALSE, unshared)
+
+database = evolutionsource (no default, shared)
+
+databaseFormat (no default, shared)
+
+databaseUser = evolutionuser (no default, shared), databasePassword = evolutionpassword (no default, shared)
+"""
+
+        # The WORKAROUND lines remove trailing newline from expected
+        # output.  This should be fixed in Cmdline, I guess. For now I
+        # adapted the test to actual output to check if there are
+        # other errors.
+
+        out, err, code = self.runCmdline(["--sync-property", "?"])
+        self.assertEqualDiff('', err)
+        # WORKAROUND-----------------------vvvvv
+        self.assertEqualDiff(syncproperties[:-1],
+                             filterIndented(out))
+
+        out, err, code = self.runCmdline(["--source-property", "?"])
+        self.assertEqualDiff('', err)
+        # WORKAROUND-------------------------vvvvv
+        self.assertEqualDiff(sourceproperties[:-1],
+                             filterIndented(out))
+
+        out, err, code = self.runCmdline(["--source-property", "?",
+                                          "--sync-property", "?"])
+        self.assertEqualDiff('', err)
+        # WORKAROUND------------------------------------------vvvvv
+        self.assertEqualDiff(sourceproperties + syncproperties[:-1],
+                             filterIndented(out))
+
+        out, err, code = self.runCmdline(["--sync-property", "?",
+                                          "--source-property", "?"])
+        self.assertEqualDiff('', err)
+        # WORKAROUND------------------------------------------vvvvv
+        self.assertEqualDiff(syncproperties + sourceproperties[:-1],
+                             filterIndented(out))
+
+        out, err, code = self.runCmdline(["--source-property", "sync=?"])
+        self.assertEqualDiff('', err)
+        # WORKAROUND---------------------------------------vvvvv
+        self.assertEqualDiff("'--source-property sync=?'\n"[:-1],
+                             filterIndented(out))
+
+        out, err, code = self.runCmdline(["sync=?"])
+        self.assertEqualDiff('', err)
+        # WORKAROUND---------------------vvvvv
+        self.assertEqualDiff("'sync=?'\n"[:-1],
+                             filterIndented(out))
+
+        out, err, code = self.runCmdline(["syncURL=?"])
+        self.assertEqualDiff('', err)
+        # WORKAROUND------------------------vvvvv
+        self.assertEqualDiff("'syncURL=?'\n"[:-1],
+                             filterIndented(out))
 
 if __name__ == '__main__':
     unittest.main()
