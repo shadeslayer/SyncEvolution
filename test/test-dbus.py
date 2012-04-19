@@ -3748,8 +3748,15 @@ class TestCmdline(unittest.TestCase, DBusUtil):
             s = subprocess.Popen(a, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                  env=cmdline_env)
         out, err = s.communicate()
+        doFail = False
         if expectSuccess and s.returncode != 0:
-            result = 'syncevolution command failed.\nOutput:\n%s' % out
+            result = 'syncevolution command failed.'
+            doFail = True
+        elif not expectSuccess and s.returncode == 0:
+            result = 'syncevolution was expected to fail, but it succeeded.'
+            doFail = True
+        if doFail:
+            result += '\nOutput:\n%s' % out
             if not preserveOutputOrder:
                 result += '\nSeparate stderr:\n%s' % err
             self.fail(result)
