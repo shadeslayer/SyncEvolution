@@ -4613,6 +4613,85 @@ sources/xyz/config.ini:# databasePassword = """)
         self.expectUsageError(out, err,
                               "[ERROR] a property name must be given in '=1'\n")
 
+    def isWebDAVEnabled(self):
+        '''Checks config.h for existence of '#define ENABLE_DAV' or
+        '/* #undef ENABLE_DAV*/'. It assumes that the test is being
+        run in $(top_builddir)/src, which is the same assumption like
+        some tests already have.'''
+        configfile = open('../config.h', 'r')
+
+        for line in configfile:
+            if line == '#define ENABLE_DAV 1\n':
+                return True
+            if line == '/* #undef ENABLE_DAV */\n':
+                return False
+        self.fail('Could not find out whether DAV is enabled or not.')
+
+    @property("debug", False)
+    def testWebDAV(self):
+        """TestCmdline.testWebDAV - configure and print WebDAV configs"""
+
+        # configure Yahoo under a different name, with explicit
+        # template selection
+        out, err, code = self.runCmdline(["--configure",
+                                          "--template", "yahoo",
+                                          "target-config@my-yahoo"])
+        self.assertSilent(out, err)
+
+        out, err, code = self.runCmdline(["--print-config", "target-config@my-yahoo"])
+        self.assertEqualDiff('', err)
+# TODO: is this ok?
+        davenabled = self.isWebDAVEnabled()
+        if davenabled:
+            self.assertEqualDiff(yahoo,
+                                 removeComments(self.removeRandomUUID(filterConfig(out))))
+        else:
+            self.assertEqualDiff(yahoo.replace("sync = two-way", "sync = disabled"),
+                                 removeComments(self.removeRandomUUID(filterConfig(out))))
+
+        # configure Google Calendar with template derived from config name
+        out, err, code = self.runCmdline(["--configure",
+                                          "target-config@google-calendar"])
+        self.assertSilent(out, err)
+
+        out, err, code = self.runCmdline(["--print-config", "target-config@google-calendar"])
+        self.assertEqualDiff('', err)
+# TODO: is this ok?
+        if davenabled:
+            self.assertEqualDiff(googlecaldav,
+                                 removeComments(self.removeRandomUUID(filterConfig(out))))
+        else:
+            self.assertEqualDiff(googlecaldav.replace("sync = two-way", "sync = disabled"),
+                                 removeComments(self.removeRandomUUID(filterConfig(out))))
+
+        # test "template not found" error cases
+        out, err, code = self.runCmdline(["--configure",
+                                          "--template", "yahooxyz",
+                                          "target-config@my-yahoo-xyz"],
+                                         expectSuccess = False)
+        error = """[ERROR] No configuration template for 'yahooxyz' available.
+[INFO] 
+[INFO] Available configuration templates (clients and servers):
+"""
+        self.assertEqualDiff('', out)
+        self.assertTrue(err.startswith(error))
+        self.assertTrue(err.endswith("\n"))
+        self.assertFalse(err.endswith("\n\n"))
+
+        out, err, code = self.runCmdline(["--configure",
+                                          "target-config@foobar"],
+                                         expectSuccess = False)
+        error = """[ERROR] No configuration template for 'foobar' available.
+[INFO] Use '--template none' and/or specify relevant properties on the command line to create a configuration without a template. Need values for: syncURL
+[INFO] 
+[INFO] Available configuration templates (clients and servers):
+"""
+
+        self.assertEqualDiff('', out)
+        self.assertTrue(err.startswith(error))
+        self.assertTrue(err.endswith("\n"))
+        self.assertFalse(err.endswith("\n\n"))
+
 
 if __name__ == '__main__':
     unittest.main()
