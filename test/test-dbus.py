@@ -3799,7 +3799,22 @@ class TestCmdline(unittest.TestCase, DBusUtil):
     def getPeerCurVersion(self):
         return self.getVersion('CONFIG_PEER_CUR_VERSION')
 
-    def ScheduleWorldConfig(self, peerMinVersion = 1, peerCurVersion = 1, contextMinVersion = 1, contextCurVersion = 1):
+    def ScheduleWorldConfig(self,
+                            peerMinVersion = None,
+                            peerCurVersion = None,
+                            contextMinVersion = None,
+                            contextCurVersion = None):
+        '''properties sorted by the order in which they are defined in
+        the sync and sync source property registry'''
+        if peerMinVersion == None:
+            peerMinVersion = self.getPeerMinVersion()
+        if peerCurVersion == None:
+            peerCurVersion = self.getPeerCurVersion()
+        if contextMinVersion == None:
+            contextMinVersion = self.getContextMinVersion()
+        if contextCurVersion == None:
+            contextCurVersion = self.getContextCurVersion()
+
         return '''peers/scheduleworld/.internal.ini:peerMinVersion = {0}
 peers/scheduleworld/.internal.ini:peerCurVersion = {1}
 peers/scheduleworld/.internal.ini:# HashCode = 0
