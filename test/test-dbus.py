@@ -5254,5 +5254,43 @@ sources/calendar/config.ini:# databasePassword =
         self.assertIn("backend = file\n", res)
         self.assertIn("databaseFormat = text/calendar\n", res)
 
+    @property("debug", False)
+    def testPrintDatabases(self):
+        '''TestCmdline.testPrintDatabases - print some databases'''
+        # full output
+        out, err, code = self.runCmdline(["--print-databases"])
+        self.assertEqualDiff('', err)
+        # exact output varies, do not test
+
+        haveEDS = False
+        out, err, code = self.runCmdline(["--print-databases", "backend=evolution-contacts"])
+        if "not one of the valid values" in err:
+            # not enabled, only this error message expected
+            self.assertEqualDiff('', out)
+        else:
+            # enabled, no error, one entry
+            haveEDS = True
+            self.assertEqualDiff('', err)
+            self.assertTrue(out.startswith("evolution-contacts:\n"))
+            entries = 0
+            lines = out.splitlines()
+            for line in lines:
+                if line and not line.startswith(" "):
+                    entries += 1
+            self.assertEqual(1, entries)
+        if haveEDS:
+            # limit output to one specific backend, chosen via config
+            out, err, code = self.runCmdline(["--configure", "backend=evolution-contacts", "@foo-config", "bar-source"])
+            self.assertSilent(out, err)
+            out, err, code = self.runCmdline(["--print-databases", "@foo-config", "bar-source"])
+            self.assertEqualDiff('', err)
+            self.assertTrue(out.startswith("@foo-config/bar-source:\n"))
+            entries = 0
+            lines = out.splitlines()
+            for line in lines:
+                if line and not line.startswith(" "):
+                    entries += 1
+            self.assertEqual(1, entries)
+
 if __name__ == '__main__':
     unittest.main()
