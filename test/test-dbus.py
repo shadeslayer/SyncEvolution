@@ -5652,5 +5652,97 @@ sources/memo/config.ini:type = todo
         for expectedline in expectedlines:
             self.assertIn(expectedline, migratedconfig)
 
+    @property("debug", False)
+    def testMigrateAutoSync(self):
+        '''TestCmdline.testMigrateAutoSync - TODO: migrate stuff?'''
+        oldroot = xdg_root + "/.sync4j/evolution/scheduleworld"
+        newroot = self.configdir + "/default"
+        oldconfig = "spds/syncml/config.txt:autoSync = 1\n" + self.OldScheduleWorldConfig()
+
+        # migrate old config
+        createFiles(oldroot, oldconfig)
+        createdconfig = scanFiles(oldroot)
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(newroot)
+        expected = self.ScheduleWorldConfig()
+        expected = expected.replace("# autoSync = 0",
+                                    "autoSync = 1",
+                                    1)
+        expected = sortConfig(expected)
+
+        # migrating Syncevolution < 1.2 configs sets ConsumerReady, to
+        # keep config visible in the updated sync-ui
+        expected = expected.replace("# ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        expected = expected.replace("# database = ",
+                                    "database = xyz",
+                                    1)
+        expected = expected.replace("# databaseUser = ",
+                                    "databaseUser = foo",
+                                    1)
+        expected = expected.replace("# databasePassword = ",
+                                    "databasePassword = bar",
+                                    1)
+        # migrating "type" sets forceSyncFormat (always) and
+        # databaseFormat (if format was part of type, as for
+        # addressbook)
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 0")
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard", 1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(oldroot + ".old")
+        # autoSync must have been unset
+        createdconfig = createdconfig.replace(":autoSync = 1",
+                                              ":autoSync = 0",
+                                              1)
+        self.assertEqualDiff(createdconfig, renamedconfig)
+
+        # rewrite existing config with autoSync set
+        createdconfig = scanFiles(newroot, "scheduleworld")
+
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(newroot, "scheduleworld")
+        expected = ScheduleWorldConfig()
+        expected = expected.replace("# autoSync = 0",
+                                    "autoSync = 1",
+                                    1)
+        expected = sortConfig(expected)
+        expected = expected.replace("# ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        expected = expected.replace("# database = ",
+                                    "database = xyz",
+                                    1)
+        expected = expected.replace("# databaseUser = ",
+                                    "databaseUser = foo",
+                                    1)
+        expected = expected.replace("# databasePassword = ",
+                                    "databasePassword = bar",
+                                    1)
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 0")
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard",
+                                    1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(newroot, "scheduleworld.old.1")
+        # autoSync must have been unset
+        createdconfig = createdconfig.replace(":autoSync = 1",
+                                              ":autoSync = 0",
+                                              1)
+        # the scheduleworld config was consumer ready, the migrated
+        # one isn't
+        createdconfig = createdconfig.replace("ConsumerReady = 1",
+                                              "ConsumerReady = 0")
+        createdconfig = createdconfig.replace("/scheduleworld/",
+                                              "/scheduleworld.old.1/")
+        self.assertEqualDiff(createdconfig, renamedconfig)
+
 if __name__ == '__main__':
     unittest.main()
