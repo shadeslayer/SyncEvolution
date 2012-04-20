@@ -5583,5 +5583,74 @@ peers/scheduleworld/config.ini''',
                                     "/scheduleworld.old.5/")
         self.assertEqualDiff(expected, renamedconfig)
 
+    @property("debug", False)
+    def testMigrateContext(self):
+        '''TestCmdline.testMigrateContext - migrate context containing a peer'''
+        # Must also migrate peer. Covers special case of inconsistent
+        # "type".
+
+        root = self.configdir + "/default"
+        oldconfig = '''config.ini:logDir = none
+peers/scheduleworld/config.ini:syncURL = http://sync.scheduleworld.com/funambol/ds
+peers/scheduleworld/config.ini:# username = 
+peers/scheduleworld/config.ini:# password = 
+
+peers/scheduleworld/sources/addressbook/config.ini:sync = two-way
+peers/scheduleworld/sources/addressbook/config.ini:uri = card3
+peers/scheduleworld/sources/addressbook/config.ini:type = addressbook:text/vcard
+sources/addressbook/config.ini:type = calendar
+
+peers/funambol/config.ini:syncURL = http://sync.funambol.com/funambol/ds
+peers/funambol/config.ini:# username = 
+peers/funambol/config.ini:# password = 
+
+peers/funambol/sources/calendar/config.ini:sync = refresh-from-server
+peers/funambol/sources/calendar/config.ini:uri = cal
+peers/funambol/sources/calendar/config.ini:type = calendar
+peers/funambol/sources/addressbook/config.ini:# sync = disabled
+peers/funambol/sources/addressbook/config.ini:type = file
+sources/calendar/config.ini:type = memos
+
+peers/memotoo/config.ini:syncURL = http://sync.memotoo.com/memotoo/ds
+peers/memotoo/config.ini:# username = 
+peers/memotoo/config.ini:# password = 
+
+peers/memotoo/sources/memo/config.ini:sync = refresh-from-client
+peers/memotoo/sources/memo/config.ini:uri = cal
+peers/memotoo/sources/memo/config.ini:type = memo:text/plain
+sources/memo/config.ini:type = todo
+'''
+
+        createFiles(root, oldconfig)
+        out, err, code = self.runCmdline(["--migrate",
+                                          "memo/backend=file", # override memo "backend" during migration
+                                          "@default"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(root)
+
+        expectedlines = ["peers/scheduleworld/",
+                         "sources/addressbook/config.ini:backend = addressbook",
+                         "sources/addressbook/config.ini:databaseFormat = text/vcard",
+                         "peers/scheduleworld/sources/addressbook/config.ini:syncFormat = text/vcard",
+                         "peers/scheduleworld/sources/addressbook/config.ini:sync = two-way",
+                         "peers/scheduleworld/sources/calendar/config.ini:# sync = disabled",
+                         "peers/scheduleworld/sources/memo/config.ini:# sync = disabled",
+                         "sources/calendar/config.ini:backend = calendar",
+                         "sources/calendar/config.ini:# databaseFormat = ",
+                         "peers/funambol/sources/calendar/config.ini:# syncFormat = ",
+                         "peers/funambol/sources/addressbook/config.ini:# sync = disabled",
+                         "peers/funambol/sources/calendar/config.ini:sync = refresh-from-server",
+                         "peers/funambol/sources/memo/config.ini:# sync = disabled",
+                         "sources/memo/config.ini:backend = file",
+                         "sources/memo/config.ini:databaseFormat = text/plain",
+                         "peers/memotoo/sources/memo/config.ini:syncFormat = text/plain",
+                         "peers/memotoo/sources/addressbook/config.ini:# sync = disabled",
+                         "peers/memotoo/sources/calendar/config.ini:# sync = disabled",
+                         "peers/memotoo/sources/memo/config.ini:sync = refresh-from-client"]
+
+        for expectedline in expectedlines:
+            self.assertIn(expectedline, migratedconfig)
+
 if __name__ == '__main__':
     unittest.main()
