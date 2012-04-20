@@ -5744,5 +5744,152 @@ sources/memo/config.ini:type = todo
                                               "/scheduleworld.old.1/")
         self.assertEqualDiff(createdconfig, renamedconfig)
 
+    @property("debug", False)
+    def testItemOperations(self):
+        '''TestCmdline.testItemOperations - add and print items'''
+        # "foo" not configured
+        out, err, code = self.runCmdline(["--print-items",
+                                          "foo",
+                                          "bar"],
+                                         expectSuccess = False)
+        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): bar: backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] configuration 'foo' does not exist\n[ERROR] source 'bar' does not exist\n[ERROR] backend property not set\n",
+                             stripTime(err))
+        self.assertEqualDiff('', out)
+
+        # "foo" not configured, no source named
+        out, err, code  = self.runCmdline(["--print-items",
+                                           "foo"],
+                                          expectSuccess = False)
+        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] configuration 'foo' does not exist\n[ERROR] no source selected\n[ERROR] backend property not set\n",
+                             stripTime(err))
+        self.assertEqualDiff('', out)
+
+        # nothing known about source
+        out, err, code = self.runCmdline(["--print-items"],
+                                         expectSuccess = False)
+        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] no source selected\n[ERROR] backend property not set\n",
+                             stripTime(err))
+        self.assertEqualDiff('', out)
+
+        # now create "foo"
+        out, err, code = self.runCmdline(["--configure",
+                                          "--template", "default",
+                                          "foo"])
+        self.assertSilent(out, err)
+
+        # "foo" now configured, still no source
+        out, err, code  = self.runCmdline(["--print-items",
+                                           "foo"],
+                                          expectSuccess = False)
+        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] no source selected\n[ERROR] backend property not set\n",
+                             stripTime(err))
+        self.assertEqualDiff('', out)
+
+        # "foo" configured, but "bar" is not
+        out, err, code = self.runCmdline(["--print-items",
+                                          "foo",
+                                          "bar"],
+                                         expectSuccess = False)
+        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): bar: backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] source 'bar' does not exist\n[ERROR] backend property not set\n",
+                             stripTime(err))
+        self.assertEqualDiff('', out)
+
+        # add "bar" source, using file backend
+        out, err, code = self.runCmdline(["--configure",
+                                          "backend=file",
+                                          "database=file://" + xdg_root + "/addressbook",
+                                          "databaseFormat=text/vcard",
+                                          "foo",
+                                          "bar"])
+        self.assertSilent(out, err)
+
+        # no items yet
+        out, err, code = self.runCmdline(["--print-items",
+                                          "foo",
+                                          "bar"])
+        self.assertSilent(out, err)
+
+        john = """BEGIN:VCARD
+VERSION:3.0
+FN:John Doe
+N:Doe;John;;;
+END:VCARD
+"""
+        joan = """BEGIN:VCARD
+VERSION:3.0
+FN:Joan Doe
+N:Doe;Joan;;;
+END:VCARD
+"""
+
+        # create one file
+        file1 = "1:" + john
+        file2 = "2:" + joan
+        file1 = file1.replace("\n", "\n1:")
+        file1 = file1[:-2]
+        file2 = file2.replace("\n", "\n2:")
+        file2 = file2[:-2]
+        createFiles(xdg_root + "/addressbook", file1 + file2)
+
+        out, err, code = self.runCmdline(["--print-items",
+                                          "foo",
+                                          "bar"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff("1\n2\n", out)
+
+        # alternatively just specify enough parameters without the
+        # "foo" "bar" config part
+        out, err, code = self.runCmdline(["--print-items",
+                                          "backend=file",
+                                          "database=file://" + xdg_root + "/addressbook",
+                                          "databaseFormat=text/vcard"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff("1\n2\n", out)
+
+        # export all
+        out, err, code = self.runCmdline(["--export", "-",
+                                          "foo", "bar"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff(john + "\n" + joan, out)
+
+        # TODO: this case looks the same as previous. is something
+        # TODO continued: missing?
+        # export all via config
+        out, err, code = self.runCmdline(["--export", "-",
+                                          "foo", "bar"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff(john + "\n" + joan, out)
+
+        # export one
+        out, err, code = self.runCmdline(["--export", "-",
+                                          "backend=file"
+                                          "database=file://" + xdg_root + "/addressbook",
+                                          "databaseFormat=text/vcard",
+                                          "--luids", "1"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff(john, out)
+
+        # export one via config
+        out, err, code = self.runCmdline(["--export", "-",
+                                          "foo", "bar", "1"])
+        self.assertEqualDiff('', err)
+        self.assertEqualDiff(john, out)
+
+        # Copied from C++ test:
+        # TODO: check configuration of just the source as @foo bar
+        # without peer
+
+        # check error message for missing config name
+        out, err, code = self.runCmdline([],
+                                         expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] No configuration name specified.\n")
+
+        # check error message for missing config name, version II
+        out, err, code = self.runCmdline(["--run"],
+                                         expectSuccess = False)
+        self.expectUsageError(out, err,
+                              "[ERROR] No configuration name specified.\n")
+
 if __name__ == '__main__':
     unittest.main()
