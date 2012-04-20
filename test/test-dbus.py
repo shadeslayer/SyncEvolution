@@ -5160,6 +5160,99 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
         self.assertEqualDiff(fooconfig + syncurl + configsource, res)
 
+    @property("debug", False)
+    def testConfigureSource(self):
+        '''TestCmdline.testConfigureSource - configure some sources'''
+        # create from scratch with only addressbook configured
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "database = file://tmp/test",
+                                          "--source-property", "type = file:/x-vcard",
+                                          "@foobar",
+                                          "addressbook"])
+        self.assertSilent(out, err)
+
+        root = self.configdir + "/foobar"
+        res = self.removeRandomUUID(scanFiles(root))
+        expected = '''.internal.ini:contextMinVersion = {0}
+.internal.ini:contextCurVersion = {1}
+config.ini:# logdir = 
+config.ini:# maxlogdirs = 10
+config.ini:deviceId = fixed-devid
+sources/addressbook/config.ini:backend = file
+sources/addressbook/config.ini:database = file://tmp/test
+sources/addressbook/config.ini:databaseFormat = text/x-vcard
+sources/addressbook/config.ini:# databaseUser = 
+sources/addressbook/config.ini:# databasePassword = 
+'''.format(self.getContextMinVersion(),
+           self.getContextCurVersion())
+        self.assertEqualDiff(expected, res)
+
+        # add calendar
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "database@foobar = file://tmp/test2",
+                                          "--source-property", "backend = calendar",
+                                          "@foobar",
+                                          "calendar"])
+        self.assertSilent(out, err)
+
+        res = self.removeRandomUUID(scanFiles(root))
+        expected += '''sources/calendar/config.ini:backend = calendar
+sources/calendar/config.ini:database = file://tmp/test2
+sources/calendar/config.ini:# databaseFormat = 
+sources/calendar/config.ini:# databaseUser = 
+sources/calendar/config.ini:# databasePassword = 
+'''
+        self.assertEqualDiff(expected, res)
+
+        # add ScheduleWorld peer: must reuse existing backend settings
+        out, err, code = self.runCmdline(["--configure",
+                                          "scheduleworld@foobar"])
+        self.assertSilent(out, err)
+
+        res = self.removeRandomUUID(scanFiles(root))
+        expected = self.ScheduleWorldConfig()
+        expected = expected.replace("addressbook/config.ini:backend = addressbook",
+                                    "addressbook/config.ini:backend = file")
+        expected = expected.replace("addressbook/config.ini:# database = ",
+                                    "addressbook/config.ini:database = file://tmp/test")
+        expected = expected.replace("addressbook/config.ini:# databaseFormat = ",
+                                    "addressbook/config.ini:databaseFormat = text/x-vcard")
+        expected = expected.replace("calendar/config.ini:# database = ",
+                                    "calendar/config.ini:database = file://tmp/test2")
+        expected = sortConfig(expected)
+        self.assertEqualDiff(expected, res)
+
+        # disable all sources except for addressbook
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "addressbook/sync=two-way",
+                                          "--source-property", "sync=none",
+                                          "scheduleworld@foobar"])
+        self.assertSilent(out, err)
+
+        res = self.removeRandomUUID(scanFiles(root))
+        expected = expected.replace("sync = two-way",
+                                    "sync = disabled")
+        expected = expected.replace("sync = disabled",
+                                    "sync = two-way",
+                                    1)
+        self.assertEqualDiff(expected, res)
+
+        # override type in template while creating from scratch
+        out, err, code = self.runCmdline(["--configure",
+                                          "--template", "SyncEvolution",
+                                          "--source-property", "addressbook/type=file:text/vcard:3.0",
+                                          "--source-property", "calendar/type=file:text/calendar:2.0",
+                                          "syncevo@syncevo"])
+        self.assertSilent(out, err)
+
+        syncevoroot = self.configdir + "/syncevo"
+        res = scanFiles(syncevoroot + "/sources/addressbook")
+        self.assertIn("backend = file\n", res)
+        self.assertIn("databaseFormat = text/vcard\n", res)
+
+        res = scanFiles(syncevoroot + "/sources/calendar")
+        self.assertIn("backend = file\n", res)
+        self.assertIn("databaseFormat = text/calendar\n", res)
 
 if __name__ == '__main__':
     unittest.main()
