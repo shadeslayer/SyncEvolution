@@ -4044,6 +4044,67 @@ sources/todo/config.ini:# databasePassword = '''.format(
                                 1)
         return config
 
+    def OldScheduleWorldConfig(self):
+        return '''spds/syncml/config.txt:syncURL = http://sync.scheduleworld.com/funambol/ds
+spds/syncml/config.txt:# username = 
+spds/syncml/config.txt:# password = 
+spds/syncml/config.txt:# logdir = 
+spds/syncml/config.txt:# loglevel = 0
+spds/syncml/config.txt:# printChanges = 1
+spds/syncml/config.txt:# dumpData = 1
+spds/syncml/config.txt:# maxlogdirs = 10
+spds/syncml/config.txt:# autoSync = 0
+spds/syncml/config.txt:# autoSyncInterval = 30M
+spds/syncml/config.txt:# autoSyncDelay = 5M
+spds/syncml/config.txt:# preventSlowSync = 1
+spds/syncml/config.txt:# useProxy = 0
+spds/syncml/config.txt:# proxyHost = 
+spds/syncml/config.txt:# proxyUsername = 
+spds/syncml/config.txt:# proxyPassword = 
+spds/syncml/config.txt:# clientAuthType = md5
+spds/syncml/config.txt:# RetryDuration = 5M
+spds/syncml/config.txt:# RetryInterval = 2M
+spds/syncml/config.txt:# remoteIdentifier = 
+spds/syncml/config.txt:# PeerIsClient = 0
+spds/syncml/config.txt:# SyncMLVersion = 
+spds/syncml/config.txt:PeerName = ScheduleWorld
+spds/syncml/config.txt:deviceId = fixed-devid
+spds/syncml/config.txt:# remoteDeviceId = 
+spds/syncml/config.txt:# enableWBXML = 1
+spds/syncml/config.txt:# maxMsgSize = 150000
+spds/syncml/config.txt:# maxObjSize = 4000000
+spds/syncml/config.txt:# SSLServerCertificates = {0}
+spds/syncml/config.txt:# SSLVerifyServer = 1
+spds/syncml/config.txt:# SSLVerifyHost = 1
+spds/syncml/config.txt:WebURL = http://www.scheduleworld.com
+spds/syncml/config.txt:IconURI = image://themedimage/icons/services/scheduleworld
+spds/syncml/config.txt:# ConsumerReady = 0
+spds/sources/addressbook/config.txt:sync = two-way
+spds/sources/addressbook/config.txt:type = addressbook:text/vcard
+spds/sources/addressbook/config.txt:evolutionsource = xyz
+spds/sources/addressbook/config.txt:uri = card3
+spds/sources/addressbook/config.txt:evolutionuser = foo
+spds/sources/addressbook/config.txt:evolutionpassword = bar
+spds/sources/calendar/config.txt:sync = two-way
+spds/sources/calendar/config.txt:type = calendar
+spds/sources/calendar/config.txt:# database = 
+spds/sources/calendar/config.txt:uri = cal2
+spds/sources/calendar/config.txt:# evolutionuser = 
+spds/sources/calendar/config.txt:# evolutionpassword = 
+spds/sources/memo/config.txt:sync = two-way
+spds/sources/memo/config.txt:type = memo
+spds/sources/memo/config.txt:# database = 
+spds/sources/memo/config.txt:uri = note
+spds/sources/memo/config.txt:# evolutionuser = 
+spds/sources/memo/config.txt:# evolutionpassword = 
+spds/sources/todo/config.txt:sync = two-way
+spds/sources/todo/config.txt:type = todo
+spds/sources/todo/config.txt:# database = 
+spds/sources/todo/config.txt:uri = task2
+spds/sources/todo/config.txt:# evolutionuser = 
+spds/sources/todo/config.txt:# evolutionpassword = 
+'''.format(self.getSSLServerCertificates())
+
     def replaceLineInConfig(self, config, begin, to):
         index = config.find(begin)
         self.assertNotEqual(index, -1)
@@ -5291,6 +5352,236 @@ sources/calendar/config.ini:# databasePassword =
                 if line and not line.startswith(" "):
                     entries += 1
             self.assertEqual(1, entries)
+
+    @property("debug", False)
+    def testMigrate(self):
+        '''TestCmdline.testMigrate - migrate from old configuration'''
+        oldroot = xdg_root + "/config/.sync4j/evolution/scheduleworld"
+        newroot = self.configdir + "/default"
+        oldconfig = self.OldScheduleWorldConfig()
+
+        # migrate old config
+        createFiles(oldroot, oldconfig)
+        createdoldconfig = scanFiles(oldroot)
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(newroot)
+        expected = sortConfig(self.ScheduleWorldConfig())
+        # migrating SyncEvolution < 1.2 configs sets ConsumerReady, to
+        # keep config visible in the updated sync-ui
+        expected = expected.replace("# ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        expected = expected.replace("# database = ",
+                                    "database = xyz",
+                                    1)
+        expected = expected.replace("# databaseUser = ",
+                                    "databaseUser = foo",
+                                    1)
+        expected = expected.replace("# databasePassword = ",
+                                    "databasePassword = bar",
+                                    1)
+        # migrating "type" sets forceSyncFormat (always) and
+        # databaseFormat (if format was part of type, as for
+        # addressbook
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 0")
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard",
+                                    1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(oldroot + ".old")
+        self.assertEqualDiff(createdoldconfig, renamedconfig)
+
+        # rewrite existing config with obsolete properties => these
+        # properties should get removed
+        #
+        # There is one limitation: shared nodes are not
+        # rewritten. This is acceptable.
+        createFiles(newroot + "/peers/scheduleworld",
+                    '''config.ini:# obsolete comment
+config.ini:obsoleteprop = foo
+''',
+                    True)
+        createdconfig = scanFiles(newroot, "scheduleworld")
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(newroot, "scheduleworld")
+        expected = sortConfig(self.ScheduleWorldConfig())
+        expected = expected.replace("# ConsumerReady = 0", "ConsumerReady = 1")
+        expected = expected.replace("# database = ", "database = xyz", 1)
+        expected = expected.replace("# databaseUser = ", "databaseUser = foo", 1)
+        expected = expected.replace("# databasePassword = ", "databasePassword = bar", 1)
+        expected = expected.replace("# forceSyncFormat = 0", "forceSyncFormat = 0")
+        expected = expected.replace("# databaseFormat = ", "databaseFormat = text/vcard", 1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(newroot, "scheduleworld.old.1")
+        createdconfig = createdconfig.replace("ConsumerReady = 1", "ConsumerReady = 0", 1)
+        createdconfig = createdconfig.replace("/scheduleworld/", "/scheduleworld.old.1/")
+        self.assertEqualDiff(createdconfig, renamedconfig)
+
+        # migrate old config with changes and .synthesis directory, a
+        # second time
+        createFiles(oldroot, oldconfig)
+        createFiles(oldroot,
+                    '''.synthesis/dummy-file.bfi:dummy = foobar
+spds/sources/addressbook/changes/config.txt:foo = bar
+spds/sources/addressbook/changes/config.txt:foo2 = bar2
+''',
+                    True)
+        createdconfig = scanFiles(oldroot)
+        shutil.rmtree(newroot, True)
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(newroot)
+        expected = sortConfig(self.ScheduleWorldConfig())
+        expected = expected.replace("# ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        expected = expected.replace("# database = ",
+                                    "database = xyz",
+                                    1)
+        expected = expected.replace("# databaseUser = ",
+                                    "databaseUser = foo",
+                                    1)
+        expected = expected.replace("# databasePassword = ",
+                                    "databasePassword = bar",
+                                    1)
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 0")
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard",
+                                    1)
+        expected = expected.replace("peers/scheduleworld/sources/addressbook/config.ini",
+                                    '''peers/scheduleworld/sources/addressbook/.other.ini:foo = bar
+peers/scheduleworld/sources/addressbook/.other.ini:foo2 = bar2
+peers/scheduleworld/sources/addressbook/config.ini''',
+                                    1)
+        expected = expected.replace("peers/scheduleworld/config.ini",
+                                    '''peers/scheduleworld/.synthesis/dummy-file.bfi:dummy = foobar
+peers/scheduleworld/config.ini''',
+                                    1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(oldroot + ".old.1")
+        createdconfig = createdconfig.replace("ConsumerReady = 1",
+                                              "ConsumerReady = 0",
+                                              1)
+        self.assertEqualDiff(createdconfig, renamedconfig)
+
+        otherroot = self.configdir + "/other"
+        shutil.rmtree(otherroot, True)
+
+        # migrate old config into non-default context
+        createFiles(oldroot, oldconfig)
+        createdconfig = scanFiles(oldroot)
+
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld@other"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(otherroot)
+        expected = sortConfig(self.ScheduleWorldConfig())
+        expected = expected.replace("# ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        expected = expected.replace("# database = ",
+                                    "database = xyz",
+                                    1)
+        expected = expected.replace("# databaseUser = ",
+                                    "databaseUser = foo",
+                                    1)
+        expected = expected.replace("# databasePassword = ",
+                                    "databasePassword = bar",
+                                    1)
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 0")
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard",
+                                    1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(oldroot + ".old")
+        self.assertEqualDiff(createdconfig, renamedconfig)
+
+        # migrate the migrated config again inside the "other"
+        # context, with no "default" context which might interfere
+        # with the tests
+
+        # ConsumerReady was set as part of previous migration, must be
+        # removed during migration to hide the migrated config from
+        # average users.
+        shutil.rmtree(newroot, True)
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld@other"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(otherroot, "scheduleworld")
+        expected = sortConfig(self.ScheduleWorldConfig())
+        expected = expected.replace("# ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        expected = expected.replace("# database = ",
+                                    "database = xyz",
+                                    1)
+        expected = expected.replace("# databaseUser = ",
+                                    "databaseUser = foo",
+                                    1)
+        expected = expected.replace("# databasePassword = ",
+                                    "databasePassword = bar",
+                                    1)
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 0")
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard",
+                                    1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(otherroot, "scheduleworld.old.3")
+        expected = expected.replace("/scheduleworld/",
+                                    "/scheduleworld.old.3/")
+        expected = expected.replace("ConsumerReady = 1",
+                                    "ConsumerReady = 0")
+        self.assertEqualDiff(expected, renamedconfig)
+
+        # migrate once more, this time without the explicit context in
+        # the config name => must not change the context, need second
+        # .old dir
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+        migratedconfig = scanFiles(otherroot, "scheduleworld")
+        expected = expected.replace("/scheduleworld.old.3/",
+                                    "/scheduleworld/")
+        expected = expected.replace("ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(otherroot, "scheduleworld.old.4")
+        expected = expected.replace("/scheduleworld/",
+                                    "/scheduleworld.old.4/")
+        expected = expected.replace("ConsumerReady = 1",
+                                    "ConsumerReady = 0")
+        self.assertEqualDiff(expected, renamedconfig)
+
+        # remove ConsumerReady: must remain unset when migrating
+        # hidden Syncevolution >= 1.2 configs
+        out, err, code = self.runCmdline(["--configure",
+                                          "--sync-property", "ConsumerReady=0",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        # migrate once more => keep ConsumerReady unset
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(otherroot, "scheduleworld")
+        expected = expected.replace("/scheduleworld.old.4/",
+                                    "/scheduleworld/")
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(otherroot, "scheduleworld.old.5")
+        expected = expected.replace("/scheduleworld/",
+                                    "/scheduleworld.old.5/")
+        self.assertEqualDiff(expected, renamedconfig)
 
 if __name__ == '__main__':
     unittest.main()
