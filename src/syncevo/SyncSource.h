@@ -201,11 +201,14 @@ struct ClientTestConfig {
      * the sync source's desctructor should not thow exceptions.
      *
      * @param client    the same instance to which this config belongs
+     * @param clientID  the unique ID of the client, "1" resp. "2" in practice (can also be obtained as
+     *                  client->getClientID(), but not all implementers have (or want) access to the
+     *                  class definition)
      * @param source    index of the data source (from 0 to ClientTest::getNumSources() - 1)
      * @param isSourceA true if the requested SyncSource is the first one accessing that
      *                  data, otherwise the second
      */
-    typedef boost::function<TestingSyncSource *(ClientTest &, int, bool)> createsource_t;
+    typedef boost::function<TestingSyncSource *(ClientTest &, const std::string &, int, bool)> createsource_t;
 
     /**
      * Creates a sync source which references the primary database;

@@ -1164,7 +1164,29 @@ class ActiveSyncTest(SyncEvolutionTest):
 test = ActiveSyncTest("exchange")
 context.add(test)
 
-test = SyncEvolutionTest("syncevohttp",
+syncevoPrefix=" ".join([os.path.join(sync.basedir, "test", "wrappercheck.sh")] +
+                       # redirect output of command run under valgrind (when
+                       # using valgrind) or of the whole command (otherwise)
+                       # to syncevohttp.log
+                       ( 'valgrindcheck' in options.testprefix and \
+                             [ "VALGRIND_CMD_LOG=syncevohttp.log" ] or \
+                             [ "--daemon-log", "syncevohttp.log" ] ) +
+                       [ options.testprefix,
+                         os.path.join(compile.installdir, "usr", "libexec", "syncevo-dbus-server"),
+                         "--",
+                         os.path.join(sync.basedir, "test", "wrappercheck.sh"),
+                         # also redirect additional syncevo-http-server
+                         # output into the same file
+                         "--daemon-log", "syncevohttp.log",
+                         os.path.join(compile.installdir, "usr", "bin", "syncevo-http-server"),
+                         "--quiet",
+                         "http://127.0.0.1:9999/syncevolution",
+                         "--",
+                         options.testprefix])
+
+# The test uses EDS on the clients and a server config with file
+# backends.
+test = SyncEvolutionTest("edsfile",
                          compile,
                          "", options.shell,
                          "Client::Sync::eds_event Client::Sync::eds_contact Client::Sync::eds_event_eds_contact",
@@ -1172,9 +1194,9 @@ test = SyncEvolutionTest("syncevohttp",
                          "CLIENT_TEST_NUM_ITEMS=10 "
                          "CLIENT_TEST_LOG=syncevohttp.log "
                          # could be enabled, but reporting result is currently missing (BMC #1009)
-                         #"CLIENT_TEST_RETRY=t "
-                         #"CLIENT_TEST_RESEND=t "
-                         #"CLIENT_TEST_SUSPEND=t "
+                         "CLIENT_TEST_RETRY=t "
+                         "CLIENT_TEST_RESEND=t "
+                         "CLIENT_TEST_SUSPEND=t "
                          # server supports refresh-from-client, use it for
                          # more efficient test setup
                          "CLIENT_TEST_DELETE_REFRESH=1 "
@@ -1183,27 +1205,63 @@ test = SyncEvolutionTest("syncevohttp",
                          "CLIENT_TEST_SKIP="
                          # server does not detect duplicates (uses file backend), detecting on the
                          # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
-                         "Client::Sync::.*::testAddBothSides.*"
+                         # "Client::Sync::.*::testAddBothSides.*"
                          ,
-                         testPrefix=" ".join([os.path.join(sync.basedir, "test", "wrappercheck.sh")] +
-                                              # redirect output of command run under valgrind (when
-                                              # using valgrind) or of the whole command (otherwise)
-                                              # to syncevohttp.log
-                                              ( 'valgrindcheck' in options.testprefix and \
-                                                [ "VALGRIND_CMD_LOG=syncevohttp.log" ] or \
-                                                [ "--daemon-log", "syncevohttp.log" ] ) +
-                                              [ options.testprefix,
-                                                os.path.join(compile.installdir, "usr", "libexec", "syncevo-dbus-server"),
-                                                "--",
-                                                os.path.join(sync.basedir, "test", "wrappercheck.sh"),
-                                                # also redirect additional syncevo-http-server
-                                                # output into the same file
-                                                "--daemon-log", "syncevohttp.log",
-                                                os.path.join(compile.installdir, "usr", "bin", "syncevo-http-server"),
-                                                "--quiet",
-                                                "http://127.0.0.1:9999/syncevolution",
-                                                "--",
-                                                options.testprefix]))
+                         testPrefix=syncevoPrefix)
+context.add(test)
+
+# This one uses CalDAV/CardDAV in DAViCal and the same server config
+# with file backends as edsfile.
+test = SyncEvolutionTest("davfile",
+                         compile,
+                         "", options.shell,
+                         "Client::Sync::davical_caldav Client::Sync::davical_carddav Client::Sync::davical_caldav_davical_carddav",
+                         [ "davical_caldav", "davical_carddav" ],
+                         "CLIENT_TEST_SIMPLE_UID=1 " # DAViCal server gets confused by UID with special characters
+                         "CLIENT_TEST_WEBDAV='davical caldav carddav' "
+                         "CLIENT_TEST_NUM_ITEMS=10 "
+                         "CLIENT_TEST_LOG=syncevohttp.log "
+                         # could be enabled, but reporting result is currently missing (BMC #1009)
+                         # "CLIENT_TEST_RETRY=t "
+                         # "CLIENT_TEST_RESEND=t "
+                         # "CLIENT_TEST_SUSPEND=t "
+                         # server supports refresh-from-client, use it for
+                         # more efficient test setup
+                         "CLIENT_TEST_DELETE_REFRESH=1 "
+                         # server supports multiple cycles inside the same session
+                         "CLIENT_TEST_PEER_CAN_RESTART=1 "
+                         "CLIENT_TEST_SKIP="
+                         # server does not detect duplicates (uses file backend), detecting on the
+                         # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
+                         # "Client::Sync::.*::testAddBothSides.*"
+                         ,
+                         testPrefix=syncevoPrefix)
+context.add(test)
+
+# EDS on client side, DAV on server.
+test = SyncEvolutionTest("edsdav",
+                         compile,
+                         "", options.shell,
+                         "Client::Sync::eds_event Client::Sync::eds_contact Client::Sync::eds_event_eds_contact",
+                         [ "eds_event", "eds_contact" ],
+                         "CLIENT_TEST_SIMPLE_UID=1 " # DAViCal server gets confused by UID with special characters
+                         "CLIENT_TEST_NUM_ITEMS=10 "
+                         "CLIENT_TEST_LOG=syncevohttp.log "
+                         # could be enabled, but reporting result is currently missing (BMC #1009)
+                         # "CLIENT_TEST_RETRY=t "
+                         # "CLIENT_TEST_RESEND=t "
+                         # "CLIENT_TEST_SUSPEND=t "
+                         # server supports refresh-from-client, use it for
+                         # more efficient test setup
+                         "CLIENT_TEST_DELETE_REFRESH=1 "
+                         # server supports multiple cycles inside the same session
+                         "CLIENT_TEST_PEER_CAN_RESTART=1 "
+                         "CLIENT_TEST_SKIP="
+                         # server does not detect duplicates (uses file backend), detecting on the
+                         # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
+                         # "Client::Sync::.*::testAddBothSides.*"
+                         ,
+                         testPrefix=syncevoPrefix)
 context.add(test)
 
 scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,

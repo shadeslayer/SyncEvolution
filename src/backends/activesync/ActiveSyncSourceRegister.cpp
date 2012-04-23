@@ -171,9 +171,11 @@ static int DumpItems(ClientTest &client, TestingSyncSource &source, const std::s
 }
 
 static TestingSyncSource *createEASSource(const ClientTestConfig::createsource_t &create,
-                                          ClientTest &client, int source, bool isSourceA)
+                                          ClientTest &client,
+                                          const std::string &clientID,
+                                          int source, bool isSourceA)
 {
-    TestingSyncSource *res = create(client, source, isSourceA);
+    TestingSyncSource *res = create(client, clientID, source, isSourceA);
 
     // Mangle username: if the base username in the config is account
     // "foo", then source B uses "foo_B", because otherwise it'll end
@@ -205,9 +207,9 @@ static void updateConfigEAS(const RegisterSyncSourceTest */* me */,
         // wrap orginal source creation, set default database for
         // database #0 and refuse to return a source for database #1
         config.m_createSourceA = boost::bind(createEASSource, config.m_createSourceA,
-                                             _1, _2, _3);
+                                             _1, _2, _3, _4);
         config.m_createSourceB = boost::bind(createEASSource, config.m_createSourceB,
-                                             _1, _2, _3);
+                                             _1, _2, _3, _4);
 
         config.m_dump = DumpItems;
         config.m_sourceLUIDsAreVolatile = true;

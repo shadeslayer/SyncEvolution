@@ -135,6 +135,8 @@ public:
     {
     }
 
+    virtual std::string getClientID() const { return m_clientID; }
+
     /**
      * code depends on other global constructors to run first, execute it after constructor but before
      * any other methods
@@ -239,11 +241,22 @@ public:
                 }
             }
 
-            // always set these properties: they might have changed since the last run
-            string database = getDatabaseName(test->m_configName);
-            sc->setDatabaseID(database);
-            sc->setUser(m_evoUser);
-            sc->setPassword(m_evoPassword);
+            // Set these properties if not set yet: that means the env
+            // variables are used when creating the config initially,
+            // but then no longer can be used to change the config.
+            // This prevents accidentally running a test with default
+            // values, for example for the database.
+            if (sc->getDatabaseID().empty()) {
+                string database = getDatabaseName(test->m_configName);
+                sc->setDatabaseID(database);
+            }
+            if (sc->getUser().empty() && !m_evoUser.empty()) {
+                sc->setUser(m_evoUser);
+            }
+            if (sc->getPassword().empty() && !m_evoPassword.empty()) {
+                sc->setPassword(m_evoPassword);
+            }
+            // Always set this one, to ensure the config matches the test.
             sc->setBackend(SourceType(testconfig.m_type).m_backend);
         }
         config->flush();
@@ -461,7 +474,7 @@ private:
     }
 
     /** called by test frame work */
-    static TestingSyncSource *createSource(ClientTest &client, int source, bool isSourceA) {
+    static TestingSyncSource *createSource(ClientTest &client, const std::string &clientID, int source, bool isSourceA) {
         TestEvolution &evClient((TestEvolution &)client);
         string name = evClient.m_localSource2Config[source];
 
@@ -480,15 +493,57 @@ private:
             config += "-";
             config += server;
         }
+        std::string tracking =
+            string("_") + m_clientID +
+            "_" + (isSourceA ? "A" : "B");
+        SE_LOG_DEBUG(NULL, NULL, "instantiating testing source %s in config %s, with tracking name %s",
+                     name.c_str(),
+                     config.c_str(),
+                     tracking.c_str());
         boost::shared_ptr<SyncConfig> context(new SyncConfig(config));
-        SyncSourceNodes nodes = context->getSyncSourceNodes(name,
-                                                            string("_") + m_clientID +
-                                                            "_" + (isSourceA ? "A" : "B"));
+        SyncSourceNodes nodes = context->getSyncSourceNodes(name, tracking);
 
-        // always set this property: the name might have changes since last test run
-        nodes.getProperties()->setProperty("evolutionsource", database.c_str());
-        nodes.getProperties()->setProperty("evolutionuser", m_evoUser.c_str());
-        nodes.getProperties()->setProperty("evolutionpassword", m_evoPassword.c_str());
+        // The user of client-test must have configured the source
+        // @<CLIENT_TEST_SERVER>_<m_clientID>/<name> when doing
+        // Client::Sync testing.  Our testing source must use the same
+        // properties, but different change tracking.
+        std::string peerName = server ? (std::string(server) + "_" + m_clientID) : "@default";
+        boost::shared_ptr<SyncConfig> peer(new SyncConfig(peerName));
+        SyncSourceNodes peerNodes = peer->getSyncSourceNodes(name);
+        SE_LOG_DEBUG(NULL, NULL, "overriding testing source %s properties with the ones from config %s = %s",
+                     name.c_str(),
+                     peerName.c_str(),
+                     peer->getRootPath().c_str());
+        BOOST_FOREACH(const ConfigProperty *prop, SyncSourceConfig::getRegistry()) {
+            if (prop->isHidden()) {
+                continue;
+            }
+            boost::shared_ptr<FilterConfigNode> node = peerNodes.getNode(*prop);
+            InitStateString value = prop->getProperty(*node);
+            SE_LOG_DEBUG(NULL, NULL, "   %s = %s (%s)",
+                         prop->getMainName().c_str(),
+                         value.c_str(),
+                         value.wasSet() ? "set" : "default");
+            node = nodes.getNode(*prop);
+            node->setProperty(prop->getMainName(), value);
+        }
+        context->flush();
+
+        // Same as in init() above: set values if still empty, but don't
+        // overwrite anything.
+        boost::shared_ptr<FilterConfigNode> props = nodes.getProperties();
+        std::string value;
+        if (!props->getProperty("database", value)) {
+            props->setProperty("database", database);
+        }
+        if (!props->getProperty("databaseUser", value) &&
+            !m_evoUser.empty()) {
+            props->setProperty("databaseUser", m_evoUser);
+        }
+        if (!props->getProperty("databasePassword", value) &&
+            !m_evoPassword.empty()) {
+            props->setProperty("databasePassword", m_evoPassword);
+        }
 
         SyncSourceParams params(name,
                                 nodes,

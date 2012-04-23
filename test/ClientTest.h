@@ -241,6 +241,9 @@ class ClientTest {
     ClientTest(int serverSleepSec = 0, const std::string &serverLog= "");
     virtual ~ClientTest();
 
+    /** a unique string - "1" or "2" in practice */
+    virtual std::string getClientID() const = 0;
+
     /** set up before running a test */
     virtual void setup() { }
 
@@ -448,7 +451,7 @@ public:
 
     TestingSyncSource *operator() () {
         CPPUNIT_ASSERT(createSource);
-        return createSource(client, source, isSourceA);
+        return createSource(client, client.getClientID(), source, isSourceA);
     }
 
     const ClientTest::Config::createsource_t createSource;

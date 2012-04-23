@@ -233,8 +233,8 @@ public:
         if (m_type == "caldav") {
             config.m_supportsReccurenceEXDates = true;
         }
-        config.m_createSourceA = boost::bind(&WebDAVTest::createSource, this, _3);
-        config.m_createSourceB = boost::bind(&WebDAVTest::createSource, this, _3);
+        config.m_createSourceA = boost::bind(&WebDAVTest::createSource, this, _2, _4);
+        config.m_createSourceB = boost::bind(&WebDAVTest::createSource, this, _2, _4);
         ConfigProps::const_iterator it = m_props.find(m_type + "/testcases");
         if (it != m_props.end() ||
             (it = m_props.find("testcases")) != m_props.end()) {
@@ -242,19 +242,65 @@ public:
         }
     }
 
-    TestingSyncSource *createSource(bool isSourceA) const
+    // This is very similar to client-test-app.cpp. TODO: refactor?!
+    TestingSyncSource *createSource(const std::string &clientID, bool isSourceA) const
     {
-        boost::shared_ptr<SyncConfig> context(new SyncConfig(string("target-config@client-test-") + m_server));
-        SyncSourceNodes nodes = context->getSyncSourceNodes(m_type,
-                                                            /* string("_") m_clientID + */
-                                                            string("_") + (isSourceA ? "A" : "B"));
+        std::string name = m_server + "_" + m_type;
+        const char *server = getenv("CLIENT_TEST_SERVER");
+        std::string config = "target-config@client-test";
+        if (server) {
+            config += "-";
+            config += server;
+        }
+        std::string tracking =
+            string("_") + clientID +
+            string("_") + (isSourceA ? "A" : "B");
 
-        // always set properties taken from the environment;
-        // TODO: "database" property (currently always uses the default)
+        SE_LOG_DEBUG(NULL, NULL, "instantiating testing source %s in config %s, with tracking name %s",
+                     name.c_str(),
+                     config.c_str(),
+                     tracking.c_str());
+        boost::shared_ptr<SyncConfig> context(new SyncConfig(config));
+        SyncSourceNodes nodes = context->getSyncSourceNodes(name, tracking);
+
+        // Copy properties from the Client::Sync
+        // @<CLIENT_TEST_SERVER>_<clientID>/<name> config, to ensure
+        // that a testing source used as part of Client::Sync uses the
+        // same settings.
+        std::string peerName = std::string(server ? server : "no-such-server")  + "_" + clientID;
+        boost::shared_ptr<SyncConfig> peer(new SyncConfig(peerName));
+        SyncSourceNodes peerNodes = peer->getSyncSourceNodes(name);
+        SE_LOG_DEBUG(NULL, NULL, "overriding testing source %s properties with the ones from config %s = %s",
+                     name.c_str(),
+                     peerName.c_str(),
+                     peer->getRootPath().c_str());
+        BOOST_FOREACH(const ConfigProperty *prop, SyncSourceConfig::getRegistry()) {
+            if (prop->isHidden()) {
+                continue;
+            }
+            boost::shared_ptr<FilterConfigNode> node = peerNodes.getNode(*prop);
+            InitStateString value = prop->getProperty(*node);
+            SE_LOG_DEBUG(NULL, NULL, "   %s = %s (%s)",
+                         prop->getMainName().c_str(),
+                         value.c_str(),
+                         value.wasSet() ? "set" : "default");
+            node = nodes.getNode(*prop);
+            node->setProperty(prop->getMainName(), value);
+        }
+        // Also copy loglevel.
+        context->setLogLevel(peer->getLogLevel());
+        context->flush();
+
+
+        // Always set properties taken from the environment.
         nodes.getProperties()->setProperty("backend", m_type);
+        SE_LOG_DEBUG(NULL, NULL, "   additional property backend = %s (from CLIENT_TEST_WEBDAV)",
+                     m_type.c_str());
         BOOST_FOREACH(const StringPair &propval, m_props) {
             boost::shared_ptr<FilterConfigNode> node = context->getNode(propval.first);
             if (node) {
+                SE_LOG_DEBUG(NULL, NULL, "   additional property %s = %s (from CLIENT_TEST_WEBDAV)",
+                             propval.first.c_str(), propval.second.c_str());
                 node->setProperty(propval.first, propval.second);
             } else if (!boost::ends_with(propval.first, "testconfig") &&
                        !boost::ends_with(propval.first, "testcases")) {
