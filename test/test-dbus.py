@@ -874,9 +874,29 @@ class DBusUtil(Timeout):
                               (text, regex.pattern))
 
 
+    def assertInCustom(self, needle, haystack, msg=None):
+        if not needle in haystack:
+            if msg != None:
+                self.fail(msg)
+            else:
+                self.fail("'" + str(needle) + "' not found in '" + str(haystack) + "'")
+
+    def assertNotInCustom(self, needle, haystack, msg=None):
+        if needle in haystack:
+            if msg != None:
+                self.fail(msg)
+            else:
+                self.fail("'" + str(needle) + "' found in '" + str(haystack) + "'")
+
     # reimplement Python 2.7 assertions only in older Python
     if True or not 'assertRegexpMatches' in dir(self):
         assertRegexpMatches = assertRegexpMatchesCustom
+
+    if True or not 'assertIn' in dir(self):
+        assertIn = assertInCustom
+
+    if True or not 'assertNotIn' in dir(self):
+        assertNotIn = assertNotInCustom
 
 class TestDBusServer(unittest.TestCase, DBusUtil):
     """Tests for the read-only Server API."""
@@ -3920,6 +3940,45 @@ sources/todo/config.ini:# databasePassword = '''.format(
         else:
             self.fail('''DBusUtil.assertRegexpMatchesCustom() did not fail''')
         self.assertRegexpMatches('foo\nbar\nend', 'bar')
+
+        haystack = {'in': None}
+
+        self.assertInCustom('in', 'inside')
+        self.assertNotInCustom('in', 'outside')
+        self.assertInCustom('in', haystack)
+        self.assertNotIn('out', haystack)
+
+        try:
+            self.assertInCustom('in', 'outside')
+        except AssertionError, ex:
+            expected = "'in' not found in 'outside'"
+            self.assertEqual(expected, str(ex))
+        else:
+            self.fail('''DBusUtil.assertInCustom() did not fail''')
+
+        try:
+            self.assertInCustom('out', haystack)
+        except AssertionError, ex:
+            expected = "'out' not found in '{'in': None}'"
+            self.assertEqual(expected, str(ex))
+        else:
+            self.fail('''DBusUtil.assertInCustom() did not fail''')
+
+        try:
+            self.assertNotInCustom('in', 'inside')
+        except AssertionError, ex:
+            expected = "'in' found in 'inside'"
+            self.assertEqual(expected, str(ex))
+        else:
+            self.fail('''DBusUtil.assertNotInCustom() did not fail''')
+
+        try:
+            self.assertNotInCustom('in', haystack)
+        except AssertionError, ex:
+            expected = "'in' found in '{'in': None}'"
+            self.assertEqual(expected, str(ex))
+        else:
+            self.fail('''DBusUtil.assertNotInCustom() did not fail''')
 
         lines = "a\nb\nc\n"
         lastline = "c\n"
