@@ -842,7 +842,7 @@ class DBusUtil(Timeout):
             self.assertEqual(int(reports[0]["status"]), expectedResult)
         else:
             self.assertEqual(int(reports[0]["status"]), 200)
-            self.assertFalse("error" in reports[0])
+            self.assertNotIn("error", reports[0])
         return reports[0]
 
     def assertEqualDiff(self, expected, res):
@@ -2665,7 +2665,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
             self.fail("no exception thrown")
         loop.run()
         # 'idle' status doesn't be checked
-        self.assertTrue(('abort',) in DBusUtil.events)
+        self.assertIn(('abort',), DBusUtil.events)
 
     def testStartSync(self):
         """TestConnection.testStartSync - send a valid initial SyncML message"""
@@ -2680,8 +2680,8 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been accepted because must_authenticate=False
         # in Connect(); 508 = "refresh required" is normal
-        self.assertTrue('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
-        self.assertFalse('<Chal>' in DBusUtil.reply[0])
+        self.assertIn('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>', DBusUtil.reply[0])
+        self.assertNotIn('<Chal>', DBusUtil.reply[0])
         self.assertEqual(DBusUtil.reply[3], False)
         self.assertNotEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
@@ -2703,9 +2703,9 @@ class TestConnection(unittest.TestCase, DBusUtil):
         # report. Used to be listed with status 0 in the past, which would also
         # be acceptable, but here we use the strict check for "not present" to
         # ensure that the current behavior is preserved.
-        self.assertFalse("source-calendar-status" in sessions[0])
-        self.assertFalse("source-todo-status" in sessions[0])
-        self.assertFalse("source-memo-status" in sessions[0])
+        self.assertNotIn("source-calendar-status", sessions[0])
+        self.assertNotIn("source-todo-status", sessions[0])
+        self.assertNotIn("source-memo-status", sessions[0])
 
     def testCredentialsWrong(self):
         """TestConnection.testCredentialsWrong - send invalid credentials"""
@@ -2719,7 +2719,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertNotEqual(DBusUtil.reply, None)
         self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been rejected because of wrong Nonce
-        self.assertTrue('<Chal>' in DBusUtil.reply[0])
+        self.assertIn('<Chal>', DBusUtil.reply[0])
         self.assertEqual(DBusUtil.reply[3], False)
         self.assertNotEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
@@ -2746,7 +2746,7 @@ class TestConnection(unittest.TestCase, DBusUtil):
         self.assertEqual(DBusUtil.reply[1], 'application/vnd.syncml+xml')
         # credentials should have been accepted because with basic auth,
         # credentials can be replayed; 508 = "refresh required" is normal
-        self.assertTrue('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>' in DBusUtil.reply[0])
+        self.assertIn('<Status><CmdID>2</CmdID><MsgRef>1</MsgRef><CmdRef>1</CmdRef><Cmd>Alert</Cmd><TargetRef>addressbook</TargetRef><SourceRef>./addressbook</SourceRef><Data>508</Data>', DBusUtil.reply[0])
         self.assertEqual(DBusUtil.reply[3], False)
         self.assertNotEqual(DBusUtil.reply[4], '')
         connection.Close(False, 'good bye')
@@ -2941,23 +2941,23 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
         self.setUpSession("")
         config = self.session.GetConfig(False, utf8_strings=True)
         self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.assertTrue("source/addressbook" in config)
-        self.assertFalse("uri" in config["source/addressbook"])
+        self.assertIn("source/addressbook", config)
+        self.assertNotIn("uri", config["source/addressbook"])
         self.session.Detach()
 
         self.setUpSession("@DEFAULT")
         config = self.session.GetConfig(False, utf8_strings=True)
         self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
         self.assertEqual(config[""]["deviceId"], "shared-device-identifier")
-        self.assertTrue("source/addressbook" in config)
-        self.assertFalse("uri" in config["source/addressbook"])
+        self.assertIn("source/addressbook", config)
+        self.assertNotIn("uri", config["source/addressbook"])
         self.session.Detach()
 
         # different context
         self.setUpSession("@other_context")
         config = self.session.GetConfig(False, utf8_strings=True)
         self.assertEqual(config[""]["defaultPeer"], "foobar_peer")
-        self.assertFalse("source/addressbook" in config)
+        self.assertNotIn("source/addressbook", config)
         self.session.Detach()
 
     def testSharedTemplate(self):
@@ -3058,8 +3058,8 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
 
         # "addressbook" still exists in "foo" but only with default values
         config = self.server.GetConfig("foo", False, utf8_strings=True)
-        self.assertFalse("uri" in config["source/addressbook"])
-        self.assertFalse("sync" in config["source/addressbook"])
+        self.assertNotIn("uri", config["source/addressbook"])
+        self.assertNotIn("sync", config["source/addressbook"])
 
         # "addressbook" unchanged in "bar"
         config = self.server.GetConfig("bar", False, utf8_strings=True)
@@ -3077,9 +3077,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
 
         # "addressbook" gone in "foo" and "bar"
         config = self.server.GetConfig("foo", False, utf8_strings=True)
-        self.assertFalse("source/addressbook" in config)
+        self.assertNotIn("source/addressbook", config)
         config = self.server.GetConfig("bar", False, utf8_strings=True)
-        self.assertFalse("source/addressbook" in config)
+        self.assertNotIn("source/addressbook", config)
 
     def testRemovePeer(self):
         """TestMultipleConfigs.testRemovePeer - check listing of peers while removing 'bar'"""
@@ -3192,7 +3192,7 @@ END:VCARD''')
         self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
         self.checkSync()
         input = open(xdg_root + "/server/0", "r")
-        self.assertTrue("FN:John Doe" in input.read())
+        self.assertIn("FN:John Doe", input.read())
 
     @timeout(100)
     def testPasswordRequest(self):
@@ -3248,7 +3248,7 @@ END:VCARD''')
         loop.run()
         self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
         report = self.checkSync(20017, 20017) # aborted
-        self.assertFalse("error" in report) # ... but without error message
+        self.assertNotIn("error", report) # ... but without error message
         self.assertEqual(report["source-addressbook-status"], "0") # unknown status for source (aborted early)
 
     def run(self, result):
@@ -3451,7 +3451,7 @@ class TestBluetooth(unittest.TestCase, DBusUtil):
         # user-configurable name
         self.failUnlessEqual(config['']["deviceName"], bt_name)
         # must not be set
-        self.failIf("peerName" in config[''])
+        self.assertNotIn("peerName", config[''])
         # all of the possible strings in the template, must include the hardware name of this example device
         self.failIf(string.find(config['']["fingerPrint"], bt_fingerprint) < 0)
         # real hardware information
