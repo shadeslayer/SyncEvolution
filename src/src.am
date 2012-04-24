@@ -333,14 +333,19 @@ src_client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TES
 
 CLEANFILES += $(src_client_test_buteo_moc_files)
 
-# copy template directory into current working directory, if not there
-# yet
+# Copy template directory into current working directory, if not there
+# yet. -ef flag checks whether device and inode numbers of both files
+# are equal. If such check passes then it does mean that it is either
+# the same file or one of them is symlink to another. So if this is a
+# symlink, then it is fine - that is what we want. If this is the same
+# file then also it is fine - that means that we built the project in
+# the same directory as source.
 all_phonies += src/templates
 src/templates:
-	$(AM_V_at)if test '$(top_srcdir)/src/templates' != 'src/templates' && test '$(top_srcdir)' != '.'; \
+	$(AM_V_at)if test ! '$(top_srcdir)/src/templates' -ef '$(top_builddir)/src/templates'; \
 	then \
 	  rm -rf src/templates; \
-	  ln -s '$(top_srcdir)/src/templates' 'src/templates'; \
+	  ln -s '$(abs_top_srcdir)/src/templates' 'src/templates'; \
 	fi
 
 # distribute test system?
