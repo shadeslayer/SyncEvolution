@@ -115,7 +115,7 @@ class RootObject (dbus.service.Object):
 
     def __init__(self):
         self.bluez_name = dbus.service.BusName('org.bluez', bus)
-        self.conn_name = dbus.service.BusName("net.connman", bus);
+        self.conn_name = dbus.service.BusName("net.connman", bus)
         dbus.service.Object.__init__(self, bus, '/')
 
     @dbus.service.method(dbus_interface='org.bluez.Manager', in_signature='', out_signature='o')
@@ -569,7 +569,7 @@ class DBusUtil(Timeout):
         self.assertTrue(self.isServerRunning())
         maps = open("/proc/%d/maps" % pid, "r")
         regex = re.compile(r'[0-9a-f]*-[0-9a-f]* r-xp [0-9a-f]* [^ ]* \d* *(.*)\n')
-        parentre = re.compile(r'^PPid:\s+(\d+)', re.MULTILINE);
+        parentre = re.compile(r'^PPid:\s+(\d+)', re.MULTILINE)
         for line in maps:
             match = regex.match(line)
             if match:
@@ -1389,14 +1389,14 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
     def testCreateSession(self):
         """TestDBusSession.testCreateSession - ask for session"""
         self.assertEqual(self.session.GetFlags(), [])
-        self.assertEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetConfigName(), "@default")
 
     def testAttachSession(self):
         """TestDBusSession.testAttachSession - attach to running session"""
         self.session.Attach()
         self.session.Detach()
         self.assertEqual(self.session.GetFlags(), [])
-        self.assertEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetConfigName(), "@default")
 
     @timeout(70)
     def testAttachOldSession(self):
@@ -1412,7 +1412,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         self.assertEqual(self.server.GetSessions(), [])
         self.session.Attach()
         self.assertEqual(self.session.GetFlags(), [])
-        self.assertEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetConfigName(), "@default")
         time.sleep(60)
         self.assertEqual(self.session.GetFlags(), [])
 
@@ -1422,7 +1422,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         self.session.Detach()
         time.sleep(5)
         self.assertEqual(self.session.GetFlags(), [])
-        self.assertEqual(self.session.GetConfigName(), "@default");
+        self.assertEqual(self.session.GetConfigName(), "@default")
         time.sleep(60)
         try:
             self.session.GetFlags()
@@ -1436,7 +1436,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         self.session.Detach()
         self.sessionpath, self.session = self.createSession("FooBar@no-such-context", True, ["foo", "bar"])
         self.assertEqual(self.session.GetFlags(), ["foo", "bar"])
-        self.assertEqual(self.session.GetConfigName(), "foobar@no-such-context");
+        self.assertEqual(self.session.GetConfigName(), "foobar@no-such-context")
 
     def testSecondSession(self):
         """TestDBusSession.testSecondSession - a second session should not run unless the first one stops"""
