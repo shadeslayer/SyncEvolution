@@ -824,7 +824,7 @@ sync_config_widget_expand_id (SyncConfigWidget *self,
 
             sync_config_widget_set_expanded (self, TRUE);
         } else if (self->config_name &&
-                   g_strcasecmp (self->config_name, id) == 0) {
+                   g_ascii_strcasecmp (self->config_name, id) == 0) {
 
             sync_config_widget_set_expanded (self, TRUE);
         }

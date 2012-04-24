@@ -2001,7 +2001,7 @@ add_configuration_to_box (GtkBox *box,
     if (data->current_service) {
         current_name = data->current_service->pretty_name;
         if (data->current_service->name && name && 
-            g_strcasecmp (name, data->current_service->name) == 0) {
+            g_ascii_strcasecmp (name, data->current_service->name) == 0) {
             current = TRUE;
         }
      }
@@ -3476,7 +3476,7 @@ server_presence_changed_cb (SyncevoServer *server,
 {
     if (data->current_service &&
         config_name && status &&
-        g_strcasecmp (data->current_service->name, config_name) == 0) {
+        g_ascii_strcasecmp (data->current_service->name, config_name) == 0) {
 
         set_online_status (data, strcmp (status, "") == 0);
     }
