@@ -3426,6 +3426,7 @@ class TestBluetooth(unittest.TestCase, DBusUtil):
         self.failUnlessEqual(config['']["hardwareName"], bt_fingerprint)
 
 def createFiles(root, content, append = False):
+    '''create directory hierarchy, overwriting previous content'''
     if not append:
         shutil.rmtree(root, True)
 
@@ -3454,6 +3455,7 @@ def createFiles(root, content, append = False):
 
 isPropRegEx = re.compile(r'^([a-zA-Z]+) = ')
 def isPropAssignment (line):
+    '''true if "<word> = "'''
     m = isPropRegEx.search(line)
     if not m:
         return False
@@ -3463,6 +3465,12 @@ def isPropAssignment (line):
     return True
 
 def scanFiles(root, peer = '', onlyProps = True, directory = ''):
+    '''turn directory hierarchy into string
+    root      - root path in file system
+    peer      - if non-empty, then ignore all <root>/peers/<foo>
+                directories where <foo> != peer
+    onlyProps - ignore lines which are comments
+    directory - a subdirectory of root (used for recursion)'''
     newroot = root + '/' + directory
     out = ''
 
@@ -3492,6 +3500,7 @@ def scanFiles(root, peer = '', onlyProps = True, directory = ''):
     return out
 
 def sortConfig(config):
+    '''sort lines by file, preserving order inside each line'''
     lines = config.splitlines()
     linenr = -1
 
@@ -3504,6 +3513,9 @@ def sortConfig(config):
         element = parts[0], linenr, parts[1]
         unsorted.append(element)
 
+    # stable sort because of line number
+    # probably it would be stable without it
+    # but better be safe than sorry
     lines = sorted(unsorted)
     unsorted = []
     newconfig = ""
