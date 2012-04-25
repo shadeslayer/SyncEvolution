@@ -4165,6 +4165,20 @@ sources/todo/config.ini:# databasePassword = '''.format(
         self.assertRegexpMatches(out, r'^List databases:\n(.*\n)*\[ERROR\] --foo-bar: unknown parameter\n$')
         self.assertEqual(1, code)
 
+        peerMin = self.getPeerMinVersion()
+        peerCur = self.getPeerCurVersion()
+        contextMin = self.getContextMinVersion()
+        contextCur = self.getContextCurVersion()
+        rootMin = self.getRootMinVersion()
+        rootCur = self.getRootCurVersion()
+
+        self.assertRegexpMatches(peerMin, r'^\d+$', 'Peer min version is not a number.')
+        self.assertRegexpMatches(peerCur, r'^\d+$', 'Peer cur version is not a number.')
+        self.assertRegexpMatches(contextMin, r'^\d+$', 'Context min version is not a number.')
+        self.assertRegexpMatches(contextCur, r'^\d+$', 'Context cur version is not a number.')
+        self.assertRegexpMatches(rootMin, r'^\d+$', 'Peer min version is not a number.')
+        self.assertRegexpMatches(rootCur, r'^\d+$', 'Root cur version is not a number.')
+
     def assertSilent(self, out, err):
         if err != None:
             self.assertEqualDiff('', err)
