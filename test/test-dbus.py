@@ -3586,7 +3586,7 @@ class TestCmdline(unittest.TestCase, DBusUtil):
         if TestCmdline.cachedSSLServerCertificates == None:
             out, err, code = self.runCmdline(['--template', 'default',
                                               '--print-config'])
-            self.assertEqual(err, '')
+            self.assertEqualDiff('', err)
             m = re.search(r'^# SSLServerCertificates = (.*)\n', out, re.MULTILINE)
             self.assertTrue(m)
             TestCmdline.cachedSSLServerCertificates = m.group(1)
@@ -3784,16 +3784,16 @@ sources/todo/config.ini:# databasePassword = '''.format(
         lines = "a\nb\nc\n"
         lastline = "c\n"
         res = lastLine(lines)
-        self.assertEqual(lastline, res)
+        self.assertEqualDiff(lastline, res)
 
         message = "[ERROR 12:34:56] msg\n"
         stripped = "[ERROR] msg\n"
         res = stripTime(message)
-        self.assertEqual(stripped, res)
+        self.assertEqualDiff(stripped, res)
 
         # Run command without talking to server, separate streams.
         out, err, code = self.runCmdline(['--foo-bar'], expectSuccess=False)
-        self.assertEqual(err, '[ERROR] --foo-bar: unknown parameter\n')
+        self.assertEqualDiff('[ERROR] --foo-bar: unknown parameter\n', err)
         self.assertRegexpMatches(out, '^List databases:\n')
         self.assertEqual(1, code)
 
