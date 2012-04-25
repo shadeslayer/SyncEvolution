@@ -3803,6 +3803,11 @@ sources/todo/config.ini:# databasePassword = '''.format(
         self.assertRegexpMatches(out, r'^List databases:\n(.*\n)*\[ERROR\] --foo-bar: unknown parameter\n$')
         self.assertEqual(1, code)
 
+    def assertSilent(self, out, err):
+        if err != None:
+            self.assertEqualDiff('', err)
+        self.assertEqualDiff('', out)
+
     def doSetupScheduleWorld(self, shared):
         root = self.configdir + "/default"
         peer = ""
