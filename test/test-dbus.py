@@ -3821,8 +3821,7 @@ sources/todo/config.ini:# databasePassword = '''.format(
         out, err, code = self.runCmdline(['--configure',
                                           '--sync-property', 'proxyHost = proxy',
                                           'scheduleworld', 'addressbook'])
-        self.assertEqual(out, '')
-        self.assertEqual(err, '')
+        self.assertSilent(out, err)
         res = sortConfig(scanFiles(root))
         res = self.removeRandomUUID(res)
         expected = self.ScheduleWorldConfig()
@@ -3841,8 +3840,7 @@ sources/todo/config.ini:# databasePassword = '''.format(
         out, err, code = self.runCmdline(['--configure',
                                           '--sync-property', 'deviceId = fixed-devid',
                                           'scheduleworld'])
-        self.assertEqual(out, '')
-        self.assertEqual(err, '')
+        self.assertSilent(out, err)
         res = sortConfig(scanFiles(root))
         expected = self.ScheduleWorldConfig()
         expected = sortConfig(expected)
