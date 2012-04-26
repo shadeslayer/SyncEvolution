@@ -877,6 +877,23 @@ struct MethodHandler
             return;
         }
 
+        // http://developer.gnome.org/gio/stable/GDBusConnection.html#GDBusInterfaceMethodCallFunc
+        // does not say so explicitly, but it seems that 'invocation' was created for us.
+        // If we don't unref it, it leaks (visible in refdbg).
+        //
+        // The documentation for the class itself says that 'the normal way to obtain a
+        // GDBusMethodInvocation object is to receive it as an argument to the
+        // handle_method_call()' - note the word 'obtain', which seems to imply ownership.
+        // This is consistent with the transfer of ownership to calls like
+        // g_dbus_method_invocation_return_dbus_error(), which take over ownership
+        // of the invocation instance.
+        //
+        // Because we work with messages directly for the reply from now on, we
+        // unref 'invocation' immediately after referencing the underlying message.
+        GDBusMessagePtr msg(g_dbus_method_invocation_get_message(invocation), true);
+        g_object_unref(invocation);
+        invocation = NULL;
+
         // We are calling callback because we want to keep server alive as long
         // as possible. This callback is in fact delaying server's autotermination.
         if (!m_callback.empty()) {
@@ -886,8 +903,8 @@ struct MethodHandler
         MethodFunction methodFunc = it->second.first;
         void *methodData          = reinterpret_cast<void*>(it->second.second->m_func_ptr);
         GDBusMessage *reply;
-        reply = (methodFunc)(g_dbus_method_invocation_get_connection(invocation),
-                             g_dbus_method_invocation_get_message(invocation),
+        reply = (methodFunc)(connection,
+                             msg.get(),
                              methodData);
 
         if (!reply) {
@@ -897,7 +914,7 @@ struct MethodHandler
         }
 
         GError *error = NULL;
-        g_dbus_connection_send_message(g_dbus_method_invocation_get_connection(invocation),
+        g_dbus_connection_send_message(connection,
                                        reply,
                                        G_DBUS_SEND_MESSAGE_FLAGS_NONE,
                                        NULL,
