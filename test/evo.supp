@@ -4802,3 +4802,24 @@
    fun:_ZN7SyncEvo6ServerC1EP10_GMainLoopRbRN5boost10shared_ptrINS_7RestartEEERKN8GDBusCXX17DBusConnectionPtrEi
    fun:main
 }
+
+# ==8851== 7,632 bytes in 106 blocks are possibly lost in loss record 1,825 of 1,883
+# ==8851==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==8851==    by 0x9906590: g_malloc0 (gmem.c:189)
+# ==8851==    by 0x9676368: g_closure_new_simple (gclosure.c:206)
+# ==8851==    by 0x96778CF: g_cclosure_new (gclosure.c:917)
+# ==8851==    by 0x968E91D: g_signal_connect_data (gsignal.c:2443)
+# ==8851==    by 0x6B8AEA: SyncEvo::GLibNotify::GLibNotify(char const*, boost::function<void ()(_GFile*, _GFile*, GFileMonitorEvent)> const&) (GLibSupport.cpp:215)
+# ==8851==    by 0x617BC5: SyncEvo::Server::run(SyncEvo::LogRedirect&) (server.cpp:338)
+# ==8851==    by 0x5E3E7A: main (main.cpp:120)
+# ==8851== 
+{
+   potential leak in file monitoring
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_closure_new_simple
+   fun:g_cclosure_new
+   fun:g_signal_connect_data
+   fun:*GFileMonitorEvent*
+}
