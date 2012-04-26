@@ -150,7 +150,7 @@ boost::shared_ptr<DBusServerCXX> DBusServerCXX::listen(const std::string &addres
         return boost::shared_ptr<DBusServerCXX>();
     }
 
-    g_dbus_server_start(server);
+    // steals reference to 'server'
     boost::shared_ptr<DBusServerCXX> res(new DBusServerCXX(server, realAddr));
     g_signal_connect(server,
                      "new-connection",
@@ -194,10 +194,15 @@ gboolean DBusServerCXX::newConnection(GDBusServer *server, GDBusConnection *newC
 }
 
 DBusServerCXX::DBusServerCXX(GDBusServer *server, const std::string &address) :
-    m_server(server),
+    m_server(server, false), // steal reference
     m_address(address)
 {
+    g_dbus_server_start(server);
 }
 
+DBusServerCXX::~DBusServerCXX()
+{
+    g_dbus_server_stop(m_server.get());
+}
 
 }
