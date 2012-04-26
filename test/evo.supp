@@ -2,6 +2,85 @@
 # This file combines supressions common to all executables using Evolution libraries,
 # clients using libecal/libebook and evolution-data-server.
 
+##### server #####
+
+# ==3729== 72 bytes in 1 blocks are possibly lost in loss record 1,846 of 2,796
+# ==3729==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==3729==    by 0x8632590: g_malloc0 (gmem.c:189)
+# ==3729==    by 0x83A2368: g_closure_new_simple (gclosure.c:206)
+# ==3729==    by 0x83A38CF: g_cclosure_new (gclosure.c:917)
+# ==3729==    by 0x83BA91D: g_signal_connect_data (gsignal.c:2443)
+# ==3729==    by 0x5643821: ??? (in /usr/lib/x86_64-linux-gnu/libgtk-3.so.0.200.3)
+# ==3729==    by 0x56279DA: ??? (in /usr/lib/x86_64-linux-gnu/libgtk-3.so.0.200.3)
+# ==3729==    by 0x8637A5F: g_option_context_parse (goption.c:2025)
+# ==3729==    by 0x5627E3F: gtk_parse_args (in /usr/lib/x86_64-linux-gnu/libgtk-3.so.0.200.3)
+# ==3729==    by 0x5627E98: gtk_init_check (in /usr/lib/x86_64-linux-gnu/libgtk-3.so.0.200.3)
+# ==3729==    by 0x40162A: main (evolution-addressbook-factory.c:104)
+# ==3729== 
+{
+   GTK args leak
+   Memcheck:Leak
+   ...
+   fun:gtk_parse_args
+   fun:gtk_init_check
+   fun:main
+}
+
+# ==3730== 5,424 (1,024 direct, 4,400 indirect) bytes in 2 blocks are definitely lost in loss record 2,839 of 2,903
+# ==3730==    at 0x4C2776B: realloc (vg_replace_malloc.c:632)
+# ==3730==    by 0x8CD45E6: g_realloc (gmem.c:224)
+# ==3730==    by 0x8CA3757: g_ptr_array_maybe_expand (garray.c:1093)
+# ==3730==    by 0x8CA4712: g_ptr_array_add (garray.c:1350)
+# ==3730==    by 0x66FDD97: read_netlink_messages (gnetworkmonitornetlink.c:237)
+# ==3730==    by 0x66D5DE5: socket_source_dispatch (gsocket.c:3161)
+# ==3730==    by 0x8CCE799: g_main_context_dispatch (gmain.c:2515)
+# ==3730==    by 0x8CCEB5F: g_main_context_iterate.isra.23 (gmain.c:3123)
+# ==3730==    by 0x8CCEF59: g_main_loop_run (gmain.c:3317)
+# ==3730==    by 0x5085E08: e_dbus_server_run (e-dbus-server.c:253)
+# ==3730==    by 0x401759: main (evolution-calendar-factory.c:149)
+# ==3730== 
+{
+   EDS daemon + read netlink leak
+   Memcheck:Leak
+   ...
+   fun:read_netlink_messages
+   ...
+   fun:e_dbus_server_run
+   fun:main
+}
+
+# ==4154== 144 bytes in 2 blocks are possibly lost in loss record 2,131 of 2,440
+# ==4154==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==4154==    by 0x553B590: g_malloc0 (gmem.c:189)
+# ==4154==    by 0x52AB368: g_closure_new_simple (gclosure.c:206)
+# ==4154==    by 0x52AC8CF: g_cclosure_new (gclosure.c:917)
+# ==4154==    by 0x52C391D: g_signal_connect_data (gsignal.c:2443)
+# ==4154==    by 0x7E8BD72: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==4154==    by 0x7EAA793: ??? (in /usr/lib/libsoup-2.4.so.1.4.0)
+# ==4154==    by 0x624E546: g_simple_async_result_complete (gsimpleasyncresult.c:767)
+# ==4154==    by 0x6254637: g_socket_client_async_connect_complete (gsocketclient.c:1316)
+# ==4154==    by 0x62551C3: g_socket_client_connected_callback (gsocketclient.c:1516)
+# ==4154==    by 0x624E546: g_simple_async_result_complete (gsimpleasyncresult.c:767)
+# ==4154==    by 0x625663E: g_socket_connection_connect_callback (gsocketconnection.c:242)
+# ==4154==    by 0x624EDE5: socket_source_dispatch (gsocket.c:3161)
+# ==4154==    by 0x5535799: g_main_context_dispatch (gmain.c:2515)
+# ==4154==    by 0x5535B5F: g_main_context_iterate.isra.23 (gmain.c:3123)
+# ==4154==    by 0x5535F59: g_main_loop_run (gmain.c:3317)
+# ==4154==    by 0x57F653B: eas_soup_thread (eas-connection.c:672)
+# ==4154==    by 0x5557404: g_thread_proxy (gthread.c:801)
+# ==4154==    by 0x5C41B4F: start_thread (pthread_create.c:304)
+# ==4154==    by 0x5F2F90C: clone (clone.S:112)
+# ==4154== 
+{
+   EAS daemon connection leak
+   Memcheck:Leak
+   ...
+   fun:g_socket_connection_connect_callback
+   ...
+   fun:eas_soup_thread
+}
+
+
 ##### common #####
 
 # ==8468== Use of uninitialised value of size 8

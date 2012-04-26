@@ -1211,3 +1211,25 @@
    fun:_dl_map_object
    fun:openaux
 }
+
+# ==19740== 72 bytes in 1 blocks are possibly lost in loss record 1,226 of 1,985
+# ==19740==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==19740==    by 0x9906590: g_malloc0 (gmem.c:189)
+# ==19740==    by 0x9676368: g_closure_new_simple (gclosure.c:206)
+# ==19740==    by 0x96778CF: g_cclosure_new (gclosure.c:917)
+# ==19740==    by 0x968E91D: g_signal_connect_data (gsignal.c:2443)
+# ==19740==    by 0x93DA9D8: has_connection (gdbusnameowning.c:425)
+# ==19740==    by 0x93DB278: g_bus_own_name_on_connection (gdbusnameowning.c:550)
+# ==19740==    by 0x66E560: GDBusCXX::dbus_get_bus_connection(char const*, char const*, bool, GDBusCXX::DBusErrorCXX*) (gdbus-cxx-bridge.cpp:86)
+# ==19740==    by 0x5E3D54: main (main.cpp:109)
+# ==19740== 
+{
+   GIO D-Bus name owning leak
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_closure_new_simple
+   fun:g_cclosure_new
+   fun:g_signal_connect_data
+   fun:has_connection
+}
