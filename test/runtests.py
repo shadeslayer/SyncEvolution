@@ -1214,6 +1214,8 @@ test = SyncEvolutionTest("edsfile",
                          "CLIENT_TEST_DELETE_REFRESH=1 "
                          # server supports multiple cycles inside the same session
                          "CLIENT_TEST_PEER_CAN_RESTART=1 "
+                         # server cannot detect pairs based on UID/RECURRENCE-ID
+                         "CLIENT_TEST_ADD_BOTH_SIDES_SERVER_IS_DUMB=1 "
                          "CLIENT_TEST_SKIP="
                          # server does not detect duplicates (uses file backend), detecting on the
                          # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
@@ -1242,6 +1244,8 @@ test = SyncEvolutionTest("davfile",
                          "CLIENT_TEST_DELETE_REFRESH=1 "
                          # server supports multiple cycles inside the same session
                          "CLIENT_TEST_PEER_CAN_RESTART=1 "
+                         # server cannot detect pairs based on UID/RECURRENCE-ID
+                         "CLIENT_TEST_ADD_BOTH_SIDES_SERVER_IS_DUMB=1 "
                          "CLIENT_TEST_SKIP="
                          # server does not detect duplicates (uses file backend), detecting on the
                          # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
