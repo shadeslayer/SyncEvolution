@@ -25,7 +25,7 @@ SE_CHECK_FOR_STABLE_RELEASE
 
 # Minimum version of libsynthesis as defined in its
 # configure script and thus .pc files:
-define([SYNTHESIS_MIN_VERSION], [3.4.0.16.6])
+define([SYNTHESIS_MIN_VERSION], [3.4.0.16.7])
 
 # Line above is patched by gen-autotools.sh. Handle
 # both "yes" and "no".

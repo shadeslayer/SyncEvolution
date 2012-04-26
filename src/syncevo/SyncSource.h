@@ -1385,6 +1385,16 @@ class SyncSourceBase : public Logger {
          * might send back modified items.
          */
         Bool m_readOnly;
+
+        /**
+         * If true, then the storage preserves and supports UID and
+         * (in iCalendar 2.0) RECURRENCE-ID with the "globally unique"
+         * semantic from iCalendar 2.0 (id assigned once when item is
+         * created). If both sides in a sync support this, then the
+         * engine can rely on these properties to find matching items
+         * during a slow sync.
+         */
+        Bool m_globalIDs;
     };
 
     /**

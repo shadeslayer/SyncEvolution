@@ -2343,8 +2343,6 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         "      INTEGER alarmTimeToUTC;\n"
         "      alarmTimeToUTC = FALSE;\n"
         "      // for VCALENDAR_COMPARE_SCRIPT: don't use UID by default\n"
-        "      INTEGER VCALENDAR_COMPARE_UID;\n"
-        "      VCALENDAR_COMPARE_UID = FALSE;\n"
         "    ]]></sessioninitscript>\n";
 
     ostringstream clientorserver;
@@ -3439,17 +3437,6 @@ SyncMLStatus SyncContext::doSync()
         // TODO: set "sendrespuri" session key to control
         // whether the generated messages contain a respURI
         // (not needed for OBEX)
-    }
-
-    // Choosing between comparing UID/RECURRENCE-ID vs. other
-    // iCalendar 2.0 properties is a hack: in local sync mode, the
-    // iCalendar 2.0 semantic is always picked.
-    if (m_serverMode && m_localSync) {
-        SharedKey sessionKey = m_engine.OpenSessionKey(session);
-        SharedKey contextKey = m_engine.OpenKeyByPath(sessionKey, "/sessionvars");
-        m_engine.SetInt32Value(contextKey,
-                               "VCALENDAR_COMPARE_UID",
-                               true);
     }
 
     // Sync main loop: runs until SessionStep() signals end or error.

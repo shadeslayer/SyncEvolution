@@ -213,8 +213,8 @@
     ]]></macro>
 
     <!-- Uses the UID/RECURRENCE-ID fields as the only criteria for
-         comparing calendar data if the VCALENDAR_COMPARE_UID session
-         variable is true, else does a normal comparison of the
+         comparing calendar data if the parameter $1 (see GLOBALIDS in <initscript>)
+         is true, else does a normal comparison of the
          fields. That comparison is based on the datatype definition
          and ignores UID because it is not trusted to be
          preserved and/or implemented by peers.
@@ -224,7 +224,7 @@
     -->
     <macro name="VCALENDAR_COMPARE_SCRIPT"><![CDATA[
     INTEGER RES;
-    if (COMPARISONMODE() != "age" && SESSIONVAR("VCALENDAR_COMPARE_UID") ) {
+    if (COMPARISONMODE() != "age" && SYNCMODESUPPORTED("1122583000")) {
         if (TARGET.UID == REFERENCE.UID &&
             TARGET.ORIGSTART == REFERENCE.ORIGSTART) {
             RES = 0;

@@ -65,6 +65,15 @@ class EvolutionCalendarSource : public EvolutionSyncSource,
     virtual std::string getMimeType() const { return "text/calendar"; }
     virtual std::string getMimeVersion() const { return "2.0"; }
 
+    void getSynthesisInfo(SynthesisInfo &info,
+                          XMLConfigFragments &fragments)
+    {
+        // All EDS calendar storages must suppport UID/RECURRENCE-ID,
+        // it's part of the API. Therefore we can rely on it.
+        EvolutionSyncSource::getSynthesisInfo(info, fragments);
+        info.m_globalIDs = true;
+    }
+
   protected:
     //
     // implementation of TrackingSyncSource callbacks

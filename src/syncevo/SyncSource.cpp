@@ -125,7 +125,12 @@ void SyncSourceBase::getDatastoreXML(string &xml, XMLConfigFragments &fragments)
         (serverModeEnabled() ? "yes" : "no") <<
         "</plugin_datastoreadmin>\n"
         "      <fromremoteonlysupport> yes </fromremoteonlysupport>\n"
-        "      <canrestart>yes</canrestart>\n"
+        "      <canrestart>yes</canrestart>\n";
+    if (info.m_globalIDs) {
+        xmlstream << 
+            "      <syncmode>1122583000</syncmode>";
+    }
+    xmlstream <<
         "\n"
         "      <!-- conflict strategy: Newer item wins\n"
         "           You can set 'server-wins' or 'client-wins' as well\n"

@@ -48,6 +48,7 @@ class CalDAVSource : public WebDAVSource,
     virtual void updateSynthesisInfo(SynthesisInfo &info,
                                      XMLConfigFragments &fragments) {
         info.m_backendRule = "HAVE-SYNCEVOLUTION-EXDATE-DETACHED";
+        info.m_globalIDs = true;
     }
 
     // implementation of SyncSourceLogging callback
