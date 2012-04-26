@@ -77,8 +77,13 @@ void ActiveSyncSource::close()
 
 void ActiveSyncSource::beginSync(const std::string &lastToken, const std::string &resumeToken)
 {
-    // claim item node for ids
-    m_ids.swap(m_itemNode);
+    // erase content which might have been set in a previous call
+    reset();
+
+    // claim item node for ids, if not done yet
+    if (m_itemNode && !m_ids) {
+        m_ids.swap(m_itemNode);
+    }
 
     // incremental sync (non-empty token) or start from scratch
     m_startSyncKey = lastToken;

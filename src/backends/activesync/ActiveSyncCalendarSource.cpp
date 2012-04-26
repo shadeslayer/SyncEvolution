@@ -41,8 +41,10 @@ void ActiveSyncCalendarSource::beginSync(const std::string &lastToken, const std
     // erase content which might have been set in a previous call
     reset();
 
-    // claim item node for our change tracking
-    m_trackingNode.swap(m_itemNode);
+    // claim item node for our change tracking, if not done already
+    if (m_itemNode && !m_trackingNode) {
+        m_trackingNode.swap(m_itemNode);
+    }
 
     // incremental sync (non-empty token) or start from scratch
     setStartSyncKey(lastToken);
