@@ -90,9 +90,11 @@ def copyLog(filename, dirname, htaccess, lineFilter=None):
     out.close()
     os.utime(outname, (info[stat.ST_ATIME], info[stat.ST_MTIME]))
     if error:
+        error = error.strip().replace("\"", "'").replace("<", "&lt;").replace(">","&gt;")
         htaccess.write("AddDescription \"%s\" %s\n" %
-                       (error.strip().replace("\"", "'").replace("<", "&lt;").replace(">","&gt;"),
+                       (error,
                         os.path.basename(filename)))
+    return error
 
 def TryKill(pid, signal):
     try:
@@ -672,11 +674,21 @@ class SyncEvolutionTest(Action):
                 context.runCommand(basecmd)
         finally:
             tocopy = re.compile(r'.*\.log|.*\.client.[AB]|.*\.(cpp|h|c)\.html|.*\.log\.html')
+            toconvert = re.compile(r'Client_.*\.log')
             htaccess = file(os.path.join(resdir, ".htaccess"), "a")
             for f in os.listdir(self.srcdir):
                 if tocopy.match(f):
-                    copyLog(f, resdir, htaccess, self.lineFilter)
-
+                    error = copyLog(f, resdir, htaccess, self.lineFilter)
+                    if toconvert.match(f):
+                        # also convert client-test log files to HTML
+                        tohtml = os.path.join(resdir, f + ".html")
+                        os.system("env PATH=.:$PATH synclog2html %s >%s" % (f, tohtml))
+                        basehtml = f + ".html"
+                        if os.path.exists(basehtml):
+                            os.unlink(basehtml)
+                        os.symlink(tohtml, basehtml)
+                        if error:
+                            htaccess.write('AddDescription "%s" %s\n' % (error, basehtml))
 
 
 ###################################################################
@@ -1294,7 +1306,6 @@ scheduleworldtest = SyncEvolutionTest("scheduleworld", compile,
                                       "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Suspend,"
                                       "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Resend "
                                       "CLIENT_TEST_DELAY=5 "
-                                      "CLIENT_TEST_COMPARE_LOG=T "
                                       "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                       "CLIENT_TEST_INTERRUPT_AT=1",
                                       testPrefix=options.testprefix)
@@ -1367,7 +1378,6 @@ class SynthesisTest(SyncEvolutionTest):
                                    "Client::Sync::eds_contact_eds_memo::Resend "
                                    "CLIENT_TEST_NUM_ITEMS=20 "
                                    "CLIENT_TEST_DELAY=2 "
-                                   "CLIENT_TEST_COMPARE_LOG=T "
                                    "CLIENT_TEST_RESEND_TIMEOUT=5",
                                    serverName="synthesis",
                                    testPrefix=testPrefix)
@@ -1438,7 +1448,6 @@ class FunambolTest(SyncEvolutionTest):
                                    "Client::Sync::eds_contact::testTwinning,"
                                    "Client::Sync::eds_contact_eds_event_eds_task_eds_memo::testTwinning,"
                                    "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::testTwinning "
-                                   "CLIENT_TEST_COMPARE_LOG=T "
                                    "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                    "CLIENT_TEST_INTERRUPT_AT=1",
                                    lineFilter=lambda x: x.replace('dogfood.funambol.com','<host hidden>'),
@@ -1472,8 +1481,7 @@ zybtest = SyncEvolutionTest("zyb", compile,
                             "Client::Sync::eds_contact::Retry,"
                             "Client::Sync::eds_contact::Suspend,"
                             "Client::Sync::eds_contact::Resend "
-                            "CLIENT_TEST_DELAY=5 "
-                            "CLIENT_TEST_COMPARE_LOG=T",
+                            "CLIENT_TEST_DELAY=5 ",
                             testPrefix=options.testprefix)
 context.add(zybtest)
 
@@ -1498,8 +1506,7 @@ googletest = SyncEvolutionTest("google", compile,
                                "Client::Sync::eds_contact::testOneWayFromLocal,"
                                # only WBXML supported by Google
                                "Client::Sync::eds_contact::testItemsXML "
-                               "CLIENT_TEST_DELAY=5 "
-                               "CLIENT_TEST_COMPARE_LOG=T",
+                               "CLIENT_TEST_DELAY=5 ",
                                testPrefix=options.testprefix)
 context.add(googletest)
 
@@ -1604,7 +1611,6 @@ mobicaltest = SyncEvolutionTest("mobical", compile,
                                 "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Suspend,"
                                 "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Resend "
                                 "CLIENT_TEST_DELAY=5 "
-                                "CLIENT_TEST_COMPARE_LOG=T "
                                 "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                 "CLIENT_TEST_INTERRUPT_AT=1",
                                 testPrefix=options.testprefix)
@@ -1663,7 +1669,6 @@ memotootest = SyncEvolutionTest("memotoo", compile,
                                 "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Retry,"
                                 "Client::Sync::eds_event_eds_task_eds_memo_eds_contact::Suspend "
                                 "CLIENT_TEST_DELAY=10 "
-                                "CLIENT_TEST_COMPARE_LOG=T "
                                 "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                 "CLIENT_TEST_INTERRUPT_AT=1",
                                 testPrefix=options.testprefix)
@@ -1719,7 +1724,6 @@ ovitest = SyncEvolutionTest("ovi", compile,
                                 "Client::Sync::eds_contact_calendar+todo::testDeleteAllSync,"
                                 "Client::Sync::eds_contact_calendar+todo::testManyDeletes,"
                                 "CLIENT_TEST_DELAY=5 "
-                                "CLIENT_TEST_COMPARE_LOG=T "
                                 "CLIENT_TEST_RESEND_TIMEOUT=5 "
                                 "CLIENT_TEST_INTERRUPT_AT=1",
                                 serverName="Ovi",

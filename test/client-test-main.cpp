@@ -54,6 +54,10 @@
 # include <signal.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include <string>
 #include <stdexcept>
 
@@ -188,20 +192,33 @@ public:
         
         const char* compareLog = getenv("CLIENT_TEST_COMPARE_LOG");
         if(compareLog && strlen(compareLog)) {
-            FILE *fd = fopen ("____compare.log","r");
-            if (fd != NULL) {
-                fclose(fd);
-                if (system ((string("cat ____compare.log >>")+logfile).c_str()) < 0) {
-                    SE_LOG_WARNING(NULL, NULL, "Unable to append ____compare.log to %s.",
-                                   logfile.c_str());
+            int fd = open("____compare.log", O_RDONLY);
+            if (fd >= 0) {
+                int out = open(logfile.c_str(), O_WRONLY|O_APPEND);
+                if (out >= 0) {
+                    char buffer[4096];
+                    bool cont = true;
+                    ssize_t len;
+                    while (cont && (len = read(fd, buffer, sizeof(buffer))) > 0) {
+                        ssize_t total = 0;
+                        while (cont && total < len) {
+                            ssize_t written = write(out, buffer, len);
+                            if (written < 0) {
+                                perror(("writing " + logfile).c_str());
+                                cont = false;
+                            } else {
+                                total += written;
+                            }
+                        }
+                    }
+                    if (len < 0) {
+                        perror("reading ____compare.log");
+                    }
+                    close(out);
                 }
+                close(fd);
             }
         }
-
-        std::string htmllog = logfile + ".html";
-        system(StringPrintf("synclog2html %s >%s",
-                            logfile.c_str(),
-                            htmllog.c_str()).c_str());
 
         std::cout << " " << result << "\n";
         if (!failure.empty()) {
