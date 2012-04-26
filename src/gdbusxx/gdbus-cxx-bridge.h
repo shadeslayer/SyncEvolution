@@ -1097,6 +1097,7 @@ class DBusObjectHelper : public DBusObject
             g_ptr_array_add(m_signals, NULL);
         }
         GDBusInterfaceInfo *ifInfo = g_new0(GDBusInterfaceInfo, 1);
+        ifInfo->ref_count = 1;
         ifInfo->name      = g_strdup(getInterface());
         ifInfo->methods   = (GDBusMethodInfo **)g_ptr_array_free(m_methods, FALSE);
         ifInfo->signals   = (GDBusSignalInfo **)g_ptr_array_free(m_signals, FALSE);
@@ -1108,13 +1109,17 @@ class DBusObjectHelper : public DBusObject
         ifVTable.get_property = NULL;
         ifVTable.set_property = NULL;
 
-        if ((m_connId = g_dbus_connection_register_object(getConnection(),
-                                                          getPath(),
-                                                          ifInfo,
-                                                          &ifVTable,
-                                                          this,
-                                                          NULL,
-                                                          NULL)) == 0) {
+        m_connId = g_dbus_connection_register_object(getConnection(),
+                                                     getPath(),
+                                                     ifInfo,
+                                                     &ifVTable,
+                                                     this,
+                                                     NULL,
+                                                     NULL);
+        // This will free the struct if register_object didn't take a ref,
+        // as in case of an error.
+        g_dbus_interface_info_unref(ifInfo);
+        if (m_connId == 0) {
             throw std::runtime_error(std::string("g_dbus_connection_register_object() failed for ") +
                                      getPath() + " " + getInterface());
         }
