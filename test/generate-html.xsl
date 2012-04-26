@@ -634,9 +634,14 @@
             <xsl:for-each select="$list-of-unit-cases">
                 <!--xsl:sort select="name(.)" type="text"/ -->
                 <xsl:variable name="unit" select="."/>
+                <xsl:variable name="escapedunit">
+                  <xsl:call-template name="stringescape">
+                    <xsl:with-param name="string" select="name($unit)"/>
+                  </xsl:call-template>
+                </xsl:variable>
                 <tr>
                     <td width="300">
-                        <xsl:value-of select="name(.)"/>
+                        <xsl:value-of select="$escapedunit"/>
                     </td>
                     <xsl:for-each select="$type-list">
                         <xsl:variable name="type" select="."/>
@@ -664,7 +669,7 @@
                                             <xsl:with-param name="string" select="name($type)"/>
                                         </xsl:call-template>
                                     </xsl:variable>
-                                    <a href="{concat($log-path,string(@prefix),$escapedtype,'_',name($unit),$log-file-suffix)}">
+                                    <a href="{concat($log-path,string(@prefix),$escapedtype,'_',$escapedunit,$log-file-suffix)}">
                                         <xsl:value-of select="$status"/>
                                     </a>
                                 </xsl:otherwise>

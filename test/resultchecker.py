@@ -265,15 +265,22 @@ def step2(resultdir, result, servers, indents, srcdir, shellprefix, backenddir):
                 # The order of the tests matters, so don't use a hash and start with
                 # a source which has only the common tests enabled. Additional tests
                 # then get added at the end.
+                clientSync = re.compile(r' +Client::Sync::(.*?)::(?:(Suspend|Resend|Retry)::)?([^:]+)')
                 for source in ('file_task', 'file_event', 'file_contact', 'eds_contact', 'eds_event'):
                     os.chdir (srcdir)
-                    cmd = shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_PEER_CAN_RESTART=1 CLIENT_TEST_SOURCES="+source+" ./client-test -h"
+                    cmd = shellprefix + " env LD_LIBRARY_PATH=build-synthesis/src/.libs SYNCEVOLUTION_BACKEND_DIR="+backenddir +" CLIENT_TEST_PEER_CAN_RESTART=1 CLIENT_TEST_RETRY=t CLIENT_TEST_RESEND=t CLIENT_TEST_SUSPEND=t CLIENT_TEST_SOURCES="+source+" ./client-test -h"
                     fout,fin=popen2.popen2(cmd)
                     os.chdir(oldpath)
                     for line in fout:
-                        l = line.partition('Client::Sync::'+source+'::')[2].rpartition('\n')[0]
-                        if l != '' and l not in templates:
-                            templates.append(l)
+                        m = clientSync.match(line)
+                        if m:
+                            if m.group(2):
+                                # special sub-grouping
+                                test = m.group(2) + '__' + m.group(3)
+                            else:
+                                test = m.group(3)
+                            if test and test not in templates:
+                                templates.append(test)
                 indent +=space
                 indents.append(indent)
                 result.write(indent+'<sync>\n')
@@ -430,7 +437,7 @@ span.hl { color: #c02020 }
                     # <path>/SyncEvo_CmdlineTest_testConfigure.log
                     # <path>/N7SyncEvo11CmdlineTestE_testConfigure.log - C++ name mangling?
                     m = re.match(r'^(Client_Source_|Client_Sync_|N7SyncEvo\d+|[^_]*_)(.*)_([^_]*)\.log', logname)
-                    if not m:
+                    if not m or logname.endswith('.server.log'):
                         print "skipping", logname
                         continue
                     # Client_Sync_, Client_Source_, SyncEvo_, ...
@@ -442,10 +449,25 @@ span.hl { color: #c02020 }
                     # special case grouping of some tests: include group inside casename instead of
                     # format, example:
                     # <path>/Client_Source_apple_caldav_LinkedItemsDefault_testLinkedItemsParent
-                    m = re.match(r'(.*)_(LinkedItems\w+)', format)
+                    m = re.match(r'(.*)_(LinkedItems\w+|Suspend|Resend|Retry)', format)
                     if m:
                         format = m.group(1)
                         casename = m.group(2) + '::' + casename
+                        if '.' in casename:
+                            # Ignore sub logs.
+                            print "skipping", logname
+                            continue
+                    # Another special case: suspend/resend/retry uses an intermediate grouping
+                    # which we can ignore because the name is repeated in the test case name.
+                    # m = re.match(r'(.*)_(Suspend|Resend|Retry)', format)
+                    # if m:
+                    #     format = m.group(1)
+                    #     # Case name *not* extended, in contrast to the
+                    #     # LinkedItems case above.
+                    #     if '.' in casename:
+                    #         # Ignore sub logs.
+                    #         print "skipping", logname
+                    #         continue
                     print "analyzing log %s: prefix %s, subset %s, testcase %s" % (logname, prefix, format, casename)
                     if(format not in logdic):
                         logdic[format]=[]
