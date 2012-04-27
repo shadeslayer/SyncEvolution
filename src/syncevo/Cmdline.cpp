@@ -309,6 +309,7 @@ bool Cmdline::parse(vector<string> &parsed)
             // all following parameters are luids; can't be combined
             // with setting config and source name
             while (++opt < m_argc) {
+                parsed.push_back(m_argv[opt]);
                 m_luids.push_back(CmdlineLUID::toLUID(m_argv[opt]));
             }
         } else {
