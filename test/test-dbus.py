@@ -5762,23 +5762,22 @@ sources/memo/config.ini:type = todo
                                           "foo",
                                           "bar"],
                                          expectSuccess = False)
-        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): bar: backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] configuration 'foo' does not exist\n[ERROR] source 'bar' does not exist\n[ERROR] backend property not set\n",
-                             stripTime(err))
+        # Information about supported modules is optional, depends on compilation of
+        # SyncEvolution.
+        self.assertRegexpMatches(err, r'''\[ERROR\] error code from SyncEvolution error parsing config file \(local, status 20010\): bar: backend not supported (by any of the backend modules \((\w+\.so, )+\w+\.so\) )?or not correctly configured \(backend=select backend databaseFormat= syncFormat=\)\n\[ERROR\] configuration 'foo' does not exist\n\[ERROR\] source 'bar' does not exist\n\[ERROR\] backend property not set\n''')
         self.assertEqualDiff('', out)
 
         # "foo" not configured, no source named
         out, err, code  = self.runCmdline(["--print-items",
                                            "foo"],
                                           expectSuccess = False)
-        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] configuration 'foo' does not exist\n[ERROR] no source selected\n[ERROR] backend property not set\n",
-                             stripTime(err))
+        self.assertRegexpMatches(err, r'''\[ERROR\] error code from SyncEvolution error parsing config file \(local, status 20010\): backend not supported (by any of the backend modules \((\w+\.so, )+\w+\.so\) )?or not correctly configured \(backend=select backend databaseFormat= syncFormat=\)\n\[ERROR\] configuration 'foo' does not exist\n\[ERROR\] no source selected\n\[ERROR\] backend property not set\n''')
         self.assertEqualDiff('', out)
 
         # nothing known about source
         out, err, code = self.runCmdline(["--print-items"],
                                          expectSuccess = False)
-        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] no source selected\n[ERROR] backend property not set\n",
-                             stripTime(err))
+        self.assertRegexpMatches(err, r'''\[ERROR\] error code from SyncEvolution error parsing config file \(local, status 20010\): backend not supported (by any of the backend modules \((\w+\.so, )+\w+\.so\) )?or not correctly configured \(backend=select backend databaseFormat= syncFormat=\)\n\[ERROR\] no source selected\n\[ERROR\] backend property not set\n''')
         self.assertEqualDiff('', out)
 
         # now create "foo"
@@ -5791,8 +5790,7 @@ sources/memo/config.ini:type = todo
         out, err, code  = self.runCmdline(["--print-items",
                                            "foo"],
                                           expectSuccess = False)
-        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] no source selected\n[ERROR] backend property not set\n",
-                             stripTime(err))
+        self.assertRegexpMatches(err, r'''\[ERROR\] error code from SyncEvolution error parsing config file \(local, status 20010\): backend not supported (by any of the backend modules \((\w+\.so, )+\w+\.so\) )?or not correctly configured \(backend=select backend databaseFormat= syncFormat=\)\n\[ERROR\] no source selected\n\[ERROR\] backend property not set\n''')
         self.assertEqualDiff('', out)
 
         # "foo" configured, but "bar" is not
@@ -5800,8 +5798,7 @@ sources/memo/config.ini:type = todo
                                           "foo",
                                           "bar"],
                                          expectSuccess = False)
-        self.assertEqualDiff("[ERROR] error code from SyncEvolution error parsing config file (local, status 20010): bar: backend not supported or not correctly configured (backend=select backend databaseFormat= syncFormat=)\n[ERROR] source 'bar' does not exist\n[ERROR] backend property not set\n",
-                             stripTime(err))
+        self.assertRegexpMatches(err, r'''\[ERROR\] error code from SyncEvolution error parsing config file \(local, status 20010\): bar: backend not supported (by any of the backend modules \((\w+\.so, )+\w+\.so\) )?or not correctly configured \(backend=select backend databaseFormat= syncFormat=\)\n\[ERROR\] source 'bar' does not exist\n\[ERROR\] backend property not set\n''')
         self.assertEqualDiff('', out)
 
         # add "bar" source, using file backend
