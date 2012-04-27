@@ -892,13 +892,13 @@ class DBusUtil(Timeout):
                 self.fail("'" + str(needle) + "' found in '" + str(haystack) + "'")
 
     # reimplement Python 2.7 assertions only in older Python
-    if True or not 'assertRegexpMatches' in dir(self):
+    if not 'assertRegexpMatches' in dir(unittest.TestCase):
         assertRegexpMatches = assertRegexpMatchesCustom
 
-    if True or not 'assertIn' in dir(self):
+    if not 'assertIn' in dir(unittest.TestCase):
         assertIn = assertInCustom
 
-    if True or not 'assertNotIn' in dir(self):
+    if not 'assertNotIn' in dir(unittest.TestCase):
         assertNotIn = assertNotInCustom
 
 class TestDBusServer(unittest.TestCase, DBusUtil):
