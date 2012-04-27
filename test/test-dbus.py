@@ -4776,6 +4776,7 @@ sources/xyz/config.ini:# databasePassword = """)
         self.expectUsageError(out, err,
                               "[ERROR] a property name must be given in '=1'\n")
 
+    # TODO: scan output from "backend=?" to determine whether CalDAV/CardDAV are enabled
     def isWebDAVEnabled(self):
         '''Checks config.h for existence of '#define ENABLE_DAV' or
         '/* #undef ENABLE_DAV*/'. It assumes that the test is being
@@ -4803,7 +4804,6 @@ sources/xyz/config.ini:# databasePassword = """)
 
         out, err, code = self.runCmdline(["--print-config", "target-config@my-yahoo"])
         self.assertEqualDiff('', err)
-# TODO: is this ok?
         davenabled = self.isWebDAVEnabled()
         if davenabled:
             self.assertEqualDiff(yahoo,
@@ -4819,7 +4819,6 @@ sources/xyz/config.ini:# databasePassword = """)
 
         out, err, code = self.runCmdline(["--print-config", "target-config@google-calendar"])
         self.assertEqualDiff('', err)
-# TODO: is this ok?
         if davenabled:
             self.assertEqualDiff(googlecaldav,
                                  removeComments(self.removeRandomUUID(filterConfig(out))))
