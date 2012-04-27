@@ -5381,8 +5381,10 @@ sources/calendar/config.ini:# databasePassword =
         expected = expected.replace("# databaseUser = ",
                                     "databaseUser = foo",
                                     1)
+        # syncevo-dbus-server always uses keyring and doesn't
+        # return plain-text password.
         expected = expected.replace("# databasePassword = ",
-                                    "databasePassword = bar",
+                                    "databasePassword = -",
                                     1)
         # migrating "type" sets forceSyncFormat (always) and
         # databaseFormat (if format was part of type, as for
@@ -5416,7 +5418,8 @@ config.ini:obsoleteprop = foo
         expected = expected.replace("# ConsumerReady = 0", "ConsumerReady = 1")
         expected = expected.replace("# database = ", "database = xyz", 1)
         expected = expected.replace("# databaseUser = ", "databaseUser = foo", 1)
-        expected = expected.replace("# databasePassword = ", "databasePassword = bar", 1)
+        # uses keyring
+        expected = expected.replace("# databasePassword = ", "databasePassword = -", 1)
         expected = expected.replace("# forceSyncFormat = 0", "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ", "databaseFormat = text/vcard", 1)
         self.assertEqualDiff(expected, migratedconfig)
@@ -5450,8 +5453,9 @@ spds/sources/addressbook/changes/config.txt:foo2 = bar2
         expected = expected.replace("# databaseUser = ",
                                     "databaseUser = foo",
                                     1)
+        # uses keyring
         expected = expected.replace("# databasePassword = ",
-                                    "databasePassword = bar",
+                                    "databasePassword = -",
                                     1)
         expected = expected.replace("# forceSyncFormat = 0",
                                     "forceSyncFormat = 0")
@@ -5495,8 +5499,9 @@ peers/scheduleworld/config.ini''',
         expected = expected.replace("# databaseUser = ",
                                     "databaseUser = foo",
                                     1)
+        # uses keyring
         expected = expected.replace("# databasePassword = ",
-                                    "databasePassword = bar",
+                                    "databasePassword = -",
                                     1)
         expected = expected.replace("# forceSyncFormat = 0",
                                     "forceSyncFormat = 0")
@@ -5529,8 +5534,9 @@ peers/scheduleworld/config.ini''',
         expected = expected.replace("# databaseUser = ",
                                     "databaseUser = foo",
                                     1)
+        # uses keyring
         expected = expected.replace("# databasePassword = ",
-                                    "databasePassword = bar",
+                                    "databasePassword = -",
                                     1)
         expected = expected.replace("# forceSyncFormat = 0",
                                     "forceSyncFormat = 0")
@@ -5656,7 +5662,7 @@ sources/memo/config.ini:type = todo
 
     @property("debug", False)
     def testMigrateAutoSync(self):
-        '''TestCmdline.testMigrateAutoSync - TODO: migrate stuff?'''
+        '''TestCmdline.testMigrateAutoSync - migrate old configuration files'''
         oldroot = xdg_root + "/.sync4j/evolution/scheduleworld"
         newroot = self.configdir + "/default"
         oldconfig = "spds/syncml/config.txt:autoSync = 1\n" + self.OldScheduleWorldConfig()
@@ -5685,8 +5691,9 @@ sources/memo/config.ini:type = todo
         expected = expected.replace("# databaseUser = ",
                                     "databaseUser = foo",
                                     1)
+        # uses keyring
         expected = expected.replace("# databasePassword = ",
-                                    "databasePassword = bar",
+                                    "databasePassword = -",
                                     1)
         # migrating "type" sets forceSyncFormat (always) and
         # databaseFormat (if format was part of type, as for
@@ -5711,7 +5718,7 @@ sources/memo/config.ini:type = todo
         self.assertSilent(out, err)
 
         migratedconfig = scanFiles(newroot, "scheduleworld")
-        expected = ScheduleWorldConfig()
+        expected = self.ScheduleWorldConfig()
         expected = expected.replace("# autoSync = 0",
                                     "autoSync = 1",
                                     1)
@@ -5724,8 +5731,9 @@ sources/memo/config.ini:type = todo
         expected = expected.replace("# databaseUser = ",
                                     "databaseUser = foo",
                                     1)
+        # uses keyring
         expected = expected.replace("# databasePassword = ",
-                                    "databasePassword = bar",
+                                    "databasePassword = -",
                                     1)
         expected = expected.replace("# forceSyncFormat = 0",
                                     "forceSyncFormat = 0")
