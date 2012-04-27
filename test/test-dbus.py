@@ -5230,7 +5230,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         # create from scratch with only addressbook configured
         out, err, code = self.runCmdline(["--configure",
                                           "--source-property", "database = file://tmp/test",
-                                          "--source-property", "type = file:/x-vcard",
+                                          "--source-property", "type = file:text/x-vcard",
                                           "@foobar",
                                           "addressbook"])
         self.assertSilent(out, err)
@@ -5851,12 +5851,12 @@ END:VCARD
 
         # export all
         out, err, code = self.runCmdline(["--export", "-",
-                                          "foo", "bar"])
+                                          "backend=file",
+                                          "database=file://" + xdg_root + "/addressbook",
+                                          "databaseFormat=text/vcard"])
         self.assertEqualDiff('', err)
         self.assertEqualDiff(john + "\n" + joan, out)
 
-        # TODO: this case looks the same as previous. is something
-        # TODO continued: missing?
         # export all via config
         out, err, code = self.runCmdline(["--export", "-",
                                           "foo", "bar"])
@@ -5865,7 +5865,7 @@ END:VCARD
 
         # export one
         out, err, code = self.runCmdline(["--export", "-",
-                                          "backend=file"
+                                          "backend=file",
                                           "database=file://" + xdg_root + "/addressbook",
                                           "databaseFormat=text/vcard",
                                           "--luids", "1"])
