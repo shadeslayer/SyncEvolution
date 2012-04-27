@@ -3471,7 +3471,7 @@ def createFiles(root, content, append = False):
     for entry in entries:
         if not entry:
             continue
-        parts = entry.split(":")
+        parts = entry.split(":", 1)
         newname = parts[0]
         line = parts[1]
         if newname != outname:
