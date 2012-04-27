@@ -381,7 +381,7 @@ class DBusUtil(Timeout):
         else:
             return default
 
-    def runTest(self, result, own_xdg=True, serverArgs=[] ):
+    def runTest(self, result, own_xdg=True, serverArgs=[], own_home=False):
         """Starts the D-Bus server and dbus-monitor before the test
         itself. After the test run, the output of these two commands
         are added to the test's failure, if any. Otherwise the output
@@ -407,11 +407,14 @@ class DBusUtil(Timeout):
         to copy the reference directory tree."""
         self.own_xdg = own_xdg
         env = copy.deepcopy(os.environ)
-        if own_xdg:
+        if own_xdg or own_home:
             shutil.rmtree(xdg_root, True)
+        if own_xdg:
             env["XDG_DATA_HOME"] = xdg_root + "/data"
             env["XDG_CONFIG_HOME"] = xdg_root + "/config"
             env["XDG_CACHE_HOME"] = xdg_root + "/cache"
+        if own_home:
+            env["HOME"] = xdg_root
 
         # set additional environment variables for the test run,
         # as defined by @property("ENV", "foo=bar x=y")
@@ -3717,7 +3720,7 @@ class TestCmdline(unittest.TestCase, DBusUtil):
         self.configdir = xdg_root + "/config/syncevolution"
 
     def run(self, result):
-        self.runTest(result)
+        self.runTest(result, own_xdg=True, own_home=True)
 
     def runCmdline(self, args, env=None, expectSuccess=True, preserveOutputOrder=False):
         '''Run the 'syncevolution' command line (from PATH) with the
@@ -5356,7 +5359,7 @@ sources/calendar/config.ini:# databasePassword =
     @property("debug", False)
     def testMigrate(self):
         '''TestCmdline.testMigrate - migrate from old configuration'''
-        oldroot = xdg_root + "/config/.sync4j/evolution/scheduleworld"
+        oldroot = xdg_root + "/.sync4j/evolution/scheduleworld"
         newroot = self.configdir + "/default"
         oldconfig = self.OldScheduleWorldConfig()
 
