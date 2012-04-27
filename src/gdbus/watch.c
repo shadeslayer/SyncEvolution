@@ -105,8 +105,14 @@ static DBusHandlerResult owner_function(DBusConnection *connection,
 
 	DBG("name %s \"%s\" => \"%s\"", name, old, new);
 
-	for (list = data->watches; list; list = list->next) {
+        /*
+         * Allow the watch to remove itself. That'll make the "list" pointer
+         * invalid, need to read it before calling the watch.
+         */
+        list = data->watches;
+	while (list) {
 		WatchData *watch = list->data;
+                list = list->next;
 
 		if (strcmp(name, watch->name) != 0)
 			continue;
