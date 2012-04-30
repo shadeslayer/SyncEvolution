@@ -3769,6 +3769,7 @@ class TestCmdline(unittest.TestCase, DBusUtil):
 
     def setUp(self):
         self.setUpServer()
+        self.setUpListeners(None)
         # All tests run with their own XDG root hierarchy.
         # Here are the config files.
         self.configdir = xdg_root + "/config/syncevolution"
@@ -3776,7 +3777,15 @@ class TestCmdline(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result, own_xdg=True, own_home=True)
 
-    def runCmdline(self, args, env=None, expectSuccess=True, preserveOutputOrder=False):
+    def statusChanged(self, *args, **keywords):
+        '''remember the command line session'''
+        if args[0] == 'idle' and self.session == None:
+            self.session = dbus.Interface(bus.get_object(self.server.bus_name,
+                                                         keywords['path']),
+                                          'org.syncevolution.Session')
+
+    def runCmdline(self, args, env=None, expectSuccess=True, preserveOutputOrder=False,
+                   sessionFlags=['no-sync']):
         '''Run the 'syncevolution' command line (from PATH) with the
         given arguments (list or tuple of strings). Uses environment
         used to run syncevo-dbus-server unless one is set
@@ -3786,7 +3795,15 @@ class TestCmdline(unittest.TestCase, DBusUtil):
         different streams cannot be tested. When that is relevant, set
         preserveOutputOrder=True and look only at the stdout.
 
-        Returns tuple with stdout, stderr and result code.'''
+        Returns tuple with stdout, stderr and result code. DBusUtil.events
+        contains the status and progress events seen while the command line
+        ran. self.session is the proxy for that session.'''
+
+        # Watch all future events, ignore old ones.
+        while loop.get_context().iteration(False):
+            pass
+        DBusUtil.events = []
+        self.session = None
         a = [ 'syncevolution' ]
         a.extend(args)
         # Explicitly pass an environment. Otherwise subprocess.Popen()
@@ -3817,6 +3834,14 @@ class TestCmdline(unittest.TestCase, DBusUtil):
             if not preserveOutputOrder:
                 result += '\nSeparate stderr:\n%s' % err
             self.fail(result)
+
+        # Collect D-Bus events, check session.
+        while loop.get_context().iteration(False):
+            pass
+        if sessionFlags != None:
+            self.assertTrue(self.session)
+            self.assertEqual(self.session.GetFlags(), sessionFlags)
+
         return (out, err, s.returncode)
 
     cachedSSLServerCertificates = None
@@ -4307,13 +4332,18 @@ spds/sources/todo/config.txt:# evolutionpassword =
         self.assertEqualDiff(stripped, res)
 
         # Run command without talking to server, separate streams.
-        out, err, code = self.runCmdline(['--foo-bar'], expectSuccess=False)
+        out, err, code = self.runCmdline(['--foo-bar'],
+                                         sessionFlags=None,
+                                         expectSuccess=False)
         self.assertEqualDiff('[ERROR] --foo-bar: unknown parameter\n', err)
         self.assertRegexpMatches(out, '^List databases:\n')
         self.assertEqual(1, code)
 
         # Run command without talking to server, joined streams.
-        out, err, code = self.runCmdline(['--foo-bar'], expectSuccess=False, preserveOutputOrder=True)
+        out, err, code = self.runCmdline(['--foo-bar'],
+                                         sessionFlags=None,
+                                         expectSuccess=False,
+                                         preserveOutputOrder=True)
         self.assertEqual(err, None)
         self.assertRegexpMatches(out, r'^List databases:\n(.*\n)*\[ERROR\] --foo-bar: unknown parameter\n$')
         self.assertEqual(1, code)
@@ -4463,7 +4493,9 @@ spds/sources/todo/config.txt:# evolutionpassword =
     @property("debug", False)
     def testTemplate(self):
         """TestCmdline.testTemplate - check --template parameter"""
-        out, err, code = self.runCmdline(['--template'], expectSuccess = False)
+        out, err, code = self.runCmdline(['--template'],
+                                         sessionFlags=None,
+                                         expectSuccess = False)
         self.expectUsageError(out, err,
                               "[ERROR] missing parameter for '--template'\n")
 
@@ -4758,17 +4790,20 @@ sources/xyz/config.ini:# databasePassword = """)
     def testSync(self):
         """TestCmdline.testSync - check sync with various options"""
         out, err, code = self.runCmdline(["--sync"],
+                                         sessionFlags=None,
                                          expectSuccess = False)
         self.expectUsageError(out, err,
                               "[ERROR] missing parameter for '--sync'\n")
 
         out, err, code = self.runCmdline(["--sync", "foo"],
+                                         sessionFlags=None,
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
         self.assertEqualDiff("[ERROR] '--sync foo': not one of the valid values (two-way, slow, refresh-from-local, refresh-from-remote = refresh, one-way-from-local, one-way-from-remote = one-way, refresh-from-client = refresh-client, refresh-from-server = refresh-server, one-way-from-client = one-way-client, one-way-from-server = one-way-server, disabled = none)\n",
                              stripTime(err))
 
-        out, err, code = self.runCmdline(["--sync", " ?"])
+        out, err, code = self.runCmdline(["--sync", " ?"],
+                                         sessionFlags=None)
         self.assertEqualDiff("""--sync
    Requests a certain synchronization mode when initiating a sync:
    
@@ -4805,27 +4840,32 @@ sources/xyz/config.ini:# databasePassword = """)
         self.assertEqualDiff("", err)
 
         out, err, code = self.runCmdline(["--sync", "refresh-from-server"],
-                                          expectSuccess = False)
+                                         sessionFlags=None,
+                                         expectSuccess = False)
         self.expectUsageError(out, err,
                               "[ERROR] No configuration name specified.\n")
 
         out, err, code = self.runCmdline(["--source-property", "sync=refresh"],
+                                         sessionFlags=None,
                                          expectSuccess = False)
         self.expectUsageError(out, err,
                               "[ERROR] No configuration name specified.\n")
 
         out, err, code = self.runCmdline(["--source-property", "xyz=1"],
+                                         sessionFlags=None,
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
         self.assertEqualDiff("[ERROR] '--source-property xyz=1': no such property\n",
                              stripTime(err))
 
         out, err, code = self.runCmdline(["xyz=1"],
+                                         sessionFlags=None,
                                          expectSuccess = False)
         self.expectUsageError(out, err,
                               "[ERROR] unrecognized property in 'xyz=1'\n")
 
         out, err, code = self.runCmdline(["=1"],
+                                         sessionFlags=None,
                                          expectSuccess = False)
         self.expectUsageError(out, err,
                               "[ERROR] a property name must be given in '=1'\n")
@@ -5098,45 +5138,52 @@ databaseUser = evolutionuser (no default, shared), databasePassword = evolutionp
         # adapted the test to actual output to check if there are
         # other errors.
 
-        out, err, code = self.runCmdline(["--sync-property", "?"])
+        out, err, code = self.runCmdline(["--sync-property", "?"],
+                                         sessionFlags=None)
         self.assertEqualDiff('', err)
         # WORKAROUND-----------------------vvvvv
         self.assertEqualDiff(syncproperties[:-1],
                              filterIndented(out))
 
-        out, err, code = self.runCmdline(["--source-property", "?"])
+        out, err, code = self.runCmdline(["--source-property", "?"],
+                                         sessionFlags=None)
         self.assertEqualDiff('', err)
         # WORKAROUND-------------------------vvvvv
         self.assertEqualDiff(sourceproperties[:-1],
                              filterIndented(out))
 
         out, err, code = self.runCmdline(["--source-property", "?",
-                                          "--sync-property", "?"])
+                                          "--sync-property", "?"],
+                                         sessionFlags=None)
         self.assertEqualDiff('', err)
         # WORKAROUND------------------------------------------vvvvv
         self.assertEqualDiff(sourceproperties + syncproperties[:-1],
                              filterIndented(out))
 
         out, err, code = self.runCmdline(["--sync-property", "?",
-                                          "--source-property", "?"])
+                                          "--source-property", "?"],
+                                         sessionFlags=None)
         self.assertEqualDiff('', err)
         # WORKAROUND------------------------------------------vvvvv
         self.assertEqualDiff(syncproperties + sourceproperties[:-1],
                              filterIndented(out))
 
-        out, err, code = self.runCmdline(["--source-property", "sync=?"])
+        out, err, code = self.runCmdline(["--source-property", "sync=?"],
+                                         sessionFlags=None)
         self.assertEqualDiff('', err)
         # WORKAROUND---------------------------------------vvvvv
         self.assertEqualDiff("'--source-property sync=?'\n"[:-1],
                              filterIndented(out))
 
-        out, err, code = self.runCmdline(["sync=?"])
+        out, err, code = self.runCmdline(["sync=?"],
+                                         sessionFlags=None)
         self.assertEqualDiff('', err)
         # WORKAROUND---------------------vvvvv
         self.assertEqualDiff("'sync=?'\n"[:-1],
                              filterIndented(out))
 
-        out, err, code = self.runCmdline(["syncURL=?"])
+        out, err, code = self.runCmdline(["syncURL=?"],
+                                         sessionFlags=None)
         self.assertEqualDiff('', err)
         # WORKAROUND------------------------vvvvv
         self.assertEqualDiff("'syncURL=?'\n"[:-1],
@@ -5974,8 +6021,8 @@ N:Doe;John
 END:VCARD''')
         output.close()
 
-        # TODO: check D-Bus events while command line sync runs
         out, err, code = self.runCmdline(["--sync", "slow", "server"],
+                                         sessionFlags=[],
                                          preserveOutputOrder=True)
         self.assertEqual(err, None)
         self.assertEqual(0, code)
@@ -6051,10 +6098,93 @@ Data modified @default during synchronization:
 no changes
 
 ''', out)
+        # Only 'addressbook' ever active. When done (= progress 100%),
+        # a lot of information seems to be missing (= -1) or dubious
+        # (1 out of 0 items sent?!). This information comes straight
+        # from libsynthesis; use it as it is for now.
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(slow, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(sending, -1, -1, 1, 0, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=1)
 
         # check result (should be unchanged)
         input = open(item, "r")
         self.assertIn("FN:John Doe", input.read())
+
+        # no changes
+        out, err, code = self.runCmdline(["server"],
+                                         sessionFlags=[],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting normal sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO] @default/addressbook: starting normal sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+no changes
+
+[INFO] @default/addressbook: started
+[INFO @client] @client/addressbook: started
+[INFO] @default/addressbook: normal sync done successfully
+[INFO @client] @client/addressbook: normal sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+
+''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(two-way, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(, -1, -1, -1, -1, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=2)
 
         # update contact
         output = open(item, "w")
@@ -6065,6 +6195,7 @@ N:Doe;Joan
 END:VCARD''')
         output.close()
         out, err, code = self.runCmdline(["server"],
+                                         sessionFlags=[],
                                          preserveOutputOrder=True)
         self.assertEqual(err, None)
         self.assertEqual(0, code)
@@ -6149,10 +6280,17 @@ Data modified @default during synchronization:
 no changes
 
 ''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(two-way, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(sending, -1, -1, 1, 0, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=3)
 
         # now remove contact
         os.unlink(item)
         out, err, code = self.runCmdline(["server"],
+                                         sessionFlags=[],
                                          preserveOutputOrder=True)
         self.assertEqual(err, None)
         self.assertEqual(0, code)
@@ -6237,6 +6375,12 @@ Data modified @default during synchronization:
 no changes
 
 ''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(two-way, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(sending, -1, -1, 1, 0, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=4)
 
 if __name__ == '__main__':
     unittest.main()
