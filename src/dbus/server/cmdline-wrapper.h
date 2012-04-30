@@ -31,24 +31,13 @@ SE_BEGIN_CXX
  * dbus clients. It creates the DBusSync instance when required and
  * sets up the same environment as in the D-Bus client.
  */
-class CmdlineWrapper
+class CmdlineWrapper : public Cmdline
 {
-    class DBusCmdline : public Cmdline {
-        Session &m_session;
-    public:
-        DBusCmdline(Session &session,
-                    const vector<string> &args) :
-            Cmdline(args),
-            m_session(session)
-        {}
+    virtual SyncContext* createSyncClient() {
+        return new DBusSync(m_server, m_session);
+    }
 
-        SyncContext* createSyncClient() {
-            return new DBusSync(m_server, m_session);
-        }
-    };
-
-    /** instance to run command line arguments */
-    DBusCmdline m_cmdline;
+    Session &m_session;
 
     /** environment variables passed from client */
     map<string, string> m_envVars;
@@ -57,11 +46,11 @@ public:
     CmdlineWrapper(Session &session,
                    const vector<string> &args,
                    const map<string, string> &vars) :
-        m_cmdline(session, args),
+        Cmdline(args),
+        m_session(session),
         m_envVars(vars)
     {}
 
-    bool parse() { return m_cmdline.parse(); }
     bool run(LogRedirect &redirect)
     {
         bool success = true;
@@ -74,7 +63,7 @@ public:
         // exceptions must be handled (= printed) before returning,
         // so that our client gets the output
         try {
-            success = m_cmdline.run();
+            success = Cmdline::run();
         } catch (...) {
             redirect.flush();
             throw;
@@ -85,8 +74,6 @@ public:
 
         return success;
     }
-
-    bool configWasModified() { return m_cmdline.configWasModified(); }
 };
 
 SE_END_CXX
