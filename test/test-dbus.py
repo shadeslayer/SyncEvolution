@@ -756,6 +756,32 @@ class DBusUtil(Timeout):
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
+    def setUpLocalSyncConfigs(self, childPassword=None):
+        # create file<->file configs
+        self.setUpSession("target-config@client")
+        addressbook = { "sync": "two-way",
+                        "backend": "file",
+                        "databaseFormat": "text/vcard",
+                        "database": "file://" + xdg_root + "/client" }
+        if childPassword:
+            addressbook["databaseUser"] = "foo-user"
+            addressbook["databasePassword"] = childPassword
+        self.session.SetConfig(False, False,
+                               {"" : { "loglevel": "4" },
+                                "source/addressbook": addressbook })
+        self.session.Detach()
+        self.setUpSession("server")
+        self.session.SetConfig(False, False,
+                               {"" : { "loglevel": "4",
+                                       "syncURL": "local://@client",
+                                       "RetryDuration": self.getTestProperty("resendDuration", "60"),
+                                       "peerIsClient": "1" },
+                                "source/addressbook": { "sync": "two-way",
+                                                        "uri": "addressbook",
+                                                        "backend": "file",
+                                                        "databaseFormat": "text/vcard",
+                                                        "database": "file://" + xdg_root + "/server" } })
+
     def setUpFiles(self, snapshot):
         """ Copy reference directory trees from
         test/test-dbus/<snapshot> to own xdg_root (=./test-dbus). To
@@ -3152,30 +3178,7 @@ class TestLocalSync(unittest.TestCase, DBusUtil):
         self.setUpServer()
 
     def setUpConfigs(self, childPassword=None):
-        # create file<->file configs
-        self.setUpSession("target-config@client")
-        addressbook = { "sync": "two-way",
-                        "backend": "file",
-                        "databaseFormat": "text/vcard",
-                        "database": "file://" + xdg_root + "/client" }
-        if childPassword:
-            addressbook["databaseUser"] = "foo-user"
-            addressbook["databasePassword"] = childPassword
-        self.session.SetConfig(False, False,
-                               {"" : { "loglevel": "4" },
-                                "source/addressbook": addressbook })
-        self.session.Detach()
-        self.setUpSession("server")
-        self.session.SetConfig(False, False,
-                               {"" : { "loglevel": "4",
-                                       "syncURL": "local://@client",
-                                       "RetryDuration": self.getTestProperty("resendDuration", "60"),
-                                       "peerIsClient": "1" },
-                                "source/addressbook": { "sync": "two-way",
-                                                        "uri": "addressbook",
-                                                        "backend": "file",
-                                                        "databaseFormat": "text/vcard",
-                                                        "database": "file://" + xdg_root + "/server" } })
+        self.setUpLocalSyncConfigs(childPassword)
 
     @timeout(100)
     def testSync(self):
@@ -5897,6 +5900,292 @@ END:VCARD
                                          expectSuccess = False)
         self.expectUsageError(out, err,
                               "[ERROR] No configuration name specified.\n")
+
+    def stripSyncTime(self, out):
+        '''remove varying time from sync session output'''
+        p = re.compile(r'^\| +start .*?, duration \d:\d\dmin +\|$',
+                       re.MULTILINE)
+        return p.sub('| start xxx, duration a:bcmin |', out)
+
+    @property("debug", False)
+    @timeout(100)
+    def testSyncOutput(self):
+        """TestCmdline.testSyncOutput - run syncs between local dirs and check output"""
+        self.setUpLocalSyncConfigs()
+        self.session.Detach()
+        os.makedirs(xdg_root + "/server")
+        item = xdg_root + "/server/0"
+        output = open(item, "w")
+        output.write('''BEGIN:VCARD
+VERSION:3.0
+FN:John Doe
+N:Doe;John
+END:VCARD''')
+        output.close()
+
+        # TODO: check D-Bus events while command line sync runs
+        out, err, code = self.runCmdline(["--sync", "slow", "server"],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting first time sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+Comparison was impossible.
+
+[INFO] @default/addressbook: starting first time sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+Comparison was impossible.
+
+[INFO] @default/addressbook: started
+[INFO] @default/addressbook: sent 1
+[INFO @client] @client/addressbook: started
+[INFO @client] @client/addressbook: received 1/1
+[INFO @client] @client/addressbook: added 1, updated 0, removed 0
+[INFO] @default/addressbook: first time sync done successfully
+[INFO @client] @client/addressbook: first time sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  1  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   slow, 0 KB sent by client, 0 KB received                          |
+|   item(s) in database backup: 0 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+                           before sync | after sync
+                   removed during sync <
+                                       > added during sync
+-------------------------------------------------------------------------------
+                                       > BEGIN:VCARD                           
+                                       > N:Doe;John                            
+                                       > FN:John Doe                           
+                                       > VERSION:3.0                           
+                                       > END:VCARD                             
+-------------------------------------------------------------------------------
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  1  |  0  |  0  |  0  |  0  |
+|   slow, 0 KB sent by client, 0 KB received                          |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+
+''', out)
+
+        # check result (should be unchanged)
+        input = open(item, "r")
+        self.assertIn("FN:John Doe", input.read())
+
+        # update contact
+        output = open(item, "w")
+        output.write('''BEGIN:VCARD
+VERSION:3.0
+FN:Joan Doe
+N:Doe;Joan
+END:VCARD''')
+        output.close()
+        out, err, code = self.runCmdline(["server"],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting normal sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO] @default/addressbook: starting normal sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+                       after last sync | current data
+               removed since last sync <
+                                       > added since last sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                              BEGIN:VCARD                           
+N:Doe;John                             | N:Doe;Joan                            
+FN:John Doe                            | FN:Joan Doe                           
+VERSION:3.0                              VERSION:3.0                           
+END:VCARD                                END:VCARD                             
+-------------------------------------------------------------------------------
+
+[INFO] @default/addressbook: started
+[INFO] @default/addressbook: sent 1
+[INFO @client] @client/addressbook: started
+[INFO @client] @client/addressbook: received 1/1
+[INFO @client] @client/addressbook: added 0, updated 1, removed 0
+[INFO] @default/addressbook: normal sync done successfully
+[INFO @client] @client/addressbook: normal sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  1  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+                           before sync | after sync
+                   removed during sync <
+                                       > added during sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                              BEGIN:VCARD                           
+N:Doe;John                             | N:Doe;Joan                            
+FN:John Doe                            | FN:Joan Doe                           
+VERSION:3.0                              VERSION:3.0                           
+END:VCARD                                END:VCARD                             
+-------------------------------------------------------------------------------
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  1  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+
+''', out)
+
+        # now remove contact
+        os.unlink(item)
+        out, err, code = self.runCmdline(["server"],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting normal sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO] @default/addressbook: starting normal sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+                       after last sync | current data
+               removed since last sync <
+                                       > added since last sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                            <
+N:Doe;Joan                             <
+FN:Joan Doe                            <
+VERSION:3.0                            <
+END:VCARD                              <
+-------------------------------------------------------------------------------
+
+[INFO] @default/addressbook: started
+[INFO] @default/addressbook: sent 1
+[INFO @client] @client/addressbook: started
+[INFO @client] @client/addressbook: received 1/1
+[INFO @client] @client/addressbook: added 0, updated 0, removed 1
+[INFO] @default/addressbook: normal sync done successfully
+[INFO @client] @client/addressbook: normal sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  1  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 0 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+                           before sync | after sync
+                   removed during sync <
+                                       > added during sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                            <
+N:Doe;Joan                             <
+FN:Joan Doe                            <
+VERSION:3.0                            <
+END:VCARD                              <
+-------------------------------------------------------------------------------
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  1  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 0 before sync, 0 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+
+''', out)
 
 if __name__ == '__main__':
     unittest.main()
