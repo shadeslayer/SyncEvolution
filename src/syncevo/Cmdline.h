@@ -116,6 +116,8 @@ public:
 
     /* check whether command line runs sync. It should be called after parsing. */
     bool isSync();
+    /** same as isSync() for --restore */
+    bool isRestore() const;
 
 protected:
     // vector to store strings for arguments 

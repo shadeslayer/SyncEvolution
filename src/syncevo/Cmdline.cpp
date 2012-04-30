@@ -410,6 +410,11 @@ bool Cmdline::isSync()
     }
 }
 
+bool Cmdline::isRestore() const
+{
+    return !m_restore.empty();
+}
+
 bool Cmdline::dontRun() const
 {
     // this mimics the if() checks in run()
