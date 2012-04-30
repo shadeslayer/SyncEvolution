@@ -951,12 +951,12 @@ int LocalTransportMain(int argc, char **argv)
 
     SyncContext::initMain("syncevo-local-sync");
 
-    // cannot be interrupted via signal directly,
-    // signals must be directed to parent
+    // SIGPIPE must be ignored, some system libs (glib GIO?) trigger
+    // it. SIGINT/TERM will be handled via SuspendFlags once the sync
+    // runs.
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SIG_IGN;
-    sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGPIPE, &sa, NULL);
 
     try {
