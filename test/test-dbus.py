@@ -28,6 +28,7 @@ import copy
 import heapq
 import string
 import difflib
+import traceback
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
@@ -661,12 +662,12 @@ class DBusUtil(Timeout):
         """stores ready session in self.sessionpath and self.session"""
         self.sessionpath, self.session = self.createSession(config, True, flags)
 
-    def progressChanged(self, *args):
+    def progressChanged(self, *args, **keywords):
         '''subclasses override this method to write specified callbacks for ProgressChanged signals
            It is called by progress signal receivers in setUpListeners'''
         pass
 
-    def statusChanged(self, *args):
+    def statusChanged(self, *args, **keywords):
         '''subclasses override this method to write specified callbacks for StatusChanged signals
            It is called by status signal receivers in setUpListeners'''
         pass
@@ -675,15 +676,15 @@ class DBusUtil(Timeout):
         """records progress and status changes in DBusUtil.events and
         quits the main loop when the session is done"""
 
-        def progress(*args):
+        def progress(*args, **keywords):
             if self.running:
-                DBusUtil.events.append(("progress", args))
-                self.progressChanged(args)
+                DBusUtil.events.append(("progress", args, keywords['path']))
+                self.progressChanged(*args, **keywords)
 
-        def status(*args):
+        def status(*args, **keywords):
             if self.running:
-                DBusUtil.events.append(("status", args))
-                self.statusChanged(args)
+                DBusUtil.events.append(("status", args, keywords['path']))
+                self.statusChanged(*args, **keywords)
                 if args[0] == "done":
                     if sessionpath:
                         DBusUtil.quit_events.append("session " + sessionpath + " done")
@@ -696,14 +697,16 @@ class DBusUtil(Timeout):
                                 'org.syncevolution.Session',
                                 self.server.bus_name,
                                 sessionpath,
-                                byte_arrays=True, 
+                                path_keyword='path',
+                                byte_arrays=True,
                                 utf8_strings=True)
         bus.add_signal_receiver(status,
                                 'StatusChanged',
                                 'org.syncevolution.Session',
                                 self.server.bus_name,
                                 sessionpath,
-                                byte_arrays=True, 
+                                path_keyword='path',
+                                byte_arrays=True,
                                 utf8_strings=True)
 
     def setUpConfigListeners(self):
@@ -809,7 +812,46 @@ class DBusUtil(Timeout):
             if os.access(sourcepath, os.F_OK):
                 shutil.copytree(sourcepath, destpath)
 
-    def checkSync(self, expectedError=0, expectedResult=0):
+    def prettyPrintEvents(self, events=None):
+        '''Format events as lines without full class specifiers, like this:
+status: idle, 0, {}
+'''
+        if events == None:
+            events = DBusUtil.events
+        lines = []
+        def prettyPrintArg(arg):
+            if isinstance(arg, type(())):
+                res = []
+                for i in arg:
+                    res.append(prettyPrintArg(i))
+                return '(' + ', '.join(res) + ')'
+            elif isinstance(arg, type([])):
+                res = []
+                for i in arg:
+                    res.append(prettyPrintArg(i))
+                return '[' + ', '.join(res) + ']'
+            elif isinstance(arg, type({})):
+                res = []
+                for i,e in arg.iteritems():
+                    res.append('%s: %s' % (prettyPrintArg(i), prettyPrintArg(e)))
+                return '{' + ', '.join(res) + '}'
+            else:
+                return str(arg)
+        def prettyPrintArgs(args):
+            res = []
+            for arg in args:
+                res.append(prettyPrintArg(arg))
+            return ', '.join(res)
+        for event in events:
+            self.assertTrue(len(event) >= 1,
+                            'Unexpected number of entries in event: %s' % str(event))
+            if len(event) >= 2:
+                lines.append('%s: %s' % (event[0], prettyPrintArgs(event[1])))
+            else:
+                lines.append(event[0])
+        return '\n'.join(lines)
+
+    def doCheckSync(self, expectedError=0, expectedResult=0, numReports=1):
         # check recorded events in DBusUtil.events, first filter them
         statuses = []
         progresses = []
@@ -866,13 +908,22 @@ class DBusUtil(Timeout):
 
         # now check that report is sane
         reports = self.session.GetReports(0, 100, utf8_strings=True)
-        self.assertEqual(len(reports), 1)
+        self.assertEqual(len(reports), numReports)
         if expectedResult:
             self.assertEqual(int(reports[0]["status"]), expectedResult)
         else:
             self.assertEqual(int(reports[0]["status"]), 200)
             self.assertNotIn("error", reports[0])
         return reports[0]
+
+    def checkSync(self, expectedError=0, expectedResult=0, numReports=1):
+        '''augment any assertion in doCheckSync() with text dump of events'''
+        events = self.prettyPrintEvents()
+        try:
+            return self.doCheckSync(expectedError, expectedResult, numReports)
+        except AssertionError, ex:
+            raise self.failureException('Assertion about the following events failed:\n%s\n%s' %
+                                        (events, traceback.format_exc()))
 
     def assertEqualDiff(self, expected, res):
         '''Like assertEqual(), but raises an error which contains a
@@ -2535,8 +2586,8 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
         loop.run()
         self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
 
-    def progressChanged(self, *args):
-        # subclass specifies its own callback for ProgressChanged signals
+    def progressChanged(self, *args, **keywords):
+        '''abort or suspend once session has progressed far enough'''
         percentage = args[0]
         # make sure sync is really running
         if percentage > 20:
