@@ -636,7 +636,18 @@ void Session::sourceProgress(sysync::TProgressEventEnum type,
                              SyncSource &source,
                              int32_t extra1, int32_t extra2, int32_t extra3)
 {
-    switch(m_runOperation) {
+    RunOperation op;
+    if (m_runOperation == OP_CMDLINE) {
+        // a command line operation can be many things
+        op = !m_cmdline ? OP_CMDLINE : // should never happen
+            m_cmdline->isSync() ? OP_SYNC :
+            m_cmdline->isRestore() ? OP_RESTORE :
+            OP_CMDLINE;
+    } else {
+        op = m_runOperation;
+    }
+
+    switch(op) {
     case OP_SYNC: {
         SourceProgress &progress = m_sourceProgress[source.getName()];
         SourceStatus &status = m_sourceStatus[source.getName()];
