@@ -952,29 +952,25 @@ list<string> SyncConfig::getSyncSources() const
     // 1. contextpath/sources
     // 2. peers/[one-peer]/sources
     // 3. sources in source filter
-    list<string> sources;
+    set<string> sources;
+    list<string> sourceList;
     if (m_layout == SHARED_LAYOUT) {
         // get sources in context
-        sources = m_tree->getChildren(m_contextPath + "/sources");
-        list<string> peerSources;
-        // get sources from peer if it's not empty
+        sourceList = m_tree->getChildren(m_contextPath + "/sources");
+        sources.insert(sourceList.begin(), sourceList.end());
+        // get sources from peer if it's not empty and merge into
+        // full set of sources
         if (!m_peerPath.empty()) {
-            peerSources = m_tree->getChildren(m_peerPath + "/sources");
-        }
-        // union sources in specific peer
-        BOOST_FOREACH(const string &peerSource, peerSources) {
-            list<string>::iterator it = std::find(sources.begin(), sources.end(), peerSource);
-            // not found
-            if ( it == sources.end()) {
-                sources.push_back(peerSource); 
-            }
+            sourceList = m_tree->getChildren(m_peerPath + "/sources");
+            sources.insert(sourceList.begin(), sourceList.end());
         }
     } else {
         // get sources from peer
-        sources = m_tree->getChildren(m_peerPath +
-                                      (m_layout == SYNC4J_LAYOUT ? 
-                                       "/spds/sources" :
-                                       "/sources"));
+        sourceList = m_tree->getChildren(m_peerPath +
+                                         (m_layout == SYNC4J_LAYOUT ? 
+                                          "/spds/sources" :
+                                          "/sources"));
+        sources.insert(sourceList.begin(), sourceList.end());
     }
     // get sources from filter and union them into returned sources
     BOOST_FOREACH(const SourceProps::value_type &value, m_sourceFilters) {
@@ -982,14 +978,12 @@ list<string> SyncConfig::getSyncSources() const
             // ignore filter for all sources
             continue;
         }
-        list<string>::iterator it = std::find(sources.begin(), sources.end(), value.first);
-        if (it == sources.end()) {
-            // found a filter for a source which does not exist yet
-            sources.push_back(value.first); 
-        }
+        sources.insert(value.first);
     }
 
-    return sources;
+    // Convert back to simple list. As a nice side-effect of
+    // temporarily using a set, the final list is sorted.
+    return list<string>(sources.begin(), sources.end());
 }
 
 SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
