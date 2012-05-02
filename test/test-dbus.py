@@ -759,31 +759,43 @@ class DBusUtil(Timeout):
                                 byte_arrays=True, 
                                 utf8_strings=True)
 
-    def setUpLocalSyncConfigs(self, childPassword=None):
+    def setUpLocalSyncConfigs(self, childPassword=None, enableCalendar=False):
         # create file<->file configs
         self.setUpSession("target-config@client")
         addressbook = { "sync": "two-way",
                         "backend": "file",
                         "databaseFormat": "text/vcard",
                         "database": "file://" + xdg_root + "/client" }
+        calendar = { "sync": "two-way",
+                     "backend": "file",
+                     "databaseFormat": "text/calendar",
+                     "database": "file://" + xdg_root + "/client-calendar" }
         if childPassword:
             addressbook["databaseUser"] = "foo-user"
             addressbook["databasePassword"] = childPassword
-        self.session.SetConfig(False, False,
-                               {"" : { "loglevel": "4" },
-                                "source/addressbook": addressbook })
+        config = {"" : { "loglevel": "4" } }
+        config["source/addressbook"] = addressbook
+        if enableCalendar:
+            config["source/calendar"] = calendar
+        self.session.SetConfig(False, False, config)
         self.session.Detach()
         self.setUpSession("server")
-        self.session.SetConfig(False, False,
-                               {"" : { "loglevel": "4",
-                                       "syncURL": "local://@client",
-                                       "RetryDuration": self.getTestProperty("resendDuration", "60"),
-                                       "peerIsClient": "1" },
-                                "source/addressbook": { "sync": "two-way",
-                                                        "uri": "addressbook",
-                                                        "backend": "file",
-                                                        "databaseFormat": "text/vcard",
-                                                        "database": "file://" + xdg_root + "/server" } })
+        config = {"" : { "loglevel": "4",
+                         "syncURL": "local://@client",
+                         "RetryDuration": self.getTestProperty("resendDuration", "60"),
+                         "peerIsClient": "1" },
+                  "source/addressbook": { "sync": "two-way",
+                                          "uri": "addressbook",
+                                          "backend": "file",
+                                          "databaseFormat": "text/vcard",
+                                          "database": "file://" + xdg_root + "/server" } }
+        if enableCalendar:
+            config["source/calendar"] = { "sync": "two-way",
+                                          "uri": "calendar",
+                                          "backend": "file",
+                                          "databaseFormat": "text/calendar",
+                                          "database": "file://" + xdg_root + "/server-calendar" }
+        self.session.SetConfig(False, False, config)
 
     def setUpFiles(self, snapshot):
         """ Copy reference directory trees from
@@ -832,7 +844,9 @@ status: idle, 0, {}
                 return '[' + ', '.join(res) + ']'
             elif isinstance(arg, type({})):
                 res = []
-                for i,e in arg.iteritems():
+                items = arg.items()
+                items.sort()
+                for i,e in items:
                     res.append('%s: %s' % (prettyPrintArg(i), prettyPrintArg(e)))
                 return '{' + ', '.join(res) + '}'
             else:
@@ -969,7 +983,7 @@ status: idle, 0, {}
                 self.fail("'" + str(needle) + "' found in '" + str(haystack) + "'")
 
     # reimplement Python 2.7 assertions only in older Python
-    if not 'assertRegexpMatches' in dir(unittest.TestCase):
+    if True or not 'assertRegexpMatches' in dir(unittest.TestCase):
         assertRegexpMatches = assertRegexpMatchesCustom
 
     if not 'assertIn' in dir(unittest.TestCase):
@@ -3764,7 +3778,7 @@ def filterFiles(config):
 #        return out[:-1]
     return out
 
-class TestCmdline(unittest.TestCase, DBusUtil):
+class TestCmdline(DBusUtil, unittest.TestCase):
     """Tests cmdline by Session::Execute()."""
 
     def setUp(self):
@@ -6006,7 +6020,7 @@ END:VCARD
         return p.sub('| start xxx, duration a:bcmin |', out)
 
     @property("debug", False)
-    @timeout(100)
+    @timeout(200)
     def testSyncOutput(self):
         """TestCmdline.testSyncOutput - run syncs between local dirs and check output"""
         self.setUpLocalSyncConfigs()
@@ -6381,6 +6395,558 @@ no changes
 (.*\n)*progress: 100, \{addressbook: \(sending, -1, -1, 1, 0, -1, -1\)\}
 (.*\n)*status: done, .*''')
         self.checkSync(numReports=4)
+
+    @property("debug", False)
+    @timeout(200)
+    def testSyncOutput2(self):
+        """TestCmdline.testSyncOutput2 - run syncs between local dirs and check output, with two sources"""
+        self.setUpLocalSyncConfigs(enableCalendar=True)
+        self.session.Detach()
+        os.makedirs(xdg_root + "/server")
+        item = xdg_root + "/server/0"
+        output = open(item, "w")
+        output.write('''BEGIN:VCARD
+VERSION:3.0
+FN:John Doe
+N:Doe;John
+END:VCARD''')
+        output.close()
+
+        out, err, code = self.runCmdline(["--sync", "slow", "server"],
+                                         sessionFlags=[],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting first time sync, two-way (peer is server)
+[INFO @client] @client/calendar: starting first time sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+Comparison was impossible.
+
+[INFO @client] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @client/calendar ***
+Comparison was impossible.
+
+[INFO] @default/addressbook: starting first time sync, two-way (peer is client)
+[INFO] @default/calendar: starting first time sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+Comparison was impossible.
+
+[INFO] @default/addressbook: started
+[INFO] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @default/calendar ***
+Comparison was impossible.
+
+[INFO] @default/calendar: started
+[INFO] @default/addressbook: sent 1
+[INFO @client] @client/addressbook: started
+[INFO @client] @client/addressbook: received 1/1
+[INFO @client] @client/addressbook: added 1, updated 0, removed 0
+[INFO @client] @client/calendar: started
+[INFO] @default/addressbook: first time sync done successfully
+[INFO] @default/calendar: first time sync done successfully
+[INFO @client] @client/addressbook: first time sync done successfully
+[INFO @client] @client/calendar: first time sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  1  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   slow, 0 KB sent by client, 0 KB received                          |
+|   item(s) in database backup: 0 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      slow, 0 KB sent by client, 0 KB received                       |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+                           before sync | after sync
+                   removed during sync <
+                                       > added during sync
+-------------------------------------------------------------------------------
+                                       > BEGIN:VCARD                           
+                                       > N:Doe;John                            
+                                       > FN:John Doe                           
+                                       > VERSION:3.0                           
+                                       > END:VCARD                             
+-------------------------------------------------------------------------------
+*** @client/calendar ***
+no changes
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  1  |  0  |  0  |  0  |  0  |
+|   slow, 0 KB sent by client, 0 KB received                          |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      slow, 0 KB sent by client, 0 KB received                       |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+*** @default/calendar ***
+no changes
+
+''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(slow, running, 0\), calendar: \(slow, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(sending, -1, -1, 1, 0, -1, -1\), calendar: \(, -1, -1, -1, -1, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=1)
+
+        # check result (should be unchanged)
+        input = open(item, "r")
+        self.assertIn("FN:John Doe", input.read())
+
+        # no changes
+        out, err, code = self.runCmdline(["server"],
+                                         sessionFlags=[],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting normal sync, two-way (peer is server)
+[INFO @client] @client/calendar: starting normal sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO @client] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @client/calendar ***
+no changes
+
+[INFO] @default/addressbook: starting normal sync, two-way (peer is client)
+[INFO] @default/calendar: starting normal sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+no changes
+
+[INFO] @default/addressbook: started
+[INFO] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @default/calendar ***
+no changes
+
+[INFO] @default/calendar: started
+[INFO @client] @client/addressbook: started
+[INFO @client] @client/calendar: started
+[INFO] @default/addressbook: normal sync done successfully
+[INFO] @default/calendar: normal sync done successfully
+[INFO @client] @client/addressbook: normal sync done successfully
+[INFO @client] @client/calendar: normal sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      two-way, 0 KB sent by client, 0 KB received                    |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+no changes
+*** @client/calendar ***
+no changes
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      two-way, 0 KB sent by client, 0 KB received                    |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+*** @default/calendar ***
+no changes
+
+''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(two-way, running, 0\), calendar: \(two-way, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(, -1, -1, -1, -1, -1, -1\), calendar: \(, -1, -1, -1, -1, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=2)
+
+        # update contact
+        output = open(item, "w")
+        output.write('''BEGIN:VCARD
+VERSION:3.0
+FN:Joan Doe
+N:Doe;Joan
+END:VCARD''')
+        output.close()
+        out, err, code = self.runCmdline(["server"],
+                                         sessionFlags=[],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting normal sync, two-way (peer is server)
+[INFO @client] @client/calendar: starting normal sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO @client] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @client/calendar ***
+no changes
+
+[INFO] @default/addressbook: starting normal sync, two-way (peer is client)
+[INFO] @default/calendar: starting normal sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+                       after last sync | current data
+               removed since last sync <
+                                       > added since last sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                              BEGIN:VCARD                           
+N:Doe;John                             | N:Doe;Joan                            
+FN:John Doe                            | FN:Joan Doe                           
+VERSION:3.0                              VERSION:3.0                           
+END:VCARD                                END:VCARD                             
+-------------------------------------------------------------------------------
+
+[INFO] @default/addressbook: started
+[INFO] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @default/calendar ***
+no changes
+
+[INFO] @default/calendar: started
+[INFO] @default/addressbook: sent 1
+[INFO @client] @client/addressbook: started
+[INFO @client] @client/addressbook: received 1/1
+[INFO @client] @client/addressbook: added 0, updated 1, removed 0
+[INFO @client] @client/calendar: started
+[INFO] @default/addressbook: normal sync done successfully
+[INFO] @default/calendar: normal sync done successfully
+[INFO @client] @client/addressbook: normal sync done successfully
+[INFO @client] @client/calendar: normal sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  1  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      two-way, 0 KB sent by client, 0 KB received                    |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+                           before sync | after sync
+                   removed during sync <
+                                       > added during sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                              BEGIN:VCARD                           
+N:Doe;John                             | N:Doe;Joan                            
+FN:John Doe                            | FN:Joan Doe                           
+VERSION:3.0                              VERSION:3.0                           
+END:VCARD                                END:VCARD                             
+-------------------------------------------------------------------------------
+*** @client/calendar ***
+no changes
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  1  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 1 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      two-way, 0 KB sent by client, 0 KB received                    |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+*** @default/calendar ***
+no changes
+
+''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(two-way, running, 0\), calendar: \(two-way, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(sending, -1, -1, 1, 0, -1, -1\), calendar: \(, -1, -1, -1, -1, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=3)
+
+        # now remove contact
+        os.unlink(item)
+        out, err, code = self.runCmdline(["server"],
+                                         sessionFlags=[],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO @client] @client/addressbook: starting normal sync, two-way (peer is server)
+[INFO @client] @client/calendar: starting normal sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO @client] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @client/calendar ***
+no changes
+
+[INFO] @default/addressbook: starting normal sync, two-way (peer is client)
+[INFO] @default/calendar: starting normal sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+                       after last sync | current data
+               removed since last sync <
+                                       > added since last sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                            <
+N:Doe;Joan                             <
+FN:Joan Doe                            <
+VERSION:3.0                            <
+END:VCARD                              <
+-------------------------------------------------------------------------------
+
+[INFO] @default/addressbook: started
+[INFO] creating complete data backup of source calendar before sync (enabled with dumpData and needed for printChanges)
+*** @default/calendar ***
+no changes
+
+[INFO] @default/calendar: started
+[INFO] @default/addressbook: sent 1
+[INFO @client] @client/addressbook: started
+[INFO @client] @client/addressbook: received 1/1
+[INFO @client] @client/addressbook: added 0, updated 0, removed 1
+[INFO @client] @client/calendar: started
+[INFO] @default/addressbook: normal sync done successfully
+[INFO] @default/calendar: normal sync done successfully
+[INFO @client] @client/addressbook: normal sync done successfully
+[INFO @client] @client/calendar: normal sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  1  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 1 before sync, 0 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      two-way, 0 KB sent by client, 0 KB received                    |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+                           before sync | after sync
+                   removed during sync <
+                                       > added during sync
+-------------------------------------------------------------------------------
+BEGIN:VCARD                            <
+N:Doe;Joan                             <
+FN:Joan Doe                            <
+VERSION:3.0                            <
+END:VCARD                              <
+-------------------------------------------------------------------------------
+*** @client/calendar ***
+no changes
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  1  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 0 before sync, 0 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|      calendar |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|      two-way, 0 KB sent by client, 0 KB received                    |
+|      item(s) in database backup: 0 before sync, 0 after it          |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+*** @default/calendar ***
+no changes
+
+''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(two-way, running, 0\), calendar: \(two-way, running, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(sending, -1, -1, 1, 0, -1, -1\), calendar: \(, -1, -1, -1, -1, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=4)
+
+        # only 'addressbook' active
+        out, err, code = self.runCmdline(["server", "addressbook"],
+                                         sessionFlags=[],
+                                         preserveOutputOrder=True)
+        self.assertEqual(err, None)
+        self.assertEqual(0, code)
+        out = self.stripSyncTime(out)
+        self.assertEqualDiff('''[INFO] @default/calendar: inactive
+[INFO @client] @client/calendar: inactive
+[INFO @client] @client/addressbook: starting normal sync, two-way (peer is server)
+[INFO @client] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@client data changes to be applied during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO] @default/addressbook: starting normal sync, two-way (peer is client)
+[INFO] creating complete data backup of source addressbook before sync (enabled with dumpData and needed for printChanges)
+@default data changes to be applied during synchronization:
+*** @default/addressbook ***
+no changes
+
+[INFO] @default/addressbook: started
+[INFO @client] @client/addressbook: started
+[INFO] @default/addressbook: normal sync done successfully
+[INFO @client] @client/addressbook: normal sync done successfully
+[INFO @client] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |        @client        |       @default        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 0 before sync, 0 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @client during synchronization:
+*** @client/addressbook ***
+no changes
+
+[INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+Synchronization successful.
+
+Changes applied during synchronization:
++---------------|-----------------------|-----------------------|-CON-+
+|               |       @default        |        @client        | FLI |
+|        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+|   addressbook |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+|   two-way, 0 KB sent by client, 0 KB received                       |
+|   item(s) in database backup: 0 before sync, 0 after it             |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+| start xxx, duration a:bcmin |
+|               synchronization completed successfully                |
++---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+Data modified @default during synchronization:
+*** @default/addressbook ***
+no changes
+
+''', out)
+        self.assertRegexpMatches(self.prettyPrintEvents(),
+                                 r'''status: idle, .*
+(.*\n)+status: running;waiting, 0, \{addressbook: \(two-way, running, 0\), calendar: \(none, idle, 0\)\}
+(.*\n)*progress: 100, \{addressbook: \(, -1, -1, -1, -1, -1, -1\), calendar: \(, -1, -1, -1, -1, -1, -1\)\}
+(.*\n)*status: done, .*''')
+        self.checkSync(numReports=5)
 
 if __name__ == '__main__':
     unittest.main()
