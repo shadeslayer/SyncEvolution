@@ -1224,7 +1224,7 @@
 # ==19740==    by 0x5E3D54: main (main.cpp:109)
 # ==19740== 
 {
-   GIO D-Bus name owning leak
+   g_cclosure_new + GIO D-Bus name owning leak
    Memcheck:Leak
    fun:calloc
    fun:g_malloc0
@@ -1232,4 +1232,27 @@
    fun:g_cclosure_new
    fun:g_signal_connect_data
    fun:has_connection
+}
+
+# ==10738== 72 bytes in 1 blocks are possibly lost in loss record 1,327 of 2,063
+# ==10738==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==10738==    by 0x94C3590: g_malloc0 (gmem.c:189)
+# ==10738==    by 0x9233368: g_closure_new_simple (gclosure.c:206)
+# ==10738==    by 0x92348CF: g_cclosure_new (gclosure.c:917)
+# ==10738==    by 0x924B91D: g_signal_connect_data (gsignal.c:2443)
+# ==10738==    by 0x8AC520E: notify_notification_show (in /usr/lib/x86_64-linux-gnu/libnotify.so.4.0.0)
+# ==10738==    by 0x63A1BB: SyncEvo::AutoSyncManager::syncDone(SyncEvo::SyncMLStatus) (auto-sync-manager.cpp:335)
+# ==10738==    by 0x62459C: SyncEvo::Session::run(SyncEvo::LogRedirect&) (session.cpp:768)
+# ==10738==    by 0x60C8AC: SyncEvo::Server::run(SyncEvo::LogRedirect&) (server.cpp:362)
+# ==10738==    by 0x5DDFBA: main (main.cpp:120)
+# ==10738== 
+{
+   g_cclosure_new + notify_notification_show
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_closure_new_simple
+   fun:g_cclosure_new
+   fun:g_signal_connect_data
+   fun:notify_notification_show
 }
