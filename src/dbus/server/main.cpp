@@ -90,6 +90,14 @@ int main(int argc, char **argv, char **envp)
         opt++;
     }
     try {
+        // Temporarily set G_DBUS_DEBUG. Hopefully GIO will read and
+        // remember it, because we don't want to keep it set
+        // permanently, lest it gets passed on to other processes.
+        const char *gdbus = getenv("SYNCEVOLUTION_DBUS_SERVER_GDBUS");
+        if (gdbus) {
+            setenv("G_DBUS_DEBUG", gdbus, 1);
+        }
+
         SyncContext::initMain(execName);
 
         loop = g_main_loop_new (NULL, FALSE);
@@ -101,9 +109,12 @@ int main(int argc, char **argv, char **envp)
         const bool debugEnabled(debugVar && *debugVar);
 
         // TODO: redirect output *and* log it via syslog?!
-        boost::shared_ptr<LoggerBase> logger((true ||  debugEnabled) ?
-                                             static_cast<LoggerBase *>(new LogRedirect(true)) :
-                                             static_cast<LoggerBase *>(new LoggerSyslog(execName)));
+        boost::shared_ptr<LoggerBase> logger;
+        if (!gdbus) {
+            logger.reset((true ||  debugEnabled) ?
+                         static_cast<LoggerBase *>(new LogRedirect(true)) :
+                         static_cast<LoggerBase *>(new LoggerSyslog(execName)));
+        }
 
         // make daemon less chatty - long term this should be a command line option
         LoggerBase::instance().setLevel(debugEnabled ?
@@ -134,6 +145,10 @@ int main(int argc, char **argv, char **envp)
 
         boost::scoped_ptr<SyncEvo::Server> server(new SyncEvo::Server(loop, shutdownRequested, restart, conn, duration));
         server->activate();
+
+        if (gdbus) {
+            unsetenv("G_DBUS_DEBUG");
+        }
 
         SE_LOG_INFO(NULL, NULL, "ready to run");
         server->run();
