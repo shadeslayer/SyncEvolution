@@ -800,6 +800,9 @@ SyncMLStatus Exception::handle(SyncMLStatus *status,
     if (flags & HANDLE_EXCEPTION_FATAL) {
         level = Logger::ERROR;
     }
+    if (flags & HANDLE_EXCEPTION_NO_ERROR) {
+        level = Logger::DEBUG;
+    }
     SE_LOG(level, logger, NULL, "%s", error.c_str());
     if (flags & HANDLE_EXCEPTION_FATAL) {
         // Something unexpected went wrong, can only shut down.

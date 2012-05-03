@@ -420,7 +420,11 @@ enum HandleExceptionFlags {
      */
     HANDLE_EXCEPTION_404_IS_OKAY = 1 << 0,
     HANDLE_EXCEPTION_FATAL = 1 << 1,
-    HANDLE_EXCEPTION_MAX = 1 << 2
+    /**
+     * don't log exception as ERROR
+     */
+    HANDLE_EXCEPTION_NO_ERROR = 1 << 2,
+    HANDLE_EXCEPTION_MAX = 1 << 3,
 };
 
 /**
