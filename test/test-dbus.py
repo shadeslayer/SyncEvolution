@@ -433,14 +433,6 @@ class DBusUtil(Timeout):
         # and increase log level
         if self.getTestProperty("debug", True):
             env["SYNCEVOLUTION_DEBUG"] = "1"
-        else:
-            # we explicitly specified @property("debug", False")
-            # thus we do not want to have any debugging output.
-            try:
-                del env["SYNCEVOLUTION_DEBUG"]
-            except KeyError:
-                # there was no such key anyway
-                pass
 
         self.storedenv = env
 
@@ -3713,10 +3705,13 @@ def sortConfig(config):
 def lastLine(string):
     return string.splitlines(True)[-1]
 
-def stripTime(string):
-    matches = re.match("\[(\w+)\s+\d\d:\d\d:\d\d\] (.*)$", string, re.DOTALL)
-    if matches != None:
-        return "[" + matches.group(1) + "] " + matches.group(2)
+def stripOutput(string):
+    # strip debug output, if it was enabled via env var
+    if os.environ.get('SYNCEVOLUTION_DEBUG', None) != None:
+        string = re.sub(r'\[DEBUG *\S*?\].*?\n', '', string)
+    # remove time
+    r = re.compile(r'^\[(\w+)\s+\d\d:\d\d:\d\d\]', re.MULTILINE)
+    string = r.sub(r'[\1]', string)
     return string
 
 def injectValues(config):
@@ -4303,7 +4298,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
         self.assertEqual(out.find("\nOptions:\n"), -1)
         self.assertTrue(out.endswith("Remove item(s):\n" \
                                      "  syncevolution --delete-items [--] <config> <source> (<luid> ... | '*')\n\n"))
-        self.assertEqualDiff(specific_error, stripTime(err))
+        self.assertEqualDiff(specific_error, stripOutput(err))
 
     @property('debug', False)
     def testFramework(self):
@@ -4425,14 +4420,14 @@ spds/sources/todo/config.txt:# evolutionpassword =
 
         message = "[ERROR 12:34:56] msg\n"
         stripped = "[ERROR] msg\n"
-        res = stripTime(message)
+        res = stripOutput(message)
         self.assertEqualDiff(stripped, res)
 
         # Run command without talking to server, separate streams.
         out, err, code = self.runCmdline(['--foo-bar'],
                                          sessionFlags=None,
                                          expectSuccess=False)
-        self.assertEqualDiff('[ERROR] --foo-bar: unknown parameter\n', err)
+        self.assertEqualDiff('[ERROR] --foo-bar: unknown parameter\n', stripOutput(err))
         self.assertRegexpMatches(out, '^List databases:\n')
         self.assertEqual(1, code)
 
@@ -4442,7 +4437,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                                          expectSuccess=False,
                                          preserveOutputOrder=True)
         self.assertEqual(err, None)
-        self.assertRegexpMatches(out, r'^List databases:\n(.*\n)*\[ERROR\] --foo-bar: unknown parameter\n$')
+        self.assertRegexpMatches(stripOutput(out), r'^List databases:\n(.*\n)*\[ERROR\] --foo-bar: unknown parameter\n$')
         self.assertEqual(1, code)
 
         peerMin = self.getPeerMinVersion()
@@ -4460,7 +4455,8 @@ spds/sources/todo/config.txt:# evolutionpassword =
         self.assertRegexpMatches(rootCur, r'^\d+$', 'Root cur version is not a number.')
 
     def assertSilent(self, out, err):
-        if err != None:
+        if err != None and \
+                os.environ.get('SYNCEVOLUTION_DEBUG', None) == None:
             self.assertEqualDiff('', err)
         self.assertEqualDiff('', out)
 
@@ -4681,13 +4677,13 @@ spds/sources/todo/config.txt:# evolutionpassword =
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
         self.assertEqualDiff("[ERROR] Server 'foo' has not been configured yet.\n",
-                             stripTime(err))
+                             stripOutput(err))
 
         out, err, code = self.runCmdline(["--print-config", "--template", "foo"],
                                          expectSuccess = False)
         self.assertEqualDiff("", out)
         self.assertEqualDiff("[ERROR] No configuration template for 'foo' available.\n",
-                             stripTime(err))
+                             stripOutput(err))
 
         out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld"])
         self.assertEqualDiff("", err)
@@ -4897,7 +4893,7 @@ sources/xyz/config.ini:# databasePassword = """)
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
         self.assertEqualDiff("[ERROR] '--sync foo': not one of the valid values (two-way, slow, refresh-from-local, refresh-from-remote = refresh, one-way-from-local, one-way-from-remote = one-way, refresh-from-client = refresh-client, refresh-from-server = refresh-server, one-way-from-client = one-way-client, one-way-from-server = one-way-server, disabled = none)\n",
-                             stripTime(err))
+                             stripOutput(err))
 
         out, err, code = self.runCmdline(["--sync", " ?"],
                                          sessionFlags=None)
@@ -4953,7 +4949,7 @@ sources/xyz/config.ini:# databasePassword = """)
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
         self.assertEqualDiff("[ERROR] '--source-property xyz=1': no such property\n",
-                             stripTime(err))
+                             stripOutput(err))
 
         out, err, code = self.runCmdline(["xyz=1"],
                                          sessionFlags=None,
@@ -5301,6 +5297,7 @@ databaseUser = evolutionuser (no default, shared), databasePassword = evolutionp
 [INFO] 
 [INFO] Available configuration templates (clients and servers):
 """
+        err = stripOutput(err)
         self.assertTrue(err.startswith(error))
         self.assertTrue(err.endswith("\n"))
         self.assertFalse(err.endswith("\n\n"))
@@ -5316,6 +5313,7 @@ databaseUser = evolutionuser (no default, shared), databasePassword = evolutionp
 [INFO] 
 [INFO] Available configuration templates (clients and servers):
 """
+        err = stripOutput(err)
         self.assertTrue(err.startswith(error))
         self.assertTrue(err.endswith("\n"))
         self.assertFalse(err.endswith("\n\n"))
@@ -5371,6 +5369,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         out, err, code = self.runCmdline(["--configure", "--template", "none", "foo", "eds_event"],
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
+        err = stripOutput(err)
         self.assertEqualDiff('[ERROR] error code from SyncEvolution fatal error (local, status 10500): eds_event: no backend available\n', err)
 
         shutil.rmtree(self.configdir, True)
@@ -5379,6 +5378,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "foo", "eds_event"],
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
+        err = stripOutput(err)
         self.assertEqualDiff('[ERROR] error code from SyncEvolution fatal error (local, status 10500): no such source(s): eds_event\n', err)
 
         shutil.rmtree(self.configdir, True)
@@ -5387,6 +5387,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "eds_event/backend@xyz=calendar", "foo", "eds_event"],
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
+        err = stripOutput(err)
         self.assertEqualDiff('[ERROR] error code from SyncEvolution fatal error (local, status 10500): no such source(s): eds_event\n', err)
 
         shutil.rmtree(self.configdir, True)
