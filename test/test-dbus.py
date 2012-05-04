@@ -412,11 +412,11 @@ class DBusUtil(Timeout):
         if own_xdg or own_home:
             shutil.rmtree(xdg_root, True)
         if own_xdg:
-            env["XDG_DATA_HOME"] = xdg_root + "/data"
-            env["XDG_CONFIG_HOME"] = xdg_root + "/config"
-            env["XDG_CACHE_HOME"] = xdg_root + "/cache"
+            env["XDG_DATA_HOME"] = os.path.abspath(os.path.join(xdg_root, "data"))
+            env["XDG_CONFIG_HOME"] = os.path.abspath(os.path.join(xdg_root, "config"))
+            env["XDG_CACHE_HOME"] = os.path.abspath(os.path.join(xdg_root, "cache"))
         if own_home:
-            env["HOME"] = xdg_root
+            env["HOME"] = os.path.abspath(xdg_root)
 
         # populate xdg_root
         snapshot = self.getTestProperty("snapshot", None)
@@ -4657,9 +4657,9 @@ spds/sources/todo/config.txt:# evolutionpassword =
 
         out, err, code = self.runCmdline(["--print-servers"])
         expected = "Configured servers:\n" \
-                   "   funambol = " + self.configdir + "/default/peers/funambol\n" \
-                   "   scheduleworld = " + self.configdir + "/default/peers/scheduleworld\n" \
-                   "   synthesis = " + self.configdir + "/default/peers/synthesis\n"
+                   "   funambol = " + os.path.abspath(self.configdir) + "/default/peers/funambol\n" \
+                   "   scheduleworld = " + os.path.abspath(self.configdir) + "/default/peers/scheduleworld\n" \
+                   "   synthesis = " + os.path.abspath(self.configdir) + "/default/peers/synthesis\n"
         self.assertEqualDiff(expected, out)
         self.assertEqualDiff('', err)
 
