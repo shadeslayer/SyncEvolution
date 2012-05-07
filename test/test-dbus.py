@@ -4070,6 +4070,10 @@ class TestCmdline(DBusUtil, unittest.TestCase):
 
         return (out, err, s.returncode)
 
+    def assertNoErrors(self, err):
+        '''check that error output is empty'''
+        self.assertEqualDiff('', err)
+
     cachedSSLServerCertificates = None
     def getSSLServerCertificates(self):
         '''Default SSLServerCertificates path as compiled into the SyncEvolution
@@ -4077,7 +4081,7 @@ class TestCmdline(DBusUtil, unittest.TestCase):
         if TestCmdline.cachedSSLServerCertificates == None:
             out, err, code = self.runCmdline(['--template', 'default',
                                               '--print-config'])
-            self.assertEqualDiff('', err)
+            self.assertNoErrors(err)
             m = re.search(r'^# SSLServerCertificates = (.*)\n', out, re.MULTILINE)
             self.assertTrue(m)
             TestCmdline.cachedSSLServerCertificates = m.group(1)
@@ -4591,7 +4595,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
     def assertSilent(self, out, err):
         if err != None and \
                 os.environ.get('SYNCEVOLUTION_DEBUG', None) == None:
-            self.assertEqualDiff('', err)
+            self.assertNoErrors(err)
         self.assertEqualDiff('', out)
 
     def doSetupScheduleWorld(self, shared):
@@ -4744,7 +4748,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                    "   Yahoo = contact and event sync using WebDAV, use for the 'target-config@yahoo' config\n"
         out, err, code = self.runCmdline(["--template", "? "])
         self.assertEqualDiff(expected, out)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
 
     @property("ENV", "SYNCEVOLUTION_TEMPLATE_DIR=" + xdg_root + "/templates")
     @property("debug", False)
@@ -4759,11 +4763,11 @@ spds/sources/todo/config.txt:# evolutionpassword =
                    "   Nokia_7210c = Template for Nokia S40 series Phone    100%\n" \
                    "   SyncEvolution_Client = SyncEvolution server side template    40%\n"
         self.assertEqualDiff(expected, out)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
 
         out, err, code = self.runCmdline(["--template", "?nokia"], env)
         self.assertEqualDiff(expected, out)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
 
         out, err, code = self.runCmdline(["--template", "?7210c"], env)
         expected = "Available configuration templates (clients):\n" \
@@ -4771,7 +4775,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                    "   Nokia_7210c = Template for Nokia S40 series Phone    60%\n" \
                    "   SyncEvolution_Client = SyncEvolution server side template    20%\n"
         self.assertEqualDiff(expected, out)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
 
         out, err, code = self.runCmdline(["--template", "?syncevolution client"], env)
         expected = "Available configuration templates (clients):\n" \
@@ -4779,7 +4783,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                    "   SyncEvolution_Client = SyncEvolution server side template    100%\n" \
                    "   Nokia_7210c = Template for Nokia S40 series Phone    40%\n"
         self.assertEqualDiff(expected, out)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
 
     @property("debug", False)
     def testPrintServers(self):
@@ -4795,7 +4799,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                    "   scheduleworld = " + os.path.abspath(self.configdir) + "/default/peers/scheduleworld\n" \
                    "   synthesis = " + os.path.abspath(self.configdir) + "/default/peers/synthesis\n"
         self.assertEqualDiff(expected, out)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
 
     @property("debug", False)
     def testPrintConfig(self):
@@ -4851,7 +4855,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                                           "syncURL=foo",
                                           "database=Personal",
                                           "--source-property", "sync=disabled"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         expected = filterConfig(internalToIni(self.ScheduleWorldConfig()))
         expected = expected.replace("syncURL = http://sync.scheduleworld.com/funambol/ds",
                                     "syncURL = foo",
@@ -4870,7 +4874,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                                           "--sync-property", "syncURL=foo",
                                           "--source-property", "evolutionsource=Personal",
                                           "--source-property", "sync=disabled"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         expected = filterConfig(internalToIni(self.ScheduleWorldConfig()))
         expected = expected.replace("syncURL = http://sync.scheduleworld.com/funambol/ds",
                                     "syncURL = foo",
@@ -4938,19 +4942,19 @@ spds/sources/todo/config.txt:# evolutionpassword =
         # note that "backend" will be taken from the @default context
         # if one exists, so run this before setting up Funambol below
         out, err, code = self.runCmdline(["--print-config", "--template", "google calendar"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff(googlecaldav,
                              removeComments(self.removeRandomUUID(filterConfig(out))))
 
         out, err, code = self.runCmdline(["--print-config", "--template", "yahoo"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff(yahoo,
                              removeComments(self.removeRandomUUID(filterConfig(out))))
 
         self.doSetupFunambol(False)
 
         out, err, code = self.runCmdline(["--print-config", "--template", "scheduleworld"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # deviceId must be the one from Funambol
         self.assertIn("deviceId = fixed-devid", out)
         filtered = injectValues(filterConfig(out))
@@ -4960,7 +4964,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
         self.assertTrue(len(out) > len(filtered))
 
         out, err, code = self.runCmdline(["--print-config", "funambol"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff(filterConfig(internalToIni(self.FunambolConfig())),
                              injectValues(filterConfig(out)))
 
@@ -5124,7 +5128,7 @@ sources/xyz/config.ini:# databasePassword = """)
         self.assertSilent(out, err)
 
         out, err, code = self.runCmdline(["--print-config", "target-config@my-yahoo"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         davenabled = self.isWebDAVEnabled()
         if davenabled:
             self.assertEqualDiff(yahoo,
@@ -5139,7 +5143,7 @@ sources/xyz/config.ini:# databasePassword = """)
         self.assertSilent(out, err)
 
         out, err, code = self.runCmdline(["--print-config", "target-config@google-calendar"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         if davenabled:
             self.assertEqualDiff(googlecaldav,
                                  removeComments(self.removeRandomUUID(filterConfig(out))))
@@ -5177,7 +5181,7 @@ sources/xyz/config.ini:# databasePassword = """)
 
     def printConfig(self, server):
         out, err, code = self.runCmdline(["--print-config", server])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         return out
 
     def doConfigure(self, config, prefix):
@@ -5367,14 +5371,14 @@ databaseUser = evolutionuser (no default, shared), databasePassword = evolutionp
 
         out, err, code = self.runCmdline(["--sync-property", "?"],
                                          sessionFlags=None)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # WORKAROUND-----------------------vvvvv
         self.assertEqualDiff(syncproperties[:-1],
                              filterIndented(out))
 
         out, err, code = self.runCmdline(["--source-property", "?"],
                                          sessionFlags=None)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # WORKAROUND-------------------------vvvvv
         self.assertEqualDiff(sourceproperties[:-1],
                              filterIndented(out))
@@ -5382,7 +5386,7 @@ databaseUser = evolutionuser (no default, shared), databasePassword = evolutionp
         out, err, code = self.runCmdline(["--source-property", "?",
                                           "--sync-property", "?"],
                                          sessionFlags=None)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # WORKAROUND------------------------------------------vvvvv
         self.assertEqualDiff(sourceproperties + syncproperties[:-1],
                              filterIndented(out))
@@ -5390,28 +5394,28 @@ databaseUser = evolutionuser (no default, shared), databasePassword = evolutionp
         out, err, code = self.runCmdline(["--sync-property", "?",
                                           "--source-property", "?"],
                                          sessionFlags=None)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # WORKAROUND------------------------------------------vvvvv
         self.assertEqualDiff(syncproperties + sourceproperties[:-1],
                              filterIndented(out))
 
         out, err, code = self.runCmdline(["--source-property", "sync=?"],
                                          sessionFlags=None)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # WORKAROUND---------------------------------------vvvvv
         self.assertEqualDiff("'--source-property sync=?'\n"[:-1],
                              filterIndented(out))
 
         out, err, code = self.runCmdline(["sync=?"],
                                          sessionFlags=None)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # WORKAROUND---------------------vvvvv
         self.assertEqualDiff("'sync=?'\n"[:-1],
                              filterIndented(out))
 
         out, err, code = self.runCmdline(["syncURL=?"],
                                          sessionFlags=None)
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # WORKAROUND------------------------vvvvv
         self.assertEqualDiff("'syncURL=?'\n"[:-1],
                              filterIndented(out))
@@ -5655,7 +5659,7 @@ sources/calendar/config.ini:# databasePassword =
         '''TestCmdline.testPrintDatabases - print some databases'''
         # full output
         out, err, code = self.runCmdline(["--print-databases"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         # exact output varies, do not test
 
         haveEDS = False
@@ -5666,7 +5670,7 @@ sources/calendar/config.ini:# databasePassword =
         else:
             # enabled, no error, one entry
             haveEDS = True
-            self.assertEqualDiff('', err)
+            self.assertNoErrors(err)
             self.assertTrue(out.startswith("evolution-contacts:\n"))
             entries = 0
             lines = out.splitlines()
@@ -5679,7 +5683,7 @@ sources/calendar/config.ini:# databasePassword =
             out, err, code = self.runCmdline(["--configure", "backend=evolution-contacts", "@foo-config", "bar-source"])
             self.assertSilent(out, err)
             out, err, code = self.runCmdline(["--print-databases", "@foo-config", "bar-source"])
-            self.assertEqualDiff('', err)
+            self.assertNoErrors(err)
             self.assertTrue(out.startswith("@foo-config/bar-source:\n"))
             entries = 0
             lines = out.splitlines()
@@ -6174,7 +6178,7 @@ END:VCARD
         out, err, code = self.runCmdline(["--print-items",
                                           "foo",
                                           "bar"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff("1\n2\n", out)
 
         # alternatively just specify enough parameters without the
@@ -6183,7 +6187,7 @@ END:VCARD
                                           "backend=file",
                                           "database=file://" + xdg_root + "/addressbook",
                                           "databaseFormat=text/vcard"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff("1\n2\n", out)
 
         # export all
@@ -6191,13 +6195,13 @@ END:VCARD
                                           "backend=file",
                                           "database=file://" + xdg_root + "/addressbook",
                                           "databaseFormat=text/vcard"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff(john + "\n" + joan, out)
 
         # export all via config
         out, err, code = self.runCmdline(["--export", "-",
                                           "foo", "bar"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff(john + "\n" + joan, out)
 
         # export one
@@ -6206,13 +6210,13 @@ END:VCARD
                                           "database=file://" + xdg_root + "/addressbook",
                                           "databaseFormat=text/vcard",
                                           "--luids", "1"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff(john, out)
 
         # export one via config
         out, err, code = self.runCmdline(["--export", "-",
                                           "foo", "bar", "1"])
-        self.assertEqualDiff('', err)
+        self.assertNoErrors(err)
         self.assertEqualDiff(john, out)
 
         # Copied from C++ test:
