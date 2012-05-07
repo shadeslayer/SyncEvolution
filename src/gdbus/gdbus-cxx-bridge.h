@@ -1211,7 +1211,9 @@ template<class V> struct dbus_traits< DBusArray<V> > : public dbus_traits_base
         DBusMessageIter sub;
         dbus_message_iter_recurse(&iter, &sub);
         int type = dbus_message_iter_get_arg_type(&sub);
-        if (type != dbus_traits<V>::dbus_type) {
+        // type is zero for empty arrays?!
+        if (type &&
+            type != dbus_traits<V>::dbus_type) {
             throw std::runtime_error("invalid argument");
         }
         int nelements;
@@ -1220,6 +1222,10 @@ template<class V> struct dbus_traits< DBusArray<V> > : public dbus_traits_base
         array.first = nelements;
         array.second = data;
         dbus_message_iter_next(&iter);
+        if (!type && nelements) {
+            // non-empty array of invalid type?!
+            throw std::runtime_error("could not decode DBusArray: type is zero, but array isn't empty");
+        }
     }
 
     static void append(DBusMessageIter &iter, arg_type array)
