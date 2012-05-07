@@ -385,7 +385,7 @@ class DBusUtil(Timeout):
         else:
             return default
 
-    def runTest(self, result, own_xdg=True, serverArgs=[], own_home=False):
+    def runTest(self, result, own_xdg=True, serverArgs=[], own_home=False, defTimeout=20):
         """Starts the D-Bus server and dbus-monitor before the test
         itself. After the test run, the output of these two commands
         are added to the test's failure, if any. Otherwise the output
@@ -474,6 +474,7 @@ class DBusUtil(Timeout):
                 if out:
                     # process exists, but might still be loading,
                     # so give it some more time
+                    print "found syncevo-dbus-server, starting test in two seconds:\n", out
                     time.sleep(2)
                     break
         else:
@@ -509,7 +510,7 @@ class DBusUtil(Timeout):
         # the function definition to see whether it comes
         # with a non-default timeout, otherwise use a 20 second
         # timeout.
-        timeout = self.getTestProperty("timeout", 20)
+        timeout = self.getTestProperty("timeout", defTimeout)
         timeout_handle = None
         if timeout and not debugger:
             def timedout():
@@ -4001,7 +4002,11 @@ class TestCmdline(DBusUtil, unittest.TestCase):
         self.configdir = xdg_root + "/config/syncevolution"
 
     def run(self, result):
-        self.runTest(result, own_xdg=True, own_home=True)
+        # Runtime varies a lot when using valgrind, because
+        # of the need to check an additional process. Allow
+        # a lot more time when running under valgrind.
+        self.runTest(result, own_xdg=True, own_home=True,
+                     defTimeout=usingValgrind() and 600 or 20)
 
     def statusChanged(self, *args, **keywords):
         '''remember the command line session'''
