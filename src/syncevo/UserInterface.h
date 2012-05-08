@@ -80,6 +80,25 @@ class UserInterface {
     virtual std::string askPassword(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key) = 0;
 
     /**
+     * A helper function which interactively asks the user for
+     * a certain password. May throw errors. Final result will
+     * be returned via callbacks. Use this function in code which
+     * is currently inside glib event processing, because askPassword()
+     * might only work when it is allowed to invoke glib.
+     *
+     * @param passwordName the name of the password in the config file, such as 'proxyPassword'
+     * @param descr        A simple string explaining what the password is needed for,
+     *                     e.g. "SyncML server". This string alone has to be enough
+     *                     for the user to know what the password is for, i.e. the
+     *                     string has to be unique.
+     * @param key          the key used to retrieve password. Using this instead of ConfigNode is
+     *                     to make user interface independent on Configuration Tree
+     */
+    virtual void askPasswordAsync(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key,
+                                  const boost::function<void (const std::string &)> &success,
+                                  const boost::function<void ()> &failureException);
+
+    /**
      * A helper function which is used for user interface to save
      * a certain password. Currently possibly syncml server. May
      * throw errors.

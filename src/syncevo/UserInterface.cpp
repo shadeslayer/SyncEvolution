@@ -34,4 +34,16 @@ SavePasswordSignal &GetSavePasswordSignal()
     return savePasswordSignal;
 }
 
+void UserInterface::askPasswordAsync(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key,
+                                     const boost::function<void (const std::string &)> &success,
+                                     const boost::function<void ()> &failureException)
+{
+    try {
+        success(askPassword(passwordName, descr, key));
+    } catch (...) {
+        failureException();
+    }
+}
+
+
 SE_END_CXX
