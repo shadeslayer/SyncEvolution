@@ -22,6 +22,7 @@ import unittest
 import subprocess
 import time
 import os
+import errno
 import signal
 import shutil
 import copy
@@ -403,8 +404,16 @@ class DBusUtil(Timeout):
         DBusUtil.quit_events = []
         DBusUtil.reply = None
 
-        kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server dbus-monitor >/dev/null 2>&1'", shell=True)
+        kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server syncevo-local-sync syncevo-dbus-helper dbus-monitor >/dev/null 2>&1'", shell=True)
         kill.communicate()
+
+        # collect zombies
+        try:
+            while os.waitpid(-1, os.WNOHANG)[0]:
+                pass
+        except OSError, ex:
+            if ex.errno != errno.ECHILD:
+                raise ex
 
         """own_xdg is saved in self for we use this flag to check whether
         to copy the reference directory tree."""
@@ -535,7 +544,7 @@ class DBusUtil(Timeout):
                 delay = 60
             else:
                 delay = 20
-            if not ShutdownSubprocess(DBusUtil.pserver, delay):
+            if DBusUtil.pserver and not ShutdownSubprocess(DBusUtil.pserver, delay):
                 print "   syncevo-dbus-server had to be killed with SIGKILL"
                 result.errors.append((self,
                                       "syncevo-dbus-server had to be killed with SIGKILL"))
@@ -562,7 +571,8 @@ class DBusUtil(Timeout):
         # detect the expected "killed by signal TERM" both when
         # running syncevo-dbus-server directly (negative value) and
         # when valgrindcheck.sh returns the error code 128 + 15 = 143
-        if DBusUtil.pserver.returncode and \
+        if DBusUtil.pserver and \
+           DBusUtil.pserver.returncode and \
            DBusUtil.pserver.returncode != 128 + 15 and \
            DBusUtil.pserver.returncode != -15:
             # create a new failure specifically for the server
@@ -590,7 +600,7 @@ class DBusUtil(Timeout):
                 # must be syncevo-dbus-server
                 res = match.group(1)
                 if 'syncevo-dbus-server' in res:
-                    return res
+                    return (res, pid)
                 # not found, try children
                 for process in os.listdir('/proc'):
                     try:
@@ -604,13 +614,20 @@ class DBusUtil(Timeout):
                         # ignore all errors
                         pass
         # no result
-        return ""
+        return None
 
     def serverExecutable(self):
         """returns full path of currently running syncevo-dbus-server binary"""
         res = self.serverExecutableHelper(DBusUtil.pserver.pid)
         self.assertTrue(res)
-        return res
+        return res[0]
+
+    def serverPid(self):
+        """PID of syncevo-dbus-server, None if not running. Works regardless whether it is
+        started directly or with a wrapper script like valgrindcheck.sh."""
+        res = self.serverExecutableHelper(DBusUtil.pserver.pid)
+        self.assertTrue(res)
+        return res[1]
 
     def setUpServer(self):
         self.server = dbus.Interface(bus.get_object('org.syncevolution',
@@ -3338,6 +3355,9 @@ class TestMultipleConfigs(unittest.TestCase, DBusUtil):
 class TestLocalSync(unittest.TestCase, DBusUtil):
     """Tests involving local sync."""
 
+    def run(self, result):
+        self.runTest(result)
+
     def setUp(self):
         self.setUpServer()
 
@@ -3426,8 +3446,74 @@ END:VCARD''')
             self.assertNotIn("error", report) # ... but without error message
             self.assertEqual(report["source-addressbook-status"], "0") # unknown status for source (aborted early)
 
-    def run(self, result):
-        self.runTest(result)
+    @timeout(200)
+    def testParentFailure(self):
+        """TestLocalSync.testParentFailure - check that child detects when parent dies"""
+        self.setUpConfigs(childPassword="-")
+        self.setUpListeners(self.sessionpath)
+        self.lastState = "unknown"
+        pid = self.serverPid()
+        serverPid = DBusUtil.pserver.pid
+        def infoRequest(id, session, state, handler, type, params):
+            if state == "request":
+                self.assertEqual(self.lastState, "unknown")
+                self.lastState = "request"
+                # kill syncevo-dbus-server
+                if pid != serverPid:
+                    logging.printf('killing syncevo-dbus-server wrapper with pid %d', serverPid)
+                    os.kill(serverPid, signal.SIGKILL)
+                logging.printf('killing syncevo-dbus-server with pid %d', pid)
+                os.kill(pid, signal.SIGKILL)
+                loop.quit()
+        dbusSignal = bus.add_signal_receiver(infoRequest,
+                                             'InfoRequest',
+                                             'org.syncevolution.Server',
+                                             self.server.bus_name,
+                                             None,
+                                             byte_arrays=True,
+                                             utf8_strings=True)
+
+        try:
+            self.session.Sync("slow", {})
+            loop.run()
+        finally:
+            dbusSignal.remove()
+
+        # Remove syncevo-dbus-server zombie process(es).
+        try:
+            while os.waitpid(-1, os.WNOHANG)[0]:
+                pass
+        except OSError, ex:
+            if ex.errno != errno.ECHILD:
+                raise ex
+        DBusUtil.pserver = None
+
+        # Give syncevo-dbus-helper and syncevo-local-sync some time to shut down.
+        time.sleep(usingValgrind() and 60 or 10)
+
+        # Now no processes should be left in the process group
+        # of the syncevo-dbus-server.
+        ps = subprocess.Popen(['ps', 'x', '--no-headers', '-o', 'pgid,pid,args'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        out, err = ps.communicate()
+        self.assertEqual('', err)
+        children = []
+        for line in out.splitlines():
+            pgid, command = line.lstrip().split(' ', 1)
+            if int(pgid) == pid:
+                children.append(command)
+        self.assertEqual([], children)
+
+        # try:
+        #     os.kill(-pid, signal.SIGTERM)
+        #     self.fail('found some unexpected child process of syncevo-dbus-server')
+        # except OSError, ex:
+        #     if ex.errno != errno.ECHILD:
+        #         raise ex
+
+    # TODO: test that password timeout and password cancelation are
+    # correctly recognized during a sync
 
 class TestFileNotify(unittest.TestCase, DBusUtil):
     """syncevo-dbus-server must stop if one of its files mapped into
