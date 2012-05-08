@@ -28,6 +28,37 @@ SE_BEGIN_CXX
 
 static const std::string ForkExecEnvVar("SYNCEVOLUTION_FORK_EXEC=");
 
+// internal D-Bus API: only used to monitor parent by having one method call pending
+static const std::string FORKEXEC_PARENT_PATH("/org/syncevolution/forkexec/parent");
+static const std::string FORKEXEC_PARENT_IFACE("org.syncevolution.forkexec.parent");
+static const std::string FORKEXEC_PARENT_DESTINATION = "direct.peer"; // doesn't matter, routing is off
+
+/**
+ * The only purpose is to accept method calls and never reply.
+ * When the parent destructs or gets killed, the caller (= child)
+ * will notice because the method call fails, which ForkExecChild
+ * translates into a "parent died" signal.
+ */
+class ForkExecParentDBusAPI : public GDBusCXX::DBusObjectHelper
+{
+public:
+    ForkExecParentDBusAPI(const GDBusCXX::DBusConnectionPtr &conn) :
+        GDBusCXX::DBusObjectHelper(conn,
+                                   FORKEXEC_PARENT_PATH,
+                                   FORKEXEC_PARENT_IFACE)
+    {
+        add(this, &ForkExecParentDBusAPI::watch, "Watch");
+        activate();
+    }
+
+private:
+    void watch(const boost::shared_ptr< GDBusCXX::Result0> &result)
+    {
+        m_watches.push_back(result);
+    }
+    std::list< boost::shared_ptr< GDBusCXX::Result0> > m_watches;
+};
+
 ForkExec::ForkExec()
 {
 }
@@ -329,6 +360,7 @@ void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) thro
         SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: child %s has connected",
                      m_helper.c_str());
         m_hasConnected = true;
+        m_api.reset(new ForkExecParentDBusAPI(conn));
         m_onConnect(conn);
     } catch (...) {
         std::string explanation;
@@ -371,6 +403,7 @@ void ForkExecParent::stop(int signal)
     if (signal && signal != SIGINT && signal != SIGTERM) {
         ::kill(m_childPid, signal);
     }
+    m_api.reset();
 }
 
 void ForkExecParent::kill()
@@ -383,9 +416,11 @@ void ForkExecParent::kill()
     SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with SIGKILL",
                  m_helper.c_str());
     ::kill(m_childPid, SIGKILL);
+    m_api.reset();
 }
 
-ForkExecChild::ForkExecChild()
+ForkExecChild::ForkExecChild() :
+    m_state(IDLE)
 {
 }
 
@@ -397,6 +432,9 @@ boost::shared_ptr<ForkExecChild> ForkExecChild::create()
 
 void ForkExecChild::connect()
 {
+    // set error state, clear it later
+    m_state = DISCONNECTED;
+
     const char *address = getParentDBusAddress();
     if (!address) {
         SE_THROW("cannot connect to parent, was not forked");
@@ -411,8 +449,34 @@ void ForkExecChild::connect()
     if (!conn) {
         dbusError.throwFailure("connecting to server");
     }
+
+    m_state = CONNECTED;
+
+    // start watching connection
+    class Parent : public GDBusCXX::DBusRemoteObject
+    {
+    public:
+        Parent(const GDBusCXX::DBusConnectionPtr &conn) :
+            GDBusCXX::DBusRemoteObject(conn,
+                                       FORKEXEC_PARENT_PATH,
+                                       FORKEXEC_PARENT_IFACE,
+                                       FORKEXEC_PARENT_DESTINATION),
+            m_watch(*this, "Watch")
+        {}
+
+        GDBusCXX::DBusClientCall0 m_watch;
+    } parent(conn);
+    parent.m_watch.start(boost::bind(&ForkExecChild::connectionLost, this));
+
     m_onConnect(conn);
     dbus_bus_connection_undelay(conn);
+}
+
+void ForkExecChild::connectionLost()
+{
+    SE_LOG_DEBUG(NULL, NULL, "lost connection to parent");
+    m_state = DISCONNECTED;
+    m_onQuit();
 }
 
 bool ForkExecChild::wasForked()

@@ -36,6 +36,8 @@
 
 SE_BEGIN_CXX
 
+class ForkExecParentDBusAPI;
+
 /**
  * Utility class which starts a specific helper binary in a second
  * process. The helper binary is identified via its base name like
@@ -205,6 +207,7 @@ class ForkExecParent : public ForkExec
     gint m_status;
     bool m_sigIntSent;
     bool m_sigTermSent;
+    boost::scoped_ptr<class ForkExecParentDBusAPI> m_api;
 
     /** invoke m_onOutput while reading from a single stream */
     bool m_mergedStdoutStderr;
@@ -257,6 +260,20 @@ class ForkExecChild : public ForkExec
     void connect();
 
     /**
+     * Called when the parent has quit.
+     */
+    typedef boost::signals2::signal<void ()> OnQuit;
+    OnQuit m_onQuit;
+
+    enum State {
+        IDLE,         /**< created, connect() not called yet */
+        CONNECTING,   /**< connect() called but no connection yet */
+        CONNECTED,    /**< connection established */
+        DISCONNECTED  /**< lost connection or failed to establish it */
+    };
+    State getState() const { return m_state; }
+
+    /**
      * true if the current process was created by ForkExecParent
      */
     static bool wasForked();
@@ -265,6 +282,8 @@ class ForkExecChild : public ForkExec
     ForkExecChild();
 
     static const char *getParentDBusAddress();
+    void connectionLost();
+    State m_state;
 };
 
 SE_END_CXX
