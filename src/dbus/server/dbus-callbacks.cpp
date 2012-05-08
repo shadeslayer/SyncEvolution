@@ -38,7 +38,14 @@ uint32_t dbusErrorCallback(const boost::shared_ptr<GDBusCXX::Result> &result)
         // let D-Bus parent log the error
         std::string explanation;
         uint32_t error = Exception::handle(explanation, HANDLE_EXCEPTION_NO_ERROR);
-        result->failed(GDBusCXX::dbus_error(SessionCommon::SERVER_IFACE, explanation));
+        try {
+            result->failed(GDBusCXX::dbus_error(SessionCommon::SERVER_IFACE, explanation));
+        } catch (...) {
+            // Ignore failures while sending the reply. This can
+            // happen when our caller dropped the connection before we
+            // could reply.
+            Exception::handle(HANDLE_EXCEPTION_NO_ERROR);
+        }
         return error;
     }
     // keep compiler happy
