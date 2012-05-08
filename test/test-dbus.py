@@ -105,6 +105,20 @@ atexit.register(os.kill, child, 9)
 bus = dbus.SessionBus()
 loop = gobject.MainLoop()
 
+# log to .dbus.log of a test
+class Logging(dbus.service.Object):
+    def __init__(self):
+        dbus.service.Object.__init__(self, bus, '/test/dbus/py')
+
+    @dbus.service.signal(dbus_interface='t.d.p',
+                         signature='s')
+    def log(self, str):
+        pass
+
+    def printf(self, format, *args):
+        self.log(format % args)
+logging = Logging()
+
 # Bluez default adapter
 bt_adaptor = "/org/bluez/1036/hci0"
 
