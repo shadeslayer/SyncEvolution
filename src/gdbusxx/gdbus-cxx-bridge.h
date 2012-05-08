@@ -4201,13 +4201,19 @@ protected:
     const std::string m_method;
     const DBusConnectionPtr m_conn;
 
-    static void dbusCallback (GObject *src_obj, GAsyncResult *res, void *user_data)
+    static void dbusCallback (GObject *src_obj, GAsyncResult *res, void *user_data) throw ()
     {
-        CallbackData *data = static_cast<CallbackData *>(user_data);
+        try {
+            CallbackData *data = static_cast<CallbackData *>(user_data);
 
-        GError *err = NULL;
-        DBusMessagePtr reply(g_dbus_connection_send_message_with_reply_finish(data->m_conn.get(), res, &err));
-        CallTraits::handleMessage(reply, data, err);
+            GError *err = NULL;
+            DBusMessagePtr reply(g_dbus_connection_send_message_with_reply_finish(data->m_conn.get(), res, &err));
+            CallTraits::handleMessage(reply, data, err);
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in dbusCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in dbusCallback()");
+        }
     }
 
     void prepare(DBusMessagePtr &msg)
@@ -4599,10 +4605,16 @@ class SignalWatch0 : public SignalWatch< boost::function<void (void)> >
                                  const gchar *interface,
                                  const gchar *signal,
                                  GVariant *params,
-                                 gpointer data)
+                                 gpointer data) throw ()
     {
-        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
-        cb();
+        try {
+            const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+            cb();
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in internalCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in internalCallback()");
+        }
     }
 
     void activate(const Callback_t &callback)
@@ -4630,16 +4642,22 @@ class SignalWatch1 : public SignalWatch< boost::function<void (const A1 &)> >
                                  const gchar *interface,
                                  const gchar *signal,
                                  GVariant *params,
-                                 gpointer data)
+                                 gpointer data) throw()
     {
-        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+        try {
+            const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
-        typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A1>::host_type a1;
 
-        GVariantIter iter;
-        g_variant_iter_init(&iter, params);
-        dbus_traits<A1>::get(conn, NULL, iter, a1);
-        cb(a1);
+            GVariantIter iter;
+            g_variant_iter_init(&iter, params);
+            dbus_traits<A1>::get(conn, NULL, iter, a1);
+            cb(a1);
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in internalCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in internalCallback()");
+        }
     }
 
     void activate(const Callback_t &callback)
@@ -4667,18 +4685,24 @@ class SignalWatch2 : public SignalWatch< boost::function<void (const A1 &, const
                                  const gchar *interface,
                                  const gchar *signal,
                                  GVariant *params,
-                                 gpointer data)
+                                 gpointer data) throw ()
     {
-        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+        try {
+            const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
 
-        GVariantIter iter;
-        g_variant_iter_init(&iter, params);
-        dbus_traits<A1>::get(conn, NULL, iter, a1);
-        dbus_traits<A2>::get(conn, NULL, iter, a2);
-        cb(a1, a2);
+            GVariantIter iter;
+            g_variant_iter_init(&iter, params);
+            dbus_traits<A1>::get(conn, NULL, iter, a1);
+            dbus_traits<A2>::get(conn, NULL, iter, a2);
+            cb(a1, a2);
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in internalCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in internalCallback()");
+        }
     }
 
     void activate(const Callback_t &callback)
@@ -4707,23 +4731,26 @@ class SignalWatch3 : public SignalWatch< boost::function<void (const A1 &, const
                                  const gchar *interface,
                                  const gchar *signal,
                                  GVariant *params,
-                                 gpointer data)
+                                 gpointer data) throw ()
     {
-        /* if (SignalWatch<Callback_t>::isMatched(msg, data) == FALSE) { */
-        /*     return TRUE; */
-        /* } */
-        const Callback_t &cb =static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+        try {
+            const Callback_t &cb =static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
 
-        GVariantIter iter;
-        g_variant_iter_init(&iter, params);
-        dbus_traits<A1>::get(conn, NULL, iter, a1);
-        dbus_traits<A2>::get(conn, NULL, iter, a2);
-        dbus_traits<A3>::get(conn, NULL, iter, a3);
-        cb(a1, a2, a3);
+            GVariantIter iter;
+            g_variant_iter_init(&iter, params);
+            dbus_traits<A1>::get(conn, NULL, iter, a1);
+            dbus_traits<A2>::get(conn, NULL, iter, a2);
+            dbus_traits<A3>::get(conn, NULL, iter, a3);
+            cb(a1, a2, a3);
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in internalCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in internalCallback()");
+        }
     }
 
     void activate(const Callback_t &callback)
@@ -4755,23 +4782,28 @@ class SignalWatch4 : public SignalWatch< boost::function<void (const A1 &, const
                                  const gchar *interface,
                                  const gchar *signal,
                                  GVariant *params,
-                                 gpointer data)
+                                 gpointer data) throw ()
     {
-        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+        try {
+            const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
 
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-
-        GVariantIter iter;
-        g_variant_iter_init(&iter, params);
-        dbus_traits<A1>::get(conn, NULL, iter, a1);
-        dbus_traits<A2>::get(conn, NULL, iter, a2);
-        dbus_traits<A3>::get(conn, NULL, iter, a3);
-        dbus_traits<A4>::get(conn, NULL, iter, a4);
-        cb(a1, a2, a3, a4);
+            GVariantIter iter;
+            g_variant_iter_init(&iter, params);
+            dbus_traits<A1>::get(conn, NULL, iter, a1);
+            dbus_traits<A2>::get(conn, NULL, iter, a2);
+            dbus_traits<A3>::get(conn, NULL, iter, a3);
+            dbus_traits<A4>::get(conn, NULL, iter, a4);
+            cb(a1, a2, a3, a4);
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in internalCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in internalCallback()");
+        }
     }
 
     void activate(const Callback_t &callback)
@@ -4803,23 +4835,28 @@ class SignalWatch5 : public SignalWatch< boost::function<void (const A1 &, const
                                  GVariant *params,
                                  gpointer data)
     {
-        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+        try {
+            const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
 
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-
-        GVariantIter iter;
-        g_variant_iter_init(&iter, params);
-        dbus_traits<A1>::get(conn, NULL, iter, a1);
-        dbus_traits<A2>::get(conn, NULL, iter, a2);
-        dbus_traits<A3>::get(conn, NULL, iter, a3);
-        dbus_traits<A4>::get(conn, NULL, iter, a4);
-        dbus_traits<A5>::get(conn, NULL, iter, a5);
-        cb(a1, a2, a3, a4, a5);
+            GVariantIter iter;
+            g_variant_iter_init(&iter, params);
+            dbus_traits<A1>::get(conn, NULL, iter, a1);
+            dbus_traits<A2>::get(conn, NULL, iter, a2);
+            dbus_traits<A3>::get(conn, NULL, iter, a3);
+            dbus_traits<A4>::get(conn, NULL, iter, a4);
+            dbus_traits<A5>::get(conn, NULL, iter, a5);
+            cb(a1, a2, a3, a4, a5);
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in internalCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in internalCallback()");
+        }
     }
 
     void activate(const Callback_t &callback)
@@ -4852,26 +4889,32 @@ class SignalWatch6 : public SignalWatch< boost::function<void (const A1 &, const
                                  const gchar *interface,
                                  const gchar *signal,
                                  GVariant *params,
-                                 gpointer data)
+                                 gpointer data) throw ()
     {
-        const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
+        try {
+            const Callback_t &cb = static_cast< SignalWatch<Callback_t> *>(data)->getCallback();
 
-        typename dbus_traits<A1>::host_type a1;
-        typename dbus_traits<A2>::host_type a2;
-        typename dbus_traits<A3>::host_type a3;
-        typename dbus_traits<A4>::host_type a4;
-        typename dbus_traits<A5>::host_type a5;
-        typename dbus_traits<A6>::host_type a6;
+            typename dbus_traits<A1>::host_type a1;
+            typename dbus_traits<A2>::host_type a2;
+            typename dbus_traits<A3>::host_type a3;
+            typename dbus_traits<A4>::host_type a4;
+            typename dbus_traits<A5>::host_type a5;
+            typename dbus_traits<A6>::host_type a6;
 
-        GVariantIter iter;
-        g_variant_iter_init(&iter, params);
-        dbus_traits<A1>::get(conn, NULL, iter, a1);
-        dbus_traits<A2>::get(conn, NULL, iter, a2);
-        dbus_traits<A3>::get(conn, NULL, iter, a3);
-        dbus_traits<A4>::get(conn, NULL, iter, a4);
-        dbus_traits<A5>::get(conn, NULL, iter, a5);
-        dbus_traits<A6>::get(conn, NULL, iter, a6);
-        cb(a1, a2, a3, a4, a5, a6);
+            GVariantIter iter;
+            g_variant_iter_init(&iter, params);
+            dbus_traits<A1>::get(conn, NULL, iter, a1);
+            dbus_traits<A2>::get(conn, NULL, iter, a2);
+            dbus_traits<A3>::get(conn, NULL, iter, a3);
+            dbus_traits<A4>::get(conn, NULL, iter, a4);
+            dbus_traits<A5>::get(conn, NULL, iter, a5);
+            dbus_traits<A6>::get(conn, NULL, iter, a6);
+            cb(a1, a2, a3, a4, a5, a6);
+        } catch (const std::exception &ex) {
+            g_error("unexpected exception caught in internalCallback(): %s", ex.what());
+        } catch (...) {
+            g_error("unexpected exception caught in internalCallback()");
+        }
     }
 
     void activate(const Callback_t &callback)
