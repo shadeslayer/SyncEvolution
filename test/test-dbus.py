@@ -2516,6 +2516,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         config = copy.deepcopy(self.config)
         config[""]["remoteDeviceId"] = "foo"
         config[""]["deviceId"] = "bar"
+        del config[""]["password"]
         for i in ("addressbook", "calendar", "todo", "memo"):
             source = config["source/" + i]
             source["database"] = source["database"] + ".server"
@@ -2529,6 +2530,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         config[""]["PeerIsClient"] = "1"
         config[""]["autoSync"] = "1"
         config[""]["autoSyncDelay"] = "0"
+        del config[""]["password"]
         # must be small enough (otherwise test runs a long time)
         # but not too small (otherwise the next sync already starts
         # before we can check the result and kill the daemon)
