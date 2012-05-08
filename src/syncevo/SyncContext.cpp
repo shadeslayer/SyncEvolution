@@ -3793,6 +3793,12 @@ SyncMLStatus SyncContext::doSync()
                     break;
                 }
             }
+
+            // Don't tell engine to abort when it already did.
+            if (aborting && stepCmd == sysync::STEPCMD_ABORT) {
+                stepCmd = sysync::STEPCMD_DONE;
+            }
+
             previousStepCmd = stepCmd;
             // loop until session done or aborted with error
         } catch (const BadSynthesisResult &result) {
@@ -3811,12 +3817,14 @@ SyncMLStatus SyncContext::doSync()
             } else {
                 Exception::handle(&status);
                 SE_LOG_DEBUG(NULL, NULL, "aborting after catching fatal error");
-                stepCmd = sysync::STEPCMD_ABORT;
+                // Don't tell engine to abort when it already did.
+                stepCmd = aborting ? sysync::STEPCMD_DONE : sysync::STEPCMD_ABORT;
             }
         } catch (...) {
             Exception::handle(&status);
             SE_LOG_DEBUG(NULL, NULL, "aborting after catching fatal error");
-            stepCmd = sysync::STEPCMD_ABORT;
+            // Don't tell engine to abort when it already did.
+            stepCmd = aborting ? sysync::STEPCMD_DONE : sysync::STEPCMD_ABORT;
         }
     } while (stepCmd != sysync::STEPCMD_DONE && stepCmd != sysync::STEPCMD_ERROR);
 
