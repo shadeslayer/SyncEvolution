@@ -418,6 +418,9 @@ class DBusUtil(Timeout):
         DBusUtil.quit_events = []
         DBusUtil.reply = None
 
+        # allow arbitrarily long diffs in Python unittest
+        self.maxDiff = None
+
         kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server syncevo-local-sync syncevo-dbus-helper dbus-monitor >/dev/null 2>&1'", shell=True)
         kill.communicate()
 
