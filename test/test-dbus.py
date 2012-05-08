@@ -347,11 +347,13 @@ class TimeoutTest:
 def TryKill(pid, signal):
     try:
         os.kill(pid, signal)
+        return True
     except OSError, ex:
         # might have quit in the meantime, deal with the race
         # condition
         if ex.errno != 3:
             raise ex
+    return False
 
 def ShutdownSubprocess(popen, timeout):
     start = time.time()
@@ -389,6 +391,7 @@ class DBusUtil(Timeout):
     quit_events = []
     reply = None
     pserver = None
+    pmonitor = None
     storedenv = {}
 
     def getTestProperty(self, key, default):
@@ -417,13 +420,12 @@ class DBusUtil(Timeout):
         DBusUtil.events = []
         DBusUtil.quit_events = []
         DBusUtil.reply = None
+        self.pserverpid = None
 
         # allow arbitrarily long diffs in Python unittest
         self.maxDiff = None
 
-        kill = subprocess.Popen("sh -c 'killall -9 syncevo-dbus-server syncevo-local-sync syncevo-dbus-helper dbus-monitor >/dev/null 2>&1'", shell=True)
-        kill.communicate()
-
+        self.killChildren(0)
         # collect zombies
         try:
             while os.waitpid(-1, os.WNOHANG)[0]:
@@ -472,9 +474,9 @@ class DBusUtil(Timeout):
         dbuslog = testname + ".dbus.log"
         syncevolog = testname + ".syncevo.log"
 
-        pmonitor = subprocess.Popen(monitor,
-                                    stdout=open(dbuslog, "w"),
-                                    stderr=subprocess.STDOUT)
+        self.pmonitor = subprocess.Popen(monitor,
+                                         stdout=open(dbuslog, "w"),
+                                         stderr=subprocess.STDOUT)
         
         if debugger:
             print "\n%s: %s\n" % (self.id(), self.shortDescription())
@@ -518,6 +520,10 @@ class DBusUtil(Timeout):
                 size = newsize
                 time.sleep(1)
 
+        # pserver.pid is not necessarily the pid of syncevo-dbus-server.
+        # It might be the child of the pserver process.
+        self.pserverpid = self.serverPid()
+
         numerrors = len(result.errors)
         numfailures = len(result.failures)
         if debugger:
@@ -553,26 +559,26 @@ class DBusUtil(Timeout):
         if debugger:
             # allow debugger to run as long as it is needed
             DBusUtil.pserver.communicate()
-        else:
-            # Force shutdown after a certain delay: how much time we grant
-            # the process depends on how much work it still needs to do
-            # after being asked to quit. valgrind leak checking can take
-            # a while.
-            if usingValgrind():
-                delay = 60
-            else:
-                delay = 20
-            if DBusUtil.pserver and not ShutdownSubprocess(DBusUtil.pserver, delay):
-                print "   syncevo-dbus-server had to be killed with SIGKILL"
-                result.errors.append((self,
-                                      "syncevo-dbus-server had to be killed with SIGKILL"))
+
+        # Find and kill all sub-processes except for dbus-monitor:
+        # first try SIGTERM, then if they don't respond, SIGKILL. The
+        # latter is an error. How much time we allow them between
+        # SIGTERM and SIGTERM depends on how much work still needs to
+        # be done after being asked to quit. valgrind leak checking
+        # can take a while.
+        unresponsive = self.killChildren(usingValgrind() and 60 or 20)
+        if unresponsive:
+            error = "/".join(unresponsive) + " had to be killed with SIGKILL"
+            print "   ", error
+            result.errors.append((self, error))
+
         serverout = open(syncevolog).read()
         if DBusUtil.pserver is not None and DBusUtil.pserver.returncode != -15:
             hasfailed = True
         if hasfailed:
             # give D-Bus time to settle down
             time.sleep(1)
-        if not ShutdownSubprocess(pmonitor, 5):
+        if not ShutdownSubprocess(self.pmonitor, 5):
             print "   dbus-monitor had to be killed with SIGKILL"
             result.errors.append((self,
                                   "dbus-monitor had to be killed with SIGKILL"))
@@ -606,6 +612,112 @@ class DBusUtil(Timeout):
     def isServerRunning(self):
         """True while the syncevo-dbus-server executable is still running"""
         return DBusUtil.pserver and DBusUtil.pserver.poll() == None
+
+    def getChildren(self):
+        '''Find all children of the current process (ppid = out pid,
+        in our process group, or in process group of known
+        children). Return mapping from pid to name.'''
+
+        # Any of the known children might have its own process group.
+        # syncevo-dbus-server definitely does (we create it like that);
+        # that allows us to find its forked processes.
+        pgids = []
+        if self.pmonitor:
+            pgids.append(self.pmonitor.pid)
+        if self.pserverpid:
+            pgids.append(self.pserverpid)
+
+        # Maps from pid to name, process ID, process group ID.
+        procs = {}
+        statre = re.compile(r'^\d+ \((?P<name>.*?)\) \S (?P<ppid>\d+) (?P<pgid>\d+)')
+        for process in os.listdir('/proc'):
+            try:
+                pid = int(process)
+                stat = open('/proc/%d/stat' % pid).read()
+                m = statre.search(stat)
+                if m:
+                    procs[pid] = m.groupdict()
+                    for i in ('ppid', 'pgid'):
+                        procs[pid][i] = int(procs[pid][i])
+            except:
+                # ignore all errors
+                pass
+        logging.printf("found processes: %s", procs)
+        # Now determine direct or indirect children.
+        children = {}
+        mypid = os.getpid()
+        def isChild(pid):
+            if pid == mypid:
+                return False
+            if not procs.get(pid, None):
+                return False
+            return procs[pid]['ppid'] == mypid or \
+                procs[pid]['pgid'] in pgids or \
+                isChild(procs[pid]['ppid'])
+        for pid, info in procs.iteritems():
+            if isChild(pid):
+                children[pid] = info['name']
+        # Exclude dbus-monitor and forked test-dbus.py, they are handled separately.
+        if self.pmonitor:
+            del children[self.pmonitor.pid]
+        del children[child]
+        logging.printf("found children: %s", children)
+        return children
+
+    def killChildren(self, delay):
+        '''Find all children of the current process and kill them. First send SIGTERM,
+        then after a grace period SIGKILL.'''
+        children = self.getChildren()
+        # First pass with SIGTERM?
+        if delay:
+            for pid, name in children.iteritems():
+                logging.printf("sending SIGTERM to %d %s", pid, name)
+                TryKill(pid, signal.SIGTERM)
+        start = time.time()
+        logging.printf("starting to wait for process termination at %s", time.asctime(time.localtime(start)))
+        while delay and start + delay >= time.time():
+            # Check if any process has quit, remove from list.
+            pids = copy.deepcopy(children)
+            def checkKnown(p):
+                if (p):
+                    if p.pid in pids:
+                        del pids[p.pid]
+                    if p.poll() != None and p.pid in children:
+                        logging.printf("known process %d %s has quit at %s",
+                                       p.pid, children[p.pid], time.asctime())
+                        del children[p.pid]
+            checkKnown(self.pserver)
+            for pid, name in pids.iteritems():
+                try:
+                    res = os.waitpid(pid, os.WNOHANG)
+                    if res[0]:
+                        # got result, remove process
+                        logging.printf("got status for process %d %s at %s",
+                                       pid, name, time.asctime())
+                        del children[pid]
+                except OSError, ex:
+                    if ex.errno == errno.ECHILD:
+                        # someone else must have been faster, also okay
+                        logging.printf("process %d %s gone at %s",
+                                       pid, name, time.asctime())
+                        del children[pid]
+                    else:
+                        raise ex
+            if not children:
+                # All children quit normally.
+                logging.printf("all process gone at %s",
+                               time.asctime())
+                return []
+        # Force killing of remaining children. It's still possible
+        # that one of them quits before we get around to sending the
+        # signal.
+        logging.printf("starting to kill unresponsive processes at %s", time.asctime())
+        killed = []
+        for pid, name in children.iteritems():
+            if TryKill(pid, signal.SIGKILL):
+                logging.printf("killed %d %s", pid, name)
+                killed.append("%d %s" % (pid, name))
+        return killed
 
     def serverExecutableHelper(self, pid):
         self.assertTrue(self.isServerRunning())
