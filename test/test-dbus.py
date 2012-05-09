@@ -30,6 +30,8 @@ import heapq
 import string
 import difflib
 import traceback
+import ConfigParser
+import io
 
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop
@@ -1010,6 +1012,18 @@ status: idle, 0, {}
             else:
                 lines.append(event[0])
         return '\n'.join(lines)
+
+    def assertSyncStatus(self, config, status, error):
+        cache = self.own_xdg and os.path.join(xdg_root, 'cache', 'syncevolution') or \
+            os.path.join(os.environ['HOME'], '.cache', 'syncevolution')
+        entries = [x for x in os.listdir(cache) if x.startswith(config + '-')]
+        entries.sort()
+        self.assertEqual(1, len(entries))
+        config = ConfigParser.ConfigParser()
+        content = '[fake]\n' + open(os.path.join(cache, entries[0], 'status.ini')).read()
+        config.readfp(io.BytesIO(content))
+        self.assertEqual(status, config.getint('fake', 'status'))
+        self.assertEqual(error, config.get('fake', 'error'))
 
     def doCheckSync(self, expectedError=0, expectedResult=0, reportOptional=False, numReports=1):
         # check recorded events in DBusUtil.events, first filter them
@@ -3609,38 +3623,30 @@ END:VCARD''')
         finally:
             dbusSignal.remove()
 
-        # Remove syncevo-dbus-server zombie process(es).
-        try:
-            while os.waitpid(-1, os.WNOHANG)[0]:
-                pass
-        except OSError, ex:
-            if ex.errno != errno.ECHILD:
-                raise ex
-        DBusUtil.pserver = None
-
         # Give syncevo-dbus-helper and syncevo-local-sync some time to shut down.
         time.sleep(usingValgrind() and 60 or 10)
 
+        # Remove syncevo-dbus-server zombie process(es).
+        DBusUtil.pserver.wait()
+        DBusUtil.pserver = None
+        try:
+            while True:
+                res = os.waitpid(-1, os.WNOHANG)
+                if res[0]:
+                    logging.printf('got status %d for pid %d', res[1], res[0])
+                else:
+                    break
+        except OSError, ex:
+            if ex.errno != errno.ECHILD:
+                raise ex
+
         # Now no processes should be left in the process group
         # of the syncevo-dbus-server.
-        ps = subprocess.Popen(['ps', 'x', '--no-headers', '-o', 'pgid,pid,args'],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
-        out, err = ps.communicate()
-        self.assertEqual('', err)
-        children = []
-        for line in out.splitlines():
-            pgid, command = line.lstrip().split(' ', 1)
-            if int(pgid) == pid:
-                children.append(command)
-        self.assertEqual([], children)
+        self.assertEqual({}, self.getChildren())
 
-        # try:
-        #     os.kill(-pid, signal.SIGTERM)
-        #     self.fail('found some unexpected child process of syncevo-dbus-server')
-        # except OSError, ex:
-        #     if ex.errno != errno.ECHILD:
-        #         raise ex
+        # Sync should have failed with an explanation that it was
+        # because of the password.
+        self.assertSyncStatus('server', 22003, "error code from SyncEvolution password request timed out (local, status 22003): failure in local sync child: Could not get the 'addressbook backend' password from user.")
 
     # TODO: test that password timeout and password cancelation are
     # correctly recognized during a sync
