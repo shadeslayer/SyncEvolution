@@ -1023,7 +1023,10 @@ status: idle, 0, {}
         content = '[fake]\n' + open(os.path.join(cache, entries[0], 'status.ini')).read()
         config.readfp(io.BytesIO(content))
         self.assertEqual(status, config.getint('fake', 'status'))
-        self.assertEqual(error, config.get('fake', 'error'))
+        if error == None:
+            self.assertFalse(config.has_option('fake', 'error'))
+        else:
+            self.assertEqual(error, config.get('fake', 'error'))
 
     def doCheckSync(self, expectedError=0, expectedResult=0, reportOptional=False, numReports=1):
         # check recorded events in DBusUtil.events, first filter them
@@ -3528,21 +3531,19 @@ END:VCARD''')
         input = open(xdg_root + "/server/0", "r")
         self.assertIn("FN:John Doe", input.read())
 
-    @timeout(100)
-    def testPasswordRequest(self):
-        """TestLocalSync.testPassswordRequest - check that password request child->parent->us works"""
-        self.setUpConfigs(childPassword="-")
-        self.setUpListeners(self.sessionpath)
+    def setUpInfoRequest(self, response={"password" : "123456"}):
         self.lastState = "unknown"
         def infoRequest(id, session, state, handler, type, params):
             if state == "request":
                 self.assertEqual(self.lastState, "unknown")
                 self.lastState = "request"
-                self.server.InfoResponse(id, "working", {}, utf8_strings=True)
+                if response != None:
+                    self.server.InfoResponse(id, "working", {}, utf8_strings=True)
             elif state == "waiting":
                 self.assertEqual(self.lastState, "request")
                 self.lastState = "waiting"
-                self.server.InfoResponse(id, "response", {"password" : "123456"}, utf8_strings=True)
+                if response != None:
+                    self.server.InfoResponse(id, "response", response, utf8_strings=True)
             elif state == "done":
                 self.assertEqual(self.lastState, "waiting")
                 self.lastState = "done"
@@ -3556,7 +3557,14 @@ END:VCARD''')
                                          None,
                                          byte_arrays=True,
                                          utf8_strings=True)
+        return signal
 
+    @timeout(100)
+    def testPasswordRequest(self):
+        """TestLocalSync.testPassswordRequest - check that password request child->parent->us works"""
+        self.setUpConfigs(childPassword="-")
+        self.setUpListeners(self.sessionpath)
+        signal = self.setUpInfoRequest()
         try:
             self.session.Sync("slow", {})
             loop.run()
@@ -3566,6 +3574,48 @@ END:VCARD''')
         self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
         self.assertEqual(self.lastState, "done")
         self.checkSync()
+        self.assertSyncStatus('server', 200, None)
+
+    @timeout(100)
+    def testPasswordRequestAbort(self):
+        """TestLocalSync.testPassswordRequestAbort - let user cancel password request"""
+        self.setUpConfigs(childPassword="-")
+        self.setUpListeners(self.sessionpath)
+        signal = self.setUpInfoRequest(response={})
+        try:
+            self.session.Sync("slow", {})
+            loop.run()
+        finally:
+            signal.remove()
+
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.assertEqual(self.lastState, "done")
+        self.checkSync(expectedError=20017, expectedResult=20017)
+        self.assertSyncStatus('server', 20017, "error code from SyncEvolution aborted on behalf of user (local, status 20017): failure in local sync child: User did not provide the 'addressbook backend' password.")
+
+    @timeout(200)
+    def testPasswordRequestTimeout(self):
+        """TestLocalSync.testPassswordRequestTimeout - let password request time out"""
+        self.setUpConfigs(childPassword="-")
+        self.setUpListeners(self.sessionpath)
+        signal = self.setUpInfoRequest(response=None)
+        try:
+            # Will time out roughly after 120 seconds.
+            start = time.time()
+            self.session.Sync("slow", {})
+            loop.run()
+        finally:
+            signal.remove()
+
+        self.assertEqual(DBusUtil.quit_events, ["session " + self.sessionpath + " done"])
+        self.assertEqual(self.lastState, "request")
+        self.checkSync(expectedError=22003, expectedResult=22003)
+        self.assertSyncStatus('server', 22003, "error code from SyncEvolution password request timed out (local, status 22003): failure in local sync child: Could not get the 'addressbook backend' password from user.")
+        end = time.time()
+        self.assertAlmostEqual(120 + (usingValgrind() and 20 or 0),
+                               end - start,
+                               delta=usingValgrind() and 60 or 20)
+
 
     # Killing the syncevo-dbus-helper before it even starts (SYNCEVOLUTION_LOCAL_CHILD_DELAY=5)
     # is possible, but leads to ugly valgrind warnings about "possibly lost" memory because
@@ -3647,9 +3697,6 @@ END:VCARD''')
         # Sync should have failed with an explanation that it was
         # because of the password.
         self.assertSyncStatus('server', 22003, "error code from SyncEvolution password request timed out (local, status 22003): failure in local sync child: Could not get the 'addressbook backend' password from user.")
-
-    # TODO: test that password timeout and password cancelation are
-    # correctly recognized during a sync
 
 class TestFileNotify(unittest.TestCase, DBusUtil):
     """syncevo-dbus-server must stop if one of its files mapped into
