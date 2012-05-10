@@ -1188,6 +1188,10 @@ struct VariantTypeInt64   { static const GVariantType* getVariantType() { return
 struct VariantTypeUInt64  { static const GVariantType* getVariantType() { return G_VARIANT_TYPE_UINT64;  } };
 struct VariantTypeDouble  { static const GVariantType* getVariantType() { return G_VARIANT_TYPE_DOUBLE;  } };
 
+#define GDBUS_CXX_QUOTE(x) #x
+#define GDBUS_CXX_LINE GDBUS_CXX_QUOTE(__LINE__)
+#define GDBUS_CXX_SOURCE_INFO __FILE__ ":" GDBUS_CXX_LINE
+
 template<class host, class VariantTraits> struct basic_marshal : public dbus_traits_base
 {
     typedef host host_type;
@@ -1201,7 +1205,7 @@ template<class host, class VariantTraits> struct basic_marshal : public dbus_tra
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_equal(g_variant_get_type(var), VariantTraits::getVariantType())) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
         g_variant_get(var, g_variant_get_type_string(var), &value);
         g_variant_unref(var);
@@ -1298,7 +1302,7 @@ template<> struct dbus_traits<bool> : public dbus_traits_base
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_equal(g_variant_get_type(var), VariantTypeBoolean::getVariantType())) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
         gboolean buffer;
         g_variant_get(var, g_variant_get_type_string(var), &buffer);
@@ -1325,7 +1329,7 @@ template<> struct dbus_traits<std::string> : public dbus_traits_base
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_equal(g_variant_get_type(var), G_VARIANT_TYPE_STRING)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
         const char *str = g_variant_get_string(var, NULL);
         value = str;
@@ -1353,7 +1357,7 @@ template <> struct dbus_traits<DBusObject_t> : public dbus_traits_base
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_equal(g_variant_get_type(var), G_VARIANT_TYPE_OBJECT_PATH)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
         const char *objPath = g_variant_get_string(var, NULL);
         value = objPath;
@@ -1363,7 +1367,7 @@ template <> struct dbus_traits<DBusObject_t> : public dbus_traits_base
     static void append(GVariantBuilder &builder, const DBusObject_t &value)
     {
         if (!g_variant_is_object_path(value.c_str())) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
         g_variant_builder_add_value(&builder, g_variant_new_object_path(value.c_str()));
     }
@@ -1419,7 +1423,7 @@ template<class A, class B> struct dbus_traits< std::pair<A,B> > : public dbus_tr
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_is_subtype_of(g_variant_get_type(var), G_VARIANT_TYPE_TUPLE)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
 
         GVariantIter tupIter;
@@ -1483,7 +1487,7 @@ template<class V> struct dbus_traits< DBusArray<V> > : public dbus_traits_base
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_is_subtype_of(g_variant_get_type(var), G_VARIANT_TYPE_ARRAY)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
         typedef typename dbus_traits<V>::host_type V_host_type;
         gsize nelements;
@@ -1535,7 +1539,7 @@ template<class K, class V, class C> struct dbus_traits< std::map<K, V, C> > : pu
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_is_subtype_of(g_variant_get_type(var), G_VARIANT_TYPE_ARRAY)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
 
         GVariantIter contIter;
@@ -1596,7 +1600,7 @@ template<class V> struct dbus_traits< std::vector<V> > : public dbus_traits_base
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_is_subtype_of(g_variant_get_type(var), G_VARIANT_TYPE_ARRAY)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
 
         int nelements = g_variant_n_children(var);
@@ -1660,7 +1664,7 @@ template <class V> struct dbus_traits <boost::variant <V> > : public dbus_traits
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_equal(g_variant_get_type(var), G_VARIANT_TYPE_VARIANT)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
 
         GVariant *varVar;
@@ -1710,7 +1714,7 @@ template <class V1, class V2> struct dbus_traits <boost::variant <V1, V2> > : pu
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_equal(g_variant_get_type(var), G_VARIANT_TYPE_VARIANT)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
 
         GVariant *varVar;
@@ -1829,7 +1833,7 @@ template<class K, class M> struct dbus_struct_traits : public dbus_traits_base
     {
         GVariant *var = g_variant_iter_next_value(&iter);
         if (var == NULL || !g_variant_type_is_subtype_of(g_variant_get_type(var), G_VARIANT_TYPE_TUPLE)) {
-            throw std::runtime_error("invalid argument");
+            throw std::runtime_error("g_variant failure " GDBUS_CXX_SOURCE_INFO);
         }
 
         GVariantIter tupIter;
