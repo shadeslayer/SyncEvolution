@@ -3698,6 +3698,54 @@ END:VCARD''')
         # because of the password.
         self.assertSyncStatus('server', 22003, "error code from SyncEvolution password request timed out (local, status 22003): failure in local sync child: Could not get the 'addressbook backend' password from user.")
 
+    @timeout(200)
+    @property("ENV", "SYNCEVOLUTION_LOCAL_CHILD_DELAY=10") # allow killing syncevo-dbus-server in middle of sync
+    def testNoParent(self):
+        """TestLocalSync.testNoParent - check that sync helper can continue without parent"""
+        self.setUpConfigs()
+        self.setUpListeners(self.sessionpath)
+        pid = self.serverPid()
+        serverPid = DBusUtil.pserver.pid
+        def killServer(*args, **keywords):
+            if pid != serverPid:
+                logging.printf('killing syncevo-dbus-server wrapper with pid %d', serverPid)
+                os.kill(serverPid, signal.SIGKILL)
+            logging.printf('killing syncevo-dbus-server with pid %d', pid)
+            os.kill(pid, signal.SIGKILL)
+            DBusUtil.pserver.wait()
+            DBusUtil.pserver = None
+            loop.quit()
+        self.progressChanged = killServer
+
+        self.session.Sync("slow", {})
+        loop.run()
+
+        # Should have killed server.
+        self.assertFalse(DBusUtil.pserver)
+
+        # Give syncevo-dbus-helper and syncevo-local-sync some time to shut down.
+        time.sleep(usingValgrind() and 60 or 20)
+        logging.log('sync should be done now')
+
+        # Remove syncevo-dbus-server zombie process(es).
+        try:
+            while True:
+                res = os.waitpid(-1, os.WNOHANG)
+                if res[0]:
+                    logging.printf('got status %d for pid %d', res[1], res[0])
+                else:
+                    break
+        except OSError, ex:
+            if ex.errno != errno.ECHILD:
+                raise ex
+
+        # Now no processes should be left in the process group
+        # of the syncevo-dbus-server.
+        self.assertEqual({}, self.getChildren())
+
+        # Sync should have succeeded.
+        self.assertSyncStatus('server', 200, None)
+
 class TestFileNotify(unittest.TestCase, DBusUtil):
     """syncevo-dbus-server must stop if one of its files mapped into
     memory (executable, libraries) change. Furthermore it must restart
