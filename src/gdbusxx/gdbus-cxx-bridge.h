@@ -118,6 +118,10 @@ class DBusConnectionPtr : public boost::intrusive_ptr<GDBusConnection>
         g_object_ref(conn);
         return conn;
     }
+
+    typedef boost::function<void ()> Disconnect_t;
+    void setDisconnect(const Disconnect_t &func);
+#define GDBUS_CXX_HAVE_DISCONNECT 1
 };
 
 class DBusMessagePtr : public boost::intrusive_ptr<GDBusMessage>

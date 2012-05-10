@@ -119,6 +119,32 @@ void dbus_bus_connection_undelay(const DBusConnectionPtr &conn)
     g_dbus_connection_start_message_processing(conn.get());
 }
 
+static void ConnectionLost(GDBusConnection *connection,
+                           gboolean remotePeerVanished,
+                           GError *error,
+                           gpointer data)
+{
+    DBusConnectionPtr::Disconnect_t *cb = static_cast<DBusConnectionPtr::Disconnect_t *>(data);
+    (*cb)();
+}
+
+static void DestroyDisconnect(gpointer data,
+                              GClosure *closure)
+                           {
+    DBusConnectionPtr::Disconnect_t *cb = static_cast<DBusConnectionPtr::Disconnect_t *>(data);
+    delete cb;
+}
+
+void DBusConnectionPtr::setDisconnect(const Disconnect_t &func)
+{
+    g_signal_connect_closure(get(),
+                             "closed",
+                             g_cclosure_new(G_CALLBACK(ConnectionLost),
+                                            new Disconnect_t(func),
+                                            DestroyDisconnect),
+                             true);
+}
+
 boost::shared_ptr<DBusServerCXX> DBusServerCXX::listen(const std::string &address, DBusErrorCXX *err)
 {
     GDBusServer *server = NULL;
