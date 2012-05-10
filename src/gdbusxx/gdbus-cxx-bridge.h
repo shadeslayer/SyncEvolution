@@ -510,45 +510,74 @@ public:
     const char *getDestination() const { return m_destination.c_str(); }
 };
 
-class EmitSignal0
+template<bool optional> class EmitSignalHelper
 {
+ protected:
     const DBusObject &m_object;
     const std::string m_signal;
 
+    EmitSignalHelper(const DBusObject &object,
+                     const std::string &signal) :
+       m_object(object),
+       m_signal(signal)
+       {}
+
+
+    void sendMsg(const DBusMessagePtr &msg)
+    {
+        if (optional) {
+            g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
+                                           G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL);
+        } else {
+            if (!msg) {
+                throwFailure(m_signal, "g_dbus_message_new_signal()", NULL);
+            }
+
+            GError *error = NULL;
+            if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
+                                                G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, &error)) {
+                throwFailure(m_signal, "g_dbus_connection_send_message()", error);
+            }
+        }
+    }
+};
+
+template<bool optional = false> class EmitSignal0Template : private EmitSignalHelper<optional>
+{
  public:
-    EmitSignal0(const DBusObject &object,
-                const std::string &signal) :
-        m_object(object),
-        m_signal(signal)
+    EmitSignal0Template(const DBusObject &object,
+                        const std::string &signal) :
+        EmitSignalHelper<optional>(object, signal)
     {}
 
     typedef void result_type;
 
     void operator () ()
     {
-        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                     m_object.getInterface(),
-                                                     m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(EmitSignalHelper<optional>::m_object.getPath(),
+                                                     EmitSignalHelper<optional>::m_object.getInterface(),
+                                                     EmitSignalHelper<optional>::m_signal.c_str()));
         if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_signal() failed");
+            if (optional) {
+                return;
+            }
+            throwFailure(EmitSignalHelper<optional>::m_signal, "g_dbus_message_new_signal()", NULL);
         }
-
-        if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message failed");
-        }
+        EmitSignalHelper<optional>::sendMsg(msg);
     }
 
     GDBusSignalInfo *makeSignalEntry() const
     {
         GDBusSignalInfo *entry = g_new0(GDBusSignalInfo, 1);
 
-        entry->name = g_strdup(m_signal.c_str());
+        entry->name = g_strdup(EmitSignalHelper<optional>::m_signal.c_str());
 
         entry->ref_count = 1;
         return entry;
     }
 };
+
+typedef EmitSignal0Template<false> EmitSignal0;
 
 template <typename Arg>
 void appendNewArg(GPtrArray *pa)
@@ -578,36 +607,30 @@ void appendNewArgForReply(GPtrArray *pa)
     g_ptr_array_add(pa, argInfo);
 }
 
-template <typename A1>
-class EmitSignal1
+template <typename A1, bool optional = false>
+class EmitSignal1 : private EmitSignalHelper<optional>
 {
-    const DBusObject &m_object;
-    const std::string m_signal;
-
  public:
     EmitSignal1(const DBusObject &object,
                 const std::string &signal) :
-        m_object(object),
-        m_signal(signal)
+        EmitSignalHelper<optional>(object, signal)
     {}
 
     typedef void result_type;
 
     void operator () (A1 a1)
     {
-        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                     m_object.getInterface(),
-                                                     m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(EmitSignalHelper<optional>::m_object.getPath(),
+                                                     EmitSignalHelper<optional>::m_object.getInterface(),
+                                                     EmitSignalHelper<optional>::m_signal.c_str()));
         if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_signal() failed");
+            if (optional) {
+                return;
+            }
+            throwFailure(EmitSignalHelper<optional>::m_signal, "g_dbus_message_new_signal()", NULL);
         }
-
         AppendRetvals(msg) << a1;
-
-        if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message failed");
-        }
+        EmitSignalHelper<optional>::sendMsg(msg);
     }
 
     GDBusSignalInfo *makeSignalEntry() const
@@ -618,7 +641,7 @@ class EmitSignal1
         appendNewArg<A1>(args);
         g_ptr_array_add(args, NULL);
 
-        entry->name = g_strdup(m_signal.c_str());
+        entry->name = g_strdup(EmitSignalHelper<optional>::m_signal.c_str());
         entry->args = (GDBusArgInfo **)g_ptr_array_free (args, FALSE);
 
         entry->ref_count = 1;
@@ -626,35 +649,30 @@ class EmitSignal1
     }
 };
 
-template <typename A1, typename A2>
-class EmitSignal2
+template <typename A1, typename A2, bool optional = false>
+class EmitSignal2 : private EmitSignalHelper<optional>
 {
-    const DBusObject &m_object;
-    const std::string m_signal;
-
  public:
     EmitSignal2(const DBusObject &object,
                 const std::string &signal) :
-        m_object(object),
-        m_signal(signal)
+        EmitSignalHelper<optional>(object, signal)
     {}
 
     typedef void result_type;
 
     void operator () (A1 a1, A2 a2)
     {
-        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                     m_object.getInterface(),
-                                                     m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(EmitSignalHelper<optional>::m_object.getPath(),
+                                                     EmitSignalHelper<optional>::m_object.getInterface(),
+                                                     EmitSignalHelper<optional>::m_signal.c_str()));
         if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_signal() failed");
+            if (optional) {
+                return;
+            }
+            throwFailure(EmitSignalHelper<optional>::m_signal, "g_dbus_message_new_signal()", NULL);
         }
         AppendRetvals(msg) << a1 << a2;
-
-        if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message failed");
-        }
+        EmitSignalHelper<optional>::sendMsg(msg);
     }
 
     GDBusSignalInfo *makeSignalEntry() const
@@ -666,7 +684,7 @@ class EmitSignal2
         appendNewArg<A2>(args);
         g_ptr_array_add(args, NULL);
 
-        entry->name = g_strdup(m_signal.c_str());
+        entry->name = g_strdup(EmitSignalHelper<optional>::m_signal.c_str());
         entry->args = (GDBusArgInfo **)g_ptr_array_free (args, FALSE);
 
         entry->ref_count = 1;
@@ -674,34 +692,30 @@ class EmitSignal2
     }
 };
 
-template <typename A1, typename A2, typename A3>
-class EmitSignal3
+template <typename A1, typename A2, typename A3, bool optional = false>
+class EmitSignal3 : private EmitSignalHelper<optional>
 {
-    const DBusObject &m_object;
-    const std::string m_signal;
-
  public:
     EmitSignal3(const DBusObject &object,
                 const std::string &signal) :
-        m_object(object),
-        m_signal(signal)
+        EmitSignalHelper<optional>(object, signal)
     {}
 
     typedef void result_type;
 
     void operator () (A1 a1, A2 a2, A3 a3)
     {
-        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                     m_object.getInterface(),
-                                                     m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(EmitSignalHelper<optional>::m_object.getPath(),
+                                                     EmitSignalHelper<optional>::m_object.getInterface(),
+                                                     EmitSignalHelper<optional>::m_signal.c_str()));
         if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_signal() failed");
+            if (optional) {
+                return;
+            }
+            throwFailure(EmitSignalHelper<optional>::m_signal, "g_dbus_message_new_signal()", NULL);
         }
         AppendRetvals(msg) << a1 << a2 << a3;
-        if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message failed");
-        }
+        EmitSignalHelper<optional>::sendMsg(msg);
     }
 
     GDBusSignalInfo *makeSignalEntry() const
@@ -714,7 +728,7 @@ class EmitSignal3
         appendNewArg<A3>(args);
         g_ptr_array_add(args, NULL);
 
-        entry->name = g_strdup(m_signal.c_str());
+        entry->name = g_strdup(EmitSignalHelper<optional>::m_signal.c_str());
         entry->args = (GDBusArgInfo **)g_ptr_array_free (args, FALSE);
 
         entry->ref_count = 1;
@@ -722,34 +736,30 @@ class EmitSignal3
     }
 };
 
-template <typename A1, typename A2, typename A3, typename A4>
-class EmitSignal4
+template <typename A1, typename A2, typename A3, typename A4, bool optional = false>
+class EmitSignal4 : private EmitSignalHelper<optional>
 {
-    const DBusObject &m_object;
-    const std::string m_signal;
-
  public:
     EmitSignal4(const DBusObject &object,
                 const std::string &signal) :
-        m_object(object),
-        m_signal(signal)
+        EmitSignalHelper<optional>(object, signal)
     {}
 
     typedef void result_type;
 
     void operator () (A1 a1, A2 a2, A3 a3, A4 a4)
     {
-        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                     m_object.getInterface(),
-                                                     m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(EmitSignalHelper<optional>::m_object.getPath(),
+                                                     EmitSignalHelper<optional>::m_object.getInterface(),
+                                                     EmitSignalHelper<optional>::m_signal.c_str()));
         if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_signal() failed");
+            if (optional) {
+                return;
+            }
+            throwFailure(EmitSignalHelper<optional>::m_signal, "g_dbus_message_new_signal()", NULL);
         }
         AppendRetvals(msg) << a1 << a2 << a3 << a4;
-        if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message failed");
-        }
+        EmitSignalHelper<optional>::sendMsg(msg);
     }
 
     GDBusSignalInfo *makeSignalEntry() const
@@ -763,7 +773,7 @@ class EmitSignal4
         appendNewArg<A4>(args);
         g_ptr_array_add(args, NULL);
 
-        entry->name = g_strdup(m_signal.c_str());
+        entry->name = g_strdup(EmitSignalHelper<optional>::m_signal.c_str());
         entry->args = (GDBusArgInfo **)g_ptr_array_free (args, FALSE);
 
         entry->ref_count = 1;
@@ -771,34 +781,30 @@ class EmitSignal4
     }
 };
 
-template <typename A1, typename A2, typename A3, typename A4, typename A5>
-class EmitSignal5
+template <typename A1, typename A2, typename A3, typename A4, typename A5, bool optional = false>
+class EmitSignal5 : private EmitSignalHelper<optional>
 {
-    const DBusObject &m_object;
-    const std::string m_signal;
-
  public:
     EmitSignal5(const DBusObject &object,
                 const std::string &signal) :
-        m_object(object),
-        m_signal(signal)
+        EmitSignalHelper<optional>(object, signal)
     {}
 
     typedef void result_type;
 
     void operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
     {
-        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                     m_object.getInterface(),
-                                                     m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(EmitSignalHelper<optional>::m_object.getPath(),
+                                                     EmitSignalHelper<optional>::m_object.getInterface(),
+                                                     EmitSignalHelper<optional>::m_signal.c_str()));
         if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_signal() failed");
+            if (optional) {
+                return;
+            }
+            throwFailure(EmitSignalHelper<optional>::m_signal, "g_dbus_message_new_signal()", NULL);
         }
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5;
-        if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message");
-        }
+        EmitSignalHelper<optional>::sendMsg(msg);
     }
 
     GDBusSignalInfo *makeSignalEntry() const
@@ -813,7 +819,7 @@ class EmitSignal5
         appendNewArg<A5>(args);
         g_ptr_array_add(args, NULL);
 
-        entry->name = g_strdup(m_signal.c_str());
+        entry->name = g_strdup(EmitSignalHelper<optional>::m_signal.c_str());
         entry->args = (GDBusArgInfo **)g_ptr_array_free (args, FALSE);
 
         entry->ref_count = 1;
@@ -821,34 +827,30 @@ class EmitSignal5
     }
 };
 
-template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6>
-class EmitSignal6
+template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6, bool optional = false>
+class EmitSignal6 : private EmitSignalHelper<optional>
 {
-    const DBusObject &m_object;
-    const std::string m_signal;
-
  public:
     EmitSignal6(const DBusObject &object,
                 const std::string &signal) :
-        m_object(object),
-        m_signal(signal)
+        EmitSignalHelper<optional>(object, signal)
     {}
 
     typedef void result_type;
 
     void operator () (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6)
     {
-        DBusMessagePtr msg(g_dbus_message_new_signal(m_object.getPath(),
-                                                     m_object.getInterface(),
-                                                     m_signal.c_str()));
+        DBusMessagePtr msg(g_dbus_message_new_signal(EmitSignalHelper<optional>::m_object.getPath(),
+                                                     EmitSignalHelper<optional>::m_object.getInterface(),
+                                                     EmitSignalHelper<optional>::m_signal.c_str()));
         if (!msg) {
-            throw std::runtime_error("g_dbus_message_new_signal() failed");
+            if (optional) {
+                return;
+            }
+            throwFailure(EmitSignalHelper<optional>::m_signal, "g_dbus_message_new_signal()", NULL);
         }
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6;
-        if (!g_dbus_connection_send_message(m_object.getConnection(), msg.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message failed");
-        }
+        EmitSignalHelper<optional>::sendMsg(msg);
     }
 
     GDBusSignalInfo *makeSignalEntry() const
@@ -864,7 +866,7 @@ class EmitSignal6
         appendNewArg<A6>(args);
         g_ptr_array_add(args, NULL);
 
-        entry->name = g_strdup(m_signal.c_str());
+        entry->name = g_strdup(EmitSignalHelper<optional>::m_signal.c_str());
         entry->args = (GDBusArgInfo **)g_ptr_array_free (args, FALSE);
 
         entry->ref_count = 1;
