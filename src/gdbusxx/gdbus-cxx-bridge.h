@@ -971,7 +971,8 @@ struct MethodHandler
                                        NULL,
                                        &error);
         g_object_unref(reply);
-        // TODO: throw an exception?
+        // Cannot throw an exception, glib event loop won't know what to do with it;
+        // pretend that the problem didn't happen.
         if (error != NULL) {
             g_error_free (error);
         }
