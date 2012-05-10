@@ -40,6 +40,9 @@ typedef struct {
 	DBusConnection *connection;
 	GMainContext *context;
 	GSource *queue;
+        BDBusWatchFunction disconnect;
+        void *disconnect_data;
+        BDBusDestroyFunction disconnect_destroy;
 	gboolean unshared;
 } ConnectionData;
 
@@ -374,6 +377,9 @@ static void free_connection(void *memory)
 	dbus_connection_unref(data->connection);
 #endif
 
+        if (data->disconnect_destroy)
+            data->disconnect_destroy (data->disconnect_data);
+
 	g_main_context_unref(data->context);
 
 	g_free(data);
@@ -621,13 +627,19 @@ gboolean b_dbus_request_name(DBusConnection *connection, const char *name,
 }
 
 static DBusHandlerResult disconnect_filter(DBusConnection *connection,
-					DBusMessage *message, void *data)
+					DBusMessage *message, void *user_data)
 {
+        ConnectionData *data = user_data;
+
 	if (dbus_message_is_signal(message,
 			DBUS_INTERFACE_LOCAL, "Disconnected") == FALSE)
 		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
 	DBG("disconnected");
+
+        if (data->disconnect)
+            data->disconnect (connection,
+                              data->disconnect_data);
 
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
@@ -648,11 +660,26 @@ gboolean b_dbus_set_disconnect_function(DBusConnection *connection,
 				BDBusWatchFunction function,
 				void *user_data, BDBusDestroyFunction destroy)
 {
+        ConnectionData *data = dbus_connection_get_data(connection, connection_slot);
+        if (!data)
+            return FALSE;
+
+        if (data->disconnect_destroy)
+            data->disconnect_destroy (data->disconnect_data);
+        data->disconnect_destroy = NULL;
+        data->disconnect = NULL;
+        data->disconnect_data = NULL;
+
 	dbus_connection_set_exit_on_disconnect(connection, FALSE);
 
 	if (dbus_connection_add_filter(connection,
-				disconnect_filter, NULL, NULL) == FALSE)
+				disconnect_filter, data, NULL) == FALSE)
 		return FALSE;
 
+        data = dbus_connection_get_data(connection, connection_slot);
+
+        data->disconnect = function;
+        data->disconnect_data = user_data;
+        data->disconnect_destroy = destroy;
 	return TRUE;
 }

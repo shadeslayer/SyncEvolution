@@ -41,6 +41,27 @@ DBusConnectionPtr dbus_get_bus_connection(const char *busType,
                              false);
 }
 
+static void ConnectionLost(DBusConnection *connection,
+                           void *user_data)
+{
+    DBusConnectionPtr::Disconnect_t *cb = static_cast<DBusConnectionPtr::Disconnect_t *>(user_data);
+    (*cb)();
+}
+
+static void DestroyDisconnect(void *user_data)
+{
+    DBusConnectionPtr::Disconnect_t *cb = static_cast<DBusConnectionPtr::Disconnect_t *>(user_data);
+    delete cb;
+}
+
+void DBusConnectionPtr::setDisconnect(const Disconnect_t &func)
+{
+    b_dbus_set_disconnect_function(get(),
+                                   ConnectionLost,
+                                   new Disconnect_t(func),
+                                   DestroyDisconnect);
+}
+
 DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
                                           DBusErrorCXX *err,
                                           bool /*delayed*/ /*= false*/)
@@ -48,6 +69,7 @@ DBusConnectionPtr dbus_get_bus_connection(const std::string &address,
     DBusConnectionPtr conn(dbus_connection_open_private(address.c_str(), err), false);
     if (conn) {
         b_dbus_setup_connection(conn.get(), TRUE, NULL);
+        dbus_connection_set_exit_on_disconnect(conn.get(), FALSE);
     }
     return conn;
 }
