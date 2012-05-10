@@ -103,6 +103,25 @@ typedef GVariantIter reader_type;
 
 class DBusMessagePtr;
 
+inline void throwFailure(const std::string &object,
+                         const std::string &operation,
+                         GError *error)
+{
+    std::string description = object;
+    if (!description.empty()) {
+        description += ": ";
+    }
+    description += operation;
+    if (error) {
+        description += ": ";
+        description += error->message;
+        g_clear_error(&error);
+    } else {
+        description += " failed";
+    }
+    throw std::runtime_error(description);
+}
+
 class DBusConnectionPtr : public boost::intrusive_ptr<GDBusConnection>
 {
  public:
@@ -2076,6 +2095,15 @@ class DBusResult : virtual public Result
     DBusConnectionPtr m_conn;     /**< connection via which the message was received */
     DBusMessagePtr m_msg;         /**< the method invocation message */
 
+    void sendMsg(const DBusMessagePtr &msg)
+    {
+        GError *error = NULL;
+        if (!g_dbus_connection_send_message(m_conn.get(), msg.get(),
+                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, &error)) {
+            throwFailure("", "g_dbus_connection_send_message()", error);
+        }
+    }
+
  public:
     DBusResult(GDBusConnection *conn,
                GDBusMessage *msg) :
@@ -2085,13 +2113,9 @@ class DBusResult : virtual public Result
 
     virtual void failed(const dbus_error &error)
     {
-        GDBusMessage *errMsg;
-        errMsg = g_dbus_message_new_method_error(m_msg.get(), error.dbusName().c_str(),
-                                                 "%s", error.what());
-        if (!g_dbus_connection_send_message(m_conn.get(), errMsg,
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error(" g_dbus_connection_send_message failed");
-        }
+        DBusMessagePtr errMsg(g_dbus_message_new_method_error(m_msg.get(), error.dbusName().c_str(),
+                                                              "%s", error.what()));
+        sendMsg(errMsg);
     }
 
     virtual Watch *createWatch(const boost::function<void (void)> &callback)
@@ -2118,9 +2142,10 @@ class DBusResult0 :
         if (!reply) {
             throw std::runtime_error("no GDBusMessage");
         }
+        GError *error = NULL;
         if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-            throw std::runtime_error("g_dbus_connection_send_message");
+                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, &error)) {
+            throwFailure("", "g_dbus_connection_send_message()", error);
         }
     }
 
@@ -2145,9 +2170,7 @@ class DBusResult1 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() { return dbus_traits<A1>::getSignature(); }
@@ -2173,9 +2196,7 @@ class DBusResult2 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
@@ -2206,9 +2227,7 @@ class DBusResult3 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
@@ -2239,8 +2258,10 @@ class DBusResult4 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3 << a4;
+        GError *error = NULL;
         if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
+                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, &error)) {
+            throwFailure("", "g_dbus_connection_send_message()", error);
         }
     }
     static std::string getSignature() {
@@ -2271,9 +2292,7 @@ class DBusResult5 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
@@ -2305,9 +2324,7 @@ class DBusResult6 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
@@ -2339,9 +2356,7 @@ class DBusResult7 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
@@ -2373,9 +2388,7 @@ class DBusResult8 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
@@ -2407,9 +2420,7 @@ class DBusResult9 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
@@ -2441,9 +2452,7 @@ class DBusResult10 :
             throw std::runtime_error("no GDBusMessage");
         }
         AppendRetvals(reply) << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9 << a10;
-        if (!g_dbus_connection_send_message(m_conn.get(), reply.get(),
-                                            G_DBUS_SEND_MESSAGE_FLAGS_NONE, NULL, NULL)) {
-        }
+        sendMsg(reply);
     }
 
     static std::string getSignature() {
