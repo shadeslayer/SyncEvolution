@@ -36,7 +36,9 @@
 
 SE_BEGIN_CXX
 
+#ifndef GDBUS_CXX_HAVE_DISCONNECT
 class ForkExecParentDBusAPI;
+#endif
 
 /**
  * Utility class which starts a specific helper binary in a second
@@ -207,7 +209,9 @@ class ForkExecParent : public ForkExec
     gint m_status;
     bool m_sigIntSent;
     bool m_sigTermSent;
+#ifndef GDBUS_CXX_HAVE_DISCONNECT
     boost::scoped_ptr<class ForkExecParentDBusAPI> m_api;
+#endif
 
     /** invoke m_onOutput while reading from a single stream */
     bool m_mergedStdoutStderr;

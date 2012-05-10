@@ -28,6 +28,7 @@ SE_BEGIN_CXX
 
 static const std::string ForkExecEnvVar("SYNCEVOLUTION_FORK_EXEC=");
 
+#ifndef GDBUS_CXX_HAVE_DISCONNECT
 // internal D-Bus API: only used to monitor parent by having one method call pending
 static const std::string FORKEXEC_PARENT_PATH("/org/syncevolution/forkexec/parent");
 static const std::string FORKEXEC_PARENT_IFACE("org.syncevolution.forkexec.parent");
@@ -58,6 +59,7 @@ private:
     }
     std::list< boost::shared_ptr< GDBusCXX::Result0> > m_watches;
 };
+#endif // GDBUS_CXX_HAVE_DISCONNECT
 
 ForkExec::ForkExec()
 {
@@ -360,7 +362,9 @@ void ForkExecParent::newClientConnection(GDBusCXX::DBusConnectionPtr &conn) thro
         SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: child %s has connected",
                      m_helper.c_str());
         m_hasConnected = true;
+#ifndef GDBUS_CXX_HAVE_DISCONNECT
         m_api.reset(new ForkExecParentDBusAPI(conn));
+#endif
         m_onConnect(conn);
     } catch (...) {
         std::string explanation;
@@ -403,7 +407,9 @@ void ForkExecParent::stop(int signal)
     if (signal && signal != SIGINT && signal != SIGTERM) {
         ::kill(m_childPid, signal);
     }
+#ifndef GDBUS_CXX_HAVE_DISCONNECT
     m_api.reset();
+#endif
 }
 
 void ForkExecParent::kill()
@@ -416,7 +422,9 @@ void ForkExecParent::kill()
     SE_LOG_DEBUG(NULL, NULL, "ForkExecParent: killing %s with SIGKILL",
                  m_helper.c_str());
     ::kill(m_childPid, SIGKILL);
+#ifndef GDBUS_CXX_HAVE_DISCONNECT
     m_api.reset();
+#endif
 }
 
 ForkExecChild::ForkExecChild() :
@@ -453,6 +461,10 @@ void ForkExecChild::connect()
     m_state = CONNECTED;
 
     // start watching connection
+#ifdef GDBUS_CXX_HAVE_DISCONNECT
+    conn.setDisconnect(boost::bind(&ForkExecChild::connectionLost, this));
+#else
+    // emulate disconnect with a pending method call
     class Parent : public GDBusCXX::DBusRemoteObject
     {
     public:
@@ -467,6 +479,7 @@ void ForkExecChild::connect()
         GDBusCXX::DBusClientCall0 m_watch;
     } parent(conn);
     parent.m_watch.start(boost::bind(&ForkExecChild::connectionLost, this));
+#endif
 
     m_onConnect(conn);
     dbus_bus_connection_undelay(conn);
