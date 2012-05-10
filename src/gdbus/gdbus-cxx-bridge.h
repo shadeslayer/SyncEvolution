@@ -462,14 +462,14 @@ public:
     const char *getDestination() const { return m_destination.c_str(); }
 };
 
-class EmitSignal0
+template<bool optional = false> class EmitSignal0Template
 {
     const DBusObject &m_object;
     const std::string m_signal;
 
  public:
-    EmitSignal0(const DBusObject &object,
-                const std::string &signal) :
+    EmitSignal0Template(const DBusObject &object,
+                        const std::string &signal) :
         m_object(object),
         m_signal(signal)
     {}
@@ -482,10 +482,16 @@ class EmitSignal0
                                                    m_object.getInterface(),
                                                    m_signal.c_str()));
         if (!msg) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
 
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
@@ -501,7 +507,9 @@ class EmitSignal0
     }
 };
 
-template <typename A1>
+typedef EmitSignal0Template<false> EmitSignal0;
+
+template <typename A1, bool optional = false>
 class EmitSignal1
 {
     const DBusObject &m_object;
@@ -522,11 +530,17 @@ class EmitSignal1
                                                    m_object.getInterface(),
                                                    m_signal.c_str()));
         if (!msg) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
         AppendRetvals(msg) << a1;
 
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
@@ -543,7 +557,7 @@ class EmitSignal1
     }
 };
 
-template <typename A1, typename A2>
+template <typename A1, typename A2, bool optional = false>
 class EmitSignal2
 {
     const DBusObject &m_object;
@@ -564,11 +578,17 @@ class EmitSignal2
                                                    m_object.getInterface(),
                                                    m_signal.c_str()));
         if (!msg) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
         AppendRetvals(msg) << a1 << a2;
 
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
@@ -586,7 +606,7 @@ class EmitSignal2
     }
 };
 
-template <typename A1, typename A2, typename A3>
+template <typename A1, typename A2, typename A3, bool optional = false>
 class EmitSignal3
 {
     const DBusObject &m_object;
@@ -607,10 +627,16 @@ class EmitSignal3
                                                    m_object.getInterface(),
                                                    m_signal.c_str()));
         if (!msg) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
         AppendRetvals(msg) << a1 << a2 << a3;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
@@ -629,7 +655,7 @@ class EmitSignal3
     }
 };
 
-template <typename A1, typename A2, typename A3, typename A4>
+template <typename A1, typename A2, typename A3, typename A4, bool optional = false>
 class EmitSignal4
 {
     const DBusObject &m_object;
@@ -650,10 +676,16 @@ class EmitSignal4
                                                    m_object.getInterface(),
                                                    m_signal.c_str()));
         if (!msg) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
         AppendRetvals(msg) << a1 << a2 << a3 << a4;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
@@ -673,7 +705,7 @@ class EmitSignal4
     }
 };
 
-template <typename A1, typename A2, typename A3, typename A4, typename A5>
+template <typename A1, typename A2, typename A3, typename A4, typename A5, bool optional = false>
 class EmitSignal5
 {
     const DBusObject &m_object;
@@ -694,10 +726,16 @@ class EmitSignal5
                                                    m_object.getInterface(),
                                                    m_signal.c_str()));
         if (!msg) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
@@ -718,7 +756,7 @@ class EmitSignal5
     }
 };
 
-template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6>
+template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6, bool optional = false>
 class EmitSignal6
 {
     const DBusObject &m_object;
@@ -739,10 +777,16 @@ class EmitSignal6
                                                    m_object.getInterface(),
                                                    m_signal.c_str()));
         if (!msg) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_message_new_signal() failed");
         }
         AppendRetvals(msg) << a1 << a2 << a3 << a4 << a5 << a6;
         if (!dbus_connection_send(m_object.getConnection(), msg.get(), NULL)) {
+            if (optional) {
+                return;
+            }
             throw std::runtime_error("dbus_connection_send failed");
         }
     }
