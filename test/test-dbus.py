@@ -3561,7 +3561,7 @@ END:VCARD''')
 
     @timeout(100)
     def testPasswordRequest(self):
-        """TestLocalSync.testPassswordRequest - check that password request child->parent->us works"""
+        """TestLocalSync.testPasswordRequest - check that password request child->parent->us works"""
         self.setUpConfigs(childPassword="-")
         self.setUpListeners(self.sessionpath)
         signal = self.setUpInfoRequest()
@@ -3578,7 +3578,7 @@ END:VCARD''')
 
     @timeout(100)
     def testPasswordRequestAbort(self):
-        """TestLocalSync.testPassswordRequestAbort - let user cancel password request"""
+        """TestLocalSync.testPasswordRequestAbort - let user cancel password request"""
         self.setUpConfigs(childPassword="-")
         self.setUpListeners(self.sessionpath)
         signal = self.setUpInfoRequest(response={})
