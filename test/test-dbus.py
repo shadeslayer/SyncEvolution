@@ -1158,7 +1158,7 @@ status: idle, 0, {}
     if not 'assertNotIn' in dir(unittest.TestCase):
         assertNotIn = assertNotInCustom
 
-class TestDBusServer(unittest.TestCase, DBusUtil):
+class TestDBusServer(DBusUtil, unittest.TestCase):
     """Tests for the read-only Server API."""
 
     def setUp(self):
@@ -1224,7 +1224,7 @@ class TestDBusServer(unittest.TestCase, DBusUtil):
         else:
             self.fail("no exception thrown")
 
-class TestDBusServerTerm(unittest.TestCase, DBusUtil):
+class TestDBusServerTerm(DBusUtil, unittest.TestCase):
     def setUp(self):
         self.setUpServer()
 
@@ -1404,7 +1404,7 @@ class TestDBusServerTerm(unittest.TestCase, DBusUtil):
         self.assertFalse(self.isServerRunning())
 
 
-class TestNamedConfig(unittest.TestCase, DBusUtil):
+class TestNamedConfig(DBusUtil, unittest.TestCase):
     """Tests for Set/GetNamedConfig"""
 
     def setUp(self):
@@ -1455,7 +1455,7 @@ class TestNamedConfig(unittest.TestCase, DBusUtil):
         self.assertEqual(fooConfig, self.session.GetNamedConfig("foo", False))
         self.assertEqual(barConfig, self.session.GetNamedConfig("bar", False))
 
-class TestDBusServerPresence(unittest.TestCase, DBusUtil):
+class TestDBusServerPresence(DBusUtil, unittest.TestCase):
     """Tests Presence signal and checkPresence API"""
 
     # TODO: check auto sync + presence combination
@@ -1691,7 +1691,7 @@ class TestDBusServerPresence(unittest.TestCase, DBusUtil):
     def run(self, result):
         self.runTest(result, True)
 
-class TestDBusSession(unittest.TestCase, DBusUtil):
+class TestDBusSession(DBusUtil, unittest.TestCase):
     """Tests that work with an active session."""
 
     def setUp(self):
@@ -1818,7 +1818,7 @@ class TestDBusSession(unittest.TestCase, DBusUtil):
         finally:
             self.removeTimeout(t1)
 
-class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
+class TestSessionAPIsEmptyName(DBusUtil, unittest.TestCase):
     """Test session APIs that work with an empty server name. Thus, all of session APIs which
        need this kind of checking are put in this class. """
 
@@ -1883,7 +1883,7 @@ class TestSessionAPIsEmptyName(unittest.TestCase, DBusUtil):
         self.assertTrue(reports[0]["dir"].endswith("dummy_+test@context-2010-01-20-10-10"))
 
 
-class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
+class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
     """Tests that work for GetConfig/SetConfig/CheckSource/GetDatabases/GetReports in Session.
        This class is only working in a dummy config. Thus it can't do sync correctly. The purpose
        is to test some cleanup cases and expected errors. Also, some unit tests for some APIs 
@@ -2772,7 +2772,7 @@ class TestSessionAPIsDummy(unittest.TestCase, DBusUtil):
         self.runTestDBusCheck = checkDBusLog
 
 
-class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
+class TestSessionAPIsReal(DBusUtil, unittest.TestCase):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
         Thus we need a real server configuration to confirm sync could be run successfully.
         Typically we need make sure that at least one sync has been done before testing our
@@ -2877,7 +2877,7 @@ class TestSessionAPIsReal(unittest.TestCase, DBusUtil):
                                                     "session " + sessionpath2 + " ready"])
         session2.Detach()
 
-class TestDBusSyncError(unittest.TestCase, DBusUtil):
+class TestDBusSyncError(DBusUtil, unittest.TestCase):
     def setUp(self):
         self.setUpServer()
         self.setUpSession(configName)
@@ -2895,7 +2895,7 @@ class TestDBusSyncError(unittest.TestCase, DBusUtil):
         self.assertEqual(status, "done")
         self.assertEqual(error, 10500)
 
-class TestConnection(unittest.TestCase, DBusUtil):
+class TestConnection(DBusUtil, unittest.TestCase):
     """Tests Server.Connect(). Tests depend on getting one Abort signal to terminate."""
 
     """a real message sent to our own server, DevInf stripped, username/password foo/bar"""
