@@ -3612,9 +3612,9 @@ END:VCARD''')
         self.checkSync(expectedError=22003, expectedResult=22003)
         self.assertSyncStatus('server', 22003, "error code from SyncEvolution password request timed out (local, status 22003): failure in local sync child: Could not get the 'addressbook backend' password from user.")
         end = time.time()
-        self.assertAlmostEqual(120 + (usingValgrind() and 20 or 0),
-                               end - start,
-                               delta=usingValgrind() and 60 or 20)
+        self.assertTrue(abs(120 + (usingValgrind() and 20 or 0) -
+                            (end - start)) <
+                        (usingValgrind() and 60 or 20))
 
 
     # Killing the syncevo-dbus-helper before it even starts (SYNCEVOLUTION_LOCAL_CHILD_DELAY=5)
