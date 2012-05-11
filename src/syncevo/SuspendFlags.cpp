@@ -33,6 +33,7 @@
 SE_BEGIN_CXX
 
 SuspendFlags::SuspendFlags() :
+    m_level(Logger::INFO),
     m_state(NORMAL),
     m_lastSuspend(0),
     m_senderFD(-1),
@@ -275,7 +276,7 @@ void SuspendFlags::printSignals()
             if (!str) {
                 SE_LOG_DEBUG(NULL, NULL, "internal error: received invalid signal msg %d", msg);
             } else {
-                SE_LOG_INFO(NULL, NULL, "%s", str);
+                SE_LOG(m_level, NULL, NULL, "%s", str);
             }
             m_stateChanged(*this);
         }

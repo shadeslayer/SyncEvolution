@@ -25,6 +25,8 @@
 #include <boost/function.hpp>
 #include <boost/signals2.hpp>
 
+#include <syncevo/Logging.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -135,9 +137,15 @@ class SuspendFlags
      */
     boost::shared_ptr<StateBlocker> abort();
 
+    /** log level of the "aborting" messages */
+    Logger::Level getLevel() const { return m_level; }
+    void setLevel(Logger::Level level) { m_level = level; }
+
  private:
     SuspendFlags();
     ~SuspendFlags();
+
+    Logger::Level m_level;
 
     /** free file descriptors, restore signal handlers */
     void deactivate();
