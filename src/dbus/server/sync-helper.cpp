@@ -77,6 +77,7 @@ int main(int argc, char **argv, char **envp)
     // Suspend and abort are signaled via SIGINT/SIGTERM
     // respectively. SuspendFlags handle that for us.
     SuspendFlags &s = SuspendFlags::getSuspendFlags();
+    s.setLevel(Logger::DEV);
     boost::shared_ptr<SuspendFlags::Guard> guard = s.activate();
 
     bool debug = getenv("SYNCEVOLUTION_DEBUG");
