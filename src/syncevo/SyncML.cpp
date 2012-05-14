@@ -271,8 +271,53 @@ std::string Status2String(SyncMLStatus status)
     case STATUS_COMMAND_NOT_ALLOWED:
         error = "operation not allowed";
         break;
+    case STATUS_OPTIONAL_FEATURE_NOT_SUPPORTED:
+        error = "optional feature not supported";
+        break;
+    case STATUS_AUTHORIZATION_REQUIRED:
+        error = "authorization required";
+        break;
+    case STATUS_COMMAND_GONE:
+        error = "command gone";
+        break;
+    case STATUS_SIZE_REQUIRED:
+        error = "size required";
+        break;
+    case STATUS_INCOMPLETE_COMMAND:
+        error = "incomplete command";
+        break;
+    case STATUS_REQUEST_ENTITY_TOO_LARGE:
+        error = "request entity too large";
+        break;
+    case STATUS_UNSUPPORTED_MEDIA_TYPE_OR_FORMAT:
+        error = "unsupported media type or format";
+        break;
+    case STATUS_REQUESTED_SIZE_TOO_BIG:
+        error = "requested size too big";
+        break;
+    case STATUS_RETRY_LATER:
+        error = "retry later";
+        break;
     case STATUS_ALREADY_EXISTS:
         error = "object exists already";
+        break;
+    case STATUS_UNKNOWN_SEARCH_GRAMMAR:
+        error = "unknown search grammar";
+        break;
+    case STATUS_BAD_CGI_OR_FILTER_QUERY:
+        error = "bad CGI or filter query";
+        break;
+    case STATUS_SOFT_DELETE_CONFLICT:
+        error = "soft-delete conflict";
+        break;
+    case STATUS_PARTIAL_ITEM_NOT_ACCEPTED:
+        error = "partial item not accepted";
+        break;
+    case STATUS_ITEM_NOT_EMPTY:
+        error = "item not empty";
+        break;
+    case STATUS_MOVE_FAILED:
+        error = "move failed";
         break;
     case STATUS_FATAL:
         error = "fatal error";
