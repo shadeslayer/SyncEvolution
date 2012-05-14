@@ -843,6 +843,14 @@ address and the server supports auto-discovery of its CalDAV and/or
 CardDAV services (using DNS SRV entries, ``.well-known`` URIs, properties
 of the current principal, ...).
 
+Alternatively, credentials can also be set in the ``databaseUser`` and
+``databasePassword`` properties of the source. The downside is that these
+values have to be set for each source and cannot be shared. The advantage
+is that, in combination with setting ``database``, such sources can be
+used as part of a normal SyncML server or client sync config. SyncEvolution
+then reads and writes data directly from the server and exchanges it
+via SyncML with the peer that is defined in the sync config.
+
 The ``database`` property of each source can be set to the URL of a
 specific *collection* (= database in WebDAV terminology). If not set,
 then the WebDAV backend first locates the server based on ``username``
@@ -854,8 +862,17 @@ by setting the ``database`` property.
   **Warning:** the protocols do not uniquely identify this default
   collection. The backend tries to make an educated guess, but it might
   pick the wrong one if the server provides more than one address book
-  or calendar. A future version of SyncEvolution will support listing
-  the available collections, but 1.2 does not yet support that.
+  or calendar. It is safer to scan for collections manually with
+  ``--print-databases`` and then use the URL of the desired collection
+  as value of ``database``.
+
+To scan for collections, use::
+
+   syncevolution --print-databases \
+                 backend=<caldav or carddav> \
+                 username=<email address or user name> \
+                 "password=!@#ABcd1234" \
+                 syncURL=<base URL of server, if auto-discovery is not supported>
 
 Configuration templates for Google Calendar, Yahoo Calendar and a
 generic CalDAV/CardDAV server are included in SyncEvolution. The Yahoo
@@ -870,8 +887,8 @@ replace ``webdav`` with ``google-calendar`` resp. ``yahoo`` and remove the
    # configure target config
    syncevolution --configure \
                 --template webdav \
-                username=123456 \
-                password=!@#ABcd1234" \
+                username=123456@example.com \
+                "password=!@#ABcd1234" \
                 target-config@webdav
 
    # configure sync config
@@ -888,6 +905,52 @@ replace ``webdav`` with ``google-calendar`` resp. ``yahoo`` and remove the
 
    # incremental sync
    syncevolution webdav
+
+Here are some alternative ways of configuring the target config::
+
+   # A) Server has one URL as starting point instead of DNS auto-discovery.
+   syncevolution --configure \
+                --template webdav \
+                username=123456 \
+                "password=!@#ABcd1234" \
+                syncURL=http://example.com \
+                target-config@webdav
+
+   # B) Explicitly specify collections (from server documentation or --print-databases).
+   #    The 'calendar' and 'addressbook' names are the ones expected by the sync config
+   #    above, additional sources can also be configured and/or the names can be changed.
+   syncevolution --configure \
+                username=123456 \
+                "password=!@#ABcd1234" \
+                addressbook/backend=carddav \
+                addressbook/database=http://example.com/addressbooks/123456/ \
+                calendar/backend=caldav \
+                calendar/database=http://example.com/calendar/123456/ \
+                target-config@webdav \
+                calendar addressbook
+
+Finally, here is how the ``@webdav`` context needs to be configured so that SyncML
+clients or servers can be added to it::
+
+   # configure sources
+   syncevolution --configure \
+                databaseUser=123456 \
+                "databasePassword=!@#ABcd1234" \
+                addressbook/backend=carddav \
+                addressbook/database=http://example.com/addressbooks/123456/ \
+                calendar/backend=caldav \
+                calendar/database=http://example.com/calendar/123456/ \
+                @webdav \
+                calendar addressbook
+
+   # configure one peer (Memotoo in this example):
+   syncevolution --configure \
+                 username=654321 \
+                 password=^749@2524 \
+                 memotoo@webdav
+
+   # sync
+   syncevolution --sync slow memotoo@webdav
 
 
 NOTES
