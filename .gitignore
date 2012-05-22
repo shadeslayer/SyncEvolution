@@ -59,9 +59,6 @@ Makefile.in
 # src/backends
 /src/backends/backends.am
 
-# src/backends/buteo
-/src/backends/buteo/autotroll.mk
-
 # src/backends/webdav
 /src/backends/webdav/syncevo-webdav-lookup
 

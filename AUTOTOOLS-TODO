@@ -83,10 +83,6 @@ NITPICKS:
   and test-client always relinked.
 
 
-- Check if /etc/sync and /lib/sync really have to be created, even if they are
-  going to be empty after install (this is probably some buteo stuff).
-
-
 - Maybe do not create /share/man/man1 directory if we do not put there anything.
 
 

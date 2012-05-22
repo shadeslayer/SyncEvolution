@@ -129,17 +129,6 @@ AC_ARG_ENABLE(integration-tests,
                              [enables tests outside of the library (can be used together with normal builds of the library)]),
               enable_integration_tests="$enableval", enable_integration_tests="no")
 
-AC_ARG_ENABLE(buteo-tests,
-              AS_HELP_STRING([--enable-buteo-tests],
-                             [enables tests for Buteo sync framework. Not enabled when neither '--enable-unit-tests' nor '--enable-integration-tests' is specified]),
-              [ if test "$enable_unit_tests" = "yes" || test "$enable_integration_tests" = "yes" ; then
-                    enable_buteo_tests="$enableval"
-                else
-                    enable_buteo_tests="no"
-                fi], enable_buteo_tests="no")
-PKG_CHECK_MODULES(BUTEOSYNCPROFILE, [syncprofile], HAVE_SYNCPROFILE=yes, HAVE_SYNCPROFILE=no)
-PKG_CHECK_MODULES(BUTEOSYNCCOMMON, [synccommon], HAVE_SYNCCOMMON=yes, HAVE_SYNCCOMMON=no)
-
 AC_ARG_ENABLE(static-cxx,
               AS_HELP_STRING([--enable-static-cxx],
                              [build executables which contain libstdc++ instead of requiring suitable libstdc++.so to run]),
@@ -188,17 +177,8 @@ fi
 if test "x$enable_integration_tests" = 'xyes'; then
         AC_DEFINE(ENABLE_INTEGRATION_TESTS, 1, [enable integration tests inside the final library])
 fi
-if test "$enable_buteo_tests" = "yes"; then
-        AC_DEFINE(ENABLE_BUTEO_TESTS, 1, [enable buteo tests])
-        need_qt_modules="$need_qt_modules dbus xml"
-        AC_PATH_PROG(SQLITE3, sqlite3)
-        if test -z "$SQLITE3"; then
-            AC_MSG_ERROR([sqlite3 not found, is required for buteo testing])
-        fi
-fi
 AM_CONDITIONAL([ENABLE_UNIT_TESTS], [test "$enable_unit_tests" = "yes"])
 AM_CONDITIONAL([ENABLE_TESTING], [test "$enable_unit_tests" = "yes" || test "$enable_integration_tests" = "yes" ])
-AM_CONDITIONAL([ENABLE_BUTEO_TESTS], [test "$enable_buteo_tests" = "yes"])
 
 if test $enable_static_cxx = "yes"; then
         LIBS="$LIBS -L."
@@ -545,10 +525,6 @@ AC_SUBST(DBUS_GLIB_LIBS)
 AC_SUBST(LIBNOTIFY_CFLAGS)
 AC_SUBST(LIBNOTIFY_LIBS)
 AC_SUBST(LIBEXECDIR)
-AC_SUBST(BUTEOSYNCPROFILE_LIBS)
-AC_SUBST(BUTEOSYNCPROFILE_CFLAGS)
-AC_SUBST(BUTEOSYNCCOMMON_LIBS)
-AC_SUBST(BUTEOSYNCCOMMON_CFLAGS)
 
 DBUS_SERVICES_DIR="${datadir}/dbus-1/services"
 AC_SUBST(DBUS_SERVICES_DIR)

@@ -227,15 +227,6 @@ src_client_test_SOURCES = \
   $(CORE_SOURCES)
 nodist_src_client_test_SOURCES = test/test.cpp
 
-if ENABLE_BUTEO_TESTS
-src_client_test_buteo_moc_files = src/client-test-buteo.moc.cpp
-src_client_test_SOURCES += \
-  src/client-test-buteo.h \
-  src/client-test-buteo.cpp
-nodist_src_client_test_SOURCES += $(src_client_test_buteo_moc_files)
-BUILT_SOURCES += $(src_client_test_buteo_moc_files)
-endif
-
 # list of test file base files
 #
 # Generated files (testcases/eds_event.ics.funambol.tem) are derived from
@@ -268,10 +259,10 @@ TEST_FILES_PATCHED = $(wildcard src/testcases/*.tem)
 # add files created via patches
 CLIENT_LIB_TEST_FILES += $(TEST_FILES_GENERATED)
 
-src_client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(src_cppflags) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(QT_CPPFLAGS)
-src_client_test_CXXFLAGS = @CPPUNIT_CXXFLAGS@ $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(BUTEOSYNCPROFILE_CFLAGS) $(BUTEOSYNCCOMMON_CFLAGS) $(filter-out -O2 -g -W -Wall, $(QT_CXXFLAGS)) $(SYNCEVO_WFLAGS)
-src_client_test_LDFLAGS = @CPPUNIT_LDFLAGS@ `nm src/syncevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-Wl,-u/'` $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LDFLAGS)
-src_client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE) $(BUTEOSYNCPROFILE_LIBS) $(BUTEOSYNCCOMMON_LIBS) $(QT_LIBS)
+src_client_test_CPPFLAGS = -DHAVE_CONFIG_H -DENABLE_INTEGRATION_TESTS -DENABLE_UNIT_TESTS $(src_cppflags) $(QT_CPPFLAGS)
+src_client_test_CXXFLAGS = @CPPUNIT_CXXFLAGS@ $(PCRECPP_CFLAGS) $(SYNCEVOLUTION_CXXFLAGS) $(CORE_CXXFLAGS) $(filter-out -O2 -g -W -Wall, $(QT_CXXFLAGS)) $(SYNCEVO_WFLAGS)
+src_client_test_LDFLAGS = @CPPUNIT_LDFLAGS@ `nm src/syncevo/.libs/libsyncevolution.a | grep funambolAutoRegisterRegistry | sed -e 's/.* /-Wl,-u/'` $(PCRECPP_LIBS) $(CORE_LD_FLAGS) $(QT_LDFLAGS)
+src_client_test_LDADD = $(CORE_LDADD) $(SYNTHESIS_ENGINE) $(QT_LIBS)
 # These dependencies are intentionally a bit too broad:
 # they ensure that all files are in place to *run* client-test.
 
@@ -346,8 +337,6 @@ $(filter-out %.tem, $(filter src/testcases/%, $(subst $(top_srcdir)/test/,src/,$
 # Listing the dependencies here is done to ensure that one doesn't accidentally
 # runs the binary with out-dated auxiliary files.
 src_client_test_DEPENDENCIES = $(EXTRA_LTLIBRARIES) $(CORE_DEP) $(CLIENT_LIB_TEST_FILES) testcase2patch src/synccompare src/synclog2html src/templates
-
-CLEANFILES += $(src_client_test_buteo_moc_files)
 
 # Copy template directory into current working directory, if not there
 # yet. -ef flag checks whether device and inode numbers of both files

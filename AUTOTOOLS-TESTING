@@ -6,8 +6,6 @@ Untested:
   --enable-kcalextended
   --enable-qtcontacts (see TODO)
   --enable-kwallet
-  --enable-buteo-tests
-  --enable-buteo
   --enable-maemocal
   ... probably more.
 - make -j and make -jX where X>2, because gcc is being killed by oom-killer).

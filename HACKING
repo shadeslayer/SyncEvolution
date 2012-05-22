@@ -366,30 +366,3 @@ crash scenarios the final error messages may get lost. To debug such
 cases, disable redirection by setting the environment variable
 SYNCEVOLUTION_DEBUG (value doesn't matter) and capture the output
 normally.
-
-Testing Buteo
----------
-
-SyncEvolution enables Buteo testing based client-test. Configure with
---enable-integration-tests and --enable-buteo-tests and then run
-"src/client-test" to test Buteo with the above described environment
-variables. The only difference is that you have to set a new one
-"CLIENT_TEST_BUTEO=1". Buteo testing supports testing two kinds of
-data: qt_contact and kcal_event.
-
-Here are step-by-step instructions to get started with Buteo testing,
-also using ScheduleWorld as example:
-- CLIENT_TEST_SERVER=scheduleworld \
-  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/testing/ \
-  ./client-test -h
-  => creates ~/.config/syncevolution/scheduleworld_[12]/ configs
-     which use data bases under /tmp/testing, then
-     prints all available tests
-- create Buteo sync profile file ~/.sync/profiles/sync/scheduleworld.xml 
-  and edit and enter account data for ScheduleWorld. 
-- chmod -R 666 /etc/sync
-  => change the access mode of the directory /etc/sync
-- CLIENT_TEST_SERVER=scheduleworld \
-  CLIENT_TEST_EVOLUTION_PREFIX=file:///tmp/testing/ \
-  ./client-test Client::Sync::qt_contact
-  => runs all tests for qt_contact

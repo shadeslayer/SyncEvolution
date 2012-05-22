@@ -72,10 +72,6 @@
 
 #include <syncevo/declarations.h>
 
-#ifdef ENABLE_BUTEO_TESTS
-#include "client-test-buteo.h"
-#endif
-
 namespace CppUnit {
 
 /**
@@ -416,20 +412,10 @@ static void removeItem(TestingSyncSource *source, const std::string &luid)
 
 static void restoreStorage(const ClientTest::Config &config, ClientTest &client)
 {
-#ifdef ENABLE_BUTEO_TESTS
-    if (boost::iequals(config.sourceName,"qt_contact")) { 
-        QtContactsSwitcher::restoreStorage(client); 
-    }
-#endif
 }
 
 static void backupStorage(const ClientTest::Config &config, ClientTest &client)
 {
-#ifdef ENABLE_BUTEO_TESTS
-    if (boost::iequals(config.sourceName,"qt_contact")) { 
-        QtContactsSwitcher::backupStorage(client); 
-    }
-#endif
 }
 
 /** adds the supported tests to the instance itself */
