@@ -596,6 +596,7 @@ class SyncEvolutionTest(Action):
         if not self.serverName:
             self.serverName = name
         self.testBinary = testBinary
+        self.alarmSeconds = 1200
 
     def execute(self):
         resdir = os.getcwd()
@@ -639,7 +640,7 @@ class SyncEvolutionTest(Action):
                       "CLIENT_TEST_SERVER=%(server)s " \
                       "CLIENT_TEST_SOURCES=%(sources)s " \
                       "SYNC_EVOLUTION_EVO_CALENDAR_DELAY=1 " \
-                      "CLIENT_TEST_ALARM=1200 " \
+                      "CLIENT_TEST_ALARM=%(alarm)d " \
                       "%(env)s %(installenv)s" \
                       "CLIENT_TEST_LOG=%(log)s " \
                       "CLIENT_TEST_EVOLUTION_PREFIX=%(evoprefix)s " \
@@ -648,6 +649,7 @@ class SyncEvolutionTest(Action):
                       "%(testbinary)s" % \
                       { "server": self.serverName,
                         "sources": ",".join(self.sources),
+                        "alarm": self.alarmSeconds,
                         "env": self.testenv,
                         "installenv": installenv,
                         "log": self.serverlogs,
@@ -1122,10 +1124,11 @@ test = SyncEvolutionTest("apple", compile,
                          [ "apple_caldav", "apple_carddav", "eds_event", "eds_contact" ],
                          "CLIENT_TEST_WEBDAV='apple caldav carddav' "
                          "CLIENT_TEST_NUM_ITEMS=250 " # test is local, so we can afford a higher number
-                         "CLIENT_TEST_ALARM=2400 " # but even with a local server does the test run a long time
                          "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
                          testPrefix=options.testprefix)
+# but even with a local server does the test run a long time
+test.alarmSeconds = 2400
 context.add(test)
 
 class ActiveSyncTest(SyncEvolutionTest):
