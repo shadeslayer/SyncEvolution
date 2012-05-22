@@ -946,6 +946,75 @@
    fun:b_dbus_setup_server
 }
 
+# ==19740== 72 bytes in 1 blocks are possibly lost in loss record 1,226 of 1,985
+# ==19740==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==19740==    by 0x9906590: g_malloc0 (gmem.c:189)
+# ==19740==    by 0x9676368: g_closure_new_simple (gclosure.c:206)
+# ==19740==    by 0x96778CF: g_cclosure_new (gclosure.c:917)
+# ==19740==    by 0x968E91D: g_signal_connect_data (gsignal.c:2443)
+# ==19740==    by 0x93DA9D8: has_connection (gdbusnameowning.c:425)
+# ==19740==    by 0x93DB278: g_bus_own_name_on_connection (gdbusnameowning.c:550)
+# ==19740==    by 0x66E560: GDBusCXX::dbus_get_bus_connection(char const*, char const*, bool, GDBusCXX::DBusErrorCXX*) (gdbus-cxx-bridge.cpp:86)
+# ==19740==    by 0x5E3D54: main (main.cpp:109)
+# ==19740== 
+{
+   g_cclosure_new + GIO D-Bus name owning leak
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_closure_new_simple
+   fun:g_cclosure_new
+   fun:g_signal_connect_data
+   fun:has_connection
+}
+
+# ==10738== 72 bytes in 1 blocks are possibly lost in loss record 1,327 of 2,063
+# ==10738==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==10738==    by 0x94C3590: g_malloc0 (gmem.c:189)
+# ==10738==    by 0x9233368: g_closure_new_simple (gclosure.c:206)
+# ==10738==    by 0x92348CF: g_cclosure_new (gclosure.c:917)
+# ==10738==    by 0x924B91D: g_signal_connect_data (gsignal.c:2443)
+# ==10738==    by 0x8AC520E: notify_notification_show (in /usr/lib/x86_64-linux-gnu/libnotify.so.4.0.0)
+# ==10738==    by 0x63A1BB: SyncEvo::AutoSyncManager::syncDone(SyncEvo::SyncMLStatus) (auto-sync-manager.cpp:335)
+# ==10738==    by 0x62459C: SyncEvo::Session::run(SyncEvo::LogRedirect&) (session.cpp:768)
+# ==10738==    by 0x60C8AC: SyncEvo::Server::run(SyncEvo::LogRedirect&) (server.cpp:362)
+# ==10738==    by 0x5DDFBA: main (main.cpp:120)
+# ==10738== 
+{
+   g_cclosure_new + notify_notification_show
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:g_closure_new_simple
+   fun:g_cclosure_new
+   fun:g_signal_connect_data
+   fun:notify_notification_show
+}
+
+# ==27329== 2,032 bytes in 1 blocks are definitely lost in loss record 23,780 of 24,016
+# ==27329==    at 0x4C260C6: calloc (vg_replace_malloc.c:566)
+# ==27329==    by 0x8532590: g_malloc0 (gmem.c:189)
+# ==27329==    by 0x84FEAEF: thread_memory_from_self.part.9 (gslice.c:512)
+# ==27329==    by 0x8545984: g_slice_alloc (gslice.c:501)
+# ==27329==    by 0x8545CA5: g_slice_alloc0 (gslice.c:1029)
+# ==27329==    by 0x852BCCC: g_main_context_push_thread_default (gmain.c:671)
+# ==27329==    by 0x759B90C: gdbus_shared_thread_func (gdbusprivate.c:276)
+# ==27329==    by 0x854E404: g_thread_proxy (gthread.c:801)
+# ==27329==    by 0x6E4AB4F: start_thread (pthread_create.c:304)
+# ==27329==    by 0x9DD990C: clone (clone.S:112)
+# ==27329== 
+{
+   GIO D-Bus thread
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   fun:thread_memory_from_self.*
+   fun:g_slice_alloc
+   fun:g_slice_alloc0
+   fun:g_main_context_push_thread_default
+   fun:gdbus_shared_thread_func
+}
+
 ### KDE ###
 
 # ==21052== 1,040 bytes in 26 blocks are possibly lost in loss record 5,184 of 5,271
