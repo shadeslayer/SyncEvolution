@@ -285,7 +285,7 @@ class LogDir : public LoggerBase, private boost::noncopyable, private LogDirName
                                   of the file is hard-coded in the engine. Despite
                                   that this class still is the central point to ask
                                   for the name of the log file. */
-    SafeConfigNode *m_info;  /**< key/value representation of sync information */
+    boost::scoped_ptr<SafeConfigNode> m_info;  /**< key/value representation of sync information */
     bool m_readonly;         /**< m_info is not to be written to */
     SyncReport *m_report;    /**< record start/end times here */
 
@@ -377,7 +377,7 @@ public:
      */
     void openLogdir(const string &dir) {
         boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(dir, "status.ini", true));
-        m_info = new SafeConfigNode(filenode);
+        m_info.reset(new SafeConfigNode(filenode));
         m_info->setMode(false);
         m_readonly = true;
     }
@@ -545,7 +545,7 @@ public:
         m_readonly = mode == SESSION_READ_ONLY;
         if (!m_path.empty()) {
             boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(m_path, "status.ini", m_readonly));
-            m_info = new SafeConfigNode(filenode);
+            m_info.reset(new SafeConfigNode(filenode));
             m_info->setMode(false);
             if (mode != SESSION_READ_ONLY) {
                 // Create a status.ini which contains an error.
@@ -695,11 +695,9 @@ public:
         }
     }
 
-    // remove redirection of logging
-    void restore() {
-        if (&LoggerBase::instance() == this) {
-            LoggerBase::popLogger();
-        }
+    // finalize session
+    void endSession()
+    {
         time_t end = time(NULL);
         if (m_report) {
             m_report->setEnd(end);
@@ -712,8 +710,14 @@ public:
                 }
                 m_info->flush();
             }
-            delete m_info;
-            m_info = NULL;
+            m_info.reset();
+        }
+    }
+
+    // remove redirection of logging (safe for destructor)
+    void restore() {
+        if (&LoggerBase::instance() == this) {
+            LoggerBase::popLogger();
         }
     }
 
@@ -1325,8 +1329,11 @@ public:
                 updateSyncReport(*report);
             }
 
-            // ensure that stderr is seen again, also writes out session status
+            // ensure that stderr is seen again
             m_logdir.restore();
+
+            // write out session status
+            m_logdir.endSession();
 
             if (m_reportTodo) {
                 // haven't looked at result of sync yet;
@@ -1369,6 +1376,10 @@ public:
                 // now remove some old logdirs
                 m_logdir.expire();
             }
+        } else {
+            // finish debug session
+            m_logdir.restore();
+            m_logdir.endSession();
         }
     }
 
