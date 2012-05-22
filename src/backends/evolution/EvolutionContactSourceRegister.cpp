@@ -35,13 +35,13 @@ static SyncSource *createSource(const SyncSourceParams &params)
     enabled = EDSAbiHaveEbook && EDSAbiHaveEdataserver;
     
     if (isMe || maybeMe) {
-        if (sourceType.m_format == "" || sourceType.m_format == "text/x-vcard") {
+        if (sourceType.m_format == "text/x-vcard") {
             return
 #ifdef ENABLE_EBOOK
                 enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_21) :
 #endif
                 isMe ? RegisterSyncSource::InactiveSource(params) : NULL;
-        } else if (sourceType.m_format == "text/vcard") {
+        } else if (sourceType.m_format == "" || sourceType.m_format == "text/vcard") {
             return
 #ifdef ENABLE_EBOOK
                 enabled ? new EvolutionContactSource(params, EVC_FORMAT_VCARD_30) :
@@ -60,8 +60,8 @@ static RegisterSyncSource registerMe("Evolution Address Book",
 #endif
                                      createSource,
                                      "Evolution Address Book = Evolution Contacts = addressbook = contacts = evolution-contacts\n"
-                                     "   vCard 2.1 (default) = text/x-vcard\n"
-                                     "   vCard 3.0 = text/vcard\n"
+                                     "   vCard 2.1 = text/x-vcard\n"
+                                     "   vCard 3.0 (default) = text/vcard\n"
                                      "   The later is the internal format of Evolution and preferred with\n"
                                      "   servers that support it.",
                                      Values() +
