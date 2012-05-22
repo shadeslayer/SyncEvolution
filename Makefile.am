@@ -179,7 +179,7 @@ deb rpm : dist/$(distdir) dist/debian/control
 		--pkgsource='http://syncevolution.org' \
 		--pkggroup='$*' \
 		--pkggroup='comm' \
-		cp -r `pwd`/$</usr/* /usr
+		cp -r `pwd`/$</* /
 	if [ $@ = "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm .; fi
 
 # Pseudo platform .deb packages:
