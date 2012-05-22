@@ -1200,7 +1200,7 @@ syncevoPrefix=" ".join([os.path.join(sync.basedir, "test", "wrappercheck.sh")] +
                          options.testprefix])
 
 # The test uses EDS on the clients and a server config with file
-# backends.
+# backends - normal tests.
 test = SyncEvolutionTest("edsfile",
                          compile,
                          "", options.shell,
@@ -1208,7 +1208,32 @@ test = SyncEvolutionTest("edsfile",
                          [ "eds_event", "eds_contact" ],
                          "CLIENT_TEST_NUM_ITEMS=10 "
                          "CLIENT_TEST_LOG=syncevohttp.log "
-                         # could be enabled, but reporting result is currently missing (BMC #1009)
+                         # Slow, and running many syncs still fails when using
+                         # valgrind. Tested separately below in "edsxfile".
+                         # "CLIENT_TEST_RETRY=t "
+                         # "CLIENT_TEST_RESEND=t "
+                         # "CLIENT_TEST_SUSPEND=t "
+                         # server supports refresh-from-client, use it for
+                         # more efficient test setup
+                         "CLIENT_TEST_DELETE_REFRESH=1 "
+                         # server supports multiple cycles inside the same session
+                         "CLIENT_TEST_PEER_CAN_RESTART=1 "
+                         # server cannot detect pairs based on UID/RECURRENCE-ID
+                         "CLIENT_TEST_ADD_BOTH_SIDES_SERVER_IS_DUMB=1 "
+                         "CLIENT_TEST_SKIP="
+                         ,
+                         testPrefix=syncevoPrefix)
+context.add(test)
+
+# The test uses EDS on the clients and a server config with file
+# backends - suspend/retry/resend tests.
+test = SyncEvolutionTest("edsxfile",
+                         compile,
+                         "", options.shell,
+                         "Client::Sync::eds_contact::Retry Client::Sync::eds_contact::Resend Client::Sync::eds_contact::Suspend",
+                         [ "eds_contact" ],
+                         "CLIENT_TEST_NUM_ITEMS=10 "
+                         "CLIENT_TEST_LOG=syncevohttp.log "
                          "CLIENT_TEST_RETRY=t "
                          "CLIENT_TEST_RESEND=t "
                          "CLIENT_TEST_SUSPEND=t "
@@ -1220,11 +1245,10 @@ test = SyncEvolutionTest("edsfile",
                          # server cannot detect pairs based on UID/RECURRENCE-ID
                          "CLIENT_TEST_ADD_BOTH_SIDES_SERVER_IS_DUMB=1 "
                          "CLIENT_TEST_SKIP="
-                         # server does not detect duplicates (uses file backend), detecting on the
-                         # client breaks syncing (see '[SyncEvolution] 409 "item merged" in client')
-                         # "Client::Sync::.*::testAddBothSides.*"
                          ,
                          testPrefix=syncevoPrefix)
+# a lot of syncs per test
+test.alarmSeconds = 6000
 context.add(test)
 
 # This one uses CalDAV/CardDAV in DAViCal and the same server config
