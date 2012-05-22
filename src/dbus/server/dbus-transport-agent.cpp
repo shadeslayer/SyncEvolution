@@ -117,11 +117,12 @@ void DBusTransportAgent::doWait()
     SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: wait - old state: %s, %s",
                  SessionCommon::ConnectionStateToString(m_state).c_str(),
                  m_error.c_str());
-    // Block for one iteration. Both D-Bus calls and signals (thanks
-    // to the SuspendFlags guard in the running sync session) will
-    // wake us up.
-    g_main_context_iteration(NULL, true);
-
+    if (SuspendFlags::getSuspendFlags().getState() == SuspendFlags::NORMAL) {
+        // Block for one iteration. Both D-Bus calls and signals (thanks
+        // to the SuspendFlags guard in the running sync session) will
+        // wake us up.
+        g_main_context_iteration(NULL, true);
+    }
     SE_LOG_DEBUG(NULL, NULL, "D-Bus transport: wait - new state: %s, %s",
                  SessionCommon::ConnectionStateToString(m_state).c_str(),
                  m_error.c_str());
