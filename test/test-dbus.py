@@ -2570,8 +2570,7 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
         self.runTestDBusCheck = checkDBusLog
 
     @timeout(60)
-    def testAutoSyncLocalConfigError(self):
-        """TestSessionAPIsDummy.testAutoSyncLocalConfigError - test that auto-sync is triggered for local sync, fails due to permanent config error here"""
+    def doAutoSyncLocalConfigError(self, notifyLevel):
         self.setupConfig()
         # enable auto-sync
         config = copy.deepcopy(self.config)
@@ -2580,6 +2579,8 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
         config[""]["autoSyncDelay"] = "0"
         config[""]["autoSyncInterval"] = "10s"
         config[""]["password"] = "foobar"
+        if notifyLevel != 3:
+            config[""]["notifyLevel"] = str(notifyLevel)
         self.session.SetConfig(True, False, config, utf8_strings=True)
 
         def session_ready(object, ready):
@@ -2622,6 +2623,7 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
         def checkDBusLog(self, content):
             notifications = GrepNotifications(content)
             self.assertEqual(notifications,
+                             notifyLevel >= 1 and
                              ['   string "SyncEvolution"\n'
                               '   uint32 0\n'
                               '   string ""\n'
@@ -2635,7 +2637,8 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
                               '   ]\n'
                               '   array [\n'
                               '   ]\n'
-                              '   int32 -1\n'])
+                              '   int32 -1\n']
+                             or [])
 
         # check that no other session is started at the time of
         # the next regular auto sync session
@@ -2667,9 +2670,22 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
         # done as part of post-processing in runTest()
         self.runTestDBusCheck = checkDBusLog
 
-    @timeout(120)
-    def testAutoSyncLocalSuccess(self):
-        """TestSessionAPIsDummy.testAutoSyncLocalSuccess - test that auto-sync is done successfully for local sync between file backends"""
+    @timeout(60)
+    def testAutoSyncLocalConfigError(self):
+        """TestSessionAPIsDummy.testAutoSyncLocalConfigError - test that auto-sync is triggered for local sync, fails due to permanent config error here"""
+        self.doAutoSyncLocalConfigError(3)
+
+    @timeout(60)
+    def testAutoSyncLocalConfigErrorEssential(self):
+        """TestSessionAPIsDummy.testAutoSyncLocalConfigErrorEssential - test that auto-sync is triggered for local sync, fails due to permanent config error here, with only the essential error notification"""
+        self.doAutoSyncLocalConfigError(1)
+
+    @timeout(60)
+    def testAutoSyncLocalConfigErrorQuiet(self):
+        """TestSessionAPIsDummy.testAutoSyncLocalConfigErrorQuiet - test that auto-sync is triggered for local sync, fails due to permanent config error here, with no notification"""
+        self.doAutoSyncLocalConfigError(0)
+
+    def doAutoSyncLocalSuccess(self, notifyLevel):
         # create @foobar config
         self.session.Detach()
         self.setUpSession("target-config@foobar")
@@ -2690,6 +2706,8 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
         config[""]["PeerIsClient"] = "1"
         config[""]["autoSync"] = "1"
         config[""]["autoSyncDelay"] = "0"
+        if notifyLevel != 3:
+            config[""]["notifyLevel"] = str(notifyLevel)
         del config[""]["password"]
         # must be small enough (otherwise test runs a long time)
         # but not too small (otherwise the next sync already starts
@@ -2738,6 +2756,7 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
         def checkDBusLog(self, content):
             notifications = GrepNotifications(content)
             self.assertEqual(notifications,
+                             notifyLevel >= 3 and
                              ['   string "SyncEvolution"\n'
                               '   uint32 0\n'
                               '   string ""\n'
@@ -2766,11 +2785,21 @@ class TestSessionAPIsDummy(DBusUtil, unittest.TestCase):
                               '   ]\n'
                               '   array [\n'
                               '   ]\n'
-                              '   int32 -1\n'])
+                              '   int32 -1\n']
+                             or [])
 
         # done as part of post-processing in runTest()
         self.runTestDBusCheck = checkDBusLog
 
+    @timeout(120)
+    def testAutoSyncLocalSuccess(self):
+        """TestSessionAPIsDummy.testAutoSyncLocalSuccess - test that auto-sync is done successfully for local sync between file backends, with notifications"""
+        self.doAutoSyncLocalSuccess(3)
+
+    @timeout(120)
+    def testAutoSyncLocalSuccessQuiet(self):
+        """TestSessionAPIsDummy.testAutoSyncLocalSuccessQuiet - test that auto-sync is done successfully for local sync between file backends, without notifications"""
+        self.doAutoSyncLocalSuccess(1)
 
 class TestSessionAPIsReal(DBusUtil, unittest.TestCase):
     """ This class is used to test those unit tests of session APIs, depending on doing sync.
@@ -4396,6 +4425,7 @@ peers/scheduleworld/config.ini:# password =
 .internal.ini:contextCurVersion = {3}
 config.ini:# logdir = 
 peers/scheduleworld/config.ini:# loglevel = 0
+peers/scheduleworld/config.ini:# notifyLevel = 3
 peers/scheduleworld/config.ini:# printChanges = 1
 peers/scheduleworld/config.ini:# dumpData = 1
 config.ini:# maxlogdirs = 10
@@ -4597,6 +4627,7 @@ spds/syncml/config.txt:# username =
 spds/syncml/config.txt:# password = 
 spds/syncml/config.txt:# logdir = 
 spds/syncml/config.txt:# loglevel = 0
+spds/syncml/config.txt:# notifyLevel = 3
 spds/syncml/config.txt:# printChanges = 1
 spds/syncml/config.txt:# dumpData = 1
 spds/syncml/config.txt:# maxlogdirs = 10
@@ -5520,6 +5551,8 @@ password (no default, unshared)
 logdir (no default, shared)
 
 loglevel (0, unshared)
+
+notifyLevel (3, unshared)
 
 printChanges (TRUE, unshared)
 

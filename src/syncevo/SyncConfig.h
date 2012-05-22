@@ -1385,6 +1385,15 @@ class SyncConfig {
     virtual InitState<unsigned int> getLogLevel() const;
     virtual void setLogLevel(unsigned int value, bool temporarily = false);
 
+    enum NotifyLevel {
+        NOTIFY_NONE,        /**< suppress all notifications */
+        NOTIFY_ERROR,       /**< show only errors */
+        NOTIFY_CHANGES,     /**< show information about changes and errors */
+        NOTIFY_ALL          /**< show all notifications, including starting a sync */
+    };
+    virtual InitState<NotifyLevel> getNotifyLevel() const;
+    virtual void setNotifyLevel(NotifyLevel value, bool temporarily = false);
+
     virtual InitState<bool> getPrintChanges() const;
     virtual void setPrintChanges(bool value, bool temporarily = false);
 

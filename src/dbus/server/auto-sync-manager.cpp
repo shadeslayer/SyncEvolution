@@ -170,6 +170,7 @@ void AutoSyncManager::initConfig(const std::string &configName)
         task->m_interval = config.getAutoSyncInterval();
         task->m_delay = config.getAutoSyncDelay();
         task->m_remoteDeviceId = config.getRemoteDevID();
+        task->m_notifyLevel = config.getNotifyLevel();
 
         // Assume that whatever change was made might have resolved
         // the past problem -> allow auto syncing again.
@@ -424,7 +425,8 @@ void AutoSyncManager::autoSyncSuccessStart(AutoSyncTask *task)
     task->m_syncSuccessStart = true;
     SE_LOG_INFO(NULL, NULL,"Automatic sync for '%s' has been successfully started.\n",
                 task->m_peerName.c_str());
-    if (m_server.notificationsEnabled()) {
+    if (m_server.notificationsEnabled() &&
+        task->m_notifyLevel >= SyncConfig::NOTIFY_ALL) {
         std::string summary = StringPrintf(_("%s is syncing"), task->m_peerName.c_str());
         std::string body = StringPrintf(_("We have just started to sync your computer with the %s sync service."),
                                         task->m_peerName.c_str());
@@ -456,19 +458,23 @@ void AutoSyncManager::autoSyncDone(AutoSyncTask *task, SyncMLStatus status)
         // send a notification to notification server
         std::string summary, body;
         if (task->m_syncSuccessStart && status == STATUS_OK) {
-            // if sync is successfully started and done
-            summary = StringPrintf(_("%s sync complete"), task->m_peerName.c_str());
-            body = StringPrintf(_("We have just finished syncing your computer with the %s sync service."),
-                                task->m_peerName.c_str());
-            //TODO: set config information for 'sync-ui'
-            m_notificationManager->publish(summary, body);
+            if (task->m_notifyLevel >= SyncConfig::NOTIFY_ALL) {
+                // if sync is successfully started and done
+                summary = StringPrintf(_("%s sync complete"), task->m_peerName.c_str());
+                body = StringPrintf(_("We have just finished syncing your computer with the %s sync service."),
+                                    task->m_peerName.c_str());
+                //TODO: set config information for 'sync-ui'
+                m_notificationManager->publish(summary, body);
+            }
         } else if (task->m_syncSuccessStart || !ErrorIsTemporary(status)) {
-            // if sync is successfully started and has errors, or not started successful with a permanent error
-            // that needs attention
-            summary = StringPrintf(_("Sync problem."));
-            body = StringPrintf(_("Sorry, there's a problem with your sync that you need to attend to."));
-            //TODO: set config information for 'sync-ui'
-            m_notificationManager->publish(summary, body);
+            if (task->m_notifyLevel >= SyncConfig::NOTIFY_ERROR) {
+                // if sync is successfully started and has errors, or not started successful with a permanent error
+                // that needs attention
+                summary = StringPrintf(_("Sync problem."));
+                body = StringPrintf(_("Sorry, there's a problem with your sync that you need to attend to."));
+                //TODO: set config information for 'sync-ui'
+                m_notificationManager->publish(summary, body);
+            }
         }
     }
 

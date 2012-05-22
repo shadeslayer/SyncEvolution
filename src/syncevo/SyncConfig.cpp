@@ -1257,6 +1257,16 @@ static UIntConfigProperty syncPropLogLevel("loglevel",
                                           "- 2 = also INFO messages\n"
                                           "- 3 = also DEBUG messages\n"
                                           "> 3 = increasing amounts of debug messages for developers");
+static UIntConfigProperty syncPropNotifyLevel("notifyLevel",
+                                              "Level of detail for desktop notifications. Currently such\n"
+                                              "notifications are generated only for automatically started\n"
+                                              "sync sessions.\n"
+                                              "\n"
+                                              "0 - suppress all notifications\n"
+                                              "1 - show only errors\n"
+                                              "2 - show information about changes and errors (in practice currently the same as level 3)\n"
+                                              "3 - show all notifications, including starting a sync\n",
+                                              "3");
 static BoolConfigProperty syncPropPrintChanges("printChanges",
                                                "enables or disables the detailed (and sometimes slow) comparison\n"
                                                "of database content before and after a sync session",
@@ -1528,6 +1538,7 @@ public:
         registry.push_back(&syncPropPassword);
         registry.push_back(&syncPropLogDir);
         registry.push_back(&syncPropLogLevel);
+        registry.push_back(&syncPropNotifyLevel);
         registry.push_back(&syncPropPrintChanges);
         registry.push_back(&syncPropDumpData);
         registry.push_back(&syncPropMaxLogDirs);
@@ -1845,6 +1856,11 @@ InitState<unsigned int> SyncConfig::getMaxLogDirs() const { return syncPropMaxLo
 void SyncConfig::setMaxLogDirs(unsigned int value, bool temporarily) { syncPropMaxLogDirs.setProperty(*getNode(syncPropMaxLogDirs), value, temporarily); }
 InitState<unsigned int> SyncConfig::getLogLevel() const { return syncPropLogLevel.getPropertyValue(*getNode(syncPropLogLevel)); }
 void SyncConfig::setLogLevel(unsigned int value, bool temporarily) { syncPropLogLevel.setProperty(*getNode(syncPropLogLevel), value, temporarily); }
+InitState<SyncConfig::NotifyLevel> SyncConfig::getNotifyLevel() const {
+    InitState<unsigned int> res = syncPropNotifyLevel.getPropertyValue(*getNode(syncPropNotifyLevel));
+    return InitState<SyncConfig::NotifyLevel>(static_cast<SyncConfig::NotifyLevel>(res.get()), res.wasSet());
+}
+void SyncConfig::setNotifyLevel(SyncConfig::NotifyLevel value, bool temporarily) { syncPropNotifyLevel.setProperty(*getNode(syncPropNotifyLevel), value, temporarily); }
 InitState<unsigned int> SyncConfig::getRetryDuration() const {return syncPropRetryDuration.getPropertyValue(*getNode(syncPropRetryDuration));}
 void SyncConfig::setRetryDuration(unsigned int value, bool temporarily) { syncPropRetryDuration.setProperty(*getNode(syncPropRetryDuration), value, temporarily); }
 InitState<unsigned int> SyncConfig::getRetryInterval() const { return syncPropRetryInterval.getPropertyValue(*getNode(syncPropRetryInterval)); }

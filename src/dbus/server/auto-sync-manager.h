@@ -26,6 +26,7 @@
 #include <boost/signals2.hpp>
 
 #include <syncevo/SyncML.h>
+#include <syncevo/SyncContext.h>
 #include <syncevo/SmartPtr.h>
 #include <syncevo/util.h>
 
@@ -100,6 +101,9 @@ class AutoSyncManager
 
         /** copy of config's remoteDeviceId sync property */
         std::string m_remoteDeviceId;
+
+        /** copy of config's notifyLevel property */
+        SyncConfig::NotifyLevel m_notifyLevel;
 
         /** last auto sync attempt succeeded (needed for notification logic) */
         bool m_syncSuccessStart;
