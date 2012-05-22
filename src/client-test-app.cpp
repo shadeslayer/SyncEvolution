@@ -332,6 +332,15 @@ public:
     {
         init();
 
+        // Let "Client_Sync_Current" symlink point to a new, empty
+        // directory logbase + ".server". Can be used by SyncEvolution
+        // server as per-test logdir.
+        std::string current = logbase + ".server";
+        rm_r(current);
+        mkdir_p(current);
+        rm_r("Client_Sync_Current");
+        symlink(current.c_str(), "Client_Sync_Current");
+
         // check whether using buteo to do sync
         const char *buteo = getenv("CLIENT_TEST_BUTEO");
         bool useButeo = false;
