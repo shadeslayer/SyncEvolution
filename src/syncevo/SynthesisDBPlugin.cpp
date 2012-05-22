@@ -666,7 +666,8 @@ sysync::TSyError SyncEvolution_ReadBlob(CContext aContext, cItemID  aID,  cAppCh
   TSyError res;
   if (source->getOperations().m_readBlob) {
       try {
-	    size_t blksize, totsize;
+            size_t blksize = aBlkSize ? static_cast<size_t>(*aBlkSize) : 0,
+                totsize = aTotSize ? static_cast<size_t>(*aTotSize) : 0;
 	    /* Another conversion between memSize and size_t to make s390 happy */
             res = source->getOperations().m_readBlob(aID, aBlobID, (void **)aBlkPtr,
 						     aBlkSize ? &blksize : NULL,
@@ -687,7 +688,9 @@ sysync::TSyError SyncEvolution_ReadBlob(CContext aContext, cItemID  aID,  cAppCh
   }
 
   SE_LOG_DEBUG(source, NULL, "ReadBlob aID=(%s,%s) aBlobID=(%s) aBlkPtr=%p aBlkSize=%lu aTotSize=%lu aFirst=%s aLast=%s res=%d",
-               aID->item,aID->parent, aBlobID, aBlkPtr, (unsigned long)*aBlkSize, (unsigned long)*aTotSize,
+               aID->item,aID->parent, aBlobID, aBlkPtr,
+               aBlkSize ? (unsigned long)*aBlkSize : 0,
+               aTotSize ? (unsigned long)*aTotSize : 0,
                aFirst? "true" : "false", *aLast ? "true" : "false", res);
   return res;
 } /* ReadBlob */

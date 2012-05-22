@@ -2433,7 +2433,8 @@ class SyncSourceBlob : public virtual SyncSourceBase
                               bool aFirst, bool *aLast) {
         // Translate between sysync::memSize and size_t, which
         // is different on s390 (or at least the compiler complains...).
-        sysync::memSize blksize, totsize;
+        sysync::memSize blksize = aBlkSize ? static_cast<sysync::memSize>(*aBlkSize) : 0,
+            totsize = aTotSize ? static_cast<sysync::memSize>(*aTotSize) : 0;
         sysync::TSyError err = m_blob.ReadBlob(aID, aBlobID, aBlkPtr,
                                                aBlkSize ? &blksize : NULL,
                                                aTotSize ? &totsize : NULL,
