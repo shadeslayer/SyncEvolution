@@ -1,3 +1,388 @@
+SyncEvolution 1.2.2 -> 1.2.99.1, ..........
+===========================================
+
+First pre-release of SyncEvolution 1.3. Contains bug fixes that were
+not backported to 1.2.x, so upgrading is recommended. SyncEvolution
+1.3 is required for Evolution 3.4, otherwise photos are not exported
+properly.
+
+Major new features are KDE/Akonadi support in the syncevolution.org
+binaries and ActiveSync support (only in the source code). The D-Bus
+server and local sync were rewritten considerably, to make the code
+cleaner and more robust.
+
+Details:
+
+* phone sync: delete<->delete conflict + phone calendar+todo sync (BMC #23744)
+
+  When deleting an item on phone and locally, the next sync failed with
+  ERROR messages about "object not found". This has several reasons:
+  - libsynthesis super data store attempts to read items
+    which may or may not exist (triggers ERROR message)
+  - it checks for 404 but Evolution backends only return a generic
+    database error (causes sync to fail)
+
+* phone sync: get phone vendor and model from Device ID profile (BMC #736)
+
+  In the past we have relied on the user-modifiable device name to be
+  the fingerprint for matching a phone to a template which is unreliable.
+
+  This release changes this in the cases where the phone supports the
+  Device ID profile (DIP). If support for DIP is detected, then we
+  extract the vendor and product ids and attempt to associate them
+  with a product and vendor name by using a newly added lookup table.
+
+  This lookup table has to be maintained manually and depends on
+  contributions by users to cover more devices. See
+  http://blixtra.org/blog/2011/09/22/syncevolution-needs-you-or-at-least-your-bluetooth-phones/
+
+* vCalendar 1.0: fixed recurring all-day event support
+
+  vCalendar 1.0 cannot represent all-day events. The workarounds for
+  mapping iCalendar 2.0 all-day events into vCalendar 1.0 was
+  incomplete, leading to effects like shifting EXDATEs and end
+  times.
+
+* GTK-UI: accept service config with a username again (BMC#23106)
+
+  Suppressing configs with empty username had undesired side effects:
+  modifying configs for direct syncing with a device incorrectly
+  triggered the same error message, without any means of entering
+  a username. The faulty check was removed without replacement.
+
+* GTK-UI: added GTK 3 version of UI
+
+  When GTK 3 is found during compilation, a GTK 3 version of the
+  UI is built. The source code of both is different to avoid
+  excessive use of ifdefs. At the moment, both versions offer
+  the same features. In the long run, the GTK 3 version will
+  replace the GTK 2 version.
+
+* command line: added refresh/one-way-from-local/remote (BMC #23537)
+
+  The -from-client/server sync modes are confusing because the direction
+  of the data exchange depends on which side acts as SyncML server or
+  client.
+
+  This release introduces new modes which use -from-local/remote
+  instead. The statistics and messages also use these variants
+  now. The old modes are still understood, but are declared as "not
+  recommended" in the documentation.
+
+* command line: config and source names are optional (BMC #23783)
+
+  The need to add "foo" and "bar" pseudo config and source names to the
+  command line even when all parameters for the operation where
+  explicitly specified on the command line was confusing.
+
+  Now it is possible to invoke item operations without the config and
+  source name. Names which refer to non-existent configs are still
+  accepted, as in previous releases. Typos are handled better by
+  producing a detailed error report which includes (as applicable):
+  - config doesn't exist
+  - source doesn't exist or not selected
+  - backend property not set
+
+  Because luids used to be positional arguments after <config> and
+  <source>, a new --luids keyword is necessary to indicate that the
+  ensuing parameters are luids and not <config> and <source>.
+
+* command line: introduced --print-databases, supported for CalDAV/CardDAV
+
+  Listing databases is now a dedicated operation, instead of being done
+  whenever syncevolution was invoked without parameters.
+
+  Advantages:
+  - can be combined with property assignments for backends
+    which do not work without that additional information, for example
+    CalDAV/CardDAV:
+    syncevolution --print-databases \
+                  backend=[caldav|carddav] \
+                  syncURL=... \
+                  username=... \
+                  password=...
+  - can be done for configured sources
+
+* command line: use both stdout and stderr
+
+  Traditionally, the "syncevolution" command line tool mixed its
+  INFO/ERROR/DEBUG messages into the normal stdout. This has the major
+  drawback that error messages get lost during operations like
+     syncevolution --export - @default addressbook | grep "John Doe"
+
+  Now anything which not the expected result of the operation is
+  always sent to stderr. Obviously this includes ERROR messages. INFO
+  and DEBUG are harder to decide. Because they usually convey meta
+  information about the running operation, they are also sent to
+  stderr. The output of running a sync goes to both stdout (summary)
+  and stderr (progress).
+
+* command line + local sync: fixed erroneous "Comparison impossible" output.
+
+  "Comparison impossible" was incorrectly printed after a successful
+  comparison on the target side of local sync.
+
+* synccompare: shorter data dump of PHOTO
+
+  A full comparison of the base64 PHOTO data can be very long.
+  Now some key characteristics of the PHOTO data (number of
+  characters in base64 encoding, number of bytes in decoded
+  data, md5sum of decoded data) are printed instead.
+
+  That way, unintended changes of the data (different encoding,
+  different content) should still be found while testing and
+  added/removed photos are nicely visible in synccompare diffs.
+
+* Evolution: always create databases (PTCOM-113)
+
+  Always try to create address book or calendar database, because even
+  if there is a source there's no guarantee that the actual database
+  was created already; the original logic for only setting this when
+  explicitly requesting a new database therefore failed in some cases.
+
+  This problem affected users who had never created anything locally
+  and wanted to use SyncEvolution to migrate their data. Now that
+  works without having to create dummy entries first.
+
+* Evolution contacts: changed default sync format to vCard 3.0
+
+  vCard 3.0 is the better default because it has saner encoding
+  rules and defines more properties, thus avoiding the need for
+  non-standard extensions. However, Mobical has problems with
+  the new default. See upgrade instructions below.
+
+* D-Bus server: made notification verbosity configurable with "notifyLevel"
+
+  The new "notifyLevel" per-peer configuration option allows users to
+  control how many desktop notifications the D-Bus server produces while
+  executing an automatic sync:
+
+  0 - suppress all notifications
+  1 - show only errors
+  2 - show information about changes and errors (in practice currently the same as level 3)
+  3 - show all notifications, including starting a sync (default)
+
+* CalDAV: updated Google workarounds
+
+  Google started sending empty items (VCALENDAR with no VEVENT inside)
+  which cannot be removed. SyncEvolution 1.3 ignores such items.
+
+  The workaround for a 404 from Google Calendar for a GET (sending a
+  REPORT request matching the item's UID) was broken: first, processing
+  the result ended up calling the unset responseEnd boost function
+  pointer, which caused the request to fail. Second, getting multiple
+  items wasn't handled (data from all items concatenated together was
+  used).
+
+  That can happen in the somewhat unlike case that some items have a UID
+  which is a complete superset of the requested UID - not realistic in
+  real life, but happens during testing.
+
+* WebDAV: bridge with SyncML
+
+  Now a peer accessed via SyncML can read/write data stored in a
+  CalDAV/CardDAV server directly. This can be used to connect a device
+  which only supports SyncML to a CalDAV/CardDAV server, or sync data
+  between a SyncML server and a CalDAV/CardDAV server. See "CalDAV and
+  CardDAV" in the README for details.
+
+* WebDAV: avoid potential crash during database detection
+
+  When a server responds to a PROPFIND for a path with results for some
+  other path, then SyncEvolution crashed during the search for the
+  default calendar or address book because of a bug in the code which
+  was meant to handle that kind of response. Apparently Yahoo Calendar
+  did that. Now seen again in combination with Radicale 0.6.4.
+
+  In general, the code was made more robust to cope with bugs in
+  Radicale 0.6.4. Later Radicale versions fixed these issues and also
+  worked with SyncEvolution 1.2.2 without client-side workarounds.
+
+* WebDAV: better path normalization
+
+  "syncURL" and "database" properties had to end in a trailing slash,
+  otherwise items were not found (404 errors). Now the necessary slash
+  is added automatically.
+
+* Curl transport: support SSLServerCertificates=<path>
+
+  When the setting refers to a directory, then CURLOPT_CAINFO doesn't
+  work (must be a file). Check this and use CURLOPT_CAPATH instead.
+
+  Caveat: there are some comments in the API documentation about "NSS
+  enabled libcurl" which supports a directory in
+  CURLOPT_CAINFO. Hopefully providing an explicit path in CURLOPT_CAPATH
+  also works in that configuration.
+
+* code cleanup + rewrite: syncing done in separate process
+
+  syncevo-dbus-server now runs syncing in a separate process. Local
+  sync also uses a second helper process. This makes the D-Bus server
+  more responsive via D-Bus (no more blocking operations) and
+  minimizes the effect of bugs in code involved with syncing
+  (backends, system libraries, etc.).
+
+  In the long term this restructuring will also allow more advanced
+  features, like monitoring local or remote storage for changes.
+
+* SyncEvolution <-> SyncEvolution sync: multiple cycles per session
+
+  SyncML only allows one send/receive cycle per session. There are cases
+  (for example, client side merges data that a dumber server failed to
+  match correctly) where client and server are still out of sync at
+  the end of a cycle. When SyncEvolution syncs with another SyncEvolution
+  instance (locally or remotely), both sides detect that the peer
+  can continue syncing in the same session and start over automatically
+  when needed. Previously the user had to start another sync session manually.
+
+  To the user this is shown as "number of cycles" in a sync session
+  in the sync report. "Restart" is the process of entering a new cycle.
+
+  The cycles are also visible in the command line output as multiple
+  INFO lines:
+
+    [INFO] eds_contact: starting first time sync from client (peer is server)
+    [INFO] creating complete data backup of source eds_contact before sync (enabled with dumpData and needed for prin
+    Local data changes to be applied during synchronization:
+    *** eds_contact ***
+    no changes
+
+    [INFO] eds_contact: sent 1/1
+    [INFO] eds_contact: started
+    [INFO] eds_contact: first time sync done successfully
+    [INFO] eds_contact: starting normal sync from client (peer is server)         <===
+    [INFO] eds_contact: started                                                   <===
+    [INFO] eds_contact: normal sync done successfully                             <===
+    [INFO] creating complete data backup after sync (enabled with dumpData and needed for printChanges)
+
+    Synchronization successful.
+
+    Changes applied during synchronization:
+    +---------------|-----------------------|-----------------------|-CON-+
+    |               |         LOCAL         |        REMOTE         | FLI |
+    |        Source | NEW | MOD | DEL | ERR | NEW | MOD | DEL | ERR | CTS |
+    +---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+    |   eds_contact |  0  |  0  |  0  |  0  |  1  |  0  |  0  |  0  |  0  |
+    |   refresh-from-local, 2 cycles, 0 KB sent by client, 0 KB received  |
+                            ^^^^^^^^
+    |   item(s) in database backup: 1 before sync, 1 after it             |
+    +---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+    |          start Tue Feb  7 17:07:49 2012, duration 0:03min           |
+    |               synchronization completed successfully                |
+    +---------------+-----+-----+-----+-----+-----+-----+-----+-----+-----+
+
+* SyncEvolution <-> SyncEvolution sync: negotiate UID support via SyncCap (BMC #22783)
+
+  The semantic of UID/RECURRENCE-ID in calendar data is now tracked
+  per data store involved in a sync. If full iCalendar 2.0 semantic
+  (= IDs are globally unique) is guaranteed, then pairs are found
+  based on these IDs. Otherwise pairs must be found by looking at
+  item attributes.
+
+  Previously a hack was used to detect this kind of support (any kind
+  of SyncEvolution instance was assumed to support it, although some
+  backends do not).
+
+* syncevolution.org packages: fixed D-Bus server autostart in .deb and .rpm packages
+
+  syncevo-dbus-server wasn't started automatically as part of a user
+  session because /etc/xdg/autostart/syncevo-dbus-server.desktop wasn't
+  included in the packages. This broke auto syncing after a session
+  restart (required manually starting SyncEvolution).
+
+* syncevolution.org packages: support KDE
+
+  The traditional "syncevolution-evolution" package was
+  replaced with "syncevolution-bundle". A meta "syncevolution-evolution"
+  package depends on it, to support seamless updates for users who have
+  "syncevolution-evolution" installed.
+
+  Binary dependencies of the main .deb are ignored for backends
+  because loading them is optional. The new "syncevolution-kde"
+  package has the right dependencies for KDE/Akonadi, while
+  "syncevolution-evolution" mostly just lists standard libs
+  if the "EDS compatibility" mode is used, where libebook/libecal
+  are loaded dynamically.
+
+  Platform specific code (GNOME keyring, KDE wallet) was moved into
+  loadable, optional modules, to allow installation of the SyncEvolution
+  bundle without forcing the installation of unused system components.
+
+* D-Bus: use GIO D-Bus instead of libdbus if available
+
+  When compiling from source, the more modern GIO D-Bus is used instead
+  of libdbus if available and recent enough (>= 2.30). syncevolution.org
+  binaries still use libdbus, to stay compatible with older Linux
+  distros.
+
+* several minor bug fixes
+
+  syncevo-dbus-server now runs under valgrind in the nightly testing,
+  plus several more test scenarios were added. This helped to find
+  and fix various minor memory handling issues.
+
+* developers: backend API changes
+
+  beginSync/endSync() (aka m_startDataRead/m_endDataWrite) may now be
+  called multiple times per SyncSource instance life cycle. SyncSources
+  derived from TrackingSyncSource should work without changes. Use the
+  Client::Source::*::testChangesMultiCycles test to check whether your
+  backend supports this correctly.
+
+  Reading and deleting must throw a 404 status exception when an item
+  is not found. The Client::Source::*::*404 tests cover this.
+
+  The special semantic of the former RegisterSyncSource::InactiveSource
+  (invalid pointer of value 1) caused bugs, like using it in
+  --print-databases (=> segfault) or not being able to store the result
+  of a createSource() directly in a smart pointer (=> potential leak in
+  SyncSource::createSource()).
+
+  Obviously a bad idea to start with. Replaced with a
+  RegisterSyncSource::InactiveSource() method which creates a real,
+  inactive SyncSource instance which can and must be deleted by the
+  caller.
+
+  This is a SyncSource API change for backend developers.  Instead of
+  RegisterSyncSource::InactiveSource, return
+  RegisterSyncSource::InactiveSource(). Comparisons against
+  RegisterSyncSource::InactiveSource needs to be replaced with a call
+  to the new SyncSource::isInactive().
+
+  Long-running backend calls are encouraged to check for events on the
+  main glib context (either in a loop or with
+  g_main_context_iteration(NULL)) and abort when
+  SuspendFlags::getSuspendFlags().getState() returns
+  SuspendFlags::ABORT.
+
+* packagers:
+
+  libgdbussyncevo is now installed as a normal library in /usr/lib,
+  even though SyncEvolution is the only user.
+
+  pcrecpp is now a new hard dependency.
+
+
+Upgrading from release 1.2.x:
+
+The sync format of existing configurations for Mobical (aka Everdroid)
+must be updated manually, because the server has encoding problems when
+using vCard 3.0 (now the default for Evolution contacts):
+   syncevolution --configure \
+                 syncFormat=text/x-vcard \
+                 mobical addressbook
+
+
+Upgrading from releases before 1.2:
+
+Old configurations can still be read. But writing, as it happens
+during a sync, must migrate the configuration first. Releases >= 1.2
+automatically migrates configurations. The old configurations
+will still be available (see "syncevolution --print-configs") but must
+be renamed manually to use them again under their original names with
+older SyncEvolution releases.
+
+
 SyncEvolution 1.2.1 -> 1.2.2, 13.01.2012
 ========================================
 
