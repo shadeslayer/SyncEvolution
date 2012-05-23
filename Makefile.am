@@ -61,7 +61,7 @@ MAINTAINERCLEANFILES += Makefile.in config.h.in config.guess config.sub configur
 
 TEST_README_FILES = $(wildcard $(top_srcdir)/test/README.*)
 
-DEV_FILE_PATTERN = $(1)$(2)/etc $(1)$(2)/include $(1)$(2)/lib/*.so $(1)$(2)/lib/*.a $(1)$(2)/lib/*.la $(1)$(2)/lib/*/*.la $(1)$(2)/lib/pkgconfig
+DEV_FILE_PATTERN = $(1)$(2)/include $(1)$(2)/lib/*.so $(1)$(2)/lib/*.a $(1)$(2)/lib/*.la $(1)$(2)/lib/*/*.la $(1)$(2)/lib/pkgconfig
 
 # binary distribution as .tar.gz
 if COND_DBUS
@@ -225,7 +225,7 @@ dist/$(distdir): all
 	rm -rf $@
 	$(MAKE) install DESTDIR=`pwd`/$@
 	$(MAKE) installcheck DESTDIR=`pwd`/$@
-	rm -rf $(call DEV_FILE_PATTERN, $@)
+	rm -rf $(call DEV_FILE_PATTERN,$@,/usr)
 clean-local: clean_dist
 clean_dist:
 	rm -rf dist description-pak
