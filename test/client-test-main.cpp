@@ -29,6 +29,14 @@
 
 #include "test.h"
 
+#include <signal.h>
+#ifdef HAVE_VALGRIND_VALGRIND_H
+# include <valgrind/valgrind.h>
+#endif
+#ifdef HAVE_EXECINFO_H
+# include <execinfo.h>
+#endif
+
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/ui/text/TestRunner.h>
 #include <cppunit/TestListener.h>
@@ -41,6 +49,7 @@
 #include <Logging.h>
 #include <LogStdout.h>
 #include <syncevo/LogRedirect.h>
+#include <syncevo/SyncContext.h>
 #include "ClientTest.h"
 
 #include <boost/algorithm/string/split.hpp>
@@ -260,9 +269,41 @@ static void printTests(CppUnit::Test *test, int indention)
     }
 }
 
+static void handler(int sig)
+{
+    void *buffer[100];
+    int size;
+
+    fprintf(stderr, "\ncaught signal %d\n", sig);
+    fflush(stderr);
+#ifdef HAVE_EXECINFO_H
+    size = backtrace(buffer, sizeof(buffer)/sizeof(buffer[0]));
+    backtrace_symbols_fd(buffer, size, 2);
+#endif
+#ifdef HAVE_VALGRIND_VALGRIND_H
+    VALGRIND_PRINTF_BACKTRACE("\ncaught signal %d\n", sig);
+#endif
+    /* system("objdump -l -C -d client-test >&2"); */
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = SIG_DFL;
+    sigaction(SIGABRT, &act, NULL);
+    abort();
+}
+
 extern "C"
 int main(int argc, char* argv[])
 {
+  SyncContext::initMain("client-test");
+
+  struct sigaction act;
+
+  memset(&act, 0, sizeof(act));
+  act.sa_handler = handler;
+  sigaction(SIGABRT, &act, NULL);
+  sigaction(SIGSEGV, &act, NULL);
+  sigaction(SIGILL, &act, NULL);
+
   // Get the top level suite from the registry
   CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 
