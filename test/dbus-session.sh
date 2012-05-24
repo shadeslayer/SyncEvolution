@@ -16,7 +16,11 @@ export DBUS_SESSION_BUS_ADDRESS
 KEYRING_PID=$!
 
 # kill all programs started by us
-trap "kill $KEYRING_PID; kill $DBUS_SESSION_BUS_PID" EXIT
+atexit() {
+    kill $KEYRING_PID
+    kill $DBUS_SESSION_BUS_PID
+}
+trap atexit EXIT
 
 # If DBUS_SESSION_SH_EDS_BASE is set and our main program runs
 # under valgrind, then also check EDS. Otherwise start EDS only
@@ -25,12 +29,20 @@ trap "kill $KEYRING_PID; kill $DBUS_SESSION_BUS_PID" EXIT
 #
 # DBUS_SESSION_SH_EDS_BASE must be the directory which contains
 # e-addressbook/calendar-factory.
+#
+# Similar for DBUS_SESSION_SH_AKONADI, except that we rely on akonadictl
+# and don't run it under valgrind.
 E_CAL_PID=
 E_BOOK_PID=
 case "$@" in *valgrind*) prefix=`echo $@ | perl -p -e 's;.*?(\S*/?valgrind\S*).*;$1;'`;;
              *syncevolution\ *|*client-test\ *|*test-dbus.py\ *|*gdb\ *) prefix=env;;
              *) prefix=;; # don't start EDS
 esac
+if [ "$DBUS_SESSION_SH_AKONADI" ] && [ "$prefix" ]; then
+    akonadictl start
+else
+    DBUS_SESSION_SH_AKONADI=
+fi
 if [ "$DBUS_SESSION_SH_EDS_BASE" ] && [ "$prefix" ]; then
     $prefix $DBUS_SESSION_SH_EDS_BASE/evolution-calendar-factory --keep-running &
     E_CAL_PID=$!
@@ -73,6 +85,10 @@ shutdown () {
 		       ;;
     esac
 }
+
+if [ "$DBUS_SESSION_SH_AKONADI" ]; then
+    akonadictl stop
+fi
 
 if [ "$DBUS_SESSION_SH_EDS_BASE" ]; then
     kill "$E_CAL_PID" 2>/dev/null
