@@ -157,14 +157,36 @@ struct GErrorCXX {
     /** copies error content */
     GErrorCXX(const GErrorCXX &other) : m_gerror(g_error_copy(other.m_gerror)) {}
     GErrorCXX &operator =(const GErrorCXX &other) {
-        if (this != &other) {
+        if (m_gerror != other.m_gerror) {
             if (m_gerror) {
                 g_clear_error(&m_gerror);
             }
-            m_gerror = g_error_copy(other.m_gerror);
+            if (other.m_gerror) {
+                m_gerror = g_error_copy(other.m_gerror);
+            }
         }
         return *this;
     }
+    GErrorCXX &operator =(const GError* err) {
+        if (err != m_gerror) {
+            if (m_gerror) {
+                g_clear_error(&m_gerror);
+            }
+            if (err) {
+                m_gerror = g_error_copy(err);
+            }
+        }
+        return *this;
+    }
+
+    /** For convenient access to GError members (message, domain, ...) */
+    const GError * operator-> () const { return m_gerror; }
+
+    /**
+     * For passing to C functions. They must not free the GError,
+     * because GErrorCXX retains ownership.
+     */
+    operator const GError * () const { return m_gerror; }
 
     /** error description, with fallback if not set (not expected, so not localized) */
     operator const char * () { return m_gerror ? m_gerror->message : "<<no error>>"; }
@@ -174,6 +196,9 @@ struct GErrorCXX {
 
     /** clear error if any is set */
     void clear() { g_clear_error(&m_gerror); }
+
+    /** transfer ownership of error back to caller */
+    GError *release() { GError *gerror = m_gerror; m_gerror = NULL; return gerror; }
 
     /** checks whether the current error is the one passed as parameters */
     bool matches(GQuark domain, gint code) { return g_error_matches(m_gerror, domain, code); }
