@@ -291,11 +291,11 @@ template< class T, class L, void (*D)(T*) = NoopDestructor<T> > struct GListCXX 
     static void listFree(GSList *l) { g_slist_free(l); }
     static void listFree(GList *l) { g_list_free(l); }
 
-    static GSList *listPrepend(GSList *list, T *entry) { return g_slist_prepend(list, static_cast<gpointer>(entry)); }
-    static GList *listPrepend(GList *list, T *entry) { return g_list_prepend(list, static_cast<gpointer>(entry)); }
+    static GSList *listPrepend(GSList *list, T *entry) { return g_slist_prepend(list, (gpointer)entry); }
+    static GList *listPrepend(GList *list, T *entry) { return g_list_prepend(list, (gpointer)entry); }
 
-    static GSList *listAppend(GSList *list, T *entry) { return g_slist_append(list, static_cast<gpointer>(entry)); }
-    static GList *listAppend(GList *list, T *entry) { return g_list_append(list, static_cast<gpointer>(entry)); }
+    static GSList *listAppend(GSList *list, T *entry) { return g_slist_append(list, (gpointer)entry); }
+    static GList *listAppend(GList *list, T *entry) { return g_list_append(list, (gpointer)entry); }
 
  public:
     typedef T * value_type;
