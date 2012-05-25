@@ -52,15 +52,26 @@
 
 #ifdef HAVE_EDS
 #include <glib-object.h>
+#include <libedataserver/eds-version.h>
 #include <libedataserver/e-source.h>
 #include <libedataserver/e-source-list.h>
 #ifdef ENABLE_EBOOK
+#ifdef USE_EBOOK_CLIENT
+#include <libebook/e-book-client.h>
+#else
 #include <libebook/e-book.h>
+#endif
 #include <libebook/e-vcard.h>
+#include <libebook/e-book-query.h>
 #endif
 #ifdef ENABLE_ECAL
 # define HANDLE_LIBICAL_MEMORY 1
+#ifdef USE_ECAL_CLIENT
+#include <libecal/e-cal-client.h>
+#include <libecal/e-cal-check-timezones.h>
+#else
 #include <libecal/e-cal.h>
+#endif
 #endif
 #endif
 #ifdef ENABLE_BLUETOOTH

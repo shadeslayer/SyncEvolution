@@ -37,10 +37,20 @@ SE_ARG_ENABLE_BACKEND(ecal, evolution,
                        AC_MSG_ERROR([libecal not found. Use --disable-ecal to compile without or install the necessary development files.])]
                      )
 
+AC_ARG_ENABLE(eds-client-api,
+              AS_HELP_STRING([--enable-eds-client-api],
+                             [Use the EBookClient and ECalClient API introduced in EDS 3.2 instead of
+                              the legacy API. Some operations are more efficient with it, but it is also
+                              less well tested and thus disabled by default.]),
+              enable_eds_client_api="$enableval", enable_eds_client_api="no")
+
 enable_evo="no"
 if test "$enable_ebook" = "yes"; then
         test "x${EBOOKFOUND}" = "xyes" || AC_MSG_ERROR([--enable-ebook requires pkg-config information for libebook, which was not found])
         AC_DEFINE(ENABLE_EBOOK, 1, [libebook available])
+        if test "$enable_eds_client_api" = "yes"; then
+            AC_DEFINE(USE_EBOOK_CLIENT, 1, [use e_book_client_* calls])
+        fi
         enable_evo="yes"
 else
         EBOOK_CFLAGS=
@@ -52,6 +62,9 @@ if test "$enable_ecal" = "yes"; then
         need_ical="yes"
         test "x${ECALFOUND}" = "xyes" || AC_MSG_ERROR([--enable-ecal requires pkg-config information for libecal, which was not found"])
         AC_DEFINE(ENABLE_ECAL, 1, [libecal available])
+        if test "$enable_eds_client_api" = "yes"; then
+            AC_DEFINE(USE_ECAL_CLIENT, 1, [use e_cal_client_* calls])
+        fi
         enable_evo="yes"
 else
         ECAL_CFLAGS=

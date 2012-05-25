@@ -25,6 +25,8 @@
 #include <syncevo/eds_abi_wrapper.h>
 
 #include <syncevo/declarations.h>
+#include <syncevo/GLibSupport.h>
+
 SE_BEGIN_CXX
 
 
@@ -77,14 +79,38 @@ class EvolutionSyncSource : public TrackingSyncSource
      * output format: <source name>: <action>: <error string>
      *
      * @param action     a string describing the operation or object involved
-     * @param gerror     if not NULL: a more detailed description of the failure,
-     *                                will be freed
+     * @param gerror     a more detailed description of the failure,
+     *                   may be empty
      */
     void throwError(const string &action,
-                    GError *gerror);
+                    GErrorCXX &gerror);
 #endif
 };
 
+/**
+ * Utility class which hides the mechanisms needed to handle events
+ * during asynchronous calls.
+ */
+class EvolutionAsync {
+    public:
+    EvolutionAsync()
+    {
+        m_loop = GMainLoopCXX(g_main_loop_new(NULL, FALSE), false);
+    }
+     
+    /** start processing events */
+    void run() {
+        g_main_loop_run(m_loop.get());
+    }
+ 
+    /** stop processing events, to be called inside run() by callback */
+    void quit() {
+        g_main_loop_quit(m_loop.get());
+    }
+ 
+    private:
+    GMainLoopCXX m_loop;
+};
 
 SE_END_CXX
 #endif // INCL_EVOLUTIONSYNCSOURCE

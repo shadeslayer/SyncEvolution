@@ -1797,6 +1797,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
     // Skip the testing, proceed to full removal.
     if (currentServer() != "exchange") {
         SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(createSourceA()));
+#ifndef USE_ECAL_CLIENT
         if (getCurrentTest().find("::eds_event::") != std::string::npos) {
             // hack: ignore EDS side effect of adding EXDATE to parent, see http://bugs.meego.com/show_bug.cgi?id=10906
             size_t pos = parentData.rfind("DTSTART");
@@ -1805,6 +1806,7 @@ void LocalTests::testLinkedItemsRemoveNormal() {
                               "EXDATE:20080413T090000\n" :
                               "EXDATE:20080413\n");
         }
+#endif
         CT_ASSERT_NO_THROW(compareDatabases(*source, &parentData, NULL));
         SOURCE_ASSERT_EQUAL(source.get(), 1, countItems(source.get()));
         SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));

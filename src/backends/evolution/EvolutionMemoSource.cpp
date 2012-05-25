@@ -169,13 +169,30 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
         throwError(string("failure creating vjournal " ) + summary);
     }
 
-    GError *gerror = NULL;
+    GErrorCXX gerror;
     if (!update) {
         const char *uid = NULL;
+#ifdef USE_ECAL_CLIENT
+        // UID only needs to be freed in ECalClient API
+        PlainGStr uidOwner;
+#endif
 
-        if(!e_cal_create_object(m_calendar, subcomp, (char **)&uid, &gerror)) {
-            if (gerror->domain == E_CALENDAR_ERROR &&
-                gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS) {
+        if (
+#ifdef USE_ECAL_CLIENT
+            !e_cal_client_create_object_sync(m_calendar, subcomp, (gchar **)&uid, NULL, gerror)
+#else
+            !e_cal_create_object(m_calendar, subcomp, (gchar **)&uid, gerror)
+#endif
+            ) {
+            if (
+#ifdef USE_ECAL_CLIENT
+                gerror->domain == E_CAL_CLIENT_ERROR &&
+                gerror->code == E_CAL_CLIENT_ERROR_OBJECT_ID_ALREADY_EXISTS
+#else
+                gerror->domain == E_CALENDAR_ERROR &&
+                gerror->code == E_CALENDAR_STATUS_OBJECT_ID_ALREADY_EXISTS
+#endif
+                ) {
                 // Deal with error due to adding already existing item.
                 // Should never happen for plain text journal entries because
                 // they have no embedded ID, but who knows...
@@ -184,11 +201,15 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
                 if (!uid) {
                     throwError("storing new memo item, no UID set", gerror);
                 }
-                g_clear_error(&gerror);
             } else {
-                throwError( "storing new memo item", gerror );
+                throwError("storing new memo item", gerror);
             }
         }
+#ifdef USE_ECAL_CLIENT
+        else {
+            uidOwner = PlainGStr((gchar *)uid);
+        }
+#endif
         ItemID id(uid, "");
         newluid = id.getLUID();
         if (state != ITEM_NEEDS_MERGE) {
@@ -202,7 +223,14 @@ EvolutionCalendarSource::InsertItemResult EvolutionMemoSource::insertItem(const 
             icalcomponent_set_uid(subcomp, id.m_uid.c_str());
         }
 
-        if (!e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, &gerror)) {
+        if (
+#ifdef USE_ECAL_CLIENT
+            !e_cal_client_modify_object_sync(m_calendar, subcomp, CALOBJ_MOD_ALL, 
+                                             NULL, gerror)
+#else
+            !e_cal_modify_object(m_calendar, subcomp, CALOBJ_MOD_ALL, gerror)
+#endif
+            ) {
             throwError(string("updating memo item ") + luid, gerror);
         }
         ItemID newid = getItemID(subcomp);

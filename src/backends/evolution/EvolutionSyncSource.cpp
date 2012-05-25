@@ -60,13 +60,12 @@ ESource *EvolutionSyncSource::findSource( ESourceList *list, const string &id )
     return NULL;
 }
 
-void EvolutionSyncSource::throwError(const string &action, GError *gerror)
+void EvolutionSyncSource::throwError(const string &action, GErrorCXX &gerror)
 {
     string gerrorstr;
     if (gerror) {
         gerrorstr += ": ";
         gerrorstr += gerror->message;
-        g_clear_error(&gerror);
     } else {
         gerrorstr = ": failure";
     }
