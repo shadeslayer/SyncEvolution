@@ -33,6 +33,7 @@
 typedef void *GMainLoop;
 #endif
 
+#include <boost/shared_ptr.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/utility.hpp>
 #include <boost/foreach.hpp>
@@ -76,7 +77,7 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
  * *inside* the SyncEvolution namespace.
  *
  * Example:
- * SE_GOBJECT_TYPE(GFile);
+ * SE_GOBJECT_TYPE(GFile)
  * SE_BEGIN_CXX
  * {
  *   // reference normally increased during construction,
@@ -96,6 +97,7 @@ GLibSelectResult GLibSelect(GMainLoop *loop, int fd, int direction, Timespec *ti
          _x ## CXX(_x *ptr, bool add_ref = true) : boost::intrusive_ptr<_x>(ptr, add_ref) {} \
          _x ## CXX() {} \
          _x ## CXX(const _x ## CXX &other) : boost::intrusive_ptr<_x>(other) {} \
+         operator _x * () { return get(); } \
 \
          static  _x ## CXX steal(_x *ptr) { return _x ## CXX(ptr, false); } \
     }; \
