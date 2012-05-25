@@ -402,6 +402,19 @@ typedef GListCXX<char, GList, GFreeDestructor<char> > GStringListFreeCXX;
 /** use this for a list which does not own the strings it points to */
 typedef GListCXX<char, GList> GStringListNoFreeCXX;
 
+/**
+ * Wraps a C gchar array and takes care of freeing the memory.
+ */
+class PlainGStr : public boost::shared_ptr<gchar>
+{
+    public:
+        PlainGStr() {}
+        PlainGStr(gchar *str) : boost::shared_ptr<char>(str, g_free) {}
+        PlainGStr(const PlainGStr &other) : boost::shared_ptr<gchar>(other) {}    
+        operator const gchar *() const { return &**this; }
+        const gchar *c_str() const { return &**this; }
+};
+
 #endif
 
 SE_END_CXX
