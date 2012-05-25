@@ -468,7 +468,9 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
         }
     }
 
-    if (update || state != ITEM_NEEDS_MERGE || detached) {
+    if (update ||
+        (state != ITEM_OKAY && state != ITEM_NEEDS_MERGE) ||
+        detached) {
         ItemID id(newluid);
         bool isParent = id.m_rid.empty();
 
