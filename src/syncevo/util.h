@@ -384,7 +384,7 @@ template<class T> class InitStateClass : public T {
     InitStateClass() : m_wasSet(false) {}
     InitStateClass(const char *val) : T(val), m_wasSet(false) {}
     InitStateClass(const InitStateClass &other) : T(other), m_wasSet(other.m_wasSet) {}
-    InitStateClass & operator = (const T &val) { *this = val; m_wasSet = true; return *this; }
+    InitStateClass & operator = (const T &val) { T::operator = (val); m_wasSet = true; return *this; }
     const T & get() const { return *this; }
     T & get() { return *this; }
     bool wasSet() const { return m_wasSet; }
