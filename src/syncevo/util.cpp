@@ -750,6 +750,22 @@ void Sleep(double seconds)
     select(0, NULL, NULL, NULL, &delay);
 }
 
+InitStateTri::Value InitStateTri::getValue() const
+{
+    const std::string &val = get();
+    if (val == "1" ||
+        boost::iequals(val, "true") ||
+        boost::iequals(val, "yes")) {
+        return VALUE_TRUE;
+    } else if (val == "0" ||
+               boost::iequals(val, "false") ||
+               boost::iequals(val, "no")) {
+        return VALUE_FALSE;
+    } else {
+        return VALUE_STRING;
+    }
+}
+
 const char * const TRANSPORT_PROBLEM = "transport problem: ";
 const char * const SYNTHESIS_PROBLEM = "error code from Synthesis engine ";
 const char * const SYNCEVOLUTION_PROBLEM = "error code from SyncEvolution ";

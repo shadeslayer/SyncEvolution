@@ -412,6 +412,30 @@ typedef InitState<bool> Bool;
  */
 typedef InitStateClass<std::string> InitStateString;
 
+/**
+ * Version of InitState where the value can true, false, or a string.
+ * Recognizes 0/1/false/true/no/yes case-insensitively as special
+ * booleans, everything else is considered a string.
+ */
+class InitStateTri : public InitStateString
+{
+ public:
+    InitStateTri(const std::string &val, bool wasSet) : InitStateString(val, wasSet) {}
+    InitStateTri() {}
+    InitStateTri(const char *val) : InitStateString(val, false) {}
+    InitStateTri(const InitStateTri &other) : InitStateString(other) {}
+    InitStateTri(const InitStateString &other) : InitStateString(other) {}
+
+    enum Value {
+        VALUE_TRUE,
+        VALUE_FALSE,
+        VALUE_STRING
+    };
+
+    // quick check for true/false, use get() for string case
+    Value getValue() const;
+};
+
 enum HandleExceptionFlags {
     HANDLE_EXCEPTION_FLAGS_NONE = 0,
 
