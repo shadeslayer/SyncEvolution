@@ -196,7 +196,9 @@ string DBusSync::askPassword(const string &passwordName,
     return password;
 }
 
-void DBusSync::askPasswordAsync(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key,
+void DBusSync::askPasswordAsync(const std::string &passwordName,
+                                const std::string &descr,
+                                const ConfigPasswordKey &key,
                                 const boost::function<void (const std::string &)> &success,
                                 const boost::function<void ()> &failureException)
 {
@@ -205,8 +207,9 @@ void DBusSync::askPasswordAsync(const std::string &passwordName, const std::stri
     m_passwordFailure.clear();
     m_passwordDescr = descr;
 
-    string password;
-    if (GetLoadPasswordSignal()(passwordName, descr, key, password)) {
+    InitStateString password;
+    if (GetLoadPasswordSignal()(getKeyring(), passwordName, descr, key, password) &&
+        password.wasSet()) {
         // handled
         success(password);
         return;
@@ -279,9 +282,11 @@ void DBusSync::suspendFlagsChanged(SuspendFlags &flags)
     }
 }
 
-bool DBusSync::savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key)
+bool DBusSync::savePassword(const std::string &passwordName,
+                            const std::string &password,
+                            const ConfigPasswordKey &key)
 {
-    if (GetSavePasswordSignal()(passwordName, password, key)) {
+    if (GetSavePasswordSignal()(getKeyring(), passwordName, password, key)) {
         return true;
     }
 

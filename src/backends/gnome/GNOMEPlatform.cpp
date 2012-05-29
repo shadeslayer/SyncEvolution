@@ -44,11 +44,33 @@ inline const char *passwdStr(const std::string &str)
     return str.empty() ? NULL : str.c_str();
 }
 
-bool GNOMELoadPasswordSlot(const std::string &passwordName,
+static bool UseGNOMEKeyring(const InitStateTri &keyring)
+{
+    // Disabled by user?
+    if (keyring.getValue() == InitStateTri::VALUE_FALSE) {
+        return false;
+    }
+
+    // If explicitly selected, it must be us.
+    if (keyring.getValue() == InitStateTri::VALUE_STRING &&
+        !boost::iequals(keyring.get(), "GNOME")) {
+        return false;
+    }
+
+    // Use GNOME Keyring.
+    return true;
+}
+
+bool GNOMELoadPasswordSlot(const InitStateTri &keyring,
+                           const std::string &passwordName,
                            const std::string &descr,
                            const ConfigPasswordKey &key,
-                           std::string &password)
+                           InitStateString &password)
 {
+    if (!UseGNOMEKeyring(keyring)) {
+        return false;
+    }
+
     GnomeKeyringResult result;
     GList* list;
 
@@ -65,19 +87,22 @@ bool GNOMELoadPasswordSlot(const std::string &passwordName,
     if(result == GNOME_KEYRING_RESULT_OK && list && list->data ) {
         GnomeKeyringNetworkPasswordData *key_data;
         key_data = (GnomeKeyringNetworkPasswordData*)list->data;
-        password = key_data->password;
+        password = std::string(key_data->password);
         gnome_keyring_network_password_list_free(list);
-        return true;
     }
 
-    // not found, ask user
-    return false;
+    return true;
 }
 
-bool GNOMESavePasswordSlot(const std::string &passwordName,
+bool GNOMESavePasswordSlot(const InitStateTri &keyring,
+                           const std::string &passwordName,
                            const std::string &password,
                            const ConfigPasswordKey &key)
 {
+    if (!UseGNOMEKeyring(keyring)) {
+        return false;
+    }
+
     guint32 itemId;
     GnomeKeyringResult result;
     // write password to keyring

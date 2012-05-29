@@ -22,17 +22,21 @@
 
 #include <string>
 
+#include <syncevo/util.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 struct ConfigPasswordKey;
 
-bool GNOMELoadPasswordSlot(const std::string &passwordName,
+bool GNOMELoadPasswordSlot(const InitStateTri &keyring,
+                           const std::string &passwordName,
                            const std::string &descr,
                            const ConfigPasswordKey &key,
-                           std::string &password);
+                           InitStateString &password);
 
-bool GNOMESavePasswordSlot(const std::string &passwordName,
+bool GNOMESavePasswordSlot(const InitStateTri &keyring,
+                           const std::string &passwordName,
                            const std::string &password,
                            const ConfigPasswordKey &key);
 SE_END_CXX

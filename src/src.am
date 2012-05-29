@@ -101,8 +101,6 @@ src/libstdc++.a :
 
 src_syncevolution_SOURCES = \
   src/syncevolution.cpp \
-  src/CmdlineSyncClient.h \
-  src/CmdlineSyncClient.cpp \
   $(CORE_SOURCES)
 
 if ENABLE_UNIT_TESTS
@@ -219,7 +217,6 @@ endif # COND_DBUS
 # link line.
 src_client_test_SOURCES = \
   src/client-test-app.cpp \
-  src/CmdlineSyncClient.cpp \
   test/ClientTest.cpp \
   test/ClientTest.h \
   test/ClientTestAssert.h \

@@ -629,25 +629,10 @@ a list of valid values.
   Suppresses most of the normal output during a synchronization. The
   log file still contains all the information.
 
---keyring|-k
-  Save or retrieve passwords from the GNOME keyring when modifying the
-  configuration or running a synchronization. Note that using this option
-  applies to *all* passwords in a configuration, so setting a single
-  password as follows moves the other passwords into the keyring, if
-  they were not stored there already::
-
-     --keyring --configure --sync-property proxyPassword=foo
-
-  When passwords were stored in the keyring, their value is set to a single
-  hyphen ("-") in the configuration. This means that when running a
-  synchronization without the --keyring argument, the password has to be
-  entered interactively. The --print-config output always shows "-" instead
-  of retrieving the password from the keyring.
-
-  The SyncEvolution daemon always uses the GNOME keyring, regardless of
-  the --keyring command line parameter. Therefore --keyring only has an
-  effect in combination with --daemon=no, or when SyncEvolution was compiled
-  without daemon support (not the default).
+--keyring[=<value>]|-k
+  A legacy option, now the same as setting the global keyring sync property.
+  When not specifying a value explicitly, "true" for "use some kind of
+  keyring" is implied. See "--sync-property keyring" for details.
 
 --daemon[=yes/no]
   By default, the SyncEvolution command line is executed inside the

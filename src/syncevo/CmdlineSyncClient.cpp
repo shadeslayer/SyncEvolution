@@ -27,10 +27,8 @@ SE_BEGIN_CXX
 using namespace std;
 
 CmdlineSyncClient::CmdlineSyncClient(const string &server,
-                                     bool doLogging,
-                                     bool useKeyring):
-    SyncContext(server, doLogging),
-    m_keyring(useKeyring)
+                                     bool doLogging):
+    SyncContext(server, doLogging)
 {
     setUserInterface(this);
 }
@@ -39,11 +37,12 @@ string CmdlineSyncClient::askPassword(const string &passwordName,
                                       const string &descr,
                                       const ConfigPasswordKey &key)
 {
-    string password;
+    InitStateString password;
 
     // try to use keyring, if allowed
-    if (m_keyring &&
-        GetLoadPasswordSignal()(passwordName, descr, key,  password)) {
+    if (useKeyring() &&
+        GetLoadPasswordSignal()(getKeyring(), passwordName, descr, key,  password) &&
+        password.wasSet()) {
         // succcess
         return password;
     }
@@ -62,7 +61,7 @@ string CmdlineSyncClient::askPassword(const string &passwordName,
         if (len && buffer[len - 1] == '\n') {
             buffer[len - 1] = 0;
         }
-        password = buffer;
+        password = std::string(buffer);
     } else {
         throwError(string("could not read password for ") + descr);
     }
@@ -74,19 +73,10 @@ bool CmdlineSyncClient::savePassword(const string &passwordName,
                                      const string &password,
                                      const ConfigPasswordKey &key)
 {
-    // use keyring?
-    if (m_keyring) {
-        if (GetSavePasswordSignal()(passwordName, password, key)) {
-            // saved!
-            return true;
-        }
-
-        /* if no keyring support and it was requested, then raise an error */
-        SyncContext::throwError("Cannot save " + passwordName + " as requested. "
-                                "This SyncEvolution binary was compiled without support for storing "
-                                "passwords in a keyring or wallet, or none of the backends providing that "
-                                "functionality were usable. Either store passwords in your configuration "
-                                "files or enter them interactively on each program run.\n");
+    if (useKeyring() &&
+        GetSavePasswordSignal()(getKeyring(), passwordName, password, key)) {
+        // saved!
+        return true;
     }
 
     // let config code store the password
@@ -98,6 +88,14 @@ void CmdlineSyncClient::readStdin(string &content)
     if (!ReadFile(cin, content)) {
         throwError("stdin", errno);
     }
+}
+
+bool CmdlineSyncClient::useKeyring()
+{
+    InitStateTri keyring = getKeyring();
+    return keyring.wasSet() &&
+        keyring.getValue() != InitStateTri::VALUE_FALSE &&
+        keyring.get() != "";
 }
 
 SE_END_CXX

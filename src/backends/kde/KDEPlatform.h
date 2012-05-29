@@ -22,6 +22,8 @@
 
 #include <string>
 
+#include <syncevo/util.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -29,12 +31,14 @@ struct ConfigPasswordKey;
 
 void KDEInitMainSlot(const char *appname);
 
-bool KWalletLoadPasswordSlot(const std::string &passwordName,
+bool KWalletLoadPasswordSlot(const InitStateTri &keyring,
+                             const std::string &passwordName,
                              const std::string &descr,
                              const ConfigPasswordKey &key,
-                             std::string &password);
+                             InitStateString &password);
 
-bool KWalletSavePasswordSlot(const std::string &passwordName,
+bool KWalletSavePasswordSlot(const InitStateTri &keyring,
+                             const std::string &passwordName,
                              const std::string &password,
                              const ConfigPasswordKey &key);
 SE_END_CXX

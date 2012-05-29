@@ -85,8 +85,13 @@ struct ContextProps
 class FullProps : public std::map<std::string, ContextProps, Nocase<std::string> >
 {
  public:
+    enum PropCheckMode {
+        CHECK_ALL,
+        IGNORE_GLOBAL_PROPS
+    };
+
     /** any of the contained ConfigProps has entries */
-    bool hasProperties() const;
+    bool hasProperties(PropCheckMode mode) const;
 
     /**
      * Combines sync properties into one filter, giving "config"

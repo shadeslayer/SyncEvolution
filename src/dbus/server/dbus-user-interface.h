@@ -21,6 +21,7 @@
 #define DBUS_USER_INTERFACE_H
 
 #include <syncevo/UserInterface.h>
+#include <syncevo/util.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -33,15 +34,17 @@ SE_BEGIN_CXX
 class DBusUserInterface : public UserInterface
 {
 public:
+    DBusUserInterface(const InitStateTri &keyring);
+
     /*
-     * Ask password from gnome keyring, if not found, empty string
+     * Ask password from keyring, if not found, empty string
      * is returned
      */
     std::string askPassword(const std::string &passwordName,
                             const std::string &descr,
                             const ConfigPasswordKey &key);
 
-    //save password to gnome keyring, if not successful, false is returned.
+    //save password to keyring, if not successful, false is returned.
     bool savePassword(const std::string &passwordName,
                       const std::string &password,
                       const ConfigPasswordKey &key);
@@ -50,6 +53,9 @@ public:
      * Read stdin via InfoRequest/Response.
      */
     void readStdin(std::string &content);
+
+ private:
+    InitStateTri m_keyring;
 };
 
 SE_END_CXX

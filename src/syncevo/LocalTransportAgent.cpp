@@ -423,7 +423,9 @@ public:
     {}
 
     /** implements password request by asking the parent via D-Bus */
-    virtual string askPassword(const string &passwordName, const string &descr, const ConfigPasswordKey &key)
+    virtual string askPassword(const string &passwordName,
+                               const string &descr,
+                               const ConfigPasswordKey &key)
     {
         SE_LOG_DEBUG(NULL, NULL, "local transport child: requesting password %s, %s via D-Bus",
                      passwordName.c_str(),

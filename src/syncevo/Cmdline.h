@@ -147,7 +147,6 @@ protected:
     Bool m_printConfig;
     Bool m_printSessions;
     Bool m_dontrun;
-    Bool m_keyring;
     Bool m_monitor;
     Bool m_useDaemon;
     FullProps m_props;
@@ -213,6 +212,20 @@ protected:
                    const char *opt,
                    const char *param,
                    const char *propname = NULL);
+
+    /**
+     * parse keyword which sets a certain property,
+     * like --sync=two-way, --sync two-way, ... for the "sync" property
+     *
+     * If a default value is give, then the format is like:
+     * --keyring[=<def>], --keyring=<value>, ...
+     * but not
+     * --keyring <value>
+     */
+    bool parseAssignment(int &opt, std::vector<std::string> &parsed,
+                         PropertyType propertyType,
+                         const char *propname,
+                         const char *def);
 
     bool listPropValues(const ConfigPropertyRegistry &validProps,
                         const std::string &propName,

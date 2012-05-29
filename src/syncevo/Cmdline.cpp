@@ -19,6 +19,7 @@
  */
 
 #include <syncevo/Cmdline.h>
+#include <syncevo/CmdlineSyncClient.h>
 #include <syncevo/FilterConfigNode.h>
 #include <syncevo/VolatileConfigNode.h>
 #include <syncevo/IniConfigNode.h>
@@ -104,6 +105,18 @@ bool Cmdline::parse()
     return parse(parsed);
 }
 
+/**
+ * Detects "--sync foo", "--sync=foo", "-s foo".
+ */
+static bool IsKeyword(const std::string arg,
+                      const char *longWord,
+                      const char *shortWord)
+{
+    return boost::istarts_with(arg, std::string(longWord) + "=") ||
+        boost::iequals(arg, longWord) ||
+        boost::iequals(arg, shortWord);
+}
+
 bool Cmdline::parse(vector<string> &parsed)
 {
     parsed.clear();
@@ -143,21 +156,18 @@ bool Cmdline::parse(vector<string> &parsed)
                 break;
             }
         }
-        if (boost::iequals(m_argv[opt], "--sync") ||
-            boost::iequals(m_argv[opt], "-s")) {
-            opt++;
-            string param;
-            string cmdopt(m_argv[opt - 1]);
-            if (!parseProp(SOURCE_PROPERTY_TYPE,
-                           m_argv[opt - 1], opt == m_argc ? NULL : m_argv[opt],
-                           "sync")) {
+        if (IsKeyword(m_argv[opt], "--sync", "-s")) {
+            if (!parseAssignment(opt, parsed, SOURCE_PROPERTY_TYPE, "sync", NULL)) {
                 return false;
             }
-            parsed.push_back(m_argv[opt]);
 
             // disable requirement to add --run explicitly in order to
             // be compatible with traditional command lines
             m_run = true;
+        } else if (IsKeyword(m_argv[opt], "--keyring", "-k")) {
+            if (!parseAssignment(opt, parsed, SYNC_PROPERTY_TYPE, "keyring", "true")) {
+                return false;
+            }
         } else if(boost::iequals(m_argv[opt], "--sync-property") ||
                   boost::iequals(m_argv[opt], "-y")) {
                 opt++;
@@ -293,10 +303,6 @@ bool Cmdline::parse(vector<string> &parsed)
         } else if(boost::iequals(m_argv[opt], "--version")) {
             operations.push_back(m_argv[opt]);
             m_version = true;
-        } else if (parseBool(opt, "--keyring", "-k", true, m_keyring, ok)) {
-            if (!ok) {
-                return false;
-            }
         } else if (parseBool(opt, "--daemon", NULL, true, m_useDaemon, ok)) {
             if (!ok) {
                 return false;
@@ -403,7 +409,7 @@ bool Cmdline::isSync()
         !m_restore.empty() ||
         m_accessItems ||
         m_dryrun ||
-        (!m_run && m_props.hasProperties())) {
+        (!m_run && m_props.hasProperties(FullProps::IGNORE_GLOBAL_PROPS))) {
         return false;
     } else {
         return true;
@@ -500,6 +506,13 @@ void Cmdline::copyConfig(const boost::shared_ptr<SyncConfig> &from,
     from->setConfigFilter(true, "", syncFilter);
     BOOST_FOREACH(const SourceProps::value_type &entry, sourceFilters) {
         from->setConfigFilter(false, entry.first, entry.second);
+    }
+
+    // Modify behavior of target UI before using it: set keyring
+    // property separately.
+    InitStateTri keyring = from->getKeyring();
+    if (keyring.wasSet()) {
+        to->setKeyring(keyring);
     }
 
     // Write into the requested configuration, creating it if necessary.
@@ -819,15 +832,6 @@ bool Cmdline::run() {
         }
         if (m_dryrun) {
             SyncContext::throwError("--dry-run not supported for configuration changes");
-        }
-        if (m_keyring &&
-            GetLoadPasswordSignal().empty()) {
-            SE_LOG_ERROR(NULL, NULL,
-                         "This syncevolution binary was compiled without support for storing "
-                         "passwords in a keyring or wallet, or the backends for that functionality are not usable. "
-                         "Either store passwords in your configuration "
-                         "files or enter them interactively on each program run.");
-            return false;
         }
 
         // name of renamed config ("foo.old") after migration
@@ -1194,7 +1198,7 @@ bool Cmdline::run() {
 
         // extra sanity check
         if (!m_sources.empty() ||
-            m_props.hasProperties()) {
+            m_props.hasProperties(FullProps::IGNORE_GLOBAL_PROPS)) {
             usage(false, "too many parameters for --remove");
             return false;
         } else {
@@ -1607,7 +1611,7 @@ bool Cmdline::run() {
             // safety catch: if props are given, then --run
             // is required
             if (!m_run &&
-                (m_props.hasProperties())) {
+                (m_props.hasProperties(FullProps::IGNORE_GLOBAL_PROPS))) {
                 usage(false, "Properties specified, but neither '--configure' nor '--run' - what did you want?");
                 return false;
             }
@@ -1649,10 +1653,14 @@ string Cmdline::cmdOpt(const char *opt, const char *param)
     if (opt) {
         res += opt;
     }
-    if (opt && param) {
+    // parameter was provided as part of option
+    bool included = opt && param &&
+        boost::ends_with(std::string(opt),
+                         std::string("=") + param);
+    if (!included && opt && param) {
         res += " ";
     }
-    if (param) {
+    if (!included && param) {
         res += param;
     }
     res += "'";
@@ -1793,6 +1801,36 @@ bool Cmdline::parseProp(PropertyType propertyType,
             }
         }
     }
+}
+
+bool Cmdline::parseAssignment(int &opt, vector<string> &parsed,
+                              PropertyType propertyType,
+                              const char *propname,
+                              const char *def)
+{
+    string param;
+    bool haveParam = false;
+    string cmdopt(m_argv[opt]);
+    size_t off = cmdopt.find('=');
+    if (off != cmdopt.npos) {
+        // value embedded in option
+        param = cmdopt.substr(off + 1);
+        haveParam = true;
+    } else if (!def && ++opt < m_argc) {
+        // assume next entry is parameter
+        param = m_argv[opt];
+        parsed.push_back(m_argv[opt]);
+        haveParam = true;
+    } else if (def) {
+        // use default
+        param = def;
+        haveParam = true;
+    }
+
+    return parseProp(propertyType,
+                     cmdopt.c_str(),
+                     haveParam ? param.c_str() : NULL,
+                     propname);
 }
 
 bool Cmdline::listPropValues(const ConfigPropertyRegistry &validProps,
@@ -2155,7 +2193,7 @@ static bool isPropAssignment(const string &buffer) {
 
 // remove pure comment lines from buffer,
 // also empty lines,
-// also defaultPeer (because reference properties do not include global props)
+// also defaultPeer and keyring (because reference properties do not include global props)
 static string filterConfig(const string &buffer)
 {
     ostringstream res;
@@ -2168,6 +2206,7 @@ static string filterConfig(const string &buffer)
         string line = boost::copy_range<string>(*it);
         if (!line.empty() &&
             line.find("defaultPeer =") == line.npos &&
+            line.find("keyring =") == line.npos &&
             (!boost::starts_with(line, "# ") ||
              isPropAssignment(line.substr(2)))) {
             res << line << endl;
@@ -2413,6 +2452,7 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testMatchTemplate);
     CPPUNIT_TEST(testAddSource);
     CPPUNIT_TEST(testSync);
+    CPPUNIT_TEST(testKeyring);
     CPPUNIT_TEST(testWebDAV);
     CPPUNIT_TEST(testConfigure);
     CPPUNIT_TEST(testConfigureTemplates);
@@ -3238,6 +3278,11 @@ protected:
         CPPUNIT_ASSERT_EQUAL_DIFF("", failure2.m_out.str());
         CPPUNIT_ASSERT_EQUAL_DIFF("[ERROR] '--sync foo': not one of the valid values (two-way, slow, refresh-from-local, refresh-from-remote = refresh, one-way-from-local, one-way-from-remote = one-way, refresh-from-client = refresh-client, refresh-from-server = refresh-server, one-way-from-client = one-way-client, one-way-from-server = one-way-server, disabled = none)\n", failure2.m_err.str());
 
+        TestCmdline failure3("--sync=foo", NULL);
+        CPPUNIT_ASSERT(!failure3.m_cmdline->parse());
+        CPPUNIT_ASSERT_EQUAL_DIFF("", failure3.m_out.str());
+        CPPUNIT_ASSERT_EQUAL_DIFF("[ERROR] '--sync=foo': not one of the valid values (two-way, slow, refresh-from-local, refresh-from-remote = refresh, one-way-from-local, one-way-from-remote = one-way, refresh-from-client = refresh-client, refresh-from-server = refresh-server, one-way-from-client = one-way-client, one-way-from-server = one-way-server, disabled = none)\n", failure3.m_err.str());
+
         TestCmdline help("--sync", " ?", NULL);
         help.doit();
         CPPUNIT_ASSERT_EQUAL_DIFF("--sync\n"
@@ -3303,6 +3348,165 @@ protected:
         TestCmdline filter5("=1", NULL);
         CPPUNIT_ASSERT(!filter5.m_cmdline->parse());
         CPPUNIT_ASSERT_NO_THROW(filter5.expectUsageError("[ERROR] a property name must be given in '=1'\n"));
+    }
+
+    void testKeyring() {
+        ScopedEnvChange xdg("XDG_CONFIG_HOME", m_testDir);
+        ScopedEnvChange home("HOME", m_testDir);
+
+        rm_r(m_testDir);
+        {
+            TestCmdline cmdline(NULL, NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(false, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--sync-property", "keyring=True", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("keyring=True", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=true", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=1", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=Yes", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=false", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_FALSE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=0", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_FALSE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=NO", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_FALSE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=GNOME", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_STRING, keyring.getValue());
+            CPPUNIT_ASSERT_EQUAL(std::string("GNOME"), keyring.get());
+        }
+
+        // empty config prop
+        {
+            TestCmdline cmdline("--configure", "@default", NULL);
+            cmdline.doit();
+        }
+        {
+            TestCmdline cmdline("@foobar", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(false, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+
+        // now set the value permanently
+        {
+            TestCmdline cmdline("--keyring", "--configure", "@default", NULL);
+            cmdline.doit();
+        }
+        {
+            TestCmdline cmdline("@foobar", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("--keyring=KDE", "--configure", "@default", NULL);
+            cmdline.doit();
+        }
+        {
+            TestCmdline cmdline("@foobar", NULL);
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_STRING, keyring.getValue());
+            CPPUNIT_ASSERT_EQUAL(std::string("KDE"), keyring.get());
+        }
+
+        // allow sync operation although --keyring was set
+        {
+            TestCmdline cmdline("keyring=GNOME", "foobar@default", NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL(std::string(""), cmdline.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(std::string("[ERROR] No configuration for server \"foobar@default\" found.\n[ERROR] cannot proceed without configuration"), cmdline.m_err.str());
+        }
+
+        // catch invalid "keyring" value
+        {
+            TestCmdline cmdline("--configure",
+                                "username=foo",
+                                "password=bar",
+                                "syncURL=http://no.such.server",
+                                "keyring=no-such-keyring",
+                                "foobar@default", NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL(std::string(""), cmdline.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(std::string("[ERROR] Unsupported value for the \"keyring\" property, no such keyring found: no-such-keyring"),
+                                 cmdline.m_err.str());
+        }
     }
 
     void testWebDAV() {
@@ -3505,7 +3709,9 @@ protected:
                               "\n"
                               "peerType (no default, unshared)\n"
                               "\n"
-                              "defaultPeer (no default, global)\n");
+                              "defaultPeer (no default, global)\n"
+                              "\n"
+                              "keyring (yes, global)\n");
 
         string sourceProperties("sync (disabled, unshared, required)\n"
                                 "\n"
@@ -4714,7 +4920,7 @@ private:
                 m_argv[index + 1] = m_argvstr[index].c_str();
             }
 
-            m_cmdline.set(new Cmdline(m_argvstr.size() + 1, m_argv.get()), "cmdline");
+            m_cmdline.set(new KeyringSyncCmdline(m_argvstr.size() + 1, m_argv.get()), "cmdline");
         }
 
     public:
@@ -4739,6 +4945,16 @@ private:
 
         ~TestCmdline() {
             popLogger();
+        }
+
+        boost::shared_ptr<SyncContext> parse()
+        {
+            if (!m_cmdline->parse()) {
+                return boost::shared_ptr<SyncContext>();
+            }
+            boost::shared_ptr<SyncContext> context(new SyncContext(m_cmdline->m_server));
+            context->setConfigFilter(true, "", m_cmdline->m_props.createSyncFilter(m_cmdline->m_server));
+            return context;
         }
 
         void doit(bool expectSuccess = true) {

@@ -1418,8 +1418,43 @@ static SafeConfigProperty syncPropDeviceData("deviceData",
                                              "information about the peer in the format described in the\n"
                                              "Synthesis SDK manual under 'Session_SaveDeviceInfo'");
 
-static SafeConfigProperty syncPropDefaultPeer("defaultPeer",
-                                              "the peer which is used by default in some frontends, like the sync-UI");
+static SafeConfigProperty globalPropDefaultPeer("defaultPeer",
+                                                "the peer which is used by default in some frontends, like the sync-UI");
+
+static ConfigProperty globalPropKeyring("keyring",
+                                        "Explicitly selects a certain safe password storage.\n"
+                                        "Depending on how SyncEvolution was compiled and installed\n"
+                                        "the following values are possible:\n"
+                                        "\n"
+                                        "GNOME\n  GNOME Keyring\n"
+                                        "KDE\n  KWallet\n"
+                                        "yes/true/1\n  pick one automatically\n"
+                                        "no/false/0\n  store passwords in SyncEvolution config files\n"
+                                        "\n"
+                                        "If unset, the default is to pick one automatically in\n"
+                                        "the D-Bus server and not use any keyring in the command\n"
+                                        "tool when running without that D-Bus server (because the\n"
+                                        "keyring might not be usable without a desktop session).\n"
+                                        "If support for only storage was compiled and installed,\n"
+                                        "then that is the one which gets picked. Otherwise the\n"
+                                        "default is to use GNOME Keyring (because distinguishing\n"
+                                        "between KDE and GNOME sessions automatically is tricky).\n"
+                                        "\n"
+                                        "Note that using this option applies to *all* passwords in\n"
+                                        "a configuration and that the --keyring command line option\n"
+                                        "is merely an alias for setting the global property, so setting\n"
+                                        "a single password as follows sets both `keyring` and\n"
+                                        "`proxyPasswords`, and also moves the other passwords into the\n"
+                                        "keyring, even if they were not stored there already:\n"
+                                        "\n"
+                                        "     --keyring --configure proxyPassword=foo\n"
+                                        "\n"
+                                        "When passwords were stored in the keyring, their value is set to a single\n"
+                                        "hyphen (\"-\") in the configuration. This means that when running a\n"
+                                        "synchronization without the --keyring argument, the password has to be\n"
+                                        "entered interactively. The --print-config output always shows \"-\" instead\n"
+                                        "of retrieving the password from the keyring.\n",
+                                        "yes");
 
 static StringConfigProperty syncPropAutoSync("autoSync",
                                              "Controls automatic synchronization. Currently,\n"
@@ -1469,17 +1504,17 @@ static SecondsConfigProperty syncPropAutoSyncDelay("autoSyncDelay",
                                                    "5M");
 
 /* config and on-disk file versionsing */
-static IntConfigProperty syncPropRootMinVersion("rootMinVersion", "");
-static IntConfigProperty syncPropRootCurVersion("rootCurVersion", "");
-static IntConfigProperty syncPropContextMinVersion("contextMinVersion", "");
-static IntConfigProperty syncPropContextCurVersion("contextCurVersion", "");
-static IntConfigProperty syncPropPeerMinVersion("peerMinVersion", "");
-static IntConfigProperty syncPropPeerCurVersion("peerCurVersion", "");
+static IntConfigProperty propRootMinVersion("rootMinVersion", "");
+static IntConfigProperty propRootCurVersion("rootCurVersion", "");
+static IntConfigProperty propContextMinVersion("contextMinVersion", "");
+static IntConfigProperty propContextCurVersion("contextCurVersion", "");
+static IntConfigProperty propPeerMinVersion("peerMinVersion", "");
+static IntConfigProperty propPeerCurVersion("peerCurVersion", "");
 
 static const IntConfigProperty *configVersioning[CONFIG_LEVEL_MAX][CONFIG_VERSION_MAX] = {
-    { &syncPropRootMinVersion, &syncPropRootCurVersion },
-    { &syncPropContextMinVersion, &syncPropContextCurVersion },
-    { &syncPropPeerMinVersion, &syncPropPeerCurVersion }
+    { &propRootMinVersion, &propRootCurVersion },
+    { &propContextMinVersion, &propContextCurVersion },
+    { &propPeerMinVersion, &propPeerCurVersion }
 };
 
 static const IntConfigProperty &getConfigVersionProp(ConfigLevel level, ConfigLimit limit)
@@ -1573,7 +1608,8 @@ public:
         registry.push_back(&syncPropConfigDate);
         registry.push_back(&syncPropNonce);
         registry.push_back(&syncPropDeviceData);
-        registry.push_back(&syncPropDefaultPeer);
+        registry.push_back(&globalPropDefaultPeer);
+        registry.push_back(&globalPropKeyring);
 
 #if 0
         // Must not be registered! Not valid for --sync-property and
@@ -1607,24 +1643,25 @@ public:
         syncPropConfigDate.setHidden(true);
         syncPropNonce.setHidden(true);
         syncPropDeviceData.setHidden(true);
-        syncPropRootMinVersion.setHidden(true);
-        syncPropRootCurVersion.setHidden(true);
-        syncPropContextMinVersion.setHidden(true);
-        syncPropContextCurVersion.setHidden(true);
-        syncPropPeerMinVersion.setHidden(true);
-        syncPropPeerCurVersion.setHidden(true);
+        propRootMinVersion.setHidden(true);
+        propRootCurVersion.setHidden(true);
+        propContextMinVersion.setHidden(true);
+        propContextCurVersion.setHidden(true);
+        propPeerMinVersion.setHidden(true);
+        propPeerCurVersion.setHidden(true);
 
         // global sync properties
-        syncPropDefaultPeer.setSharing(ConfigProperty::GLOBAL_SHARING);
-        syncPropRootMinVersion.setSharing(ConfigProperty::GLOBAL_SHARING);
-        syncPropRootCurVersion.setSharing(ConfigProperty::GLOBAL_SHARING);
+        globalPropDefaultPeer.setSharing(ConfigProperty::GLOBAL_SHARING);
+        globalPropKeyring.setSharing(ConfigProperty::GLOBAL_SHARING);
+        propRootMinVersion.setSharing(ConfigProperty::GLOBAL_SHARING);
+        propRootCurVersion.setSharing(ConfigProperty::GLOBAL_SHARING);
 
         // peer independent sync properties
         syncPropLogDir.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         syncPropMaxLogDirs.setSharing(ConfigProperty::SOURCE_SET_SHARING);
         syncPropDevID.setSharing(ConfigProperty::SOURCE_SET_SHARING);
-        syncPropContextMinVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
-        syncPropContextCurVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        propContextMinVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
+        propContextCurVersion.setSharing(ConfigProperty::SOURCE_SET_SHARING);
     }
 } RegisterSyncConfigProperties;
 
@@ -1913,8 +1950,10 @@ InitStateString SyncConfig::getNonce() const { return syncPropNonce.getProperty(
 void SyncConfig::setNonce(const string &value) { syncPropNonce.setProperty(*getNode(syncPropNonce), value); }
 InitStateString SyncConfig::getDeviceData() const { return syncPropDeviceData.getProperty(*getNode(syncPropDeviceData)); }
 void SyncConfig::setDeviceData(const string &value) { syncPropDeviceData.setProperty(*getNode(syncPropDeviceData), value); }
-InitStateString SyncConfig::getDefaultPeer() const { return syncPropDefaultPeer.getProperty(*getNode(syncPropDefaultPeer)); }
-void SyncConfig::setDefaultPeer(const string &value) { syncPropDefaultPeer.setProperty(*getNode(syncPropDefaultPeer), value); }
+InitStateString SyncConfig::getDefaultPeer() const { return globalPropDefaultPeer.getProperty(*getNode(globalPropDefaultPeer)); }
+void SyncConfig::setDefaultPeer(const string &value) { globalPropDefaultPeer.setProperty(*getNode(globalPropDefaultPeer), value); }
+InitStateTri SyncConfig::getKeyring() const { return globalPropKeyring.getProperty(*getNode(globalPropKeyring)); }
+void SyncConfig::setKeyring(const string &value) { globalPropKeyring.setProperty(*getNode(globalPropKeyring), value); }
 
 InitStateString SyncConfig::getAutoSync() const { return syncPropAutoSync.getProperty(*getNode(syncPropAutoSync)); }
 void SyncConfig::setAutoSync(const string &value, bool temporarily) { syncPropAutoSync.setProperty(*getNode(syncPropAutoSync), value, temporarily); }

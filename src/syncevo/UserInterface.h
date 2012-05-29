@@ -24,6 +24,8 @@
 
 #include <boost/signals2.hpp>
 
+#include <syncevo/util.h>
+
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
@@ -77,7 +79,9 @@ class UserInterface {
      *                     to make user interface independent on Configuration Tree
      * @return entered password
      */
-    virtual std::string askPassword(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key) = 0;
+    virtual std::string askPassword(const std::string &passwordName,
+                                    const std::string &descr,
+                                    const ConfigPasswordKey &key) = 0;
 
     /**
      * A helper function which interactively asks the user for
@@ -94,7 +98,9 @@ class UserInterface {
      * @param key          the key used to retrieve password. Using this instead of ConfigNode is
      *                     to make user interface independent on Configuration Tree
      */
-    virtual void askPasswordAsync(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key,
+    virtual void askPasswordAsync(const std::string &passwordName,
+                                  const std::string &descr,
+                                  const ConfigPasswordKey &key,
                                   const boost::function<void (const std::string &)> &success,
                                   const boost::function<void ()> &failureException);
 
@@ -107,7 +113,9 @@ class UserInterface {
      * @param key          the key used to store password
      * @return true if ui saves the password and false if not
      */
-    virtual bool savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key) = 0;
+    virtual bool savePassword(const std::string &passwordName,
+                              const std::string &password,
+                              const ConfigPasswordKey &key) = 0;
 
     /**
      * Read from stdin until end of stream. Must be connected to
@@ -152,11 +160,14 @@ struct TrySlots
 
 /**
  * Same as ConfigUserInterface::askPassword(), except that the
- * password is returned in retval and the return value indicates
- * whether any slot was able to retrieve the value.
+ * password is returned as retval. If it was set, then the
+ * password was found in the keyring. The return value indicates
+ * whether any slot matched the configured keyring.
  *
  * Backends need to be sure that the user wants them to handle
- * the request before doing the work and returning true.
+ * the request before doing the work and returning true. They
+ * should check the first parameter, the value of the "keyring"
+ * configuration option, to determine that.
  *
  * GNOME keyring and KWallet add themselves here and in
  * SavePasswordSignal. KWallet adds itself with priority 0
@@ -165,21 +176,27 @@ struct TrySlots
  * storage, otherwise defers to GNOME keyring (or any other
  * slot) by returning false.
  */
-typedef boost::signals2::signal<bool (const std::string &passwordName,
+typedef boost::signals2::signal<bool (const InitStateTri &keyring,
+                                      const std::string &passwordName,
                                       const std::string &descr,
                                       const ConfigPasswordKey &key,
-                                      std::string &password),
+                                      InitStateString &password),
                                 TrySlots> LoadPasswordSignal;
 LoadPasswordSignal &GetLoadPasswordSignal();
+
+static const int INTERNAL_LOAD_PASSWORD_SLOTS = 1;
 
 /**
  * Same as AskPasswordSignal for saving.
  */
-typedef boost::signals2::signal<bool (const std::string &passwordName,
+typedef boost::signals2::signal<bool (const InitStateTri &keyring,
+                                      const std::string &passwordName,
                                       const std::string &password,
                                       const ConfigPasswordKey &key),
                                 TrySlots> SavePasswordSignal;
 SavePasswordSignal &GetSavePasswordSignal();
+
+static const int INTERNAL_SAVE_PASSWORD_SLOTS = 2;
 
 SE_END_CXX
 

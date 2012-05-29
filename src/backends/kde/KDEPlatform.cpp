@@ -90,6 +90,33 @@ void KDEInitMainSlot(const char *appname)
     }
 }
 
+static bool UseKWallet(const InitStateTri &keyring,
+                       int slotCount)
+{
+    // Disabled by user?
+    if (keyring.getValue() == InitStateTri::VALUE_FALSE) {
+        return false;
+    }
+
+    // When both (presumably) GNOME keyring and KWallet are available,
+    // check if the user really wanted KWallet before using KWallet
+    // instead of GNOME keyring. This default favors GNOME keyring
+    // over KWallet because SyncEvolution traditionally used that.
+    if (keyring.getValue() == InitStateTri::VALUE_TRUE &&
+        slotCount > 1) {
+        return false;
+    }
+
+    // If explicitly selected, it must be us.
+    if (keyring.getValue() == InitStateTri::VALUE_STRING &&
+        !boost::iequals(keyring.get(), "KDE")) {
+        return false;
+    }
+
+    // Use KWallet.
+    return true;
+}
+
 /**
  * Here we use server sync url without protocol prefix and
  * user account name as the key in the keyring.
@@ -97,16 +124,14 @@ void KDEInitMainSlot(const char *appname)
  * Also since the KWallet's API supports only storing (key,password)
  * or Map<QString,QString> , the former is used.
  */
-bool KWalletLoadPasswordSlot(const std::string &passwordName,
+bool KWalletLoadPasswordSlot(const InitStateTri &keyring,
+                             const std::string &passwordName,
                              const std::string &descr,
                              const ConfigPasswordKey &key,
-                             std::string &password)
+                             InitStateString &password)
 {
-    // When both (presumably) GNOME keyring and KWallet are
-    // available, check if this is a KDE Session before using
-    // KWallet instead of GNOME keyring.
-    if (GetLoadPasswordSignal().num_slots() > 1 &&
-        !getenv("KDE_FULL_SESSION")) {
+    if (!UseKWallet(keyring,
+                    GetLoadPasswordSignal().num_slots() - INTERNAL_LOAD_PASSWORD_SLOTS)) {
         return false;
     }
 
@@ -123,29 +148,26 @@ bool KWalletLoadPasswordSlot(const std::string &passwordName,
     //QString folder = QString::fromUtf8("Syncevolution");
     const QLatin1String folder("Syncevolution");
 
-    password = "";
     if (!KWallet::Wallet::keyDoesNotExist(wallet_name, folder, walletKey)) {
         KWallet::Wallet *wallet = KWallet::Wallet::openWallet(wallet_name, -1, KWallet::Wallet::Synchronous);
         if (wallet &&
             wallet->setFolder(folder) &&
             wallet->readPassword(walletKey, walletPassword) == 0) {
             password = walletPassword.toStdString();
-            return true;
         }
     }
 
-    // not found, ask user
-    return false;
+    return true;
 }
 
 
-bool KWalletSavePasswordSlot(const std::string &passwordName,
+bool KWalletSavePasswordSlot(const InitStateTri &keyring,
+                             const std::string &passwordName,
                              const std::string &password,
                              const ConfigPasswordKey &key)
 {
-    // see above
-    if (GetLoadPasswordSignal().num_slots() > 1 &&
-        !getenv("KDE_FULL_SESSION")) {
+    if (!UseKWallet(keyring,
+                    GetSavePasswordSignal().num_slots() - INTERNAL_SAVE_PASSWORD_SLOTS)) {
         return false;
     }
 

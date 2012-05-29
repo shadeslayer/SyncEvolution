@@ -4126,17 +4126,18 @@ def injectValues(config):
 
 def filterConfig(config):
     '''remove pure comment lines from buffer, also empty lines, also
-    defaultPeer (because reference properties do not include global
+    defaultPeer/keyring (because reference properties do not include global
     props)'''
     config_lines = config.splitlines()
     out = ''
 
     for line in config_lines:
-        if line:
-            index = line.find("defaultPeer =")
-            if index == -1:
-                if line.startswith("# ") == False or isPropAssignment(line[2:]):
-                    out += line + "\n"
+        if line and \
+                "defaultPeer =" not in line and \
+                "keyring =" not in line and \
+                (line.startswith("# ") == False or \
+                     isPropAssignment(line[2:])):
+            out += line + "\n"
 
     return out
 
@@ -5613,6 +5614,8 @@ ConsumerReady (FALSE, unshared)
 peerType (no default, unshared)
 
 defaultPeer (no default, global)
+
+keyring (yes, global)
 """.format(self.getSSLServerCertificates())
 
         sourceproperties = """sync (disabled, unshared, required)

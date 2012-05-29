@@ -71,6 +71,8 @@ src_syncevo_sources = \
   \
   src/syncevo/Cmdline.cpp \
   src/syncevo/Cmdline.h \
+  src/syncevo/CmdlineSyncClient.h \
+  src/syncevo/CmdlineSyncClient.cpp \
   \
   src/syncevo/SyncSource.h \
   src/syncevo/SyncSource.cpp \

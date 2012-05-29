@@ -122,11 +122,22 @@ ConfigProps FullProps::createSourceFilter(const std::string &config,
     return filter;
 }
 
-bool FullProps::hasProperties() const
+bool FullProps::hasProperties(PropCheckMode mode) const
 {
     BOOST_FOREACH(const value_type &context, *this) {
-        if (!context.second.m_syncProps.empty()) {
+        if (mode == CHECK_ALL &&
+            !context.second.m_syncProps.empty()) {
             return true;
+        }
+        if (mode == IGNORE_GLOBAL_PROPS) {
+            const ConfigPropertyRegistry &registry = SyncConfig::getRegistry();
+            BOOST_FOREACH(const StringPair &entry, context.second.m_syncProps) {
+                const ConfigProperty *prop = registry.find(entry.first);
+                if (!prop ||
+                    prop->getSharing() != ConfigProperty::GLOBAL_SHARING) {
+                    return true;
+                }
+            }
         }
         BOOST_FOREACH(const SourceProps::value_type &source, context.second.m_sourceProps) {
             if (!source.second.empty()) {

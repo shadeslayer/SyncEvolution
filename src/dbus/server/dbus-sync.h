@@ -76,11 +76,15 @@ protected:
     string askPassword(const string &passwordName,
                        const string &descr,
                        const ConfigPasswordKey &key);
-    virtual void askPasswordAsync(const std::string &passwordName, const std::string &descr, const ConfigPasswordKey &key,
+    virtual void askPasswordAsync(const std::string &passwordName,
+                                  const std::string &descr,
+                                  const ConfigPasswordKey &key,
                                   const boost::function<void (const std::string &)> &success,
                                   const boost::function<void ()> &failureException);
 
-    virtual bool savePassword(const std::string &passwordName, const std::string &password, const ConfigPasswordKey &key);
+    virtual bool savePassword(const std::string &passwordName,
+                              const std::string &password,
+                              const ConfigPasswordKey &key);
     virtual void readStdin(std::string &content);
 };
 

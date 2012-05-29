@@ -21,6 +21,7 @@
 #define INCL_CMDLINESYNCCLIENT
 
 #include <syncevo/SyncContext.h>
+#include <syncevo/Cmdline.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
@@ -33,8 +34,7 @@ SE_BEGIN_CXX
 class CmdlineSyncClient : public SyncContext, private UserInterface {
  public:
     CmdlineSyncClient(const string &server,
-                      bool doLogging = false,
-                      bool useKeyring = false);
+                      bool doLogging = false);
 
     /**
      * These 2 functions are from UserInterface and implement it
@@ -47,13 +47,32 @@ class CmdlineSyncClient : public SyncContext, private UserInterface {
     /** read from real stdin */
     virtual void readStdin(string &content);
 
-    void setKeyring(bool keyring) { m_keyring = keyring; }
-    bool getKeyring() const { return m_keyring; }
  private:
-    /** a bool flag used to indicate whether to use keyring to store password */
-    bool m_keyring;
+    /**
+     * special semantic of --daemon=no command line:
+     * don't use keyring if option is unset or
+     * explicitly false
+     */
+    bool useKeyring();
 };
 
+/**
+ * This is a class derived from Cmdline. The purpose
+ * is to implement the factory method 'createSyncClient' to create
+ * new implemented 'CmdlineSyncClient' objects.
+ */
+class KeyringSyncCmdline : public Cmdline {
+ public:
+    KeyringSyncCmdline(int argc, const char * const * argv) :
+        Cmdline(argc, argv)
+    {}
+    /**
+     * create a user implemented sync client.
+     */
+    SyncContext* createSyncClient() {
+        return new CmdlineSyncClient(m_server, true);
+    }
+};
 
 SE_END_CXX
 #endif // INCL_CMDLINESYNCCLIENT

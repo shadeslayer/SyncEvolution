@@ -173,8 +173,8 @@ void ReadOperations::getNamedConfig(const std::string &configName,
         }
         syncConfig = dbusConfig.get();
     } else {
-        DBusUserInterface ui;
         dbusConfig = getLocalConfig(configName);
+        DBusUserInterface ui(dbusConfig->getKeyring());
         //try to check password and read password from gnome keyring if possible
         ConfigPropertyRegistry& registry = SyncConfig::getRegistry();
         BOOST_FOREACH(const ConfigProperty *prop, registry) {

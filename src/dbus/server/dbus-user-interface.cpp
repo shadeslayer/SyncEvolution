@@ -23,12 +23,18 @@
 
 SE_BEGIN_CXX
 
+DBusUserInterface::DBusUserInterface(const InitStateTri &keyring) :
+    m_keyring(keyring)
+{
+}
+
 std::string DBusUserInterface::askPassword(const std::string &passwordName,
                                            const std::string &descr,
                                            const ConfigPasswordKey &key)
 {
-    std::string password;
-    if (GetLoadPasswordSignal()(passwordName, descr, key,  password)) {
+    InitStateString password;
+    if (GetLoadPasswordSignal()(m_keyring, passwordName, descr, key,  password) &&
+        password.wasSet()) {
         // handled
         return password;
     }
@@ -41,7 +47,7 @@ bool DBusUserInterface::savePassword(const std::string &passwordName,
                                      const std::string &password,
                                      const ConfigPasswordKey &key)
 {
-    if (GetSavePasswordSignal()(passwordName, password, key)) {
+    if (GetSavePasswordSignal()(m_keyring, passwordName, password, key)) {
         return true;
     }
 

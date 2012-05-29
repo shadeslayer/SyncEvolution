@@ -1376,6 +1376,9 @@ class SyncConfig {
     virtual InitStateString getDefaultPeer() const;
     virtual void setDefaultPeer(const std::string &value);
 
+    virtual InitStateTri getKeyring() const;
+    virtual void setKeyring(const std::string &value);
+
     virtual InitStateString getLogDir() const;
     virtual void setLogDir(const std::string &value, bool temporarily = false);
 

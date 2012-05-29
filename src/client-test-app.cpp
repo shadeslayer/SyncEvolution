@@ -334,7 +334,7 @@ public:
             ClientTest(const string &server,
                        const string &logbase,
                        const SyncOptions &options) :
-                CmdlineSyncClient(server, false, true),
+                CmdlineSyncClient(server, false),
                 m_logbase(logbase),
                 m_options(options),
                 m_started(false)
