@@ -766,7 +766,7 @@ if($#ARGV > 1) {
       # Both "files" are really directories of individual files.
       # Don't include files in the comparison which are known
       # to be identical because the refer to the same inode.
-      # - build map from inode to filename
+      # - build map from inode to filename(s) (each inode might be used more than once!)
       my %files1;
       my %files2;
       my @content1;
@@ -778,7 +778,10 @@ if($#ARGV > 1) {
       foreach $entry (grep { -f "$file1/$_" } readdir($dh)) {
           $fullname = "$file1/$entry";
           $inode = (stat($fullname))[1];
-          $files1{$inode} = $entry;
+          if (!$files1{$inode}) {
+              $files1{$inode} = [];
+          }
+          push(@{$files1{$inode}}, $entry);
       }
       closedir($dh);
       # - remove common files, read others
@@ -786,18 +789,21 @@ if($#ARGV > 1) {
       foreach $entry (grep { -f "$file2/$_" } readdir($dh)) {
           $fullname = "$file2/$entry";
           $inode = (stat($fullname))[1];
-          if ($files1{$inode}) {
-              delete $files1{$inode};
+          if (@{$files1{$inode}}) {
+              # randomly match against the last file
+              pop @{$files1{$inode}};
           } else {
               open(IN, "<:utf8", "$fullname") || die "$fullname: $!";
               push @content2, <IN>;
           }
       }
       # - read remaining entries from first dir
-      foreach $entry (values %files1) {
-          $fullname = "$file1/$entry";
-          open(IN, "<:utf8", "$fullname") || die "$fullname: $!";
-          push @content1, <IN>;
+      foreach my $array (values %files1) {
+          foreach $entry (@{$array}) {
+              $fullname = "$file1/$entry";
+              open(IN, "<:utf8", "$fullname") || die "$fullname: $!";
+              push @content1, <IN>;
+          }
       }
       my $content1 = join("", @content1);
       my $content2 = join("", @content2); 
