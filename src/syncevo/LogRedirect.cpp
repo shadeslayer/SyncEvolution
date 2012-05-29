@@ -93,6 +93,11 @@ void LogRedirect::init()
             ++it;
         }
     }
+
+    // CONSOLEPRINTF in libsynthesis.
+    m_knownErrors.insert("SYSYNC   Rejected with error:");
+    // libneon 'Request ends, status 207 class 2xx, error line:'
+    m_knownErrors.insert("xx, error line:\n");
 }
 
 LogRedirect::LogRedirect(bool both, const char *filename) throw()
