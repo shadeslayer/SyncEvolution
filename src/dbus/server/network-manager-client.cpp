@@ -44,7 +44,7 @@ NetworkManagerClient::NetworkManagerClient(Server &server) :
                                     &NetworkManagerClient::stateChanged,
                                     this, _1));
     } else {
-        SE_LOG_ERROR(NULL, NULL,
+        SE_LOG_DEBUG(NULL, NULL,
                      "DBus connection setup for NetworkManager failed");
     }
 }

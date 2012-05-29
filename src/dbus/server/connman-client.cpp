@@ -39,7 +39,7 @@ ConnmanClient::ConnmanClient(Server &server):
         getProp.start(boost::bind(&ConnmanClient::getPropCb, this, _1, _2));
         m_propertyChanged.activate(boost::bind(&ConnmanClient::propertyChanged, this, _1, _2));
     }else{
-        SE_LOG_ERROR (NULL, NULL, "DBus connection setup for connman failed");
+        SE_LOG_DEBUG (NULL, NULL, "DBus connection setup for connman failed");
     }
 }
 
