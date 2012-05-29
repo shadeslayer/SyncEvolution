@@ -67,10 +67,20 @@ void AkonadiSyncSource::start()
 {
     // Start The Akonadi Server if not already Running.
     if (!Akonadi::ServerManager::isRunning()) {
+        // Don't try to start it. A normal KDE user should have it already
+        // running. Users of other desktop systems probably don't want it
+        // to run, if they have it installed at all.
+        //
+        // Starting it here also produces output that we don't want mixed
+        // into normal SyncEvolution command line output.
+#if 0
         SE_LOG_DEBUG(NULL, NULL, "Akonadi Server isn't running, and hence starting it.");
         if (!Akonadi::Control::start()) {
             SE_THROW("Couldn't Start Akonadi Server: hence the akonadi backend of syncevolution wont work ..");
         }
+#else
+        SE_THROW("Akonadi is not running. It can be started with 'akonadictl start'.");
+#endif
     }
 }
 
