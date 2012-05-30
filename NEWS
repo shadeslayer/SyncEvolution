@@ -133,6 +133,35 @@ Details:
   different content) should still be found while testing and
   added/removed photos are nicely visible in synccompare diffs.
 
+* synccompare: fixed output for byte-identical duplicates
+
+  If database dumps contained byte-identical duplicates, they
+  were treated as a single item on the left side of a comparison.
+  This caused erroneous "added" entries on the right side.
+
+* secure password storage: usage of GNOME Keyring vs. KDE KWallet configurable
+
+  Automatically detecting KDE users is not possible at the
+  moment. Instead KDE users have to manually set the new "keyring"
+  global config property to "KDE" (case insensitive) if the
+  SyncEvolution installation supports both, because GNOME Keyring is the
+  default to avoid surprises for traditional users. If only KWallet
+  support is enabled, then this is not necessary.
+
+  "GNOME" and "true/false/1/0/yes/no" can also be set. This has the
+  advantage that keyring usage can be enabled permanently for the
+  command line in --daemon=no mode; normally keyrings are not used in
+  that mode because accessing them can bring up UI dialogs.
+
+  It also becomes possible to disable keyring usage in syncevo-dbus-server,
+  something which couldn't be done before.
+
+  The --keyring command line option is still supported, as an alias for
+  "[--sync-property] keyring=<value>". The default value for --keyring
+  is true, to match the traditional behavior. In contrast to other sync
+  properties, setting "keyring" does not require an explicit --run
+  parameter. Again this is done to mirror traditional usage.
+
 * Evolution: always create databases (PTCOM-113)
 
   Always try to create address book or calendar database, because even
