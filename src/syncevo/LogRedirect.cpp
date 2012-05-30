@@ -98,6 +98,8 @@ void LogRedirect::init()
     m_knownErrors.insert("SYSYNC   Rejected with error:");
     // libneon 'Request ends, status 207 class 2xx, error line:'
     m_knownErrors.insert("xx, error line:\n");
+    // some internal Qt warning (?)
+    m_knownErrors.insert("Qt: Session management error: None of the authentication protocols specified are supported");
 }
 
 LogRedirect::LogRedirect(bool both, const char *filename) throw()
