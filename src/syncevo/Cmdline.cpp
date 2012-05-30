@@ -2458,7 +2458,6 @@ class CmdlineTest : public CppUnit::TestFixture {
     CPPUNIT_TEST(testConfigureTemplates);
     CPPUNIT_TEST(testConfigureSources);
     CPPUNIT_TEST(testOldConfigure);
-    CPPUNIT_TEST(testPrintDatabases);
     CPPUNIT_TEST(testMigrate);
     CPPUNIT_TEST(testMigrateContext);
     CPPUNIT_TEST(testMigrateAutoSync);
@@ -4263,65 +4262,6 @@ protected:
         }
 
         return expected;
-    }
-
-    void testPrintDatabases() {
-        {
-            // full output
-            TestCmdline cmdline("--print-databases", (char *)0);
-            cmdline.doit();
-            CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
-            // exact output varies, do not test
-        }
-        bool haveEDS;
-        {
-            // limit output to one specific backend
-            TestCmdline cmdline("--print-databases", "backend=evolution-contacts", (char *)0);
-            cmdline.doit();
-            if (cmdline.m_err.str().find("not one of the valid values") != std::string::npos) {
-                // not enabled, only this error messages expected
-                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
-            } else {
-                // enabled, no error, one entry
-                haveEDS = true;
-                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
-                CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "evolution-contacts:\n"));
-                int entries = 0;
-		std::string out = cmdline.m_out.str();
-                BOOST_FOREACH(const std::string &line,
-                              boost::tokenizer< boost::char_separator<char> >(out,
-                                                                              boost::char_separator<char>("\n"))) {
-                    if (!boost::starts_with(line, " ")) {
-                        entries++;
-                    }
-                }
-                CPPUNIT_ASSERT_EQUAL(1, entries);
-            }
-        }
-        if (haveEDS) {
-            // limit output to one specific backend, chosen via config
-            {
-                TestCmdline cmdline("--configure", "backend=evolution-contacts", "@foo-config", "bar-source", (char *)0);
-                cmdline.doit();
-                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_out.str());
-            }
-            {
-                TestCmdline cmdline("--print-databases", "@foo-config", "bar-source", (char *)0);
-                cmdline.doit();
-                CPPUNIT_ASSERT_EQUAL_DIFF("", cmdline.m_err.str());
-                CPPUNIT_ASSERT(boost::starts_with(cmdline.m_out.str(), "@foo-config/bar-source:\n"));
-                int entries = 0;
-		std::string out = cmdline.m_out.str();
-                BOOST_FOREACH(const std::string &line,
-                              boost::tokenizer< boost::char_separator<char> >(out,
-                                                                              boost::char_separator<char>("\n"))) {
-                    if (!boost::starts_with(line, " ")) {
-                        entries++;
-                    }
-                }
-                CPPUNIT_ASSERT_EQUAL(1, entries);
-            }
-        }
     }
 
     void testMigrate() {

@@ -5930,6 +5930,8 @@ sources/calendar/config.ini:# databasePassword =
         '''TestCmdline.testPrintDatabases - print some databases'''
         # full output
         out, err, code = self.runCmdline(["--print-databases"])
+        # ignore errors about Akonadi not running
+        err = re.sub(r'''\[ERROR\] KDE.*\n\[ERROR\] listing databases failed\n\[ERROR\] Akonadi is not running. It can be started with 'akonadictl start'\.\n''', "", err)
         self.assertNoErrors(err)
         # exact output varies, do not test
 
