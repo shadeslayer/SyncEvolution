@@ -39,7 +39,7 @@ trap atexit EXIT
 E_CAL_PID=
 E_BOOK_PID=
 case "$@" in *valgrind*) prefix=`echo $@ | perl -p -e 's;.*?(\S*/?valgrind\S*).*;$1;'`;;
-             *syncevolution\ *|*client-test\ *|*test-dbus.py\ *|*gdb\ *) prefix=env;;
+             *syncevolution\ *|*client-test\ *|*bash*|*test-dbus.py\ *|*gdb\ *) prefix=env;;
              *) prefix=;; # don't start EDS
 esac
 akonadi=$prefix
