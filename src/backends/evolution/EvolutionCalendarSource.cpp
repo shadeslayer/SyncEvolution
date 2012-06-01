@@ -506,6 +506,32 @@ void EvolutionCalendarSource::readItem(const string &luid, std::string &item, bo
     item = retrieveItemAsString(id);
 }
 
+#ifdef USE_ECAL_CLIENT
+icaltimezone *
+my_tzlookup(const gchar *tzid,
+            gconstpointer ecalclient,
+            GCancellable *cancellable,
+            GError **error)
+{
+    icaltimezone *zone = NULL;
+    GError *local_error = NULL;
+
+    if (e_cal_client_get_timezone_sync((ECalClient *)ecalclient, tzid, &zone, cancellable, &local_error)) {
+        return zone;
+    } else if (local_error && local_error->domain == E_CAL_CLIENT_ERROR) {
+        // Ignore *all* E_CAL_CLIENT_ERROR errors, e_cal_client_get_timezone_sync() does
+        // not reliably return a specific code like E_CAL_CLIENT_ERROR_OBJECT_NOT_FOUND.
+        // See the 'e_cal_client_check_timezones() + e_cal_client_tzlookup() + Could not retrieve calendar time zone: Invalid object'
+        // mail thread.
+        g_clear_error (&local_error);
+    } else if (local_error) {
+        g_propagate_error (error, local_error);
+    }
+
+    return NULL;
+}
+#endif
+
 EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(const string &luid, const std::string &item, bool raw)
 {
     bool update = !luid.empty();
@@ -558,7 +584,7 @@ EvolutionCalendarSource::InsertItemResult EvolutionCalendarSource::insertItem(co
 #ifdef USE_ECAL_CLIENT
         !e_cal_client_check_timezones(icomp,
                                       NULL,
-                                      e_cal_client_tzlookup,
+                                      my_tzlookup,
                                       (const void *)m_calendar.get(),
                                       NULL,
                                       gerror)
