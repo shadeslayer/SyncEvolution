@@ -386,6 +386,7 @@ void Server::run()
         }
     }
 
+    SE_LOG_INFO(NULL, NULL, "ready to run");
     if (!m_shutdownRequested) {
         g_main_loop_run(m_loop);
     }

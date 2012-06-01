@@ -150,7 +150,6 @@ int main(int argc, char **argv, char **envp)
             unsetenv("G_DBUS_DEBUG");
         }
 
-        SE_LOG_INFO(NULL, NULL, "ready to run");
         server->run();
         SE_LOG_DEBUG(NULL, NULL, "cleaning up");
         server.reset();
