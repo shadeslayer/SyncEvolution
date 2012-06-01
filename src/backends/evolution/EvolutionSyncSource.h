@@ -27,6 +27,10 @@
 #include <syncevo/declarations.h>
 #include <syncevo/GLibSupport.h>
 
+#ifdef HAVE_EDS
+SE_GOBJECT_TYPE(ESourceList)
+#endif
+
 SE_BEGIN_CXX
 
 

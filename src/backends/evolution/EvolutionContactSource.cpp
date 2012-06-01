@@ -194,18 +194,22 @@ handle_authentication_cb (EClient */*client*/, ECredentials *credentials, gpoint
 
 void EvolutionContactSource::open()
 {
+    GErrorCXX gerror;
+    bool created = false;
+    bool onlyIfExists = false; // always try to create address book, because even if there is
+                               // a source there's no guarantee that the actual database was
+                               // created already; the original logic below for only setting
+                               // this when explicitly requesting a new address book
+                               // therefore failed in some cases
 #ifdef USE_EBOOK_CLIENT
-    ESourceList *sources;
-
-    if (!e_book_client_get_sources(&sources, NULL)) {
-        throwError("unable to access address books");
+    ESourceList *tmp;
+    if (!e_book_client_get_sources(&tmp, gerror)) {
+        throwError("unable to access address books", gerror);
     }
-    
+    ESourceListCXX sources(tmp, false);
+
     string id = getDatabaseID();
     ESource *source = findSource(sources, id);
-    bool onlyIfExists = true;
-    bool created = false;
-    GErrorCXX gerror;
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
@@ -219,13 +223,12 @@ void EvolutionContactSource::open()
             throwError(string(getName()) + ": no such address book: '" + id + "'");
         }
         created = true;
-        onlyIfExists = false;
     } else {
         m_addressbook = EBookClientCXX::steal(e_book_client_new( source, gerror ));
     }
 
     if (gerror) {
-        gerror.throwError("create addressbook");
+        throwError("create addressbook", gerror);
     }
 
     // Listen for errors
@@ -241,10 +244,10 @@ void EvolutionContactSource::open()
             gerror.clear();
             sleep(5);
             if (!e_client_open_sync( E_CLIENT ((EBookClient*)m_addressbook), onlyIfExists, NULL, gerror)) {
-                gerror.throwError("opening address book");
+                throwError("opening address book", gerror);
             }
         } else {
-            gerror.throwError("opening address book");
+            throwError("opening address book", gerror);
         }
     }
 
@@ -253,20 +256,14 @@ void EvolutionContactSource::open()
                            G_CALLBACK(SyncContext::fatalError),
                            (void *)"Evolution Data Server has died unexpectedly, contacts no longer available.");
 #else
-    ESourceList *sources;
-    if (!e_book_get_addressbooks(&sources, NULL)) {
-        throwError("unable to access address books");
+    ESourceList *tmp;
+    if (!e_book_get_addressbooks(&tmp, gerror)) {
+        throwError("unable to access address books", gerror);
     }
-    
-    GErrorCXX gerror;
+    ESourceListCXX sources(tmp, false);
+
     string id = getDatabaseID();
     ESource *source = findSource(sources, id);
-    bool onlyIfExists = false; // always try to create address book, because even if there is
-                               // a source there's no guarantee that the actual database was
-                               // created already; the original logic below for only setting
-                               // this when explicitly requesting a new address book
-                               // therefore failed in some cases
-    bool created = false;
     if (!source) {
         // might have been special "<<system>>" or "<<default>>", try that and
         // creating address book from file:// URI before giving up
@@ -280,7 +277,6 @@ void EvolutionContactSource::open()
             throwError(string(getName()) + ": no such address book: '" + id + "'");
         }
         created = true;
-        onlyIfExists = false;
     } else {
         m_addressbook.set( e_book_new( source, gerror ), "address book" );
     }
@@ -444,7 +440,7 @@ void EvolutionContactSource::listAllItems(RevisionMap_t &revisions)
     PlainGStr sexp(e_book_query_to_string (allItemsQuery.get()));
     
     if (!e_book_client_get_view_sync(m_addressbook, sexp, &view, NULL, gerror)) {
-        gerror.throwError( "getting the view" );
+        throwError( "getting the view" , gerror);
     }
     EBookClientViewCXX viewPtr = EBookClientViewCXX::steal(view);
 
@@ -460,7 +456,7 @@ void EvolutionContactSource::listAllItems(RevisionMap_t &revisions)
 
     EBookClientViewSyncHandler handler(viewPtr, list_revisions, &revisions);
     if (!handler.process(gerror)) {
-        gerror.throwError("watching view");
+        throwError("watching view", gerror);
     }
 #else
     GErrorCXX gerror;
