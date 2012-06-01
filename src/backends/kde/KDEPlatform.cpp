@@ -24,6 +24,12 @@
 
 #include "KDEPlatform.h"
 
+#include <syncevo/SyncContext.h>
+#include <syncevo/SyncConfig.h>
+
+// Qt headers may define "signals" as preprocessor symbol,
+// which conflicts with glib C headers included indirectly
+// above. This order of header files works.
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
 #include <QtCore/QLatin1String>
@@ -35,9 +41,6 @@
 #include <KCmdLineArgs>
 
 #include <kwallet.h>
-
-#include <syncevo/SyncContext.h>
-#include <syncevo/SyncConfig.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
