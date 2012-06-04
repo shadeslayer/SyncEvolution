@@ -142,7 +142,8 @@ namespace {
  * operation. Using the cached information implies that we won't find bugs in
  * the handling of that information.
  */
-static int DumpItems(ClientTest &client, TestingSyncSource &source, const std::string &file)
+static int DumpItems(ClientTest &client, TestingSyncSource &source, const std::string &file,
+                     bool forceBaseReadItem)
 {
     ActiveSyncSource &eassource = static_cast<ActiveSyncSource &>(source);
     ofstream out(file.c_str());
@@ -161,7 +162,20 @@ static int DumpItems(ClientTest &client, TestingSyncSource &source, const std::s
 
     BOOST_FOREACH(const std::string &easid, easids) {
         std::string item;
-        eassource.ActiveSyncSource::readItem(easid, item);
+        if (forceBaseReadItem) {
+            // This bypasses the more specialized
+            // ActiveSyncCalendarSource::readItem(), which helps
+            // reveal potential bugs in it. However, it depends on a
+            // working Fetch operation in the ActiveSync server, which
+            // Google doesn't seem to provide (404 error).
+            eassource.ActiveSyncSource::readItem(easid, item);
+        } else {
+            // Normal readItem() works with Google by using the cached
+            // item. However, the source must have done a beginSync()
+            // with empty sync key, because otherwise the cache is
+            // not guaranteed to be complete.
+            eassource.readItem(easid, item);
+        }
         out << item << '\n';
         if (!boost::ends_with(item, "\n")) {
             out << '\n';
@@ -201,7 +215,8 @@ static TestingSyncSource *createEASSource(const ClientTestConfig::createsource_t
 
 // common settings for all kinds of data
 static void updateConfigEAS(const RegisterSyncSourceTest */* me */,
-                            ClientTestConfig &config)
+                            ClientTestConfig &config,
+                            EasItemType type)
 {
         // cannot run tests involving a second database:
         // wrap orginal source creation, set default database for
@@ -211,7 +226,12 @@ static void updateConfigEAS(const RegisterSyncSourceTest */* me */,
         config.m_createSourceB = boost::bind(createEASSource, config.m_createSourceB,
                                              _1, _2, _3, _4);
 
-        config.m_dump = DumpItems;
+        config.m_dump = boost::bind(DumpItems, _1, _2, _3,
+                                    type == EAS_ITEM_CONTACT ||
+                                    // need to read from our cache for Google Calendar,
+                                    // because it does not support Fetch
+                                    strcmp(getEnv("CLIENT_TEST_SERVER", ""), "googleeas")
+                                    );
         config.m_sourceLUIDsAreVolatile = true;
         // TODO: find out how ActiveSync/Exchange handle children without parent;
         // at the moment, the child is stored as if it was a stand-alone event
@@ -233,7 +253,7 @@ public:
         // TODO: provide comprehensive set of vCard 3.0 contacts as they are understood by the ActiveSync library
         // config.testcases = "testcases/eas_contact.vcf";
 
-        updateConfigEAS(this, config);
+        updateConfigEAS(this, config, EAS_ITEM_CONTACT);
     }
 } ActiveSyncContactTest;
 
@@ -246,7 +266,7 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.m_type = "eas-events";
-        updateConfigEAS(this, config);
+        updateConfigEAS(this, config, EAS_ITEM_CALENDAR);
     }
 } ActiveSyncEventTest;
 
@@ -259,7 +279,7 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.m_type = "eas-todos";
-        updateConfigEAS(this, config);
+        updateConfigEAS(this, config, EAS_ITEM_TODO);
     }
 } ActiveSyncTodoTest;
 
@@ -272,7 +292,7 @@ public:
     virtual void updateConfig(ClientTestConfig &config) const
     {
         config.m_type = "eas-memos";
-        updateConfigEAS(this, config);
+        updateConfigEAS(this, config, EAS_ITEM_JOURNAL);
     }
 } ActiveSyncMemoTest;
 

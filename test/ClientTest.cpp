@@ -280,7 +280,12 @@ public:
         }
     }
 
-    void reset(TestingSyncSource *source = NULL)
+    enum Flags {
+        SLOW,           /**< erase anchor, start accessing database from scratch */
+        INCREMENTAL     /**< allow source to do incremental data read */
+    };
+
+    void reset(TestingSyncSource *source = NULL, Flags flags = INCREMENTAL)
     {
         if (get() && m_active) {
             stopAccess();
@@ -291,7 +296,7 @@ public:
             base_t::reset(source);
         }
         if (source) {
-            startAccess();
+            startAccess(flags);
         }
     }
 
@@ -299,7 +304,7 @@ public:
      * done automatically as part of reset(), only to be called
      * after an explicit stopAccess()
      */
-    void startAccess()
+    void startAccess(Flags flags = INCREMENTAL)
     {
         CT_ASSERT(get());
         CT_ASSERT(!m_active);
@@ -311,6 +316,9 @@ public:
         CT_ASSERT_NO_THROW(get()->open());
         string node = get()->getTrackingNode()->getName();
         string anchor = m_anchors[node];
+        if (flags == SLOW) {
+            anchor = "";
+        }
         get()->beginSync(anchor, "");
         if (isServerMode()) {
             CT_ASSERT_NO_THROW(get()->enableServerMode());
@@ -1282,9 +1290,13 @@ void LocalTests::testImport() {
     backupStorage(config, client);
     CT_ASSERT_NO_THROW(source.reset());
 
-    // export again and compare against original file
+    // export again and compare against original file,
+    // without relying on change tracking (because
+    // Google ActiveSync has problems with Fetch,
+    // which would be needed for a data dump when
+    // using the incremental approach)
     TestingSyncSourcePtr copy;
-    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
+    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA(), TestingSyncSourcePtr::SLOW));
     bool equal = compareDatabases(testcases.c_str(), *copy.get(), false);
     CT_ASSERT_NO_THROW(source.reset());
 
@@ -1371,7 +1383,7 @@ void LocalTests::testRemoveProperties() {
 
     // compare
     TestingSyncSourcePtr copy;
-    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA()));
+    SOURCE_ASSERT_NO_FAILURE(copy.get(), copy.reset(createSourceA(), TestingSyncSourcePtr::SLOW));
     bool equal = compareDatabases(updated.c_str(), *copy.get(), false);
     CT_ASSERT_NO_THROW(source.reset());
 

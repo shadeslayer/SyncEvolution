@@ -84,7 +84,9 @@ my $full_timezones = $ENV{CLIENT_TEST_FULL_TIMEZONES}; # do not simplify VTIMEZO
 my $exchange = $server =~ /exchange/; # Exchange via ActiveSync
 my $egroupware = $server =~ /egroupware/;
 my $funambol = $server =~ /funambol/;
-my $google = $server =~ /google/;
+my $googlesyncml = $server eq "google";
+my $googlecaldav = $server eq "googlecalendar";
+my $googleeas = $server eq "googleeas";
 my $google_valarm = $ENV{CLIENT_TEST_GOOGLE_VALARM};
 my $yahoo = $server =~ /yahoo/;
 my $davical = $server =~ /davical/;
@@ -363,7 +365,7 @@ sub NormalizeItem {
     #                                      >    LY                                 
     s/^(\w+)([^:\n]*);X-EVOLUTION-ENDDATE=[0-9TZ]*/$1$2/mg;
 
-    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$google || $mobical || $memotoo) {
+    if ($scheduleworld || $egroupware || $synthesis || $addressbook || $funambol ||$googlesyncml || $googleeas || $mobical || $memotoo) {
       # does not preserve X-EVOLUTION-UI-SLOT=
       s/^(\w+)([^:\n]*);X-EVOLUTION-UI-SLOT=\d+/$1$2/mg;
     }
@@ -389,7 +391,7 @@ sub NormalizeItem {
       s/^(TEL.*);TYPE=PREF/$1/mg;
     }
 
-   if($google) {
+   if($googlesyncml) {
       # ignore the PHOTO encoding data 
       s/^PHOTO(.*?): .*\n/^PHOTO$1: [...]\n/mg; 
       # FN propertiey is not correct 
@@ -398,7 +400,9 @@ sub NormalizeItem {
       s!^TEL\;TYPE=CAR(.*)\n!TEL$1\n!mg;
       # some properties are lost
       s/^(X-EVOLUTION-FILE-AS|NICKNAME|BDAY|CATEGORIES|CALURI|FBURL|ROLE|URL|X-AIM|X-EVOLUTION-UI-SLOT|X-ANNIVERSARY|X-ASSISTANT|X-EVOLUTION-BLOG-URL|X-EVOLUTION-VIDEO-URL|X-GROUPWISE|X-ICQ|X-GADUGADU|X-JABBER|X-MSN|X-SIP|X-SKYPE|X-MANAGER|X-SPOUSE|X-MOZILLA-HTML|X-YAHOO)(;[^:;\n]*)*:.*\r?\n?//gm;
+   }
 
+   if ($googlecaldav) {
       #several properties are not preserved by Google in icalendar2.0 format
       s/^(SEQUENCE|X-EVOLUTION-ALARM-UID)(;[^:;\n]*)*:.*\r?\n?//gm;
 
@@ -429,7 +433,7 @@ sub NormalizeItem {
         s/^(X-RADICALE-NAME)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
-    if ($google || $yahoo) {
+    if ($googlecaldav || $yahoo) {
       # default status is CONFIRMED
       s/^STATUS:CONFIRMED\r?\n?//gm;
     }
@@ -648,6 +652,11 @@ sub NormalizeItem {
         }
         # ignore added VALARM DESCRIPTION
         s/^DESCRIPTION:Reminder\n//m;
+    }
+
+    if ($googleeas) {
+        # unsupported properties
+        s/^(FN)(;[^:;\n]*)*:.*\r?\n?//gm;
     }
 
     # treat X-MOZILLA-HTML=FALSE as if the property didn't exist

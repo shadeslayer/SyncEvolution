@@ -74,6 +74,10 @@ which must simulate two independent ActiveSync clients.
 
 Configure "local" testing (backend is covered, no syncing involved):
 ./syncevolution --configure username=<EAS account ID> \
+                eas_event/backend=eas-events \
+                eas_event/database= \
+                eas_contact/backend=eas-contacts \
+                eas_contact/database= \
                 --template SyncEvolution target-config@client-test-exchange
 
 On MeeGo:
@@ -114,19 +118,22 @@ Sync Testing
   syncevolution --configure \
                 syncURL=local://@exchange \
                 username=<EAS account ID> \
-                backend=evolution-calendar \
                 eds_event/backend=evolution-calendar \
-                eds_event/uri=calendar \
+                eds_event/uri=eas_event \
+                eds_event/database=SyncEvolution_Test_eds_event_1 \
                 eds_contact/backend=evolution-contacts \
-                eds_contact/uri=addressbook \
+                eds_contact/uri=eas_contact \
+                eds_contact/database=SyncEvolution_Test_eds_contact_1 \
                 --template SyncEvolution_Client exchange_1@client-test-1 eds_event eds_contact
   syncevolution --configure \
                 syncURL=local://@exchange \
                 username=<EAS account ID>_B \
                 eds_event/backend=evolution-calendar \
-                eds_event/uri=calendar \
+                eds_event/uri=eas_event \
+                eds_event/database=SyncEvolution_Test_eds_event_2 \
                 eds_contact/backend=evolution-contacts \
-                eds_contact/uri=addressbook \
+                eds_contact/uri=eas_contact \
+                eds_contact/database=SyncEvolution_Test_eds_contact_2 \
                 --template SyncEvolution_Client exchange_2@client-test-2 eds_event eds_contact
 - Create calendars named as follows in Evolution:
   SyncEvolution_Test_eds_event_1
@@ -139,4 +146,12 @@ This setup depends on overriding the username in
 target-config@exchange with different usernames in each sync
 config. This is necessary because change tracking depends on that
 username.
+
+
+Google via ActiveSync
+=====================
+
+- Use "googleeas" instead of "exchange", because ActiveSyncSourceRegister.cpp
+  needs to know that it is talking to Google, to work around the lack of
+  Fetch command support.
 
