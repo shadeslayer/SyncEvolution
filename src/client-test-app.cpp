@@ -235,14 +235,14 @@ public:
             // but then no longer can be used to change the config.
             // This prevents accidentally running a test with default
             // values, for example for the database.
-            if (sc->getDatabaseID().empty()) {
+            if (!sc->getDatabaseID().wasSet()) {
                 string database = getDatabaseName(test->m_configName);
                 sc->setDatabaseID(database);
             }
-            if (sc->getUser().empty() && !m_evoUser.empty()) {
+            if (!sc->getUser().wasSet() && !m_evoUser.empty()) {
                 sc->setUser(m_evoUser);
             }
-            if (sc->getPassword().empty() && !m_evoPassword.empty()) {
+            if (!sc->getPassword().wasSet() && !m_evoPassword.empty()) {
                 sc->setPassword(m_evoPassword);
             }
             // Always set this one, to ensure the config matches the test.
