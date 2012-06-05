@@ -41,6 +41,34 @@ namespace GDBusCXX {
         dbus_enum_traits<SyncEvo::SyncMode, uint32_t>
     {};
 
+    /** for InitState or InitStateClass: like a pair of two values, but with different storage class on the host */
+    template <class I> struct dbus_init_state_traits :
+        public dbus_traits< std::pair<typename I::value_type, bool> >
+    {
+        typedef dbus_traits< std::pair<typename I::value_type, bool> > base_traits;
+        typedef I host_type;
+        typedef const I &arg_type;
+
+        static void get(connection_type *conn,
+                        message_type *msg,
+                        reader_type &reader, host_type &value)
+        {
+            typename base_traits::host_type tmp;
+            base_traits::get(conn, msg, reader, tmp);
+            value = host_type(tmp.first, tmp.second);
+        }
+
+        static void append(builder_type &builder, arg_type value)
+        {
+            base_traits::append(builder, typename base_traits::host_type(value.get(), value.wasSet()));
+        }
+    };
+
+    template <class T> struct dbus_traits< SyncEvo::InitStateClass<T> > :
+        public dbus_init_state_traits< SyncEvo::InitStateClass<T> > {};
+    template <class T> struct dbus_traits< SyncEvo::InitState<T> > :
+        public dbus_init_state_traits< SyncEvo::InitState<T> > {};
+
     /**
      * Actual content is a std::map, so serialization can be done using that.
      * We only have to ensure that instances and parameters use FullProps.
@@ -62,7 +90,7 @@ namespace GDBusCXX {
         typedef const SyncEvo::SourceProps &arg_type;
     };
     template <> struct dbus_traits<SyncEvo::ConfigProps> :
-        public dbus_traits < std::map<std::string, std::string, SyncEvo::Nocase<std::string> > >
+        public dbus_traits < std::map<std::string, SyncEvo::InitStateString, SyncEvo::Nocase<std::string> > >
     {
         typedef SyncEvo::ConfigProps host_type;
         typedef const SyncEvo::ConfigProps &arg_type;

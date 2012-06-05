@@ -150,7 +150,7 @@ static void copyProperty(const StringPair &keyvalue,
         SE_THROW_EXCEPTION(InvalidCall, StringPrintf("invalid value '%s' for property '%s': '%s'",
                                                      value.c_str(), name.c_str(), error.c_str()));
     }
-    filter.insert(keyvalue);
+    filter.insert(std::make_pair(keyvalue.first, InitStateString(keyvalue.second, true)));
 }
 
 static void setSyncFilters(const ReadOperations::Config_t &config,FilterConfigNode::ConfigFilter &syncFilter,std::map<std::string, FilterConfigNode::ConfigFilter> &sourceFilters)
@@ -369,8 +369,8 @@ void Session::sync2(const std::string &mode, const SessionCommon::SourceModes_t 
     boost::shared_ptr<Connection> c = m_connection.lock();
     if (c && !c->mustAuthenticate()) {
         // unsetting username/password disables checking them
-        params.m_syncFilter["password"] = "";
-        params.m_syncFilter["username"] = "";
+        params.m_syncFilter["password"] = InitStateString("", true);
+        params.m_syncFilter["username"] = InitStateString("", true);
     }
 
     // Relay messages between connection and helper.If the

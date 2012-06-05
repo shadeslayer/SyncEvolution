@@ -293,7 +293,7 @@ public:
 
 
         // Always set properties taken from the environment.
-        nodes.getProperties()->setProperty("backend", m_type);
+        nodes.getProperties()->setProperty("backend", InitStateString(m_type, true));
         SE_LOG_DEBUG(NULL, NULL, "   additional property backend = %s (from CLIENT_TEST_WEBDAV)",
                      m_type.c_str());
         BOOST_FOREACH(const StringPair &propval, m_props) {
@@ -301,7 +301,7 @@ public:
             if (node) {
                 SE_LOG_DEBUG(NULL, NULL, "   additional property %s = %s (from CLIENT_TEST_WEBDAV)",
                              propval.first.c_str(), propval.second.c_str());
-                node->setProperty(propval.first, propval.second);
+                node->setProperty(propval.first, InitStateString(propval.second, true));
             } else if (!boost::ends_with(propval.first, "testconfig") &&
                        !boost::ends_with(propval.first, "testcases")) {
                 SE_THROW(StringPrintf("invalid property %s=%s set in CLIENT_TEST_WEBDAV for %s %s",

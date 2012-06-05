@@ -145,7 +145,6 @@ src_syncevo_libsyncevolution_include_HEADERS = \
   src/syncevo/LogRedirect.h \
   src/syncevo/LogStdout.h \
   src/syncevo/LogSyslog.h \
-  src/syncevo/FileConfigNode.h \
   \
   src/syncevo/FilterConfigNode.h \
   src/syncevo/PrefixConfigNode.h \

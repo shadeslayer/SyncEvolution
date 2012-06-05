@@ -41,20 +41,18 @@ PrefixConfigNode::PrefixConfigNode(const string prefix,
 {
 }
 
-string PrefixConfigNode::readProperty(const string &property) const
+InitStateString PrefixConfigNode::readProperty(const string &property) const
 {
     return m_readOnlyNode->readProperty(m_prefix + property);
 }
 
-void PrefixConfigNode::setProperty(const string &property,
-                                 const string &value,
-                                 const string &comment,
-                                 const string *defValue)
+void PrefixConfigNode::writeProperty(const string &property,
+                                     const InitStateString &value,
+                                     const string &comment)
 {
-    m_node->setProperty(m_prefix + property,
-                        value,
-                        comment,
-                        defValue);
+    m_node->writeProperty(m_prefix + property,
+                          value,
+                          comment);
 }
 
 void PrefixConfigNode::readProperties(ConfigProps &props) const

@@ -38,20 +38,19 @@ SafeConfigNode::SafeConfigNode(const boost::shared_ptr<const ConfigNode> &node) 
 {
 }
 
-string SafeConfigNode::readProperty(const string &property) const
+InitStateString SafeConfigNode::readProperty(const string &property) const
 {
-    return unescape(m_readOnlyNode->readProperty(escape(property)));
+    InitStateString res = m_readOnlyNode->readProperty(escape(property));
+    return InitStateString(unescape(res.get()), res.wasSet());
 }
 
-void SafeConfigNode::setProperty(const string &property,
-                                 const string &value,
-                                 const string &comment,
-                                 const string *defValue)
+void SafeConfigNode::writeProperty(const string &property,
+                                   const InitStateString &value,
+                                   const string &comment)
 {
-    m_node->setProperty(escape(property),
-                        escape(value),
-                        comment,
-                        defValue);
+    m_node->writeProperty(escape(property),
+                          InitStateString(escape(value.get()), value.wasSet()),
+                          comment);
 }
 
 void SafeConfigNode::readProperties(ConfigProps &props) const

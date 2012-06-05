@@ -363,6 +363,8 @@ template<class T> class Init {
  */
 template<class T> class InitState {
  public:
+    typedef T value_type;
+
     InitState(const T &val, bool wasSet) : m_value(val), m_wasSet(wasSet) {}
     InitState() : m_value(boost::value_initialized<T>()), m_wasSet(false) {}
     InitState(const InitState &other) : m_value(other.m_value), m_wasSet(other.m_wasSet) {}
@@ -380,6 +382,8 @@ template<class T> class InitState {
 /** version of InitState for classes */
 template<class T> class InitStateClass : public T {
  public:
+    typedef T value_type;
+
     InitStateClass(const T &val, bool wasSet) : T(val), m_wasSet(wasSet) {}
     InitStateClass() : m_wasSet(false) {}
     InitStateClass(const char *val) : T(val), m_wasSet(false) {}

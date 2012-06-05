@@ -42,7 +42,7 @@ FilterConfigNode::FilterConfigNode(const boost::shared_ptr<const ConfigNode> &no
 }
 
 void FilterConfigNode::addFilter(const string &property,
-                                 const string &value)
+                                 const InitStateString &value)
 {
     m_filter[property] = value;
 }
@@ -52,7 +52,7 @@ void FilterConfigNode::setFilter(const ConfigFilter &filter)
     m_filter = filter;
 }
 
-string FilterConfigNode::readProperty(const string &property) const
+InitStateString FilterConfigNode::readProperty(const string &property) const
 {
     ConfigFilter::const_iterator it = m_filter.find(property);
 
@@ -63,10 +63,9 @@ string FilterConfigNode::readProperty(const string &property) const
     }
 }
 
-void FilterConfigNode::setProperty(const string &property,
-                                   const string &value,
-                                   const string &comment,
-                                   const string *defValue)
+void FilterConfigNode::writeProperty(const string &property,
+                                     const InitStateString &value,
+                                     const string &comment)
 {
     ConfigFilter::iterator it = m_filter.find(property);
 
@@ -77,7 +76,7 @@ void FilterConfigNode::setProperty(const string &property,
     if (it != m_filter.end()) {
         m_filter.erase(it);
     }
-    m_node->setProperty(property, value, comment, defValue);
+    m_node->writeProperty(property, value, comment);
 }
 
 void FilterConfigNode::readProperties(ConfigProps &props) const
@@ -116,16 +115,6 @@ void FilterConfigNode::flush()
         SyncContext::throwError(getName() + ": read-only, flushing not allowed");
     }
     m_node->flush();
-}
-
-FilterConfigNode::ConfigFilter::operator string () const {
-    vector<string> res;
-
-    BOOST_FOREACH(const StringPair &filter, *this) {
-        res.push_back(filter.first + " = " + filter.second);
-    }
-    sort(res.begin(), res.end());
-    return boost::join(res, "\n");
 }
 
 SE_END_CXX

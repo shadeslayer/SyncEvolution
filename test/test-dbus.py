@@ -5285,6 +5285,29 @@ sources/xyz/config.ini:# databasePassword = """)
         self.assertEqualDiff(expected, res)
 
     @property("debug", False)
+    def testEmptyDatabaseProp(self):
+        '''TestCmdline.testEmptyDatabaseProp - add a source with explicit empty database property'''
+        self.doSetupScheduleWorld(False)
+        out, err, code = self.runCmdline(["--configure",
+                                          "database=",
+                                          "scheduleworld",
+                                          "xyz"])
+        res = scanFiles(self.configdir + "/default")
+        expected = sortConfig(self.ScheduleWorldConfig() + """
+peers/scheduleworld/sources/xyz/.internal.ini:# adminData = 
+peers/scheduleworld/sources/xyz/.internal.ini:# synthesisID = 0
+peers/scheduleworld/sources/xyz/config.ini:# sync = disabled
+peers/scheduleworld/sources/xyz/config.ini:# uri = 
+peers/scheduleworld/sources/xyz/config.ini:# syncFormat = 
+peers/scheduleworld/sources/xyz/config.ini:# forceSyncFormat = 0
+sources/xyz/config.ini:# backend = select backend
+sources/xyz/config.ini:database = 
+sources/xyz/config.ini:# databaseFormat = 
+sources/xyz/config.ini:# databaseUser = 
+sources/xyz/config.ini:# databasePassword = """)
+        self.assertEqualDiff(expected, res)
+
+    @property("debug", False)
     def testSync(self):
         """TestCmdline.testSync - check sync with various options"""
         out, err, code = self.runCmdline(["--sync"],
@@ -5520,21 +5543,46 @@ sources/xyz/config.ini:# databasePassword = """)
         expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/vcard",
                                     1)
-        expected = expected.replace("# forceSyncFormat = 0",
-                                    "forceSyncFormat = 0",
-                                    1)
         self.assertEqualDiff(expected,
                              filterConfig(self.printConfig("scheduleworld")))
         shared = filterConfig(self.printConfig("@default"))
         self.assertIn("backend = file", shared)
         self.assertIn("databaseFormat = text/vcard", shared)
 
+        # force sync format
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "addressbook/type=file:text/vcard:3.0!",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+        expected = expected.replace('# forceSyncFormat = 0',
+                                    'forceSyncFormat = 1',
+                                    1)
+        self.assertEqualDiff(expected,
+                             filterConfig(self.printConfig("scheduleworld")))
+
+        # unset format
+        out, err, code = self.runCmdline(["--configure",
+                                          "--source-property", "addressbook/type=file",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+        expected = expected.replace('databaseFormat = text/vcard',
+                                    '# databaseFormat = ',
+                                    1)
+        expected = expected.replace('syncFormat = text/vcard',
+                                    '# syncFormat = ',
+                                    1)
+        expected = expected.replace('forceSyncFormat = 1',
+                                    '# forceSyncFormat = 0',
+                                    1)
+        self.assertEqualDiff(expected,
+                             filterConfig(self.printConfig("scheduleworld")))
+
         # updating type for context must not affect peer
         out, err, code = self.runCmdline(["--configure",
                                           "--source-property", "type=file:text/x-vcard:2.1",
                                           "@default", "addressbook"])
         self.assertSilent(out, err)
-        expected = expected.replace("databaseFormat = text/vcard",
+        expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/x-vcard",
                                     1)
         self.assertEqualDiff(expected,
@@ -5996,11 +6044,9 @@ sources/calendar/config.ini:# databasePassword =
         expected = expected.replace("# databasePassword = ",
                                     "databasePassword = -",
                                     1)
-        # migrating "type" sets forceSyncFormat (always) and
+        # migrating "type" sets forceSyncFormat (if non-standard) and
         # databaseFormat (if format was part of type, as for
         # addressbook
-        expected = expected.replace("# forceSyncFormat = 0",
-                                    "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/vcard",
                                     1)
@@ -6030,7 +6076,6 @@ config.ini:obsoleteprop = foo
         expected = expected.replace("# databaseUser = ", "databaseUser = foo", 1)
         # uses keyring
         expected = expected.replace("# databasePassword = ", "databasePassword = -", 1)
-        expected = expected.replace("# forceSyncFormat = 0", "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ", "databaseFormat = text/vcard", 1)
         self.assertEqualDiff(expected, migratedconfig)
         renamedconfig = scanFiles(newroot, "scheduleworld.old.1")
@@ -6067,8 +6112,6 @@ spds/sources/addressbook/changes/config.txt:foo2 = bar2
         expected = expected.replace("# databasePassword = ",
                                     "databasePassword = -",
                                     1)
-        expected = expected.replace("# forceSyncFormat = 0",
-                                    "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/vcard",
                                     1)
@@ -6113,8 +6156,6 @@ peers/scheduleworld/config.ini''',
         expected = expected.replace("# databasePassword = ",
                                     "databasePassword = -",
                                     1)
-        expected = expected.replace("# forceSyncFormat = 0",
-                                    "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/vcard",
                                     1)
@@ -6148,8 +6189,6 @@ peers/scheduleworld/config.ini''',
         expected = expected.replace("# databasePassword = ",
                                     "databasePassword = -",
                                     1)
-        expected = expected.replace("# forceSyncFormat = 0",
-                                    "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/vcard",
                                     1)
@@ -6200,6 +6239,53 @@ peers/scheduleworld/config.ini''',
         expected = expected.replace("/scheduleworld/",
                                     "/scheduleworld.old.5/")
         self.assertEqualDiff(expected, renamedconfig)
+
+    @property("debug", False)
+    def testMigrateSyncFormat(self):
+        '''TestCmdline.testMigrateSyncFormat - migrate from old configuration with forced format'''
+        oldroot = xdg_root + "/.sync4j/evolution/scheduleworld"
+        newroot = self.configdir + "/default"
+        oldconfig = self.OldScheduleWorldConfig()
+        oldconfig = oldconfig.replace('type = addressbook:text/vcard',
+                                      'type = addressbook:text/vcard!',
+                                      1)
+
+        # migrate old config
+        createFiles(oldroot, oldconfig)
+        createdoldconfig = scanFiles(oldroot)
+        out, err, code = self.runCmdline(["--migrate",
+                                          "scheduleworld"])
+        self.assertSilent(out, err)
+
+        migratedconfig = scanFiles(newroot)
+        expected = sortConfig(self.ScheduleWorldConfig())
+        # migrating SyncEvolution < 1.2 configs sets ConsumerReady, to
+        # keep config visible in the updated sync-ui
+        expected = expected.replace("# ConsumerReady = 0",
+                                    "ConsumerReady = 1")
+        expected = expected.replace("# database = ",
+                                    "database = xyz",
+                                    1)
+        expected = expected.replace("# databaseUser = ",
+                                    "databaseUser = foo",
+                                    1)
+        # syncevo-dbus-server always uses keyring and doesn't
+        # return plain-text password.
+        expected = expected.replace("# databasePassword = ",
+                                    "databasePassword = -",
+                                    1)
+        # migrating "type" sets forceSyncFormat (if non-standard) and
+        # databaseFormat (if format was part of type, as for
+        # addressbook
+        expected = expected.replace("# databaseFormat = ",
+                                    "databaseFormat = text/vcard",
+                                    1)
+        expected = expected.replace("# forceSyncFormat = 0",
+                                    "forceSyncFormat = 1",
+                                    1)
+        self.assertEqualDiff(expected, migratedconfig)
+        renamedconfig = scanFiles(oldroot + ".old")
+        self.assertEqualDiff(createdoldconfig, renamedconfig)
 
     @property("debug", False)
     def testMigrateContext(self):
@@ -6305,11 +6391,9 @@ sources/memo/config.ini:type = todo
         expected = expected.replace("# databasePassword = ",
                                     "databasePassword = -",
                                     1)
-        # migrating "type" sets forceSyncFormat (always) and
+        # migrating "type" sets forceSyncFormat (if non-standard) and
         # databaseFormat (if format was part of type, as for
         # addressbook)
-        expected = expected.replace("# forceSyncFormat = 0",
-                                    "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/vcard", 1)
         self.assertEqualDiff(expected, migratedconfig)
@@ -6345,8 +6429,6 @@ sources/memo/config.ini:type = todo
         expected = expected.replace("# databasePassword = ",
                                     "databasePassword = -",
                                     1)
-        expected = expected.replace("# forceSyncFormat = 0",
-                                    "forceSyncFormat = 0")
         expected = expected.replace("# databaseFormat = ",
                                     "databaseFormat = text/vcard",
                                     1)

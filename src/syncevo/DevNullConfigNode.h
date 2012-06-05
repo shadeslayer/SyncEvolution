@@ -36,11 +36,10 @@ class DevNullConfigNode : public ConfigNode {
 
     virtual string getName() const { return m_name; }
     virtual void flush() {}
-    virtual string readProperty(const string &property) const { return ""; }
-    virtual void setProperty(const string &property,
-                             const string &value,
-                             const string &comment = string(""),
-                             const string *defValue = NULL)
+    virtual InitStateString readProperty(const string &property) const { return ""; }
+    virtual void writeProperty(const string &property,
+                               const InitStateString &value,
+                               const string &comment = string(""))
     {
         SE_THROW(m_name + ": virtual read-only configuration node, cannot write property " +
                  property + " = " + value);

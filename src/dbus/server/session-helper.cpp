@@ -187,12 +187,12 @@ bool SessionHelper::doRestore(const std::string &configName,
         if (!sources.empty()) {
             BOOST_FOREACH(const std::string &source, sources) {
                 FilterConfigNode::ConfigFilter filter;
-                filter["sync"] = "two-way";
+                filter["sync"] = InitStateString("two-way", true);
                 sync.setConfigFilter(false, source, filter);
             }
             // disable other sources
             FilterConfigNode::ConfigFilter disabled;
-            disabled["sync"] = "disabled";
+            disabled["sync"] = InitStateString("disabled", true);
             sync.setConfigFilter(false, "", disabled);
         }
         sync.restore(dir,

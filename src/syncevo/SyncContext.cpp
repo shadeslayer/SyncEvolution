@@ -551,7 +551,7 @@ public:
                 // Create a status.ini which contains an error.
                 // Will be overwritten later on, unless we crash.
                 m_info->setProperty("status", STATUS_DIED_PREMATURELY);
-                m_info->setProperty("error", "synchronization process died prematurely");
+                m_info->setProperty("error", InitStateString("synchronization process died prematurely", true));
                 writeTimestamp("start", start);
             }
         }
@@ -4369,9 +4369,9 @@ private:
         CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
         IniFileConfigNode status(dir, "status.ini", true);
         CPPUNIT_ASSERT(status.exists());
-        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before"));
-        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-after"));
-        CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before").get());
+        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-after").get());
+        CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status").get());
         CPPUNIT_ASSERT(!LogDir::haveDifferentContent("file_event",
                                                      dir, "before",
                                                      dir, "after"));
@@ -4388,9 +4388,9 @@ private:
         CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
         IniFileConfigNode status(dir, "status.ini", true);
         CPPUNIT_ASSERT(status.exists());
-        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before"));
-        CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-after"));
-        CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+        CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before").get());
+        CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-after").get());
+        CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status").get());
         CPPUNIT_ASSERT(LogDir::haveDifferentContent("file_event",
                                                     dir, "before",
                                                     dir, "after"));
@@ -4412,11 +4412,11 @@ private:
             CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
             IniFileConfigNode status(dir, "status.ini", true);
             CPPUNIT_ASSERT(status.exists());
-            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before"));
-            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-after"));
-            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__contact-backup-before"));
-            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__contact-backup-after"));
-            CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before").get());
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-after").get());
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__contact-backup-before").get());
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__contact-backup-after").get());
+            CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status").get());
             CPPUNIT_ASSERT(LogDir::haveDifferentContent("file_event",
                                                         dir, "before",
                                                         dir, "after"));
@@ -4436,11 +4436,11 @@ private:
             CPPUNIT_ASSERT_EQUAL(seconddir, sessions[1]);
             IniFileConfigNode status(seconddir, "status.ini", true);
             CPPUNIT_ASSERT(status.exists());
-            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-before"));
-            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-after"));
-            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__contact-backup-before"));
-            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__contact-backup-after"));
-            CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status"));
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-before").get());
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-after").get());
+            CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__contact-backup-before").get());
+            CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__contact-backup-after").get());
+            CPPUNIT_ASSERT_EQUAL(string("200"), status.readProperty("status").get());
             CPPUNIT_ASSERT(LogDir::haveDifferentContent("file_event",
                                                         seconddir, "before",
                                                         seconddir, "after"));

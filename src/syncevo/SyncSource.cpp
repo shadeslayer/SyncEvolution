@@ -1328,7 +1328,7 @@ sysync::TSyError SyncSourceAdmin::updateMapItem(sysync::cMapID mID)
     string key, value;
     mapid2entry(mID, key, value);
 
-    StringMap::iterator it = m_mapping.find(key);
+    ConfigProps::iterator it = m_mapping.find(key);
     if (it == m_mapping.end()) {
         // error, does not exist
         return sysync::DB_Forbidden;
@@ -1346,7 +1346,7 @@ sysync::TSyError SyncSourceAdmin::deleteMapItem(sysync::cMapID mID)
     string key, value;
     mapid2entry(mID, key, value);
 
-    StringMap::iterator it = m_mapping.find(key);
+    ConfigProps::iterator it = m_mapping.find(key);
     if (it == m_mapping.end()) {
         // error, does not exist
         return sysync::DB_Forbidden;

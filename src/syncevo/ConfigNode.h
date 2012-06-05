@@ -65,33 +65,50 @@ class ConfigNode {
      * Returns the value of the given property
      *
      * @param property - the property name
-     * @return value of the property or empty string if not set
+     * @return value of the property or empty string if not set;
+     *         also includes whether the property was set
      */
-    virtual std::string readProperty(const std::string &property) const = 0;
+    virtual InitStateString readProperty(const std::string &property) const = 0;
 
     /**
-     * Sets a property value.
+     * Sets a property value. Overloaded, with variations providing
+     * convenience wrappers around it.
      *
      * @param property   the property name
-     * @param value      the property value (zero terminated string)
+     * @param value      the property value and whether it is considered
+     *                   "explicitly set"; if it is not, then the property
+     *                   shall be removed from the list of properties
      * @param comment    a comment explaining what the property is about, with
      *                   \n separating lines; might be used by the backend 
      *                   when adding a new property
-     * @param defValue   If a defValue is provided and the value
-     *                   matches the default, then the node is asked to
-     *                   remember that the value hasn't really been changed.
-     *                   An implementation can decide to not support this.
+     * @param defValue   Default value in case that value isn't set.
+     *                   Can be be used by an implementation to annotate
+     *                   unset properties.
      */
-    virtual void setProperty(const std::string &property,
-                             const std::string &value,
-                             const std::string &comment = std::string(""),
-                             const std::string *defValue = NULL) = 0;
+    void setProperty(const std::string &property,
+                     const InitStateString &value,
+                     const std::string &comment = std::string("")) {
+        writeProperty(property, value, comment);
+    }
+    void setProperty(const std::string &property,
+                     const char *value) {
+        setProperty(property, InitStateString(value, true));
+    }
+    void setProperty(const std::string &property,
+                     char *value) {
+        setProperty(property, InitStateString(value, true));
+    }
 
     /**
      * Sets a boolean property, using "true/false".
      */
+    void setProperty(const std::string &property, const InitState<bool> &value) {
+        setProperty(property,
+                    InitStateString(value ? "true" : "false",
+                                    value.wasSet()));
+    }
     void setProperty(const std::string &property, bool value) {
-        setProperty(property, value ? "true" : "false");
+        setProperty(property, InitState<bool>(value, true));
     }
 
     /**
@@ -99,22 +116,35 @@ class ConfigNode {
      * using stream formatting.
      */
     template <class T> void setProperty(const std::string &property,
-                                        const T &value) {
+                                        const InitState<T> &value) {
         std::stringstream strval;
-        strval << value;
-        setProperty(property, strval.str());
+        strval << value.get();
+        setProperty(property,
+                    InitStateString(strval.str(),
+                                    value.wasSet()));
+    }
+    template <class T> void setProperty(const std::string &property,
+                                        const T &value) {
+        setProperty(property,
+                    InitState<T>(value, true));
     }
 
     bool getProperty(const std::string &property,
                      std::string &value) const {
-        value = readProperty(property);
-        return !value.empty();
+        InitStateString str = readProperty(property);
+        if (str.wasSet()) {
+            value = str;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     bool getProperty(const std::string &property,
                      bool &value) const {
-        std::string str = readProperty(property);
-        if (str.empty()) {
+        InitStateString str = readProperty(property);
+        if (!str.wasSet() ||
+            str.empty()) {
             return false;
         }
 
@@ -144,8 +174,9 @@ class ConfigNode {
 
     template <class T> bool getProperty(const std::string &property,
                                         T &value) const {
-        std::string str = readProperty(property);
-        if (str.empty()) {
+        InitStateString str = readProperty(property);
+        if (!str.wasSet() ||
+            str.empty()) {
             return false;
         } else {
             std::stringstream strval(str);
@@ -156,6 +187,16 @@ class ConfigNode {
 
     // defined here for source code backwards compatibility
     typedef ConfigProps PropsType;
+
+    /**
+     * Actual implementation of setProperty(). Uses different
+     * different name, to avoid shadowing the setProperty()
+     * variations in derived classes.
+     */
+    virtual void writeProperty(const std::string &property,
+                               const InitStateString &value,
+                               const std::string &comment = std::string("")) = 0;
+
 
     /**
      * Extract all list of all currently defined properties

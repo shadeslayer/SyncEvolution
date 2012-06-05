@@ -50,7 +50,7 @@ MultiplexConfigNode::getNode(const std::string &property,
 }
 
 void MultiplexConfigNode::addFilter(const std::string &property,
-                                    const std::string &value)
+                                    const InitStateString &value)
 {
     FilterConfigNode::addFilter(property, value);
     for (int i = 0; i < 2; i++) {
@@ -85,25 +85,24 @@ void MultiplexConfigNode::flush()
     }
 }
 
-std::string MultiplexConfigNode::readProperty(const std::string &property) const
+InitStateString MultiplexConfigNode::readProperty(const std::string &property) const
 {
     FilterConfigNode *node = getNode(property);
     if (node) {
         return node->readProperty(property);
     } else {
-        return "";
+        return InitStateString();
     }
 }
 
-void MultiplexConfigNode::setProperty(const std::string &property,
-                                      const std::string &value,
-                                      const std::string &comment,
-                                      const std::string *defValue)
+void MultiplexConfigNode::writeProperty(const std::string &property,
+                                        const InitStateString &value,
+                                        const std::string &comment)
 {
     const ConfigProperty *prop;
     FilterConfigNode *node = getNode(property, &prop);
     if (node) {
-        node->setProperty(property, value, comment, defValue);
+        node->writeProperty(property, value, comment);
     } else {
         SE_THROW(property + ": not supported by configuration multiplexer");
     }

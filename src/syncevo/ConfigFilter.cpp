@@ -29,7 +29,7 @@ SE_BEGIN_CXX
 
 void ConfigProps::add(const ConfigProps &other)
 {
-    BOOST_FOREACH(const StringPair &entry, other) {
+    BOOST_FOREACH(const ConfigProps::value_type &entry, other) {
         std::pair<iterator, bool> res = insert(entry);
         if (!res.second) {
             res.first->second = entry.second;
@@ -37,14 +37,24 @@ void ConfigProps::add(const ConfigProps &other)
     }
 }
 
-string ConfigProps::get(const string &key, const string &def) const
+InitStateString ConfigProps::get(const string &key, const string &def) const
 {
     const_iterator it = find(key);
     if (it == end()) {
-        return def;
+        return InitStateString(def, false);
     } else {
         return it->second;
     }
+}
+
+ConfigProps::operator string () const
+{
+    vector<string> res;
+    BOOST_FOREACH(const StringPair &filter, *this) {
+        res.push_back(filter.first + " = " + filter.second);
+    }
+    sort(res.begin(), res.end());
+    return boost::join(res, "\n");
 }
 
 ConfigProps SourceProps::createSourceFilter(const std::string &source) const

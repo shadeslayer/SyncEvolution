@@ -77,16 +77,15 @@ class MultiplexConfigNode : public FilterConfigNode
     }
 
     virtual void addFilter(const std::string &property,
-                           const std::string &value);
+                           const InitStateString &value);
     virtual void setFilter(const ConfigFilter &filter);
 
     virtual std::string getName() const { return m_name; }
     virtual void flush();
-    virtual std::string readProperty(const std::string &property) const;
-    virtual void setProperty(const std::string &property,
-                             const std::string &value,
-                             const std::string &comment = std::string(""),
-                             const std::string *defValue = NULL);
+    virtual InitStateString readProperty(const std::string &property) const;
+    virtual void writeProperty(const std::string &property,
+                               const InitStateString &value,
+                               const std::string &comment = std::string(""));
     virtual void readProperties(PropsType &props) const;
 
     /*

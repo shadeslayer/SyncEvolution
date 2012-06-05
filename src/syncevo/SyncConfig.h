@@ -22,7 +22,6 @@
 
 #include <syncevo/FilterConfigNode.h>
 #include <syncevo/SafeConfigNode.h>
-#include <syncevo/FileConfigNode.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -347,8 +346,15 @@ class ConfigProperty {
     void setSharing(Sharing sharing) { m_sharing = sharing; }
 
     /** set value unconditionally, even if it is not valid */
-    void setProperty(ConfigNode &node, const std::string &value) const { node.setProperty(getName(node), value, getComment()); }
-    void setProperty(FilterConfigNode &node, const std::string &value, bool temporarily = false) const {
+    void setProperty(ConfigNode &node, const InitStateString &value) const {
+        node.setProperty(getName(node),
+                         value,
+                         getComment());
+    }
+    void setProperty(ConfigNode &node, const std::string &value) const {
+        setProperty(node, InitStateString(value, true));
+    }
+    void setProperty(FilterConfigNode &node, const InitStateString &value, bool temporarily = false) const {
         std::string name = getName(node);
         if (temporarily) {
             node.addFilter(name, value);
@@ -356,12 +362,13 @@ class ConfigProperty {
             node.setProperty(name, value, getComment());
         }
     }
+    void setProperty(FilterConfigNode &node, const std::string &value, bool temporarily = false) const {
+        setProperty(node, InitStateString(value, true), temporarily);
+    }
 
-    /** set default value of a property, marked as default unless forced setting */
+    /** set default value of a property, marked as unset unless "force" is true */
     void setDefaultProperty(ConfigNode &node, bool force) const {
-        std::string name = getName(node);
-        std::string defValue = getDefValue();
-        node.setProperty(name, defValue, getComment(), force ? NULL : &defValue);
+        setProperty(node, InitStateString(m_defValue, force));
     }
 
     /**
@@ -371,25 +378,17 @@ class ConfigProperty {
      */
     virtual InitStateString getProperty(const ConfigNode &node) const {
         std::string name = getName(node);
-        std::string value = node.readProperty(name);
-        if (!value.empty()) {
-            // value was set
+        InitStateString value = node.readProperty(name);
+        if (value.wasSet()) {
             std::string error;
             if (!checkValue(value, error)) {
                 throwValueError(node, name, value, error);
             }
-            return InitStateString(value, true);
+            return value;
         } else {
             // default
             return InitStateString(getDefValue(), false);
         }
-    }
-
-    // true if property is set to non-empty value
-    bool isSet(const ConfigNode &node) const {
-        std::string name = getName(node);
-        std::string value = node.readProperty(name);
-        return !value.empty();
     }
 
  protected:
@@ -531,10 +530,11 @@ template<class T> class TypedConfigProperty : public ConfigProperty {
         std::string name = getName(node);
 
         out << value;
+        InitStateString res(out.str(), true);
         if (temporarily) {
-            node.addFilter(name, out.str());
+            node.addFilter(name, res);
         } else {
-            node.setProperty(name, out.str(), getComment());
+            node.setProperty(name, res, getComment());
         }
     }
 
@@ -785,10 +785,10 @@ class BoolConfigProperty : public StringConfigProperty {
         {}
 
     void setProperty(ConfigNode &node, bool value) {
-        StringConfigProperty::setProperty(node, value ? "1" : "0");
+        StringConfigProperty::setProperty(node, InitStateString(value ? "1" : "0", true));
     }
     void setProperty(FilterConfigNode &node, bool value, bool temporarily = false) {
-        StringConfigProperty::setProperty(node, value ? "1" : "0", temporarily);
+        StringConfigProperty::setProperty(node, InitStateString(value ? "1" : "0", true), temporarily);
     }
     InitState<bool> getPropertyValue(const ConfigNode &node) const {
         InitStateString res = ConfigProperty::getProperty(node);
@@ -809,8 +809,15 @@ class SafeConfigProperty : public ConfigProperty {
     ConfigProperty(name, comment)
     {}
 
+    void setProperty(ConfigNode &node, const InitStateString &value) {
+        ConfigProperty::setProperty(node,
+                                    InitStateString(StringEscape::escape(value, '!', StringEscape::INI_WORD),
+                                                    value.wasSet()));
+    }
     void setProperty(ConfigNode &node, const std::string &value) {
-        ConfigProperty::setProperty(node, StringEscape::escape(value, '!', StringEscape::INI_WORD));
+        ConfigProperty::setProperty(node,
+                                    InitStateString(StringEscape::escape(value, '!', StringEscape::INI_WORD),
+                                                    true));
     }
     virtual InitStateString getProperty(const ConfigNode &node) const {
         InitStateString res = ConfigProperty::getProperty(node);
@@ -1491,10 +1498,10 @@ class SyncConfig {
     /**
      * An arbitrary name assigned to the peer configuration,
      * not necessarily unique. Can be used by a GUI instead
-     * of the config name.
+     * of the config name. Unsetting it is supported.
      */
     virtual InitStateString getUserPeerName() const;
-    virtual void setUserPeerName(const std::string &name);
+    virtual void setUserPeerName(const InitStateString &name);
 
     /**
      * The Device ID of our peer. Typically only relevant when the
@@ -1839,11 +1846,6 @@ class SyncSourceConfig {
     /** true if the source config exists with view-specific properties (not just default or shared ones) */
     bool exists() const { return m_nodes.exists(); }
 
-    /** checks if a certain property is set to a non-empty value */
-    bool isSet(ConfigProperty &prop) {
-        return prop.isSet(*getProperties(prop.isHidden()));
-    }
-
     virtual InitStateString getUser() const;
     virtual void setUser(const std::string &value, bool temporarily = false);
 
@@ -1885,7 +1887,7 @@ class SyncSourceConfig {
     virtual InitStateString getBackend() const;
     virtual void setDatabaseFormat(const std::string &value, bool temporarily = false);
     virtual InitStateString getDatabaseFormat() const;
-    virtual void setSyncFormat(const std::string &value, bool temporarily = false);
+    virtual void setSyncFormat(const InitStateString &value, bool temporarily = false);
     virtual InitStateString getSyncFormat() const;
     virtual void setForceSyncFormat(bool value, bool temporarily = false);
     virtual InitState<bool> getForceSyncFormat() const;

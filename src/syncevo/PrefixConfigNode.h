@@ -54,11 +54,10 @@ class PrefixConfigNode : public ConfigNode {
 
     /* ConfigNode API */
     virtual void flush();
-    virtual std::string readProperty(const std::string &property) const;
-    virtual void setProperty(const std::string &property,
-                             const std::string &value,
-                             const std::string &comment = "",
-                             const std::string *defValue = NULL);
+    virtual InitStateString readProperty(const std::string &property) const;
+    virtual void writeProperty(const std::string &property,
+                               const InitStateString &value,
+                               const std::string &comment = "");
     virtual void readProperties(ConfigProps &props) const;
     virtual void removeProperty(const std::string &property);
     virtual bool exists() const { return m_readOnlyNode->exists(); }

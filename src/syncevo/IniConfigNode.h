@@ -86,11 +86,10 @@ class IniFileConfigNode : public IniBaseConfigNode {
     /* keep underlying methods visible; our own setProperty() would hide them */
     using ConfigNode::setProperty;
 
-    virtual std::string readProperty(const std::string &property) const;
-    virtual void setProperty(const std::string &property,
-                             const std::string &value,
-                             const std::string &comment = "",
-                             const std::string *defValue = NULL);
+    virtual InitStateString readProperty(const std::string &property) const;
+    virtual void writeProperty(const std::string &property,
+                               const InitStateString &value,
+                               const std::string &comment = "");
     virtual void readProperties(ConfigProps &props) const;
     virtual void removeProperty(const std::string &property);
     virtual void clear();
@@ -100,7 +99,8 @@ class IniFileConfigNode : public IniBaseConfigNode {
 /**
  * The main difference from FileConfigNode is to store pair of 'property-value'
  * in a map to avoid O(n^2) string comparison
- * Here comments for property default value are discarded.
+ * Here comments for property default value are discarded and unset
+ * properties are not stored.
  */
 class IniHashConfigNode: public IniBaseConfigNode {
     std::map<std::string, std::string> m_props;
@@ -116,11 +116,10 @@ class IniHashConfigNode: public IniBaseConfigNode {
  public:
     IniHashConfigNode(const boost::shared_ptr<DataBlob> &data);
     IniHashConfigNode(const std::string &path, const std::string &fileName, bool readonly);
-    virtual std::string readProperty(const std::string &property) const;
-    virtual void setProperty(const std::string &property,
-                             const std::string &value,
-                             const std::string &comment = "",
-                             const std::string *defValue = NULL);
+    virtual InitStateString readProperty(const std::string &property) const;
+    virtual void writeProperty(const std::string &property,
+                               const InitStateString &value,
+                               const std::string &comment = "");
     virtual void readProperties(ConfigProps &props) const;
     virtual void writeProperties(const ConfigProps &props);
     virtual void removeProperty(const std::string &property);

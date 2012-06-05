@@ -555,7 +555,7 @@ void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
                 ready.setProperty(node, false);
             }
             if (!autosync.getProperty(node).empty()) {
-                autosync.setProperty(node, "0");
+                autosync.setProperty(node, InitStateString("0", true));
             }
             node.flush();
         }
@@ -564,7 +564,7 @@ void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
         {
             IniFileConfigNode node(from->getRootPath() + "/spds/syncml", "config.txt", false);
             if (!autosync.getProperty(node).empty()) {
-                autosync.setProperty(node, "0");
+                autosync.setProperty(node, InitStateString("0", true));
             }
             node.flush();
         }
@@ -1558,7 +1558,7 @@ bool Cmdline::run() {
 
             // temporarily disable the rest
             FilterConfigNode::ConfigFilter disabled;
-            disabled["sync"] = "disabled";
+            disabled["sync"] = InitStateString("disabled", true);
             context->setConfigFilter(false, "", disabled);
         }
 
@@ -1769,10 +1769,19 @@ bool Cmdline::parseProp(PropertyType propertyType,
                     return false;
                 }
                 ContextProps &props = m_props[spec.m_config];
-                props.m_sourceProps[spec.m_source]["backend"] = sourceType.m_backend;
-                props.m_sourceProps[spec.m_source]["databaseFormat"] = sourceType.m_localFormat;
-                props.m_sourceProps[spec.m_source]["syncFormat"] = sourceType.m_format;
-                props.m_sourceProps[spec.m_source]["forceSyncFormat"] = sourceType.m_forceFormat ? "1" : "0";
+                props.m_sourceProps[spec.m_source]["backend"] =
+                    InitStateString(sourceType.m_backend,
+                                    !sourceType.m_backend.empty());
+                props.m_sourceProps[spec.m_source]["databaseFormat"] =
+                    InitStateString(sourceType.m_localFormat,
+                                    !sourceType.m_localFormat.empty());
+                props.m_sourceProps[spec.m_source]["syncFormat"] =
+                    InitStateString(sourceType.m_format,
+                                    !sourceType.m_format.empty());
+                props.m_sourceProps[spec.m_source]["forceSyncFormat"] =
+                    sourceType.m_forceFormat ?
+                    InitStateString("1", true) :
+                    InitStateString("0", false);
                 return true;
             } else if (!prop) {
                 SE_LOG_ERROR(NULL, NULL, "%s: no such property", args.c_str());
@@ -3609,9 +3618,6 @@ protected:
             boost::replace_first(expected,
                                  "# databaseFormat = ",
                                  "databaseFormat = text/vcard");
-            boost::replace_first(expected,
-                                 "# forceSyncFormat = 0",
-                                 "forceSyncFormat = 0");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected,
                                       filterConfig(printConfig("scheduleworld")));
             string shared = filterConfig(printConfig("@default"));
@@ -4178,9 +4184,8 @@ protected:
         boost::replace_first(expected, "# database = ", "database = xyz");
         boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
         boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-        // migrating "type" sets forceSyncFormat (always)
+        // migrating "type" sets forceSyncFormat if not the default,
         // and databaseFormat (if format was part of type, as for addressbook)
-        boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
         boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
         doConfigure(expected, "sources/addressbook/config.ini:");
     }
@@ -4295,9 +4300,8 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-            // migrating "type" sets forceSyncFormat (always)
+            // migrating "type" sets forceSyncFormat if different from the "false" default
             // and databaseFormat (if format was part of type, as for addressbook)
-            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
@@ -4330,7 +4334,6 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(newRoot, "scheduleworld.old.1");
@@ -4363,7 +4366,6 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             boost::replace_first(expected,
                                  "peers/scheduleworld/sources/addressbook/config.ini",
@@ -4403,7 +4405,6 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
@@ -4431,7 +4432,6 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             renamedConfig = scanFiles(otherRoot, "scheduleworld.old.3");
@@ -4597,9 +4597,8 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-            // migrating "type" sets forceSyncFormat (always)
+            // migrating "type" sets forceSyncFormat if not already the default,
             // and databaseFormat (if format was part of type, as for addressbook)
-            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(oldRoot + ".old");
@@ -4627,7 +4626,6 @@ protected:
             boost::replace_first(expected, "# database = ", "database = xyz");
             boost::replace_first(expected, "# databaseUser = ", "databaseUser = foo");
             boost::replace_first(expected, "# databasePassword = ", "databasePassword = bar");
-            boost::replace_all(expected, "# forceSyncFormat = 0", "forceSyncFormat = 0");
             boost::replace_first(expected, "# databaseFormat = ", "databaseFormat = text/vcard");
             CPPUNIT_ASSERT_EQUAL_DIFF(expected, migratedConfig);
             string renamedConfig = scanFiles(newRoot, "scheduleworld.old.1");

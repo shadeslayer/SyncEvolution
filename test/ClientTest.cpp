@@ -5608,8 +5608,8 @@ static bool setDeadSyncURL(SyncContext &context,
         FullProps props = context.getConfigProps();
         string target = url.substr(strlen("local://"));
         props[target].m_syncProps["syncURL"] = fakeURL;
-        props[target].m_syncProps["retryDuration"] = "10";
-        props[target].m_syncProps["retryInterval"] = "10";
+        props[target].m_syncProps["retryDuration"] = InitStateString("10", true);
+        props[target].m_syncProps["retryInterval"] = InitStateString("10", true);
         context.setConfigProps(props);
         return false;
     } else {

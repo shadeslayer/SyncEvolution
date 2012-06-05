@@ -28,8 +28,8 @@
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
-/** a case-insensitive string to string mapping */
-class ConfigProps : public std::map<std::string, std::string, Nocase<std::string> > {
+/** a case-insensitive string to InitStateString mapping */
+class ConfigProps : public std::map<std::string, InitStateString, Nocase<std::string> > {
  public:
     /** format as <key> = <value> lines */
     operator std::string () const;
@@ -42,9 +42,9 @@ class ConfigProps : public std::map<std::string, std::string, Nocase<std::string
     void add(const ConfigProps &other);
 
     /**
-     * Return value in map or the given default.
+     * Return value in map or the given default, marked as unset.
      */
-    std::string get(const std::string &key, const std::string &def = "") const;
+    InitStateString get(const std::string &key, const std::string &def = "") const;
 };
 
 /**
