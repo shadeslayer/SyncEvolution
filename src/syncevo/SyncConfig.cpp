@@ -29,6 +29,7 @@
 #include <syncevo/DevNullConfigNode.h>
 #include <syncevo/MultiplexConfigNode.h>
 #include <syncevo/SingleFileConfigTree.h>
+#include <syncevo/IniConfigNode.h>
 #include <syncevo/Cmdline.h>
 #include <syncevo/lcs.h>
 #include <test.h>
@@ -428,9 +429,9 @@ SyncConfig::SyncConfig(const string &peer,
         path = m_peerPath;
         if (path.empty()) {
             if (!m_redirectPeerRootPath.empty()) {
-                node.reset(new FileConfigNode(m_redirectPeerRootPath,
-                                              ".internal.ini",
-                                              false));
+                node.reset(new IniFileConfigNode(m_redirectPeerRootPath,
+                                                 ".internal.ini",
+                                                 false));
                 node = m_tree->add(m_redirectPeerRootPath + "/.internal.ini",
                                    node);
             } else {
@@ -1079,13 +1080,13 @@ SyncSourceNodes SyncConfig::getSyncSourceNodes(const string &name,
         // against the same context end up sharing .internal.ini and
         // .other.ini files inside that context.
         string path = m_redirectPeerRootPath + "/sources/" + lower;
-        trackingNode.reset(new HashFileConfigNode(path,
-                                                  ".other.ini",
-                                                  false));
+        trackingNode.reset(new IniHashConfigNode(path,
+                                                 ".other.ini",
+                                                 false));
         trackingNode = m_tree->add(path + "/.other.ini", trackingNode);
-        boost::shared_ptr<ConfigNode> node(new HashFileConfigNode(path,
-                                                                  ".internal.ini",
-                                                                  false));
+        boost::shared_ptr<ConfigNode> node(new IniHashConfigNode(path,
+                                                                 ".internal.ini",
+                                                                 false));
         hiddenPeerNode.reset(new FilterConfigNode(node));
         hiddenPeerNode = boost::static_pointer_cast<FilterConfigNode>(m_tree->add(path + "/.internal.ini", peerNode));
         if (peerPath.empty()) {

@@ -29,7 +29,7 @@
 #include <syncevo/SuspendFlags.h>
 
 #include <syncevo/SafeConfigNode.h>
-#include <syncevo/FileConfigNode.h>
+#include <syncevo/IniConfigNode.h>
 
 #include <syncevo/LogStdout.h>
 #include <syncevo/TransportAgent.h>
@@ -376,7 +376,7 @@ public:
      * access existing log directory to extract status information
      */
     void openLogdir(const string &dir) {
-        boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(dir, "status.ini", true));
+        boost::shared_ptr<ConfigNode> filenode(new IniFileConfigNode(dir, "status.ini", true));
         m_info.reset(new SafeConfigNode(filenode));
         m_info->setMode(false);
         m_readonly = true;
@@ -544,7 +544,7 @@ public:
         }
         m_readonly = mode == SESSION_READ_ONLY;
         if (!m_path.empty()) {
-            boost::shared_ptr<ConfigNode> filenode(new FileConfigNode(m_path, "status.ini", m_readonly));
+            boost::shared_ptr<ConfigNode> filenode(new IniFileConfigNode(m_path, "status.ini", m_readonly));
             m_info.reset(new SafeConfigNode(filenode));
             m_info->setMode(false);
             if (mode != SESSION_READ_ONLY) {
@@ -4367,7 +4367,7 @@ private:
         Sessions_t sessions = listSessions();
         CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
         CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
-        FileConfigNode status(dir, "status.ini", true);
+        IniFileConfigNode status(dir, "status.ini", true);
         CPPUNIT_ASSERT(status.exists());
         CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before"));
         CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-after"));
@@ -4386,7 +4386,7 @@ private:
         Sessions_t sessions = listSessions();
         CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
         CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
-        FileConfigNode status(dir, "status.ini", true);
+        IniFileConfigNode status(dir, "status.ini", true);
         CPPUNIT_ASSERT(status.exists());
         CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before"));
         CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-after"));
@@ -4410,7 +4410,7 @@ private:
             Sessions_t sessions = listSessions();
             CPPUNIT_ASSERT_EQUAL((size_t)1, sessions.size());
             CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
-            FileConfigNode status(dir, "status.ini", true);
+            IniFileConfigNode status(dir, "status.ini", true);
             CPPUNIT_ASSERT(status.exists());
             CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-before"));
             CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-after"));
@@ -4434,7 +4434,7 @@ private:
             CPPUNIT_ASSERT_EQUAL((size_t)2, sessions.size());
             CPPUNIT_ASSERT_EQUAL(dir, sessions[0]);
             CPPUNIT_ASSERT_EQUAL(seconddir, sessions[1]);
-            FileConfigNode status(seconddir, "status.ini", true);
+            IniFileConfigNode status(seconddir, "status.ini", true);
             CPPUNIT_ASSERT(status.exists());
             CPPUNIT_ASSERT_EQUAL(string("2"), status.readProperty("source-file__event-backup-before"));
             CPPUNIT_ASSERT_EQUAL(string("1"), status.readProperty("source-file__event-backup-after"));

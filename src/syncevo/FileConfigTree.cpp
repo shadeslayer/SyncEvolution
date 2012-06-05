@@ -21,7 +21,7 @@
 #include <ctype.h>
 
 #include <syncevo/FileConfigTree.h>
-#include <syncevo/FileConfigNode.h>
+#include <syncevo/IniConfigNode.h>
 #include <syncevo/util.h>
 
 #include <boost/foreach.hpp>
@@ -182,10 +182,10 @@ boost::shared_ptr<ConfigNode> FileConfigTree::open(const string &path,
     if (found != m_nodes.end()) {
         return found->second;
     } else if(type != other && type != server) {
-        boost::shared_ptr<ConfigNode> node(new FileConfigNode(fullpath, filename, m_readonly));
+        boost::shared_ptr<ConfigNode> node(new IniFileConfigNode(fullpath, filename, m_readonly));
         return m_nodes[fullname] = node;
     } else {
-        boost::shared_ptr<ConfigNode> node(new HashFileConfigNode(fullpath, filename, m_readonly));
+        boost::shared_ptr<ConfigNode> node(new IniHashConfigNode(fullpath, filename, m_readonly));
         return m_nodes[fullname] = node;
     }
 }

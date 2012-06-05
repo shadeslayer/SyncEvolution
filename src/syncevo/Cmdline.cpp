@@ -550,7 +550,7 @@ void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
         // Also disable auto-syncing in the migrated config.
         StringConfigProperty autosync("autoSync", "", "");
         {
-            FileConfigNode node(from->getRootPath(), "config.ini", false);
+            IniFileConfigNode node(from->getRootPath(), "config.ini", false);
             if (ready.getPropertyValue(node)) {
                 ready.setProperty(node, false);
             }
@@ -562,7 +562,7 @@ void Cmdline::finishCopy(const boost::shared_ptr<SyncConfig> &from,
 
         // same for very old configs
         {
-            FileConfigNode node(from->getRootPath() + "/spds/syncml", "config.txt", false);
+            IniFileConfigNode node(from->getRootPath() + "/spds/syncml", "config.txt", false);
             if (!autosync.getProperty(node).empty()) {
                 autosync.setProperty(node, "0");
             }
@@ -1063,9 +1063,9 @@ bool Cmdline::run() {
 
             BOOST_FOREACH(const std::string source, from->getSyncSources()) {
                 BOOST_FOREACH(const string &peer, peers) {
-                    FileConfigNode node(from->getRootPath() + "/peers/" + peer + "/sources/" + source,
-                                        "config.ini",
-                                        true);
+                    IniFileConfigNode node(from->getRootPath() + "/peers/" + peer + "/sources/" + source,
+                                           "config.ini",
+                                           true);
                     string sync = node.readProperty("sync");
                     if (sync.empty() ||
                         boost::iequals(sync, "none") ||

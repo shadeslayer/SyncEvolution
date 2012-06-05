@@ -21,20 +21,21 @@
 # define INCL_EVOLUTION_VOLATILE_CONFIG_NODE
 
 #include <syncevo/FilterConfigNode.h>
-#include <syncevo/FileConfigNode.h>
+#include <syncevo/IniConfigNode.h>
 
 #include <syncevo/declarations.h>
 SE_BEGIN_CXX
 
 /**
  * This class can store properties while in memory, but will never
- * save them persistently. Implemented by instantiating a FileConfigNode
+ * save them persistently. Implemented by instantiating an IniHashConfigNode
+ * (because order of entries doesn't matter)
  * with invalid path and never calling its flush() method.
  */
 class VolatileConfigNode : public FilterConfigNode {
  public:
  VolatileConfigNode() :
-    FilterConfigNode(boost::shared_ptr<ConfigNode>(new FileConfigNode("/dev/null", "dummy.ini", true)))
+    FilterConfigNode(boost::shared_ptr<ConfigNode>(new IniHashConfigNode("/dev/null", "dummy.ini", true)))
         {}
 
     virtual std::string getName() const { return "intermediate configuration"; }

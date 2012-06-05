@@ -104,9 +104,6 @@ src_syncevo_sources = \
   src/syncevo/PrefixConfigNode.h \
   src/syncevo/PrefixConfigNode.cpp \
   \
-  src/syncevo/FileConfigNode.h \
-  src/syncevo/FileConfigNode.cpp \
-  \
   src/syncevo/IniConfigNode.h \
   src/syncevo/IniConfigNode.cpp \
   src/syncevo/SingleFileConfigTree.h \

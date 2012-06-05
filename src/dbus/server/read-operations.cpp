@@ -22,6 +22,8 @@
 #include "server.h"
 #include "dbus-sync.h"
 
+#include <syncevo/IniConfigNode.h>
+
 SE_BEGIN_CXX
 
 ReadOperations::ReadOperations(const std::string &config_name, Server &server) :
@@ -268,7 +270,7 @@ void ReadOperations::getReports(uint32_t start, uint32_t count,
             }
 
             /** serialize report to ConfigProps and then copy them to reports */
-            HashFileConfigNode node("/dev/null","",true);
+            IniHashConfigNode node("/dev/null","",true);
             node << report;
             ConfigProps props;
             node.readProperties(props);
