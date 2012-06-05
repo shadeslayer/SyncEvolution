@@ -2872,12 +2872,18 @@ void SyncContext::setStableRelease(bool isStableRelease)
     IsStableRelease = isStableRelease;
 }
 
-void SyncContext::checkConfig() const
+void SyncContext::checkConfig(const std::string &operation) const
 {
+    std::string peer, context;
+    splitConfigString(m_server, peer, context);
     if (isConfigNeeded() &&
-        !exists()) {
-        SE_LOG_ERROR(NULL, NULL, "No configuration for server \"%s\" found.", m_server.c_str());
-        throwError("cannot proceed without configuration");
+        (!exists() || peer.empty())) {
+        if (peer.empty()) {
+            SE_LOG_INFO(NULL, NULL, "Configuration \"%s\" does not refer to a sync peer.", m_server.c_str());
+        } else {
+            SE_LOG_INFO(NULL, NULL, "Configuration \"%s\" does not exist.", m_server.c_str());
+        }
+        throwError(StringPrintf("Cannot proceed with %s without a configuration.", operation.c_str()));
     }
 }
 
@@ -2885,7 +2891,7 @@ SyncMLStatus SyncContext::sync(SyncReport *report)
 {
     SyncMLStatus status = STATUS_OK;
 
-    checkConfig();
+    checkConfig("sync");
 
     // redirect logging as soon as possible
     SourceList sourceList(*this, m_doLogging);
@@ -3895,7 +3901,7 @@ SyncMLStatus SyncContext::handleException()
 
 void SyncContext::status()
 {
-    checkConfig();
+    checkConfig("status check");
 
     SourceList sourceList(*this, false);
     initSources(sourceList);
@@ -3947,7 +3953,7 @@ void SyncContext::status()
 
 void SyncContext::checkStatus(SyncReport &report)
 {
-    checkConfig();
+    checkConfig("status check");
 
     SourceList sourceList(*this, false);
     initSources(sourceList);
@@ -4037,7 +4043,7 @@ bool SyncContext::checkForScriptAbort(SharedSession session)
 
 void SyncContext::restore(const string &dirname, RestoreDatabase database)
 {
-    checkConfig();
+    checkConfig("restore");
 
     SourceList sourceList(*this, false);
     sourceList.accessSession(dirname.c_str());

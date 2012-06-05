@@ -237,8 +237,10 @@ class SyncContext : public SyncConfig {
 
     /**
      * throws error if config is needed and not available
+     *
+     * @param operation   a noun describing what is to be done next ("proceed with %s", operation)
      */
-    void checkConfig() const;
+    void checkConfig(const std::string &operation) const;
 
     /**
      * Sets configuration filters. Currently only used in local sync

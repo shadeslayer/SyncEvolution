@@ -3454,11 +3454,40 @@ protected:
             CPPUNIT_ASSERT_EQUAL(std::string("GNOME"), keyring.get());
         }
 
+        // Broken command line: treated like a sync, but config doesn't exist.
+        {
+            TestCmdline cmdline("keyring=KDE", "@foobar", NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL(std::string(""), cmdline.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(std::string("[INFO] Configuration \"@foobar\" does not refer to a sync peer.\n[ERROR] Cannot proceed with sync without a configuration."), cmdline.m_err.str());
+        }
+        {
+            TestCmdline cmdline("keyring=KDE", "nosuchpeer@foobar", NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL(std::string(""), cmdline.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(std::string("[INFO] Configuration \"nosuchpeer@foobar\" does not exist.\n[ERROR] Cannot proceed with sync without a configuration."), cmdline.m_err.str());
+        }
+
         // empty config prop
         {
             TestCmdline cmdline("--configure", "@default", NULL);
             cmdline.doit();
         }
+
+        // Try broken command line again.
+        {
+            TestCmdline cmdline("keyring=KDE", "@foobar", NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL(std::string(""), cmdline.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(std::string("[INFO] Configuration \"@foobar\" does not refer to a sync peer.\n[ERROR] Cannot proceed with sync without a configuration."), cmdline.m_err.str());
+        }
+        {
+            TestCmdline cmdline("keyring=KDE", "nosuchpeer@foobar", NULL);
+            cmdline.doit(false);
+            CPPUNIT_ASSERT_EQUAL(std::string(""), cmdline.m_out.str());
+            CPPUNIT_ASSERT_EQUAL(std::string("[INFO] Configuration \"nosuchpeer@foobar\" does not exist.\n[ERROR] Cannot proceed with sync without a configuration."), cmdline.m_err.str());
+        }
+
         {
             TestCmdline cmdline("@foobar", NULL);
             boost::shared_ptr<SyncContext> context = cmdline.parse();
@@ -3472,9 +3501,6 @@ protected:
         {
             TestCmdline cmdline("--keyring", "--configure", "@default", NULL);
             cmdline.doit();
-        }
-        {
-            TestCmdline cmdline("@foobar", NULL);
             boost::shared_ptr<SyncContext> context = cmdline.parse();
             CPPUNIT_ASSERT(context);
             InitStateTri keyring = context->getKeyring();
@@ -3484,9 +3510,6 @@ protected:
         {
             TestCmdline cmdline("--keyring=KDE", "--configure", "@default", NULL);
             cmdline.doit();
-        }
-        {
-            TestCmdline cmdline("@foobar", NULL);
             boost::shared_ptr<SyncContext> context = cmdline.parse();
             CPPUNIT_ASSERT(context);
             InitStateTri keyring = context->getKeyring();
@@ -3495,12 +3518,34 @@ protected:
             CPPUNIT_ASSERT_EQUAL(std::string("KDE"), keyring.get());
         }
 
+        // create by setting keyring in @default, then update;
+        // @default not strictly needed
+        rm_r(m_testDir);
+        {
+            TestCmdline cmdline("keyring=KDE", "--configure", "@default", NULL);
+            cmdline.doit();
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_STRING, keyring.getValue());
+        }
+        {
+            TestCmdline cmdline("keyring=yes", "--configure", "@default", NULL);
+            cmdline.doit();
+            boost::shared_ptr<SyncContext> context = cmdline.parse();
+            CPPUNIT_ASSERT(context);
+            InitStateTri keyring = context->getKeyring();
+            CPPUNIT_ASSERT_EQUAL(true, keyring.wasSet());
+            CPPUNIT_ASSERT_EQUAL(InitStateTri::VALUE_TRUE, keyring.getValue());
+        }
+
         // allow sync operation although --keyring was set
         {
             TestCmdline cmdline("keyring=GNOME", "foobar@default", NULL);
             cmdline.doit(false);
             CPPUNIT_ASSERT_EQUAL(std::string(""), cmdline.m_out.str());
-            CPPUNIT_ASSERT_EQUAL(std::string("[ERROR] No configuration for server \"foobar@default\" found.\n[ERROR] cannot proceed without configuration"), cmdline.m_err.str());
+            CPPUNIT_ASSERT_EQUAL(std::string("[INFO] Configuration \"foobar@default\" does not exist.\n[ERROR] Cannot proceed with sync without a configuration."), cmdline.m_err.str());
         }
 
         // catch invalid "keyring" value
