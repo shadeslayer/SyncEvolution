@@ -6598,6 +6598,40 @@ END:VCARD
 
     @property("debug", False)
     @timeout(200)
+    def testSyncOutputErrors(self):
+        """TestCmdline.testSyncOutputErrors - check error messages for sync operations"""
+        self.setUpLocalSyncConfigs()
+        self.session.Detach()
+
+        # error message for --dry-run
+        out, err, code = self.runCmdline(["--dry-run", "server"],
+                                         expectSuccess=False)
+        self.expectUsageError(out, err, '[ERROR] --dry-run not supported for running a synchronization\n')
+
+        # ambiguous command line
+        out, err, code = self.runCmdline(["sync=two-way", "server"],
+                                         expectSuccess=False)
+        self.expectUsageError(out, err, "[ERROR] Properties specified, but neither '--configure' nor '--run' - what did you want?\n")
+
+        # ambiguous command line, empty source property
+        out, err, code = self.runCmdline(["database=", "server"],
+                                         expectSuccess=False)
+        self.expectUsageError(out, err, "[ERROR] Properties specified, but neither '--configure' nor '--run' - what did you want?\n")
+
+        # ambiguous command line, empty sync property
+        out, err, code = self.runCmdline(["logdir=", "server"],
+                                         expectSuccess=False)
+        self.expectUsageError(out, err, "[ERROR] Properties specified, but neither '--configure' nor '--run' - what did you want?\n")
+
+        # empty global property allowed
+        out, err, code = self.runCmdline(["keyring=", "server"],
+                                         sessionFlags=[],
+                                         expectSuccess=True)
+
+        
+
+    @property("debug", False)
+    @timeout(200)
     def testSyncOutput(self):
         """TestCmdline.testSyncOutput - run syncs between local dirs and check output"""
         self.setUpLocalSyncConfigs()

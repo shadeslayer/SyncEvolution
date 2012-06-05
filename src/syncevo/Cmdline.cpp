@@ -1605,7 +1605,8 @@ bool Cmdline::run() {
                              SyncContext::DATABASE_BEFORE_SYNC);
         } else {
             if (m_dryrun) {
-                SyncContext::throwError("--dry-run not supported for running a synchronization");
+                usage(false, "--dry-run not supported for running a synchronization");
+                return false;
             }
 
             // safety catch: if props are given, then --run
