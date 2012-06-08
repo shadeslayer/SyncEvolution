@@ -22,6 +22,7 @@
 #define INCL_LOGGING
 
 #include <stdarg.h>
+#include <stdio.h>
 #include <string>
 
 #ifdef HAVE_CONFIG_H
@@ -130,6 +131,18 @@ class Logger
                          const gchar *message,
                          gpointer userData);
 #endif
+
+    /**
+     * can be used as replacement for libsynthesis console printf function,
+     * logs at DEBUG level
+     *
+     * @param stream   is ignored
+     * @param format   guaranteed to start with "SYSYNC "
+     * @return always 0
+     */
+    static int sysyncPrintf(FILE *stream,
+                            const char *format,
+                            ...);
 
     virtual ~Logger() {}
 

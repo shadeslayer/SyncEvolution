@@ -254,4 +254,21 @@ void Logger::glogFunc(const gchar *logDomain,
 
 #endif
 
+int Logger::sysyncPrintf(FILE *stream,
+                         const char *format,
+                         ...)
+{
+    va_list args;
+    va_start(args, format);
+    const char prefix[] = "SYSYNC ";
+    if (strlen(format) >= sizeof(prefix) &&
+        !memcmp(format, prefix, sizeof(prefix) - 1)) {
+        format += sizeof(prefix) - 1;
+    }
+    LoggerBase::instance().messagev(DEBUG, "SYSYNC", NULL, 0, NULL, format, args);
+    va_end(args);
+
+    return 0;
+}
+
 SE_END_CXX

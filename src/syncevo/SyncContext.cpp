@@ -2802,6 +2802,10 @@ void SyncContext::initEngine(bool logXML)
     }
 }
 
+extern "C" int (*SySync_ConsolePrintf)(FILE *stream, const char *format, ...);
+
+static int nopPrintf(FILE *stream, const char *format, ...) { return 0; }
+
 void SyncContext::initMain(const char *appname)
 {
 #if defined(HAVE_GLIB)
@@ -2813,6 +2817,11 @@ void SyncContext::initMain(const char *appname)
     // redirect glib logging into our own logging
     g_log_set_default_handler(Logger::glogFunc, NULL);
 #endif
+    if (atoi(getEnv("SYNCEVOLUTION_DEBUG", "0")) > 3) {
+        SySync_ConsolePrintf = Logger::sysyncPrintf;
+    } else {
+        SySync_ConsolePrintf = nopPrintf;
+    }
 
     // invoke optional init parts, for example KDE KApplication init
     // in KDE backend
