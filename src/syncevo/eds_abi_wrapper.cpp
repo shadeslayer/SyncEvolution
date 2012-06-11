@@ -184,7 +184,7 @@ extern "C" void EDSAbiWrapperInit()
 #ifdef EVOLUTION_COMPATIBILITY
 # ifdef HAVE_EDS
     edshandle =
-    findSymbols("libedataserver-1.2.so", 7, 14,
+    findSymbols("libedataserver-1.2.so", 7, 16,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
                 &EDSAbiWrapperSingleton.e_source_get_type, "e_source_get_type",
                 &EDSAbiWrapperSingleton.e_source_get_uri, "e_source_get_uri",
@@ -198,7 +198,7 @@ extern "C" void EDSAbiWrapperInit()
 
 # ifdef ENABLE_EBOOK
     static const int libebookMinVersion = 5,
-        libebookMaxVersion = 12;
+        libebookMaxVersion = 13;
     ebookhandle =
     findSymbols("libebook-1.2.so", libebookMinVersion, libebookMaxVersion,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
@@ -239,7 +239,7 @@ extern "C" void EDSAbiWrapperInit()
 
 # ifdef ENABLE_ECAL
     static const int libecalMinVersion = 3,
-        libecalMaxVersion = 10;
+        libecalMaxVersion = 11;
     ecalhandle =
     findSymbols("libecal-1.2.so", libecalMinVersion, libecalMaxVersion,
                 FIND_SYMBOLS_NEED_ALL|FIND_SYMBOLS_LENIENT_MAX_VERSION, NULL,
