@@ -126,7 +126,7 @@ TYPE_rpm = -R
 #   distros, libkdeui5 is what we need.
 # - same for kdepimlibs5 -> libakonadi-kde4
 REQUIRES_SED_KDE = -e 's/kdelibs5 ([^,]*),/kdelibs5 | libkdeui5,/g' -e 's/kdepimlibs5 ([^,]*),/kdepimlibs5 | libakonadi-kde4,/g'
-REQUIRES_deb = --requires="'$(shell set -x; cd dist; LD_LIBRARY_PATH=$(distdir)/usr/lib:$(distdir)/usr/lib/syncevolution dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $$(find $(distdir) -type f -perm /u+x | grep -v -e client-test -e lib/syncevolution/backends/); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed $(REQUIRES_SED_KDE) -e 's/[^=]*=//')$(REQUIRES_deb_neon)'"
+REQUIRES_deb = --requires="'$(shell set -x; cd checkinstall/dist; LD_LIBRARY_PATH=$(distdir)/usr/lib:$(distdir)/usr/lib/syncevolution dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $$(find $(distdir) -type f -perm /u+x | grep -v -e client-test -e lib/syncevolution/backends/); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed $(REQUIRES_SED_KDE) -e 's/[^=]*=//')$(REQUIRES_deb_neon)'"
 if NEON_COMPATIBILITY
 # --enable-neon-compatibility in src/backends/webdav:
 # replace dependencies from linking with hard-coded dlopen() dependencies
@@ -158,11 +158,12 @@ PKGS = $(addprefix syncevolution-evolution-, 2.6 2.8 2.12)
 # system libs. The assumption is that the system library is named
 # after the lib and its major version, which holds for libsmltk and
 # libsynthesis in Debian.
-deb rpm : dist/$(distdir) dist/debian/control
+deb rpm : checkinstall/dist/$(distdir) checkinstall/dist/debian/control
 	(echo "SyncEvolution - synchronizing personal information management data" && cat $(srcdir)/description) >description-pak
-	conflicts=`ls -1 dist/$(distdir)/usr/lib/*.so.[0123456789] | sed -e 's;.*/;;' -e 's/\.so\.//' -e 's/$$/, /'` && \
+	conflicts=`ls -1 checkinstall/dist/$(distdir)/usr/lib/*.so.[0123456789] | sed -e 's;.*/;;' -e 's/\.so\.//' -e 's/$$/, /'` && \
 	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
 	trap "rm -rf $$tmpdir" EXIT && \
+	cd checkinstall && \
 	fakeroot checkinstall </dev/null \
 		$(TYPE_$@) \
 		$(REQUIRES_$@) \
@@ -179,8 +180,8 @@ deb rpm : dist/$(distdir) dist/debian/control
 		--pkgsource='http://syncevolution.org' \
 		--pkggroup='$*' \
 		--pkggroup='comm' \
-		cp -r `pwd`/$</* /
-	if [ $@ = "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm .; fi
+		cp -r `pwd`/dist/$(distdir)/* / && \
+	if [ $@ = "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm ..; else mv *.deb ..; fi
 
 # Pseudo platform .deb packages:
 # only depend on PKGNAME = syncevolution-$(BINSUFFIX) (usually syncevolution-bundle).
@@ -199,10 +200,11 @@ PLATFORM_FILES_kde = platformkde syncakonadi
 # Fake conflicts/replaces works around a bug in CheckInstall,
 # which creates empty, invalid entries for those unless
 # something is given.
-syncevolution-%-deb: dist/$(distdir) dist/debian/control
-	(echo "SyncEvolution - meta package for $*" && cat $(srcdir)/description) >description-pak
+syncevolution-%-deb: checkinstall/dist/$(distdir) checkinstall/dist/debian/control
+	(echo "SyncEvolution - meta package for $*" && cat $(srcdir)/description) >checkinstall/description-pak
 	tmpdir=`mktemp -d $$HOME/syncevolution.XXXXXXXXXX` && \
 	trap "rm -rf $$tmpdir" EXIT && \
+	cd checkinstall && \
 	fakeroot checkinstall </dev/null \
 		$(TYPE_deb) \
 		--fstrans=yes \
@@ -212,26 +214,27 @@ syncevolution-%-deb: dist/$(distdir) dist/debian/control
 		--pkgrelease=$(PLATFORM_DEB_RELEASE) \
 		--pkgname=syncevolution-$* \
 		--pkgarch=all \
-                --requires="'$(shell set -x; cd dist; LD_LIBRARY_PATH=$(distdir)/usr/lib:$(distdir)/usr/lib/syncevolution dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $(patsubst %,$(distdir)/usr/lib/syncevolution/backends/%.so,$(PLATFORM_FILES_$*)); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed $(REQUIRES_SED_KDE) -e 's/[^=]*=//'), $(PKGNAME) (= $(VERSION_deb)-$(RELEASE))'" \
+                --requires="'$(shell set -x; cd checkinstall/dist; LD_LIBRARY_PATH=$(distdir)/usr/lib:$(distdir)/usr/lib/syncevolution dpkg-shlibdeps -L$(srcdir)/src/shlibs.local --ignore-missing-info -O $$(for i in $(patsubst %,$(distdir)/usr/lib/syncevolution/backends/%.so,$(PLATFORM_FILES_$*)); do if file $$i | grep ELF >/dev/null; then echo $$i; fi; done) | sed $(REQUIRES_SED_KDE) -e 's/[^=]*=//'), $(PKGNAME) (= $(VERSION_deb)-$(RELEASE))'" \
                 --conflicts=syncevolution-foobar \
                 --replaces=syncevolution-foobar \
 		--maintainer="'Patrick Ohly <patrick.ohly@gmx.de>'" \
 		--pkgsource='http://syncevolution.org' \
 		--pkggroup='$*' \
-		sh -c 'mkdir -p touch /usr/share/doc/syncevolution-$* && echo "SyncEvolution platform pseudo-package for $*" >/usr/share/doc/syncevolution-$*/README'
+		sh -c 'mkdir -p touch /usr/share/doc/syncevolution-$* && echo "SyncEvolution platform pseudo-package for $*" >/usr/share/doc/syncevolution-$*/README' && \
+	mv *.deb ..
 
-all_phonies += dist/$(distdir) clean_dist
-dist/$(distdir): all
+all_phonies += checkinstall/dist/$(distdir) clean_dist
+checkinstall/dist/$(distdir): all
 	rm -rf $@
 	$(MAKE) install DESTDIR=`pwd`/$@
 	$(MAKE) installcheck DESTDIR=`pwd`/$@
 	rm -rf $(call DEV_FILE_PATTERN,$@,/usr)
 clean-local: clean_dist
 clean_dist:
-	rm -rf dist description-pak
+	rm -rf checkinstall
 
 # required by dpkg-shlibdeps
-dist/debian/control:
+checkinstall/dist/debian/control:
 	mkdir -p ${dir $@}
 	touch $@
 
