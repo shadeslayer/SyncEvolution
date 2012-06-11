@@ -1245,6 +1245,16 @@ static BoolConfigProperty syncPropWBXML("enableWBXML",
                                         "not applicable when the peer is a SyncML client, because then the client\n"
                                         "chooses the encoding",
                                         "TRUE");
+static BoolConfigProperty syncPropRefreshSync("enableRefreshSync",
+                                              "Use the more advanced refresh-from-server sync mode to\n"
+                                              "implement the refresh-from-remote operation. Some SyncML\n"
+                                              "servers do not support this. Therefore the default is to\n"
+                                              "delete local data before doing a slow sync, which has the\n"
+                                              "same effect. However, some servers work better when they\n"
+                                              "are told explicitly that the sync is a refresh sync. For\n"
+                                              "example, Funambol's One Media server rejects too many slow\n"
+                                              "syncs in a row with a 417 'retry later' error.\n",
+                                              "FALSE");
 static ConfigProperty syncPropLogDir("logdir",
                                      "full path to directory where automatic backups and logs\n"
                                      "are stored for all synchronizations; if unset, then\n"
@@ -1604,6 +1614,7 @@ public:
         registry.push_back(&syncPropDevID);
         registry.push_back(&syncPropRemoteDevID);
         registry.push_back(&syncPropWBXML);
+        registry.push_back(&syncPropRefreshSync);
         registry.push_back(&syncPropMaxMsgSize);
         registry.push_back(&syncPropMaxObjSize);
         registry.push_back(&syncPropSSLServerCertificates);
@@ -1896,6 +1907,8 @@ InitStateString SyncConfig::getDevID() const { return syncPropDevID.getProperty(
 void SyncConfig::setDevID(const string &value, bool temporarily) { syncPropDevID.setProperty(*getNode(syncPropDevID), value, temporarily); }
 InitState<bool> SyncConfig::getWBXML() const { return syncPropWBXML.getPropertyValue(*getNode(syncPropWBXML)); }
 void SyncConfig::setWBXML(bool value, bool temporarily) { syncPropWBXML.setProperty(*getNode(syncPropWBXML), value, temporarily); }
+InitState<bool> SyncConfig::getRefreshSync() const { return syncPropRefreshSync.getPropertyValue(*getNode(syncPropRefreshSync)); }
+void SyncConfig::setRefreshSync(bool value, bool temporarily) { syncPropRefreshSync.setProperty(*getNode(syncPropRefreshSync), value, temporarily); }
 InitStateString SyncConfig::getLogDir() const { return syncPropLogDir.getProperty(*getNode(syncPropLogDir)); }
 void SyncConfig::setLogDir(const string &value, bool temporarily) { syncPropLogDir.setProperty(*getNode(syncPropLogDir), value, temporarily); }
 InitState<unsigned int> SyncConfig::getMaxLogDirs() const { return syncPropMaxLogDirs.getPropertyValue(*getNode(syncPropMaxLogDirs)); }

@@ -3744,6 +3744,8 @@ protected:
                               "\n"
                               "enableWBXML (TRUE, unshared)\n"
                               "\n"
+                              "enableRefreshSync (FALSE, unshared)\n"
+                              "\n"
                               "maxMsgSize (150000, unshared), maxObjSize (4000000, unshared)\n"
                               "\n"
                               "SSLServerCertificates (" SYNCEVOLUTION_SSL_SERVER_CERTIFICATES ", unshared)\n"
@@ -5080,6 +5082,7 @@ private:
                          "config.ini:deviceId = fixed-devid\n" /* this is not the default! */
                          "peers/scheduleworld/config.ini:# remoteDeviceId = \n"
                          "peers/scheduleworld/config.ini:# enableWBXML = 1\n"
+                         "peers/scheduleworld/config.ini:# enableRefreshSync = 0\n"
                          "peers/scheduleworld/config.ini:# maxMsgSize = 150000\n"
                          "peers/scheduleworld/config.ini:# maxObjSize = 4000000\n"
                          "peers/scheduleworld/config.ini:# SSLServerCertificates = \n"
@@ -5195,6 +5198,7 @@ private:
             "spds/syncml/config.txt:deviceId = fixed-devid\n" /* this is not the default! */
             "spds/syncml/config.txt:# remoteDeviceId = \n"
             "spds/syncml/config.txt:# enableWBXML = 1\n"
+            "spds/syncml/config.txt:# enableRefreshSync = 0\n"
             "spds/syncml/config.txt:# maxMsgSize = 150000\n"
             "spds/syncml/config.txt:# maxObjSize = 4000000\n"
 #ifdef ENABLE_LIBSOUP
@@ -5260,6 +5264,10 @@ private:
         boost::replace_first(config,
                              "# enableWBXML = 1",
                              "enableWBXML = 0");
+
+        boost::replace_first(config,
+                             "# enableRefreshSync = 0",
+                             "enableRefreshSync = 1");
 
         boost::replace_first(config,
                              "# RetryInterval = 2M",

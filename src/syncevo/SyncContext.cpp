@@ -2386,9 +2386,14 @@ void SyncContext::getConfigXML(string &xml, string &configname)
         clientorserver <<
             "  <client type='plugin'>\n"
             "    <binfilespath>$(binfilepath)</binfilespath>\n"
-            "    <defaultauth/>\n"
-            "    <preferslowsync>no</preferslowsync>\n"
+            "    <defaultauth/>\n";
+        if (getRefreshSync()) {
+            clientorserver <<
+                "    <preferslowsync>no</preferslowsync>\n";
+        }
+        clientorserver <<
             "\n" ;
+
          string syncMLVersion (getSyncMLVersion());
          if (!syncMLVersion.empty()) {
              clientorserver << "<defaultsyncmlversion>"

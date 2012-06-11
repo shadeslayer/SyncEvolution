@@ -4448,6 +4448,7 @@ peers/scheduleworld/config.ini:PeerName = ScheduleWorld
 config.ini:deviceId = fixed-devid
 peers/scheduleworld/config.ini:# remoteDeviceId = 
 peers/scheduleworld/config.ini:# enableWBXML = 1
+peers/scheduleworld/config.ini:# enableRefreshSync = 0
 peers/scheduleworld/config.ini:# maxMsgSize = 150000
 peers/scheduleworld/config.ini:# maxObjSize = 4000000
 peers/scheduleworld/config.ini:# SSLServerCertificates = {4}
@@ -4561,6 +4562,9 @@ sources/todo/config.ini:# databasePassword = '''.format(
         config = config.replace("# enableWBXML = 1",
                                 "enableWBXML = 0",
                                 1)
+        config = config.replace("# enableRefreshSync = 0",
+                                "enableRefreshSync = 1",
+                                1)
         config = config.replace("# RetryInterval = 2M",
                                 "RetryInterval = 0",
                                 1)
@@ -4650,6 +4654,7 @@ spds/syncml/config.txt:PeerName = ScheduleWorld
 spds/syncml/config.txt:deviceId = fixed-devid
 spds/syncml/config.txt:# remoteDeviceId = 
 spds/syncml/config.txt:# enableWBXML = 1
+spds/syncml/config.txt:# enableRefreshSync = 0
 spds/syncml/config.txt:# maxMsgSize = 150000
 spds/syncml/config.txt:# maxObjSize = 4000000
 spds/syncml/config.txt:# SSLServerCertificates = {0}
@@ -5644,6 +5649,8 @@ deviceId (no default, shared)
 remoteDeviceId (no default, unshared)
 
 enableWBXML (TRUE, unshared)
+
+enableRefreshSync (FALSE, unshared)
 
 maxMsgSize (150000, unshared), maxObjSize (4000000, unshared)
 

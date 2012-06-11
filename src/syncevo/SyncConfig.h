@@ -1542,6 +1542,9 @@ class SyncConfig {
     virtual InitState<bool> getWBXML() const;
     virtual void setWBXML(bool isWBXML, bool temporarily = false);
 
+    virtual InitState<bool> getRefreshSync() const;
+    virtual void setRefreshSync(bool enableRefreshSync, bool temporarily = false);
+
     virtual InitStateString getUserAgent() const { return "SyncEvolution"; }
     virtual InitStateString getMan() const { return "Patrick Ohly"; }
     virtual InitStateString getMod() const { return "SyncEvolution"; }
