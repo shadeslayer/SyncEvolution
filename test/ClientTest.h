@@ -476,6 +476,19 @@ public:
     /** configuration that corresponds to source */
     const ClientTest::Config config;
 
+    /** shortcut for config.m_sourceName */
+    const std::string &getSourceName() const { return config.m_sourceName; }
+
+    /**
+     * A list of config pointers which share the same
+     * database. Normally, sources are tested in isolation, but for
+     * such linked sources we also need to test interdependencies, in
+     * particular regarding change tracking and item listing.
+     *
+     * This includes *all* configs, not just the other ones.
+     */
+    std::list<LocalTests *> m_linkedSources;
+
     /** helper funclets to create sources */
     CreateSource createSourceA, createSourceB;
 
@@ -617,6 +630,7 @@ public:
     void doChanges(bool restart);
     virtual void testChanges();
     virtual void testChangesMultiCycles();
+    virtual void testLinkedSources();
     virtual void testImport();
     virtual void testImportDelete();
     virtual void testRemoveProperties();

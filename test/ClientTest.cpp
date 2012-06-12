@@ -266,6 +266,9 @@ class TestingSyncSourcePtr : public std::auto_ptr<TestingSyncSource>
 
 public:
     TestingSyncSourcePtr() : m_active(false) {}
+    TestingSyncSourcePtr(const TestingSyncSourcePtr &other) : m_active(false) {
+        CPPUNIT_ASSERT(!other.get());
+    }
     ~TestingSyncSourcePtr()
     {
         // We can skip the full cleanup if the test has already failed.
@@ -444,6 +447,10 @@ void LocalTests::addTests() {
                 if (config.m_createSourceB) {
                     ADD_TEST(LocalTests, testChanges);
                     ADD_TEST(LocalTests, testChangesMultiCycles);
+
+                    if (!config.m_linkedSources.empty()) {
+                        ADD_TEST(LocalTests, testLinkedSources);
+                    }
                 }
             }
 
@@ -1268,6 +1275,115 @@ void LocalTests::testChanges()
 void LocalTests::testChangesMultiCycles()
 {
     doChanges(true);
+}
+
+// Make changes in one source and verify that other linked
+// sources do not see and report any changes in their view
+// of the shared database. Source A of the other sources
+// is created once and is restarted, source B is created
+// from scratch after each change.
+void LocalTests::testLinkedSources()
+{
+    // make changes in each of the sources (doesn't have t be
+    // the current one)
+    BOOST_FOREACH (LocalTests *main, m_linkedSources) {
+        CLIENT_TEST_LOG("making changes in %s", main->getSourceName().c_str());
+
+        // first delete via *all* sources
+        BOOST_FOREACH (LocalTests *test, m_linkedSources) {
+            CLIENT_TEST_LOG("clean via source A of %s", test->getSourceName().c_str());
+            CT_ASSERT_NO_THROW(test->deleteAll(test->createSourceA));
+        }
+
+        std::map<std::string, TestingSyncSourcePtr> sourcesA;
+        BOOST_FOREACH (LocalTests *test, m_linkedSources) {
+            if (test == main) {
+                continue;
+            }
+            TestingSyncSourcePtr &source = sourcesA[test->getSourceName()];
+            CLIENT_TEST_LOG("creating source A of %s", test->getSourceName().c_str());
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.reset(test->createSourceA()));
+            CT_ASSERT_NO_THROW(source.stopAccess());
+        }
+
+        // insert one item
+        CLIENT_TEST_LOG("inserting into %s", main->getSourceName().c_str());
+        CT_ASSERT_NO_THROW(main->testSimpleInsert());
+        BOOST_FOREACH (LocalTests *test, m_linkedSources) {
+            if (test == main) {
+                continue;
+            }
+            TestingSyncSourcePtr &source = sourcesA[test->getSourceName()];
+            CLIENT_TEST_LOG("checking %s after insertion into %s",
+                            test->getSourceName().c_str(),
+                            main->getSourceName().c_str());
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.startAccess());
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.stopAccess());
+
+            TestingSyncSourcePtr sourceB;
+            SOURCE_ASSERT_NO_FAILURE(sourceB.get(), sourceB.reset(test->createSourceB()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countNewItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countUpdatedItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countDeletedItems(sourceB.get()));
+        }
+
+        // update one item
+        CLIENT_TEST_LOG("updating in %s", main->getSourceName().c_str());
+        CT_ASSERT_NO_THROW(main->update(main->createSourceA, main->config.m_updateItem));
+        BOOST_FOREACH (LocalTests *test, m_linkedSources) {
+            if (test == main) {
+                continue;
+            }
+            TestingSyncSourcePtr &source = sourcesA[test->getSourceName()];
+            CLIENT_TEST_LOG("checking %s after update into %s",
+                            test->getSourceName().c_str(),
+                            main->getSourceName().c_str());
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.startAccess());
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.stopAccess());
+
+            TestingSyncSourcePtr sourceB;
+            SOURCE_ASSERT_NO_FAILURE(sourceB.get(), sourceB.reset(test->createSourceB()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countNewItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countUpdatedItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countDeletedItems(sourceB.get()));
+        }
+
+        // delete one item
+        CLIENT_TEST_LOG("deleting in %s", main->getSourceName().c_str());
+        CT_ASSERT_NO_THROW(main->deleteAll(main->createSourceA));
+        BOOST_FOREACH (LocalTests *test, m_linkedSources) {
+            if (test == main) {
+                continue;
+            }
+            TestingSyncSourcePtr &source = sourcesA[test->getSourceName()];
+            CLIENT_TEST_LOG("checking %s after delete in %s",
+                            test->getSourceName().c_str(),
+                            main->getSourceName().c_str());
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.startAccess());
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countNewItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countUpdatedItems(source.get()));
+            SOURCE_ASSERT_EQUAL(source.get(), 0, countDeletedItems(source.get()));
+            SOURCE_ASSERT_NO_FAILURE(source.get(), source.stopAccess());
+
+            TestingSyncSourcePtr sourceB;
+            SOURCE_ASSERT_NO_FAILURE(sourceB.get(), sourceB.reset(test->createSourceB()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countNewItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countUpdatedItems(sourceB.get()));
+            SOURCE_ASSERT_EQUAL(sourceB.get(), 0, countDeletedItems(sourceB.get()));
+        }
+    }
 }
 
 // clean database, import file, then export again and compare
@@ -5790,6 +5906,8 @@ public:
         CppUnit::TestSuite *tests;
 
         // create local source tests
+        typedef std::map<std::string, LocalTests *> ConfigMap;
+        ConfigMap configs;
         tests = new CppUnit::TestSuite(alltests->getName() + "::Source");
         for (source=0; source < client.getNumLocalSources(); source++) {
             ClientTest::Config config;
@@ -5799,6 +5917,18 @@ public:
                     client.createLocalTests(tests->getName() + "::" + config.m_sourceName, source, config);
                 sourcetests->addTests();
                 tests->addTest(FilterTest(sourcetests));
+                configs[config.m_sourceName] = sourcetests;
+            }
+        }
+        // link configs of sources which share the same database
+        BOOST_FOREACH (const ConfigMap::value_type &entry, configs) {
+            LocalTests *sourcetests = entry.second;
+            const ClientTest::Config &config = sourcetests->config;
+            if (!config.m_linkedSources.empty()) {
+                sourcetests->m_linkedSources.push_back(sourcetests);
+                BOOST_FOREACH (const std::string &source, config.m_linkedSources) {
+                    sourcetests->m_linkedSources.push_back(configs[source]);
+                }
             }
         }
         alltests->addTest(FilterTest(tests));

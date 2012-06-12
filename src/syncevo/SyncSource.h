@@ -485,6 +485,15 @@ struct ClientTestConfig {
      */
     boost::function<void (std::string &)> m_update;
     boost::function<void (std::string &)> m_genericUpdate;
+
+    /**
+     * A list of m_sourceName values of other ClientTestConfigs
+     * which share the same database. Normally, sources are tested in
+     * isolation, but for such linked sources we also need to test
+     * interdependencies, in particular regarding change tracking and
+     * item listing.
+     */
+    std::list<std::string> m_linkedSources;
 };
 
 /**
@@ -561,6 +570,15 @@ class RegisterSyncSourceTest
 
     const string m_configName;
     const string m_testCaseName;
+
+    /**
+     * A list of m_configName values of other RegisterSyncSourceTest
+     * which share the same database. Normally, sources are tested in
+     * isolation, but for such linked sources we also need to test
+     * interdependencies, in particular regarding change tracking and
+     * item listing.
+     */
+    std::list<std::string> m_linkedSources;
 };
 
 class TestRegistry : public vector<const RegisterSyncSourceTest *>

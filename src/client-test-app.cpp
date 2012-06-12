@@ -296,6 +296,7 @@ public:
         config.m_createSourceA = createSource;
         config.m_createSourceB = createSource;
         config.m_sourceName = test->m_configName.c_str();
+        config.m_linkedSources = test->m_linkedSources;
 
         test->updateConfig(config);
     }
