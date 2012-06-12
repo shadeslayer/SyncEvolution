@@ -138,6 +138,16 @@ public:
             m_initialized = true;
         }
 
+        // allow each backend test to create more backend tests
+        size_t count = 0;
+        while (count != m_configs.size()) {
+            count = m_configs.size();
+            BOOST_FOREACH (const RegisterSyncSourceTest *test,
+                           TestRegistry(m_configs)) {
+                test->init();
+            }
+        }
+
         const char *server = getenv("CLIENT_TEST_SERVER");
 
         if (m_clientID == "1") {
@@ -169,12 +179,15 @@ public:
             boost::split(sources, sourcelist, boost::is_any_of(","));
         } else {
             BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
-                sources.insert(test->m_configName);
+                if (!test->m_configName.empty()) {
+                    sources.insert(test->m_configName);
+                }
             }
         }
 
         BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
-            if (sources.find(test->m_configName) != sources.end()) {
+            if (sources.find(test->m_configName) != sources.end() &&
+                !test->m_configName.empty()) {
                 m_syncSource2Config.push_back(test->m_configName);
             }
         }
@@ -213,6 +226,10 @@ public:
             config->setDevID(m_clientID == "1" ? "sc-api-nat" : "sc-pim-ppc");
         }
         BOOST_FOREACH(const RegisterSyncSourceTest *test, m_configs) {
+            if (test->m_configName.empty()) {
+                continue;
+            }
+
             ClientTest::Config testconfig;
             getSourceConfig(test, testconfig);
             CPPUNIT_ASSERT(!testconfig.m_type.empty());

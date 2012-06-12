@@ -539,6 +539,13 @@ class RegisterSyncSourceTest
 {
  public:
     /**
+     * Invoked after all global constructors are run.
+     * May add further RegisterSyncSourceTests to the
+     * global registry.
+     */
+    virtual void init() const {}
+
+    /**
      * This call is invoked after setting up the config with default
      * values for the test cases selected via the constructor's
      * testCaseName parameter (one of eds_contact, eds_contact, eds_event, eds_task;
