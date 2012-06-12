@@ -1522,6 +1522,9 @@ void WebDAVSource::removeItem(const string &uid)
     case 204:
         // the expected outcome
         break;
+    case 200:
+        // reported by Radicale, also okay
+        break;
     default:
         SE_THROW_EXCEPTION_STATUS(TransportStatusException,
                                   std::string("unexpected status for removal: ") +
