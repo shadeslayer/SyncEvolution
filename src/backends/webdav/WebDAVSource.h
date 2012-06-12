@@ -164,6 +164,17 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
     virtual std::string contentType() const = 0;
 
     /**
+     * VEVENT, VTODO, VJOURNAL, VCARD
+     */
+    virtual std::string getContent() const = 0;
+
+    /**
+     * true if a collection might contain items with different content
+     * types
+     */
+    virtual bool getContentMixed() const = 0;
+
+    /**
      * create new resource name (only last component, not full path)
      *
      * Some servers require that this matches the item content,
@@ -209,6 +220,11 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
                               const ne_prop_result_set *results,
                               RevisionMap_t &revisions,
                               bool &failed);
+
+    int checkItem(RevisionMap_t &revisions,
+                  const std::string &href,
+                  const std::string &etag,
+                  std::string &data);
 
     void backupData(const boost::function<Operations::BackupData_t> &op,
                     const Operations::ConstBackupInfo &oldBackup,

@@ -1293,6 +1293,9 @@ void LocalTests::testLinkedSources()
         BOOST_FOREACH (LocalTests *test, m_linkedSources) {
             CLIENT_TEST_LOG("clean via source A of %s", test->getSourceName().c_str());
             CT_ASSERT_NO_THROW(test->deleteAll(test->createSourceA));
+            // reset change tracking in source B
+            TestingSyncSourcePtr sourceB;
+            SOURCE_ASSERT_NO_FAILURE(sourceB.get(), sourceB.reset(test->createSourceB()));
         }
 
         std::map<std::string, TestingSyncSourcePtr> sourcesA;

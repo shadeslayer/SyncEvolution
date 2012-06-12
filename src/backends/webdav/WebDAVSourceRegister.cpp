@@ -4,6 +4,7 @@
 
 #include "WebDAVSource.h"
 #include "CalDAVSource.h"
+#include "CalDAVVxxSource.h"
 #include "CardDAVSource.h"
 #include <syncevo/SyncSource.h>
 #ifdef ENABLE_UNIT_TESTS
@@ -46,7 +47,9 @@ static SyncSource *createSource(const SyncSourceParams &params)
     static bool enabled = true;
 #endif
 
-    isMe = sourceType.m_backend == "CalDAV";
+    isMe = sourceType.m_backend == "CalDAV" ||
+        sourceType.m_backend == "CalDAVTodo" ||
+        sourceType.m_backend == "CalDAVJournal";
     if (isMe) {
         if (sourceType.m_format == "" ||
             sourceType.m_format == "text/calendar" ||
@@ -55,8 +58,13 @@ static SyncSource *createSource(const SyncSourceParams &params)
 #ifdef ENABLE_DAV
             if (enabled) {
                 boost::shared_ptr<Neon::Settings> settings;
-                boost::shared_ptr<SubSyncSource> sub(new CalDAVSource(params, settings));
-                return new MapSyncSource(params, sub);
+                if (sourceType.m_backend == "CalDAV") {
+                    boost::shared_ptr<SubSyncSource> sub(new CalDAVSource(params, settings));
+                    return new MapSyncSource(params, sub);
+                } else {
+                    return new CalDAVVxxSource(sourceType.m_backend == "CalDAVTodo" ? "VTODO" : "VJOURNAL",
+                                               params, settings);
+                }
             }
 #endif
             return RegisterSyncSource::InactiveSource(params);
@@ -93,10 +101,18 @@ public:
 #endif
                            createSource,
                            "CalDAV\n"
+                           "   calendar events\n"
+                           "CalDAVTodo\n"
+                           "   tasks\n"
+                           "CalDAVJournal\n"
+                           "   memos\n"
                            "CardDAV\n"
+                           "   contacts\n"
                            ,
                            Values() +
                            Aliases("CalDAV")
+                           + Aliases("CalDAVTodo")
+                           + Aliases("CalDAVJournal")
                            + Aliases("CardDAV")
                            )
     {
@@ -204,12 +220,13 @@ namespace {
 class WebDAVTest : public RegisterSyncSourceTest {
     std::string m_server;
     std::string m_type;
+    std::string m_database;
     ConfigProps m_props;
 
 public:
     /**
      * @param server      for example, "yahoo", "google"
-     * @param type        "caldav" or "carddav"
+     * @param type        "caldav", "caldavtodo", "caldavjournal" or "carddav"
      * @param props       sync properties (username, password, syncURL, ...)
      *                    or key/value parameters for the testing (testcases)
      */
@@ -220,12 +237,17 @@ public:
                                props.get(type + "/testconfig",
                                          props.get("testconfig",
                                                    type == "caldav" ? "eds_event" :
+                                                   type == "caldavtodo" ? "eds_task" :
+                                                   type == "caldavjournal" ? "eds_memo" :
                                                    type == "carddav" ? "eds_contact" :
                                                    type))),
         m_server(server),
         m_type(type),
         m_props(props)
     {}
+
+    std::string getDatabase() const { return m_database; }
+    void setDatabase(const std::string &database) { m_database = database; }
 
     virtual void updateConfig(ClientTestConfig &config) const
     {
@@ -326,12 +348,52 @@ public:
  * creates WebDAV sources by parsing
  * CLIENT_TEST_WEBDAV=<server> [caldav] [carddav] <prop>=<val> ...; ...
  */
-static class WebDAVTestSingleton {
-    list< boost::shared_ptr<WebDAVTest> > m_sources;
+static class WebDAVTestSingleton : RegisterSyncSourceTest {
+    /**
+     * It could be that different sources are configured to use
+     * the same resource (= database property). Get the database
+     * property of each source by instantiating it. Check against
+     * already added entries and if a match is found, record the
+     * link. This enables the Client::Source::xxx::testLinkedSources
+     * test of that previous entry.
+     */
+    class WebDAVList
+    {
+        list< boost::shared_ptr<WebDAVTest> >m_sources;
+
+    public:
+        void push_back(const boost::shared_ptr<WebDAVTest> &source)
+        {
+            boost::scoped_ptr<TestingSyncSource> instance(source->createSource("1", true));
+            std::string database = instance->getDatabaseID();
+            source->setDatabase(database);
+
+            BOOST_FOREACH (const boost::shared_ptr<WebDAVTest> &other,
+                           m_sources) {
+                if (other->getDatabase() == database) {
+                    other->m_linkedSources.push_back(source->m_configName);
+                    break;
+                }
+            }
+            m_sources.push_back(source);
+        }
+    };
+    mutable WebDAVList m_sources;
 
 public:
-    WebDAVTestSingleton()
+    WebDAVTestSingleton() :
+        RegisterSyncSourceTest("", "") // empty, only purpose is to get init() called
+    {}
+
+    virtual void updateConfig(ClientTestConfig &config) const {}
+    virtual void init() const
     {
+        static bool initialized;
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
         const char *env = getenv("CLIENT_TEST_WEBDAV");
         if (!env) {
             return;
@@ -343,7 +405,10 @@ public:
         BOOST_FOREACH(const std::string &entry,
                       boost::tokenizer< boost::char_separator<char> >(settings, boost::char_separator<char>(";"))) {
             std::string server;
-            bool caldav = false, carddav = false;
+            bool caldav = false,
+                caldavtodo = false,
+                caldavjournal = false,
+                carddav = false;
             ConfigProps props;
             BOOST_FOREACH(const std::string &token,
                           boost::tokenizer< boost::char_separator<char> >(entry, boost::char_separator<char>("\t "))) {
@@ -351,6 +416,10 @@ public:
                     server = token;
                 } else if (token == "caldav") {
                     caldav = true;
+                } else if (token == "caldavtodo") {
+                    caldavtodo = true;
+                } else if (token == "caldavjournal") {
+                    caldavjournal = true;
                 } else if (token == "carddav") {
                     carddav = true;
                 } else {
@@ -361,8 +430,17 @@ public:
                     props[token.substr(0,pos)] = token.substr(pos + 1);
                 }
             }
+
             if (caldav) {
                 boost::shared_ptr<WebDAVTest> ptr(new WebDAVTest(server, "caldav", props));
+                m_sources.push_back(ptr);
+            }
+            if (caldavtodo) {
+                boost::shared_ptr<WebDAVTest> ptr(new WebDAVTest(server, "caldavtodo", props));
+                m_sources.push_back(ptr);
+            }
+            if (caldavjournal) {
+                boost::shared_ptr<WebDAVTest> ptr(new WebDAVTest(server, "caldavjournal", props));
                 m_sources.push_back(ptr);
             }
             if (carddav) {

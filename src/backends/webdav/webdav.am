@@ -23,6 +23,8 @@ src/backends/webdav/syncevo-webdav-lookup: $(srcdir)/src/backends/webdav/syncevo
 src_backends_webdav_src = \
   src/backends/webdav/CalDAVSource.h \
   src/backends/webdav/CalDAVSource.cpp \
+  src/backends/webdav/CalDAVVxxSource.h \
+  src/backends/webdav/CalDAVVxxSource.cpp \
   src/backends/webdav/CardDAVSource.h \
   src/backends/webdav/CardDAVSource.cpp \
   src/backends/webdav/WebDAVSource.h \

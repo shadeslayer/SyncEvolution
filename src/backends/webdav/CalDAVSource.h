@@ -82,6 +82,8 @@ class CalDAVSource : public WebDAVSource,
 
     virtual std::string contentType() const { return "text/calendar; charset=utf-8"; }
     virtual std::string suffix() const { return ".ics"; }
+    virtual std::string getContent() const { return "VEVENT"; }
+    virtual bool getContentMixed() const { return true; }
 
  private:
     /**
