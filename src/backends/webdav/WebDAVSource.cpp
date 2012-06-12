@@ -1247,8 +1247,19 @@ void WebDAVSource::readItem(const string &uid, std::string &item, bool raw)
                           "", item);
         // useful with CardDAV: server might support more than vCard 3.0, but we don't
         req.addHeader("Accept", contentType());
-        if (req.run()) {
-            break;
+        try {
+            if (req.run()) {
+                break;
+            }
+        } catch (const TransportStatusException &ex) {
+            if (ex.syncMLStatus() == 410) {
+                // Radicale reports 410 'Gone'. Hmm, okay.
+                // Let's map it to the expected 404.
+                SE_THROW_EXCEPTION_STATUS(TransportStatusException,
+	                                  "object not found (was 410 'Gone')",
+	                                  SyncMLStatus(404));
+            }
+            throw;
         }
     }
 }
