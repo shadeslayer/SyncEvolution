@@ -181,7 +181,7 @@ deb rpm : checkinstall/dist/$(distdir) checkinstall/dist/debian/control
 		--pkggroup='$*' \
 		--pkggroup='comm' \
 		cp -r `pwd`/dist/$(distdir)/* / && \
-	if [ $@ = "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm ..; else mv *.deb ..; fi
+	if [ $@ = "rpm" ]; then cp /usr/src/rpm/RPMS/*/${PKGNAME}-${VERSION}-2.*.rpm ..; else mv ${PKGNAME}_${VERSION}*.deb ..; fi
 
 # Pseudo platform .deb packages:
 # only depend on PKGNAME = syncevolution-$(BINSUFFIX) (usually syncevolution-bundle).
@@ -221,7 +221,7 @@ syncevolution-%-deb: checkinstall/dist/$(distdir) checkinstall/dist/debian/contr
 		--pkgsource='http://syncevolution.org' \
 		--pkggroup='$*' \
 		sh -c 'mkdir -p touch /usr/share/doc/syncevolution-$* && echo "SyncEvolution platform pseudo-package for $*" >/usr/share/doc/syncevolution-$*/README' && \
-	mv *.deb ..
+	mv syncevolution-$**.deb ..
 
 all_phonies += checkinstall/dist/$(distdir) clean_dist
 checkinstall/dist/$(distdir): all
