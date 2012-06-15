@@ -620,6 +620,11 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
     // default remote rule (local-storage.xml): suppresses empty properties
     info.m_backendRule = "LOCALSTORAGE";
 
+    // We store entire items locally and thus have to make sure that
+    // they are complete by having the engine merge incoming and local
+    // data.
+    info.m_datastoreOptions += "      <updateallfields>true</updateallfields>\n";
+
     if (type == "text/x-vcard") {
         info.m_native = "vCard21";
         info.m_fieldlist = "contacts";

@@ -1390,7 +1390,9 @@ class SyncSourceBase : public Logger {
          *
          * One example is adding <updateallfields>: this is necessary
          * in backends which depend on getting complete items (= for example,
-         * vCard 3.0 strings) from the engine.
+         * vCard 3.0 strings) from the engine. Note that any source
+         * derived from SyncSourceSerialize (= the majority of the backends)
+         * have this set by default.
          */
         std::string m_datastoreOptions;
 
