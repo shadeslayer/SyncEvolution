@@ -25,6 +25,7 @@
 #include <syncevo/IniConfigNode.h>
 #include <syncevo/GLibSupport.h>
 #include <syncevo/DBusTraits.h>
+#include <syncevo/SuspendFlags.h>
 
 #include <stddef.h>
 #include <sys/socket.h>
@@ -435,7 +436,14 @@ public:
                                                   boost::ref(password), boost::ref(error),
                                                   boost::ref(havePassword),
                                                   _1, _2));
+        SuspendFlags &s = SuspendFlags::getSuspendFlags();
         while (!havePassword) {
+            if (s.getState() != SuspendFlags::NORMAL) {
+                SE_THROW_EXCEPTION_STATUS(StatusException,
+                                          StringPrintf("User did not provide the '%s' password.",
+                                                       passwordName.c_str()),
+                                          SyncMLStatus(sysync::LOCERR_USERABORT));
+            }
             g_main_context_iteration(NULL, true);
         }
         if (!error.empty()) {
@@ -746,10 +754,19 @@ public:
 
     void run()
     {
+        SuspendFlags &s = SuspendFlags::getSuspendFlags();
+
         while (!m_parent) {
+            if (s.getState() != SuspendFlags::NORMAL) {
+                SE_LOG_DEBUG(NULL, NULL, "aborted, returning while waiting for parent");
+                return;
+            }
             step("waiting for parent");
         }
         while (!m_client) {
+            if (s.getState() != SuspendFlags::NORMAL) {
+                SE_LOG_DEBUG(NULL, NULL, "aborted, returning while waiting for Sync() call from parent");
+            }
             step("waiting for Sync() call from parent");
         }
         try {
@@ -803,7 +820,8 @@ public:
             SE_LOG_DEBUG(NULL, NULL, "child sending sync report:\n%s", report.c_str());
             m_parent->m_storeSyncReport.start(report,
                                               boost::bind(&LocalTransportAgentChild::syncReportReceived, this, _1));
-            while (!m_reportSent && m_parent) {
+            while (!m_reportSent && m_parent &&
+                   s.getState() == SuspendFlags::NORMAL) {
                 step("waiting for parent's ACK for sync report");
             }
         }
@@ -898,7 +916,9 @@ public:
      */
     virtual Status wait(bool noReply = false)
     {
-        while (m_status == ACTIVE) {
+        SuspendFlags &s = SuspendFlags::getSuspendFlags();
+        while (m_status == ACTIVE &&
+               s.getState() == SuspendFlags::NORMAL) {
             step("waiting for next message");
         }
         return m_status;
