@@ -1108,9 +1108,9 @@ context.add(test)
 
 test = SyncEvolutionTest("davical", compile,
                          "", options.shell,
-                         "Client::Sync::eds_contact Client::Sync::eds_event Client::Source::davical_caldav Client::Source::davical_carddav",
-                         [ "davical_caldav", "davical_carddav", "eds_event", "eds_contact" ],
-                         "CLIENT_TEST_WEBDAV='davical caldav carddav' "
+                         "Client::Sync::eds_contact Client::Sync::eds_event Client::Sync::eds_task Client::Source::davical_caldav Client::Source::davical_caldavtodo Client::Source::davical_carddav",
+                         [ "davical_caldav", "davical_caldavtodo", "davical_carddav", "eds_event", "eds_task", "eds_contact" ],
+                         "CLIENT_TEST_WEBDAV='davical caldav caldavtodo carddav' "
                          "CLIENT_TEST_NUM_ITEMS=10 " # don't stress server
                          "CLIENT_TEST_SIMPLE_UID=1 " # server gets confused by UID with special characters
                          "CLIENT_TEST_MODE=server " # for Client::Sync
@@ -1120,9 +1120,9 @@ context.add(test)
 
 test = SyncEvolutionTest("apple", compile,
                          "", options.shell,
-                         "Client::Sync::eds_event Client::Sync::eds_contact Client::Source::apple_caldav Client::Source::apple_carddav",
-                         [ "apple_caldav", "apple_carddav", "eds_event", "eds_contact" ],
-                         "CLIENT_TEST_WEBDAV='apple caldav carddav' "
+                         "Client::Sync::eds_event Client::Sync::eds_task Client::Sync::eds_contact Client::Source::apple_caldav Client::Source::apple_caldavtodo Client::Source::apple_carddav",
+                         [ "apple_caldav", "apple_caldavtodo", "apple_carddav", "eds_event", "eds_task", "eds_contact" ],
+                         "CLIENT_TEST_WEBDAV='apple caldav caldavtodo carddav' "
                          "CLIENT_TEST_NUM_ITEMS=250 " # test is local, so we can afford a higher number
                          "CLIENT_TEST_MODE=server " # for Client::Sync
                          ,
@@ -1256,10 +1256,10 @@ context.add(test)
 test = SyncEvolutionTest("davfile",
                          compile,
                          "", options.shell,
-                         "Client::Sync::davical_caldav Client::Sync::davical_carddav Client::Sync::davical_caldav_davical_carddav",
-                         [ "davical_caldav", "davical_carddav" ],
+                         "Client::Sync::davical_caldav Client::Sync::davical_caldavtodo Client::Sync::davical_carddav Client::Sync::davical_caldav_davical_caldavtodo_davical_carddav",
+                         [ "davical_caldav", "davical_caldavtodo", "davical_carddav" ],
                          "CLIENT_TEST_SIMPLE_UID=1 " # DAViCal server gets confused by UID with special characters
-                         "CLIENT_TEST_WEBDAV='davical caldav carddav' "
+                         "CLIENT_TEST_WEBDAV='davical caldav caldavtodo carddav' "
                          "CLIENT_TEST_NUM_ITEMS=10 "
                          "CLIENT_TEST_LOG=syncevohttp.log "
                          # could be enabled, but reporting result is currently missing (BMC #1009)
