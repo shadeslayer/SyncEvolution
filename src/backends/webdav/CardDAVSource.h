@@ -45,11 +45,6 @@ class CardDAVSource : public WebDAVSource,
     virtual std::string contentType() const { return "text/vcard; charset=utf-8"; }
     virtual std::string getContent() const { return "VCARD"; }
     virtual bool getContentMixed() const { return false; }
-    virtual const std::string *createResourceName(const std::string &item, std::string &buffer, std::string &luid);
-    virtual const std::string *setResourceName(const std::string &item, std::string &buffer, const std::string &luid);
-
- private:
-    std::string extractUID(const std::string &item);
 };
 
 SE_END_CXX

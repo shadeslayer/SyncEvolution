@@ -242,6 +242,91 @@ WebDAVSource::WebDAVSource(const SyncSourceParams &params,
     LogRedirect::addIgnoreError("Read block (");
 }
 
+static const std::string UID("\nUID:");
+
+const std::string *WebDAVSource::createResourceName(const std::string &item, std::string &buffer, std::string &luid)
+{
+    luid = extractUID(item);
+    std::string suffix = getSuffix();
+    if (luid.empty()) {
+        // must modify item
+        luid = UUID();
+        buffer = item;
+        size_t start = buffer.find("\nEND:" + getContent());
+        if (start != buffer.npos) {
+            start++;
+            buffer.insert(start, StringPrintf("UID:%s\r\n", luid.c_str()));
+        }
+        luid += suffix;
+        return &buffer;
+    } else {
+        luid += suffix;
+        return &item;
+    }
+}
+
+const std::string *WebDAVSource::setResourceName(const std::string &item, std::string &buffer, const std::string &luid)
+{
+    std::string olduid = luid;
+    std::string suffix = getSuffix();
+    if (boost::ends_with(olduid, suffix)) {
+        olduid.resize(olduid.size() - suffix.size());
+    }
+
+    // first check if the item already contains the right UID
+    std::string uid = extractUID(item);
+    if (uid == olduid) {
+        return &item;
+    }
+
+    // insert or overwrite
+    buffer = item;
+    size_t start = buffer.find(UID);
+    if (start != buffer.npos) {
+        start += UID.size();
+        size_t end = buffer.find("\n", start);
+        if (end != buffer.npos) {
+            // overwrite
+            buffer.replace(start, end, olduid);
+        }
+    } else {
+        // insert
+        start = buffer.find("\nEND:" + getContent());
+        if (start != buffer.npos) {
+            start++;
+            buffer.insert(start, StringPrintf("UID:%s\n", olduid.c_str()));
+        }
+    }
+    return &buffer;
+}
+
+
+
+std::string WebDAVSource::extractUID(const std::string &item)
+{
+    std::string luid;
+    // find UID, use that plus ".vcf" as resource name (expected by Yahoo Contacts)
+    size_t start = item.find(UID);
+    if (start != item.npos) {
+        start += UID.size();
+        size_t end = item.find("\n", start);
+        if (end != item.npos) {
+            luid = item.substr(start, end - start);
+            if (boost::ends_with(luid, "\r")) {
+                luid.resize(luid.size() - 1);
+            }
+        }
+    }
+    return luid;
+}
+
+std::string WebDAVSource::getSuffix() const
+{
+    return getContent() == "VCARD" ?
+        ".vcf" :
+        ".ics";
+}
+
 void WebDAVSource::replaceHTMLEntities(std::string &item)
 {
     while (true) {

@@ -185,12 +185,23 @@ class WebDAVSource : public TrackingSyncSource, private boost::noncopyable
      * @retval luid   new resource name, not URL encoded
      * @return item data to be sent
      */
-    virtual const std::string *createResourceName(const std::string &item, std::string &buffer, std::string &luid) { luid = UUID(); return &item; }
+    virtual const std::string *createResourceName(const std::string &item, std::string &buffer, std::string &luid);
 
     /**
      * optionally modify item content to match the luid of the item we are going to update
      */
-    virtual const std::string *setResourceName(const std::string &item, std::string &buffer, const std::string &luid) { return &item; }
+    virtual const std::string *setResourceName(const std::string &item, std::string &buffer, const std::string &luid);
+
+    /**
+     * Get UID property value from vCard 3.0 or iCalendar 2.0 text
+     * items.
+     */
+    static std::string extractUID(const std::string &item);
+
+    /**
+     * .vcf for VCARD and .ics for everything else.
+     */
+    virtual std::string getSuffix() const;
 
  private:
     /** settings to be used, never NULL, may be the same as m_contextSettings */
