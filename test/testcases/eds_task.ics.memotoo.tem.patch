@@ -1,7 +1,7 @@
-@@ -2,24 +2,6 @@
+@@ -1,24 +1,6 @@
+ BEGIN:VCALENDAR
  PRODID:-//Ximian//NONSGML Evolution Calendar//EN
  VERSION:2.0
- METHOD:PUBLISH
 -BEGIN:VTIMEZONE
 -TZID:/softwarestudio.org/Tzfile/America/New_York
 -X-LIC-LOCATION:America/New_York
@@ -23,7 +23,7 @@
  BEGIN:VTODO
  UID:20090401T145153Z-22321-1000-1-18@pohly-MOBL
  DTSTAMP:20090401T145153Z
-@@ -28,14 +10,13 @@
+@@ -27,14 +9,13 @@
  CREATED:20090401T145153Z
  LAST-MODIFIED:20090401T145153Z
  DESCRIPTION:This is a test task in time zone New York\, to be started May 

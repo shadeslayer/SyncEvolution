@@ -1,7 +1,6 @@
 BEGIN:VCALENDAR
 PRODID:-//Ximian//NONSGML Evolution Calendar//EN
 VERSION:2.0
-METHOD:PUBLISH
 BEGIN:VTIMEZONE
 TZID:/softwarestudio.org/Tzfile/America/New_York
 X-LIC-LOCATION:America/New_York
