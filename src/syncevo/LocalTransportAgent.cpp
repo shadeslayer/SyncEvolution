@@ -413,13 +413,10 @@ void LocalTransportAgent::setTimeout(int seconds)
 class LocalTransportUI : public UserInterface
 {
     boost::shared_ptr<LocalTransportParent> m_parent;
-    SyncEvo::GMainLoopCXX m_loop;
 
 public:
-    LocalTransportUI(const boost::shared_ptr<LocalTransportParent> &parent,
-                     const SyncEvo::GMainLoopCXX loop) :
-        m_parent(parent),
-        m_loop(loop)
+    LocalTransportUI(const boost::shared_ptr<LocalTransportParent> &parent) :
+        m_parent(parent)
     {}
 
     /** implements password request by asking the parent via D-Bus */
@@ -432,10 +429,15 @@ public:
                      descr.c_str());
         std::string password;
         std::string error;
+        bool havePassword = false;
         m_parent->m_askPassword.start(passwordName, descr, key,
                                       boost::bind(&LocalTransportUI::storePassword, this,
-                                                  boost::ref(password), boost::ref(error), _1, _2));
-        g_main_loop_run(m_loop.get());
+                                                  boost::ref(password), boost::ref(error),
+                                                  boost::ref(havePassword),
+                                                  _1, _2));
+        while (!havePassword) {
+            g_main_context_iteration(NULL, true);
+        }
         if (!error.empty()) {
             Exception::tryRethrowDBus(error);
             SE_THROW(StringPrintf("retrieving password failed: %s", error.c_str()));
@@ -447,7 +449,7 @@ public:
     virtual void readStdin(std::string &content) { SE_THROW("not implemented"); }
 
 private:
-    void storePassword(std::string &res, std::string &errorRes, const std::string &password, const std::string &error)
+    void storePassword(std::string &res, std::string &errorRes, bool &haveRes, const std::string &password, const std::string &error)
     {
         if (!error.empty()) {
             SE_LOG_DEBUG(NULL, NULL, "local transport child: D-Bus password request failed: %s",
@@ -457,7 +459,7 @@ private:
             SE_LOG_DEBUG(NULL, NULL, "local transport child: D-Bus password request succeeded");
             res = password;
         }
-        g_main_loop_quit(m_loop.get());
+        haveRes = true;
     }
 };
 
@@ -484,12 +486,6 @@ class LocalTransportAgentChild : public TransportAgent
      * sync report for client side of the local sync
      */
     SyncReport m_clientReport;
-
-    /**
-     * the loop will run by step() while waiting for something;
-     * normally the process is outside of the loop
-     */
-    SyncEvo::GMainLoopCXX m_loop;
 
     /**
      * provides connection to parent, created in constructor
@@ -558,7 +554,11 @@ class LocalTransportAgentChild : public TransportAgent
     void step(const std::string &status)
     {
         SE_LOG_DEBUG(NULL, NULL, "local transport: %s", status.c_str());
-        g_main_loop_run(m_loop.get());
+        if (!m_forkexec ||
+            m_forkexec->getState() == ForkExecChild::DISCONNECTED) {
+            SE_THROW("local transport child no longer has a parent, terminating");
+        }
+        g_main_context_iteration(NULL, true);
         if (m_ret) {
             SE_THROW("local transport child encountered a problem, terminating");
         }
@@ -597,7 +597,6 @@ class LocalTransportAgentChild : public TransportAgent
 
         // return to step()
         m_ret = 1;
-        g_main_loop_quit(m_loop.get());
     }
 
     // D-Bus API, see LocalTransportChild;
@@ -622,7 +621,7 @@ class LocalTransportAgentChild : public TransportAgent
                                        serverConfig.second + "/." + clientContext,
                                        boost::shared_ptr<TransportAgent>(this, NoopAgentDestructor()),
                                        serverDoLogging));
-        boost::shared_ptr<UserInterface> ui(new LocalTransportUI(m_parent, m_loop));
+        boost::shared_ptr<UserInterface> ui(new LocalTransportUI(m_parent));
         m_client->setUserInterface(ui);
 
         // allow proceeding with sync even if no "target-config" was created,
@@ -713,7 +712,6 @@ class LocalTransportAgentChild : public TransportAgent
 
         // ready for m_client->sync()
         m_status = ACTIVE;
-        g_main_loop_quit(m_loop.get());
     }
 
     void sendMsg(const std::string &contentType,
@@ -728,7 +726,6 @@ class LocalTransportAgentChild : public TransportAgent
                              data.first);
             m_messageType = contentType;
             m_status = GOT_REPLY;
-            g_main_loop_quit(m_loop.get());
         } else {
             reply->failed(GDBusCXX::dbus_error("org.syncevolution.localtransport.error",
                                                "child not expecting any message"));
@@ -738,7 +735,6 @@ class LocalTransportAgentChild : public TransportAgent
 public:
     LocalTransportAgentChild() :
         m_ret(0),
-        m_loop(g_main_loop_new(NULL, FALSE), false),
         m_forkexec(SyncEvo::ForkExecChild::create()),
         m_reportSent(false),
         m_status(INACTIVE)
@@ -795,7 +791,7 @@ public:
                 // do not wait too long
                 if (m_parent) {
                     SE_LOG_DEBUG(NULL, NULL, "waiting for parent's ACK for sync report");
-                    g_main_loop_run(m_loop.get());
+                    g_main_context_iteration(NULL, true);
                 }
             }
             throw;
@@ -808,8 +804,7 @@ public:
             m_parent->m_storeSyncReport.start(report,
                                               boost::bind(&LocalTransportAgentChild::syncReportReceived, this, _1));
             while (!m_reportSent && m_parent) {
-                SE_LOG_DEBUG(NULL, NULL, "waiting for parent's ACK for sync report");
-                g_main_loop_run(m_loop.get());
+                step("waiting for parent's ACK for sync report");
             }
         }
     }
@@ -819,7 +814,6 @@ public:
         SE_LOG_DEBUG(NULL, NULL, "sending sync report to parent: %s",
                      error.empty() ? "done" : error.c_str());
         m_reportSent = true;
-        g_main_loop_quit(m_loop.get());
     }
 
     int getReturnCode() const { return m_ret; }
