@@ -556,6 +556,140 @@
 
         </subprofile>
 
+        <!-- sub-profile for journal: recurrences are allowed by the standard, but
+             intentionally not supported here -->
+        <subprofile name="VJOURNAL" nummandatory="1" showifselectedonly="yes" field="ISEVENT" value="2">
+
+          <property name="LAST-MODIFIED" suppressempty="yes">
+            <value field="DMODIFIED"/>
+          </property>
+
+          <property name="DTSTAMP" suppressempty="yes" onlyformode="standard">
+            <value field="DGENERATED"/>
+          </property>
+
+          <property name="DCREATED" suppressempty="yes" onlyformode="old">
+            <value field="DCREATED"/>
+          </property>
+          <property name="CREATED" suppressempty="yes" onlyformode="standard">
+            <value field="DCREATED"/>
+          </property>
+
+          <property name="UID" suppressempty="yes">
+            <value field="UID"/>
+          </property>
+
+          <property name="SEQUENCE" suppressempty="yes">
+            <value field="SEQNO"/>
+          </property>
+
+          <property onlyformode="standard" name="CATEGORIES" values="list" valueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property onlyformode="old" name="CATEGORIES" values="list" valueseparator=";" altvalueseparator="," suppressempty="yes">
+            <value field="CATEGORIES" />
+            <position field="CATEGORIES" repeat="array" minshow="0"/>
+          </property>
+
+          <property name="CLASS" suppressempty="yes">
+            <value field="CLASS">
+              <enum name="PUBLIC"       value="0"/>
+              <enum name="PRIVATE"      value="1"/>
+              <enum name="CONFIDENTIAL" value="2"/>
+            </value>
+          </property>
+
+          <property name="SUMMARY" mandatory="yes">
+            <value field="SUMMARY"/>
+          </property>
+
+          <!-- DESCRIPTION is an optional property and libical does not like
+               empty properties, so suppress it here. -->
+          <property name="DESCRIPTION" suppressempty="yes" mandatory="no">
+            <value field="DESCRIPTION"/>
+          </property>
+
+          <property name="URL" suppressempty="yes" mandatory="no">
+            <value field="URL"/>
+          </property>
+
+          <property name="DTSTART" suppressempty="yes" delayedparsing="1">
+            <value field="DTSTART" conversion="autodate"/>
+            <parameter onlyformode="standard" name="TZID" default="no" show="yes">
+              <value field="DTSTART" conversion="TZID"/>
+            </parameter>
+            <parameter onlyformode="standard" name="VALUE" default="no" show="yes">
+              <value field="DTSTART" conversion="VALUETYPE"/>
+            </parameter>
+          </property>
+
+          <property name="STATUS" onlyformode="standard" suppressempty="yes">
+            <value field="STATUS" conversion="emptyonly">
+              <enum name="COMPLETED"      value="0"/>
+              <enum name="NEEDS-ACTION"   value="1"/>
+              <enum name="IN-PROCESS"     value="2"/>
+              <enum name="CANCELLED"      value="3"/>
+              <enum name="ACCEPTED"       value="4"/>
+              <enum name="TENTATIVE"      value="5"/>
+              <enum name="DELEGATED"      value="6"/>
+              <enum name="DECLINED"       value="7"/>
+              <enum name="SENT"           value="8"/>
+              <enum name="CONFIRMED"      value="9"/>
+              <enum name="DRAFT"          value="10"/>
+              <enum name="FINAL"          value="11"/>
+            </value>
+          </property>
+
+          <property name="STATUS" onlyformode="old" suppressempty="yes">
+            <value field="STATUS" conversion="emptyonly">
+              <enum name="COMPLETED"      value="0"/>
+              <enum name="NEEDS ACTION"   value="1"/>
+              <enum mode="defaultvalue"   value="1"/> <!-- catch unknown, but also non-conformant NEEDS_ACTION -->
+              <enum name="IN PROCESS"     value="2"/>
+              <enum name="CANCELLED"      value="3"/>
+              <enum name="ACCEPTED"       value="4"/>
+              <enum name="TENTATIVE"      value="5"/>
+              <enum name="DELEGATED"      value="6"/>
+              <enum name="DECLINED"       value="7"/>
+              <enum name="SENT"           value="8"/>
+              <enum name="CONFIRMED"      value="9"/>
+              <enum name="DRAFT"          value="10"/>
+              <enum name="FINAL"          value="11"/>
+            </value>
+          </property>
+
+          <property onlyformode="old" name="RELATED-TO" suppressempty="yes">
+            <value field="PARENT_UID"/>
+          </property>
+
+          <property onlyformode="standard" name="RELATED-TO" suppressempty="yes">
+            <value field="PARENT_UID"/>
+            <parameter onlyformode="standard" name="RELTYPE" default="no" positional="yes" show="yes">
+              <value>
+                <enum name="PARENT"/>
+                <enum mode="defaultvalue" name="other"/>
+              </value>
+              <position hasnot="other" shows="PARENT" field="PARENT_UID"/>
+            </parameter>
+          </property>
+
+        </subprofile>
+
       </profile>
     </mimeprofile>
 
+    <textprofile name="JournalText" fieldlist="calendar">
+      <linemap field="SUMMARY">
+        <numlines>1</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+        <filterkeyword>SUMMARY</filterkeyword>
+      </linemap>
+      <linemap field="DESCRIPTION">
+        <numlines>0</numlines>
+        <inheader>false</inheader>
+        <allowempty>true</allowempty>
+      </linemap>
+    </textprofile>

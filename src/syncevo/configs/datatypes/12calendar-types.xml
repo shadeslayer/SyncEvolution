@@ -35,3 +35,22 @@
       ]]></comparescript>
     </datatype>
 
+    <datatype name="journaltext10" basetype="text">
+      <use profile="JournalText"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.0</versionstring>
+
+      <incomingscript><![CDATA[
+        ISEVENT = 2;
+      ]]></incomingscript>
+    </datatype>
+
+    <datatype name="journaltext11" basetype="text">
+      <use profile="JournalText"/>
+      <typestring>text/plain</typestring>
+      <versionstring>1.1</versionstring>
+
+      <incomingscript><![CDATA[
+        ISEVENT = 2;
+      ]]></incomingscript>
+    </datatype>

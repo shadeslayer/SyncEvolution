@@ -662,7 +662,8 @@ void SyncSourceSerialize::getSynthesisInfo(SynthesisInfo &info,
          */
         info.m_afterReadScript = "$VCALENDAR10_AFTERREAD_SCRIPT;\n";
         info.m_beforeWriteScript = "$VCALENDAR10_BEFOREWRITE_SCRIPT;\n";
-    } else if (type == "text/calendar") {
+    } else if (type == "text/calendar" ||
+               boost::starts_with(type, "text/calendar+")) {
         info.m_native = "iCalendar20";
         info.m_fieldlist = "calendar";
         info.m_profile = "\"vCalendar\", 2";
@@ -717,6 +718,11 @@ std::string SyncSourceBase::getDataTypeSupport(const std::string &type,
             datatypes +=
                 "        <use datatype='vcalendar10' mode='rw'/>\n";
         }
+    } else if (type == "text/calendar+plain") {
+        datatypes =
+            "        <use datatype='icalendar20' mode='rw' preferred='yes'/>\n"
+            "        <use datatype='journaltext10' mode='rw'/>\n"
+            "        <use datatype='journaltext11' mode='rw'/>\n";
     } else if (type == "text/plain:1.0" || type == "text/plain") {
         // note10 are the same as note11, so ignore force format
         datatypes =
