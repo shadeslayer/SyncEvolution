@@ -41,8 +41,12 @@
       <versionstring>1.0</versionstring>
 
       <incomingscript><![CDATA[
-        ISEVENT = 2;
+        $MEMO_INCOMING_SCRIPT
       ]]></incomingscript>
+
+      <outgoingscript><![CDATA[
+        $MEMO_OUTGOING_SCRIPT
+      ]]></outgoingscript>
     </datatype>
 
     <datatype name="journaltext11" basetype="text">
@@ -53,4 +57,8 @@
       <incomingscript><![CDATA[
         ISEVENT = 2;
       ]]></incomingscript>
+
+      <outgoingscript><![CDATA[
+        $MEMO_OUTGOING_SCRIPT
+      ]]></outgoingscript>
     </datatype>

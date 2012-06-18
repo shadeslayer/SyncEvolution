@@ -236,3 +236,22 @@
     }
     return RES;
     ]]></macro>
+
+    <!-- invoked when reading plain text memo from storage or receiving from peer -->
+    <macro name="MEMO_INCOMING_SCRIPT"><![CDATA[
+    ISEVENT = 2;
+    ]]></macro>
+
+    <!-- invoked before writing plain text memo into storage or sending to peer -->
+    <macro name="MEMO_OUTGOING_SCRIPT"><![CDATA[
+    // remove SUMMARY from start of DESCRIPTION before writing,
+    // because that will concatenate them again
+    integer lensummary, lendescr;
+    lensummary = LENGTH(SUMMARY);
+    lendescr = LENGTH(DESCRIPTION);
+    if (lendescr > lensummary &&
+        SUBSTR(DESCRIPTION, 0, lensummary) == SUMMARY &&
+        SUBSTR(DESCRIPTION, lensummary, 1) == "\n") {
+        DESCRIPTION = SUBSTR(DESCRIPTION, lensummary + 1, lendescr - lensummary - 1);
+    }
+    ]]></macro>
