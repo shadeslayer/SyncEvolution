@@ -562,6 +562,14 @@ void Server::removeSyncSession(Session *session)
     }
 }
 
+static bool quitLoop(GMainLoop *loop)
+{
+    SE_LOG_DEBUG(NULL, NULL, "stopping server's event loop");
+    g_main_loop_quit(loop);
+    // don't call me again
+    return false;
+}
+
 void Server::checkQueue()
 {
     if (m_activeSession) {
@@ -571,8 +579,11 @@ void Server::checkQueue()
 
     if (m_shutdownRequested) {
         // Don't schedule new sessions. Instead return to Server::run().
+        // But don't do it immediately: when done inside the Session.Detach()
+        // call, the D-Bus response was not delivered reliably to the client
+        // which caused the shutdown.
         SE_LOG_DEBUG(NULL, NULL, "shutting down in checkQueue(), idle and shutdown was requested");
-        g_main_loop_quit(m_loop);
+        addTimeout(boost::bind(quitLoop, m_loop), 0);
         return;
     }
 
