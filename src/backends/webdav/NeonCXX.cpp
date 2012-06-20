@@ -21,6 +21,7 @@
 #include <syncevo/Logging.h>
 #include <syncevo/LogRedirect.h>
 #include <syncevo/SmartPtr.h>
+#include <syncevo/SuspendFlags.h>
 
 #include <sstream>
 
@@ -489,6 +490,9 @@ void Session::startOperation(const string &operation, const Timespec &deadline)
                                          (deadline - Timespec::monotonic()).duration()).c_str() :
                  "no deadline");
 
+    // now is a good time to check for user abort
+    SuspendFlags::getSuspendFlags().checkForNormal();
+
     // remember current operation attributes
     m_operation = operation;
     m_deadline = deadline;
@@ -513,6 +517,7 @@ void Session::flush()
 bool Session::checkError(int error, int code, const ne_status *status, const string &location)
 {
     flush();
+    SuspendFlags &s = SuspendFlags::getSuspendFlags();
 
     // unset operation, set it again only if the same operation is going to be retried
     string operation = m_operation;
@@ -673,9 +678,11 @@ bool Session::checkError(int error, int code, const ne_status *status, const str
                                  m_attempt);
                 }
 
-                // try same operation again
-                m_operation = operation;
-                return false;
+                // try same operation again?
+                if (s.getState() == SuspendFlags::NORMAL) {
+                    m_operation = operation;
+                    return false;
+                }
             } else {
                 SE_LOG_DEBUG(NULL, NULL, "retry %s would exceed deadline, bailing out",
                              m_operation.c_str());
