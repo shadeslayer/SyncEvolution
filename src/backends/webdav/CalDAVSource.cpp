@@ -963,7 +963,7 @@ std::string CalDAVSource::removeSubItem(const string &davLUID, const std::string
                                 if (ex2.syncMLStatus() == 409 &&
                                     strstr(ex2.what(), "Can't delete a recurring event")) {
                                     SE_LOG_DEBUG(this, NULL, "Google recurring event delete hack: try again in a second");
-                                    sleep(1);
+                                    Sleep(1);
                                 } else {
                                     throw;
                                 }

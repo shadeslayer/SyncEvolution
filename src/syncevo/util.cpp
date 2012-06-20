@@ -25,6 +25,7 @@
 #include <syncevo/SynthesisEngine.h>
 #include <syncevo/Logging.h>
 #include <syncevo/LogRedirect.h>
+#include <syncevo/SuspendFlags.h>
 
 #include <synthesis/syerror.h>
 
@@ -49,8 +50,14 @@
 #include <stdlib.h>
 #include <math.h>
 
-#if USE_SHA256 == 1
+#ifdef HAVE_GLIB
 # include <glib.h>
+#endif
+
+#if USE_SHA256 == 1
+# ifndef HAVE_GLIB
+#  error need glib.h
+# endif
 #elif USE_SHA256 == 2
 # include <nss/sechash.h>
 # include <nss/hasht.h>
@@ -742,12 +749,49 @@ char *Strncpy(char *dest, const char *src, size_t n)
     return dest;
 }
 
-void Sleep(double seconds)
+static gboolean SleepTimeout(gpointer triggered)
 {
-    timeval delay;
-    delay.tv_sec = floor(seconds);
-    delay.tv_usec = (seconds - (double)delay.tv_sec) * 1e6;
-    select(0, NULL, NULL, NULL, &delay);
+    *static_cast<bool *>(triggered) = true;
+    return false;
+}
+
+double Sleep(double seconds)
+{
+    Timespec start = Timespec::monotonic();
+    SuspendFlags &s = SuspendFlags::getSuspendFlags();
+    if (s.getState() == SuspendFlags::NORMAL) {
+#ifdef HAVE_GLIB
+        bool triggered = false;
+        GLibEvent timeout(g_timeout_add(seconds * 1000,
+                                        SleepTimeout,
+                                        &triggered),
+                          "glib timeout");
+        while (!triggered) {
+            if (s.getState() != SuspendFlags::NORMAL) {
+                break;
+            }
+            g_main_context_iteration(NULL, true);
+        }
+        // done
+        return 0;
+#else
+        // Only works when abort or suspend requests are delivered via signal.
+        // Not the case when used inside helper processes; but those have
+        // and depend on glib.
+        timeval delay;
+        delay.tv_sec = floor(seconds);
+        delay.tv_usec = (seconds - (double)delay.tv_sec) * 1e6;
+        if (select(0, NULL, NULL, NULL, &delay) != -1) {
+            // done
+            return 0;
+        }
+#endif
+    }
+
+    // not done normally, calculate remaining time
+    Timespec end = Timespec::monotonic();
+    double left = (end - start).duration() - seconds;
+    return std::max((double)0, left);
 }
 
 InitStateTri::Value InitStateTri::getValue() const

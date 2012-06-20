@@ -20,6 +20,7 @@
 
 #include <syncevo/SuspendFlags.h>
 #include <syncevo/util.h>
+#include <synthesis/syerror.h>
 
 #include <errno.h>
 #include <unistd.h>
@@ -109,6 +110,15 @@ SuspendFlags::State SuspendFlags::getState() const {
         return SUSPEND;
     } else {
         return m_state;
+    }
+}
+
+void SuspendFlags::checkForNormal() const
+{
+    if (getState() != SuspendFlags::NORMAL) {
+        SE_THROW_EXCEPTION_STATUS(StatusException,
+                                  "aborting as requested by user",
+                                  (SyncMLStatus)sysync::LOCERR_USERABORT);
     }
 }
 

@@ -72,6 +72,14 @@ class SuspendFlags
     State getState() const;
 
     /**
+     * Throws a "aborting as requested by user" StatusException with
+     * LOCERR_USERABORT as status code if the current state is not
+     * NORMAL. In other words, suspend and abort are both
+     * treated like an abort request.
+     */
+    void checkForNormal() const;
+
+    /**
      * Users of this class can read a single char for each received
      * signal from this file descriptor. The char is the State that
      * was entered by that signal. This can be used to be notified

@@ -1169,16 +1169,18 @@ void SyncSourceRevisions::deleteRevision(ConfigNode &trackingNode,
 
 void SyncSourceRevisions::sleepSinceModification()
 {
-    time_t current = time(NULL);
-    while (current - m_modTimeStamp < m_revisionAccuracySeconds) {
-        sleep(m_revisionAccuracySeconds - (current - m_modTimeStamp));
-        current = time(NULL);
+    Timespec current = Timespec::monotonic();
+    // Don't let this get interrupted by user abort.
+    // It is needed for correct change tracking.
+    while ((current - m_modTimeStamp).duration() < m_revisionAccuracySeconds) {
+        Sleep(m_revisionAccuracySeconds - (current - m_modTimeStamp).duration());
+        current = Timespec::monotonic();
     }
 }
 
 void SyncSourceRevisions::databaseModified()
 {
-    m_modTimeStamp = time(NULL);
+    m_modTimeStamp = Timespec::monotonic();
 }
 
 void SyncSourceRevisions::init(SyncSourceRaw *raw,
@@ -1188,7 +1190,6 @@ void SyncSourceRevisions::init(SyncSourceRaw *raw,
 {
     m_raw = raw;
     m_del = del;
-    m_modTimeStamp = 0;
     m_revisionAccuracySeconds = granularity;
     m_revisionsSet = false;
     m_firstCycle = false;

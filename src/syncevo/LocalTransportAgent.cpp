@@ -958,7 +958,7 @@ int LocalTransportMain(int argc, char **argv)
     // delay the client for debugging purposes
     const char *delay = getenv("SYNCEVOLUTION_LOCAL_CHILD_DELAY");
     if (delay) {
-        sleep(atoi(delay));
+        Sleep(atoi(delay));
     }
 
     SyncContext::initMain("syncevo-local-sync");

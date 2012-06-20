@@ -3295,7 +3295,7 @@ SyncMLStatus SyncContext::doSync()
     // delay the sync for debugging purposes
     const char *delay = getenv("SYNCEVOLUTION_SYNC_DELAY");
     if (delay) {
-        sleep(atoi(delay));
+        Sleep(atoi(delay));
     }
 
     if (checkForSuspend() ||
@@ -3807,7 +3807,7 @@ SyncMLStatus SyncContext::doSync()
                         // retry send
                         int leftTime = m_retryInterval - (curTime - resendStart);
                         if (leftTime >0 ) {
-                            if (sleep (leftTime) > 0) {
+                            if (Sleep(leftTime) > 0) {
                                 if (checkForSuspend()) {
                                     SE_LOG_DEBUG(NULL, NULL, "suspending after premature exit from sleep() caused by user suspend");
                                     stepCmd = sysync::STEPCMD_SUSPEND;
@@ -4028,16 +4028,6 @@ void SyncContext::checkSourceChanges(SourceList &sourceList, SyncReport &changes
         changes.addSyncSourceReport(source->getName(), local);
     }
     changes.setEnd(time(NULL));
-}
-
-int SyncContext::sleep (int intervals) 
-{
-    while ( (intervals = ::sleep (intervals)) > 0) {
-        if (checkForSuspend() || checkForAbort ()) {
-            break;
-        }
-    }
-    return intervals;
 }
 
 bool SyncContext::checkForScriptAbort(SharedSession session)

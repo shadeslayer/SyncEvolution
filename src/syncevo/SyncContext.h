@@ -333,13 +333,6 @@ class SyncContext : public SyncConfig {
     void restore(const string &dirname, RestoreDatabase database);
 
     /**
-     * Sleep the sync session in interval seconds, blocks until the interval
-     * is expired or a user suspend/abort request is signaled (CTRL+C)
-     * returns time left to sleep if the method is interrupted by CTRL+C.
-     */
-    virtual int sleep (int interval);
-
-    /**
      * fills vector with absolute path to information about previous
      * sync sessions, oldest one first
      */

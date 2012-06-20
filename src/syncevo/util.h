@@ -334,9 +334,11 @@ char *Strncpy(char *dest, const char *src, size_t n);
 
 /**
  * sleep() with sub-second resolution. Might be interrupted by signals
- * before the time has elapsed.
+ * or SuspendFlags abort/suspend requests before the time has elapsed.
+ *
+ * @return seconds not elapsed yet, 0 if not interrupted
  */
-void Sleep(double seconds);
+double Sleep(double seconds);
 
 /**
  * Acts like the underlying type. In addition ensures that plain types

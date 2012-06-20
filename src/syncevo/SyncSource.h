@@ -24,6 +24,7 @@
 #include <syncevo/SyncConfig.h>
 #include <syncevo/Logging.h>
 #include <syncevo/SyncML.h>
+#include <syncevo/Timespec.h>
 
 #include <synthesis/sync_declarations.h>
 #include <synthesis/syerror.h>
@@ -2340,7 +2341,7 @@ class SyncSourceRevisions : virtual public SyncSourceChanges, virtual public Syn
     void databaseModified();
 
     /** time stamp of latest database modification, for sleepSinceModification() */
-    time_t m_modTimeStamp;
+    Timespec m_modTimeStamp;
     void sleepSinceModification();
 };
 
