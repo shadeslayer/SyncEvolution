@@ -4335,6 +4335,12 @@ class TestCmdline(DBusUtil, unittest.TestCase):
 
         return (out, err, s.returncode)
 
+    def sourceCheckOutput(self, sources=['addressbook', 'calendar', 'memo', 'todo']):
+        '''returns the output produced by --configure when checking sources'''
+        if not (isinstance(sources, type([])) or isinstance(sources, type(()))):
+            sources = (sources,)
+        return ''.join(['[INFO] %s: looking for databases...\n[INFO] %s: okay\n' % (i, i) for i in sources])
+
     def assertNoErrors(self, err):
         '''check that error output is empty'''
         self.assertEqualDiff('', err)
@@ -4864,9 +4870,11 @@ spds/sources/todo/config.txt:# evolutionpassword =
         self.assertRegexpMatches(rootMin, r'^\d+$', 'Peer min version is not a number.')
         self.assertRegexpMatches(rootCur, r'^\d+$', 'Root cur version is not a number.')
 
-    def assertSilent(self, out, err):
+    def assertSilent(self, out, err, ignore=None):
         if err != None and \
                 os.environ.get('SYNCEVOLUTION_DEBUG', None) == None:
+            if ignore:
+                err = err.replace(ignore, "", 1)
             self.assertNoErrors(err)
         self.assertEqualDiff('', out)
 
@@ -4883,7 +4891,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
         out, err, code = self.runCmdline(['--configure',
                                           '--sync-property', 'proxyHost = proxy',
                                           'scheduleworld', 'addressbook'])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput('addressbook'))
         res = sortConfig(scanFiles(root))
         res = self.removeRandomUUID(res)
         expected = self.ScheduleWorldConfig()
@@ -4902,7 +4910,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
         out, err, code = self.runCmdline(['--configure',
                                           '--sync-property', 'deviceId = fixed-devid',
                                           'scheduleworld'])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
         res = sortConfig(scanFiles(root))
         expected = self.ScheduleWorldConfig()
         expected = sortConfig(expected)
@@ -4921,7 +4929,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                                           '--template', 'default',
                                           '--sync-property', 'deviceId = fixed-devid',
                                           'some-other-server'])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
         res = scanFiles(root, 'some-other-server')
         expected = sortConfig(self.DefaultConfig()).replace('/syncevolution/', '/some-other-server/')
         self.assertEqualDiff(expected, res)
@@ -4940,7 +4948,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
                                           "--template", "scheduleworld",
                                           "--sync-property", "deviceId = fixed-devid",
                                           "scheduleworld2"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
         res = scanFiles(root, "scheduleworld2")
         expected = sortConfig(self.ScheduleWorldConfig()).replace("/scheduleworld/", "/scheduleworld2/")
         self.assertEqualDiff(expected, res)
@@ -4959,7 +4967,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
 
         args.append("FunamBOL")
         out, err, code = self.runCmdline(args)
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
         res = scanFiles(root, "funambol")
         expected = sortConfig(self.FunambolConfig())
         self.assertEqualDiff(expected, res)
@@ -4983,7 +4991,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
 
         args.append("synthesis")
         out, err, code = self.runCmdline(args)
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
         res = scanFiles(root, "synthesis")
         expected = sortConfig(self.SynthesisConfig())
         self.assertEqualDiff(expected, res)
@@ -5197,7 +5205,7 @@ spds/sources/todo/config.txt:# evolutionpassword =
 
         # create config => again, must not use settings from default context
         out, err, code = self.runCmdline(["--configure", "--template", "scheduleworld", "other@other"])
-        self.assertEqualDiff("", err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
 
         out, err, code = self.runCmdline(["--print-config", "other@other"])
         self.assertEqualDiff("", err)
@@ -5420,7 +5428,8 @@ sources/xyz/config.ini:# databasePassword = """)
         out, err, code = self.runCmdline(["--configure",
                                           "--template", "yahoo",
                                           "target-config@my-yahoo"])
-        self.assertSilent(out, err)
+        # TODO: why does it check 'addressbook'? It's disabled in the template.
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput(['addressbook', 'calendar']))
 
         out, err, code = self.runCmdline(["--print-config", "target-config@my-yahoo"])
         self.assertNoErrors(err)
@@ -5435,7 +5444,7 @@ sources/xyz/config.ini:# databasePassword = """)
         # configure Google Calendar with template derived from config name
         out, err, code = self.runCmdline(["--configure",
                                           "target-config@google-calendar"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput('calendar'))
 
         out, err, code = self.runCmdline(["--print-config", "target-config@google-calendar"])
         self.assertNoErrors(err)
@@ -5483,7 +5492,7 @@ sources/xyz/config.ini:# databasePassword = """)
         out, err, code = self.runCmdline(["--configure",
                                           "--source-property", "sync = disabled",
                                           "scheduleworld"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
         expected = filterConfig(internalToIni(config)).replace("sync = two-way",
                                                                "sync = disabled")
         self.assertEqualDiff(expected,
@@ -5834,7 +5843,8 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
                                          expectSuccess = False)
         self.assertEqualDiff('', out)
         err = stripOutput(err)
-        self.assertEqualDiff('[ERROR] error code from SyncEvolution fatal error (local, status 10500): eds_event: no backend available\n', err)
+        self.assertEqualDiff(self.sourceCheckOutput('eds_event').replace('okay', 'no backend available') +
+                             '[ERROR] error code from SyncEvolution fatal error (local, status 10500): eds_event: no backend available\n', err)
 
         shutil.rmtree(self.configdir, True)
         # allow user to proceed if they wish and possible: here
@@ -5858,7 +5868,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         # allow user to proceed if they wish: configure exactly the
         # specified sources
         out, err, code = self.runCmdline(["--configure", "--template", "none", "backend=calendar", "foo", "eds_event"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput('eds_event'))
         res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
         self.assertEqualDiff(fooconfig + configsource, res)
 
@@ -5874,7 +5884,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         # allow user to proceed if they provide enough information:
         # source created because listed and usable
         out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "backend=calendar", "foo", "eds_event"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput('eds_event'))
         res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
         self.assertEqualDiff(fooconfig + syncurl + configsource, res)
 
@@ -5882,7 +5892,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
         # allow user to proceed if they provide enough information:
         # source created because listed and usable
         out, err, code = self.runCmdline(["--configure", "syncURL=local://@bar", "eds_event/backend@default=calendar", "foo", "eds_event"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput('eds_event'))
         res = filterFiles(self.removeRandomUUID(scanFiles(xdg_config)))
         self.assertEqualDiff(fooconfig + syncurl + configsource, res)
 
@@ -5895,7 +5905,7 @@ syncevolution/default/sources/eds_event/config.ini:backend = calendar
                                           "--source-property", "type = file:text/x-vcard",
                                           "@foobar",
                                           "addressbook"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput('addressbook'))
 
         root = self.configdir + "/foobar"
         res = self.removeRandomUUID(scanFiles(root))
@@ -5933,7 +5943,7 @@ sources/calendar/config.ini:# databasePassword =
         # add ScheduleWorld peer: must reuse existing backend settings
         out, err, code = self.runCmdline(["--configure",
                                           "scheduleworld@foobar"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
 
         res = self.removeRandomUUID(scanFiles(root))
         expected = self.ScheduleWorldConfig()
@@ -5969,7 +5979,7 @@ sources/calendar/config.ini:# databasePassword =
                                           "--source-property", "addressbook/type=file:text/vcard:3.0",
                                           "--source-property", "calendar/type=file:text/calendar:2.0",
                                           "syncevo@syncevo"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
 
         syncevoroot = self.configdir + "/syncevo"
         res = scanFiles(syncevoroot + "/sources/addressbook")
@@ -6009,7 +6019,7 @@ sources/calendar/config.ini:# databasePassword =
         if haveEDS:
             # limit output to one specific backend, chosen via config
             out, err, code = self.runCmdline(["--configure", "backend=evolution-contacts", "@foo-config", "bar-source"])
-            self.assertSilent(out, err)
+            self.assertSilent(out, err, ignore=self.sourceCheckOutput('bar-source'))
             out, err, code = self.runCmdline(["--print-databases", "@foo-config", "bar-source"])
             self.assertNoErrors(err)
             self.assertTrue(out.startswith("@foo-config/bar-source:\n"))
@@ -6483,7 +6493,7 @@ sources/memo/config.ini:type = todo
         out, err, code = self.runCmdline(["--configure",
                                           "--template", "default",
                                           "foo"])
-        self.assertSilent(out, err)
+        self.assertSilent(out, err, ignore=self.sourceCheckOutput())
 
         # "foo" now configured, still no source
         out, err, code  = self.runCmdline(["--print-items",
