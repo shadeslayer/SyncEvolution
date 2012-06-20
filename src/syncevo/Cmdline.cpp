@@ -26,6 +26,7 @@
 #include <syncevo/SyncSource.h>
 #include <syncevo/SyncContext.h>
 #include <syncevo/util.h>
+#include <syncevo/SuspendFlags.h>
 #include "test.h"
 
 #include <synthesis/SDK_util.h>
@@ -1113,7 +1114,8 @@ bool Cmdline::run() {
         if (fromScratch) {
             list<string> configuredSources = to->getSyncSources();
             set<string> sources = m_sources;
-            
+            SuspendFlags &s = SuspendFlags::getSuspendFlags();
+
             BOOST_FOREACH(const string &source, configuredSources) {
                 boost::shared_ptr<PersistentSyncSourceConfig> sourceConfig(to->getSyncSourceConfig(source));
                 string disable = "";
@@ -1145,6 +1147,7 @@ bool Cmdline::run() {
                             disable = "backend failed";
                         }
                     }
+                    s.checkForNormal();
                 }
 
                 // Do sanity checking of source (can it be enabled?),
