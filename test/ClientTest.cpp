@@ -6314,7 +6314,7 @@ static string mangleICalendar20(const std::string &data, bool update)
 
     // Ensure that items of different types do not have the same UID.
     // They might be stored in the same VCALENDAR.
-    boost::replace_all(item, "@dummy\n", "@dummy" + type);
+    boost::replace_all(item, "@dummy\n", "@dummy" + type + "\n");
 
     if (getenv("CLIENT_TEST_UNIQUE_UID")) {
         // Making UID unique per test to avoid issues
