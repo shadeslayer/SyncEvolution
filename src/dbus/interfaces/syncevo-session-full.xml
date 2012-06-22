@@ -56,7 +56,7 @@
         <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
         <doc:doc><doc:description>See Server.GetConfig() for dictionary description.</doc:description></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
     </method>
 
     <method name="SetConfig">
@@ -104,7 +104,7 @@
         <doc:doc><doc:summary>server configuration</doc:summary></doc:doc>
         <doc:doc><doc:description>See Server.GetConfig() for dictionary description.</doc:description></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="QStringMultiMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QStringMultiMap"/>
     </method>
 
     <method name="GetNamedConfig">
@@ -115,9 +115,8 @@
       <arg type="s" name="name" direction="in">
         <doc:doc><doc:summary>configuration name</doc:summary></doc:doc>
       </arg>
-      <arg type="b" name="template" direction="in"/>
       <arg type="a{sa{ss}}" name="configuration" direction="out"/>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
     </method>
 
     <method name="SetNamedConfig">
@@ -130,7 +129,7 @@
         <doc:doc><doc:summary>temporary changes of the configuration are currently only supported for the configuration chosen when creating the session</doc:summary></doc:doc>
       </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="in"/>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="QStringMultiMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QStringMultiMap"/>
     </method>
 
     <method name="GetReports">
@@ -145,7 +144,7 @@
         <doc:doc><doc:summary>synchronization reports</doc:summary></doc:doc>
         <doc:doc><doc:description>See Server.GetReports() for array description.</doc:description></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfStringMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QArrayOfStringMap"/>
     </method>
 
     
@@ -177,7 +176,7 @@
           </doc:description>
         </doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfDatabases"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QArrayOfDatabases"/>
     </method>
 
     <method name="CheckSource">
@@ -231,7 +230,7 @@
         <doc:doc><doc:summary>synchronization source modes</doc:summary></doc:doc>
         <doc:doc><doc:description>Source modes to override the 'mode' variable for specific sources. The dictionary key is source name, value is synchronization mode. Valid synchronization modes are all synchronization modes used in syncevolution server configuration files and the empty string.</doc:description></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In1" value="QStringMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="QStringMap"/>
     </method>
 
     <method name="Abort">
@@ -318,7 +317,7 @@
         <doc:doc><doc:summary>Synchronization source status dictionary</doc:summary></doc:doc>
         <doc:doc><doc:description>Dictionary key is source name. The value structs contain synchronization mode, source status and error code. Valid values for status are the same as for status parameter above. "done" represents a synced source when the whole sync is not done yet.</doc:description></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out2" value="QSyncStatusMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out2" value="QSyncStatusMap"/>
     </method>
 
     <method name="GetProgress">
@@ -330,7 +329,7 @@
         <doc:doc><doc:summary>Synchronization source progress dictionary</doc:summary></doc:doc>
         <doc:doc><doc:description>Dictionary key is source name. The value structs contain phase (can be one of "", "preparing", "sending", "receiving"), prepare count, prepare total, send count, send total, receive count and receive total. -1 is used for unknown. Normally only the 'counts' increase but there are cases where the total will increase as well.</doc:description></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out1" value="QSyncProgressMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out1" value="QSyncProgressMap"/>
     </method>
 
     <method name="Execute">
@@ -345,7 +344,7 @@
       </arg>
       <arg type="a{ss}" name="vars" direction="in">
         <doc:doc><doc:summary>Environment variables in clients</doc:summary></doc:doc>
-        <annotation name="com.trolltech.QtDBus.QtTypeName.In1" value="QStringMap"/>
+        <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="QStringMap"/>
       </arg>
     </method>
 
@@ -354,14 +353,14 @@
       <arg type="s" name="status"/>
       <arg type="u" name="error"/>
       <arg type="a{s(ssu)}" name="sources"/>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="QSyncStatusMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QSyncStatusMap"/>
     </signal> 
 
     <signal name="ProgressChanged">
       <doc:doc><doc:description>Synchronization progress change. See GetProgress() for argument descriptions.</doc:description></doc:doc>
       <arg type="i" name="progress"/>
       <arg type="a{s(siiiiii)}" name="sources"/>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In1" value="QSyncProgressMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="QSyncProgressMap"/>
     </signal>
 
   </interface>

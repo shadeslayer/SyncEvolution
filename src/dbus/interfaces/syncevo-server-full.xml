@@ -129,7 +129,7 @@
             "system" - some plain text information about system libraries,
             "backends" - available backend libraries
         </doc:summary></doc:doc>
-        <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMap"/>
+        <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QStringMap"/>
       </arg>
     </method>  
 
@@ -342,7 +342,7 @@
           server (or template) configuration
         </doc:summary></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QStringMultiMap"/>
     </method>
 
     <method name="CheckPresence">
@@ -411,7 +411,7 @@
                 its pair-value won't be included in the dictionary.
         </doc:description></doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfStringMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QArrayOfStringMap"/>
     </method>
 
     <method name="GetDatabases">
@@ -444,7 +444,7 @@
           </doc:description>
         </doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.Out0" value="QArrayOfDatabases"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QArrayOfDatabases"/>
     </method>
 
     <method name="CheckSource">
@@ -585,7 +585,7 @@
             version of the transport entity.
           </doc:summary>
         </doc:doc>
-        <annotation name="com.trolltech.QtDBus.QtTypeName.In0" value="QStringMap"/>
+        <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QStringMap"/>
       </arg>
       <arg type="b" name="must_authenticate" direction="in">
         <doc:doc>
@@ -824,7 +824,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In5" value="QStringMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In5" value="QStringMap"/>
     </signal>
 
     <method name="InfoResponse">
@@ -853,7 +853,7 @@
           </doc:summary>
         </doc:doc>
       </arg>
-      <annotation name="com.trolltech.QtDBus.QtTypeName.In2" value="QStringMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QStringMap"/>
     </method>
 
     <signal name="LogOutput">
