@@ -2909,17 +2909,17 @@ void SyncTests::doCopy() {
 }
 
 /**
- * replicate server database locally: same as SYNC_REFRESH_FROM_SERVER,
- * but done with explicit local delete and then a SYNC_SLOW because some
- * servers do no support SYNC_REFRESH_FROM_SERVER
+ * Replicate server database locally. Works with all servers
+ * (including those which do not support refresh sync) because the
+ * Synthesis engine will do a local delete + slow sync (by default)
+ * and a real refresh sync only when asked to explicitly (Funambol).
  */
 void SyncTests::refreshClient(SyncOptions options) {
-    CT_ASSERT_NO_THROW(allSourcesDeleteAll());
     doSync(__FILE__, __LINE__,
            "refresh",
            options
-           .setSyncMode(SYNC_SLOW)
-           .setCheckReport(CheckSyncReport(-1,0,0, 0,0,0, true, SYNC_SLOW)));
+           .setSyncMode(SYNC_REFRESH_FROM_REMOTE)
+           .setCheckReport(CheckSyncReport(-1,0,-1, 0,0,0, true, SYNC_REFRESH_FROM_REMOTE)));
 }
 
 
