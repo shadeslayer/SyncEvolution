@@ -6291,9 +6291,12 @@ static string mangleGeneric(const std::string &data, bool update)
 static string mangleICalendar20(const std::string &data, bool update)
 {
     std::string item = data;
+    std::string type;
+    static const pcrecpp::RE re("BEGIN:(VEVENT|VJOURNAL|VTODO)\n");
+    re.PartialMatch(data, &type);
 
     if (update) {
-        if (item.find("BEGIN:VJOURNAL") != item.npos) {
+        if (type == "VJOURNAL") {
             // Need to modify first line of description and summary
             // consistently for a note because in plain text
             // representation, these lines are expected to be
@@ -6308,6 +6311,10 @@ static string mangleICalendar20(const std::string &data, bool update)
     } else if (getenv("CLIENT_TEST_SIMPLE_UID")) {
         boost::replace_all(item, "UID:1234567890!@#$%^&*()<>@dummy", "UID:1234567890@dummy");
     }
+
+    // Ensure that items of different types do not have the same UID.
+    // They might be stored in the same VCALENDAR.
+    boost::replace_all(item, "@dummy\n", "@dummy" + type);
 
     if (getenv("CLIENT_TEST_UNIQUE_UID")) {
         // Making UID unique per test to avoid issues
@@ -6875,7 +6882,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:STANDARD\n"
             "END:VTIMEZONE\n"
             "BEGIN:VEVENT\n"
-            "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+            "UID:20080407T193125Z-19554-727-1-50@dummy\n"
             "DTSTAMP:20080407T193125Z\n"
             "DTSTART;TZID=Europe/Berlin:20080406T090000\n"
             "DTEND;TZID=Europe/Berlin:20080406T093000\n"
@@ -6912,7 +6919,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "END:STANDARD\n"
             "END:VTIMEZONE\n"
             "BEGIN:VEVENT\n"
-            "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+            "UID:20080407T193125Z-19554-727-1-50@dummy\n"
             "DTSTAMP:20080407T193125Z\n"
             "DTSTART;TZID=Europe/Berlin:20080413T090000\n"
             "DTEND;TZID=Europe/Berlin:20080413T093000\n"
@@ -6957,7 +6964,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "END:STANDARD\n"
                 "END:VTIMEZONE\n"
                 "BEGIN:VEVENT\n"
-                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "UID:20080407T193125Z-19554-727-1-50@dummy\n"
                 "DTSTAMP:20080407T193125Z\n"
                 "DTSTART;TZID=Europe/Berlin:20080406T090000\n"
                 "DTEND;TZID=Europe/Berlin:20080406T093000\n"
@@ -6979,7 +6986,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
                 "BEGIN:VEVENT\n"
-                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "UID:20080407T193125Z-19554-727-1-50@dummy\n"
                 "DTSTAMP:20080407T193125Z\n"
                 "DTSTART:20080406T070000Z\n"
                 "DTEND:20080406T073000Z\n"
@@ -6998,7 +7005,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
                 "BEGIN:VEVENT\n"
-                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "UID:20080407T193125Z-19554-727-1-50@dummy\n"
                 "DTSTAMP:20080407T193125Z\n"
                 "DTSTART:20080413T070000Z\n"
                 "DTEND:20080413T073000Z\n"
@@ -7021,7 +7028,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
                 "BEGIN:VEVENT\n"
-                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "UID:20080407T193125Z-19554-727-1-50@dummy\n"
                 "DTSTAMP:20080407T193125Z\n"
                 "DTSTART:20080406T070000\n"
                 "DTEND:20080406T073000\n"
@@ -7040,7 +7047,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
                 "BEGIN:VEVENT\n"
-                "UID:20080407T193125Z-19554-727-1-50@gollum\n"
+                "UID:20080407T193125Z-19554-727-1-50@dummy\n"
                 "DTSTAMP:20080407T193125Z\n"
                 "DTSTART:20080413T070000\n"
                 "DTEND:20080413T073000\n"
@@ -7127,7 +7134,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
                 "BEGIN:VEVENT\n"
-                "UID:20110829T130000Z-19554-727-1-50@gollum\n"
+                "UID:20110829T130000Z-19554-727-1-50@dummy\n"
                 "DTSTAMP:20080407T193125Z\n"
                 "DTSTART;VALUE=DATE:20080406\n"
                 "DTEND;VALUE=DATE:20080407\n"
@@ -7157,7 +7164,7 @@ void ClientTest::getTestData(const char *type, Config &config)
                 "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
                 "VERSION:2.0\n"
                 "BEGIN:VEVENT\n"
-                "UID:20110829T130000Z-19554-727-1-50@gollum\n"
+                "UID:20110829T130000Z-19554-727-1-50@dummy\n"
                 "DTSTAMP:20080407T193125Z\n"
                 "DTSTART;VALUE=DATE:20080413\n"
                 "DTEND;VALUE=DATE:20080414\n"
@@ -7453,7 +7460,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
             "BEGIN:VTODO\n"
-            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "UID:20060417T173712Z-4360-727-1-2730@dummy\n"
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me\n"
             "DESCRIPTION:to be done<<REVISION>>\n"
@@ -7468,7 +7475,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
             "BEGIN:VTODO\n"
-            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "UID:20060417T173712Z-4360-727-1-2730@dummy\n"
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me ASAP\n"
             "DESCRIPTION:to be done\n"
@@ -7484,7 +7491,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
             "BEGIN:VTODO\n"
-            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "UID:20060417T173712Z-4360-727-1-2730@dummy\n"
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me please\\, please\n"
             "DESCRIPTION:to be done\n"
@@ -7499,7 +7506,7 @@ void ClientTest::getTestData(const char *type, Config &config)
             "PRODID:-//Ximian//NONSGML Evolution Calendar//EN\n"
             "VERSION:2.0\n"
             "BEGIN:VTODO\n"
-            "UID:20060417T173712Z-4360-727-1-2730@gollum\n"
+            "UID:20060417T173712Z-4360-727-1-2730@dummy\n"
             "DTSTAMP:20060417T173712Z\n"
             "SUMMARY:do me\n"
             "DESCRIPTION:to be done\n"
