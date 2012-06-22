@@ -1,15 +1,18 @@
-SyncEvolution 1.2.2 -> 1.2.99.1, ..........
+SyncEvolution 1.2.2 -> 1.2.99.1, 22.06.2012
 ===========================================
 
 First pre-release of SyncEvolution 1.3. Contains bug fixes that were
-not backported to 1.2.x, so upgrading is recommended. SyncEvolution
-1.3 is required for Evolution 3.4, otherwise photos are not exported
-properly.
+not backported to 1.2.x, so upgrading is recommended. For example,
+SyncEvolution 1.3 is required for Evolution 3.4, otherwise photos are
+not exported properly. Further workarounds for recent changes in
+Google CalDAV were added.
 
 Major new features are KDE/Akonadi support in the syncevolution.org
 binaries and ActiveSync support (only in the source code). The D-Bus
 server and local sync were rewritten considerably, to make the code
-cleaner and more robust.
+cleaner and more robust. The CalDAV backend now also supports tasks
+and memos.
+
 
 Details:
 
@@ -117,6 +120,23 @@ Details:
   stderr. The output of running a sync goes to both stdout (summary)
   and stderr (progress).
 
+* command line: allow setting empty properties
+
+  Due to the way how properties were handled internally, it wasn't
+  possible to explicitly set a property to its default value. Instead
+  the property was unset. For example, explicitly setting database= was
+  not possible.
+
+  This is necessary for client-test and ActiveSync, because client-test
+  needs to know that the testing is expected to run with the default
+  databases (something which normally is avoided by overwriting empty
+  database properties).
+
+  Now the "is set" state is tracked explicitly in the config storage and
+  command line property APIs. Unsetting a property via the command line
+  could be implemented with an explicit command line option, but is not
+  supported at the moment.
+
 * command line + local sync: fixed erroneous "Comparison impossible" output.
 
   "Comparison impossible" was incorrectly printed after a successful
@@ -215,6 +235,93 @@ Details:
   between a SyncML server and a CalDAV/CardDAV server. See "CalDAV and
   CardDAV" in the README for details.
 
+* WebDAV: improved --configure
+
+  Added INFO output about checking sources. This helps with WebDAV when
+  the server cannot be contacted (dead, misconfigured) because otherwise
+  there would be no indication at all why the --configure operation
+  seems to hang.
+
+  Here is some example output, including aborting:
+  $ syncevolution --configure --template webdav \
+                  syncURL=http://192.168.1.100:9000/ \
+                  username=foo password=bar retryDuration=2s \
+                  target-config@webdav-temp
+  [INFO] creating configuration target-config@webdav-temp
+  [INFO] addressbook: looking for databases...
+  [INFO] addressbook: no database to synchronize
+  [INFO] calendar: looking for databases...
+  [INFO] calendar: no database to synchronize
+  [INFO] memo: looking for databases...
+  [INFO] memo: no database to synchronize
+  [INFO] todo: looking for databases...
+  [INFO] todo: no database to synchronize
+
+  It timed out fairly quickly here because of the retryDuration=2s. That
+  also gets placed in the resulting config, which is probably not desired.
+
+  Aborting the operation is now supported:
+
+  $ syncevolution --configure \
+                  --template webdav \
+                  syncURL=http://192.168.1.100:9000/ \
+                  username=foo password=bar \
+                  target-config@webdav-temp
+  [INFO] creating configuration target-config@webdav-temp
+  [INFO] addressbook: looking for databases...
+  ^C[INFO] Asking to suspend...
+  [INFO] Press CTRL-C again quickly (within 2s) to stop immediately (can cause problems in the future!)
+  ^C[INFO] Aborting immediately ...
+  [ERROR] error code from SyncEvolution aborted on behalf of user (local, status 20017): aborting as requested by u
+
+  It would be good to make the CTRL-C handling code aware that it can
+  abort immediately instead of doing the intermediate "asking to suspend"
+  step, which only makes sense for sync sessions.
+
+* WebDAV: support tasks and memos (BMC #24893)
+
+  The new backend property values "CalDAVTodo" and "CalDAVJournal"
+  select tasks resp. memos stored in a CalDAV collection. "CalDAV"
+  continues to select events.
+
+  Events, tasks and journals can be mixed in the same resource (=
+  URL). However, this is less efficient than storing them separately.
+
+  A good CalDAV server allows filtering items by type, and SyncEvolution
+  uses that. However, it was found that Radicale 0.7 ignores this
+  filtering, which could have led to data loss (SyncEvolution asks for
+  all VTODOs in preparation for a "delete all items" operation in a
+  "CalDAVTodo" source, gets also VJOURNALs, then deletes them).
+
+  Therefore SyncEvolution plays it safe and downloads the VTODO and
+  VJOURNAL data to double-check that it is working on the right items.
+  This causes additional traffic for well-behaving servers; currently
+  it cannot be turned off.
+
+  Tasks are exchanged as vCalendar 1.0 or iCalendar 2.0 VJOURNAL.
+  Memos are exchanged as VTODO or plain text. The logic for storing
+  incoming plain text is slightly different compared to the way how
+  the EDS memo backend did it: instead of copying the first line
+  from the text into the summary, it is now moved. In other words,
+  the first line gets stripped. The change is primarily technically
+  motivated; both approaches have pros and cons.
+
+* WebDAV: improved Radicale support
+
+  Radicale > 0.7 will return status 200 for delete requests;
+  is now treated like 204 by SyncEvolution. 412 'Preconditiona Failed'
+  when asking to delete an already removed item is treated like
+  the more common 404 'not found'. Same with 410 'gone' instead
+  of 404 when trying to read a non-existent item.
+
+* file backend: more flexible sync support for memos
+
+  The databaseFormat=text/calendar for memos did not support
+  synchronizing as plain text. When using the new
+  databaseFormat=text/calendar+plain, vCalendar/iCalendar/plain text
+  are all valid sync formats; the storage is iCalendar 2.0
+  VJOURNAL in all cases.
+
 * WebDAV: avoid potential crash during database detection
 
   When a server responds to a PROPFIND for a path with results for some
@@ -232,6 +339,23 @@ Details:
   "syncURL" and "database" properties had to end in a trailing slash,
   otherwise items were not found (404 errors). Now the necessary slash
   is added automatically.
+
+* Funambol: avoid slow syncs in refresh from server
+
+  libsynthesis has traditionally implemented "refresh-from-server" as
+  "delete local data" plus "slow" sync. This is more compatible, because
+  some servers (like Google) do not support "refresh-from-server".
+
+  But it has the downside that the server cannot know that the client
+  won't send any data, and Funambol's OneMedia now only allows one slow
+  sync before blocking the next one for a certain period of time. This is
+  done to prevent excessive resource usage by badly behaving clients.
+
+  To accomodate both kinds of servers, the new "enableRefreshSync"
+  sync property can be set set to explicitly allow the usage of
+  the "refresh-from-server" sync mode. It's off by default. The Funambol
+  template has it turned on, existing configs must be updated manually
+  (see upgrading comments below).
 
 * Curl transport: support SSLServerCertificates=<path>
 
@@ -401,6 +525,13 @@ using vCard 3.0 (now the default for Evolution contacts):
                  syncFormat=text/x-vcard \
                  mobical addressbook
 
+The Funambol template explicitly enables usage of the
+"refresh-from-server" sync mode to avoid getting throttled with 417
+'retry later' errors. The same must be added to existing configs
+manually:
+   syncevolution --configure \
+                 enableRefreshSync=TRUE \
+                 funambol
 
 Upgrading from releases before 1.2:
 
