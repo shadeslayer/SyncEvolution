@@ -49,7 +49,7 @@
 
     <method name="GetConfig">
       <doc:doc><doc:description>Get the configuration identified by the name given to StartSession()</doc:description></doc:doc>
-      <arg type="b" name="template" direction="in">
+      <arg type="b" name="templateName" direction="in">
         <doc:doc><doc:summary>if TRUE, will return a matching template configuration, otherwise will return the stored configuration</doc:summary></doc:doc>
       </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="out">

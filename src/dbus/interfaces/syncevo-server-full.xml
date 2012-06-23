@@ -234,7 +234,7 @@
         and thus can be used to find all templates refering to the same device.
         </doc:para>
       </doc:description></doc:doc>
-      <arg type="b" name="template" direction="in">
+      <arg type="b" name="templateName" direction="in">
         <doc:doc><doc:summary>
           if TRUE, will return template names, otherwise will return 
           configured servers
@@ -331,7 +331,7 @@
       <arg type="s" name="server" direction="in">
         <doc:doc><doc:summary>server name</doc:summary></doc:doc>
       </arg>
-      <arg type="b" name="template" direction="in">
+      <arg type="b" name="templateName" direction="in">
         <doc:doc><doc:summary>
           if TRUE, will return a matching template configuration, otherwise
           will return a matching server configuration
