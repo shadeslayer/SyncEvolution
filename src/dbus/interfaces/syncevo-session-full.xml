@@ -129,7 +129,7 @@
         <doc:doc><doc:summary>temporary changes of the configuration are currently only supported for the configuration chosen when creating the session</doc:summary></doc:doc>
       </arg>
       <arg type="a{sa{ss}}" name="configuration" direction="in"/>
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="QStringMultiMap"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In3" value="QStringMultiMap"/>
     </method>
 
     <method name="GetReports">
